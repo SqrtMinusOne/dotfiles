@@ -20,7 +20,7 @@ Plug 'janko-m/vim-test'
 Plug 'ryanoasis/vim-devicons'
 Plug 'wakatime/vim-wakatime'
 "Plug 'lervag/vimtex'
-
+Plug 'vim-scripts/glsl.vim'
 
 call plug#end()
 
