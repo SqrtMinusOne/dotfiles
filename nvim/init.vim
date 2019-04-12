@@ -25,19 +25,22 @@ Plug 'heavenshell/vim-pydocstring'
 "Other
 Plug 'wakatime/vim-wakatime'
 Plug 'ctrlpvim/ctrlp.vim'
-"Plug 'lervag/vimtex'
+Plug 'lervag/vimtex'
+Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
 Plug 'tikhomirov/vim-glsl'
 
 
 Plug 'ryanoasis/vim-devicons'
 call plug#end()
 
+set runtimepath+=~/.config/nvim/my-snippets/
+
 "LaTeX
-"let g:tex_flavor='latex'
-"let g:vimtex_view_method='zathura'
-"let g:vimtex_quickfix_mode=0
-"set conceallevel=1
-"let g:tex_conceal='abdmg'
+let g:tex_flavor='latex'
+let g:vimtex_view_method='zathura'
+let g:vimtex_quickfix_mode=0
+set conceallevel=2
+let g:tex_conceal='abdmgs'
 
 "Python
 "let g:python_host_prog='/usr/bin/python'
@@ -82,10 +85,15 @@ set expandtab
 set smartindent
 set autoindent
 
+"spell
+"set spell spelllang=en,ru
+
 "ui
 colorscheme monokai
 set termguicolors
-set guifont=DroidSansMono\ Nerd\ Font\ 11
+"set guifont=DroidSansMono\ Nerd\ Font\ 11
 set laststatus=2
 let g:airline_theme='powerlineish'
 let g:airline_powerline_fonts = 1
+
+hi Conceal guibg=Normal guifg=Normal
