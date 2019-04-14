@@ -1,4 +1,5 @@
 call plug#begin('~/.local/share/nvim/plugged')
+
 "UI
 Plug 'scrooloose/nerdtree', { 'on':  'NERDTreeToggle' }
 Plug 'vim-airline/vim-airline'
@@ -23,6 +24,7 @@ Plug 'heavenshell/vim-pydocstring'
 "Plug 'skyleach/pudb.vim'
 
 "Other
+Plug 'https://gitlab.com/code-stats/code-stats-vim.git'
 Plug 'wakatime/vim-wakatime'
 Plug 'ctrlpvim/ctrlp.vim'
 Plug 'lervag/vimtex'
@@ -34,6 +36,7 @@ Plug 'ryanoasis/vim-devicons'
 call plug#end()
 
 set runtimepath+=~/.config/nvim/my-snippets/
+let g:codestats_api_key="SFMyNTY.VTNGeWRFMXBiblZ6VDI1bCMjTlRRek1RPT0.V3iEAki_kRH75zwoXQ3u5Zng-Q_h0XRlUsb9ld09Cdc"
 
 "LaTeX
 let g:tex_flavor='latex'
@@ -48,7 +51,7 @@ let g:tex_conceal='abdmgs'
 let g:pymode_python = 'python3'
 let g:pymode_rope = 1
 let g:pymode_rope_completion = 0
-
+let NERDTreeIgnore = ['\.pyc$', '^__pycache__$']
 
 map <F8> :PymodeRun<CR>
 au BufNewFile,BufRead *.frag,*.vert,*.fp,*.vp,*.glsl setf glsl
@@ -74,7 +77,7 @@ nmap <C-l> <C-W>l
 "Snippets
 let g:UltiSnipsUsePythonVersion = 3
 let g:UltiSnipsExpandTrigger="<C-j>"
-let g:UltiSnipsJumpForwardTrigger="<s-tab>"
+let g:UltiSnipsJumpForwardTrigger="<C-S-j>"
 let g:UltiSnipsJumpBackwardTrigger=""
 
 "Indent stuff
@@ -84,6 +87,8 @@ set smarttab
 set expandtab
 set smartindent
 set autoindent
+set foldmethod=indent
+set foldlevelstart=1
 
 "spell
 "set spell spelllang=en,ru
