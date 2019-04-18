@@ -104,6 +104,8 @@ set autoindent
 set foldmethod=indent
 set foldlevelstart=1
 let g:indent_guides_enable_on_vim_startup = 1
+let g:indent_guides_exclude_filetypes = ['help', 'nerdtree']
+let g:indent_guides_guide_size = 1
 
 "Syntax
 set statusline+=%#warningmsg#
@@ -120,8 +122,8 @@ let g:syntastic_check_on_wq = 0
 "set spell spelllang=en,ru
 
 "ui
+colorscheme solarized8
 set background=dark
-colorscheme solarized8 
 let g:solarized_visibility='high'
 set termguicolors
 "set guifont=DroidSansMono\ Nerd\ Font\ 11
