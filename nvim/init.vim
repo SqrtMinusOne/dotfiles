@@ -56,6 +56,7 @@ let g:vimtex_view_method='zathura'
 let g:vimtex_quickfix_mode=0
 set conceallevel=2
 let g:tex_conceal='abdmgs'
+let g:syntastic_tex_lacheck_quiet_messages = { 'regex': '\Vpossible unwanted space at' }
 
 "Python
 "let g:python_host_prog='/usr/bin/python'
