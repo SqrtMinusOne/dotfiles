@@ -3,16 +3,19 @@ call plug#begin('~/.local/share/nvim/plugged')
 "UI
 Plug 'scrooloose/nerdtree', { 'on':  'NERDTreeToggle' }
 Plug 'jistr/vim-nerdtree-tabs'
+Plug 'xuyuanp/nerdtree-git-plugin'
 
 Plug 'vim-airline/vim-airline'
 Plug 'crusoexia/vim-monokai'
 Plug 'vim-airline/vim-airline-themes'
 Plug 'lifepillar/vim-solarized8'
 
+Plug 'kien/tabman.vim'
+
 "Coding
 Plug 'valloric/youcompleteme'
 Plug 'tpope/vim-fugitive'
-Plug 'vim-scripts/Rainbow-Parenthesis'
+Plug 'luochen1990/rainbow'
 Plug 'tpope/vim-surround'
 Plug 'mbbill/undotree'
 
@@ -87,6 +90,8 @@ nmap <C-h> <C-W>h
 nmap <C-j> <C-W>j
 nmap <C-k> <C-W>k
 nmap <C-l> <C-W>l
+
+"Other mappings
 nmap <C-p> :Files<CR>
 
 "Snippets
@@ -132,4 +137,9 @@ set laststatus=2
 let g:airline_theme='powerlineish'
 let g:airline_powerline_fonts = 1
 
+"Rainbow brackets
+let g:rainbow_active = 1
+let g:rainbow_conf = {
+\   'guifgs': ['red', 'yellow', 'lightgreen', 'lightblue'],
+\ }
 hi Conceal guibg=Normal guifg=Normal
