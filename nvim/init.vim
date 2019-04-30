@@ -4,6 +4,7 @@ call plug#begin('~/.local/share/nvim/plugged')
 Plug 'scrooloose/nerdtree', { 'on':  'NERDTreeToggle' }
 Plug 'jistr/vim-nerdtree-tabs'
 Plug 'xuyuanp/nerdtree-git-plugin'
+Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 
 Plug 'vim-airline/vim-airline'
 Plug 'crusoexia/vim-monokai'
@@ -11,6 +12,8 @@ Plug 'vim-airline/vim-airline-themes'
 Plug 'lifepillar/vim-solarized8'
 
 Plug 'kien/tabman.vim'
+
+Plug 'chrisbra/colorizer'
 
 "Coding
 Plug 'valloric/youcompleteme'
@@ -29,22 +32,25 @@ Plug 'janko-m/vim-test'
 Plug 'heavenshell/vim-pydocstring'
 "Plug 'skyleach/pudb.vim'
 
+"Navigation
+"Plug 'ctrlpvim/ctrlp.vim'
+Plug 'easymotion/vim-easymotion'
+Plug 'yuttie/comfortable-motion.vim'
+Plug 'vim-scripts/restore_view.vim'
+Plug 'ericbn/vim-relativize'
+
 "Other
 Plug 'https://gitlab.com/code-stats/code-stats-vim.git'
 Plug 'wakatime/vim-wakatime'
-"Plug 'ctrlpvim/ctrlp.vim'
 Plug 'lervag/vimtex'
 Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
 Plug 'tikhomirov/vim-glsl'
 Plug 'scrooloose/syntastic'
-Plug 'easymotion/vim-easymotion'
 Plug 'nathanaelkane/vim-indent-guides'
-Plug 'vim-scripts/restore_view.vim'
 
 Plug 'raimondi/delimitmate'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --bin' }
 Plug 'junegunn/fzf.vim'
-
 
 Plug 'ryanoasis/vim-devicons'
 call plug#end()
@@ -67,6 +73,7 @@ let g:syntastic_tex_lacheck_quiet_messages = { 'regex': '\Vpossible unwanted spa
 let g:pymode_python = 'python3'
 let g:pymode_rope = 1
 let g:pymode_rope_completion = 0
+let g:pymode_rope_autoimport = 1
 let NERDTreeIgnore = ['\.pyc$', '^__pycache__$']
 let g:syntastic_ignore_files = ['\.py$']
 
@@ -85,6 +92,9 @@ map <C-n> :NERDTreeToggle<CR>
 nmap <S-Ins> "+p
 map <C-m> :UndotreeToggle<CR>
 
+noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
+noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
+
 "Splits
 nmap <C-h> <C-W>h
 nmap <C-j> <C-W>j
@@ -93,6 +103,7 @@ nmap <C-l> <C-W>l
 
 "Other mappings
 nmap <C-p> :Files<CR>
+:tnoremap <Esc> <C-\><C-n>
 
 "Snippets
 let g:UltiSnipsUsePythonVersion = 3
@@ -136,6 +147,9 @@ set termguicolors
 set laststatus=2
 let g:airline_theme='powerlineish'
 let g:airline_powerline_fonts = 1
+highlight! TermCursorNC guibg=red
+
+let g:colorizer_auto_filetype='css,html,python,js'
 
 "Rainbow brackets
 let g:rainbow_active = 1
