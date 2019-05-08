@@ -16,7 +16,8 @@ Plug 'kien/tabman.vim'
 Plug 'chrisbra/colorizer'
 
 "Coding
-Plug 'valloric/youcompleteme'
+"Plug 'valloric/youcompleteme'
+Plug 'shougo/deoplete.nvim'
 Plug 'tpope/vim-fugitive'
 Plug 'luochen1990/rainbow'
 Plug 'tpope/vim-surround'
@@ -48,6 +49,8 @@ Plug 'elzr/vim-json'
 Plug 'tpope/vim-jdaddy'
 Plug 'tikhomirov/vim-glsl'
 Plug 'plasticboy/vim-markdown'
+Plug 'digitaltoad/vim-jade'
+Plug 'chrisbra/csv.vim'
 
 "General syntax check
 "Plug 'scrooloose/syntastic'
@@ -77,6 +80,9 @@ let g:vimtex_quickfix_mode=0
 set conceallevel=2
 let g:tex_conceal='abdmgs'
 "let g:syntastic_tex_lacheck_quiet_messages = { 'regex': ['\Vpossible unwanted space at', '\VUse ` to begin'] }
+call deoplete#custom#var('omni', 'input_patterns', {
+\   'tex': g:vimtex#re#deoplete
+\})
 
 "Python
 "let g:python_host_prog='/usr/bin/python'
@@ -105,12 +111,6 @@ map <C-m> :UndotreeToggle<CR>
 noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
 noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
 
-"Splits
-nmap <C-h> <C-W>h
-nmap <C-j> <C-W>j
-nmap <C-k> <C-W>k
-nmap <C-l> <C-W>l
-
 "Other mappings
 nmap <C-p> :Files<CR>
 :tnoremap <Esc> <C-\><C-n>
@@ -133,10 +133,18 @@ set smartindent
 set autoindent
 
 set foldmethod=syntax
-au Filetype python 
+set foldlevelstart=1
+
+function SetPugOptions()
+    set foldmethod=indent
+    set foldlevel=20
+endfunction
+
+au Filetype pug call SetPugOptions()
+    
+au Filetype python
     \ set foldmethod=indent
 
-set foldlevelstart=1
 
 let g:indent_guides_enable_on_vim_startup = 1
 let g:indent_guides_exclude_filetypes = ['help', 'nerdtree']
@@ -159,7 +167,7 @@ let g:ale_open_list = 'on_save'
 let g:ale_list_window_size = 7
 let g:ale_close_preview_on_insert = 1
 let g:ale_lint_on_text_changed = 'never'
-let g:ale_completion_enabled = 1
+let g:ale_completion_enabled = 0
 let g:ale_linters = {'python': ['pyls']}
 let g:ale_fixers = {
 \    'python':
@@ -168,10 +176,8 @@ let g:ale_fixers = {
 
 autocmd QuitPre * if empty(&bt) | lclose | endif
 
-let g:ycm_filetype_blacklist = {
-\   'python': 1
-\}
-
+let g:deoplete#enable_at_startup = 1
+call deoplete#custom#source('ale', 'rank', 999)
 
 "spell
 "set spell spelllang=en,ru
