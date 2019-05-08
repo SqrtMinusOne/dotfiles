@@ -32,6 +32,10 @@ Plug 'janko-m/vim-test'
 Plug 'heavenshell/vim-pydocstring'
 "Plug 'skyleach/pudb.vim'
 
+"LaTeX
+Plug 'lervag/vimtex'
+Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
+
 "Navigation
 "Plug 'ctrlpvim/ctrlp.vim'
 Plug 'easymotion/vim-easymotion'
@@ -39,13 +43,19 @@ Plug 'yuttie/comfortable-motion.vim'
 Plug 'vim-scripts/restore_view.vim'
 Plug 'ericbn/vim-relativize'
 
+"Other files
+Plug 'elzr/vim-json'
+Plug 'tpope/vim-jdaddy'
+Plug 'tikhomirov/vim-glsl'
+Plug 'plasticboy/vim-markdown'
+
+"General syntax check
+"Plug 'scrooloose/syntastic'
+Plug 'w0rp/ale'
+
 "Other
 Plug 'https://gitlab.com/code-stats/code-stats-vim.git'
 Plug 'wakatime/vim-wakatime'
-Plug 'lervag/vimtex'
-Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
-Plug 'tikhomirov/vim-glsl'
-Plug 'scrooloose/syntastic'
 Plug 'nathanaelkane/vim-indent-guides'
 
 Plug 'raimondi/delimitmate'
@@ -61,23 +71,23 @@ let $FZF_DEFAULT_COMMAND='fd --type f --exclude .git'
 
 "LaTeX
 let g:tex_flavor='latex'
+let g:vimtex_fold_enabled = 1
 let g:vimtex_view_method='zathura'
 let g:vimtex_quickfix_mode=0
 set conceallevel=2
 let g:tex_conceal='abdmgs'
-let g:syntastic_tex_lacheck_quiet_messages = { 'regex': '\Vpossible unwanted space at' }
+"let g:syntastic_tex_lacheck_quiet_messages = { 'regex': ['\Vpossible unwanted space at', '\VUse ` to begin'] }
 
 "Python
 "let g:python_host_prog='/usr/bin/python'
 "let g:python3_host_prog='/usr/bin/python3'
 let g:pymode_python = 'python3'
+let g:pymode_lint = 0
 let g:pymode_rope = 1
 let g:pymode_rope_completion = 0
-let g:pymode_rope_autoimport = 1
+let g:pymode_rope_autoimport = 0
 let NERDTreeIgnore = ['\.pyc$', '^__pycache__$']
-let g:syntastic_ignore_files = ['\.py$']
 
-map <F8> :PymodeRun<CR>
 au BufNewFile,BufRead *.frag,*.vert,*.fp,*.vp,*.glsl setf glsl
 
 "Usability
@@ -111,6 +121,9 @@ let g:UltiSnipsExpandTrigger="<C-j>"
 let g:UltiSnipsJumpForwardTrigger="<C-S-j>"
 let g:UltiSnipsJumpBackwardTrigger=""
 
+"Formatting
+command! JSONFormatCursor :silent! exe jdaddy#reformat('jdaddy#inner_pos', v:count1)<CR> 
+
 "Indent stuff
 set tabstop=4
 set shiftwidth=4
@@ -118,21 +131,46 @@ set smarttab
 set expandtab
 set smartindent
 set autoindent
-set foldmethod=indent
+
+set foldmethod=syntax
+au Filetype python 
+    \ set foldmethod=indent
+
 set foldlevelstart=1
+
 let g:indent_guides_enable_on_vim_startup = 1
 let g:indent_guides_exclude_filetypes = ['help', 'nerdtree']
 let g:indent_guides_guide_size = 1
 
 "Syntax
-set statusline+=%#warningmsg#
-set statusline+=%{SyntasticStatuslineFlag()}
-set statusline+=%*
+syntax on
+"set statusline+=%#warningmsg#
+"set statusline+=%{SyntasticStatuslineFlag()}
+"set statusline+=%*
+"
+"let g:syntastic_ignore_files = ['\.py$', '\.tex$']
+"let g:syntastic_always_populate_loc_list = 1
+"let g:syntastic_auto_loc_list = 1
+"let g:syntastic_check_on_open = 1
+"let g:syntastic_check_on_wq = 0
 
-let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 1
-let g:syntastic_check_on_wq = 0
+"Install: python-language-server, pylama, autopep8
+let g:ale_open_list = 'on_save'
+let g:ale_list_window_size = 7
+let g:ale_close_preview_on_insert = 1
+let g:ale_lint_on_text_changed = 'never'
+let g:ale_completion_enabled = 1
+let g:ale_linters = {'python': ['pyls']}
+let g:ale_fixers = {
+\    'python':
+\       ['autopep8', 'remove_trailing_lines', 'trim_whitespace']
+\}
+
+autocmd QuitPre * if empty(&bt) | lclose | endif
+
+let g:ycm_filetype_blacklist = {
+\   'python': 1
+\}
 
 
 "spell
