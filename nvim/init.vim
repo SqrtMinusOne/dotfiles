@@ -83,6 +83,7 @@ let g:tex_conceal='abdmgs'
 call deoplete#custom#var('omni', 'input_patterns', {
 \   'tex': g:vimtex#re#deoplete
 \})
+let g:ale_tex_chktex_options='-I --nowarn 32'
 
 "Python
 "let g:python_host_prog='/usr/bin/python'
@@ -145,6 +146,9 @@ au Filetype pug call SetPugOptions()
 au Filetype python
     \ set foldmethod=indent
 
+au Filetype tex
+	\ set foldlevel=0
+
 
 let g:indent_guides_enable_on_vim_startup = 1
 let g:indent_guides_exclude_filetypes = ['help', 'nerdtree']
@@ -167,18 +171,28 @@ let g:ale_open_list = 'on_save'
 let g:ale_list_window_size = 7
 let g:ale_close_preview_on_insert = 1
 let g:ale_lint_on_text_changed = 'never'
+let g:ale_lint_on_enter = 0
 let g:ale_completion_enabled = 0
-let g:ale_linters = {'python': ['pyls']}
+let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex']}
 let g:ale_fixers = {
-\    'python':
-\       ['autopep8', 'remove_trailing_lines', 'trim_whitespace']
+\    'python': ['autopep8', 'remove_trailing_lines', 'trim_whitespace'],
+\    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace']
 \}
+let g:airline#extensions#ale#enabled = 1
 
 autocmd QuitPre * if empty(&bt) | lclose | endif
 
 let g:deoplete#enable_at_startup = 1
 call deoplete#custom#source('ale', 'rank', 999)
 
+inoremap <silent><expr> <TAB>
+    \ pumvisible() ? "\<C-n>" :
+    \ <SID>check_back_space() ? "\<TAB>" :
+    \ deoplete#mappings#manual_complete()
+function! s:check_back_space() abort "{{{
+        let col = col('.') - 1
+            return !col || getline('.')[col - 1]  =~ '\s'
+endfunction"}}}
 "spell
 "set spell spelllang=en,ru
 
