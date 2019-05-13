@@ -16,7 +16,8 @@ Plug 'kien/tabman.vim'
 Plug 'chrisbra/colorizer'
 
 "Coding
-Plug 'valloric/youcompleteme'
+"Plug 'valloric/youcompleteme'
+Plug 'shougo/deoplete.nvim'
 Plug 'tpope/vim-fugitive'
 Plug 'luochen1990/rainbow'
 Plug 'tpope/vim-surround'
@@ -32,6 +33,10 @@ Plug 'janko-m/vim-test'
 Plug 'heavenshell/vim-pydocstring'
 "Plug 'skyleach/pudb.vim'
 
+"LaTeX
+Plug 'lervag/vimtex'
+Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
+
 "Navigation
 "Plug 'ctrlpvim/ctrlp.vim'
 Plug 'easymotion/vim-easymotion'
@@ -39,13 +44,21 @@ Plug 'yuttie/comfortable-motion.vim'
 Plug 'vim-scripts/restore_view.vim'
 Plug 'ericbn/vim-relativize'
 
+"Other files
+Plug 'elzr/vim-json'
+Plug 'tpope/vim-jdaddy'
+Plug 'tikhomirov/vim-glsl'
+Plug 'plasticboy/vim-markdown'
+Plug 'digitaltoad/vim-jade'
+Plug 'chrisbra/csv.vim'
+
+"General syntax check
+"Plug 'scrooloose/syntastic'
+Plug 'w0rp/ale'
+
 "Other
 Plug 'https://gitlab.com/code-stats/code-stats-vim.git'
 Plug 'wakatime/vim-wakatime'
-Plug 'lervag/vimtex'
-Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
-Plug 'tikhomirov/vim-glsl'
-Plug 'scrooloose/syntastic'
 Plug 'nathanaelkane/vim-indent-guides'
 
 Plug 'raimondi/delimitmate'
@@ -61,23 +74,27 @@ let $FZF_DEFAULT_COMMAND='fd --type f --exclude .git'
 
 "LaTeX
 let g:tex_flavor='latex'
+let g:vimtex_fold_enabled = 1
 let g:vimtex_view_method='zathura'
 let g:vimtex_quickfix_mode=0
 set conceallevel=2
 let g:tex_conceal='abdmgs'
-let g:syntastic_tex_lacheck_quiet_messages = { 'regex': '\Vpossible unwanted space at' }
+"let g:syntastic_tex_lacheck_quiet_messages = { 'regex': ['\Vpossible unwanted space at', '\VUse ` to begin'] }
+call deoplete#custom#var('omni', 'input_patterns', {
+\   'tex': g:vimtex#re#deoplete
+\})
+let g:ale_tex_chktex_options='-I --nowarn 32'
 
 "Python
 "let g:python_host_prog='/usr/bin/python'
 "let g:python3_host_prog='/usr/bin/python3'
 let g:pymode_python = 'python3'
+let g:pymode_lint = 0
 let g:pymode_rope = 1
 let g:pymode_rope_completion = 0
-let g:pymode_rope_autoimport = 1
+let g:pymode_rope_autoimport = 0
 let NERDTreeIgnore = ['\.pyc$', '^__pycache__$']
-let g:syntastic_ignore_files = ['\.py$']
 
-map <F8> :PymodeRun<CR>
 au BufNewFile,BufRead *.frag,*.vert,*.fp,*.vp,*.glsl setf glsl
 
 "Usability
@@ -95,12 +112,6 @@ map <C-m> :UndotreeToggle<CR>
 noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
 noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
 
-"Splits
-nmap <C-h> <C-W>h
-nmap <C-j> <C-W>j
-nmap <C-k> <C-W>k
-nmap <C-l> <C-W>l
-
 "Other mappings
 nmap <C-p> :Files<CR>
 :tnoremap <Esc> <C-\><C-n>
@@ -111,6 +122,9 @@ let g:UltiSnipsExpandTrigger="<C-j>"
 let g:UltiSnipsJumpForwardTrigger="<C-S-j>"
 let g:UltiSnipsJumpBackwardTrigger=""
 
+"Formatting
+command! JSONFormatCursor :silent! exe jdaddy#reformat('jdaddy#inner_pos', v:count1)<CR> 
+
 "Indent stuff
 set tabstop=4
 set shiftwidth=4
@@ -118,23 +132,67 @@ set smarttab
 set expandtab
 set smartindent
 set autoindent
-set foldmethod=indent
+
+set foldmethod=syntax
 set foldlevelstart=1
+
+function SetPugOptions()
+    set foldmethod=indent
+    set foldlevel=20
+endfunction
+
+au Filetype pug call SetPugOptions()
+    
+au Filetype python
+    \ set foldmethod=indent
+
+au Filetype tex
+	\ set foldlevel=0
+
+
 let g:indent_guides_enable_on_vim_startup = 1
 let g:indent_guides_exclude_filetypes = ['help', 'nerdtree']
 let g:indent_guides_guide_size = 1
 
 "Syntax
-set statusline+=%#warningmsg#
-set statusline+=%{SyntasticStatuslineFlag()}
-set statusline+=%*
+syntax on
+"set statusline+=%#warningmsg#
+"set statusline+=%{SyntasticStatuslineFlag()}
+"set statusline+=%*
+"
+"let g:syntastic_ignore_files = ['\.py$', '\.tex$']
+"let g:syntastic_always_populate_loc_list = 1
+"let g:syntastic_auto_loc_list = 1
+"let g:syntastic_check_on_open = 1
+"let g:syntastic_check_on_wq = 0
 
-let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 1
-let g:syntastic_check_on_wq = 0
+"Install: python-language-server, pylama, autopep8
+let g:ale_open_list = 'on_save'
+let g:ale_list_window_size = 7
+let g:ale_close_preview_on_insert = 1
+let g:ale_lint_on_text_changed = 'never'
+let g:ale_lint_on_enter = 0
+let g:ale_completion_enabled = 0
+let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex']}
+let g:ale_fixers = {
+\    'python': ['autopep8', 'remove_trailing_lines', 'trim_whitespace'],
+\    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace']
+\}
+let g:airline#extensions#ale#enabled = 1
 
+autocmd QuitPre * if empty(&bt) | lclose | endif
 
+let g:deoplete#enable_at_startup = 1
+call deoplete#custom#source('ale', 'rank', 999)
+
+inoremap <silent><expr> <TAB>
+    \ pumvisible() ? "\<C-n>" :
+    \ <SID>check_back_space() ? "\<TAB>" :
+    \ deoplete#mappings#manual_complete()
+function! s:check_back_space() abort "{{{
+        let col = col('.') - 1
+            return !col || getline('.')[col - 1]  =~ '\s'
+endfunction"}}}
 "spell
 "set spell spelllang=en,ru
 
