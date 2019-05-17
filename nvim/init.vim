@@ -115,6 +115,7 @@ noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
 "Other mappings
 nmap <C-p> :Files<CR>
 :tnoremap <Esc> <C-\><C-n>
+nmap , :lclose<CR> :pclose<CR>
 
 "Snippets
 let g:UltiSnipsUsePythonVersion = 3
@@ -123,7 +124,7 @@ let g:UltiSnipsJumpForwardTrigger="<C-S-j>"
 let g:UltiSnipsJumpBackwardTrigger=""
 
 "Formatting
-command! JSONFormatCursor :silent! exe jdaddy#reformat('jdaddy#inner_pos', v:count1)<CR> 
+"command! JSONFormatCursor :silent! exe jdaddy#reformat('jdaddy#inner_pos', v:count1)<CR> 
 
 "Indent stuff
 set tabstop=4
@@ -175,7 +176,7 @@ let g:ale_lint_on_enter = 0
 let g:ale_completion_enabled = 0
 let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex']}
 let g:ale_fixers = {
-\    'python': ['autopep8', 'remove_trailing_lines', 'trim_whitespace'],
+\    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
 \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace']
 \}
 let g:airline#extensions#ale#enabled = 1
