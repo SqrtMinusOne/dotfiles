@@ -43,6 +43,7 @@ Plug 'easymotion/vim-easymotion'
 Plug 'yuttie/comfortable-motion.vim'
 Plug 'vim-scripts/restore_view.vim'
 Plug 'ericbn/vim-relativize'
+Plug 'majutsushi/tagbar'
 
 "Other files
 Plug 'elzr/vim-json'
@@ -111,6 +112,13 @@ map <C-m> :UndotreeToggle<CR>
 
 noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
 noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
+nnoremap <Tab> :TagbarToggle<CR>
+
+"Splits
+nnoremap <C-J> <C-W><C-J>
+nnoremap <C-K> <C-W><C-K>
+nnoremap <C-L> <C-W><C-L>
+nnoremap <C-H> <C-W><C-H>
 
 "Other mappings
 nmap <C-p> :Files<CR>
@@ -152,7 +160,7 @@ au Filetype tex
 
 
 let g:indent_guides_enable_on_vim_startup = 1
-let g:indent_guides_exclude_filetypes = ['help', 'nerdtree']
+let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'tagbar']
 let g:indent_guides_guide_size = 1
 
 "Syntax
@@ -167,7 +175,6 @@ syntax on
 "let g:syntastic_check_on_open = 1
 "let g:syntastic_check_on_wq = 0
 
-"Install: python-language-server, pylama, autopep8
 let g:ale_open_list = 'on_save'
 let g:ale_list_window_size = 7
 let g:ale_close_preview_on_insert = 1
@@ -209,6 +216,8 @@ let g:airline_powerline_fonts = 1
 highlight! TermCursorNC guibg=red
 
 let g:colorizer_auto_filetype='css,html,python,js'
+let g:tagbar_sort = 0
+let g:tagbar_show_line_numbers = 1
 
 "Rainbow brackets
 let g:rainbow_active = 1
