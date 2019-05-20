@@ -123,7 +123,7 @@ nnoremap <C-H> <C-W><C-H>
 "Other mappings
 nmap <C-p> :Files<CR>
 :tnoremap <Esc> <C-\><C-n>
-nmap , :lclose<CR> :pclose<CR>
+nmap , :lclose<CR> :pclose<CR> :cclose<CR>
 
 "Snippets
 let g:UltiSnipsUsePythonVersion = 3
@@ -175,6 +175,7 @@ syntax on
 "let g:syntastic_check_on_open = 1
 "let g:syntastic_check_on_wq = 0
 
+"Install: python-language-server, pylama, autopep8
 let g:ale_open_list = 'on_save'
 let g:ale_list_window_size = 7
 let g:ale_close_preview_on_insert = 1
@@ -218,6 +219,7 @@ highlight! TermCursorNC guibg=red
 let g:colorizer_auto_filetype='css,html,python,js'
 let g:tagbar_sort = 0
 let g:tagbar_show_line_numbers = 1
+let g:tagbar_width = 60
 
 "Rainbow brackets
 let g:rainbow_active = 1
