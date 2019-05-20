@@ -58,7 +58,7 @@ Plug 'chrisbra/csv.vim'
 Plug 'w0rp/ale'
 
 "Other
-Plug 'https://gitlab.com/code-stats/code-stats-vim.git'
+"Plug 'https://gitlab.com/code-stats/code-stats-vim.git'
 Plug 'wakatime/vim-wakatime'
 Plug 'nathanaelkane/vim-indent-guides'
 
@@ -82,8 +82,8 @@ set conceallevel=2
 let g:tex_conceal='abdmgs'
 "let g:syntastic_tex_lacheck_quiet_messages = { 'regex': ['\Vpossible unwanted space at', '\VUse ` to begin'] }
 call deoplete#custom#var('omni', 'input_patterns', {
-\   'tex': g:vimtex#re#deoplete
-\})
+            \   'tex': g:vimtex#re#deoplete
+            \})
 let g:ale_tex_chktex_options='-I --nowarn 32'
 
 "Python
@@ -115,10 +115,6 @@ noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
 nnoremap <Tab> :TagbarToggle<CR>
 
 "Splits
-nnoremap <C-J> <C-W><C-J>
-nnoremap <C-K> <C-W><C-K>
-nnoremap <C-L> <C-W><C-L>
-nnoremap <C-H> <C-W><C-H>
 
 "Other mappings
 nmap <C-p> :Files<CR>
@@ -131,10 +127,33 @@ let g:UltiSnipsExpandTrigger="<C-j>"
 let g:UltiSnipsJumpForwardTrigger="<C-S-j>"
 let g:UltiSnipsJumpBackwardTrigger=""
 
+"Buffers and stuff
+function! SubTerminal()
+    let current_tabpage = tabpagenr()
+    let subterminal_name = current_tabpage . '_terminal'
+    let terminal_num = bufnr(subterminal_name)
+    if terminal_num == -1
+        execute ':new ' . subterminal_name
+        execute ':resize 10'
+        if isdirectory("venv")
+            execute ':terminal'
+        else
+            execute ':terminal'
+        endif
+        normal i
+    else
+        execute ':bwipeout! ' . terminal_num 
+        execute ':bwipeout! ' . (terminal_num + 1)
+    endif
+endfunction
+
+nmap ` :call SubTerminal()<CR>
+
+
 "Formatting
 "command! JSONFormatCursor :silent! exe jdaddy#reformat('jdaddy#inner_pos', v:count1)<CR> 
 
-"Indent stuff
+"Indent & folding stuff
 set tabstop=4
 set shiftwidth=4
 set smarttab
@@ -145,18 +164,18 @@ set autoindent
 set foldmethod=syntax
 set foldlevelstart=1
 
-function SetPugOptions()
+function! SetPugOptions()
     set foldmethod=indent
     set foldlevel=20
 endfunction
 
 au Filetype pug call SetPugOptions()
-    
+
 au Filetype python
-    \ set foldmethod=indent
+            \ set foldmethod=indent
 
 au Filetype tex
-	\ set foldlevel=0
+            \ set foldlevel=0
 
 
 let g:indent_guides_enable_on_vim_startup = 1
@@ -175,7 +194,6 @@ syntax on
 "let g:syntastic_check_on_open = 1
 "let g:syntastic_check_on_wq = 0
 
-"Install: python-language-server, pylama, autopep8
 let g:ale_open_list = 'on_save'
 let g:ale_list_window_size = 7
 let g:ale_close_preview_on_insert = 1
@@ -184,9 +202,9 @@ let g:ale_lint_on_enter = 0
 let g:ale_completion_enabled = 0
 let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex']}
 let g:ale_fixers = {
-\    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
-\    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace']
-\}
+            \    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
+            \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace']
+            \}
 let g:airline#extensions#ale#enabled = 1
 
 autocmd QuitPre * if empty(&bt) | lclose | endif
@@ -195,12 +213,12 @@ let g:deoplete#enable_at_startup = 1
 call deoplete#custom#source('ale', 'rank', 999)
 
 inoremap <silent><expr> <TAB>
-    \ pumvisible() ? "\<C-n>" :
-    \ <SID>check_back_space() ? "\<TAB>" :
-    \ deoplete#mappings#manual_complete()
+            \ pumvisible() ? "\<C-n>" :
+            \ <SID>check_back_space() ? "\<TAB>" :
+            \ deoplete#mappings#manual_complete()
 function! s:check_back_space() abort "{{{
-        let col = col('.') - 1
-            return !col || getline('.')[col - 1]  =~ '\s'
+    let col = col('.') - 1
+    return !col || getline('.')[col - 1]  =~ '\s'
 endfunction"}}}
 "spell
 "set spell spelllang=en,ru
@@ -224,6 +242,6 @@ let g:tagbar_width = 60
 "Rainbow brackets
 let g:rainbow_active = 1
 let g:rainbow_conf = {
-\   'guifgs': ['red', 'yellow', 'lightgreen', 'lightblue'],
-\ }
+            \   'guifgs': ['red', 'yellow', 'lightgreen', 'lightblue'],
+            \ }
 hi Conceal guibg=Normal guifg=Normal
