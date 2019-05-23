@@ -106,9 +106,9 @@ set mouse=a
 set splitbelow
 set splitright
 
-map <C-n> :NERDTreeToggle<CR>
-nmap <S-Ins> "+p
-map <C-m> :UndotreeToggle<CR>
+noremap <C-n> :NERDTreeToggle<CR>
+nnoremap <S-Ins> "+p
+noremap <C-m> :UndotreeToggle<CR>
 
 noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
 noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
@@ -117,9 +117,11 @@ nnoremap <Tab> :TagbarToggle<CR>
 "Splits
 
 "Other mappings
-nmap <C-p> :Files<CR>
+nnoremap <C-p> :Files<CR>
 :tnoremap <Esc> <C-\><C-n>
-nmap , :lclose<CR> :pclose<CR> :cclose<CR>
+nnoremap , :lclose<CR> :pclose<CR> :cclose<CR>
+noremap - ddkP
+noremap _ ddp
 
 "Snippets
 let g:UltiSnipsUsePythonVersion = 3
@@ -128,9 +130,14 @@ let g:UltiSnipsJumpForwardTrigger="<C-S-j>"
 let g:UltiSnipsJumpBackwardTrigger=""
 
 "Buffers and stuff
-function! SubTerminal()
+
+function! GetSubTerminalName()
     let current_tabpage = tabpagenr()
-    let subterminal_name = current_tabpage . '_terminal'
+    return current_tabpage . '_terminal'
+endfunction
+
+function! SubTerminal()
+    let subterminal_name = GetSubTerminalName()
     let terminal_num = bufnr(subterminal_name)
     if terminal_num == -1
         execute ':new ' . subterminal_name
@@ -147,7 +154,17 @@ function! SubTerminal()
     endif
 endfunction
 
-nmap ` :call SubTerminal()<CR>
+function! WipeSubTerminalBuffer()
+    let subterminal_name = GetSubTerminalName()
+    let terminal_num = bufnr(subterminal_name)
+    if terminal_num != -1
+        execute ':bwipeout! ' . terminal_num
+    endif
+endfunction
+
+autocmd BufWipeout term://* call WipeSubTerminalBuffer()
+
+nnoremap ` :call SubTerminal()<CR>
 
 
 "Formatting
