@@ -73,7 +73,7 @@ set runtimepath+=~/.config/nvim/my-snippets/
 let g:codestats_api_key="SFMyNTY.VTNGeWRFMXBiblZ6VDI1bCMjTlRRek1RPT0.V3iEAki_kRH75zwoXQ3u5Zng-Q_h0XRlUsb9ld09Cdc"
 let $FZF_DEFAULT_COMMAND='fd --type f --exclude .git'
 
-"LaTeX
+"LaTeX {{{
 let g:tex_flavor='latex'
 let g:vimtex_fold_enabled = 1
 let g:vimtex_view_method='zathura'
@@ -86,7 +86,9 @@ call deoplete#custom#var('omni', 'input_patterns', {
             \})
 let g:ale_tex_chktex_options='-I --nowarn 32'
 
-"Python
+" }}}
+
+"Python {{{
 "let g:python_host_prog='/usr/bin/python'
 "let g:python3_host_prog='/usr/bin/python3'
 let g:pymode_python = 'python3'
@@ -96,15 +98,21 @@ let g:pymode_rope_completion = 0
 let g:pymode_rope_autoimport = 0
 let NERDTreeIgnore = ['\.pyc$', '^__pycache__$']
 
+" }}}
+
 au BufNewFile,BufRead *.frag,*.vert,*.fp,*.vp,*.glsl setf glsl
 
-"Usability
+"Usability {{{
 set number
 set hlsearch
 set cursorline
 set mouse=a
 set splitbelow
 set splitright
+
+" }}}
+
+" Mappings {{{
 
 noremap <C-n> :NERDTreeToggle<CR>
 nnoremap <S-Ins> "+p
@@ -114,22 +122,21 @@ noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
 noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
 nnoremap <Tab> :TagbarToggle<CR>
 
-"Splits
-
-"Other mappings
 nnoremap <C-p> :Files<CR>
 :tnoremap <Esc> <C-\><C-n>
 nnoremap , :lclose<CR> :pclose<CR> :cclose<CR>
 noremap - ddkP
 noremap _ ddp
 
-"Snippets
+
 let g:UltiSnipsUsePythonVersion = 3
 let g:UltiSnipsExpandTrigger="<C-j>"
 let g:UltiSnipsJumpForwardTrigger="<C-S-j>"
 let g:UltiSnipsJumpBackwardTrigger=""
 
-"Buffers and stuff
+" }}}
+
+" Subterminal {{{
 
 function! GetSubTerminalName()
     let current_tabpage = tabpagenr()
@@ -166,11 +173,9 @@ autocmd BufWipeout term://* call WipeSubTerminalBuffer()
 
 nnoremap ` :call SubTerminal()<CR>
 
+" }}}
 
-"Formatting
-"command! JSONFormatCursor :silent! exe jdaddy#reformat('jdaddy#inner_pos', v:count1)<CR> 
-
-"Indent & folding stuff
+"Indent & folding stuff {{{
 set tabstop=4
 set shiftwidth=4
 set smarttab
@@ -181,25 +186,32 @@ set autoindent
 set foldmethod=syntax
 set foldlevelstart=1
 
-function! SetPugOptions()
-    set foldmethod=indent
-    set foldlevel=20
-endfunction
+" Filetypes {{{
 
-au Filetype pug call SetPugOptions()
+augroup filetype_pug
+    autocmd!
+    autocmd Filetype pug setlocal foldmethod=indent
+    autocmd Filetype pug setlocal foldlevel=20
+augroup END
 
 au Filetype python
-            \ set foldmethod=indent
+            \ setlocal foldmethod=indent
 
 au Filetype tex
-            \ set foldlevel=0
+            \ setlocal foldlevel=0
 
+au Filetype vim 
+            \ setlocal foldmethod=marker
+
+" }}}
 
 let g:indent_guides_enable_on_vim_startup = 1
 let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'tagbar']
 let g:indent_guides_guide_size = 1
 
-"Syntax
+" }}}
+
+"Syntax check {{{
 syntax on
 "set statusline+=%#warningmsg#
 "set statusline+=%{SyntasticStatuslineFlag()}
@@ -224,7 +236,11 @@ let g:ale_fixers = {
             \}
 let g:airline#extensions#ale#enabled = 1
 
+" }}}
+
 autocmd QuitPre * if empty(&bt) | lclose | endif
+
+" Deoplete {{{
 
 let g:deoplete#enable_at_startup = 1
 call deoplete#custom#source('ale', 'rank', 999)
@@ -233,22 +249,29 @@ inoremap <silent><expr> <TAB>
             \ pumvisible() ? "\<C-n>" :
             \ <SID>check_back_space() ? "\<TAB>" :
             \ deoplete#mappings#manual_complete()
-function! s:check_back_space() abort "{{{
+function! s:check_back_space() abort 
     let col = col('.') - 1
     return !col || getline('.')[col - 1]  =~ '\s'
-endfunction"}}}
+endfunction
+
+" }}}
 "spell
 "set spell spelllang=en,ru
 
-"ui
+" ui {{{
 colorscheme solarized8
 set background=dark
 let g:solarized_visibility='high'
 set termguicolors
 "set guifont=DroidSansMono\ Nerd\ Font\ 11
 set laststatus=2
+
+" Airline
 let g:airline_theme='powerlineish'
 let g:airline_powerline_fonts = 1
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#formatter = 'unique_tail'
+
 highlight! TermCursorNC guibg=red
 
 let g:colorizer_auto_filetype='css,html,python,js'
@@ -256,9 +279,10 @@ let g:tagbar_sort = 0
 let g:tagbar_show_line_numbers = 1
 let g:tagbar_width = 60
 
-"Rainbow brackets
+" Rainbow brackets
 let g:rainbow_active = 1
 let g:rainbow_conf = {
             \   'guifgs': ['red', 'yellow', 'lightgreen', 'lightblue'],
             \ }
 hi Conceal guibg=Normal guifg=Normal
+" }}}
