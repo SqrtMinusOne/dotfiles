@@ -33,6 +33,12 @@ Plug 'janko-m/vim-test'
 Plug 'heavenshell/vim-pydocstring'
 "Plug 'skyleach/pudb.vim'
 
+"Js & stuff
+Plug 'pangloss/vim-javascript'
+Plug 'mxw/vim-jsx'
+Plug 'posva/vim-vue'
+Plug 'alvan/vim-closetag'
+
 "LaTeX
 Plug 'lervag/vimtex'
 Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
@@ -63,6 +69,7 @@ Plug 'wakatime/vim-wakatime'
 Plug 'nathanaelkane/vim-indent-guides'
 
 Plug 'raimondi/delimitmate'
+"Plug 'cohama/lexima.vim'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --bin' }
 Plug 'junegunn/fzf.vim'
 
@@ -99,6 +106,8 @@ let g:pymode_rope_autoimport = 0
 let NERDTreeIgnore = ['\.pyc$', '^__pycache__$']
 
 " }}}
+
+let g:closetag_filenames = "*.html,*.xhtml,*.phtml,*.php,*.jsx"
 
 au BufNewFile,BufRead *.frag,*.vert,*.fp,*.vp,*.glsl setf glsl
 
@@ -184,7 +193,7 @@ set smartindent
 set autoindent
 
 set foldmethod=syntax
-set foldlevelstart=1
+set foldlevelstart=2
 
 " Filetypes {{{
 
@@ -192,6 +201,10 @@ augroup filetype_pug
     autocmd!
     autocmd Filetype pug setlocal foldmethod=indent
     autocmd Filetype pug setlocal foldlevel=20
+augroup END
+
+augroup filetype_vue
+    autocmd!
 augroup END
 
 au Filetype python
@@ -269,7 +282,7 @@ set laststatus=2
 " Airline
 let g:airline_theme='powerlineish'
 let g:airline_powerline_fonts = 1
-let g:airline#extensions#tabline#enabled = 1
+"let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
 
 highlight! TermCursorNC guibg=red
@@ -279,10 +292,13 @@ let g:tagbar_sort = 0
 let g:tagbar_show_line_numbers = 1
 let g:tagbar_width = 60
 
-" Rainbow brackets
+" Brackets
 let g:rainbow_active = 1
 let g:rainbow_conf = {
             \   'guifgs': ['red', 'yellow', 'lightgreen', 'lightblue'],
             \ }
 hi Conceal guibg=Normal guifg=Normal
+let g:closetag_filenames = '*.html,*.xhtml,*.vue'
+let g:closetag_filetypes = 'html,xhtml,vue'
+let delimitMate_matchpairs = "(:),[:],{:}"
 " }}}
