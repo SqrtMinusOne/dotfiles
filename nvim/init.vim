@@ -19,6 +19,7 @@ Plug 'chrisbra/colorizer'
 "Plug 'valloric/youcompleteme'
 Plug 'shougo/deoplete.nvim'
 Plug 'tpope/vim-fugitive'
+Plug 'junegunn/gv.vim'
 Plug 'luochen1990/rainbow'
 Plug 'tpope/vim-surround'
 Plug 'mbbill/undotree'
@@ -31,6 +32,7 @@ Plug 'sirver/ultisnips'
 Plug 'python-mode/python-mode', { 'branch': 'develop' }
 Plug 'janko-m/vim-test'
 Plug 'heavenshell/vim-pydocstring'
+Plug 'ivanov/vim-ipython'
 "Plug 'skyleach/pudb.vim'
 
 "Js & stuff
@@ -58,6 +60,9 @@ Plug 'tikhomirov/vim-glsl'
 Plug 'plasticboy/vim-markdown'
 Plug 'digitaltoad/vim-jade'
 Plug 'chrisbra/csv.vim'
+Plug 'kshenoy/vim-signature'
+
+Plug 'mhinz/vim-startify'
 
 "General syntax check
 "Plug 'scrooloose/syntastic'
@@ -68,7 +73,9 @@ Plug 'w0rp/ale'
 Plug 'wakatime/vim-wakatime'
 Plug 'nathanaelkane/vim-indent-guides'
 
-Plug 'raimondi/delimitmate'
+
+Plug 'jiangmiao/auto-pairs'
+"Plug 'raimondi/delimitmate'
 "Plug 'cohama/lexima.vim'
 Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --bin' }
 Plug 'junegunn/fzf.vim'
@@ -245,7 +252,9 @@ let g:ale_completion_enabled = 0
 let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex']}
 let g:ale_fixers = {
             \    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
-            \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace']
+            \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace'],
+            \    'js': ['eslint'],
+            \    'vue': ['eslint']
             \}
 let g:airline#extensions#ale#enabled = 1
 
@@ -272,12 +281,12 @@ endfunction
 "set spell spelllang=en,ru
 
 " ui {{{
-colorscheme solarized8
 set background=dark
 let g:solarized_visibility='high'
 set termguicolors
 "set guifont=DroidSansMono\ Nerd\ Font\ 11
 set laststatus=2
+colorscheme solarized8
 
 " Airline
 let g:airline_theme='powerlineish'
@@ -287,10 +296,13 @@ let g:airline#extensions#tabline#formatter = 'unique_tail'
 
 highlight! TermCursorNC guibg=red
 
+
 let g:colorizer_auto_filetype='css,html,python,js'
 let g:tagbar_sort = 0
 let g:tagbar_show_line_numbers = 1
 let g:tagbar_width = 60
+let g:tagbar_autofocus = 1
+
 
 " Brackets
 let g:rainbow_active = 1

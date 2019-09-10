@@ -14,3 +14,21 @@ snippet vmat "\begin{pmatrix} \end{pmatrix}"
 \begin{pmatrix} $1 \end{pmatrix}$0
 endsnippet
 
+snippet dfn "\dfn{}"
+\dfn{$1} $0
+endsnippet
+
+snippet fig "Default figure here"
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=$1\textwidth]{$2}
+    \caption{$3}%
+    \label{img:$4}
+\end{figure}
+
+$0
+endsnippet
+
+snippet $$ "$  $"
+\$ $1 \$ $0
+endsnippet
