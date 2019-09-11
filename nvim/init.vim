@@ -23,6 +23,7 @@ Plug 'junegunn/gv.vim'
 Plug 'luochen1990/rainbow'
 Plug 'tpope/vim-surround'
 Plug 'mbbill/undotree'
+Plug 'derekwyatt/vim-fswitch'
 
 "Snippets stuff
 Plug 'honza/vim-snippets'
@@ -44,6 +45,10 @@ Plug 'alvan/vim-closetag'
 "LaTeX
 Plug 'lervag/vimtex'
 Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
+
+"C++
+Plug 'octol/vim-cpp-enhanced-highlight'
+Plug 'zchee/deoplete-clang'
 
 "Navigation
 "Plug 'ctrlpvim/ctrlp.vim'
@@ -87,6 +92,9 @@ set runtimepath+=~/.config/nvim/my-snippets/
 let g:codestats_api_key="SFMyNTY.VTNGeWRFMXBiblZ6VDI1bCMjTlRRek1RPT0.V3iEAki_kRH75zwoXQ3u5Zng-Q_h0XRlUsb9ld09Cdc"
 let $FZF_DEFAULT_COMMAND='fd --type f --exclude .git'
 
+set exrc
+set secure
+
 "LaTeX {{{
 let g:tex_flavor='latex'
 let g:vimtex_fold_enabled = 1
@@ -113,6 +121,12 @@ let g:pymode_rope_autoimport = 0
 let NERDTreeIgnore = ['\.pyc$', '^__pycache__$']
 
 " }}}
+
+"C++ {{{
+let g:deoplete#sources#clang#libclang_path = '/usr/lib/llvm-6.0/lib/libclang.so.1'
+let g:deoplete#sources#clang#clang_header = '/usr/lib/llvm-6.0/lib/clang/6.0.0/include'
+
+"}}}
 
 let g:closetag_filenames = "*.html,*.xhtml,*.phtml,*.php,*.jsx"
 
@@ -144,6 +158,11 @@ nnoremap , :lclose<CR> :pclose<CR> :cclose<CR>
 noremap - ddkP
 noremap _ ddp
 
+noremap + :FSAbove<CR>
+noremap l+ :FSSplitLeft<CR>
+noremap h+ :FSSplitRight<CR>
+noremap j+ :FSSplitBelow<CR>
+noremap k+ :FSSplitAbove<CR>
 
 let g:UltiSnipsUsePythonVersion = 3
 let g:UltiSnipsExpandTrigger="<C-j>"
@@ -200,7 +219,7 @@ set smartindent
 set autoindent
 
 set foldmethod=syntax
-set foldlevelstart=2
+set foldlevelstart=20
 
 " Filetypes {{{
 
@@ -210,9 +229,9 @@ augroup filetype_pug
     autocmd Filetype pug setlocal foldlevel=20
 augroup END
 
-augroup filetype_vue
-    autocmd!
-augroup END
+" augroup filetype_vue
+"     autocmd!
+" augroup END
 
 au Filetype python
             \ setlocal foldmethod=indent
@@ -220,13 +239,15 @@ au Filetype python
 au Filetype tex
             \ setlocal foldlevel=0
 
-au Filetype vim 
-            \ setlocal foldmethod=marker
+augroup filetype_vim
+    autocmd!
+    autocmd Filetype vim setlocal foldmethod=marker
+augroup end
 
 " }}}
 
 let g:indent_guides_enable_on_vim_startup = 1
-let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'tagbar']
+let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'tagbar', 'startify']
 let g:indent_guides_guide_size = 1
 
 " }}}
@@ -249,12 +270,13 @@ let g:ale_close_preview_on_insert = 1
 let g:ale_lint_on_text_changed = 'never'
 let g:ale_lint_on_enter = 0
 let g:ale_completion_enabled = 0
-let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex']}
+let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex'], 'cpp': ['clang']}
 let g:ale_fixers = {
             \    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
             \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace'],
             \    'js': ['eslint'],
-            \    'vue': ['eslint']
+            \    'vue': ['eslint'],
+            \    'cpp': ['clang-format', 'remove_trailing_lines', 'trim_whitespace']
             \}
 let g:airline#extensions#ale#enabled = 1
 
@@ -312,5 +334,17 @@ let g:rainbow_conf = {
 hi Conceal guibg=Normal guifg=Normal
 let g:closetag_filenames = '*.html,*.xhtml,*.vue'
 let g:closetag_filetypes = 'html,xhtml,vue'
-let delimitMate_matchpairs = "(:),[:],{:}"
+
+let g:startify_custom_header = [
+    \ ' ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――',
+    \ '     _____            __  __  ____                  ____            ',
+    \ '    / ___/____ ______/ /_/  |/  (_)___  __  _______/ __ \____  ___  ',
+    \ '    \__ \/ __ `/ ___/ __/ /|_/ / / __ \/ / / / ___/ / / / __ \/ _ \ ',
+    \ '   ___/ / /_/ / /  / /_/ /  / / / / / / /_/ (__  ) /_/ / / / /  __/ ',
+    \ '  /____/\__, /_/   \__/_/  /_/_/_/ /_/\__,_/____/\____/_/ /_/\___/  ',
+    \ '          /_/                                                       ',
+    \ ' ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――',
+    \ '                   Unity. Precision. Perfection.                    ',
+    \ ]
+
 " }}}
