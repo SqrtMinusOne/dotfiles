@@ -159,10 +159,10 @@ noremap - ddkP
 noremap _ ddp
 
 noremap + :FSAbove<CR>
-noremap l+ :FSSplitLeft<CR>
-noremap h+ :FSSplitRight<CR>
-noremap j+ :FSSplitBelow<CR>
-noremap k+ :FSSplitAbove<CR>
+" noremap l+ :FSSplitLeft<CR>
+" noremap h+ :FSSplitRight<CR>
+" noremap j+ :FSSplitBelow<CR>
+" noremap k+ :FSSplitAbove<CR>
 
 let g:UltiSnipsUsePythonVersion = 3
 let g:UltiSnipsExpandTrigger="<C-j>"
@@ -239,6 +239,9 @@ au Filetype python
 au Filetype tex
             \ setlocal foldlevel=0
 
+auto Filetype tex
+            \ let b:AutoPairs = AutoPairsDefine({"(": ")", '[': ']', '{': '}', '$': '$'})
+
 augroup filetype_vim
     autocmd!
     autocmd Filetype vim setlocal foldmethod=marker
@@ -298,6 +301,7 @@ function! s:check_back_space() abort
     return !col || getline('.')[col - 1]  =~ '\s'
 endfunction
 
+" B
 " }}}
 "spell
 "set spell spelllang=en,ru
