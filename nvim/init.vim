@@ -10,6 +10,9 @@ Plug 'vim-airline/vim-airline'
 Plug 'crusoexia/vim-monokai'
 Plug 'vim-airline/vim-airline-themes'
 Plug 'lifepillar/vim-solarized8'
+Plug 'haishanh/night-owl.vim'
+Plug 'arcticicestudio/nord-vim'
+Plug 'drewtempelmeyer/palenight.vim'
 
 Plug 'kien/tabman.vim'
 
@@ -22,7 +25,8 @@ Plug 'tpope/vim-fugitive'
 Plug 'junegunn/gv.vim'
 Plug 'luochen1990/rainbow'
 Plug 'tpope/vim-surround'
-Plug 'mbbill/undotree'
+" Plug 'mbbill/undotree'
+Plug 'simnalamburt/vim-mundo'
 Plug 'derekwyatt/vim-fswitch'
 
 "Snippets stuff
@@ -68,6 +72,8 @@ Plug 'chrisbra/csv.vim'
 Plug 'kshenoy/vim-signature'
 
 Plug 'mhinz/vim-startify'
+
+Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
 
 "General syntax check
 "Plug 'scrooloose/syntastic'
@@ -128,6 +134,12 @@ let g:deoplete#sources#clang#clang_header = '/usr/lib/llvm-6.0/lib/clang/6.0.0/i
 
 "}}}
 
+" Markdown {{{
+
+let g:vim_markdown_conceal = 2
+
+"}}}
+
 let g:closetag_filenames = "*.html,*.xhtml,*.phtml,*.php,*.jsx"
 
 au BufNewFile,BufRead *.frag,*.vert,*.fp,*.vp,*.glsl setf glsl
@@ -146,7 +158,7 @@ set splitright
 
 noremap <C-n> :NERDTreeToggle<CR>
 nnoremap <S-Ins> "+p
-noremap <C-m> :UndotreeToggle<CR>
+noremap <C-m> :MundoToggle<CR>
 
 noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
 noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
@@ -239,13 +251,11 @@ au Filetype python
 au Filetype tex
             \ setlocal foldlevel=0
 
-auto Filetype tex
-            \ let b:AutoPairs = AutoPairsDefine({"(": ")", '[': ']', '{': '}', '$': '$'})
+au Filetype tex
+            \ let b:AutoPairs = AutoPairsDefine({"(": ")", '[': ']', '{': '}', '$': '$', '\left(': '\right)', '\left[': 'right]'})
 
-augroup filetype_vim
-    autocmd!
-    autocmd Filetype vim setlocal foldmethod=marker
-augroup end
+au Filetype vim
+            \ setlocal foldmethod=marker
 
 " }}}
 
@@ -312,10 +322,10 @@ let g:solarized_visibility='high'
 set termguicolors
 "set guifont=DroidSansMono\ Nerd\ Font\ 11
 set laststatus=2
-colorscheme solarized8
+colorscheme palenight
 
 " Airline
-let g:airline_theme='powerlineish'
+let g:airline_theme='palenight'
 let g:airline_powerline_fonts = 1
 "let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
