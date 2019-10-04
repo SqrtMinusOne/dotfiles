@@ -25,6 +25,8 @@ Plug 'tpope/vim-fugitive'
 Plug 'junegunn/gv.vim'
 Plug 'luochen1990/rainbow'
 Plug 'tpope/vim-surround'
+Plug 'valloric/matchtagalways'
+
 " Plug 'mbbill/undotree'
 Plug 'simnalamburt/vim-mundo'
 Plug 'derekwyatt/vim-fswitch'
@@ -177,8 +179,8 @@ noremap + :FSAbove<CR>
 " noremap k+ :FSSplitAbove<CR>
 
 let g:UltiSnipsUsePythonVersion = 3
-let g:UltiSnipsExpandTrigger="<C-j>"
-let g:UltiSnipsJumpForwardTrigger="<C-S-j>"
+let g:UltiSnipsExpandTrigger="<a-q>"
+let g:UltiSnipsJumpForwardTrigger="<a-q>"
 let g:UltiSnipsJumpBackwardTrigger=""
 
 " }}}
@@ -251,12 +253,13 @@ au Filetype python
 au Filetype tex
             \ setlocal foldlevel=0
 
-au Filetype tex
-            \ let b:AutoPairs = AutoPairsDefine({"(": ")", '[': ']', '{': '}', '$': '$', '\left(': '\right)', '\left[': 'right]'})
+augroup filetype_tex
+    autocmd!
+    autocmd Filetype tex
+            \ let b:AutoPairs = {"(": ")", '[': ']', '{': '}', '$': '$', '\left(': '\right)', '\left[': 'right]', "''": '``', "``": "''"}
+augroup END
 
-au Filetype vim
-            \ setlocal foldmethod=marker
-
+autocmd Filetype vim setlocal foldmethod=marker
 " }}}
 
 let g:indent_guides_enable_on_vim_startup = 1
@@ -347,7 +350,8 @@ let g:rainbow_conf = {
             \ }
 hi Conceal guibg=Normal guifg=Normal
 let g:closetag_filenames = '*.html,*.xhtml,*.vue'
-let g:closetag_filetypes = 'html,xhtml,vue'
+let g:closetag_filetypes = 'html,xhtml,vue,xml,xsd'
+let g:mta_filetypes = { 'html' : 1, 'xhtml' : 1, 'xml' : 1, 'jinja' : 1, 'xsd': 1, 'vue': 1 }
 
 let g:startify_custom_header = [
     \ ' ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――',
