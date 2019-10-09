@@ -1,3 +1,17 @@
+snippet 'sympy(.*)sympy' "evaluate sympy" wr
+`!p
+from sympy import *
+x, y, z, t = symbols('x y z t')
+k, m, n = symbols('k m n', integer=True)
+f, g, h = symbols('f g h', cls=Function)
+init_printing()
+snip.rv = eval('latex(' + match.group(1).replace('\\', '') \
+    .replace('^', '**') \
+    .replace('{', '(') \
+    .replace('}', ')') + ')')
+`
+endsnippet
+
 snippet vec "vector sign"
 \vec{$0}
 endsnippet
@@ -80,6 +94,18 @@ endsnippet
 
 snippet <= "\Leftarrow"
 \Leftarrow $0
+endsnippet
+
+snippet '(\w+)_' "_\{text}" r
+`!p snip.rv=match.group(1)`_\text{$1} $0
+endsnippet
+
+snippet '".*"' "`` ''" r
+\`\``!p snip.rv=match.group(0)[1:-1]`'' $0
+endsnippet
+
+snippet '<<.*>>' "\enquote{text}" r
+\enquote{`!p snip.rv=match.group(0)[2:-2]`} $0
 endsnippet
 
 snippet <- "\leftarrow"

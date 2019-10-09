@@ -26,6 +26,7 @@ Plug 'junegunn/gv.vim'
 Plug 'luochen1990/rainbow'
 Plug 'tpope/vim-surround'
 Plug 'valloric/matchtagalways'
+Plug 'junegunn/vim-easy-align'
 
 " Plug 'mbbill/undotree'
 Plug 'simnalamburt/vim-mundo'
@@ -178,6 +179,12 @@ noremap + :FSAbove<CR>
 " noremap j+ :FSSplitBelow<CR>
 " noremap k+ :FSSplitAbove<CR>
 
+" Start interactive EasyAlign in visual mode (e.g. vipga)
+xmap ga <Plug>(EasyAlign)
+
+" Start interactive EasyAlign for a motion/text object (e.g. gaip)
+nmap ga <Plug>(EasyAlign)
+
 let g:UltiSnipsUsePythonVersion = 3
 let g:UltiSnipsExpandTrigger="<a-q>"
 let g:UltiSnipsJumpForwardTrigger="<a-q>"
@@ -256,7 +263,8 @@ au Filetype tex
 augroup filetype_tex
     autocmd!
     autocmd Filetype tex
-            \ let b:AutoPairs = {"(": ")", '[': ']', '{': '}', '$': '$', '\left(': '\right)', '\left[': 'right]', "''": '``', "``": "''"}
+            \ let b:AutoPairs = {"(": ")", '[': ']', '{': '}', '$': '$', '\left(': '\right)',
+            \ '\left[': 'right]', "''": '``', "``": "''", '"': '"', 'sympy': 'sympy', '<<': '>>'}
 augroup END
 
 autocmd Filetype vim setlocal foldmethod=marker
