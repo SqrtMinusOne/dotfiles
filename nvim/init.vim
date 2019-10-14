@@ -45,7 +45,7 @@ Plug 'ivanov/vim-ipython'
 
 "Js & stuff
 Plug 'pangloss/vim-javascript'
-Plug 'mxw/vim-jsx'
+"Plug 'mxw/vim-jsx'
 Plug 'posva/vim-vue'
 Plug 'alvan/vim-closetag'
 
@@ -299,6 +299,7 @@ let g:ale_fixers = {
             \    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
             \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace'],
             \    'js': ['eslint'],
+            \    'jsx': ['eslint'],
             \    'vue': ['eslint'],
             \    'cpp': ['clang-format', 'remove_trailing_lines', 'trim_whitespace']
             \}
