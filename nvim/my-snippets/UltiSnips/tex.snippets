@@ -2,6 +2,22 @@ priority 50
 
 extends eltech
 
+global !p
+import os
+
+def get_last_image():
+	max_time = 0
+	last_image = ''
+	for r, d, files in os.walk(os.path.join(os.getcwd(), 'img')):
+	    for f in files:
+	        time = os.path.getmtime(os.path.join(r, f))
+	        if time > max_time:
+	            max_time = time
+	            last_image = os.path.relpath(os.path.join(r, f))
+	return last_image
+
+endglobal
+
 snippet 'sympy(.*)sympy' "evaluate sympy" wr
 `!p
 from sympy import *
@@ -14,6 +30,23 @@ snip.rv = eval('latex(' + match.group(1).replace('\\', '') \
     .replace('{', '(') \
     .replace('}', ')') + ')')
 `
+endsnippet
+
+snippet lfigp "last figure path"
+`!p
+snip.rv = get_last_image()
+`
+endsnippet
+
+snippet lfig 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=$1\textwidth]{`!p snip.rv = get_last_image()`}
+    \caption{$2}%
+    \label{img:$3}
+\end{figure}
+
+$0
 endsnippet
 
 snippet vec "vector sign"
