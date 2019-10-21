@@ -167,9 +167,11 @@ noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
 noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
 nnoremap <Tab> :TagbarToggle<CR>
 
+nnoremap <Leader>s :%s/\<<C-r><C-w>\>/
+
 nnoremap <C-p> :Files<CR>
 :tnoremap <Esc> <C-\><C-n>
-nnoremap , :lclose<CR> :pclose<CR> :cclose<CR>
+nnoremap , :lclose<CR> :pclose<CR> :cclose<CR> :noh<CR>
 noremap - ddkP
 noremap _ ddp
 
