@@ -49,8 +49,12 @@ snippet lfig
 $0
 endsnippet
 
+snippet ' -' "---" wrA
+ --- $0
+endsnippet
+
 snippet vec "vector sign"
-\vec{$0}
+\vec{$1} $0
 endsnippet
 
 snippet suml "\sum\limits"
@@ -78,10 +82,6 @@ snippet fig "Default figure here"
 \end{figure}
 
 $0
-endsnippet
-
-snippet $$ "$  $"
-\$ $1 \$ $0
 endsnippet
 
 snippet subfig "Figure with subfigures"

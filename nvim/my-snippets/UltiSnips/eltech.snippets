@@ -1,8 +1,35 @@
 priority -50
 
+global !p
+
+import glob
+
+PRIORITIES = {
+	'generalPreamble': 0,
+	'Locale': 1,
+	'BibTex': 2,
+}
+
+def get_styles(folder):
+	styles = [file[:-4] for file in glob.glob(f'{folder}/*.sty')]
+	priorities = [1] * len(styles)
+	for i, filename in enumerate(styles):
+		for name, priority in PRIORITIES.items():
+			if name in filename:
+				priorities[i] = priority
+	priorities, styles = zip(*sorted(zip(priorities, styles)))
+	return styles
+
+endglobal
+
 snippet defdoc "Default document template"
 \documentclass[a4paper, 14pt]{extarticle}
-\usepackage{./styles/generalPreamble}
+`!p
+res = ""
+for style in get_styles("./styles"):
+	res += "\\usepackage{" + style + "}\n"
+snip.rv = res
+`
 
 \begin{document}
 	$0
@@ -14,32 +41,54 @@ snippet etutitle "ETU default report title"
     \centering
     {\bfseries
         \uppercase{
-            Минобрнауки России \\
-            Санкт-Петербургский государственный \\
-            Электротехнический университет \\
-            \enquote{ЛЭТИ} им. В.И.Ульянова (Ленина)\\
+            Минобрнауки России \\\\
+            Санкт-Петербургский государственный \\\\
+            Электротехнический университет \\\\
+            \enquote{ЛЭТИ} им. В.И.Ульянова (Ленина)\\\\
         }
         Кафедра ${1:МО ЭВМ}
 
         \vspace{\fill}
-		\uppercase{${2:Отчёт}}
-		по ${3:лабораторной работе} ${4:№1}
-        по дисциплине \enquote{$5} \\
+		\uppercase{${2:Отчёт}} \\\\
+		по ${3:лабораторной работе} ${4:№1} \\\\
+        по дисциплине \enquote{$5} \\\\
         Тема: $6
     }
 
     \vspace{\fill}
     \begin{tabularx}{0.8\textwidth}{l X c r}
-        Студент гр. 6304 & & \underline{\hspace{3cm}} & Корытов П.В.\\
+        Студент гр. 6304 & & \underline{\hspace{3cm}} & Корытов П.В.\\\\
         Преподаватель & & \underline{\hspace{3cm}} & $7
     \end{tabularx}
 
     \vspace{1cm}
-    Санкт-Петербург \\
+    Санкт-Петербург \\\\
     \the\year{}
 \end{titlepage}
 
 $0
+endsnippet
+
+snippet fhdr "My default fancy header"
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+
+\newcommand{\theversion}{${1:1.0}}
+
+\fancyhead[L]{
+    \begin{tabular}{ll}
+    \textit{${2:Project}} \\\\
+    ${3:Документ}
+    \end{tabular}
+}
+
+\fancyhead[R]{
+    \begin{tabular}{ll}
+    Версия: & \theversion{} \\\\
+    Дата: & \today{}
+    \end{tabular}
+}
+
 endsnippet
 
 # vim:ft=snippets:

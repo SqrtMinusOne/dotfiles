@@ -233,6 +233,15 @@ nnoremap ` :call SubTerminal()<CR>
 
 " }}}
 
+" Git diff stats {{{
+function! Gstats()
+    execute '!git diff --stat'
+endfunction
+
+command! Gstats call Gstats()
+
+" }}}
+
 "Indent & folding stuff {{{
 set tabstop=4
 set shiftwidth=4
