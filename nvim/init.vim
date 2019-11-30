@@ -76,7 +76,7 @@ Plug 'kshenoy/vim-signature'
 
 Plug 'mhinz/vim-startify'
 
-Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
+"Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
 
 "General syntax check
 "Plug 'scrooloose/syntastic'
@@ -231,6 +231,16 @@ autocmd BufWipeout term://* call WipeSubTerminalBuffer()
 
 nnoremap ` :call SubTerminal()<CR>
 
+" }}}
+
+" Terminal in tab {{{
+function! OpenTerminalInTab()
+    execute ':tabnew'
+    execute ':terminal'
+    normal i
+endfunction
+
+nnoremap ~ :call OpenTerminalInTab()<CR>
 " }}}
 
 " Git diff stats {{{
