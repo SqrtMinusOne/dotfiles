@@ -233,6 +233,18 @@ nnoremap ` :call SubTerminal()<CR>
 
 " }}}
 
+" {{{ 
+function! s:DiffWithSaved()
+  let filetype=&ft
+  diffthis
+  vnew | r # | normal! 1Gdd
+  diffthis
+  exe "setlocal bt=nofile bh=wipe nobl noswf ro ft=" . filetype
+endfunction
+
+com! DiffSaved call s:DiffWithSaved()
+" }}}
+
 " Terminal in tab {{{
 function! OpenTerminalInTab()
     execute ':tabnew'
@@ -320,6 +332,7 @@ let g:ale_fixers = {
             \    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
             \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace'],
             \    'js': ['eslint'],
+            \    'javascript': ['eslint'],
             \    'jsx': ['eslint'],
             \    'vue': ['eslint'],
             \    'cpp': ['clang-format', 'remove_trailing_lines', 'trim_whitespace']
