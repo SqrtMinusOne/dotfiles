@@ -45,6 +45,7 @@ Plug 'ivanov/vim-ipython'
 
 "Js & stuff
 Plug 'pangloss/vim-javascript'
+Plug 'heavenshell/vim-jsdoc'
 "Plug 'mxw/vim-jsx'
 Plug 'posva/vim-vue'
 Plug 'alvan/vim-closetag'
@@ -76,7 +77,7 @@ Plug 'kshenoy/vim-signature'
 
 Plug 'mhinz/vim-startify'
 
-"Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
+Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
 
 "General syntax check
 "Plug 'scrooloose/syntastic'
@@ -143,7 +144,12 @@ let g:vim_markdown_conceal = 2
 
 "}}}
 
+" js {{{
 let g:closetag_filenames = "*.html,*.xhtml,*.phtml,*.php,*.jsx"
+let g:jsdoc_allow_input_prompt = 1
+let g:jsdoc_enable_es6 = 1
+let g:jsdoc_input_description = 1
+" }}}
 
 au BufNewFile,BufRead *.frag,*.vert,*.fp,*.vp,*.glsl setf glsl
 
@@ -283,9 +289,10 @@ augroup filetype_pug
     autocmd Filetype pug setlocal foldlevel=20
 augroup END
 
-" augroup filetype_vue
-"     autocmd!
-" augroup END
+augroup filetype_vue
+    autocmd!
+    autocmd Filetype vue command! -register JsDoc call jsdoc#insert()
+augroup END
 
 au Filetype python
             \ setlocal foldmethod=indent
@@ -334,7 +341,7 @@ let g:ale_fixers = {
             \    'js': ['eslint'],
             \    'javascript': ['eslint'],
             \    'jsx': ['eslint'],
-            \    'vue': ['eslint'],
+            \    'vue': ['prettier', 'eslint'],
             \    'cpp': ['clang-format', 'remove_trailing_lines', 'trim_whitespace']
             \}
 let g:airline#extensions#ale#enabled = 1
