@@ -7,22 +7,28 @@ Plug 'xuyuanp/nerdtree-git-plugin'
 Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 
 Plug 'vim-airline/vim-airline'
-Plug 'crusoexia/vim-monokai'
 Plug 'vim-airline/vim-airline-themes'
-Plug 'lifepillar/vim-solarized8'
-Plug 'haishanh/night-owl.vim'
-Plug 'arcticicestudio/nord-vim'
+
+"Themes
+"Plug 'crusoexia/vim-monokai'
+"Plug 'lifepillar/vim-solarized8'
+"Plug 'haishanh/night-owl.vim'
+"Plug 'arcticicestudio/nord-vim'
 Plug 'drewtempelmeyer/palenight.vim'
 
 Plug 'kien/tabman.vim'
 
 Plug 'chrisbra/colorizer'
 
+"Git
+Plug 'tpope/vim-fugitive'
+Plug 'junegunn/gv.vim'
+Plug 'airblade/vim-gitgutter'
+Plug 'jreybert/vimagit'
+
 "Coding
 "Plug 'valloric/youcompleteme'
 Plug 'shougo/deoplete.nvim'
-Plug 'tpope/vim-fugitive'
-Plug 'junegunn/gv.vim'
 Plug 'luochen1990/rainbow'
 Plug 'tpope/vim-surround'
 Plug 'valloric/matchtagalways'
@@ -55,8 +61,8 @@ Plug 'lervag/vimtex'
 Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
 
 "C++
-Plug 'octol/vim-cpp-enhanced-highlight'
-Plug 'zchee/deoplete-clang'
+"Plug 'octol/vim-cpp-enhanced-highlight'
+"Plug 'zchee/deoplete-clang'
 
 "Navigation
 "Plug 'ctrlpvim/ctrlp.vim'
@@ -69,9 +75,9 @@ Plug 'majutsushi/tagbar'
 "Other files
 Plug 'elzr/vim-json'
 Plug 'tpope/vim-jdaddy'
-Plug 'tikhomirov/vim-glsl'
+"Plug 'tikhomirov/vim-glsl'
 Plug 'plasticboy/vim-markdown'
-Plug 'digitaltoad/vim-jade'
+"Plug 'digitaltoad/vim-jade'
 Plug 'chrisbra/csv.vim'
 Plug 'kshenoy/vim-signature'
 
@@ -88,6 +94,7 @@ Plug 'w0rp/ale'
 Plug 'wakatime/vim-wakatime'
 Plug 'nathanaelkane/vim-indent-guides'
 
+Plug 'scrooloose/nerdcommenter'
 
 Plug 'jiangmiao/auto-pairs'
 "Plug 'raimondi/delimitmate'
@@ -129,6 +136,8 @@ let g:pymode_rope = 1
 let g:pymode_rope_completion = 0
 let g:pymode_rope_autoimport = 0
 let NERDTreeIgnore = ['\.pyc$', '^__pycache__$']
+let NERDTreeMinimalUI = 1
+let NERDTreeDirArrows = 1
 
 " }}}
 
@@ -187,6 +196,14 @@ noremap + :FSAbove<CR>
 " noremap j+ :FSSplitBelow<CR>
 " noremap k+ :FSSplitAbove<CR>
 
+nnoremap <Leader>tl :TestLast<CR>
+nnoremap <Leader>tf :TestFile<CR>
+nnoremap <Leader>ts :TestSuit<CR>
+nnoremap <Leader>tn :TestNearest<CR>
+nnoremap <Leader>tv :TestVisit<CR>
+
+nnoremap <Leader>af :ALEFix<CR>
+
 " Start interactive EasyAlign in visual mode (e.g. vipga)
 xmap ga <Plug>(EasyAlign)
 
@@ -239,7 +256,7 @@ nnoremap ` :call SubTerminal()<CR>
 
 " }}}
 
-" {{{ 
+" Diff with saved {{{ 
 function! s:DiffWithSaved()
   let filetype=&ft
   diffthis
@@ -269,6 +286,50 @@ endfunction
 command! Gstats call Gstats()
 
 " }}}
+
+" Uptime {{{
+let s:start_time = localtime()
+
+function! UptimeSeconds()
+    let l:current_time = localtime()
+    let l:uptime = l:current_time - s:start_time
+    return l:uptime
+endfunction
+
+function! s:AddLeadingZero(i)
+    if a:i == 0
+        return "00"
+    elseif a:i < 10
+        return "0" . a:i
+    else
+        return "" . a:i
+    endif
+endfu
+
+function! Uptime(...)
+    let l:show_seconds = get(a:, 1, 0)
+    let l:uptime = UptimeSeconds()
+    let l:m_s = (l:uptime) % 60
+    let l:m_m = (l:uptime/ 60) % 60
+    let l:m_h = (l:uptime/ (60 * 60)) % 24
+    let l:m_d = (l:uptime/ (60 * 60 * 24))
+
+    let l:msg = ""
+    if (l:m_d > 0)
+        let l:msg = l:msg . l:m_d . "d "
+    endif
+    let l:msg = l:msg . s:AddLeadingZero(l:m_h) . ":" .
+                \       s:AddLeadingZero(l:m_m)
+    if l:show_seconds == 1
+        let l:msg = l:msg . ":" . s:AddLeadingZero(l:m_s)
+    endif
+    return l:msg
+endfunction
+
+command! Uptime echo Uptime(1)
+
+" }}}
+
 
 "Indent & folding stuff {{{
 set tabstop=4
@@ -377,11 +438,16 @@ set termguicolors
 set laststatus=2
 colorscheme palenight
 
+" git
+autocmd BufWritePost * GitGutter
+let g:magit_default_fold_level = 0
+
 " Airline
 let g:airline_theme='palenight'
 let g:airline_powerline_fonts = 1
 "let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
+let g:airline_section_b = '%{Uptime()}'
 
 highlight! TermCursorNC guibg=red
 
