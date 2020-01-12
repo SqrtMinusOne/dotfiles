@@ -70,7 +70,8 @@ Plug 'easymotion/vim-easymotion'
 Plug 'yuttie/comfortable-motion.vim'
 Plug 'vim-scripts/restore_view.vim'
 Plug 'ericbn/vim-relativize'
-Plug 'majutsushi/tagbar'
+"Plug 'majutsushi/tagbar'
+Plug 'liuchengxu/vista.vim'
 
 "Other files
 Plug 'elzr/vim-json'
@@ -180,7 +181,8 @@ noremap <C-m> :MundoToggle<CR>
 
 noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
 noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
-nnoremap <Tab> :TagbarToggle<CR>
+"nnoremap <Tab> :TagbarToggle<CR>
+nnoremap <Tab> :Vista!!<CR>
 
 nnoremap <Leader>s :%s/\<<C-r><C-w>\>/
 
@@ -204,11 +206,21 @@ nnoremap <Leader>tv :TestVisit<CR>
 
 nnoremap <Leader>af :ALEFix<CR>
 
-" Start interactive EasyAlign in visual mode (e.g. vipga)
+"EasyAlign
 xmap ga <Plug>(EasyAlign)
-
-" Start interactive EasyAlign for a motion/text object (e.g. gaip)
 nmap ga <Plug>(EasyAlign)
+
+nnoremap gn :tabnew<CR>
+nnoremap gc :tabclose<CR>
+nnoremap t1 1gt
+nnoremap t2 2gt
+nnoremap t3 3gt
+nnoremap t4 4gt
+nnoremap t5 5gt
+nnoremap t6 6gt
+nnoremap t7 7gt
+nnoremap t8 8gt
+nnoremap t9 9gt
 
 let g:UltiSnipsUsePythonVersion = 3
 let g:UltiSnipsExpandTrigger="<a-q>"
@@ -237,7 +249,7 @@ function! SubTerminal()
         endif
         normal i
     else
-        execute ':bwipeout! ' . terminal_num 
+        execute ':bwipeout! ' . terminal_num
         execute ':bwipeout! ' . (terminal_num + 1)
     endif
 endfunction
@@ -256,7 +268,7 @@ nnoremap ` :call SubTerminal()<CR>
 
 " }}}
 
-" Diff with saved {{{ 
+" Diff with saved {{{
 function! s:DiffWithSaved()
   let filetype=&ft
   diffthis
@@ -330,6 +342,53 @@ command! Uptime echo Uptime(1)
 
 " }}}
 
+" {{{ Fugitive conflict resolution
+
+function! GitVMergeSplit()
+    execute 'Gdiffsplit!'
+    wincmd k
+    wincmd H
+    let s:leftMergeBuffer = bufnr('%')
+    wincmd l
+    wincmd j
+    wincmd L
+    let s:rightMergeBuffer = bufnr('%')
+    wincmd h
+endfunction
+
+function! GitMergeGetLeft()
+    execute ":diffget" . s:leftMergeBuffer
+endfunction
+
+function! GitMergeGetRight()
+    execute ":diffget" . s:rightMergeBuffer
+endfunction
+
+command! Gdiffmerge call GitVMergeSplit()
+nnoremap gdh :call GitMergeGetLeft()<CR>
+nnoremap gdl :call GitMergeGetRight()<CR>
+nnoremap gd<Left> :call GitMergeGetLeft()<CR>
+nnoremap gd<Right> :call GitMergeGetRight()<CR>
+
+" }}}
+
+" {{{ Delete Hidden buffers
+function! DeleteHiddenBuffers()
+  let tpbl=[]
+  let closed = 0
+  call map(range(1, tabpagenr('$')), 'extend(tpbl, tabpagebuflist(v:val))')
+  for buf in filter(range(1, bufnr('$')), 'bufexists(v:val) && index(tpbl, v:val)==-1')
+    if getbufvar(buf, '&mod') == 0
+      silent execute 'bwipeout' buf
+      let closed += 1
+    endif
+  endfor
+  echo "Closed ".closed." hidden buffers"
+endfunction
+
+command! DeleteHiddenBuffers call DeleteHiddenBuffers()
+
+" }}}
 
 "Indent & folding stuff {{{
 set tabstop=4
@@ -395,15 +454,16 @@ let g:ale_close_preview_on_insert = 1
 let g:ale_lint_on_text_changed = 'never'
 let g:ale_lint_on_enter = 0
 let g:ale_completion_enabled = 0
-let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex'], 'cpp': ['clang']}
+let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex'], 'cpp': ['clang'], 'vue': ['eslint']}
 let g:ale_fixers = {
             \    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
             \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace'],
-            \    'js': ['eslint'],
-            \    'javascript': ['eslint'],
-            \    'jsx': ['eslint'],
+            \    'js': ['prettier', 'eslint'],
+            \    'javascript': ['prettier', 'eslint'],
+            \    'jsx': ['prettier', 'eslint'],
             \    'vue': ['prettier', 'eslint'],
-            \    'cpp': ['clang-format', 'remove_trailing_lines', 'trim_whitespace']
+            \    'cpp': ['clang-format', 'remove_trailing_lines', 'trim_whitespace'],
+            \    'json': ['prettier']
             \}
 let g:airline#extensions#ale#enabled = 1
 
@@ -420,7 +480,7 @@ inoremap <silent><expr> <TAB>
             \ pumvisible() ? "\<C-n>" :
             \ <SID>check_back_space() ? "\<TAB>" :
             \ deoplete#mappings#manual_complete()
-function! s:check_back_space() abort 
+function! s:check_back_space() abort
     let col = col('.') - 1
     return !col || getline('.')[col - 1]  =~ '\s'
 endfunction
@@ -429,6 +489,27 @@ endfunction
 " }}}
 "spell
 "set spell spelllang=en,ru
+
+" Fix for NERDTree devicons integration {{{
+function! SetNERDTreeSyntax()
+  if g:webdevicons_enable_nerdtree == 1 && g:webdevicons_conceal_nerdtree_brackets == 1
+    augroup webdevicons_conceal_nerdtree_brackets
+      au!
+      autocmd FileType nerdtree syntax match hideBracketsInNerdTree "\]" contained conceal containedin=ALL
+      autocmd FileType nerdtree syntax match hideBracketsInNerdTree "\[" contained conceal containedin=ALL
+      autocmd FileType nerdtree setlocal conceallevel=3
+      autocmd FileType nerdtree setlocal concealcursor=nvic
+    augroup END
+  endif
+endfunction
+
+if exists('g:loaded_webdevicons')
+  call SetNERDTreeSyntax()
+endif
+
+autocmd VimEnter * source $MYVIMRC
+
+" }}}
 
 " ui {{{
 set background=dark
@@ -445,7 +526,7 @@ let g:magit_default_fold_level = 0
 " Airline
 let g:airline_theme='palenight'
 let g:airline_powerline_fonts = 1
-"let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
 let g:airline_section_b = '%{Uptime()}'
 
@@ -458,6 +539,7 @@ let g:tagbar_show_line_numbers = 1
 let g:tagbar_width = 60
 let g:tagbar_autofocus = 1
 
+let g:vista_sidebar_width = 60
 
 " Brackets
 let g:rainbow_active = 1
