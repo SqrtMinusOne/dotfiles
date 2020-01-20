@@ -4,6 +4,7 @@ call plug#begin('~/.local/share/nvim/plugged')
 Plug 'scrooloose/nerdtree', { 'on':  'NERDTreeToggle' }
 Plug 'xuyuanp/nerdtree-git-plugin'
 Plug 'nathanaelkane/vim-indent-guides'
+Plug 'jistr/vim-nerdtree-tabs'
 Plug 'luochen1990/rainbow'
 
 Plug 'vim-airline/vim-airline'
@@ -27,6 +28,7 @@ Plug 'heavenshell/vim-pydocstring'
 Plug 'pangloss/vim-javascript'
 Plug 'posva/vim-vue'
 Plug 'heavenshell/vim-jsdoc'
+Plug 'leafgarland/typescript-vim'
 "Plug 'mxw/vim-jsx'
 
 "C++
@@ -65,6 +67,7 @@ Plug 'alvan/vim-closetag'
 Plug 'tpope/vim-surround'
 Plug 'junegunn/vim-easy-align'
 Plug 'scrooloose/nerdcommenter'
+Plug 'chrisbra/nrrwrgn'
 
 Plug 'jiangmiao/auto-pairs'
 "Plug 'raimondi/delimitmate'
@@ -185,20 +188,26 @@ nnoremap t7 7gt
 nnoremap t8 8gt
 nnoremap t9 9gt
 
+" ALE
 nnoremap <Leader>af :ALEFix<CR>
+nnoremap <Leader>ad :ALEGoToDefinition<CR>
+nnoremap <Leader>asd :ALEGoToDefinitionInVSplit<CR>
+nnoremap <Leader>atd :ALEGoToDefinitionInTab<CR>
+nnoremap <Leader>ar :ALEFindReferences<CR>
+nnoremap <Leader>ah :ALEHover<CR>
+nnoremap <Leader>ac :ALERename<CR>
 
 "EasyAlign
 xmap ga <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
 
 " FSwitch
-
 " noremap + :FSAbove<CR>
 " noremap l+ :FSSplitLeft<CR>
 " noremap h+ :FSSplitRight<CR>
 " noremap j+ :FSSplitBelow<CR>
 " noremap k+ :FSSplitAbove<CR>
-"
+
 " Snippets
 let g:UltiSnipsUsePythonVersion = 3
 let g:UltiSnipsExpandTrigger="<a-q>"
@@ -298,6 +307,8 @@ augroup END
 
 autocmd Filetype javascript setlocal conceallevel=2
 
+autocmd Filetype typescript execute ':CloseTagDisableBuffer'
+
 let g:mta_filetypes = { 'html' : 1, 'xhtml' : 1, 'xml' : 1, 'jinja' : 1, 'xsd': 1, 'vue': 1 }
 let g:closetag_filenames = '*.html,*.xhtml,*.vue'
 let g:closetag_filetypes = 'html,xhtml,vue,xml,xsd'
@@ -307,7 +318,7 @@ let g:jsdoc_allow_input_prompt = 1
 let g:jsdoc_enable_es6 = 1
 let g:jsdoc_input_description = 1
 
-let g:vue_pre_processors = []
+let g:vue_pre_processors = ['typescript']
 
 let g:javascript_plugin_jsdoc = 1
 
@@ -357,6 +368,7 @@ let g:pymode_lint = 0
 let g:pymode_rope = 1
 let g:pymode_rope_completion = 0
 let g:pymode_rope_autoimport = 0
+let g:pymode_doc = 1
 " }}}
 
 " Misc file commands {{{
@@ -392,12 +404,13 @@ let g:ale_close_preview_on_insert = 1
 let g:ale_lint_on_text_changed = 'never'
 let g:ale_lint_on_enter = 0
 let g:ale_completion_enabled = 0
-let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex'], 'cpp': ['clang'], 'vue': ['eslint']}
+let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex'], 'cpp': ['clang'], 'vue': ['vls'], 'typescript': ['tsserver', 'tslint']}
 let g:ale_fixers = {
             \    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
             \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace'],
             \    'js': ['prettier', 'eslint'],
             \    'javascript': ['prettier', 'eslint'],
+            \    'typescript': ['prettier', 'tslint'],
             \    'jsx': ['prettier', 'eslint'],
             \    'vue': ['prettier', 'eslint'],
             \    'cpp': ['clang-format', 'remove_trailing_lines', 'trim_whitespace'],
@@ -543,16 +556,23 @@ command! Uptime echo Uptime(1)
 
 " {{{ Delete Hidden buffers
 function! DeleteHiddenBuffers()
-  let tpbl=[]
-  let closed = 0
-  call map(range(1, tabpagenr('$')), 'extend(tpbl, tabpagebuflist(v:val))')
-  for buf in filter(range(1, bufnr('$')), 'bufexists(v:val) && index(tpbl, v:val)==-1')
-    if getbufvar(buf, '&mod') == 0
-      silent execute 'bwipeout' buf
-      let closed += 1
-    endif
-  endfor
-  echo "Closed ".closed." hidden buffers"
+    let tpbl=[]
+    let closed = 0
+    let terminals = 0
+    call map(range(1, tabpagenr('$')), 'extend(tpbl, tabpagebuflist(v:val))')
+    for buf in filter(range(1, bufnr('$')), 'bufexists(v:val) && index(tpbl, v:val)==-1')
+        if getbufvar(buf, '&mod') == 0
+            if matchstr(bufname(buf), '^term:\/\/.*$') == ''
+                silent execute 'bwipeout' buf
+                let closed += 1
+            else
+                silent execute 'bwipeout!' buf
+                let closed += 1
+                let terminals += 1
+            endif
+        endif
+    endfor
+    echo "Closed " .closed. " hidden buffers (" . terminals . " terminals)"
 endfunction
 
 command! DeleteHiddenBuffers call DeleteHiddenBuffers()
@@ -588,6 +608,9 @@ nnoremap gd<Left> :call GitMergeGetLeft()<CR>
 nnoremap gd<Right> :call GitMergeGetRight()<CR>
 
 " }}}
+
+" Put current time
+command! Timestamp :put =strftime('%d-%m-%y %H:%M:%S')
 " }}}
 
 " UI settings {{{
@@ -606,6 +629,7 @@ highlight! link Conceal Normal
 let g:airline_theme='palenight'
 let g:airline_powerline_fonts = 1
 let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#buffer_idx_mode = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
 let g:airline_section_b = '%{Uptime()}'
 
