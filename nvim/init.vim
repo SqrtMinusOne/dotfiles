@@ -9,6 +9,7 @@ Plug 'luochen1990/rainbow'
 
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
+Plug 'edkolev/tmuxline.vim'
 
 Plug 'chrisbra/colorizer'
 Plug 'mhinz/vim-startify'
@@ -318,7 +319,7 @@ let g:jsdoc_allow_input_prompt = 1
 let g:jsdoc_enable_es6 = 1
 let g:jsdoc_input_description = 1
 
-let g:vue_pre_processors = ['typescript']
+let g:vue_pre_processors = []
 
 let g:javascript_plugin_jsdoc = 1
 
@@ -404,7 +405,7 @@ let g:ale_close_preview_on_insert = 1
 let g:ale_lint_on_text_changed = 'never'
 let g:ale_lint_on_enter = 0
 let g:ale_completion_enabled = 0
-let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex'], 'cpp': ['clang'], 'vue': ['vls'], 'typescript': ['tsserver', 'tslint']}
+let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex'], 'cpp': ['clang'], 'vue': ['eslint'], 'typescript': ['tsserver', 'tslint']}
 let g:ale_fixers = {
             \    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
             \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace'],
@@ -616,7 +617,12 @@ command! Timestamp :put =strftime('%d-%m-%y %H:%M:%S')
 " UI settings {{{
 set background=dark
 "let g:solarized_visibility='high'
-set termguicolors
+if exists('+termguicolors')
+  let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
+  let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
+  let &t_SI="\<Esc>[2 q"
+  set termguicolors
+endif
 "set guifont=DroidSansMono\ Nerd\ Font\ 11
 set laststatus=2
 colorscheme palenight
@@ -632,6 +638,16 @@ let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#buffer_idx_mode = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
 let g:airline_section_b = '%{Uptime()}'
+
+" tmux line
+let g:tmuxline_preset = {
+      \'a'    : '#S',
+      \'b'    : '#W',
+      \'win'  : '#I #W #[align=left]',
+      \'cwin' : '#I #W',
+      \'x'    : '%-H:%M',
+      \'y'    : '%a, %b %d',
+      \'z'    : '#H'}
 
 " Indent guides
 let g:indent_guides_enable_on_vim_startup = 1
