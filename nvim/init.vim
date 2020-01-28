@@ -39,7 +39,8 @@ Plug 'leafgarland/typescript-vim'
 "Misc file formats
 Plug 'elzr/vim-json'
 Plug 'plasticboy/vim-markdown'
-Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
+"Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
+Plug 'euclio/vim-markdown-composer'
 Plug 'chrisbra/csv.vim'
 "Plug 'tikhomirov/vim-glsl'
 "Plug 'digitaltoad/vim-jade'
@@ -141,7 +142,7 @@ set undodir="~/.local/share/nvim/undo"
 noremap <C-n> :NERDTreeToggle<CR>
 nnoremap <S-Ins> "+p
 nnoremap <C-p> :Files<CR>
-nnoremap <C-a> :Ag<CR>
+nnoremap <Leader>aa :Ag<CR>
 
 nnoremap <Leader>s :%s/\<<C-r><C-w>\>/
 
@@ -382,6 +383,12 @@ augroup END
 au BufNewFile,BufRead *.frag,*.vert,*.fp,*.vp,*.glsl setf glsl
 
 let g:vim_markdown_conceal = 2
+let g:instant_markdown_autostart = 0
+let g:instant_markdown_mathjax = 1
+let g:instant_markdown_open_to_the_world = 1
+let g:instant_markdown_allow_external_content = 1
+
+let g:markdown_composer_autostart = 0
 " }}}
 
 " }}}
