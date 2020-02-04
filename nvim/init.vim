@@ -68,8 +68,11 @@ Plug 'valloric/matchtagalways'
 Plug 'alvan/vim-closetag'
 Plug 'tpope/vim-surround'
 Plug 'junegunn/vim-easy-align'
-Plug 'scrooloose/nerdcommenter'
+Plug 'tpope/vim-commentary'
+"Plug 'scrooloose/nerdcommenter'
 Plug 'chrisbra/nrrwrgn'
+Plug 'justinmk/vim-sneak'
+Plug 'christoomey/vim-sort-motion'
 
 Plug 'jiangmiao/auto-pairs'
 "Plug 'raimondi/delimitmate'
@@ -78,17 +81,24 @@ Plug 'jiangmiao/auto-pairs'
 Plug 'kana/vim-submode'
 
 Plug 'easymotion/vim-easymotion'
-Plug 'ericbn/vim-relativize'
+"Plug 'ericbn/vim-relativize'
 Plug 'liuchengxu/vista.vim'
 Plug 'vim-scripts/restore_view.vim'
 "Plug 'kshenoy/vim-signature'
 "Plug 'ctrlpvim/ctrlp.vim'
 "Plug 'majutsushi/tagbar'
+Plug 'tpope/vim-repeat'
 "Plug 'yuttie/comfortable-motion.vim'
 
 " Plug 'mbbill/undotree'
 " Plug 'simnalamburt/vim-mundo'
 " Plug 'derekwyatt/vim-fswitch'
+
+" Custom text objects
+Plug 'kana/vim-textobj-user'
+Plug 'kana/vim-textobj-indent'
+Plug 'kana/vim-textobj-entire'
+Plug 'kana/vim-textobj-line'
 
 "Themes
 Plug 'drewtempelmeyer/palenight.vim'
@@ -97,8 +107,9 @@ Plug 'drewtempelmeyer/palenight.vim'
 "Plug 'haishanh/night-owl.vim'
 "Plug 'arcticicestudio/nord-vim'
 
-Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --bin' }
-Plug 'junegunn/fzf.vim'
+Plug 'liuchengxu/vim-clap'
+"Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --bin' }
+"Plug 'junegunn/fzf.vim'
 
 " Misc
 Plug 'wakatime/vim-wakatime'
@@ -121,6 +132,8 @@ set mouse=a
 set splitbelow
 set splitright
 
+set relativenumber
+
 " Indent
 set tabstop=4
 set shiftwidth=4
@@ -141,8 +154,10 @@ set undodir="~/.local/share/nvim/undo"
 " Mappings {{{
 noremap <C-n> :NERDTreeToggle<CR>
 nnoremap <S-Ins> "+p
-nnoremap <C-p> :Files<CR>
-nnoremap <Leader>aa :Ag<CR>
+"nnoremap <C-p> :Files<CR>
+nnoremap <C-p> :Clap files<CR>
+nnoremap <Leader>ca :Clap grep<CR>
+nnoremap <Leader>cl :Clap blines<CR>
 
 nnoremap <Leader>s :%s/\<<C-r><C-w>\>/
 
@@ -167,7 +182,7 @@ nnoremap ; :
 "noremap <C-m> :MundoToggle<CR>
 "noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
 "noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
-"nnoremap <Tab> :TagbarToggle<CR>
+" nnoremap <S-Tab> :TagbarToggle<CR>
 nnoremap <S-Tab> :Vista!!<CR>
 
 " vim-test
@@ -179,7 +194,7 @@ nnoremap <Leader>tv :TestVisit<CR>
 
 " Tabs
 nnoremap gn :tabnew<CR>
-nnoremap gc :tabclose<CR>
+nnoremap gN :tabclose<CR>
 nnoremap t1 1gt
 nnoremap t2 2gt
 nnoremap t3 3gt
@@ -203,6 +218,9 @@ nnoremap <Leader>ac :ALERename<CR>
 xmap ga <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
 
+" vim-sneak
+let g:sneak#s_next = 1
+
 " FSwitch
 " noremap + :FSAbove<CR>
 " noremap l+ :FSSplitLeft<CR>
@@ -221,6 +239,9 @@ let g:UltiSnipsJumpBackwardTrigger=""
 " git
 autocmd BufWritePost * GitGutter
 let g:magit_default_fold_level = 0
+
+" rg
+
 " }}}
 
 " NERDTree {{{
@@ -645,6 +666,11 @@ let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#buffer_idx_mode = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
 let g:airline_section_b = '%{Uptime()}'
+
+" vim-clap
+"let g:clap_search_box_border_symbols = {'curve': ["f", "g"], 'nil': ['', ''] }
+let g:clap_search_box_border_style = 'nul'
+let g:clap_layout = { 'relative': 'editor' }
 
 " tmux line
 let g:tmuxline_preset = {
