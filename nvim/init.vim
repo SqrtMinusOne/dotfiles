@@ -113,6 +113,7 @@ Plug 'liuchengxu/vim-clap'
 
 " Misc
 Plug 'wakatime/vim-wakatime'
+Plug 'vimwiki/vimwiki'
 
 " Has to be plugged the last
 Plug 'ryanoasis/vim-devicons'
@@ -221,6 +222,10 @@ nmap ga <Plug>(EasyAlign)
 " vim-sneak
 let g:sneak#s_next = 1
 
+" vimwiki
+nnoremap <Leader>wah :VimwikiAll2HTML<CR>
+nnoremap <Leader>wl :VimwikiTabnewLink<CR>
+
 " FSwitch
 " noremap + :FSAbove<CR>
 " noremap l+ :FSSplitLeft<CR>
@@ -240,7 +245,8 @@ let g:UltiSnipsJumpBackwardTrigger=""
 autocmd BufWritePost * GitGutter
 let g:magit_default_fold_level = 0
 
-" rg
+" vimwiki
+let g:vimwiki_list = [{'path': '~/MEGAsync/vimwiki/'}]
 
 " }}}
 
@@ -691,7 +697,7 @@ let g:indent_guides_guide_size = 1
 let g:rainbow_active = 1
 let g:rainbow_conf = {
             \   'guifgs': ['red', 'yellow', 'lightgreen', 'lightblue'],
-            \   'separately': { 'nerdtree': 0 }
+            \   'separately': { 'nerdtree': 0, 'vimwiki': 0 }
             \ }
 
 " Tagbar
