@@ -132,6 +132,7 @@ set cursorline
 set mouse=a
 set splitbelow
 set splitright
+set inccommand=split
 
 set relativenumber
 
@@ -215,7 +216,7 @@ nnoremap <Leader>ar :ALEFindReferences<CR>
 nnoremap <Leader>ah :ALEHover<CR>
 nnoremap <Leader>ac :ALERename<CR>
 
-"EasyAlign
+" EasyAlign
 xmap ga <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
 
@@ -641,6 +642,30 @@ nnoremap gdh :call GitMergeGetLeft()<CR>
 nnoremap gdl :call GitMergeGetRight()<CR>
 nnoremap gd<Left> :call GitMergeGetLeft()<CR>
 nnoremap gd<Right> :call GitMergeGetRight()<CR>
+
+" }}}
+
+" {{{ Folding
+
+function! SetFoldLevel() range
+    execute ":set foldlevel=" . v:count
+    echo("set foldlevel=" . v:count)
+endfunction
+
+function! OnSpace()
+    if foldlevel('.')
+        if foldclosed('.') != -1
+            return 'zO'
+        else
+            return 'za'
+        endif
+    else
+        return "\<Space>"
+    endif
+endfunction
+
+nnoremap <Leader>ff :call SetFoldLevel()<CR>
+nnoremap <silent> <Space> @=(OnSpace())<CR>
 
 " }}}
 
