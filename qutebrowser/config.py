@@ -14,7 +14,26 @@ config.bind('gn', 'tab-clone')
 
 config.bind('\\t', 'set-cmd-text -s :buffer')
 config.bind('\\b', 'set-cmd-text -s :bookmark-load')
-config.bind('\\ww', ':open file:///home/pavel/MEGAsync/vimwiki_html/index.html')
+config.bind('\\ww', ':open http://localhost:9000')
+
+# config.unbind('<Escape>', mode='insert')
+config.bind('<Shift-Escape>', 'fake-key <Escape>', mode='insert')
+
+RUSSIAN = 'йцукенгшщзхъфывапролджэячсмитьбю.'
+ENGLISH = 'qwertyuiop[]asdfghjkl;\'zxcvbnm,./'
+
+c.bindings.key_mappings = {
+    **{r: e for r, e in zip(RUSSIAN, ENGLISH)},
+    **{r.upper(): e.upper() for r, e in zip(RUSSIAN, ENGLISH)}
+}
+
+c.editor.command = [
+    'nvim',
+    '-f',
+    '{file}',
+    '-c',
+    'normal {line}G{column0}l'
+]
 
 c.scrolling.bar = 'always'
 c.url.searchengines = {
