@@ -1,0 +1,9 @@
+[submodule "vifm-colors"]
+    path = vifm/colors
+    url = https://github.com/vifm/vifm-colors.git
+[submodule "vifm/colors"]
+	path = vifm/colors
+	url = https://github.com/vifm/vifm-colors.git
+[submodule "vifm/vifm_devicons"]
+	path = vifm/vifm_devicons
+	url = https://github.com/ryanoasis/vim-devicons.git
