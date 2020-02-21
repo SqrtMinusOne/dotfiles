@@ -39,6 +39,7 @@ Plug 'leafgarland/typescript-vim'
 "Misc file formats
 Plug 'elzr/vim-json'
 Plug 'plasticboy/vim-markdown'
+Plug 'adimit/prolog.vim'
 "Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
 Plug 'euclio/vim-markdown-composer'
 Plug 'chrisbra/csv.vim'
@@ -60,6 +61,7 @@ Plug 'sirver/ultisnips'
 Plug 'w0rp/ale'
 Plug 'shougo/deoplete.nvim'
 Plug 'janko-m/vim-test'
+Plug 'metakirby5/codi.vim'
 "Plug 'valloric/youcompleteme'
 "Plug 'scrooloose/syntastic'
 
@@ -73,31 +75,34 @@ Plug 'tpope/vim-commentary'
 Plug 'chrisbra/nrrwrgn'
 Plug 'justinmk/vim-sneak'
 Plug 'christoomey/vim-sort-motion'
+Plug 'terryma/vim-multiple-cursors'
 
 Plug 'jiangmiao/auto-pairs'
 "Plug 'raimondi/delimitmate'
 "Plug 'cohama/lexima.vim'
-
 Plug 'kana/vim-submode'
+
+Plug 'dhruvasagar/vim-table-mode'
+Plug 'bronson/vim-trailing-whitespace'
 
 Plug 'easymotion/vim-easymotion'
 "Plug 'ericbn/vim-relativize'
 Plug 'liuchengxu/vista.vim'
 Plug 'vim-scripts/restore_view.vim'
 "Plug 'kshenoy/vim-signature'
-"Plug 'ctrlpvim/ctrlp.vim'
 "Plug 'majutsushi/tagbar'
 Plug 'tpope/vim-repeat'
-"Plug 'yuttie/comfortable-motion.vim'
+" Plug 'yuttie/comfortable-motion.vim'
+" Plug 'derekwyatt/vim-fswitch'
 
+" Undo tree implementation
 " Plug 'mbbill/undotree'
 " Plug 'simnalamburt/vim-mundo'
-" Plug 'derekwyatt/vim-fswitch'
 
 " Custom text objects
 Plug 'kana/vim-textobj-user'
 Plug 'kana/vim-textobj-indent'
-Plug 'kana/vim-textobj-entire'
+" Plug 'kana/vim-textobj-entire'
 Plug 'kana/vim-textobj-line'
 
 "Themes
@@ -107,13 +112,17 @@ Plug 'drewtempelmeyer/palenight.vim'
 "Plug 'haishanh/night-owl.vim'
 "Plug 'arcticicestudio/nord-vim'
 
+" fuzzy file stuff
 Plug 'liuchengxu/vim-clap'
 "Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --bin' }
+"Plug 'ctrlpvim/ctrlp.vim'
 "Plug 'junegunn/fzf.vim'
 
 " Misc
 Plug 'wakatime/vim-wakatime'
 Plug 'vimwiki/vimwiki'
+Plug 'tpope/vim-rhubarb'
+Plug 'mtth/scratch.vim'
 
 " Has to be plugged the last
 Plug 'ryanoasis/vim-devicons'
@@ -223,6 +232,9 @@ nmap ga <Plug>(EasyAlign)
 " vim-sneak
 let g:sneak#s_next = 1
 
+" Close vim-clap with Esc
+autocmd FileType clap_input inoremap <silent> <buffer> <Esc> <Esc>:call clap#handler#exit()<CR>
+
 " vimwiki
 nnoremap <Leader>wah :VimwikiAll2HTML<CR>
 nnoremap <Leader>wl :VimwikiTabnewLink<CR>
@@ -251,12 +263,17 @@ let g:vimwiki_list = [{'path': '~/MEGAsync/vimwiki/'}]
 
 " }}}
 
+" csv {{{
+let g:csv_arrange_align = 'l*'
+
+" }}}
+
 " NERDTree {{{
 let NERDTreeIgnore = ['\.pyc$', '^__pycache__$']
 let NERDTreeMinimalUI = 1
 let NERDTreeDirArrows = 1
+let NERDTreeMouseMode = 2
 " }}}
-
 " Windows management mode {{{
 " Submode settings
 let g:submode_always_show_submode = 1
@@ -409,6 +426,7 @@ augroup filetype_vim
 augroup END
 
 au BufNewFile,BufRead *.frag,*.vert,*.fp,*.vp,*.glsl setf glsl
+au BufNewFile,BufRead *.pl setf prolog
 
 let g:vim_markdown_conceal = 2
 let g:instant_markdown_autostart = 0
@@ -669,6 +687,22 @@ nnoremap <silent> <Space> @=(OnSpace())<CR>
 
 " }}}
 
+" {{{ Deoplete and multiple cursors
+function! Multiple_cursors_before()
+    if deoplete#is_enabled()
+        call deoplete#disable()
+        let g:deoplete_is_enable_before_multi_cursors = 1
+    else
+        let g:deoplete_is_enable_before_multi_cursors = 0
+    endif
+endfunc
+func! Multiple_cursors_after()
+    if g:deoplete_is_enable_before_multi_cursors
+        call deoplete#enable()
+    endif
+endfunction
+" }}}
+
 " Put current time
 command! Timestamp :put =strftime('%d-%m-%y %H:%M:%S')
 " }}}
@@ -715,8 +749,11 @@ let g:tmuxline_preset = {
 
 " Indent guides
 let g:indent_guides_enable_on_vim_startup = 1
-let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'tagbar', 'startify']
+let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'tagbar', 'startify', 'vim-plug', 'clap_input', 'codi']
 let g:indent_guides_guide_size = 1
+
+" Highligh whitespace
+let g:extra_whitespace_ignored_filetypes = ['help', 'nerdtree', 'tagbar', 'startify', 'vim-plug', 'clap_input']
 
 " Brackets
 let g:rainbow_active = 1

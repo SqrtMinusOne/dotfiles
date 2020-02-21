@@ -17,12 +17,33 @@ def get_styles(folder):
 		for name, priority in PRIORITIES.items():
 			if name in filename:
 				priorities[i] = priority
-	priorities, styles = zip(*sorted(zip(priorities, styles)))
+	if styles:
+		priorities, styles = zip(*sorted(zip(priorities, styles)))
 	return styles
+
+def try_get_styles(folders):
+	for folder in folders:
+		styles = get_styles(folder)
+		if len(styles) > 0:
+			return styles
 
 endglobal
 
 snippet defdoc "Default document template"
+\documentclass[a4paper, 14pt]{extarticle}
+`!p
+res = ""
+for style in try_get_styles(["./styles", '.', '..', '../styles']):
+	res += "\\usepackage{" + style + "}\n"
+snip.rv = res
+`
+
+\begin{document}
+$0
+\end{document}
+endsnippet
+
+snippet defrep "Default small report template"
 \documentclass[a4paper, 14pt]{extarticle}
 `!p
 res = ""
@@ -31,8 +52,12 @@ for style in get_styles("./styles"):
 snip.rv = res
 `
 
+\title{$1}
+\author{${2:Корытов Павел, 6304 \\\\ СПбГЭТУ \enquote{ЛЭТИ}}}
+\date{${3:\today}}
 \begin{document}
-	$0
+\maketitle
+$0
 \end{document}
 endsnippet
 
