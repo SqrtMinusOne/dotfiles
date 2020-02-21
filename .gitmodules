@@ -7,3 +7,6 @@
 [submodule "vifm/vifm_devicons"]
 	path = vifm/vifm_devicons
 	url = https://github.com/ryanoasis/vim-devicons.git
+[submodule "qutebrowser/dracula"]
+	path = qutebrowser/dracula
+	url = https://github.com/dracula/qutebrowser-dracula-theme.git
