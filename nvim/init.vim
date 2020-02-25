@@ -11,8 +11,11 @@ Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 Plug 'edkolev/tmuxline.vim'
 
-Plug 'chrisbra/colorizer'
+" Plug 'lilydjwg/colorizer'
 Plug 'mhinz/vim-startify'
+
+Plug 'camspiers/animate.vim'
+Plug 'camspiers/lens.vim'
 
 "Plug 'kien/tabman.vim'
 
@@ -72,7 +75,7 @@ Plug 'tpope/vim-surround'
 Plug 'junegunn/vim-easy-align'
 Plug 'tpope/vim-commentary'
 "Plug 'scrooloose/nerdcommenter'
-Plug 'chrisbra/nrrwrgn'
+"Plug 'chrisbra/nrrwrgn'
 Plug 'justinmk/vim-sneak'
 Plug 'christoomey/vim-sort-motion'
 Plug 'terryma/vim-multiple-cursors'
@@ -142,7 +145,6 @@ set mouse=a
 set splitbelow
 set splitright
 set inccommand=split
-
 set relativenumber
 
 " Indent
@@ -163,11 +165,12 @@ set undodir="~/.local/share/nvim/undo"
 " }}}
 
 " Mappings {{{
-noremap <C-n> :NERDTreeToggle<CR>
+nnoremap <C-n> :NERDTreeToggle<CR>
 nnoremap <S-Ins> "+p
 "nnoremap <C-p> :Files<CR>
 nnoremap <C-p> :Clap files<CR>
 nnoremap <Leader>ca :Clap grep<CR>
+nnoremap <Leader>aa :Clap grep<CR>
 nnoremap <Leader>cl :Clap blines<CR>
 
 nnoremap <Leader>s :%s/\<<C-r><C-w>\>/
@@ -189,6 +192,7 @@ vnoremap <leader>d "_d
 
 " lol
 nnoremap ; :
+nnoremap <Leader>r :vertical-resize 40<CR>
 
 "noremap <C-m> :MundoToggle<CR>
 "noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
@@ -251,7 +255,13 @@ let g:UltiSnipsUsePythonVersion = 3
 let g:UltiSnipsExpandTrigger="<a-q>"
 let g:UltiSnipsJumpForwardTrigger="<a-q>"
 let g:UltiSnipsJumpBackwardTrigger=""
-" }}}
+
+" Multiple cursors
+let g:multi_cursor_start_word_key = '<C-m>'
+
+" Scratch
+let g:scratch_no_mappings = 1
+"}}}
 
 " Integrations {{{
 " git
@@ -278,11 +288,24 @@ let NERDTreeMouseMode = 2
 " Submode settings
 let g:submode_always_show_submode = 1
 let g:submode_timeout = 0
+let g:submode_keyseqs_to_leave = []
 
 " Enter and leave the mode
-call submode#enter_with('Windows', 'n', '', '<Tab>', ':echo "windows mode"<CR>')
+call submode#enter_with('Windows', 'n', '', '<Tab>', ':call WindowsModeEnter()<CR>')
+call submode#map('Windows', 'n', 'x', '<Esc>', ':call WindowsModeLeave()<CR>')
 
-" Switch to left. If the window is left-most, swith to the right-most window
+function! WindowsModeEnter()
+    if g:lens#disabled == 0
+        let g:lens#disabled = 1
+    endif
+endfunction
+
+function! WindowsModeLeave()
+    let g:lens#disabled = 0
+    call lens#run()
+endfunction
+
+" Switch to the left. If the window is left-most, swith to the right-most window
 " of the previous tab
 function! SwitchLeft()
     let l:win = winnr()
@@ -293,7 +316,7 @@ function! SwitchLeft()
     endif
 endfunction
 
-" The same for left
+" The same for the left
 function! SwitchRight()
     let l:win = winnr()
     execute 'wincmd l'
@@ -335,6 +358,16 @@ call submode#map('Windows', 'n', '', 't', '<C-w>T')
 call submode#map('Windows', 'n', '', 'v', '<C-w>v')
 call submode#map('Windows', 'n', '', 's', '<C-w>s')
 
+" Mappings for normal mode
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-h> :call SwitchLeft()<CR>
+nnoremap <C-l> :call SwitchRight()<CR>
+
+nnoremap <C-Down> <C-w>j
+nnoremap <C-Up> <C-w>k
+nnoremap <C-Left> :call SwitchLeft()<CR>
+nnoremap <C-Right> :call SwitchRight()<CR>
 " }}}
 
 " Filetype-specific settings {{{
@@ -703,6 +736,24 @@ func! Multiple_cursors_after()
 endfunction
 " }}}
 
+" {{{ Switch to project root
+let g:markers = split('.git') " TODO nvimrc
+function! CdToRepoRoot() abort
+    for marker in g:markers
+        let root = finddir(marker, expand('%:p:h') . ';')
+        if !empty(root)
+            let root = fnamemodify(root, ':h')
+            execute 'cd ' . root
+            echo 'cd ' . root . ' (found ' . marker . ')'
+            return
+        endif
+    endfor
+    echoerr 'No repo root found.'
+endfunction
+
+nnoremap cr :call CdToRepoRoot()<CR>
+" }}}
+
 " Put current time
 command! Timestamp :put =strftime('%d-%m-%y %H:%M:%S')
 " }}}
@@ -751,6 +802,11 @@ let g:tmuxline_preset = {
 let g:indent_guides_enable_on_vim_startup = 1
 let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'tagbar', 'startify', 'vim-plug', 'clap_input', 'codi']
 let g:indent_guides_guide_size = 1
+
+" Autoresize
+let g:lens#disabled_filetypes = ['nerdtree', 'tagbar', 'clap_input']
+let g:lens#width_resize_min = 10
+let g:lens#width_resize_max = 90
 
 " Highligh whitespace
 let g:extra_whitespace_ignored_filetypes = ['help', 'nerdtree', 'tagbar', 'startify', 'vim-plug', 'clap_input']
