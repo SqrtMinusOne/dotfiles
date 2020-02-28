@@ -7,7 +7,7 @@ set sortnumbers  " Natural sort of (version) numbers within text.
 set undolevels=100 " Maximum number of changes that can be undone.
 set vimhelp " Use Vim's format of help file
 set norunexec  " Run an executable with return
-colorscheme zenburn
+" colorscheme zenburn
 set timefmt=%m/%d\ %H:%M  " Time format in file list
 
 set wildmenu  " Show list of matches on tab completion in command-line mode
@@ -333,7 +333,32 @@ nnoremap <f8> :delete<cr>
 source ~/.config/vifm/vifm_devicons/SETUP
 
 " ------------------------------------------------------------------------------
+" Colorscheme
+highlight clear
 
+highlight Win cterm=none ctermfg=245 ctermbg=234
+highlight Directory cterm=bold ctermfg=33 ctermbg=234
+highlight Link cterm=bold ctermfg=yellow ctermbg=234
+highlight BrokenLink cterm=reverse ctermfg=red ctermbg=default
+
+highlight Socket cterm=bold ctermfg=125 ctermbg=default
+highlight Device cterm=bold ctermfg=red ctermbg=default
+highlight Fifo cterm=bold ctermfg=cyan ctermbg=default
+highlight Executable cterm=bold ctermfg=34 ctermbg=default
+
+highlight Selected cterm=bold ctermfg=125 ctermbg=235
+highlight CurrLine cterm=bold ctermfg=105 ctermbg=238
+
+highlight TopLine cterm=none ctermfg=black ctermbg=white
+highlight TopLineSel cterm=bold ctermfg=black ctermbg=default
+highlight StatusLine cterm=bold ctermfg=black ctermbg=white
+highlight WildMenu cterm=underline,reverse ctermfg=white ctermbg=black
+highlight CmdLine cterm=none ctermfg=white ctermbg=black
+highlight ErrorMsg cterm=none ctermfg=red ctermbg=black
+highlight Border cterm=none ctermfg=black ctermbg=white
+
+
+" ------------------------------------------------------------------------------
 " Various customization examples
 
 " Use ag (the silver searcher) instead of grep
