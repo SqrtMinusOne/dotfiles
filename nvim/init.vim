@@ -6,6 +6,7 @@ Plug 'xuyuanp/nerdtree-git-plugin'
 Plug 'nathanaelkane/vim-indent-guides'
 Plug 'jistr/vim-nerdtree-tabs'
 Plug 'luochen1990/rainbow'
+Plug 'RRethy/vim-illuminate'
 
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
@@ -25,7 +26,7 @@ Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
 
 " Python
 Plug 'python-mode/python-mode', { 'branch': 'develop' }
-Plug 'heavenshell/vim-pydocstring'
+" Plug 'heavenshell/vim-pydocstring'
 "Plug 'ivanov/vim-ipython'
 
 " Js & Co.
@@ -78,7 +79,7 @@ Plug 'tpope/vim-commentary'
 "Plug 'chrisbra/nrrwrgn'
 Plug 'justinmk/vim-sneak'
 Plug 'christoomey/vim-sort-motion'
-Plug 'terryma/vim-multiple-cursors'
+"Plug 'terryma/vim-multiple-cursors'
 
 Plug 'jiangmiao/auto-pairs'
 "Plug 'raimondi/delimitmate'
@@ -525,6 +526,10 @@ endfunction
 let g:deoplete#sources#clang#libclang_path = '/usr/lib/llvm-6.0/lib/libclang.so.1'
 let g:deoplete#sources#clang#clang_header = '/usr/lib/llvm-6.0/lib/clang/6.0.0/include'
 
+" Auto-pairs
+let g:AutoPairsFlyMode = 0
+let g:AutoPairsShortcutBackInsert = '<a-w>'
+
 " }}}
 
 " My scripts {{{
@@ -774,6 +779,7 @@ colorscheme palenight
 highlight! TermCursorNC guibg=red
 "highlight Conceal guibg=Normal guifg=Normal
 highlight! link Conceal Normal
+highlight! illuminatedWord cterm=underline gui=underline
 
 " Airline
 let g:airline_theme='palenight'
@@ -804,7 +810,7 @@ let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'tagbar', 'startify
 let g:indent_guides_guide_size = 1
 
 " Autoresize
-let g:lens#disabled_filetypes = ['nerdtree', 'tagbar', 'clap_input']
+let g:lens#disabled_filetypes = ['nerdtree', 'tagbar', 'clap_input', 'startify']
 let g:lens#width_resize_min = 10
 let g:lens#width_resize_max = 90
 
