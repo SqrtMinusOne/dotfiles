@@ -1,6 +1,6 @@
 call plug#begin('~/.local/share/nvim/plugged')
 
-"UI
+" UI
 Plug 'scrooloose/nerdtree', { 'on':  'NERDTreeToggle' }
 Plug 'xuyuanp/nerdtree-git-plugin'
 Plug 'nathanaelkane/vim-indent-guides'
@@ -18,7 +18,7 @@ Plug 'mhinz/vim-startify'
 Plug 'camspiers/animate.vim'
 Plug 'camspiers/lens.vim'
 
-"Plug 'kien/tabman.vim'
+" Plug 'kien/tabman.vim'
 
 " LaTeX
 Plug 'lervag/vimtex'
@@ -27,29 +27,29 @@ Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
 " Python
 Plug 'python-mode/python-mode', { 'branch': 'develop' }
 " Plug 'heavenshell/vim-pydocstring'
-"Plug 'ivanov/vim-ipython'
+" Plug 'ivanov/vim-ipython'
 
 " Js & Co.
 Plug 'pangloss/vim-javascript'
 Plug 'posva/vim-vue'
 Plug 'heavenshell/vim-jsdoc'
 Plug 'leafgarland/typescript-vim'
-"Plug 'mxw/vim-jsx'
+" Plug 'mxw/vim-jsx'
 
-"C++
-"Plug 'octol/vim-cpp-enhanced-highlight'
-"Plug 'zchee/deoplete-clang'
+" C++
+" Plug 'octol/vim-cpp-enhanced-highlight'
+" Plug 'zchee/deoplete-clang'
 
-"Misc file formats
+" Misc file formats
 Plug 'elzr/vim-json'
 Plug 'plasticboy/vim-markdown'
 Plug 'adimit/prolog.vim'
-"Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
+" Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
 Plug 'euclio/vim-markdown-composer'
 Plug 'chrisbra/csv.vim'
-"Plug 'tikhomirov/vim-glsl'
-"Plug 'digitaltoad/vim-jade'
-"Plug 'tpope/vim-jdaddy'
+" Plug 'tikhomirov/vim-glsl'
+" Plug 'digitaltoad/vim-jade'
+" Plug 'tpope/vim-jdaddy'
 
 "Git
 Plug 'tpope/vim-fugitive'
@@ -66,8 +66,8 @@ Plug 'w0rp/ale'
 Plug 'shougo/deoplete.nvim'
 Plug 'janko-m/vim-test'
 Plug 'metakirby5/codi.vim'
-"Plug 'valloric/youcompleteme'
-"Plug 'scrooloose/syntastic'
+" Plug 'valloric/youcompleteme'
+" Plug 'scrooloose/syntastic'
 
 " Coding & navigation
 Plug 'valloric/matchtagalways'
@@ -75,52 +75,56 @@ Plug 'alvan/vim-closetag'
 Plug 'tpope/vim-surround'
 Plug 'junegunn/vim-easy-align'
 Plug 'tpope/vim-commentary'
-"Plug 'scrooloose/nerdcommenter'
-"Plug 'chrisbra/nrrwrgn'
 Plug 'justinmk/vim-sneak'
 Plug 'christoomey/vim-sort-motion'
-"Plug 'terryma/vim-multiple-cursors'
+" Plug 'terryma/vim-multiple-cursors'
+" Plug 'scrooloose/nerdcommenter'
+" Plug 'chrisbra/nrrwrgn'
 
 Plug 'jiangmiao/auto-pairs'
-"Plug 'raimondi/delimitmate'
-"Plug 'cohama/lexima.vim'
-Plug 'kana/vim-submode'
+" Plug 'raimondi/delimitmate'
+" Plug 'cohama/lexima.vim'
 
 Plug 'dhruvasagar/vim-table-mode'
 Plug 'bronson/vim-trailing-whitespace'
 
 Plug 'easymotion/vim-easymotion'
-"Plug 'ericbn/vim-relativize'
 Plug 'liuchengxu/vista.vim'
+Plug 'pechorin/any-jump.vim'
 Plug 'vim-scripts/restore_view.vim'
-"Plug 'kshenoy/vim-signature'
-"Plug 'majutsushi/tagbar'
 Plug 'tpope/vim-repeat'
+" Plug 'kshenoy/vim-signature'
+" Plug 'ericbn/vim-relativize'
+" Plug 'majutsushi/tagbar'
 " Plug 'yuttie/comfortable-motion.vim'
 " Plug 'derekwyatt/vim-fswitch'
 
+" Different extensions
+Plug 'kana/vim-submode'
+
 " Undo tree implementation
+Plug 'sjl/gundo.vim'
 " Plug 'mbbill/undotree'
 " Plug 'simnalamburt/vim-mundo'
 
 " Custom text objects
 Plug 'kana/vim-textobj-user'
 Plug 'kana/vim-textobj-indent'
-" Plug 'kana/vim-textobj-entire'
 Plug 'kana/vim-textobj-line'
+" Plug 'kana/vim-textobj-entire'
 
-"Themes
+" Themes
 Plug 'drewtempelmeyer/palenight.vim'
-"Plug 'crusoexia/vim-monokai'
-"Plug 'lifepillar/vim-solarized8'
-"Plug 'haishanh/night-owl.vim'
-"Plug 'arcticicestudio/nord-vim'
+" Plug 'crusoexia/vim-monokai'
+" Plug 'lifepillar/vim-solarized8'
+" Plug 'haishanh/night-owl.vim'
+" Plug 'arcticicestudio/nord-vim'
 
 " fuzzy file stuff
 Plug 'liuchengxu/vim-clap'
-"Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --bin' }
-"Plug 'ctrlpvim/ctrlp.vim'
-"Plug 'junegunn/fzf.vim'
+" Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --bin' }
+" Plug 'ctrlpvim/ctrlp.vim'
+" Plug 'junegunn/fzf.vim'
 
 " Misc
 Plug 'wakatime/vim-wakatime'
@@ -159,16 +163,12 @@ set autoindent
 set foldmethod=syntax
 set foldlevelstart=20
 
-" Global undo
-set undofile
-set undodir="~/.local/share/nvim/undo"
-
 " }}}
 
 " Mappings {{{
 nnoremap <C-n> :NERDTreeToggle<CR>
 nnoremap <S-Ins> "+p
-"nnoremap <C-p> :Files<CR>
+" nnoremap <C-p> :Files<CR>
 nnoremap <C-p> :Clap files<CR>
 nnoremap <Leader>ca :Clap grep<CR>
 nnoremap <Leader>aa :Clap grep<CR>
@@ -184,8 +184,14 @@ noremap _ ddp
 nnoremap H ^
 nnoremap L $
 
+nnoremap <Home> ^
+nnoremap <End> $
+
 " Toggle conceal
 nnoremap <Leader>hc :let &cole=(&cole == 2) ? 0 : 2 <bar> echo 'conceallevel ' . &cole <CR>
+
+" lens.vim
+nnoremap <Leader>hl call lens#toggle()<CR>
 
 " Delete line into _
 nnoremap <leader>d "_d
@@ -193,11 +199,11 @@ vnoremap <leader>d "_d
 
 " lol
 nnoremap ; :
-nnoremap <Leader>r :vertical-resize 40<CR>
 
-"noremap <C-m> :MundoToggle<CR>
-"noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
-"noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
+nnoremap <Leader>u :GundoToggle<CR>
+
+" noremap <silent> <ScrollWheelDown> :call comfortable_motion#flick(40)<CR>
+" noremap <silent> <ScrollWheelUp>   :call comfortable_motion#flick(-40)<CR>
 " nnoremap <S-Tab> :TagbarToggle<CR>
 nnoremap <S-Tab> :Vista!!<CR>
 
@@ -225,6 +231,7 @@ nnoremap t9 9gt
 nnoremap <Leader>af :ALEFix<CR>
 nnoremap <Leader>ad :ALEGoToDefinition<CR>
 nnoremap <Leader>asd :ALEGoToDefinitionInVSplit<CR>
+nnoremap <Leader>assd :ALEGoToDefinitionInSplit<CR>
 nnoremap <Leader>atd :ALEGoToDefinitionInTab<CR>
 nnoremap <Leader>ar :ALEFindReferences<CR>
 nnoremap <Leader>ah :ALEHover<CR>
@@ -246,10 +253,6 @@ nnoremap <Leader>wl :VimwikiTabnewLink<CR>
 
 " FSwitch
 " noremap + :FSAbove<CR>
-" noremap l+ :FSSplitLeft<CR>
-" noremap h+ :FSSplitRight<CR>
-" noremap j+ :FSSplitBelow<CR>
-" noremap k+ :FSSplitAbove<CR>
 
 " Snippets
 let g:UltiSnipsUsePythonVersion = 3
@@ -285,6 +288,7 @@ let NERDTreeMinimalUI = 1
 let NERDTreeDirArrows = 1
 let NERDTreeMouseMode = 2
 " }}}
+
 " Windows management mode {{{
 " Submode settings
 let g:submode_always_show_submode = 1
@@ -425,7 +429,7 @@ let g:vimtex_view_method='zathura'
 let g:vimtex_quickfix_mode=0
 let g:tex_conceal='abdmgs'
 let g:ale_tex_chktex_options='-I --nowarn 32'
-"let g:syntastic_tex_lacheck_quiet_messages = { 'regex': ['\Vpossible unwanted space at', '\VUse ` to begin'] }
+" let g:syntastic_tex_lacheck_quiet_messages = { 'regex': ['\Vpossible unwanted space at', '\VUse ` to begin'] }
 
 augroup filetype_tex
     autocmd!
@@ -442,8 +446,8 @@ augroup END
 autocmd Filetype python
             \ setlocal foldmethod=indent
 
-"let g:python_host_prog='/usr/bin/python'
-"let g:python3_host_prog='/usr/bin/python3'
+" let g:python_host_prog='/usr/bin/python'
+" let g:python3_host_prog='/usr/bin/python3'
 let g:pymode_python = 'python3'
 let g:pymode_lint = 0
 let g:pymode_rope = 1
@@ -475,15 +479,15 @@ let g:markdown_composer_autostart = 0
 
 " Syntax check & autocomplete {{{
 " Syntastic
-"set statusline+=%#warningmsg#
-"set statusline+=%{SyntasticStatuslineFlag()}
-"set statusline+=%*
+" set statusline+=%#warningmsg#
+" set statusline+=%{SyntasticStatuslineFlag()}
+" set statusline+=%*
 "
-"let g:syntastic_ignore_files = ['\.py$', '\.tex$']
-"let g:syntastic_always_populate_loc_list = 1
-"let g:syntastic_auto_loc_list = 1
-"let g:syntastic_check_on_open = 1
-"let g:syntastic_check_on_wq = 0
+" let g:syntastic_ignore_files = ['\.py$', '\.tex$']
+" let g:syntastic_always_populate_loc_list = 1
+" let g:syntastic_auto_loc_list = 1
+" let g:syntastic_check_on_open = 1
+" let g:syntastic_check_on_wq = 0
 
 " ALE
 let g:ale_open_list = 'on_save'
@@ -726,19 +730,19 @@ nnoremap <silent> <Space> @=(OnSpace())<CR>
 " }}}
 
 " {{{ Deoplete and multiple cursors
-function! Multiple_cursors_before()
-    if deoplete#is_enabled()
-        call deoplete#disable()
-        let g:deoplete_is_enable_before_multi_cursors = 1
-    else
-        let g:deoplete_is_enable_before_multi_cursors = 0
-    endif
-endfunc
-func! Multiple_cursors_after()
-    if g:deoplete_is_enable_before_multi_cursors
-        call deoplete#enable()
-    endif
-endfunction
+" function! Multiple_cursors_before()
+"     if deoplete#is_enabled()
+"         call deoplete#disable()
+"         let g:deoplete_is_enable_before_multi_cursors = 1
+"     else
+"         let g:deoplete_is_enable_before_multi_cursors = 0
+"     endif
+" endfunc
+" function! Multiple_cursors_after()
+"     if g:deoplete_is_enable_before_multi_cursors
+"         call deoplete#enable()
+"     endif
+" endfunction
 " }}}
 
 " {{{ Switch to project root
@@ -765,7 +769,8 @@ command! Timestamp :put =strftime('%d-%m-%y %H:%M:%S')
 
 " UI settings {{{
 set background=dark
-"let g:solarized_visibility='high'
+" let g:solarized_visibility='high'
+" tmux cursor
 if exists('+termguicolors')
   let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
   let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
@@ -794,6 +799,9 @@ let g:airline_section_b = '%{Uptime()}'
 let g:clap_search_box_border_style = 'nul'
 let g:clap_layout = { 'relative': 'editor' }
 
+" Gundo
+let g:gundo_preview_height = 15
+
 " tmux line
 let g:tmuxline_preset = {
       \'a'    : '#S',
@@ -810,8 +818,10 @@ let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'tagbar', 'startify
 let g:indent_guides_guide_size = 1
 
 " Autoresize
-let g:lens#disabled_filetypes = ['nerdtree', 'tagbar', 'clap_input', 'startify']
+let g:lens#disabled = 1
+let g:lens#disabled_filetypes = ['nerdtree', 'tagbar', 'clap_input', 'startify', 'diff', 'gundo']
 let g:lens#width_resize_min = 10
+let g:lens#height_resize_min = 10
 let g:lens#width_resize_max = 90
 
 " Highligh whitespace
