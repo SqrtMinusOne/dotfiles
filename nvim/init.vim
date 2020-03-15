@@ -44,9 +44,11 @@ Plug 'leafgarland/typescript-vim'
 Plug 'elzr/vim-json'
 Plug 'plasticboy/vim-markdown'
 Plug 'adimit/prolog.vim'
+Plug 'udalov/kotlin-vim'
 " Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
 Plug 'euclio/vim-markdown-composer'
 Plug 'chrisbra/csv.vim'
+" Plug 'rvesse/vim-sparql'
 " Plug 'tikhomirov/vim-glsl'
 " Plug 'digitaltoad/vim-jade'
 " Plug 'tpope/vim-jdaddy'
@@ -66,6 +68,7 @@ Plug 'w0rp/ale'
 Plug 'shougo/deoplete.nvim'
 Plug 'janko-m/vim-test'
 Plug 'metakirby5/codi.vim'
+Plug 'axvr/zepl.vim'
 " Plug 'valloric/youcompleteme'
 " Plug 'scrooloose/syntastic'
 
@@ -150,7 +153,9 @@ set mouse=a
 set splitbelow
 set splitright
 set inccommand=split
+set switchbuf=vsplit
 set relativenumber
+set redrawtime=250
 
 " Indent
 set tabstop=4
@@ -184,14 +189,13 @@ noremap _ ddp
 nnoremap H ^
 nnoremap L $
 
-nnoremap <Home> ^
 nnoremap <End> $
 
 " Toggle conceal
 nnoremap <Leader>hc :let &cole=(&cole == 2) ? 0 : 2 <bar> echo 'conceallevel ' . &cole <CR>
 
 " lens.vim
-nnoremap <Leader>hl call lens#toggle()<CR>
+nnoremap <Leader>hl :call lens#toggle()<CR>
 
 " Delete line into _
 nnoremap <leader>d "_d
@@ -237,6 +241,9 @@ nnoremap <Leader>ar :ALEFindReferences<CR>
 nnoremap <Leader>ah :ALEHover<CR>
 nnoremap <Leader>ac :ALERename<CR>
 
+" REPL
+nnoremap <leader>r :Repl<CR>
+
 " EasyAlign
 xmap ga <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
@@ -274,7 +281,6 @@ let g:magit_default_fold_level = 0
 
 " vimwiki
 let g:vimwiki_list = [{'path': '~/MEGAsync/vimwiki/'}]
-
 " }}}
 
 " csv {{{
@@ -366,13 +372,13 @@ call submode#map('Windows', 'n', '', 's', '<C-w>s')
 " Mappings for normal mode
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k
-nnoremap <C-h> :call SwitchLeft()<CR>
-nnoremap <C-l> :call SwitchRight()<CR>
+nnoremap <silent> <C-h> :call SwitchLeft()<CR>
+nnoremap <silent> <C-l> :call SwitchRight()<CR>
 
 nnoremap <C-Down> <C-w>j
 nnoremap <C-Up> <C-w>k
-nnoremap <C-Left> :call SwitchLeft()<CR>
-nnoremap <C-Right> :call SwitchRight()<CR>
+nnoremap <silent> <C-Left> :call SwitchLeft()<CR>
+nnoremap <silent> <C-Right> :call SwitchRight()<CR>
 " }}}
 
 " Filetype-specific settings {{{
@@ -456,6 +462,14 @@ let g:pymode_rope_autoimport = 0
 let g:pymode_doc = 1
 " }}}
 
+" REPL {{{
+augroup zepl
+    autocmd!
+    autocmd FileType python     let b:repl_config = { 'cmd': 'ipython --colors=Linux' }
+    autocmd FileType javascript let b:repl_config = { 'cmd': 'node' }
+augroup END
+" }}}
+
 " Misc file commands {{{
 augroup filetype_vim
     autocmd!
@@ -463,8 +477,12 @@ augroup filetype_vim
     autocmd Filetype vim setlocal foldlevel=0
 augroup END
 
+augroup filetype_sparql let g:rainbow_active = 0
+augroup END
+
 au BufNewFile,BufRead *.frag,*.vert,*.fp,*.vp,*.glsl setf glsl
 au BufNewFile,BufRead *.pl setf prolog
+au BufNewFile,BufRead *.sparql setf sparql
 
 let g:vim_markdown_conceal = 2
 let g:instant_markdown_autostart = 0
@@ -727,6 +745,20 @@ endfunction
 nnoremap <Leader>ff :call SetFoldLevel()<CR>
 nnoremap <silent> <Space> @=(OnSpace())<CR>
 
+" {{{ Better Home
+function! Home()
+    let l:before = getpos('.')
+    normal ^
+    let l:after = getpos('.')
+    if l:before[2] == l:after[2]
+        call cursor(l:after[0], 1)
+    endif
+endfunction
+
+nnoremap <silent> <Home> :call Home()<CR>
+
+" }}}
+
 " }}}
 
 " {{{ Deoplete and multiple cursors
@@ -831,7 +863,7 @@ let g:extra_whitespace_ignored_filetypes = ['help', 'nerdtree', 'tagbar', 'start
 let g:rainbow_active = 1
 let g:rainbow_conf = {
             \   'guifgs': ['red', 'yellow', 'lightgreen', 'lightblue'],
-            \   'separately': { 'nerdtree': 0, 'vimwiki': 0 }
+            \   'separately': { 'nerdtree': 0, 'vimwiki': 0, 'sparql': 0 }
             \ }
 
 " Tagbar
