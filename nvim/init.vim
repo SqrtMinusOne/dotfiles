@@ -26,7 +26,6 @@ Plug 'KeitaNakamura/tex-conceal.vim', {'for': 'tex'}
 
 " Python
 Plug 'python-mode/python-mode', { 'branch': 'develop' }
-" Plug 'heavenshell/vim-pydocstring'
 " Plug 'ivanov/vim-ipython'
 
 " Js & Co.
@@ -48,6 +47,7 @@ Plug 'udalov/kotlin-vim'
 " Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
 Plug 'euclio/vim-markdown-composer'
 Plug 'chrisbra/csv.vim'
+Plug 'skwp/greplace.vim'
 " Plug 'rvesse/vim-sparql'
 " Plug 'tikhomirov/vim-glsl'
 " Plug 'digitaltoad/vim-jade'
@@ -80,6 +80,7 @@ Plug 'junegunn/vim-easy-align'
 Plug 'tpope/vim-commentary'
 Plug 'justinmk/vim-sneak'
 Plug 'christoomey/vim-sort-motion'
+Plug 'AndrewRadev/splitjoin.vim'
 " Plug 'terryma/vim-multiple-cursors'
 " Plug 'scrooloose/nerdcommenter'
 " Plug 'chrisbra/nrrwrgn'
@@ -96,6 +97,7 @@ Plug 'liuchengxu/vista.vim'
 Plug 'pechorin/any-jump.vim'
 Plug 'vim-scripts/restore_view.vim'
 Plug 'tpope/vim-repeat'
+Plug 'kkoomen/vim-doge'
 " Plug 'kshenoy/vim-signature'
 " Plug 'ericbn/vim-relativize'
 " Plug 'majutsushi/tagbar'
@@ -179,9 +181,10 @@ nnoremap <Leader>ca :Clap grep<CR>
 nnoremap <Leader>aa :Clap grep<CR>
 nnoremap <Leader>cl :Clap blines<CR>
 
-nnoremap <Leader>s :%s/\<<C-r><C-w>\>/
+" nnoremap <Leader>s :%s/\<<C-r><C-w>\>/
 
-:tnoremap <Esc> <C-\><C-n>
+tnoremap <Esc> <C-\><C-n>
+tnoremap <A-q> <C-\><C-n> :call chansend(b:terminal_job_id, "\<lt>Esc>")<CR>i
 nnoremap , :lclose<CR> :pclose<CR> :cclose<CR> :noh<CR>
 
 noremap - ddkP
@@ -274,27 +277,6 @@ let g:multi_cursor_start_word_key = '<C-m>'
 let g:scratch_no_mappings = 1
 "}}}
 
-" Integrations {{{
-" git
-autocmd BufWritePost * GitGutter
-let g:magit_default_fold_level = 0
-
-" vimwiki
-let g:vimwiki_list = [{'path': '~/MEGAsync/vimwiki/'}]
-" }}}
-
-" csv {{{
-let g:csv_arrange_align = 'l*'
-
-" }}}
-
-" NERDTree {{{
-let NERDTreeIgnore = ['\.pyc$', '^__pycache__$']
-let NERDTreeMinimalUI = 1
-let NERDTreeDirArrows = 1
-let NERDTreeMouseMode = 2
-" }}}
-
 " Windows management mode {{{
 " Submode settings
 let g:submode_always_show_submode = 1
@@ -302,7 +284,7 @@ let g:submode_timeout = 0
 let g:submode_keyseqs_to_leave = []
 
 " Enter and leave the mode
-call submode#enter_with('Windows', 'n', '', '<Tab>', ':call WindowsModeEnter()<CR>')
+call submode#enter_with('Windows', 'n', '', '<Leader>s', ':call WindowsModeEnter()<CR>')
 call submode#map('Windows', 'n', 'x', '<Esc>', ':call WindowsModeLeave()<CR>')
 
 function! WindowsModeEnter()
@@ -379,6 +361,26 @@ nnoremap <C-Down> <C-w>j
 nnoremap <C-Up> <C-w>k
 nnoremap <silent> <C-Left> :call SwitchLeft()<CR>
 nnoremap <silent> <C-Right> :call SwitchRight()<CR>
+" }}}
+
+" Misc plugins settings {{{
+" NERDTree
+let NERDTreeIgnore = ['\.pyc$', '^__pycache__$']
+let NERDTreeMinimalUI = 1
+let NERDTreeDirArrows = 1
+let NERDTreeMouseMode = 2
+
+" csv
+let g:csv_arrange_align = 'l*'
+
+" git
+autocmd BufWritePost * GitGutter
+let g:magit_default_fold_level = 0
+
+" splitjoin
+let g:splitjoin_align = 1
+let g:splitjoin_python_brackets_on_separate_lines = 1
+
 " }}}
 
 " Filetype-specific settings {{{
@@ -483,6 +485,9 @@ augroup END
 au BufNewFile,BufRead *.frag,*.vert,*.fp,*.vp,*.glsl setf glsl
 au BufNewFile,BufRead *.pl setf prolog
 au BufNewFile,BufRead *.sparql setf sparql
+
+au TermEnter * IndentGuidesDisable
+au TermLeave * IndentGuidesEnable
 
 let g:vim_markdown_conceal = 2
 let g:instant_markdown_autostart = 0
@@ -745,6 +750,8 @@ endfunction
 nnoremap <Leader>ff :call SetFoldLevel()<CR>
 nnoremap <silent> <Space> @=(OnSpace())<CR>
 
+" }}}
+
 " {{{ Better Home
 function! Home()
     let l:before = getpos('.')
@@ -756,8 +763,6 @@ function! Home()
 endfunction
 
 nnoremap <silent> <Home> :call Home()<CR>
-
-" }}}
 
 " }}}
 
