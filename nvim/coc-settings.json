@@ -1,0 +1,11 @@
+{
+    "diagnostic.displayByAle": true,
+    "codeLens.enable": true,
+    "svelte.plugin.typescript.enable": false,
+    "svelte.plugin.svelte.diagnostics.enable": false,
+    "svelte.plugin.svelte.format.enable": false,
+    "svelte.plugin.html.autoClosingTags": false,
+    "svelte.plugin.html.tagComplete": false,
+    "css.validate": false,
+    "coc.source.ultisnips.priority": 90
+}

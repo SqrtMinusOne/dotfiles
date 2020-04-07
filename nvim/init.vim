@@ -31,8 +31,11 @@ Plug 'python-mode/python-mode', { 'branch': 'develop' }
 " Js & Co.
 Plug 'pangloss/vim-javascript'
 Plug 'posva/vim-vue'
-Plug 'heavenshell/vim-jsdoc'
+" Plug 'heavenshell/vim-jsdoc'
 Plug 'leafgarland/typescript-vim'
+Plug 'mattn/emmet-vim'
+Plug 'leafOfTree/vim-svelte-plugin'
+Plug 'chrisbra/colorizer'
 " Plug 'mxw/vim-jsx'
 
 " C++
@@ -64,8 +67,9 @@ Plug 'honza/vim-snippets'
 Plug 'sirver/ultisnips'
 
 " General powerful plugins
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'w0rp/ale'
-Plug 'shougo/deoplete.nvim'
+" Plug 'shougo/deoplete.nvim'
 Plug 'janko-m/vim-test'
 Plug 'metakirby5/codi.vim'
 Plug 'axvr/zepl.vim'
@@ -133,8 +137,8 @@ Plug 'liuchengxu/vim-clap'
 
 " Misc
 Plug 'wakatime/vim-wakatime'
-Plug 'vimwiki/vimwiki'
-Plug 'tpope/vim-rhubarb'
+" Plug 'vimwiki/vimwiki'
+" Plug 'tpope/vim-rhubarb'
 Plug 'mtth/scratch.vim'
 
 " Has to be plugged the last
@@ -146,9 +150,17 @@ call plug#end()
 set runtimepath+=~/.config/nvim/my-snippets/
 let $FZF_DEFAULT_COMMAND='fd --type f --exclude .git'
 
+set hidden
+
+set nobackup
+set nowritebackup
+set shortmess+=c
+
 set exrc
 set secure
 set number
+set relativenumber
+
 set hlsearch
 set cursorline
 set mouse=a
@@ -156,7 +168,6 @@ set splitbelow
 set splitright
 set inccommand=split
 set switchbuf=vsplit
-set relativenumber
 set redrawtime=250
 
 " Indent
@@ -200,6 +211,9 @@ nnoremap <Leader>hc :let &cole=(&cole == 2) ? 0 : 2 <bar> echo 'conceallevel ' .
 " lens.vim
 nnoremap <Leader>hl :call lens#toggle()<CR>
 
+" colorizer
+nnoremap <Leader>ho :ColorToggle<CR>
+
 " Delete line into _
 nnoremap <leader>d "_d
 vnoremap <leader>d "_d
@@ -236,13 +250,19 @@ nnoremap t9 9gt
 
 " ALE
 nnoremap <Leader>af :ALEFix<CR>
-nnoremap <Leader>ad :ALEGoToDefinition<CR>
-nnoremap <Leader>asd :ALEGoToDefinitionInVSplit<CR>
-nnoremap <Leader>assd :ALEGoToDefinitionInSplit<CR>
-nnoremap <Leader>atd :ALEGoToDefinitionInTab<CR>
-nnoremap <Leader>ar :ALEFindReferences<CR>
-nnoremap <Leader>ah :ALEHover<CR>
-nnoremap <Leader>ac :ALERename<CR>
+" nnoremap <Leader>ad :ALEGoToDefinition<CR>
+" nnoremap <Leader>asd :ALEGoToDefinitionInVSplit<CR>
+" nnoremap <Leader>assd :ALEGoToDefinitionInSplit<CR>
+" nnoremap <Leader>atd :ALEGoToDefinitionInTab<CR>
+" nnoremap <Leader>ar :ALEFindReferences<CR>
+" nnoremap <Leader>ah :ALEHover<CR>
+" nnoremap <Leader>ac :ALERename<CR>
+
+" coc
+nnoremap <silent> <Leader>ad <Plug>(coc-definition)
+nnoremap <silent> <Leader>ai <Plug>(coc-implementation)
+nnoremap <silent> <Leader>ar <Plug>(coc-references)
+nnoremap <Leader>ac <Plug>(coc-rename)
 
 " REPL
 nnoremap <leader>r :Repl<CR>
@@ -403,8 +423,8 @@ autocmd Filetype javascript setlocal conceallevel=2
 autocmd Filetype typescript execute ':CloseTagDisableBuffer'
 
 let g:mta_filetypes = { 'html' : 1, 'xhtml' : 1, 'xml' : 1, 'jinja' : 1, 'xsd': 1, 'vue': 1 }
-let g:closetag_filenames = '*.html,*.xhtml,*.vue'
-let g:closetag_filetypes = 'html,xhtml,vue,xml,xsd'
+let g:closetag_filenames = '*.html,*.xhtml,*.vue,*.svelte'
+let g:closetag_filetypes = 'html,xhtml,vue,xml,xsd,svelte'
 let g:colorizer_auto_filetype='css,html,python,javascript,vue'
 
 let g:jsdoc_allow_input_prompt = 1
@@ -412,6 +432,7 @@ let g:jsdoc_enable_es6 = 1
 let g:jsdoc_input_description = 1
 
 let g:vue_pre_processors = []
+let g:vim_svelte_plugin_use_sass = 1
 
 let g:javascript_plugin_jsdoc = 1
 
@@ -501,7 +522,54 @@ let g:markdown_composer_autostart = 0
 " }}}
 
 " Syntax check & autocomplete {{{
-" Syntastic
+" coc {{{
+inoremap <silent><expr> <TAB>
+      \ pumvisible() ? "\<C-n>" :
+      \ <SID>check_back_space() ? "\<TAB>" :
+      \ coc#refresh()
+inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
+inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<C-g>u\<CR>"
+
+function! s:check_back_space() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+" Use <c-space> to trigger completion.
+inoremap <silent><expr> <c-space> coc#refresh()
+function! s:cocActionsOpenFromSelected(type) abort
+  execute 'CocCommand actions.open ' . a:type
+endfunction
+xmap <silent> <leader>p :<C-u>execute 'CocCommand actions.open ' . visualmode()<CR>
+nmap <silent> <leader>p :<C-u>set operatorfunc=<SID>cocActionsOpenFromSelected<CR>g@
+nnoremap <silent> K :call <SID>show_documentation()<CR>
+
+function! s:show_documentation()
+  if (index(['vim','help'], &filetype) >= 0)
+    execute 'h '.expand('<cword>')
+  else
+    call CocAction('doHover')
+  endif
+endfunction
+
+autocmd CursorHold * silent call CocActionAsync('highlight')
+
+let g:coc_global_extensions =
+            \ ['coc-actions',
+            \ 'coc-calc',
+            \ 'coc-marketplace',
+            \ 'coc-tabnine',
+            \ 'coc-ultisnips',
+            \ 'coc-css',
+            \ 'coc-json',
+            \ 'coc-python',
+            \ 'coc-svelte',
+            \ 'coc-vimtex']
+
+" }}}
+
+
+" Syntastic {{{
 " set statusline+=%#warningmsg#
 " set statusline+=%{SyntasticStatuslineFlag()}
 " set statusline+=%*
@@ -511,15 +579,17 @@ let g:markdown_composer_autostart = 0
 " let g:syntastic_auto_loc_list = 1
 " let g:syntastic_check_on_open = 1
 " let g:syntastic_check_on_wq = 0
+" }}}
 
-" ALE
+" ALE {{{
 let g:ale_open_list = 'on_save'
 let g:ale_list_window_size = 7
 let g:ale_close_preview_on_insert = 1
 let g:ale_lint_on_text_changed = 'never'
 let g:ale_lint_on_enter = 0
 let g:ale_completion_enabled = 0
-let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex'], 'cpp': ['clang'], 'vue': ['eslint'], 'typescript': ['tsserver', 'tslint']}
+let g:ale_linter_aliases = {'svelte': ['css', 'javascript']}
+let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex'], 'cpp': ['clang'], 'vue': ['eslint'], 'typescript': ['tsserver', 'tslint'], 'svelte': ['eslint']}
 let g:ale_fixers = {
             \    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
             \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace'],
@@ -529,29 +599,32 @@ let g:ale_fixers = {
             \    'jsx': ['prettier', 'eslint'],
             \    'vue': ['prettier', 'eslint'],
             \    'cpp': ['clang-format', 'remove_trailing_lines', 'trim_whitespace'],
-            \    'json': ['prettier']
+            \    'json': ['prettier'],
+            \    'svelte': ['eslint']
             \}
 let g:airline#extensions#ale#enabled = 1
+" }}}
 
-" Deoplete
-call deoplete#custom#var('omni', 'input_patterns', {
-            \   'tex': g:vimtex#re#deoplete
-            \})
-
-let g:deoplete#enable_at_startup = 1
-call deoplete#custom#source('ale', 'rank', 999)
-
-inoremap <silent><expr> <TAB>
-            \ pumvisible() ? "\<C-n>" :
-            \ <SID>check_back_space() ? "\<TAB>" :
-            \ deoplete#mappings#manual_complete()
-function! s:check_back_space() abort
-    let col = col('.') - 1
-    return !col || getline('.')[col - 1]  =~ '\s'
-endfunction
-
-let g:deoplete#sources#clang#libclang_path = '/usr/lib/llvm-6.0/lib/libclang.so.1'
-let g:deoplete#sources#clang#clang_header = '/usr/lib/llvm-6.0/lib/clang/6.0.0/include'
+" Deoplete {{{
+" call deoplete#custom#var('omni', 'input_patterns', {
+"             \   'tex': g:vimtex#re#deoplete
+"             \})
+"
+" let g:deoplete#enable_at_startup = 1
+" call deoplete#custom#source('ale', 'rank', 999)
+"
+" inoremap <silent><expr> <TAB>
+"             \ pumvisible() ? "\<C-n>" :
+"             \ <SID>check_back_space() ? "\<TAB>" :
+"             \ deoplete#mappings#manual_complete()
+" function! s:check_back_space() abort
+"     let col = col('.') - 1
+"     return !col || getline('.')[col - 1]  =~ '\s'
+" endfunction
+"
+" let g:deoplete#sources#clang#libclang_path = '/usr/lib/llvm-6.0/lib/libclang.so.1'
+" let g:deoplete#sources#clang#clang_header = '/usr/lib/llvm-6.0/lib/clang/6.0.0/include'
+" }}}
 
 " Auto-pairs
 let g:AutoPairsFlyMode = 0
