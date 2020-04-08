@@ -587,6 +587,7 @@ let g:ale_list_window_size = 7
 let g:ale_close_preview_on_insert = 1
 let g:ale_lint_on_text_changed = 'never'
 let g:ale_lint_on_enter = 0
+let g:ale_lint_on_insert_leave = 0
 let g:ale_completion_enabled = 0
 let g:ale_linter_aliases = {'svelte': ['css', 'javascript']}
 let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex'], 'cpp': ['clang'], 'vue': ['eslint'], 'typescript': ['tsserver', 'tslint'], 'svelte': ['eslint']}
