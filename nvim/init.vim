@@ -35,7 +35,7 @@ Plug 'posva/vim-vue'
 Plug 'leafgarland/typescript-vim'
 Plug 'mattn/emmet-vim'
 Plug 'leafOfTree/vim-svelte-plugin'
-Plug 'chrisbra/colorizer'
+" Plug 'chrisbra/colorizer'
 " Plug 'mxw/vim-jsx'
 
 " C++
@@ -50,7 +50,7 @@ Plug 'udalov/kotlin-vim'
 " Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
 Plug 'euclio/vim-markdown-composer'
 Plug 'chrisbra/csv.vim'
-Plug 'skwp/greplace.vim'
+Plug 'aklt/plantuml-syntax'
 " Plug 'rvesse/vim-sparql'
 " Plug 'tikhomirov/vim-glsl'
 " Plug 'digitaltoad/vim-jade'
@@ -61,6 +61,7 @@ Plug 'tpope/vim-fugitive'
 Plug 'junegunn/gv.vim'
 Plug 'airblade/vim-gitgutter'
 Plug 'jreybert/vimagit'
+" Plug 'drn/blamer.nvim', {'branch': 'silence-file-length-fatal-messages'}
 
 "Snippets stuff
 Plug 'honza/vim-snippets'
@@ -72,7 +73,7 @@ Plug 'w0rp/ale'
 " Plug 'shougo/deoplete.nvim'
 Plug 'janko-m/vim-test'
 Plug 'metakirby5/codi.vim'
-Plug 'axvr/zepl.vim'
+" Plug 'axvr/zepl.vim'
 " Plug 'valloric/youcompleteme'
 " Plug 'scrooloose/syntastic'
 
@@ -96,6 +97,7 @@ Plug 'jiangmiao/auto-pairs'
 Plug 'dhruvasagar/vim-table-mode'
 Plug 'bronson/vim-trailing-whitespace'
 
+Plug 'dkprice/vim-easygrep'
 Plug 'easymotion/vim-easymotion'
 Plug 'liuchengxu/vista.vim'
 Plug 'pechorin/any-jump.vim'
@@ -110,6 +112,8 @@ Plug 'kkoomen/vim-doge'
 
 " Different extensions
 Plug 'kana/vim-submode'
+Plug 'skywind3000/asynctasks.vim'
+Plug 'skywind3000/asyncrun.vim'
 
 " Undo tree implementation
 Plug 'sjl/gundo.vim'
@@ -238,34 +242,43 @@ nnoremap <Leader>tv :TestVisit<CR>
 " Tabs
 nnoremap gn :tabnew<CR>
 nnoremap gN :tabclose<CR>
-nnoremap t1 1gt
-nnoremap t2 2gt
-nnoremap t3 3gt
-nnoremap t4 4gt
-nnoremap t5 5gt
-nnoremap t6 6gt
-nnoremap t7 7gt
-nnoremap t8 8gt
-nnoremap t9 9gt
+" nnoremap t1 1gt
+" nnoremap t2 2gt
+" nnoremap t3 3gt
+" nnoremap t4 4gt
+" nnoremap t5 5gt
+" nnoremap t6 6gt
+" nnoremap t7 7gt
+" nnoremap t8 8gt
+" nnoremap t9 9gt
 
 " ALE
 nnoremap <Leader>af :ALEFix<CR>
-" nnoremap <Leader>ad :ALEGoToDefinition<CR>
-" nnoremap <Leader>asd :ALEGoToDefinitionInVSplit<CR>
-" nnoremap <Leader>assd :ALEGoToDefinitionInSplit<CR>
-" nnoremap <Leader>atd :ALEGoToDefinitionInTab<CR>
-" nnoremap <Leader>ar :ALEFindReferences<CR>
-" nnoremap <Leader>ah :ALEHover<CR>
-" nnoremap <Leader>ac :ALERename<CR>
+nnoremap <Leader>ad :ALEGoToDefinition<CR>
+nnoremap <Leader>asd :ALEGoToDefinitionInVSplit<CR>
+nnoremap <Leader>assd :ALEGoToDefinitionInSplit<CR>
+nnoremap <Leader>atd :ALEGoToDefinitionInTab<CR>
+nnoremap <Leader>ar :ALEFindReferences<CR>
+nnoremap <Leader>ah :ALEHover<CR>
+nnoremap <Leader>ac :ALERename<CR>
 
 " coc
-nnoremap <silent> <Leader>ad <Plug>(coc-definition)
-nnoremap <silent> <Leader>ai <Plug>(coc-implementation)
-nnoremap <silent> <Leader>ar <Plug>(coc-references)
-nnoremap <Leader>ac <Plug>(coc-rename)
+" nnoremap <silent> <Leader>ad <Plug>(coc-definition)
+" nnoremap <silent> <Leader>ai <Plug>(coc-implementation)
+" nnoremap <silent> <Leader>ar <Plug>(coc-references)
+" nnoremap <Leader>ac <Plug>(coc-rename)
+
+" Async tasks
+nnoremap <Leader>wl :AsyncTaskList<CR>
+nnoremap <Leader>ww :AsyncTask 
+nnoremap <Leader>wa :CocList tasks<CR>
+
+
+" Replace
+nnoremap <Leader>r :%s/\<<C-r><C-w>\>/
 
 " REPL
-nnoremap <leader>r :Repl<CR>
+" nnoremap <leader>r :Repl<CR>
 
 " EasyAlign
 xmap ga <Plug>(EasyAlign)
@@ -278,8 +291,8 @@ let g:sneak#s_next = 1
 autocmd FileType clap_input inoremap <silent> <buffer> <Esc> <Esc>:call clap#handler#exit()<CR>
 
 " vimwiki
-nnoremap <Leader>wah :VimwikiAll2HTML<CR>
-nnoremap <Leader>wl :VimwikiTabnewLink<CR>
+" nnoremap <Leader>wah :VimwikiAll2HTML<CR>
+" nnoremap <Leader>wl :VimwikiTabnewLink<CR>
 
 " FSwitch
 " noremap + :FSAbove<CR>
@@ -396,10 +409,19 @@ let g:csv_arrange_align = 'l*'
 " git
 autocmd BufWritePost * GitGutter
 let g:magit_default_fold_level = 0
+" let g:blamer_enabled = 1
+" let g:blamer_delay = 1000
+" let g:blamer_prefix = ' > '
+
 
 " splitjoin
 let g:splitjoin_align = 1
 let g:splitjoin_python_brackets_on_separate_lines = 1
+
+" asyncrun
+let g:asyncrun_open = 6
+let g:asyncrun_rootmarks = ['.nvimrc', '.git']
+let g:asynctasks_term_pos = 'tab'
 
 " }}}
 
@@ -555,16 +577,21 @@ endfunction
 autocmd CursorHold * silent call CocActionAsync('highlight')
 
 let g:coc_global_extensions =
-            \ ['coc-actions',
+            \ [
+            \ 'coc-actions',
             \ 'coc-calc',
-            \ 'coc-marketplace',
-            \ 'coc-tabnine',
-            \ 'coc-ultisnips',
             \ 'coc-css',
             \ 'coc-json',
+            \ 'coc-marketplace',
             \ 'coc-python',
             \ 'coc-svelte',
-            \ 'coc-vimtex']
+            \ 'coc-tabnine',
+            \ 'coc-tasks',
+            \ 'coc-tsserver',
+            \ 'coc-ultisnips',
+            \ 'coc-vetur',
+            \ 'coc-vimtex'
+]
 
 " }}}
 
@@ -936,7 +963,7 @@ let g:lens#height_resize_min = 10
 let g:lens#width_resize_max = 90
 
 " Highligh whitespace
-let g:extra_whitespace_ignored_filetypes = ['help', 'nerdtree', 'tagbar', 'startify', 'vim-plug', 'clap_input']
+let g:extra_whitespace_ignored_filetypes = ['help', 'nerdtree', 'tagbar', 'startify', 'vim-plug', 'clap_input', 'GV']
 
 " Brackets
 let g:rainbow_active = 1

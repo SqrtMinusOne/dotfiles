@@ -5,7 +5,12 @@
     "svelte.plugin.svelte.diagnostics.enable": false,
     "svelte.plugin.svelte.format.enable": false,
     "svelte.plugin.html.autoClosingTags": false,
-    "svelte.plugin.html.tagComplete": false,
     "css.validate": false,
-    "coc.source.ultisnips.priority": 90
+    "coc.source.ultisnips.priority": 90,
+    "typescript.validate.enable": false,
+    "typescript.referencesCodeLens.enable": false,
+    "python.analysis.diagnosticEnabled": false,
+    "python.linting.enabled": false,
+    "javascript.showUnused": false,
+    "javascript.validate.enable": false
 }
