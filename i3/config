@@ -70,6 +70,8 @@ set $w1 "1: Terminal"
 set $w2 "2: Browser"
 set $w3 "3: Chat"
 set $w4 "4: Dev"
+set $w7 "7: VoIP"
+set $w8 "8: Mail"
 set $w9 "9: Music"
 set $w10 "Z: Misc"
 
@@ -79,8 +81,8 @@ bindsym $mod+3 workspace $w3
 bindsym $mod+4 workspace $w4
 bindsym $mod+5 workspace 5
 bindsym $mod+6 workspace 6
-bindsym $mod+7 workspace 7
-bindsym $mod+8 workspace 8
+bindsym $mod+7 workspace $w7
+bindsym $mod+8 workspace $w8
 bindsym $mod+9 workspace $w9
 bindsym $mod+0 workspace $w10
 
@@ -91,8 +93,8 @@ bindsym $mod+Shift+3 move container to workspace $w3
 bindsym $mod+Shift+4 move container to workspace $w4
 bindsym $mod+Shift+5 move container to workspace 5
 bindsym $mod+Shift+6 move container to workspace 6
-bindsym $mod+Shift+7 move container to workspace 7
-bindsym $mod+Shift+8 move container to workspace 8
+bindsym $mod+Shift+7 move container to workspace $w7
+bindsym $mod+Shift+8 move container to workspace $w8
 bindsym $mod+Shift+9 move container to workspace $w9
 bindsym $mod+Shift+0 move container to workspace $w10
 
@@ -108,6 +110,8 @@ assign [class="Postman"] $w4
 assign [class="Chromium-browse"] $w4
 assign [class="Google Play Music Desktop Player"] $w9
 assign [class="jetbrains-datagrip"] $w4
+assign [class="zoom"] $w7
+assign [class="Mailspring"] $w8
 
 for_window [class="cinnamon-settings*"] floating enable
 # reload the configuration file
@@ -202,7 +206,7 @@ exec --no-startup-id /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agen
 exec_always "feh --bg-scale ~/Pictures/wallpaper.jpg"
 
 # Compton
-exec_always compton
+exec compton
 
 exec_always setxkbmap -layout us,ru
 exec_always setxkbmap -model pc105 -option 'grp:win_space_toggle' -option 'grp:alt_shift_toggle'
