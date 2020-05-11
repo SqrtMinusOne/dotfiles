@@ -45,8 +45,8 @@ Plug 'leafOfTree/vim-svelte-plugin'
 " Misc file formats
 Plug 'elzr/vim-json'
 Plug 'plasticboy/vim-markdown'
-Plug 'adimit/prolog.vim'
-Plug 'udalov/kotlin-vim'
+" Plug 'adimit/prolog.vim'
+" Plug 'udalov/kotlin-vim'
 " Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
 Plug 'euclio/vim-markdown-composer'
 Plug 'chrisbra/csv.vim'
@@ -86,6 +86,7 @@ Plug 'tpope/vim-commentary'
 Plug 'justinmk/vim-sneak'
 Plug 'christoomey/vim-sort-motion'
 Plug 'AndrewRadev/splitjoin.vim'
+Plug 'unblevable/quick-scope'
 " Plug 'terryma/vim-multiple-cursors'
 " Plug 'scrooloose/nerdcommenter'
 " Plug 'chrisbra/nrrwrgn'
@@ -137,7 +138,6 @@ Plug 'drewtempelmeyer/palenight.vim'
 Plug 'liuchengxu/vim-clap'
 " Plug 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --bin' }
 " Plug 'ctrlpvim/ctrlp.vim'
-" Plug 'junegunn/fzf.vim'
 
 " Misc
 Plug 'wakatime/vim-wakatime'
@@ -164,6 +164,8 @@ set exrc
 set secure
 set number
 set relativenumber
+set linebreak
+set nojoinspaces
 
 set hlsearch
 set cursorline
@@ -195,12 +197,15 @@ nnoremap <C-p> :Clap files<CR>
 nnoremap <Leader>ca :Clap grep<CR>
 nnoremap <Leader>aa :Clap grep<CR>
 nnoremap <Leader>cl :Clap blines<CR>
+nnoremap <Leader>cc :Clap filer<CR>
+nnoremap <Leader>ch :Clap history<CR>
+nnoremap <Leader>cj :Clap jumps<CR>
 
 " nnoremap <Leader>s :%s/\<<C-r><C-w>\>/
 
 tnoremap <Esc> <C-\><C-n>
 tnoremap <A-q> <C-\><C-n> :call chansend(b:terminal_job_id, "\<lt>Esc>")<CR>i
-nnoremap , :lclose<CR> :pclose<CR> :cclose<CR> :noh<CR>
+nnoremap <Leader>q :lclose<CR> :pclose<CR> :cclose<CR> :noh<CR>
 
 noremap - ddkP
 noremap _ ddp
@@ -223,7 +228,7 @@ nnoremap <leader>d "_d
 vnoremap <leader>d "_d
 
 " lol
-nnoremap ; :
+" nnoremap ; :
 
 nnoremap <Leader>u :GundoToggle<CR>
 
@@ -283,6 +288,9 @@ nnoremap <Leader>r :%s/\<<C-r><C-w>\>/
 " EasyAlign
 xmap ga <Plug>(EasyAlign)
 nmap ga <Plug>(EasyAlign)
+
+" quick-scope
+let g:qs_highlight_on_keys = ['f', 'F', 't', 'T']
 
 " vim-sneak
 let g:sneak#s_next = 1
@@ -591,7 +599,7 @@ let g:coc_global_extensions =
             \ 'coc-ultisnips',
             \ 'coc-vetur',
             \ 'coc-vimtex'
-]
+            \ ]
 
 " }}}
 
@@ -916,6 +924,12 @@ if exists('+termguicolors')
   set termguicolors
 endif
 "set guifont=DroidSansMono\ Nerd\ Font\ 11
+augroup qs_colors
+  autocmd!
+  autocmd ColorScheme * highlight QuickScopePrimary guifg='#ff0000' gui=underline ctermfg=155 cterm=underline
+  autocmd ColorScheme * highlight QuickScopeSecondary guifg='#ffff00' gui=underline ctermfg=81 cterm=underline
+augroup END
+
 set laststatus=2
 colorscheme palenight
 

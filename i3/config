@@ -160,13 +160,14 @@ set $inactive-bg-color   #434758
 set $text-color          #f3f4f5
 set $inactive-text-color #aaaaaa
 set $urgent-bg-color     #f07178
+set $urgent-text-color    #000000
 
 # window colors
 #                       border              background         text                 indicator
 client.focused          $bg-color           $bg-color          $text-color          #00ff00
 client.unfocused        $inactive-bg-color $inactive-bg-color $inactive-text-color #00ff00
 client.focused_inactive $inactive-bg-color $inactive-bg-color $inactive-text-color #00ff00
-client.urgent           $urgent-bg-color    $urgent-bg-color   $text-color          #00ff00
+client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-color #00ff00
 
 # bar
 bar {
@@ -177,7 +178,7 @@ bar {
         #                  border             background         text
         focused_workspace  $bg-color          $bg-color          $text-color
         inactive_workspace $inactive-bg-color $inactive-bg-color $inactive-text-color
-        urgent_workspace   $urgent-bg-color   $urgent-bg-color   $text-color
+        urgent_workspace   $urgent-bg-color   $urgent-bg-color   $urgent-text-color
     }
 }
 
