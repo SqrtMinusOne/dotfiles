@@ -103,6 +103,8 @@ bindsym $mod+comma workspace prev
 bindsym $mod+period workspace next
 
 assign [class="X-terminal-emulator"] $w1
+assign [class="Gnome-terminal"] $w1
+assign [class="Terminal"] $w1
 assign [class="qutebrowser"] $w2
 assign [class="VK"] $w3
 assign [class="Slack"] $w3
