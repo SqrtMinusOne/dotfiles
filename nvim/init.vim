@@ -143,7 +143,7 @@ Plug 'liuchengxu/vim-clap'
 
 " Misc
 Plug 'wakatime/vim-wakatime'
-" Plug 'vimwiki/vimwiki'
+Plug 'vimwiki/vimwiki'
 " Plug 'tpope/vim-rhubarb'
 Plug 'mtth/scratch.vim'
 
@@ -277,7 +277,7 @@ nnoremap <Leader>ac :ALERename<CR>
 
 " Async tasks
 nnoremap <Leader>wl :AsyncTaskList<CR>
-nnoremap <Leader>ww :AsyncTask 
+nnoremap <Leader>wr :AsyncTask 
 nnoremap <Leader>wa :CocList tasks<CR>
 
 
@@ -301,8 +301,8 @@ let g:sneak#s_next = 1
 autocmd FileType clap_input inoremap <silent> <buffer> <Esc> <Esc>:call clap#handler#exit()<CR>
 
 " vimwiki
-" nnoremap <Leader>wah :VimwikiAll2HTML<CR>
-" nnoremap <Leader>wl :VimwikiTabnewLink<CR>
+nnoremap <Leader>wah :VimwikiAll2HTML<CR>
+nnoremap <Leader>wl :VimwikiTabnewLink<CR>
 
 " FSwitch
 " noremap + :FSAbove<CR>
@@ -433,6 +433,8 @@ let g:asyncrun_open = 6
 let g:asyncrun_rootmarks = ['.nvimrc', '.git']
 let g:asynctasks_term_pos = 'tab'
 
+" vimwiki
+let g:vimwiki_list = [{'path': '~/MEGAsync/Sync/vimwiki/', 'path_html': '~/MEGAsync/Sync/vimwiki-html/'}]
 " }}}
 
 " Filetype-specific settings {{{
