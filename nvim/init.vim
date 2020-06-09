@@ -4,6 +4,7 @@ call plug#begin('~/.local/share/nvim/plugged')
 Plug 'scrooloose/nerdtree', { 'on':  'NERDTreeToggle' }
 Plug 'xuyuanp/nerdtree-git-plugin'
 Plug 'nathanaelkane/vim-indent-guides'
+" Plug 'Yggdroot/indentLine'
 Plug 'jistr/vim-nerdtree-tabs'
 Plug 'luochen1990/rainbow'
 Plug 'RRethy/vim-illuminate'
@@ -88,6 +89,7 @@ Plug 'tpope/vim-commentary'
 Plug 'justinmk/vim-sneak'
 Plug 'christoomey/vim-sort-motion'
 Plug 'AndrewRadev/splitjoin.vim'
+Plug 'AndrewRadev/sideways.vim'
 Plug 'unblevable/quick-scope'
 " Plug 'terryma/vim-multiple-cursors'
 " Plug 'scrooloose/nerdcommenter'
@@ -117,6 +119,7 @@ Plug 'kkoomen/vim-doge'
 Plug 'kana/vim-submode'
 Plug 'skywind3000/asynctasks.vim'
 Plug 'skywind3000/asyncrun.vim'
+Plug 'chrisbra/unicode.vim'
 
 " Undo tree implementation
 Plug 'sjl/gundo.vim'
@@ -131,6 +134,7 @@ Plug 'kana/vim-textobj-line'
 
 " Themes
 Plug 'drewtempelmeyer/palenight.vim'
+Plug 'https://gitlab.com/protesilaos/tempus-themes-vim.git'
 " Plug 'crusoexia/vim-monokai'
 " Plug 'lifepillar/vim-solarized8'
 " Plug 'haishanh/night-owl.vim'
@@ -284,6 +288,17 @@ nnoremap <Leader>wa :CocList tasks<CR>
 " Replace
 nnoremap <Leader>r :%s/\<<C-r><C-w>\>/
 
+" Sideways
+nnoremap gh :SidewaysLeft<cr>
+nnoremap gl :SidewaysRight<cr>
+nnoremap g<Left> :SidewaysLeft<cr>
+nnoremap g<Right> :SidewaysRight<cr>
+
+omap aa <Plug>SidewaysArgumentTextobjA
+xmap aa <Plug>SidewaysArgumentTextobjA
+omap ia <Plug>SidewaysArgumentTextobjI
+xmap ia <Plug>SidewaysArgumentTextobjI
+
 " REPL
 " nnoremap <leader>r :Repl<CR>
 
@@ -303,6 +318,12 @@ autocmd FileType clap_input inoremap <silent> <buffer> <Esc> <Esc>:call clap#han
 " vimwiki
 nnoremap <Leader>wah :VimwikiAll2HTML<CR>
 nnoremap <Leader>wl :VimwikiTabnewLink<CR>
+
+nmap <Leader>thestupidkeybinding1 <Plug>VimwikiNextLink
+let g:vimwiki_key_mappings =
+    \ {
+    \   'table_mappings': 0,
+    \ }
 
 " FSwitch
 " noremap + :FSAbove<CR>
@@ -434,7 +455,9 @@ let g:asyncrun_rootmarks = ['.nvimrc', '.git']
 let g:asynctasks_term_pos = 'tab'
 
 " vimwiki
-let g:vimwiki_list = [{'path': '~/MEGAsync/Sync/vimwiki/', 'path_html': '~/MEGAsync/Sync/vimwiki-html/'}]
+let g:vimwiki_list = [{'path': '~/MEGAsync/Sync/vimwiki/', 'path_html': '~/MEGAsync/Sync/vimwiki-html/', 'ext': '.wiki'}]
+let g:vimwiki_global_ext = 0
+
 " }}}
 
 " Filetype-specific settings {{{
@@ -513,7 +536,7 @@ autocmd Filetype python
 " let g:python3_host_prog='/usr/bin/python3'
 let g:pymode_python = 'python3'
 let g:pymode_lint = 0
-let g:pymode_rope = 1
+let g:pymode_rope = 0
 let g:pymode_rope_completion = 0
 let g:pymode_rope_autoimport = 0
 let g:pymode_doc = 1
@@ -972,6 +995,9 @@ let g:tmuxline_preset = {
 let g:indent_guides_enable_on_vim_startup = 1
 let g:indent_guides_exclude_filetypes = ['help', 'nerdtree', 'tagbar', 'startify', 'vim-plug', 'clap_input', 'codi']
 let g:indent_guides_guide_size = 1
+
+" let g:indentLine_fileTypeExclude = ['help', 'nerdtree', 'tagbar', 'startify', 'vim-plug', 'clap_input', 'codi']
+" let g:indentLine_char = '┊'
 
 " Autoresize
 let g:lens#disabled = 1
