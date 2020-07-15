@@ -16,8 +16,8 @@ Plug 'edkolev/tmuxline.vim'
 " Plug 'lilydjwg/colorizer'
 Plug 'mhinz/vim-startify'
 
-Plug 'camspiers/animate.vim'
-Plug 'camspiers/lens.vim'
+" Plug 'camspiers/animate.vim'
+" Plug 'camspiers/lens.vim'
 
 " Plug 'kien/tabman.vim'
 
@@ -52,7 +52,7 @@ Plug 'plasticboy/vim-markdown'
 Plug 'euclio/vim-markdown-composer'
 Plug 'chrisbra/csv.vim'
 Plug 'aklt/plantuml-syntax'
-Plug 'tyru/open-browser.vim'
+" Plug 'tyru/open-browser.vim'
 Plug 'weirongxu/plantuml-previewer.vim'
 " Plug 'rvesse/vim-sparql'
 " Plug 'tikhomirov/vim-glsl'
@@ -75,7 +75,7 @@ Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'w0rp/ale'
 " Plug 'shougo/deoplete.nvim'
 Plug 'janko-m/vim-test'
-Plug 'metakirby5/codi.vim'
+" Plug 'metakirby5/codi.vim'
 " Plug 'axvr/zepl.vim'
 " Plug 'valloric/youcompleteme'
 " Plug 'scrooloose/syntastic'
@@ -99,7 +99,7 @@ Plug 'jiangmiao/auto-pairs'
 " Plug 'raimondi/delimitmate'
 " Plug 'cohama/lexima.vim'
 
-Plug 'dhruvasagar/vim-table-mode'
+" Plug 'dhruvasagar/vim-table-mode'
 Plug 'bronson/vim-trailing-whitespace'
 
 Plug 'dkprice/vim-easygrep'
@@ -147,9 +147,10 @@ Plug 'liuchengxu/vim-clap'
 
 " Misc
 Plug 'wakatime/vim-wakatime'
+Plug 'ActivityWatch/aw-watcher-vim'
 Plug 'vimwiki/vimwiki'
 " Plug 'tpope/vim-rhubarb'
-Plug 'mtth/scratch.vim'
+" Plug 'mtth/scratch.vim'
 
 " Has to be plugged the last
 Plug 'ryanoasis/vim-devicons'
@@ -619,8 +620,6 @@ let g:coc_global_extensions =
             \ 'coc-json',
             \ 'coc-marketplace',
             \ 'coc-python',
-            \ 'coc-svelte',
-            \ 'coc-tabnine',
             \ 'coc-tasks',
             \ 'coc-tsserver',
             \ 'coc-ultisnips',

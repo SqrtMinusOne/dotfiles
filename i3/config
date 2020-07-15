@@ -6,7 +6,7 @@ hide_edge_borders both
 floating_modifier $mod
 
 # start a terminal
-bindsym $mod+Return exec i3-sensible-terminal
+bindsym $mod+Return exec gnome-terminal
 
 # kill focused window
 bindsym $mod+Shift+q kill
@@ -71,7 +71,7 @@ set $w2 "2: Browser"
 set $w3 "3: Chat"
 set $w4 "4: Dev"
 set $w7 "7: VoIP"
-set $w8 "8: Mail"
+set $w8 "8: Office"
 set $w9 "9: Music"
 set $w10 "Z: Misc"
 
@@ -110,10 +110,13 @@ assign [class="VK"] $w3
 assign [class="Slack"] $w3
 assign [class="Postman"] $w4
 assign [class="Chromium-browse"] $w4
+assign [class="Electron"] $w4
 assign [class="Google Play Music Desktop Player"] $w9
 assign [class="jetbrains-datagrip"] $w4
 assign [class="zoom"] $w7
 assign [class="Mailspring"] $w8
+assign [class="Thunderbird"] $w8
+assign [class="Joplin"] $w8
 
 for_window [class="cinnamon-settings*"] floating enable
 # reload the configuration file
@@ -148,6 +151,25 @@ mode "resize" {
 }
 
 bindsym $mod+r mode "resize"
+
+bindsym $mod+m mode "move" focus floating
+mode "move" {
+    bindsym $mod+Tab focus right
+
+    bindsym Left  move left
+    bindsym Down  move down
+    bindsym Up    move up
+    bindsym Right move right
+
+    bindsym h     move left
+    bindsym j     move down
+    bindsym k     move up
+    bindsym l     move right
+
+    # back to normal: Enter or Escape
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
 
 # Start i3bar to display a workspace bar (plus the system information i3status
 # finds out, if available)
@@ -211,5 +233,12 @@ exec_always "feh --bg-scale ~/Pictures/wallpaper.jpg"
 # Compton
 exec compton
 
+# Activity watch
+exec /home/pavel/Scripts/activity_watch.sh
+
 exec_always setxkbmap -layout us,ru
 exec_always setxkbmap -model pc105 -option 'grp:win_space_toggle' -option 'grp:alt_shift_toggle'
+
+# Keyring
+# exec --no-startup-id /usr/bin/gnome-keyring-daemon --start --components=secrets
+exec --no-startup-id /usr/bin/nm-applet
