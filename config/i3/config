@@ -238,16 +238,14 @@ exec_always "feh --bg-scale ~/Pictures/wallpaper.jpg"
 
 # Compton
 exec compton
-exec blueberry-tray
 
-# Activity watch
+# Some scripts
 exec activity_watch
-
 exec_always set_layout
 
 # Keyring
 # exec --no-startup-id /usr/bin/gnome-keyring-daemon --start --components=secrets
-exec --no-startup-id /usr/bin/nm-applet
 
-# Last window
-exec --no-startup-id ~/bin/scripts/last_window
+# Applets
+exec --no-startup-id /usr/bin/nm-applet
+exec blueberry-tray
