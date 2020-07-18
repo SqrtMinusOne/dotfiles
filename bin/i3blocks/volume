@@ -1,6 +1,7 @@
 #!/bin/bash
 # Copyright (C) 2014 Julien Bonjean <julien@bonjean.info>
 # Copyright (C) 2014 Alexander Keller <github@nycroth.com>
+# Copyright (C) 2020 Korytov Pavel <thexcloud@gmail.com>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -62,9 +63,9 @@ format() {
 #------------------------------------------------------------------------
 
 case $BLOCK_BUTTON in
-  3) amixer -q -D $MIXER sset $SCONTROL $(capability) toggle ;;  # right click, mute/unmute
-  4) amixer -q -D $MIXER sset $SCONTROL $(capability) ${STEP}+ unmute ;; # scroll up, increase
-  5) amixer -q -D $MIXER sset $SCONTROL $(capability) ${STEP}- unmute ;; # scroll down, decrease
+    1) cinnamon-settings sound > /dev/null ;;
+    4) ~/bin/scripts/vol volume +5% ;;
+    5) ~/bin/scripts/vol volume -5% ;;
 esac
 
 volume | format

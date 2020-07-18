@@ -6,13 +6,10 @@ hide_edge_borders both
 floating_modifier $mod
 
 # start a terminal
-bindsym $mod+Return exec gnome-terminal
+bindsym $mod+Return exec "i3-msg 'workspace 1: Terminal; exec i3-sensible-terminal'"
 
 # kill focused window
 bindsym $mod+Shift+q kill
-
-# start dmenu (a program launcher)
-bindsym $mod+d exec dmenu_run
 
 # change focus
 bindsym $mod+h focus left
@@ -102,14 +99,15 @@ bindsym $mod+Shift+0 move container to workspace $w10
 bindsym $mod+comma workspace prev
 bindsym $mod+period workspace next
 
-assign [class="X-terminal-emulator"] $w1
-assign [class="Gnome-terminal"] $w1
-assign [class="Terminal"] $w1
+# assign [class="X-terminal-emulator"] $w1
+# assign [class="Gnome-terminal"] $w1
+# assign [class="Terminal"] $w1
 assign [class="qutebrowser"] $w2
 assign [class="VK"] $w3
 assign [class="Slack"] $w3
 assign [class="Postman"] $w4
 assign [class="Chromium-browse"] $w4
+assign [class="google-chrome"] $w4
 assign [class="Electron"] $w4
 assign [class="Google Play Music Desktop Player"] $w9
 assign [class="jetbrains-datagrip"] $w4
@@ -171,10 +169,18 @@ mode "move" {
     bindsym Escape mode "default"
 }
 
+# dmenu
+bindsym $mod+d exec i3-dmenu-desktop --dmenu="dmenu -l 10"
+bindsym $mod+x mode "dmenu"
+
+mode "dmenu" {
+    bindsym d exec i3-dmenu-desktop --dmenu="dmenu -l 10"; mode default
+    bindsym p exec dmenu_run -l 10; mode default
+    bindsym Escape mode "default"
+}
+
 # Start i3bar to display a workspace bar (plus the system information i3status
 # finds out, if available)
-
-exec ulauncher
 
 bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"
 
@@ -208,9 +214,9 @@ bar {
 
 
 # Pulse Audio controls
-bindsym XF86AudioRaiseVolume exec --no-startup-id ~/Scripts/vol.sh volume +5% #increase sound volume
-bindsym XF86AudioLowerVolume exec --no-startup-id ~/Scripts/vol.sh volume -5% #decrease sound volume
-bindsym XF86AudioMute exec --no-startup-id ~/Scripts/vol.sh mute # mute sound
+bindsym XF86AudioRaiseVolume exec --no-startup-id "~/bin/scripts/vol volume +5% && pkill -RTMIN+2 i3blocks"
+bindsym XF86AudioLowerVolume exec --no-startup-id "~/bin/scripts/vol volume -5% && pkill -RTMIN+2 i3blocks"
+bindsym XF86AudioMute exec --no-startup-id "~/bin/scripts/vol mute && pkill -RTMIN+2 i3blocks"
 
 # Media player controls
 bindsym XF86AudioPlay exec playerctl play
@@ -232,13 +238,16 @@ exec_always "feh --bg-scale ~/Pictures/wallpaper.jpg"
 
 # Compton
 exec compton
+exec blueberry-tray
 
 # Activity watch
-exec /home/pavel/Scripts/activity_watch.sh
+exec activity_watch
 
-exec_always setxkbmap -layout us,ru
-exec_always setxkbmap -model pc105 -option 'grp:win_space_toggle' -option 'grp:alt_shift_toggle'
+exec_always set_layout
 
 # Keyring
 # exec --no-startup-id /usr/bin/gnome-keyring-daemon --start --components=secrets
 exec --no-startup-id /usr/bin/nm-applet
+
+# Last window
+exec --no-startup-id ~/bin/scripts/last_window
