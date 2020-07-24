@@ -31,7 +31,10 @@ GetOptions("help|h" => \&help,
 # Clicked on block
 if (defined $ENV{'BLOCK_BUTTON'}) {
     if ($ENV{'BLOCK_BUTTON'} == "1") {
-        exec('i3-sensible-terminal -e htop')
+        system('i3-sensible-terminal -e htop')
+    }
+    if ($ENV{'BLOCK_BUTTON'} == "3") {
+        system('i3-sensible-terminal -e /home/pavel/Programs/miniconda3/bin/glances')
     }
 }
 

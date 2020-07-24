@@ -1,0 +1,15 @@
+if [ -d "$HOME/bin" ] ; then
+    export PATH="$HOME/bin:$PATH"
+    export PATH="$HOME/bin/scripts:$PATH"
+fi
+
+export MANPATH="/usr/local/texlive/2020/texmf-dist/doc/man:$MANPATH"
+export INFOPATH="/usr/local/texlive/2020/texmf-dist/doc/info:$INFOPATH"
+export PATH="/usr/local/texlive/2020/bin/x86_64-linux:$PATH"
+
+export BASH_IT_THEME='powerline'
+export POWERLINE_PROMPT='scm python_venv ruby node wd'
+
+alias v="nvim"
+alias gg="lazygit"
+alias ls="exa --icons"

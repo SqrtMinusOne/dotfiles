@@ -18,6 +18,10 @@
 
 INTERFACE="${BLOCK_INSTANCE:-wlan0}"
 
+case $BLOCK_BUTTON in
+    1) i3-sensible-terminal -e "nethogs";;
+esac
+
 #------------------------------------------------------------------------
 
 # As per #36 -- It is transparent: e.g. if the machine has no battery or wireless
