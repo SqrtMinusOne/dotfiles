@@ -63,9 +63,10 @@ format() {
 #------------------------------------------------------------------------
 
 case $BLOCK_BUTTON in
-    1) cinnamon-settings sound > /dev/null ;;
-    4) ~/bin/scripts/vol volume +5% ;;
-    5) ~/bin/scripts/vol volume -5% ;;
+    1) pulseeffects > /dev/null ;;
+    3) pavucontrol > /dev/null ;;
+    4) pulseaudio-ctl up ;;
+    5) pulseaudio-ctl down ;;
 esac
 
 volume | format
