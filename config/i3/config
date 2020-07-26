@@ -53,7 +53,7 @@ bindsym $mod+e layout toggle split
 bindsym $mod+Shift+f floating toggle
 
 # change focus between tiling / floating windows
-bindsym $mod+space focus mode_toggle
+# bindsym $mod+space focus mode_toggle
 
 # focus the parent container
 bindsym $mod+a focus parent
@@ -116,6 +116,7 @@ assign [class="Mailspring"] $w8
 assign [class="Thunderbird"] $w8
 assign [class="Joplin"] $w8
 
+for_window [title="Terminal.*ncmpcpp.*"] move to workspace $w9
 for_window [class="cinnamon-settings*"] floating enable
 # reload the configuration file
 bindsym $mod+Shift+c reload
@@ -132,10 +133,10 @@ mode "resize" {
         # Pressing right will grow the window’s width.
         # Pressing up will shrink the window’s height.
         # Pressing down will grow the window’s height.
-        bindsym j resize shrink width 10 px or 10 ppt
-        bindsym k resize grow height 10 px or 10 ppt
-        bindsym l resize shrink height 10 px or 10 ppt
-        bindsym semicolon resize grow width 10 px or 10 ppt
+        bindsym h resize shrink width 10 px or 10 ppt
+        bindsym j resize grow height 10 px or 10 ppt
+        bindsym k resize shrink height 10 px or 10 ppt
+        bindsym l resize grow width 10 px or 10 ppt
 
         # same bindings, but for the arrow keys
         bindsym Left resize shrink width 10 px or 10 ppt
@@ -179,6 +180,17 @@ mode "dmenu" {
     bindsym Escape mode "default"
 }
 
+# Launch apps
+bindsym $mod+semicolon mode "apps"
+
+mode "apps" {
+    bindsym Escape mode "default"
+    bindsym b exec qutebrowser; mode default
+    bindsym v exec vk-messenger; mode default
+    bindsym s exec slack; mode default;
+    bindsym m exec "i3-sensible-terminal -e ncmpcpp"; mode default
+}
+
 # Start i3bar to display a workspace bar (plus the system information i3status
 # finds out, if available)
 
@@ -214,38 +226,42 @@ bar {
 
 
 # Pulse Audio controls
-bindsym XF86AudioRaiseVolume exec --no-startup-id "~/bin/scripts/vol volume +5% && pkill -RTMIN+2 i3blocks"
-bindsym XF86AudioLowerVolume exec --no-startup-id "~/bin/scripts/vol volume -5% && pkill -RTMIN+2 i3blocks"
-bindsym XF86AudioMute exec --no-startup-id "~/bin/scripts/vol mute && pkill -RTMIN+2 i3blocks"
+bindsym XF86AudioRaiseVolume exec --no-startup-id "pulseaudio-ctl up && pkill -RTMIN+2 i3blocks"
+bindsym XF86AudioLowerVolume exec --no-startup-id "pulseaudio-ctl down && pkill -RTMIN+2 i3blocks"
+bindsym XF86AudioMute exec --no-startup-id "pulseaudio-ctl mute && pkill -RTMIN+2 i3blocks"
 
 # Media player controls
-bindsym XF86AudioPlay exec playerctl play
-bindsym XF86AudioPause exec playerctl pause
-bindsym XF86AudioNext exec playerctl next
-bindsym XF86AudioPrev exec playerctl previous
+bindsym XF86AudioPlay exec mpc toggle
+bindsym XF86AudioPause exec mpc pause
+bindsym XF86AudioNext exec mpc next
+bindsym XF86AudioPrev exec mpc prev
+
+exec --no-startup-id pulseeffects --gapplication-service
 
 # Screenshots
-bindsym --release Shift+Print exec --no-startup-id "shutter -s"
-bindsym --release Print exec "shutter -f"
-bindsym --release Ctrl+Shift+Print exec "shutter -w"
-for_window [class="Shutter" instance="shutter"] floating enable
+bindsym --release Print exec "flameshot gui"
 
 # Sudo
-exec --no-startup-id /usr/lib/policykit-1-gnome/polkit-gnome-authentication-agent-1
+exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 
 # Wallpaper
-exec_always "feh --bg-scale ~/Pictures/wallpaper.jpg"
+exec_always "feh --bg-fill ~/Pictures/wallpaper.jpg"
 
 # Compton
 exec compton
 
 # Some scripts
-exec activity_watch
-exec_always set_layout
-
-# Keyring
-# exec --no-startup-id /usr/bin/gnome-keyring-daemon --start --components=secrets
+exec_always --no-startup-id set_layout
 
 # Applets
 exec --no-startup-id /usr/bin/nm-applet
-exec blueberry-tray
+exec --no-startup-id /usr/bin/blueman-applet
+
+# MPD
+exec --no-startup-id mpd
+
+# Stuff
+exec aw-qt
+exec xfsettingsd
+exec xiccd
+exec dunst
