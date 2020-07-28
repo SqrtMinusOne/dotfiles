@@ -6,7 +6,7 @@ hide_edge_borders both
 floating_modifier $mod
 
 # start a terminal
-bindsym $mod+Return exec "i3-msg 'workspace 1: Terminal; exec i3-sensible-terminal'"
+bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec i3-sensible-terminal'"
 
 # kill focused window
 bindsym $mod+Shift+q kill
@@ -63,14 +63,14 @@ bindsym $mod+a focus parent
 
 # switch to workspace
 
-set $w1 "1: Terminal"
-set $w2 "2: Browser"
-set $w3 "3: Chat"
-set $w4 "4: Dev"
-set $w7 "7: VoIP"
-set $w8 "8: Office"
-set $w9 "9: Music"
-set $w10 "Z: Misc"
+set $w1 "1 🚀"
+set $w2 "2 🌍"
+set $w3 "3 💬"
+set $w4 "4 ⚙️"
+set $w7 "7 📞"
+set $w8 "8 📝"
+set $w9 "9 🎵"
+set $w10 "Z 📦"
 
 bindsym $mod+1 workspace $w1
 bindsym $mod+2 workspace $w2
@@ -99,25 +99,25 @@ bindsym $mod+Shift+0 move container to workspace $w10
 bindsym $mod+comma workspace prev
 bindsym $mod+period workspace next
 
-# assign [class="X-terminal-emulator"] $w1
-# assign [class="Gnome-terminal"] $w1
-# assign [class="Terminal"] $w1
 assign [class="qutebrowser"] $w2
 assign [class="VK"] $w3
 assign [class="Slack"] $w3
 assign [class="Postman"] $w4
 assign [class="Chromium-browse"] $w4
+assign [class="chromium"] $w4
 assign [class="google-chrome"] $w4
 assign [class="Electron"] $w4
 assign [class="Google Play Music Desktop Player"] $w9
 assign [class="jetbrains-datagrip"] $w4
 assign [class="zoom"] $w7
+assign [class="skype"] $w7
 assign [class="Mailspring"] $w8
 assign [class="Thunderbird"] $w8
 assign [class="Joplin"] $w8
 
 for_window [title="Terminal.*ncmpcpp.*"] move to workspace $w9
 for_window [class="cinnamon-settings*"] floating enable
+# for_window [class=".*"] border pixel 0
 # reload the configuration file
 bindsym $mod+Shift+c reload
 # restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
@@ -125,28 +125,76 @@ bindsym $mod+Shift+r restart
 # exit i3 (logs you out of your X session)
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
 
+# Gaps
+
+set $default_inner 0
+set $default_outer 0
+
+gaps inner $default_inner
+gaps outer $default_outer
+
+# for_window [class="terminal"] border pixel 0
+
+mode "inner gaps" {
+    bindsym plus gaps inner current plus 5
+    bindsym minus gaps inner current minus 5
+    bindsym Shift+plus gaps inner all plus 5
+    bindsym Shift+minus gaps inner all minus 5
+    bindsym 0 gaps inner current set 0
+    bindsym Shift+0 gaps inner all set 0
+
+    bindsym r gaps inner current set $default_inner
+    bindsym Shift+r gaps inner all set $default_inner
+
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+
+mode "outer gaps" {
+    bindsym plus gaps outer current plus 5
+    bindsym minus gaps outer current minus 5
+    bindsym Shift+plus gaps outer all plus 5
+    bindsym Shift+minus gaps outer all minus 5
+    bindsym 0 gaps outer current set 0
+    bindsym Shift+0 gaps outer all set 0
+
+    bindsym r gaps outer current set $default_outer
+    bindsym Shift+r gaps outer all set $default_outer
+
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+
+bindsym $mod+g mode "inner gaps"
+bindsym $mod+Shift+g mode "outer gaps"
+
 # resize window (you can also use the mouse for that)
 mode "resize" {
-        # These bindings trigger as soon as you enter the resize mode
+    # These bindings trigger as soon as you enter the resize mode
 
-        # Pressing left will shrink the window’s width.
-        # Pressing right will grow the window’s width.
-        # Pressing up will shrink the window’s height.
-        # Pressing down will grow the window’s height.
-        bindsym h resize shrink width 10 px or 10 ppt
-        bindsym j resize grow height 10 px or 10 ppt
-        bindsym k resize shrink height 10 px or 10 ppt
-        bindsym l resize grow width 10 px or 10 ppt
+    bindsym h resize shrink width 10 px or 10 ppt
+    bindsym j resize grow height 10 px or 10 ppt
+    bindsym k resize shrink height 10 px or 10 ppt
+    bindsym l resize grow width 10 px or 10 ppt
 
-        # same bindings, but for the arrow keys
-        bindsym Left resize shrink width 10 px or 10 ppt
-        bindsym Down resize grow height 10 px or 10 ppt
-        bindsym Up resize shrink height 10 px or 10 ppt
-        bindsym Right resize grow width 10 px or 10 ppt
+    bindsym Shift+h resize shrink width 100 px or 100 ppt
+    bindsym Shift+j resize grow height 100 px or 100 ppt
+    bindsym Shift+k resize shrink height 100 px or 100 ppt
+    bindsym Shift+l resize grow width 100 px or 100 ppt
 
-        # back to normal: Enter or Escape
-        bindsym Return mode "default"
-        bindsym Escape mode "default"
+    # same bindings, but for the arrow keys
+    bindsym Left resize shrink width 10 px or 10 ppt
+    bindsym Down resize grow height 10 px or 10 ppt
+    bindsym Up resize shrink height 10 px or 10 ppt
+    bindsym Right resize grow width 10 px or 10 ppt
+
+    bindsym Shift+Left resize shrink width 100 px or 100 ppt
+    bindsym Shift+Down resize grow height 100 px or 100 ppt
+    bindsym Shift+Up resize shrink height 100 px or 100 ppt
+    bindsym Shift+Right resize grow width 100 px or 100 ppt
+
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
 }
 
 bindsym $mod+r mode "resize"
@@ -202,14 +250,16 @@ set $inactive-bg-color   #434758
 set $text-color          #f3f4f5
 set $inactive-text-color #aaaaaa
 set $urgent-bg-color     #f07178
-set $urgent-text-color    #000000
+set $urgent-text-color   #000000
 
 # window colors
 #                       border              background         text                 indicator
-client.focused          $bg-color           $bg-color          $text-color          #00ff00
-client.unfocused        $inactive-bg-color $inactive-bg-color $inactive-text-color #00ff00
-client.focused_inactive $inactive-bg-color $inactive-bg-color $inactive-text-color #00ff00
-client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-color #00ff00
+client.focused          $bg-color           $bg-color          $text-color          $bg-color
+client.unfocused        $inactive-bg-color  $inactive-bg-color $inactive-text-color $bg-color
+client.focused_inactive $inactive-bg-color  $inactive-bg-color $inactive-text-color $bg-color
+client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-color   $bg-color
+
+
 
 # bar
 bar {
