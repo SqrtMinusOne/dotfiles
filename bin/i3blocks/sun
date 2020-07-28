@@ -1,0 +1,23 @@
+#1/bin/bash
+time=$(sunwait poll daylight rise ${LAT} $LON)
+
+function send_report {
+    report="$(sunwait report ${LAT} ${LON} | sed 's/^[[:space:]]*//gm')"
+    notify-send "Sunwait report" "$report"
+}
+
+case $BLOCK_BUTTON in
+    1) send_report
+esac
+
+if [[ ${time} == 'DAY' ]]; then
+    sunset=$(sunwait list daylight set ${LAT} ${LON})
+    echo $sunset
+    echo $sunset
+    echo "#F4F200"
+else
+    sunrise=$(sunwait list daylight rise ${LAT} ${LON})
+    echo $sunrise
+    echo $sunrise
+    echo "#60E4FF"
+fi
