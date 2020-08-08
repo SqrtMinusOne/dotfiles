@@ -1,7 +1,17 @@
+shopt -s autocd
 if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin:$PATH"
     export PATH="$HOME/bin/scripts:$PATH"
 fi
+
+source /usr/share/fzf/completion.bash
+source /usr/share/fzf/key-bindings.bash
+
+export HISTCONTROL=ignoredups:erasedups
+shopt -s histappend
+export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+HISTSIZE=
+HISTFILESIZE=
 
 export MANPATH="/usr/local/texlive/2020/texmf-dist/doc/man:$MANPATH"
 export INFOPATH="/usr/local/texlive/2020/texmf-dist/doc/info:$INFOPATH"

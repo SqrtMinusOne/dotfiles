@@ -9,12 +9,16 @@ config.bind('gT', 'tab-prev')
 config.bind('gN', 'tab-close')
 config.bind('gn', 'tab-clone')
 
+c.fonts.default_size = '10pt'
+c.fonts.default_family = 'monospace'
+c.fonts.web.size.default_fixed = 13
+
 # config.unbind('T', mode='normal')
 # config.bind('T', 'set-cmd-text -s :buffer')
 
 config.bind('\\t', 'set-cmd-text -s :buffer')
 config.bind('\\b', 'set-cmd-text -s :bookmark-load')
-config.bind('\\ww', ':open http://localhost:9000')
+config.bind('\\ww', ':open file:///home/pavel/MEGAsync/Sync/vimwiki-html/index.html')
 
 # config.unbind('<Escape>', mode='insert')
 config.bind('<Shift-Escape>', 'fake-key <Escape>', mode='insert')

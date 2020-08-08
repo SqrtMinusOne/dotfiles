@@ -67,7 +67,7 @@ set $w1 "1 🚀"
 set $w2 "2 🌍"
 set $w3 "3 💬"
 set $w4 "4 ⚙️"
-set $w7 "7 📞"
+set $w7 "7 🛰️"
 set $w8 "8 📝"
 set $w9 "9 🎵"
 set $w10 "Z 📦"
@@ -102,6 +102,7 @@ bindsym $mod+period workspace next
 assign [class="qutebrowser"] $w2
 assign [class="VK"] $w3
 assign [class="Slack"] $w3
+assign [class="TelegramDesktop"] $w3
 assign [class="Postman"] $w4
 assign [class="Chromium-browse"] $w4
 assign [class="chromium"] $w4
@@ -225,6 +226,7 @@ bindsym $mod+x mode "dmenu"
 mode "dmenu" {
     bindsym d exec i3-dmenu-desktop --dmenu="dmenu -l 10"; mode default
     bindsym p exec dmenu_run -l 10; mode default
+    bindsym m exec dmenu-man; mode default
     bindsym Escape mode "default"
 }
 
@@ -237,6 +239,7 @@ mode "apps" {
     bindsym v exec vk-messenger; mode default
     bindsym s exec slack; mode default;
     bindsym m exec "i3-sensible-terminal -e ncmpcpp"; mode default
+    bindsym e exec mailspring; mode default
 }
 
 # Start i3bar to display a workspace bar (plus the system information i3status
