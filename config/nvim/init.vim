@@ -181,7 +181,7 @@ set splitbelow
 set splitright
 set inccommand=split
 set switchbuf=vsplit
-set redrawtime=250
+set redrawtime=500
 
 " Indent
 set tabstop=4
@@ -651,7 +651,7 @@ let g:ale_lint_on_enter = 0
 let g:ale_lint_on_insert_leave = 0
 let g:ale_completion_enabled = 0
 let g:ale_linter_aliases = {'svelte': ['css', 'javascript']}
-let g:ale_linters = {'python': ['pyls'], 'tex': ['chktex'], 'cpp': ['clang'], 'vue': ['eslint'], 'typescript': ['tsserver', 'tslint'], 'svelte': ['eslint']}
+let g:ale_linters = {'python': ['prospector'], 'tex': ['chktex'], 'cpp': ['clang'], 'vue': ['eslint'], 'typescript': ['tsserver', 'tslint'], 'svelte': ['eslint']}
 let g:ale_fixers = {
             \    'python': ['yapf', 'isort', 'remove_trailing_lines', 'trim_whitespace'],
             \    'tex': ['latexindent', 'textlint', 'remove_trailing_lines', 'trim_whitespace'],
@@ -961,16 +961,19 @@ colorscheme palenight
 
 highlight! TermCursorNC guibg=red
 "highlight Conceal guibg=Normal guifg=Normal
+hi Normal guibg=NONE ctermbg=NONE
 highlight! link Conceal Normal
 highlight! illuminatedWord cterm=underline gui=underline
 
 " Airline
 let g:airline_theme='palenight'
 let g:airline_powerline_fonts = 1
+" let g:airline_extensions = []
 let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#buffer_idx_mode = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
 let g:airline_section_b = '%{Uptime()}'
+let g:airline_highlighting_cache = 1
 
 " vim-clap
 "let g:clap_search_box_border_symbols = {'curve': ["f", "g"], 'nil': ['', ''] }

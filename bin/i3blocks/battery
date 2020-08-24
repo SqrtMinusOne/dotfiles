@@ -2,6 +2,7 @@
 #
 # Copyright 2014 Pierre Mavro <deimos@deimos.fr>
 # Copyright 2014 Vivien Didelot <vivien@didelot.org>
+# Copyright 2020 Pavel Korytov <thexcloud@gmail.com>
 #
 # Licensed under the terms of the GNU GPL v3, or any later version.
 #
@@ -30,45 +31,59 @@ close(ACPI);
 
 # fail on unexpected output
 if ($acpi !~ /: (\w+), (\d+)%/) {
-	die "$acpi\n";
+    die "$acpi\n";
 }
 
 $status = $1;
 $percent = $2;
-$full_text = "$percent%";
 
 if ($status eq 'Discharging') {
-	$full_text .= ' DIS';
-} elsif ($status eq 'Charging') {
-	$full_text .= ' CHR';
+    if ($percent < 20) {
+        $full_text = '';
+    } elsif ($percent < 40) {
+        $full_text = '';
+    } elsif ($percent < 60) {
+        $full_text = '';
+    } elsif ($percent < 85) {
+        $full_text = '';
+    } else {
+        $full_text = '';
+    }
+} elsif ($status eq 'Charging' or $status eq 'Full' or $status eq 'Unknown') {
+    $full_text = '';
 }
+
+$full_text .= " $percent%";
 
 $short_text = $full_text;
 
 if ($acpi =~ /(\d\d:\d\d):/) {
-	$full_text .= " ($1)";
+    $full_text .= " $1";
 }
 
 # print text
 print "$full_text\n";
 print "$short_text\n";
 
-# consider color and urgent flag only on discharge
 if ($status eq 'Discharging') {
 
-	if ($percent < 20) {
-		print "#FF0000\n";
-	} elsif ($percent < 40) {
-		print "#FFAE00\n";
-	} elsif ($percent < 60) {
-		print "#FFF600\n";
-	} elsif ($percent < 85) {
-		print "#A8FF00\n";
-	}
+    if ($percent < 20) {
+        print "#FF0000\n";
+    } elsif ($percent < 40) {
+        print "#FFAE00\n";
+    } elsif ($percent < 60) {
+        print "#FFF600\n";
+    } elsif ($percent < 85) {
+        print "#A8FF00\n";
+    } else {
+        print "#2FFF00\n";
+    }
 
-	if ($percent < 5) {
-		exit(33);
-	}
+    if ($percent < 5) {
+        exit(33);
+    }
+} elsif ($status eq 'Charging' or $status eq 'Full' or $status eq 'Unknown') {
+    print "#FFFE00\n"
 }
 
 exit(0);

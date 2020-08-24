@@ -5,6 +5,10 @@ hide_edge_borders both
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
 
+# Apply XFCE Settings
+exec xfsettingsd
+exec xiccd
+
 # start a terminal
 bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec i3-sensible-terminal'"
 
@@ -239,12 +243,12 @@ mode "apps" {
     bindsym v exec vk-messenger; mode default
     bindsym s exec slack; mode default;
     bindsym m exec "i3-sensible-terminal -e ncmpcpp"; mode default
+    bindsym c exec "copyq toggle"; mode default
+    bindsym k exec "keepassxc"; mode default
     bindsym e exec mailspring; mode default
 }
 
-# Start i3bar to display a workspace bar (plus the system information i3status
-# finds out, if available)
-
+bindsym $mod+p exec "copyq menu"
 bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"
 
 # Colors
@@ -289,6 +293,10 @@ bindsym XF86AudioPause exec mpc pause
 bindsym XF86AudioNext exec mpc next
 bindsym XF86AudioPrev exec mpc prev
 
+# Screen brightness
+bindsym XF86MonBrightnessUp exec xbacklight -inc 5
+bindsym XF86MonBrightnessDown exec xbacklight -dec 5
+
 exec --no-startup-id pulseeffects --gapplication-service
 
 # Screenshots
@@ -315,6 +323,6 @@ exec --no-startup-id mpd
 
 # Stuff
 exec aw-qt
-exec xfsettingsd
-exec xiccd
 exec dunst
+exec kde-connect-indicator
+exec copyq
