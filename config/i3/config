@@ -10,7 +10,7 @@ exec xfsettingsd
 exec xiccd
 
 # start a terminal
-bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec i3-sensible-terminal'"
+bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec st'"
 
 # kill focused window
 bindsym $mod+Shift+q kill
@@ -63,7 +63,7 @@ bindsym $mod+Shift+f floating toggle
 bindsym $mod+a focus parent
 
 # focus the child container
-#bindsym $mod+d focus child
+bindsym $mod+Shift+A focus child
 
 # switch to workspace
 
@@ -120,7 +120,7 @@ assign [class="Mailspring"] $w8
 assign [class="Thunderbird"] $w8
 assign [class="Joplin"] $w8
 
-for_window [title="Terminal.*ncmpcpp.*"] move to workspace $w9
+for_window [title="ncmpcpp.*"] move to workspace $w9
 for_window [class="cinnamon-settings*"] floating enable
 # for_window [class=".*"] border pixel 0
 # reload the configuration file
@@ -242,7 +242,7 @@ mode "apps" {
     bindsym b exec qutebrowser; mode default
     bindsym v exec vk-messenger; mode default
     bindsym s exec slack; mode default;
-    bindsym m exec "i3-sensible-terminal -e ncmpcpp"; mode default
+    bindsym m exec "st -e ncmpcpp"; mode default
     bindsym c exec "copyq toggle"; mode default
     bindsym k exec "keepassxc"; mode default
     bindsym e exec mailspring; mode default
