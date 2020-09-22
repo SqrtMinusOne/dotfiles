@@ -46,11 +46,13 @@ Plug 'leafOfTree/vim-svelte-plugin'
 " Misc file formats
 Plug 'elzr/vim-json'
 Plug 'plasticboy/vim-markdown'
+Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
 " Plug 'adimit/prolog.vim'
+Plug 'jidn/vim-dbml'
 " Plug 'udalov/kotlin-vim'
 " Plug 'suan/vim-instant-markdown', {'for': 'markdown'} "npm -g install instant-markdown-d
 Plug 'euclio/vim-markdown-composer'
-Plug 'chrisbra/csv.vim'
+" Plug 'chrisbra/csv.vim'
 Plug 'aklt/plantuml-syntax'
 " Plug 'tyru/open-browser.vim'
 Plug 'weirongxu/plantuml-previewer.vim'
@@ -89,7 +91,7 @@ Plug 'tpope/vim-commentary'
 Plug 'justinmk/vim-sneak'
 Plug 'christoomey/vim-sort-motion'
 Plug 'AndrewRadev/splitjoin.vim'
-Plug 'AndrewRadev/sideways.vim'
+" Plug 'AndrewRadev/sideways.vim'
 Plug 'unblevable/quick-scope'
 " Plug 'terryma/vim-multiple-cursors'
 " Plug 'scrooloose/nerdcommenter'
@@ -104,7 +106,7 @@ Plug 'bronson/vim-trailing-whitespace'
 
 Plug 'dkprice/vim-easygrep'
 Plug 'easymotion/vim-easymotion'
-Plug 'liuchengxu/vista.vim'
+" Plug 'liuchengxu/vista.vim'
 Plug 'pechorin/any-jump.vim'
 Plug 'vim-scripts/restore_view.vim'
 Plug 'tpope/vim-repeat'
@@ -317,7 +319,7 @@ let g:sneak#s_next = 1
 autocmd FileType clap_input inoremap <silent> <buffer> <Esc> <Esc>:call clap#handler#exit()<CR>
 
 " vimwiki
-nnoremap <Leader>wah :VimwikiAll2HTML<CR>
+" nnoremap <Leader>wah :VimwikiAll2HTML<CR>
 nnoremap <Leader>wl :VimwikiTabnewLink<CR>
 
 nmap <Leader>thestupidkeybinding1 <Plug>VimwikiNextLink
@@ -340,6 +342,7 @@ let g:multi_cursor_start_word_key = '<C-m>'
 
 " Scratch
 let g:scratch_no_mappings = 1
+
 "}}}
 
 " Windows management mode {{{
@@ -494,18 +497,18 @@ let g:vim_svelte_plugin_use_sass = 1
 
 let g:javascript_plugin_jsdoc = 1
 
-let g:javascript_conceal_function                  = "ƒ"
-let g:javascript_conceal_null                      = "ø"
+" let g:javascript_conceal_function                  = "ƒ"
+" let g:javascript_conceal_null                      = "ø"
 " let g:javascript_conceal_this                      = "#"
-let g:javascript_conceal_return                    = "⮜"
-let g:javascript_conceal_undefined                 = "¿"
-let g:javascript_conceal_NaN                       = "ℕ"
-let g:javascript_conceal_prototype                 = "¶"
-let g:javascript_conceal_static                    = "•"
-let g:javascript_conceal_super                     = "Ω"
-let g:javascript_conceal_arrow_function            = "⮞"
-let g:javascript_conceal_noarg_arrow_function      = "🞅"
-let g:javascript_conceal_underscore_arrow_function = "🞅"
+" let g:javascript_conceal_return                    = "⮜"
+" let g:javascript_conceal_undefined                 = "¿"
+" let g:javascript_conceal_NaN                       = "ℕ"
+" let g:javascript_conceal_prototype                 = "¶"
+" let g:javascript_conceal_static                    = "•"
+" let g:javascript_conceal_super                     = "Ω"
+" let g:javascript_conceal_arrow_function            = "⮞"
+" let g:javascript_conceal_noarg_arrow_function      = "🞅"
+" let g:javascript_conceal_underscore_arrow_function = "🞅"
 
 " }}}
 
@@ -541,6 +544,17 @@ let g:pymode_rope = 0
 let g:pymode_rope_completion = 0
 let g:pymode_rope_autoimport = 0
 let g:pymode_doc = 1
+" }}}
+
+" GO {{{
+let g:go_fmt_autosave = 0
+let g:go_imports_autosave = 0
+let g:go_mod_fmt_autosave = 0
+
+augroup filetype_go
+    autocmd!
+    autocmd FileType go set noexpandtab
+augroup END
 " }}}
 
 " REPL {{{
@@ -662,7 +676,8 @@ let g:ale_fixers = {
             \    'vue': ['prettier', 'eslint'],
             \    'cpp': ['clang-format', 'remove_trailing_lines', 'trim_whitespace'],
             \    'json': ['prettier'],
-            \    'svelte': ['eslint']
+            \    'svelte': ['eslint'],
+            \    'go': ['gofmt']
             \}
 let g:airline#extensions#ale#enabled = 1
 " }}}
@@ -943,12 +958,9 @@ command! Timestamp :put =strftime('%d-%m-%y %H:%M:%S')
 set background=dark
 " let g:solarized_visibility='high'
 " tmux cursor
-if exists('+termguicolors')
-  let &t_8f = "\<Esc>[38;2;%lu;%lu;%lum"
-  let &t_8b = "\<Esc>[48;2;%lu;%lu;%lum"
-  let &t_SI="\<Esc>[2 q"
-  set termguicolors
-endif
+ if exists('+termguicolors')
+   set termguicolors
+ endif
 "set guifont=DroidSansMono\ Nerd\ Font\ 11
 augroup qs_colors
   autocmd!

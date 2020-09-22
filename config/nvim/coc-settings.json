@@ -6,6 +6,7 @@
     "svelte.plugin.svelte.format.enable": false,
     "svelte.plugin.html.autoClosingTags": false,
     "css.validate": false,
+    "python.jediEnabled": false,
     "coc.source.ultisnips.priority": 90,
     "typescript.validate.enable": false,
     "typescript.referencesCodeLens.enable": false,
