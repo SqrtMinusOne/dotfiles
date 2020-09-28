@@ -1,0 +1,51 @@
+#!/bin/bash
+# Copyright [2019] andreasl
+# Copyright [2020] SqrtMinusOne
+
+define_standard_settings() {
+    selected_path="$HOME"
+    history_file="${HOME}/.config/.edm_history"
+    max_history_entries=3
+
+    choices=(
+        '<open terminal here>'
+        '.'
+        '..'
+        "$(ls "$selected_path")"
+        "$(cat "$history_file")"
+    )
+
+    open_command='xdg-open'
+    open_terminal_command='setsid st'
+}
+define_standard_settings
+
+write_selection_to_history_file() {
+    sed -i "\:${selected_path}:d" "$history_file"
+    printf '%s\n' "$selected_path" >> "$history_file"
+    printf '%s\n' "$(tail -n "$max_history_entries" "$history_file")" > "$history_file"
+}
+
+while : ; do
+    dmenu_result="$(printf '%s\n' "${choices[@]}" | dmenu -p "$selected_path" -l 50)" || exit 1
+    if [ "$dmenu_result" = '<open terminal here>' ]; then
+        cd $selected_path && $open_terminal_command
+        write_selection_to_history_file
+        exit 0
+    fi
+
+    if [[ "$dmenu_result" == "/"* ]]; then
+        selected_path="${dmenu_result}"
+    else
+        selected_path="$(realpath "${selected_path}/${dmenu_result}")"
+    fi
+    if [ -f "$selected_path" ] || [ "$dmenu_result" = '.' ]; then
+        $open_command "$selected_path"
+        write_selection_to_history_file
+        exit 0
+    elif [ -d "$selected_path" ]; then
+        choices=( '<open terminal here>' '.' '..' "$(ls "$selected_path")")
+    else
+        selected_path="$(dirname "$selected_path")"
+    fi
+done

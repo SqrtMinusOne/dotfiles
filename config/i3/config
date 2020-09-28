@@ -130,6 +130,15 @@ bindsym $mod+Shift+r restart
 # exit i3 (logs you out of your X session)
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
 
+# Scratchpad
+for_window [instance="dropdown_*"] floating enable
+for_window [instance="dropdown_*"] move scratchpad
+for_window [instance="dropdown_*"] sticky enable
+for_window [instance="dropdown_*"] scratchpad show
+for_window [instance="dropdown_*"] move position center
+
+bindsym $mod+u exec ~/bin/scripts/dropdown
+
 # Gaps
 
 set $default_inner 0
@@ -225,14 +234,19 @@ mode "move" {
 
 # dmenu
 bindsym $mod+d exec i3-dmenu-desktop --dmenu="dmenu -l 10"
-bindsym $mod+x mode "dmenu"
+bindsym $mod+apostrophe mode "dmenu"
 
 mode "dmenu" {
     bindsym d exec i3-dmenu-desktop --dmenu="dmenu -l 10"; mode default
     bindsym p exec dmenu_run -l 10; mode default
     bindsym m exec dmenu-man; mode default
+    bindsym b exec dmenu-buku; mode default
+    bindsym f exec dmenu-explore; mode default
+    bindsym t exec dmenu-tmuxp; mode default
     bindsym Escape mode "default"
 }
+
+bindsym $mod+b exec --no-startup-id dmenu-buku
 
 # Launch apps
 bindsym $mod+semicolon mode "apps"
@@ -271,6 +285,7 @@ client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-colo
 # bar
 bar {
     status_command i3blocks -c ~/.config/i3/i3blocks.conf
+    i3bar_command i3bar
     colors {
         background $bg-color
         separator #757575
@@ -306,7 +321,9 @@ bindsym --release Print exec "flameshot gui"
 exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 
 # Wallpaper
+# fallback
 exec_always "feh --bg-fill ~/Pictures/wallpaper.jpg"
+exec_always "/home/pavel/bin/scripts/wallgif /home/pavel/Videos/OMSBG7.mov"
 
 # Compton
 exec compton
