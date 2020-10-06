@@ -6,6 +6,7 @@ hide_edge_borders both
 floating_modifier $mod
 
 # Apply XFCE Settings
+# exec "bash /home/pavel/.screenlayout/layout.sh"
 exec xfsettingsd
 exec xiccd
 
@@ -55,6 +56,9 @@ bindsym $mod+e layout toggle split
 
 # toggle tiling / floating
 bindsym $mod+Shift+f floating toggle
+
+bindsym $mod+Tab move workspace to output right
+bindsym $mod+q focus output right
 
 # change focus between tiling / floating windows
 # bindsym $mod+space focus mode_toggle
@@ -106,6 +110,7 @@ bindsym $mod+period workspace next
 assign [class="qutebrowser"] $w2
 assign [class="VK"] $w3
 assign [class="Slack"] $w3
+assign [class="discord"] $w3
 assign [class="TelegramDesktop"] $w3
 assign [class="Postman"] $w4
 assign [class="Chromium-browse"] $w4
@@ -214,6 +219,7 @@ mode "resize" {
 bindsym $mod+r mode "resize"
 
 bindsym $mod+m mode "move" focus floating
+
 mode "move" {
     bindsym $mod+Tab focus right
 
@@ -263,7 +269,7 @@ mode "apps" {
 }
 
 bindsym $mod+p exec "copyq menu"
-bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"
+bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper-2-1.png"
 
 # Colors
 set $bg-color 	         #292d3e
@@ -286,6 +292,9 @@ client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-colo
 bar {
     status_command i3blocks -c ~/.config/i3/i3blocks.conf
     i3bar_command i3bar
+    font pango:monospace 12
+    output HDMI-A-0
+    tray_output none
     colors {
         background $bg-color
         separator #757575
@@ -296,6 +305,20 @@ bar {
     }
 }
 
+bar {
+    status_command i3blocks -c ~/.config/i3/i3blocks.conf
+    i3bar_command i3bar
+    font pango:monospace 10
+    output DVI-D-0
+    colors {
+        background $bg-color
+        separator #757575
+        #                  border             background         text
+        focused_workspace  $bg-color          $bg-color          $text-color
+        inactive_workspace $inactive-bg-color $inactive-bg-color $inactive-text-color
+        urgent_workspace   $urgent-bg-color   $urgent-bg-color   $urgent-text-color
+    }
+}
 
 # Pulse Audio controls
 bindsym XF86AudioRaiseVolume exec --no-startup-id "pulseaudio-ctl up && pkill -RTMIN+2 i3blocks"
@@ -322,8 +345,8 @@ exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 
 # Wallpaper
 # fallback
-exec_always "feh --bg-fill ~/Pictures/wallpaper.jpg"
-exec_always "/home/pavel/bin/scripts/wallgif /home/pavel/Videos/OMSBG7.mov"
+exec_always "feh --bg-fill ~/Pictures/wallpaper-2.jpg"
+# exec_always "/home/pavel/bin/scripts/wallgif /home/pavel/Videos/OMSBG7.mov"
 
 # Compton
 exec compton

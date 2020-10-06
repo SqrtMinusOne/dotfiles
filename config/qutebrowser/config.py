@@ -20,6 +20,9 @@ config.bind('\\t', 'set-cmd-text -s :buffer')
 config.bind('\\b', 'set-cmd-text -s :bookmark-load')
 config.bind('\\ww', ':open file:///home/pavel/MEGAsync/Sync/vimwiki-html/index.html')
 
+config.bind('\\z1', 'set zoom.default 100 ;; set fonts.default_size 10pt')
+config.bind('\\z2', 'set zoom.default 125 ;; set fonts.default_size 12pt')
+
 # config.unbind('<Escape>', mode='insert')
 config.bind('<Shift-Escape>', 'fake-key <Escape>', mode='insert')
 
