@@ -11,6 +11,8 @@
   (interactive "f")
   (load-file (expand-file-name file user-init-dir)))
 
+(add-to-list 'exec-path (expand-file-name "~/.cargo/bin"))
+
 ;;; -------------------- Packages --------------------
 
 ;; straight.el package manager
@@ -57,13 +59,24 @@
   :config
   (evil-commentary-mode))
 
+(use-package evil-org
+  :straight t
+  :after org
+  :config
+  (add-hook 'org-mode-hook 'evil-org-mode)
+  (add-hook 'evil-org-mode-hook
+            (lambda ()
+              (evil-org-set-key-theme '(navigation insert textobjects additional calendar todo))))
+  (require 'evil-org-agenda)
+  (evil-org-agenda-set-keys))
+
 ;; (use-package smart-backspace
 ;;   :straight t)
 
 (use-package evil-quickscope
   :straight t
   :config
-  (global-evil-quickscope-mode))
+  :hook (prog-mode . turn-on-evil-quickscope-mode))
 
 ;; Key helpers
 (use-package which-key
@@ -71,7 +84,7 @@
   (setq which-key-idle-delay 0.3)
   (setq which-key-popup-type 'frame)
   (which-key-mode)
-  (which-key-setup-minibuffer)
+  (which-key-setup-side-window-bottom)
   (set-face-attribute 'which-key-local-map-description-face nil
                       :weight 'bold)
   :straight t)
@@ -86,6 +99,9 @@
   (helm-mode 1)
   (helm-autoresize-mode 1))
 
+(use-package helm-ag
+  :straight t)
+
 ;; UI
 
 (use-package all-the-icons
@@ -95,6 +111,13 @@
   :straight t
   :config
   (solaire-global-mode +1))
+
+(use-package highlight-indent-guides
+  :straight t
+  :hook (prog-mode . highlight-indent-guides-mode)
+  :config
+  (setq highlight-indent-guides-method 'bitmap)
+  (setq highlight-indent-guides-bitmap-function 'highlight-indent-guides--bitmap-line))
 
 (use-package doom-themes
   :straight t
@@ -110,7 +133,8 @@
   :straight t
   :config
   (setq treemacs-follow-mode nil)
-  (setq treemacs-follow-after-init nil))
+  (setq treemacs-follow-after-init nil)
+  (setq treemacs-space-between-root-nodes nil))
 
 (use-package treemacs-evil
   :straight t)
@@ -156,10 +180,47 @@
 (use-package typescript-mode
   :straight t)
 
+(add-hook 'typescript-mode-hook
+          #'(lambda ()
+              (setq-local lsp-diagnostic-package :none)
+              (setq-local flycheck-checker 'javascript-eslint)))
+
 (use-package vue-mode
   :straight t)
 
+(use-package go-mode
+  :straight t)
+
 (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
+
+(use-package tex
+  :straight auctex
+  :defer t
+  :config
+  (setq-default TeX-auto-save t)
+  (setq-default TeX-parse-self t)
+  (TeX-PDF-mode)
+  (setq-default TeX-engine 'xetex)
+  (setq-default TeX-command-extra-options "-shell-escape")
+  (setq-default TeX-source-correlate-method 'synctex)
+  (TeX-source-correlate-mode)
+  (setq-default TeX-source-correlate-start-server t)
+  (setq-default LaTeX-math-menu-unicode t)
+
+  (setq-default font-latex-fontify-sectioning 1.3)
+
+  (setq-default preview-scale-function 1.4)
+
+  (add-hook 'LaTeX-mode-hook (lambda () (TeX-fold-mode 1)))
+  
+  (add-to-list 'TeX-view-program-selection
+             '(output-pdf "Zathura")))
+
+(add-hook 'LaTeX-mode-hook
+          #'(lambda ()
+              (lsp)
+              (setq-local lsp-diagnostic-package :none)
+              (setq-local flycheck-checker 'tex-chktex)))
 
 ;; LSP
 (use-package lsp-mode
@@ -167,21 +228,40 @@
   :hook (
          (typescript-mode . lsp)
          (vue-mode . lsp)
-         )
-  :commands lsp)
+         (go-mode . lsp))
+  :commands lsp
+  :config
+  (setq lsp-idle-delay 1)
+  (setq lsp-eslint-server-command '("node" "/home/pavel/.emacs.d/.cache/lsp/eslint/unzipped/extension/server/out/eslintServer.js" "--stdio"))
+  )
 
 (use-package flycheck
   :straight t
   :config
-  (global-flycheck-mode))
+  (global-flycheck-mode)
+  (setq flycheck-check-syntax-automatically '(save idle-buffer-switch mode-enabled))
+  (add-hook 'evil-insert-state-exit-hook 'flycheck-buffer)
+  (advice-add 'flycheck-eslint-config-exists-p :override (lambda() t)))
 
 (use-package lsp-ui
   :straight t
-  :commands lsp-ui-mode)
+  :commands lsp-ui-mode
+  :config
+  (setq lsp-ui-doc-delay 2))
 
 (use-package helm-lsp
   :straight t
   :commands helm-lsp-workspace-symbol)
+
+(use-package origami
+  :straight t
+  :hook (prog-mode . origami-mode)
+  :hook (latex-mode . origami-mode))
+
+(use-package lsp-origami
+  :straight t
+  :config
+  (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))
 
 (use-package lsp-treemacs
   :straight t
@@ -189,6 +269,29 @@
 
 ;; Misc
 (use-package magit
+  :straight t
+  :config
+  (setq magit-blame-styles
+        '((margin
+           (margin-format    . ("%a %A %s"))
+           (margin-width     . 42)
+           (margin-face      . magit-blame-margin)
+           (margin-body-face . (magit-blame-dimmed)))
+          (headings
+           (heading-format   . "%-20a %C %s\n"))
+          (highlight
+           (highlight-face   . magit-blame-highlight))
+          (lines
+           (show-lines       . t)
+           (show-message     . t)))
+        ))
+
+(use-package git-gutter
+  :straight t
+  :config
+  (global-git-gutter-mode +1))
+
+(use-package evil-magit
   :straight t)
 
 (use-package avy
@@ -206,11 +309,43 @@
   :config
   (global-wakatime-mode))
 
+(use-package editorconfig
+  :straight t
+  :config
+  (editorconfig-mode 1))
+
+(use-package vterm
+  :straight t
+  :config
+  (setq vterm-kill-buffer-on-exit t))
+
+(use-package ranger
+  :straight t)
+
+(use-package yasnippet
+  :straight t
+  :config
+  (yas-global-mode 1))
+
+(use-package yasnippet-snippets
+  :straight t)
+  
+;; (use-package projectile
+;;   :straight t)
+;; 
+;; (use-package treemacs-projectile
+;;   :straight t)
+
 ;;; -------------------- Display settings --------------------
 ;; Disable GUI elements
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
+
+;; Tab bar
+(setq tab-bar-show 1)
+(setq tab-bar-tab-hints t)
+(setq tab-bar-tab-name-function 'tab-bar-tab-name-current-with-count)
 
 ;; No start screen
 (setq inhibit-startup-screen t)
@@ -255,6 +390,16 @@
                (reusable-frames . visible)
                (window-height   . 0.33)))
 
+;; Vterm buffer
+(add-to-list 'display-buffer-alist
+             `(,"vterm-subterminal.*"
+               (display-buffer-reuse-window
+                display-buffer-in-side-window)
+               (side . bottom)
+               (reusable-frames . visible)
+               (window-height . 0.33)))
+
+
 ;;; -------------------- Keyboard --------------------
 (load-user-file "zoom.el")
 
@@ -291,6 +436,32 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             minibuffer-local-isearch-map)
  [escape] 'minibuffer-keyboard-quit)
 
+;; Vterm
+(defun toggle-vterm-subteminal ()
+  "Toogle subteminal."
+  (interactive)
+  (let
+      ((vterm-window
+        (seq-find
+         (lambda (window)
+           (string-match
+            "vterm-subterminal.*"
+            (buffer-name (window-buffer window)))
+           )
+         (window-list))))
+    (if vterm-window
+        (if (eq (get-buffer-window (current-buffer)) vterm-window)
+            (kill-buffer (current-buffer))
+          (select-window vterm-window)
+          )
+      (vterm-other-window "vterm-subterminal")
+      )
+    )
+  )
+
+(general-nmap "`" 'toggle-vterm-subteminal)
+(general-nmap "~" 'vterm)
+
 ;; Indent
 (setq tab-always-indent nil)
 
@@ -315,6 +486,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  :keymaps '(normal override global)
  "C-n" 'treemacs)
 
+(general-nmap "C-o" 'lsp-treemacs-symbols)
+
 (general-define-key
  :keymaps '(treemacs-mode-map) [mouse-1] #'treemacs-single-click-expand-action)
 
@@ -328,7 +501,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; LSP
 (my-leader-def
   "ld" 'lsp-ui-peek-find-definitions
-  "lr" 'lsp-ui-peek-find-references
+  "lr" 'lsp-rename
+  "lu" 'lsp-ui-peek-find-references
   "ls" 'lsp-ui-find-workspace-symbol
   "la" 'helm-lsp-code-actions
   "le" 'list-flycheck-errors)
@@ -337,15 +511,21 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap "\\\\w" 'avy-goto-word-0-below)
 (general-nmap "\\\\b" 'avy-goto-word-0-above)
 
-;; Fuzzy search
+;; Origami
+(general-nmap "TAB" 'origami-recursively-toggle-node)
+; (my-leader-def
+;   "of" 'origami-show-only-node)
 
+;; Fuzzy search
 (my-leader-def
   "fb" 'helm-buffers-list
   "fs" 'helm-lsp-workspace-symbol
   "fw" 'helm-lsp-global-workspace-symbol
   "fc" 'helm-show-kill-ring
-  "fa" 'helm-do-grep-ag
+  "fa" 'helm-do-ag-project-root
   "ff" 'project-find-file)
+
+(my-leader-def "s" 'helm-occur)
 
 (general-nmap "C-p" 'project-find-file)
 
@@ -354,10 +534,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "te" 'treemacs-edit-workspaces)
 
 (my-leader-def
-  "c" 'conda-env-activate)
+  "e" 'conda-env-activate)
 
 (my-leader-def
   "u" 'undo-tree-visualize)
+
+(my-leader-def
+  "m" 'magit)
+
+(general-imap "M-TAB" 'company-yasnippet)
 
 ;;; -------------------- Misc --------------------
 ;; UTF-8
@@ -407,4 +592,23 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-define-key "C-c c" 'my-edit-configuration)
 
 (setq gc-cons-threshold 8000000)
-(setq max-list-eval-depth 8000)
+(setq read-process-output-max (* 1024 1024))
+
+;; org mode
+(setq org-startup-indented t)
+(setq org-return-follows-link t)
+
+;;; Custom
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(org-agenda-files
+   '("~/Documents/org-mode/ETU/sem-9.org")))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
