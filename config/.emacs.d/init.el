@@ -45,7 +45,10 @@
   :straight t
   :config
   (evil-mode 1)
-  (setq evil-search-module 'evil-search))
+  (setq evil-search-module 'evil-search)
+  (setq evil-split-window-below t)
+  (setq evil-vsplit-window-right t)
+  )
 (use-package evil-numbers
   :straight t)
 
@@ -76,7 +79,10 @@
 (use-package evil-quickscope
   :straight t
   :config
-  :hook (prog-mode . turn-on-evil-quickscope-mode))
+  :hook (
+         (prog-mode . turn-on-evil-quickscope-mode)
+         (LaTeX-mode . turn-on-evil-quickscope-mode)
+         ))
 
 ;; Key helpers
 (use-package which-key
@@ -114,7 +120,9 @@
 
 (use-package highlight-indent-guides
   :straight t
-  :hook (prog-mode . highlight-indent-guides-mode)
+  :hook (
+         (prog-mode . highlight-indent-guides-mode)
+         (LaTeX-mode . highlight-indent-guides-mode))
   :config
   (setq highlight-indent-guides-method 'bitmap)
   (setq highlight-indent-guides-bitmap-function 'highlight-indent-guides--bitmap-line))
@@ -134,7 +142,10 @@
   :config
   (setq treemacs-follow-mode nil)
   (setq treemacs-follow-after-init nil)
-  (setq treemacs-space-between-root-nodes nil))
+  (setq treemacs-space-between-root-nodes nil)
+  (treemacs-git-mode 'extended)
+  (with-eval-after-load 'treemacs
+    (add-to-list 'treemacs-pre-file-insert-predicates #'treemacs-is-file-git-ignored?)))
 
 (use-package treemacs-evil
   :straight t)
@@ -152,7 +163,9 @@
 
 (use-package rainbow-delimiters
   :straight t
-  :hook (prog-mode . rainbow-delimiters-mode))
+  :hook (
+         (prog-mode . rainbow-delimiters-mode)
+         (LaTeX-mode . rainbow-delimiters-mode)))
 
 ;; Autocompletion
 
@@ -222,6 +235,12 @@
               (setq-local lsp-diagnostic-package :none)
               (setq-local flycheck-checker 'tex-chktex)))
 
+(use-package clips-mode
+  :straight t)
+
+(use-package json-mode
+  :straight t)
+
 ;; LSP
 (use-package lsp-mode
   :straight t
@@ -233,6 +252,7 @@
   :config
   (setq lsp-idle-delay 1)
   (setq lsp-eslint-server-command '("node" "/home/pavel/.emacs.d/.cache/lsp/eslint/unzipped/extension/server/out/eslintServer.js" "--stdio"))
+  (setq lsp-signature-render-documentation nil)
   )
 
 (use-package flycheck
@@ -247,7 +267,9 @@
   :straight t
   :commands lsp-ui-mode
   :config
-  (setq lsp-ui-doc-delay 2))
+  (setq lsp-ui-doc-delay 2)
+  (setq lsp-ui-sideline-show-hover nil)
+  )
 
 (use-package helm-lsp
   :straight t
@@ -255,8 +277,7 @@
 
 (use-package origami
   :straight t
-  :hook (prog-mode . origami-mode)
-  :hook (latex-mode . origami-mode))
+  :hook (prog-mode . origami-mode))
 
 (use-package lsp-origami
   :straight t
@@ -346,6 +367,9 @@
 (setq tab-bar-show 1)
 (setq tab-bar-tab-hints t)
 (setq tab-bar-tab-name-function 'tab-bar-tab-name-current-with-count)
+
+;; Prettify symbols
+(global-prettify-symbols-mode)
 
 ;; No start screen
 (setq inhibit-startup-screen t)
@@ -498,6 +522,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap "gn" 'tab-new)
 (general-nmap "gN" 'tab-close)
 
+;; Org-mode
+(general-define-key
+ :keymaps 'org-mode-map
+ "C-c d" 'org-decrypt-entry
+ "C-c e" 'org-encrypt-entry
+ "RET" 'evil-org-return
+ )
+
 ;; LSP
 (my-leader-def
   "ld" 'lsp-ui-peek-find-definitions
@@ -597,6 +629,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; org mode
 (setq org-startup-indented t)
 (setq org-return-follows-link t)
+(require 'org-crypt)
+(org-crypt-use-before-save-magic)
+(setq org-tags-exclude-from-inheritance (quote ("crypt")))
+(setq org-crypt-key nil)
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp .t)
+  (python .t)))
 
 ;;; Custom
 (custom-set-variables
@@ -605,7 +646,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(org-agenda-files
-   '("~/Documents/org-mode/ETU/sem-9.org")))
+   '("~/Documents/org-mode/Personal/look-forward.org" "~/Documents/org-mode/ETU/sem-9.org")))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
