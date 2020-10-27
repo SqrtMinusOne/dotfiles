@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: рис
+# key: рис
+# --
+рис.~\ref{fig:$1} $0

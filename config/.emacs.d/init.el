@@ -41,6 +41,13 @@
   (general-evil-setup))
 
 ;; Vim emulation & editing
+(use-package undo-tree
+  :straight t
+  :config
+  (global-undo-tree-mode)
+  (setq undo-tree-visualizer-diff t)
+  (setq undo-tree-visualizer-timestamps t))
+
 (use-package evil
   :straight t
   :config
@@ -48,7 +55,8 @@
   (setq evil-search-module 'evil-search)
   (setq evil-split-window-below t)
   (setq evil-vsplit-window-right t)
-  )
+  (evil-set-undo-system 'undo-tree))
+
 (use-package evil-numbers
   :straight t)
 
@@ -122,6 +130,7 @@
   :straight t
   :hook (
          (prog-mode . highlight-indent-guides-mode)
+         (vue-mode . highlight-indent-guides-mode)
          (LaTeX-mode . highlight-indent-guides-mode))
   :config
   (setq highlight-indent-guides-method 'bitmap)
@@ -173,7 +182,7 @@
   :straight t
   :config
   (global-company-mode)
-  (setq company-idle-delay 0.2)
+  (setq company-idle-delay 0.125)
   (setq company-show-numbers t))
 
 (use-package company-box
@@ -193,13 +202,28 @@
 (use-package typescript-mode
   :straight t)
 
+(defun set-flycheck-eslint()
+  "Override flycheck checker with eslint."
+  (setq-local lsp-diagnostic-package :none)
+  (setq-local flycheck-checker 'javascript-eslint))
+
 (add-hook 'typescript-mode-hook
-          #'(lambda ()
-              (setq-local lsp-diagnostic-package :none)
-              (setq-local flycheck-checker 'javascript-eslint)))
+          #'set-flycheck-eslint)
 
 (use-package vue-mode
   :straight t)
+
+(add-hook 'vue-mode-hook
+          #'set-flycheck-eslint)
+
+(with-eval-after-load 'editorconfig
+  (add-to-list 'editorconfig-indentation-alist
+               '(vue-mode css-indent-offset
+                          js-indent-level
+                          sgml-basic-offset
+                          ssass-tab-width
+                          typescript-indent-level
+                          )))
 
 (use-package go-mode
   :straight t)
@@ -241,18 +265,57 @@
 (use-package json-mode
   :straight t)
 
+(use-package markdown-mode
+  :straight t
+  :config
+  (setq markdown-command
+      (concat
+       "pandoc"
+       " --from=markdown --to=html"
+       " --standalone --mathjax --highlight-style=pygments"
+       " --css=pandoc.css"
+       " --quiet"
+       ))
+  (setq markdown-live-preview-delete-export 'delete-on-export)
+  (setq markdown-asymmetric-header t)
+  (setq markdown-open-command "/home/pavel/bin/scripts/vmd-sep")
+  )
+
+;; (use-package livedown
+;;   :straight (:host github :repo "shime/emacs-livedown")
+;;   :commands livedown-preview
+;;   :config
+;;   (setq livedown-browser "qutebrowser"))
+
+(use-package plantuml-mode
+  :straight t
+  :config
+  (setq plantuml-executable-path "/usr/bin/plantuml")
+  (setq plantuml-default-exec-mode 'executable)
+  (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
+  (add-to-list 'auto-mode-alist '("\\.uml\\'" . plantuml-mode))
+  )
+
+(use-package svelte-mode
+  :straight t)
+
+(add-hook 'svelte-mode-hook
+          'set-flycheck-eslint)
+
 ;; LSP
 (use-package lsp-mode
   :straight t
   :hook (
          (typescript-mode . lsp)
          (vue-mode . lsp)
-         (go-mode . lsp))
+         (go-mode . lsp)
+         (svelte-mode . lsp)) 
   :commands lsp
   :config
   (setq lsp-idle-delay 1)
   (setq lsp-eslint-server-command '("node" "/home/pavel/.emacs.d/.cache/lsp/eslint/unzipped/extension/server/out/eslintServer.js" "--stdio"))
   (setq lsp-signature-render-documentation nil)
+  (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte"))
   )
 
 (use-package flycheck
@@ -318,13 +381,6 @@
 (use-package avy
   :straight t)
 
-(use-package undo-tree
-  :straight t
-  :config
-  (global-undo-tree-mode)
-  (setq undo-tree-visualizer-diff t)
-  (setq undo-tree-visualizer-timestamps t))
-
 (use-package wakatime-mode
   :straight t
   :config
@@ -350,7 +406,21 @@
 
 (use-package yasnippet-snippets
   :straight t)
-  
+
+;; Elfeed
+(use-package elfeed
+  :straight t
+  :config
+  (add-to-list 'evil-emacs-state-modes 'elfeed-search-mode)
+  (add-to-list 'evil-emacs-state-modes 'elfeed-show-mode)
+  (setq browse-url-browser-function 'eww-browse-url))
+
+(use-package elfeed-org
+  :straight t
+  :config
+  (setq rmh-elfeed-org-files (list (expand-file-name "~/Documents/org-mode/rss.org")))
+  (elfeed-org))
+
 ;; (use-package projectile
 ;;   :straight t)
 ;; 
@@ -384,11 +454,7 @@
 
 ;; Font
 (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
-; (load-user-file "jetbrains-ligatures.el")
-
-;; Theme
-;; (load-user-file "palenight-theme.el")
-;; (load-theme 'palenight t)
+;; (load-user-file "jetbrains-ligatures.el")
 
 ;; Line numbers
 (global-display-line-numbers-mode 1)
@@ -399,8 +465,8 @@
 (show-paren-mode 1)
 
 ;; Wrap
-;; (visual-line-mode t)
 (setq word-wrap 1)
+(global-visual-line-mode t)
 
 ;; Hightlight line
 (global-hl-line-mode 1)
@@ -435,7 +501,54 @@
 
 (general-def :states '(normal motion emacs) "SPC" nil)
 
-(my-leader-def "h" (general-simulate-key "C-h" :name help-menu))
+(my-leader-def
+  :infix "h"
+  "RET" 'view-order-manuals
+  "." 'display-local-help
+  "?" 'help-for-help
+  "C" 'describe-coding-system
+  "F" 'Info-goto-emacs-command-node
+  "I" 'describe-input-method
+  "K" 'Info-goto-emacs-key-command-node
+  "L" 'describe-language-environment
+  "P" 'describe-package
+  "S" 'info-lookup-symbol
+  "a" 'helm-apropos
+  "b" 'describe-bindings
+  "c" 'describe-key-briefly
+  "d" 'apropos-documentation
+  "e" 'view-echo-area-messages
+  "f" 'describe-function
+  "g" 'describe-gnu-project
+  "h" 'view-hello-file
+  "i" 'info
+  "k" 'describe-key
+  "l" 'view-lossage
+  "m" 'describe-mode
+  "n" 'view-emacs-news
+  "o" 'describe-symbol
+  "p" 'finder-by-keyword
+  "q" 'help-quit
+  "r" 'info-emacs-manual
+  "s" 'describe-syntax
+  "t" 'help-with-tutorial
+  "v" 'describe-variable
+  "w" 'where-is
+  "<f1>" 'help-for-help
+  "C-\\" 'describe-input-method
+  "C-a" 'about-emacs
+  "C-c" 'describe-copying
+  "C-d" 'view-emacs-debugging
+  "C-e" 'view-external-packages
+  "C-f" 'view-emacs-FAQ
+  "C-h" 'help-for-help
+  "C-n" 'view-emacs-news
+  "C-o" 'describe-distribution
+  "C-p" 'view-emacs-problems
+  "C-s" 'search-forward-help-for-help
+  "C-t" 'view-emacs-todo
+  "C-w" 'describe-no-warranty
+  )
 
 ;; Escape
 (defun minibuffer-keyboard-quit ()
@@ -486,6 +599,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap "`" 'toggle-vterm-subteminal)
 (general-nmap "~" 'vterm)
 
+(general-define-key
+ :keymaps 'vterm-mode-map
+ "M-q" 'vterm-send-escape)
+
 ;; Indent
 (setq tab-always-indent nil)
 
@@ -504,6 +621,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-define-key "C-<left>" 'evil-window-left)
 (general-define-key "C-<up>" 'evil-window-up)
 (general-define-key "C-<down>" 'evil-window-down)
+
+(general-define-key "C-h" 'evil-window-left)
+(general-define-key "C-l" 'evil-window-right)
+(general-define-key "C-k" 'evil-window-up)
+(general-define-key "C-j" 'evil-window-down)
 
 ;; Treemacs
 (general-define-key
@@ -526,9 +648,32 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-define-key
  :keymaps 'org-mode-map
  "C-c d" 'org-decrypt-entry
- "C-c e" 'org-encrypt-entry
- "RET" 'evil-org-return
+ "C-c e" 'org-encrypt-entry)
+
+(general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
+(general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
+
+;; Markdown
+(general-define-key
+ :keymaps 'markdown-mode-map
+ "M-<left>" 'markdown-promote
+ "M-<right>" 'markdown-demote
  )
+
+;; PlantUML
+(general-nmap
+  :keymaps 'plantuml-mode-map
+  "RET" 'plantuml-preview)
+
+;; Image view
+(general-define-key
+ :keymaps 'image-mode-map
+ "q" 'kill-this-buffer)
+
+;; LaTeX
+(general-nmap
+  :keymaps '(LaTeX-mode-map latex-mode-map)
+  "RET" 'TeX-command-run-all)
 
 ;; LSP
 (my-leader-def
@@ -538,6 +683,89 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "ls" 'lsp-ui-find-workspace-symbol
   "la" 'helm-lsp-code-actions
   "le" 'list-flycheck-errors)
+
+;; Apps
+(my-leader-def
+  :infix "a"
+  "a" 'org-agenda
+  "e" 'elfeed
+  "w" 'eww)
+
+;; Elfeed
+(defun elfeed-open-current-with-qutebrowser ()
+  "Open current link with qutebrowser."
+  (interactive)
+  (let ((browse-url-generic-program "/usr/bin/qutebrowser"))
+    (elfeed-show-visit t)))
+
+(defun elfeed-browse-url-with-qutebrowser ()
+  "Open current link with qutebrowser."
+  (interactive)
+  (let ((browse-url-generic-program "/usr/bin/qutebrowser"))
+    (elfeed-search-browse-url t)))
+
+(defun elfeed-open-current-with-chromium ()
+  "Open current link with qutebrowser."
+  (interactive)
+  (let ((browse-url-generic-program "/usr/bin/chromium"))
+    (elfeed-show-visit t)))
+
+(defun elfeed-browse-url-with-chromium ()
+  "Open current link with qutebrowser."
+  (interactive)
+  (let ((browse-url-generic-program "/usr/bin/chromium"))
+    (elfeed-search-browse-url t)))
+
+
+(general-define-key
+ :keymaps '(elfeed-show-mode-map elfeed-search-mode-map)
+ "g" nil
+ "gn" 'tab-new
+ "gN" 'tab-close
+ "gT" 'tab-bar-switch-to-next-tab
+ "gt" 'tab-bar-switch-to-prev-tab)
+
+(general-define-key
+ :keymaps 'elfeed-search-mode-map
+ "f" 'elfeed-search-update--force
+ "o" 'elfeed-browse-url-with-qutebrowser
+ "S-o" 'elfeed-browse-url-with-chromium)
+
+(general-define-key
+ :keymaps 'elfeed-show-mode-map
+ "o" 'elfeed-open-current-with-qutebrowser
+ "S-o" 'elfeed-browse-url-with-chromium
+ )
+
+;; EWW
+
+(add-to-list 'evil-emacs-state-modes 'eww-mode)
+
+(general-define-key
+ :keymaps 'eww-mode-map
+ "q" 'quit-window
+ "r" 'eww-readable
+ "zd" 'eww-toggle-paragraph-direction
+ "ze" 'eww-set-character-encoding
+ "zf" 'eww-toggle-font
+
+ "]]" 'eww-next-url
+ "[[" 'eww-previous-url
+ "g" nil
+ "gj" 'eww-next-url
+ "gk" 'eww-previous-url
+
+ "go" 'eww-browse-with-external-browser
+ "gr" 'eww-reload
+ "+" 'text-scale-increase
+ "-" 'text-scale-decrease
+
+ "o" 'eww
+ "gn" 'eww
+ "gN" 'quit-window
+ 
+ "gt" 'tab-bar-switch-to-next-tab
+ "gT" 'tab-bar-switch-to-prev-tab)
 
 ;; avy
 (general-nmap "\\\\w" 'avy-goto-word-0-below)
@@ -575,6 +803,20 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "m" 'magit)
 
 (general-imap "M-TAB" 'company-yasnippet)
+
+;; Transparency
+;; (defun toggle-transparency ()
+;;    (interactive)
+;;    (let ((alpha (frame-parameter nil 'alpha)))
+;;      (set-frame-parameter
+;;       nil 'alpha
+;;       (if (eql (cond ((numberp alpha) alpha)
+;;                      ((numberp (cdr alpha)) (cdr alpha))
+;;                      ((numberp (cadr alpha)) (cadr alpha)))
+;;                100)
+;;           '(95 . 95) '(100 . 100)))))
+;; (my-leader-def "dt" 'toggle-transparency)
+
 
 ;;; -------------------- Misc --------------------
 ;; UTF-8
@@ -637,16 +879,24 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((emacs-lisp .t)
-  (python .t)))
+   (python .t)))
 
-;;; Custom
+(add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(css-indent-offset 2)
+ '(custom-safe-themes
+   '("c83c095dd01cde64b631fb0fe5980587deec3834dc55144a6e78ff91ebc80b19" "bf387180109d222aee6bb089db48ed38403a1e330c9ec69fe1f52460a8936b66" "e074be1c799b509f52870ee596a5977b519f6d269455b84ed998666cf6fc802a" default))
+ '(js-indent-level 2)
  '(org-agenda-files
-   '("~/Documents/org-mode/Personal/look-forward.org" "~/Documents/org-mode/ETU/sem-9.org")))
+   '("~/Documents/org-mode/Job/dig-traject.org" "~/Documents/org-mode/Personal/look-forward.org" "~/Documents/org-mode/ETU/sem-9.org"))
+ '(sgml-basic-offset 2)
+ '(wakatime-cli-path "/usr/bin/wakatime")
+ '(wakatime-python-bin nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
