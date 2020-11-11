@@ -50,12 +50,18 @@
 
 (use-package evil
   :straight t
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
   :config
   (evil-mode 1)
   (setq evil-search-module 'evil-search)
   (setq evil-split-window-below t)
   (setq evil-vsplit-window-right t)
-  (evil-set-undo-system 'undo-tree))
+  ;; (setq evil-respect-visual-line-mode t)
+  (evil-set-undo-system 'undo-tree)
+  ;; (add-to-list 'evil-emacs-state-modes 'dired-mode)
+  )
 
 (use-package evil-numbers
   :straight t)
@@ -72,14 +78,29 @@
 
 (use-package evil-org
   :straight t
-  :after org
+  :after (org evil-collection)
   :config
   (add-hook 'org-mode-hook 'evil-org-mode)
   (add-hook 'evil-org-mode-hook
             (lambda ()
               (evil-org-set-key-theme '(navigation insert textobjects additional calendar todo))))
+  (add-to-list 'evil-emacs-state-modes 'org-agenda-mode)
   (require 'evil-org-agenda)
+  (add-hook 'org-agenda-mode-hook
+          (lambda ()
+            (visual-line-mode -1)
+            (toggle-truncate-lines 1)
+            (display-line-numbers-mode 0)))
   (evil-org-agenda-set-keys))
+
+(use-package htmlize
+  :straight t)
+
+(use-package jupyter
+  :straight t
+  :config
+  ;; (add-to-list 'evil-emacs-state-modes 'jupyter-repl-mode)
+  )
 
 ;; (use-package smart-backspace
 ;;   :straight t)
@@ -247,8 +268,13 @@
   (setq-default font-latex-fontify-sectioning 1.3)
 
   (setq-default preview-scale-function 1.4)
+  (assoc-delete-all "--" tex--prettify-symbols-alist)
+  (assoc-delete-all "---" tex--prettify-symbols-alist)
 
-  (add-hook 'LaTeX-mode-hook (lambda () (TeX-fold-mode 1)))
+  (add-hook 'LaTeX-mode-hook
+            (lambda ()
+              (TeX-fold-mode 1)
+              (outline-minor-mode)))
   
   (add-to-list 'TeX-view-program-selection
              '(output-pdf "Zathura")))
@@ -302,6 +328,14 @@
 (add-hook 'svelte-mode-hook
           'set-flycheck-eslint)
 
+(use-package php-mode
+  :straight t)
+
+(use-package yaml-mode
+  :straight t
+  :config
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+
 ;; LSP
 (use-package lsp-mode
   :straight t
@@ -309,7 +343,8 @@
          (typescript-mode . lsp)
          (vue-mode . lsp)
          (go-mode . lsp)
-         (svelte-mode . lsp)) 
+         (svelte-mode . lsp)
+         (python-mode . lsp)) 
   :commands lsp
   :config
   (setq lsp-idle-delay 1)
@@ -323,7 +358,11 @@
   :config
   (global-flycheck-mode)
   (setq flycheck-check-syntax-automatically '(save idle-buffer-switch mode-enabled))
-  (add-hook 'evil-insert-state-exit-hook 'flycheck-buffer)
+  (add-hook 'evil-insert-state-exit-hook
+            '(lambda ()
+               (if flycheck-checker
+                   (flycheck-buffer))
+               ))
   (advice-add 'flycheck-eslint-config-exists-p :override (lambda() t)))
 
 (use-package lsp-ui
@@ -338,14 +377,14 @@
   :straight t
   :commands helm-lsp-workspace-symbol)
 
-(use-package origami
-  :straight t
-  :hook (prog-mode . origami-mode))
+;; (use-package origami
+;;   :straight t
+;;   :hook (prog-mode . origami-mode))
 
-(use-package lsp-origami
-  :straight t
-  :config
-  (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))
+;; (use-package lsp-origami
+;;   :straight t
+;;   :config
+;;   (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))
 
 (use-package lsp-treemacs
   :straight t
@@ -378,6 +417,12 @@
 (use-package evil-magit
   :straight t)
 
+(use-package visual-fill-column
+  :straight t
+  :config
+  (add-hook 'visual-fill-column-mode-hook
+            (lambda () (setq visual-fill-column-center-text t))))
+
 (use-package avy
   :straight t)
 
@@ -396,8 +441,8 @@
   :config
   (setq vterm-kill-buffer-on-exit t))
 
-(use-package ranger
-  :straight t)
+;; (use-package ranger
+;;   :straight t)
 
 (use-package yasnippet
   :straight t
@@ -408,18 +453,37 @@
   :straight t)
 
 ;; Elfeed
-(use-package elfeed
-  :straight t
-  :config
-  (add-to-list 'evil-emacs-state-modes 'elfeed-search-mode)
-  (add-to-list 'evil-emacs-state-modes 'elfeed-show-mode)
-  (setq browse-url-browser-function 'eww-browse-url))
+;; (use-package elfeed
+;;   :straight t
+;;   :config
+;;   (add-to-list 'evil-emacs-state-modes 'elfeed-search-mode)
+;;   (add-to-list 'evil-emacs-state-modes 'elfeed-show-mode)
+;;   (setq browse-url-browser-function 'eww-browse-url))
 
-(use-package elfeed-org
+;; (use-package elfeed-org
+;;   :straight t
+;;   :config
+;;   (setq rmh-elfeed-org-files (list (expand-file-name "~/Documents/org-mode/rss.org")))
+;;   (elfeed-org))
+
+(use-package dired+
+  :straight t
+  :init
+  (setq diredp-hide-details-initially-flag nil))
+
+(use-package dired-single
+  :straight t)
+
+(use-package all-the-icons-dired
   :straight t
   :config
-  (setq rmh-elfeed-org-files (list (expand-file-name "~/Documents/org-mode/rss.org")))
-  (elfeed-org))
+  (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
+
+;; Should be last
+(use-package evil-collection
+  :straight t
+  :config
+  (evil-collection-init '(eww dired)))
 
 ;; (use-package projectile
 ;;   :straight t)
@@ -458,6 +522,7 @@
 
 ;; Line numbers
 (global-display-line-numbers-mode 1)
+(line-number-mode nil)
 (setq display-line-numbers-type 'relative)
 (column-number-mode)
 
@@ -490,16 +555,44 @@
                (window-height . 0.33)))
 
 
+
 ;;; -------------------- Keyboard --------------------
 (load-user-file "zoom.el")
 
 (electric-pair-mode)
 
+(defvar my-intercept-mode-map (make-sparse-keymap)
+  "High precedence keymap.")
+
+(define-minor-mode my-intercept-mode
+  "Global minor mode for higher precedence evil keybindings."
+  :global t)
+
+(my-intercept-mode)
+
+(dolist (state '(normal visual insert))
+  (evil-make-intercept-map
+   (evil-get-auxiliary-keymap my-intercept-mode-map state t t)
+   state))
+
+(general-define-key
+ :keymaps 'my-intercept-mode-map
+ :states '(normal emacs)
+ "gt" 'tab-bar-switch-to-next-tab
+ "gT" 'tab-bar-switch-to-prev-tab
+ "gn" 'tab-bar-new-tab
+ )
+
 (general-create-definer my-leader-def
   :prefix "SPC"
+  :keymaps 'my-intercept-mode-map
   :states '(normal motion emacs))
 
 (general-def :states '(normal motion emacs) "SPC" nil)
+
+(general-def :states '(normal insert visual)
+  "<home>" 'beginning-of-line
+  "<end>" 'end-of-line)
 
 (my-leader-def
   :infix "h"
@@ -549,6 +642,8 @@
   "C-t" 'view-emacs-todo
   "C-w" 'describe-no-warranty
   )
+
+(my-leader-def "?" 'which-key-show-top-level)
 
 ;; Escape
 (defun minibuffer-keyboard-quit ()
@@ -650,6 +745,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  "C-c d" 'org-decrypt-entry
  "C-c e" 'org-encrypt-entry)
 
+(general-define-key
+ :keymaps 'org-agenda-mode-map
+ "M-]" 'org-agenda-later
+ "M-[" 'org-agenda-earlier)
+
 (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
 (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
 
@@ -673,7 +773,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; LaTeX
 (general-nmap
   :keymaps '(LaTeX-mode-map latex-mode-map)
-  "RET" 'TeX-command-run-all)
+  "RET" 'TeX-command-run-all
+  "C-c t" 'orgtbl-mode)
 
 ;; LSP
 (my-leader-def
@@ -688,93 +789,40 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (my-leader-def
   :infix "a"
   "a" 'org-agenda
-  "e" 'elfeed
-  "w" 'eww)
-
-;; Elfeed
-(defun elfeed-open-current-with-qutebrowser ()
-  "Open current link with qutebrowser."
-  (interactive)
-  (let ((browse-url-generic-program "/usr/bin/qutebrowser"))
-    (elfeed-show-visit t)))
-
-(defun elfeed-browse-url-with-qutebrowser ()
-  "Open current link with qutebrowser."
-  (interactive)
-  (let ((browse-url-generic-program "/usr/bin/qutebrowser"))
-    (elfeed-search-browse-url t)))
-
-(defun elfeed-open-current-with-chromium ()
-  "Open current link with qutebrowser."
-  (interactive)
-  (let ((browse-url-generic-program "/usr/bin/chromium"))
-    (elfeed-show-visit t)))
-
-(defun elfeed-browse-url-with-chromium ()
-  "Open current link with qutebrowser."
-  (interactive)
-  (let ((browse-url-generic-program "/usr/bin/chromium"))
-    (elfeed-search-browse-url t)))
-
-
-(general-define-key
- :keymaps '(elfeed-show-mode-map elfeed-search-mode-map)
- "g" nil
- "gn" 'tab-new
- "gN" 'tab-close
- "gT" 'tab-bar-switch-to-next-tab
- "gt" 'tab-bar-switch-to-prev-tab)
-
-(general-define-key
- :keymaps 'elfeed-search-mode-map
- "f" 'elfeed-search-update--force
- "o" 'elfeed-browse-url-with-qutebrowser
- "S-o" 'elfeed-browse-url-with-chromium)
-
-(general-define-key
- :keymaps 'elfeed-show-mode-map
- "o" 'elfeed-open-current-with-qutebrowser
- "S-o" 'elfeed-browse-url-with-chromium
- )
+  ;; "e" 'elfeed
+  "r" 'jupyter-run-repl
+  "w" 'eww
+  "d" 'dired)
 
 ;; EWW
 
-(add-to-list 'evil-emacs-state-modes 'eww-mode)
+;; (add-to-list 'evil-emacs-state-modes 'eww-mode)
 
 (general-define-key
  :keymaps 'eww-mode-map
- "q" 'quit-window
- "r" 'eww-readable
- "zd" 'eww-toggle-paragraph-direction
- "ze" 'eww-set-character-encoding
- "zf" 'eww-toggle-font
-
- "]]" 'eww-next-url
- "[[" 'eww-previous-url
- "g" nil
- "gj" 'eww-next-url
- "gk" 'eww-previous-url
-
- "go" 'eww-browse-with-external-browser
- "gr" 'eww-reload
  "+" 'text-scale-increase
- "-" 'text-scale-decrease
-
- "o" 'eww
- "gn" 'eww
- "gN" 'quit-window
- 
- "gt" 'tab-bar-switch-to-next-tab
- "gT" 'tab-bar-switch-to-prev-tab)
+ "-" 'text-scale-decrease)
 
 ;; avy
 (general-nmap "\\\\w" 'avy-goto-word-0-below)
 (general-nmap "\\\\b" 'avy-goto-word-0-above)
 
 ;; Origami
-(general-nmap "TAB" 'origami-recursively-toggle-node)
+;; (general-nmap "TAB" 'origami-recursively-toggle-node)
 ; (my-leader-def
 ;   "of" 'origami-show-only-node)
+
+;; HS & Folding
+(add-hook 'prog-mode-hook #'hs-minor-mode)
+(general-nmap "TAB" 'evil-toggle-fold)
+(general-nmap :keymaps 'hs-minor-mode-map "ze" 'hs-hide-level)
+
+;; Dired
+(general-define-key
+ :keymaps 'dired-mode-map
+ [remap dired-find-file] 'dired-single-buffer
+ [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
+ [remap dired-up-directory] 'dired-single-up-directory)
 
 ;; Fuzzy search
 (my-leader-def
@@ -783,6 +831,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "fw" 'helm-lsp-global-workspace-symbol
   "fc" 'helm-show-kill-ring
   "fa" 'helm-do-ag-project-root
+  "fm" 'helm-bookmarks
   "ff" 'project-find-file)
 
 (my-leader-def "s" 'helm-occur)
@@ -842,6 +891,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq backup-inhibited t)
 (setq auto-save-default nil)
 
+;; Agenda
+;; (setq org-agenda-sorting-strategy
+;;       '((agenda time-up)
+;;        (todo time-up)
+;;        (tags time-up)
+;;        (search time-up)))
+
 ;;; -------------------- Editing --------------------
 ;; undo-redo
 (fset 'undo-auto-amalgamate 'ignore)
@@ -876,12 +932,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq org-tags-exclude-from-inheritance (quote ("crypt")))
 (setq org-crypt-key nil)
 
+(conda-env-activate "base")
 (org-babel-do-load-languages
  'org-babel-load-languages
- '((emacs-lisp .t)
-   (python .t)))
+ '((emacs-lisp . t)
+   (python . t)
+   (jupyter . t)))
+
+(org-babel-jupyter-override-src-block "python")
 
 (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+
+(with-eval-after-load 'ox-latex
+  (load-user-file "org-latex.el"))
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
