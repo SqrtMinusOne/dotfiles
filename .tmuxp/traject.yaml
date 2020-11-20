@@ -1,0 +1,37 @@
+session_name: traject
+start_directory: ~/Code/Digital_Trajectories
+windows:
+  - window_name: vifm
+    layout: main-horizontal
+    shell_command_before:
+      - conda activate traject
+    panes:
+      - shell_command:
+          - cd ~/Code/Digital_Trajectories
+          - vifm .
+  - window_name: deploy
+    layout: main-vertical
+    shell_command_before:
+      - conda activate traject
+    panes:
+      - shell_command:
+          - cd ~/Code/Digital_Trajectories/digital-trajectories-backend
+          - git pull
+          - cd ~/Code/Digital_Trajectories
+          - cd ~/Code/Digital_Trajectories/digital-trajectories-backend
+          - yarn run debug
+      - shell_command:
+          - cd ~/Code/Digital_Trajectories/digital-trajectories-frontend
+          - git pull
+          - yarn run serve
+      - shell_command:
+          - cd ~/Code/Digital_Trajectories
+          - docker-compose up
+      - shell_command:
+          - vue-devtools
+  - window_name: emacs
+    panes:
+      - shell_command:
+          - cd ~/Code/Digital_Trajectories/digital-trajectories-backend
+          - conda activate traject
+          - emacs

@@ -16,12 +16,20 @@ c.fonts.web.size.default_fixed = 13
 # config.unbind('T', mode='normal')
 # config.bind('T', 'set-cmd-text -s :buffer')
 
+c.content.javascript.enabled = False
+
 config.bind('\\t', 'set-cmd-text -s :buffer')
 config.bind('\\b', 'set-cmd-text -s :bookmark-load')
 config.bind('\\ww', ':open file:///home/pavel/MEGAsync/Sync/vimwiki-html/index.html')
 
 config.bind('\\z1', 'set zoom.default 100 ;; set fonts.default_size 10pt')
 config.bind('\\z2', 'set zoom.default 125 ;; set fonts.default_size 12pt')
+
+if c.colors.webpage.darkmode.enabled:
+    config.bind('\\d', 'set colors.webpage.darkmode.enabled False ;; restart')
+else:
+    config.bind('\\d', 'set colors.webpage.darkmode.enabled True ;; restart')
+    
 
 # config.unbind('<Escape>', mode='insert')
 config.bind('<Shift-Escape>', 'fake-key <Escape>', mode='insert')

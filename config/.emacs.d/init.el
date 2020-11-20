@@ -96,11 +96,20 @@
 (use-package htmlize
   :straight t)
 
+(use-package better-jumper
+  :straight t
+  :config
+  (better-jumper-mode +1)
+  (setq better-jumper-add-jump-behavior 'replace))
+
 (use-package jupyter
   :straight t
   :config
   ;; (add-to-list 'evil-emacs-state-modes 'jupyter-repl-mode)
   )
+
+;; (use-package ob-typescript
+;;   :straight t)
 
 ;; (use-package smart-backspace
 ;;   :straight t)
@@ -142,10 +151,10 @@
 (use-package all-the-icons
   :straight t)
 
-(use-package solaire-mode
-  :straight t
-  :config
-  (solaire-global-mode +1))
+;; (use-package solaire-mode
+;;   :straight t
+;;   :config
+;;   (solaire-global-mode +1))
 
 (use-package highlight-indent-guides
   :straight t
@@ -156,6 +165,14 @@
   :config
   (setq highlight-indent-guides-method 'bitmap)
   (setq highlight-indent-guides-bitmap-function 'highlight-indent-guides--bitmap-line))
+
+(use-package auto-dim-other-buffers
+  :straight t
+  :config
+  (set-face-attribute 'auto-dim-other-buffers-face nil
+                      :background "#212533")
+  (auto-dim-other-buffers-mode t)
+  )
 
 (use-package doom-themes
   :straight t
@@ -389,6 +406,25 @@
 (use-package lsp-treemacs
   :straight t
   :commands lsp-treemacs-errors-list)
+
+;; DAP
+(use-package dap-mode
+  :straight t
+  :init
+  (setq lsp-enable-dap-auto-configure nil)
+  :config
+
+  (require 'dap-node)
+  (dap-node-setup)
+
+  (require 'dap-chrome)
+  (dap-chrome-setup)
+  
+  (dap-mode 1)
+  (dap-ui-mode 1)
+  (dap-tooltip-mode 1)
+  (tooltip-mode 1)
+  (dap-ui-controls-mode 1))
 
 ;; Misc
 (use-package magit
@@ -706,10 +742,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ; (general-imap [(shift backspace)] 'backward-delete-char)
 
 ;; Helm
-(define-key evil-ex-map "b" 'helm-buffers-list)
 (general-define-key "M-x" 'helm-M-x)
-(general-define-key "C-s" 'helm-occur)
-(general-define-key "C-h a" 'helm-apropos)
+;; (general-define-key "C-s" 'helm-occur)
 
 ;; Buffer switch
 (general-define-key "C-<right>" 'evil-window-right)
@@ -727,7 +761,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  :keymaps '(normal override global)
  "C-n" 'treemacs)
 
-(general-nmap "C-o" 'lsp-treemacs-symbols)
+;; (general-nmap "C-o" 'lsp-treemacs-symbols)
 
 (general-define-key
  :keymaps '(treemacs-mode-map) [mouse-1] #'treemacs-single-click-expand-action)
@@ -738,6 +772,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; Tabs
 (general-nmap "gn" 'tab-new)
 (general-nmap "gN" 'tab-close)
+
+;; Jumper
+(general-nmap
+  "go" 'better-jumper-jump-forward
+  "gp" 'better-jumper-jump-backward)
 
 ;; Org-mode
 (general-define-key
@@ -785,6 +824,25 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "la" 'helm-lsp-code-actions
   "le" 'list-flycheck-errors)
 
+;; DAP
+(my-leader-def
+  :infix "d"
+  "d" 'dap-debug
+  "b" 'dap-breakpoint-toggle
+  "c" 'dap-breakpoint-condition
+  "wl" 'dap-ui-locals
+  "wb" 'dap-ui-breakpoints
+  "wr" 'dap-ui-repl
+  "ws" 'dap-ui-sessions
+  "we" 'dap-ui-expressions
+  )
+
+(my-leader-def
+  :infix "d"
+  :keymaps 'dap-mode-map
+  "h" 'dap-hydra
+  )
+
 ;; Apps
 (my-leader-def
   :infix "a"
@@ -792,7 +850,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   ;; "e" 'elfeed
   "r" 'jupyter-run-repl
   "w" 'eww
-  "d" 'dired)
+  "d" 'dired
+  "o" 'org-switchb
+  )
 
 ;; EWW
 
@@ -832,18 +892,24 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "fc" 'helm-show-kill-ring
   "fa" 'helm-do-ag-project-root
   "fm" 'helm-bookmarks
-  "ff" 'project-find-file)
+  "ff" 'project-find-file
+  "fe" 'conda-env-activate)
 
 (my-leader-def "s" 'helm-occur)
+(my-leader-def "SPC" 'helm-resume)
+
+(general-define-key
+ :keymaps 'helm-map
+ "C-j" 'helm-next-line
+ "C-k" 'helm-previous-line)
+(general-imap
+  "C-y" 'helm-show-kill-ring)
 
 (general-nmap "C-p" 'project-find-file)
 
 (my-leader-def
   "tw" 'treemacs-switch-workspace
   "te" 'treemacs-edit-workspaces)
-
-(my-leader-def
-  "e" 'conda-env-activate)
 
 (my-leader-def
   "u" 'undo-tree-visualize)
@@ -937,9 +1003,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  'org-babel-load-languages
  '((emacs-lisp . t)
    (python . t)
+   ;; (typescript .t)
    (jupyter . t)))
 
 (org-babel-jupyter-override-src-block "python")
+;; (org-babel-jupyter-override-src-block "typescript")
 
 (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
 
@@ -956,7 +1024,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    '("c83c095dd01cde64b631fb0fe5980587deec3834dc55144a6e78ff91ebc80b19" "bf387180109d222aee6bb089db48ed38403a1e330c9ec69fe1f52460a8936b66" "e074be1c799b509f52870ee596a5977b519f6d269455b84ed998666cf6fc802a" default))
  '(js-indent-level 2)
  '(org-agenda-files
-   '("~/Documents/org-mode/Job/dig-traject.org" "~/Documents/org-mode/Personal/look-forward.org" "~/Documents/org-mode/ETU/sem-9.org"))
+   '("~/Documents/org-mode/Personal/misc.org" "~/Documents/org-mode/Job/dig-traject.org" "~/Documents/org-mode/Personal/look-forward.org" "~/Documents/org-mode/ETU/sem-9.org"))
  '(sgml-basic-offset 2)
  '(wakatime-cli-path "/usr/bin/wakatime")
  '(wakatime-python-bin nil))

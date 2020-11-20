@@ -7,3 +7,4 @@ fi
 ip_info=$(curl -s http://api.ipstack.com/${ip}?access_key=${API_KEY})
 emoji=$(echo $ip_info | jq -r '.location.country_flag_emoji')
 echo "$emoji $ip"
+echo "$emoji"

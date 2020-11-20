@@ -1,0 +1,9 @@
+# key: flst
+# name: float listing
+# --
+\begin{listing}[h]
+  \frame${1:text}file[fontsize=\small]{$2}
+  \caption{$3}%
+  \label{lst:$4}
+\end{listing}
+$0

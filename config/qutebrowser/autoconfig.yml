@@ -6,10 +6,53 @@
 
 config_version: 2
 settings:
+  colors.webpage.darkmode.enabled:
+    global: false
+  content.javascript.enabled:
+    '*://*.gitlab.etu.ru/*': true
+    '*://*.mega.nz/*': true
+    '*://*.my.vultr.com/*': true
+    '*://*.pandas.pydata.org/*': true
+    '*://*.sqrtminusone.ddns.net/*': true
+    '*://*.www.newscientist.com/*': false
+    '*://*.www.youtube.com/*': true
+    '*://code.visualstudio.com/*': true
+    '*://datalore.jetbrains.com/*': true
+    '*://docs.google.com/*': true
+    '*://drive.google.com/*': true
+    '*://github.com/*': true
+    '*://gitlab.etu.ru/*': false
+    '*://rasbt.github.io/*': true
+    '*://trello.com/*': true
+    '*://us02web.zoom.us/*': true
+    '*://vk.com/*': true
+    '*://wakatime.com/*': true
+    '*://www.reddit.com/*': true
+    '*://www.windy.com/*': true
+    '*://x-extends.github.io/*': true
+  content.media.audio_capture:
+    https://sqrtminusone.ddns.net:1984: true
+  content.media.audio_video_capture:
+    https://sqrtminusone.ddns.net:1984: true
+  content.media.video_capture:
+    https://sqrtminusone.ddns.net:1984: true
   content.notifications:
+    https://demo.freshrss.org: false
+    https://original-films.com: false
+    https://sqrtminusone.ddns.net: false
+    https://sqrtminusone.ddns.net:1985: false
+    https://thepiratebay.org: false
     https://www.reddit.com: false
   content.register_protocol_handler:
     https://mail.google.com?extsrc=mailto&url=%25s: false
+  fonts.default_family:
+    global: monospace
+  fonts.default_size:
+    global: 12pt
+  fonts.web.family.fixed:
+    global: monospace
+  fonts.web.size.default_fixed:
+    global: 16
   statusbar.widgets:
     global:
     - keypress
@@ -34,3 +77,5 @@ settings:
     - utm_campaign
     - utm_term
     - utm_content
+  zoom.default:
+    global: '125'

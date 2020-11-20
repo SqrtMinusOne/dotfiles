@@ -116,7 +116,7 @@ assign [class="Postman"] $w4
 assign [class="Chromium-browse"] $w4
 assign [class="chromium"] $w4
 assign [class="google-chrome"] $w4
-assign [class="Electron"] $w4
+assign [title="Vue Developer Tools"] $w4
 assign [class="Google Play Music Desktop Player"] $w9
 assign [class="jetbrains-datagrip"] $w4
 assign [class="zoom"] $w7
@@ -266,6 +266,7 @@ mode "apps" {
     bindsym c exec "copyq toggle"; mode default
     bindsym k exec "keepassxc"; mode default
     bindsym e exec mailspring; mode default
+    bindsym a exec emacs; mode default
 }
 
 bindsym $mod+p exec "copyq menu"
@@ -339,6 +340,7 @@ exec --no-startup-id pulseeffects --gapplication-service
 
 # Screenshots
 bindsym --release Print exec "flameshot gui"
+bindsym --release Shift+Print exec "xfce4-screenshooter"
 
 # Sudo
 exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
