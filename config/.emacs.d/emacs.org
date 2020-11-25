@@ -255,7 +255,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package evil-collection
   :straight t
   :config
-  (evil-collection-init '(eww dired)))
+  (evil-collection-init '(eww dired dasboard company vterm)))
 #+end_src
 ** Undo-redo & undo-tree
 #+begin_src emacs-lisp
@@ -496,12 +496,22 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap "TAB" 'evil-toggle-fold)
 (general-nmap :keymaps 'hs-minor-mode-map "ze" 'hs-hide-level)
 #+end_src
-** Total misc
+** Time trackers
+*** WakaTime
 #+begin_src emacs-lisp
 (use-package wakatime-mode
   :straight t
   :config
   (global-wakatime-mode))
+#+end_src
+*** ActivityWatch
+#+begin_src emacs-lisp
+;; (use-package request
+;;   :straight t)
+;;   
+;; (use-package activity-watch-mode
+;;   :straight t
+;;   (global-activitywatch-mode))
 #+end_src
 * Dired
 #+begin_src emacs-lisp
@@ -586,8 +596,29 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap "~" 'vterm)
 
 (general-define-key
- :keymaps 'vterm-mode-map
- "M-q" 'vterm-send-escape)
+  :keymaps 'vterm-mode-map
+  "M-q" 'vterm-send-escape
+  
+  "C-h" 'evil-window-left
+  "C-l" 'evil-window-right
+  "C-k" 'evil-window-up
+  "C-j" 'evil-window-down
+  
+  "C-<right>" 'evil-window-right
+  "C-<left>" 'evil-window-left
+  "C-<up>" 'evil-window-up
+  "C-<down>" 'evil-window-down
+  
+  "M-<left>" 'vterm-send-left
+  "M-<right>" 'vterm-send-right
+  "M-<up>" 'vterm-send-up
+  "M-<down>" 'vterm-send-down)
+  
+(general-imap
+  :keymaps 'vterm-mode-map
+  "C-r" 'vterm-send-C-r
+  "M-l" 'vterm-send-right
+  "M-h" 'vterm-send-left)
 #+end_src
 * Org-mode
 ** Installation
@@ -775,6 +806,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+begin_src emacs-lisp
 (use-package all-the-icons
   :straight t)
+#+end_src
+** Dashboard
+#+begin_src emacs-lisp
+;; (use-package dashboard
+;;   :straight t
+;;   :config
+;;   (dashboard-setup-startup-hook))
 #+end_src
 ** Theme & global stuff
 #+begin_src emacs-lisp

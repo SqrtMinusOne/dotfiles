@@ -213,7 +213,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package evil-collection
   :straight t
   :config
-  (evil-collection-init '(eww dired)))
+  (evil-collection-init '(eww dired dasboard company vterm)))
 
 (use-package undo-tree
   :straight t
@@ -428,6 +428,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (global-wakatime-mode))
 
+;; (use-package request
+;;   :straight t)
+;;   
+;; (use-package activity-watch-mode
+;;   :straight t
+;;   (global-activitywatch-mode))
+
 (use-package dired
   :ensure nil
   :custom ((dired-listing-switches "-alh --group-directories-first"))
@@ -507,8 +514,29 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap "~" 'vterm)
 
 (general-define-key
- :keymaps 'vterm-mode-map
- "M-q" 'vterm-send-escape)
+  :keymaps 'vterm-mode-map
+  "M-q" 'vterm-send-escape
+  
+  "C-h" 'evil-window-left
+  "C-l" 'evil-window-right
+  "C-k" 'evil-window-up
+  "C-j" 'evil-window-down
+  
+  "C-<right>" 'evil-window-right
+  "C-<left>" 'evil-window-left
+  "C-<up>" 'evil-window-up
+  "C-<down>" 'evil-window-down
+  
+  "M-<left>" 'vterm-send-left
+  "M-<right>" 'vterm-send-right
+  "M-<up>" 'vterm-send-up
+  "M-<down>" 'vterm-send-down)
+  
+(general-imap
+  :keymaps 'vterm-mode-map
+  "C-r" 'vterm-send-C-r
+  "M-l" 'vterm-send-right
+  "M-h" 'vterm-send-left)
 
 (straight-override-recipe
    '(org :type git :host github :repo "emacsmirror/org" :no-build t))
@@ -666,6 +694,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package all-the-icons
   :straight t)
+
+;; (use-package dashboard
+;;   :straight t
+;;   :config
+;;   (dashboard-setup-startup-hook))
 
 ;; (use-package solaire-mode
 ;;   :straight t
