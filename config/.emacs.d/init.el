@@ -245,6 +245,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (use-package helm-rg
   :straight t)
+
+(general-nmap
+  :keymaps 'helm-ag-mode-map
+  "RET" 'helm-ag-mode-jump
+  "M-RET" 'helm-ag-mode-jump-other-window)
+  
+(general-nmap
+  :keymaps 'helm-occur-mode-map
+  "RET" 'helm-occur-mode-goto-line
+  "M-RET" 'helm-occur-mode-goto-line-ow)
   
 (general-define-key "M-x" 'helm-M-x)
 (my-leader-def
@@ -272,7 +282,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  
 (general-imap
   "C-y" 'helm-show-kill-ring)
-
 ;; (general-nmap "C-p" 'project-find-file)
 
 (use-package treemacs
@@ -319,7 +328,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (my-leader-def
   "p" 'projectile-command-map
-  "fa" 'helm-projectile-rg)
+  "fa" 'helm-projectile-rg
+  "fA" 'helm-projectile-ag)
   
 (general-nmap "C-p" 'helm-projectile-find-file)
 
@@ -442,6 +452,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq dired-dwim-target t)
   (setq wdired-allow-to-change-permissions t)
   (setq wdired-create-parent-directories t)
+  (setq dired-recursive-copies 'always)
+  (setq dired-recursive-deletes 'always)
   (add-hook 'dired-mode-hook
     (lambda ()
       (setq truncate-lines t)
@@ -513,6 +525,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap "`" 'toggle-vterm-subteminal)
 (general-nmap "~" 'vterm)
 
+(add-hook 'vterm-mode-hook
+          (lambda ()
+            (setq-local global-display-line-numbers-mode nil)
+            (display-line-numbers-mode 0)
+            ))
+
 (general-define-key
   :keymaps 'vterm-mode-map
   "M-q" 'vterm-send-escape
@@ -535,6 +553,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-imap
   :keymaps 'vterm-mode-map
   "C-r" 'vterm-send-C-r
+  "C-k" 'vterm-send-C-k
+  "C-j" 'vterm-send-C-j
   "M-l" 'vterm-send-right
   "M-h" 'vterm-send-left)
 
@@ -1007,6 +1027,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-define-key
  :keymaps 'image-mode-map
  "q" 'kill-this-buffer)
+
+(setq remote-file-name-inhibit-cache nil)
+(setq tramp-default-method "ssh")
+(setq vc-ignore-dir-regexp
+      (format "%s\\|%s"
+                    vc-ignore-dir-regexp
+                    tramp-file-name-regexp))
+(setq tramp-verbose 6)
 
 (my-leader-def "aw" 'eww)
 
