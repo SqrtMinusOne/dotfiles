@@ -83,6 +83,7 @@
 (general-def :states '(normal motion emacs) "SPC" nil)
 
 (my-leader-def "?" 'which-key-show-top-level)
+(my-leader-def "E" 'eval-expression)
 
 (general-def :states '(normal insert visual)
   "<home>" 'beginning-of-line
@@ -159,15 +160,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             minibuffer-local-isearch-map)
  [escape] 'minibuffer-keyboard-quit)
 
-(general-define-key "C-<right>" 'evil-window-right)
-(general-define-key "C-<left>" 'evil-window-left)
-(general-define-key "C-<up>" 'evil-window-up)
-(general-define-key "C-<down>" 'evil-window-down)
-
-(general-define-key "C-h" 'evil-window-left)
-(general-define-key "C-l" 'evil-window-right)
-(general-define-key "C-k" 'evil-window-up)
-(general-define-key "C-j" 'evil-window-down)
+(general-define-key
+  :keymaps 'my-intercept-mode-map
+  "C-<right>" 'evil-window-right
+  "C-<left>" 'evil-window-left
+  "C-<up>" 'evil-window-up
+  "C-<down>" 'evil-window-down
+  "C-h" 'evil-window-left
+  "C-l" 'evil-window-right
+  "C-k" 'evil-window-up
+  "C-j" 'evil-window-down)
 
 (use-package evil
   :straight t
@@ -202,6 +204,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (evil-commentary-mode))
   
+(use-package evil-collection
+  :straight t
+  :config
+  (evil-collection-init '(eww dired dasboard company vterm flycheck)))
+  
 (use-package evil-quickscope
   :straight t
   :config
@@ -210,10 +217,34 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          (LaTeX-mode . turn-on-evil-quickscope-mode)
          ))
 
-(use-package evil-collection
-  :straight t
-  :config
-  (evil-collection-init '(eww dired dasboard company vterm)))
+;; (use-package evil-mc
+;;   :straight t
+;;   :config
+;;   (define-key evil-mc-key-map (kbd "C-n") nil)
+;;   (define-key evil-mc-key-map (kbd "C-p") nil)
+;;   (define-key evil-mc-key-map (kbd "g") nil)
+;;   (evil-define-key 'normal evil-mc-key-map
+;;     (kbd "C-n") nil
+;;     (kbd "g") nil
+;;     (kbd "C-p") nil
+;;   )
+;;   (evil-define-key 'visual evil-mc-key-map
+;;     "A" #'evil-mc-make-cursor-in-visual-selection-end
+;;     "I" #'evil-mc-make-cursor-in-visual-selection-beg
+;;     (kbd "C-n") nil
+;;     (kbd "g") nil
+;;     (kbd "C-p") nil
+;;   )
+;;   (global-evil-mc-mode 1))
+;;   
+;; (general-nmap "gr" evil-mc-cursors-map)
+
+;; (use-package multiple-cursors
+;;   :straight t)
+;;  
+;; (general-vmap
+;;   "I" #'mc/edit-lines
+;; )
 
 (use-package undo-tree
   :straight t
@@ -373,17 +404,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t)
   
 (my-leader-def
-  "m" 'magit)
+  "m" 'magit
+  "M" 'magit-file-dispatch)
 
-(use-package better-jumper
-  :straight t
-  :config
-  (better-jumper-mode +1)
-  (setq better-jumper-add-jump-behavior 'replace))
-
-(general-nmap
-  "go" 'better-jumper-jump-forward
-  "gp" 'better-jumper-jump-backward)
+;; (use-package better-jumper
+;;   :straight t
+;;   :config
+;;   (better-jumper-mode +1)
+;;   (setq better-jumper-add-jump-behavior 'replace))
+;; 
+;; (general-nmap
+;;   "go" 'better-jumper-jump-forward
+;;   "gp" 'better-jumper-jump-backward)
 
 ;; (use-package smart-backspace
 ;;   :straight t)
@@ -407,6 +439,21 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 4)
 (setq-default evil-shift-round nil)
+
+(use-package expand-region
+  :straight t)
+  
+(general-nmap
+  "+" 'er/expand-region)
+
+(use-package winner-mode
+  :ensure nil
+  :config
+  (winner-mode)
+  :bind (:map evil-window-map
+    ("u" . winner-undo)
+    ("U" . winner-redo)
+  ))
 
 (use-package editorconfig
   :straight t
@@ -460,7 +507,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (visual-line-mode nil)))
   (evil-collection-define-key 'normal 'dired-mode-map
     "h" 'dired-single-up-directory
-    "l" 'dired-single-buffer))
+    "l" 'dired-single-buffer
+    "h" 'dired-single-up-directory
+    "l" 'dired-single-buffer
+    "=" 'dired-narrow
+    "gc" 'dired-create-empty-file
+    (kbd "<left>") 'dired-single-up-directory
+    (kbd "<right>") 'dired-single-buffer))
     
 (use-package dired+
   :straight t
@@ -478,6 +531,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package dired-open
   :straight t)
   
+(use-package dired-narrow
+  :straight t)
+  
 (my-leader-def "ad" 'dired)
 
 (general-define-key
@@ -486,6 +542,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
   [remap dired-up-directory] 'dired-single-up-directory
   "M-<return>" 'dired-open-xdg)
+  
+(general-define-key
+  :keymaps 'dired-narrow-map
+  [escape] 'keyboard-quit)
 
 (use-package vterm
   :straight t
@@ -634,6 +694,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     "aa" 'org-agenda
     "ao" 'org-switchb)
 
+(defun my/org-link-copy (&optional arg)
+  "Extract URL from org-mode link and add it to kill ring."
+  (interactive "P")
+  (let* ((link (org-element-lineage (org-element-context) '(link) t))
+          (type (org-element-property :type link))
+          (url (org-element-property :path link))
+          (url (concat type ":" url)))
+    (kill-new url)
+    (message (concat "Copied URL: " url))))
+    
+(general-nmap :keymaps 'org-mode-map
+    "C-x C-l" 'my/org-link-copy)
+
 (use-package org-superstar
   :straight t
   :config
@@ -654,6 +727,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
+
+;; Transparency
+(set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+(add-to-list 'default-frame-alist '(alpha . (90 . 90)))
 
 ;; Prettify symbols
 (global-prettify-symbols-mode)
@@ -676,7 +753,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; Line numbers
 (global-display-line-numbers-mode 1)
 (line-number-mode nil)
-(setq display-line-numbers-type 'relative)
+(setq display-line-numbers-type 'visual)
 (column-number-mode)
 
 ;; Parenteses
@@ -711,6 +788,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)
   (setq doom-modeline-buffer-state-icon nil))
+
+(use-package emojify
+  :straight t
+  :hook (after-init . global-emojify-mode))
 
 (use-package all-the-icons
   :straight t)
@@ -795,11 +876,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          (vue-mode . lsp)
          (go-mode . lsp)
          (svelte-mode . lsp)
-         (python-mode . lsp)) 
+         (python-mode . lsp)
+         (json-mode . lsp)) 
   :commands lsp
   :config
   (setq lsp-idle-delay 1)
   (setq lsp-eslint-server-command '("node" "/home/pavel/.emacs.d/.cache/lsp/eslint/unzipped/extension/server/out/eslintServer.js" "--stdio"))
+  (setq lsp-eslint-run "onSave")
   (setq lsp-signature-render-documentation nil)
   (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte"))
   )
@@ -809,8 +892,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :commands lsp-ui-mode
   :config
   (setq lsp-ui-doc-delay 2)
-  (setq lsp-ui-sideline-show-hover nil)
-  )
+  (setq lsp-ui-sideline-show-hover nil))
 
 (use-package helm-lsp
   :straight t
@@ -863,6 +945,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq lsp-enable-dap-auto-configure nil)
   :config
 
+  (setq dap-ui-variable-length 100)
   (require 'dap-node)
   (dap-node-setup)
 
@@ -874,6 +957,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (dap-tooltip-mode 1)
   (tooltip-mode 1)
   (dap-ui-controls-mode 1))
+
 (my-leader-def
   :infix "d"
   "d" 'dap-debug
@@ -891,6 +975,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :keymaps 'dap-mode-map
   "h" 'dap-hydra
   )
+  
+(defun my/dap-yank-value-at-point (node)
+  (interactive (list (treemacs-node-at-point)))
+  (kill-new (message (plist-get (button-get node :item) :value))))
 
 (use-package typescript-mode
   :straight t)
@@ -900,14 +988,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq-local lsp-diagnostic-package :none)
   (setq-local flycheck-checker 'javascript-eslint))
 
-(add-hook 'typescript-mode-hook
-          #'set-flycheck-eslint)
+;; (add-hook 'typescript-mode-hook
+;;           #'set-flycheck-eslint)
 
 (use-package vue-mode
   :straight t)
   
-(add-hook 'vue-mode-hook
-         #'set-flycheck-eslint)
+;; (add-hook 'vue-mode-hook
+;;          #'set-flycheck-eslint)
 
 (add-hook 'vue-mode-hook #'hs-minor-mode)
          

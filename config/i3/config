@@ -74,11 +74,11 @@ bindsym $mod+Shift+A focus child
 set $w1 "1 🚀"
 set $w2 "2 🌍"
 set $w3 "3 💬"
-set $w4 "4 ⚙️"
+set $w4 "4 🛠️️"
 set $w7 "7 🛰️"
 set $w8 "8 📝"
 set $w9 "9 🎵"
-set $w10 "Z 📦"
+set $w10 "10 📦"
 
 bindsym $mod+1 workspace $w1
 bindsym $mod+2 workspace $w2
@@ -274,7 +274,7 @@ bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper-2-1.
 
 # Colors
 set $bg-color 	         #292d3e
-set $inactive-bg-color   #434758
+set $inactive-bg-color   #434758ee
 set $text-color          #f3f4f5
 set $inactive-text-color #aaaaaa
 set $urgent-bg-color     #f07178
@@ -287,39 +287,38 @@ client.unfocused        $inactive-bg-color  $inactive-bg-color $inactive-text-co
 client.focused_inactive $inactive-bg-color  $inactive-bg-color $inactive-text-color $bg-color
 client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-color   $bg-color
 
-
-
 # bar
-bar {
-    status_command i3blocks -c ~/.config/i3/i3blocks.conf
-    i3bar_command i3bar
-    font pango:monospace 12
-    output HDMI-A-0
-    tray_output none
-    colors {
-        background $bg-color
-        separator #757575
-        #                  border             background         text
-        focused_workspace  $bg-color          $bg-color          $text-color
-        inactive_workspace $inactive-bg-color $inactive-bg-color $inactive-text-color
-        urgent_workspace   $urgent-bg-color   $urgent-bg-color   $urgent-text-color
-    }
-}
+exec_always --no-startup-id "bash /home/pavel/bin/polybar.sh"
+# bar {
+#     status_command i3blocks -c ~/.config/i3/i3blocks.conf
+#     i3bar_command i3bar
+#     font pango:monospace 12
+#     output HDMI-A-0
+#     tray_output none
+#     colors {
+#         background $bg-color
+#         separator #757575
+#         #                  border             background         text
+#         focused_workspace  $bg-color          $bg-color          $text-color
+#         inactive_workspace $inactive-bg-color $inactive-bg-color $inactive-text-color
+#         urgent_workspace   $urgent-bg-color   $urgent-bg-color   $urgent-text-color
+#     }
+# }
 
-bar {
-    status_command i3blocks -c ~/.config/i3/i3blocks.conf
-    i3bar_command i3bar
-    font pango:monospace 10
-    output DVI-D-0
-    colors {
-        background $bg-color
-        separator #757575
-        #                  border             background         text
-        focused_workspace  $bg-color          $bg-color          $text-color
-        inactive_workspace $inactive-bg-color $inactive-bg-color $inactive-text-color
-        urgent_workspace   $urgent-bg-color   $urgent-bg-color   $urgent-text-color
-    }
-}
+# bar {
+#     status_command i3blocks -c ~/.config/i3/i3blocks.conf
+#     i3bar_command i3bar
+#     font pango:monospace 10
+#     output DVI-D-0
+#     colors {
+#         background $bg-color
+#         separator #757575
+#         #                  border             background         text
+#         focused_workspace  $bg-color          $bg-color          $text-color
+#         inactive_workspace $inactive-bg-color $inactive-bg-color $inactive-text-color
+#         urgent_workspace   $urgent-bg-color   $urgent-bg-color   $urgent-text-color
+#     }
+# }
 
 # Pulse Audio controls
 bindsym XF86AudioRaiseVolume exec --no-startup-id "pulseaudio-ctl up && pkill -RTMIN+2 i3blocks"
@@ -365,6 +364,7 @@ exec --no-startup-id mpd
 
 # Stuff
 exec aw-qt
+exec "bash /home/pavel/bin/bukuserver.sh"
 exec dunst
 exec kde-connect-indicator
 exec copyq
