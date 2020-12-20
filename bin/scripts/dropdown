@@ -1,9 +1,0 @@
-#!/bin/bash
-CLASSNAME="dropdown_tmux"
-COMMAND="st -n $CLASSNAME -e tmux new-session -s $CLASSNAME"
-pid=$(xdotool search --classname "dropdown_tmux")
-if [[ ! -z $pid  ]]; then
-    i3-msg scratchpad show
-else
-    setsid -f ${COMMAND}
-fi

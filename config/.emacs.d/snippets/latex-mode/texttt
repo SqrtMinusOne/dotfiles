@@ -1,4 +1,0 @@
-# key: tt
-# name: texttt
-# --
-\texttt{$1} $0

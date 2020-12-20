@@ -1,2 +1,0 @@
-#!/bin/bash
-/home/pavel/Programs/miniconda3/bin/python /home/pavel/Code/mpd-watcher/mpd-watcher/watcher.py

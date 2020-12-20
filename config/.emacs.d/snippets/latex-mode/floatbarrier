@@ -1,6 +1,0 @@
-# -*- mode: snippet -*-
-# name: floatbarrier
-# key: fb
-# --
-\FloatBarrier{}
-$0

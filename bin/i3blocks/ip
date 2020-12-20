@@ -1,6 +1,0 @@
-#!/bin/bash
-ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
-if [[ -z $ip || $ip == *"timed out"* ]]; then
-    exit
-fi
-echo $ip

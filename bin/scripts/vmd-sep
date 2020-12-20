@@ -1,2 +1,0 @@
-#!/bin/bash
-/home/pavel/Programs/miniconda3/bin/vmd $1 &

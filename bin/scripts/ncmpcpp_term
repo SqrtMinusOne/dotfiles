@@ -1,2 +1,0 @@
-#!/bin/bash
-i3-msg "workspace 9: Music; exec 'i3-sensible-terminal -e ncmpcpp'"
