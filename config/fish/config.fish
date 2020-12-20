@@ -13,3 +13,7 @@ alias q="exit"
 # !! Contents within this block are managed by 'conda init' !!
 eval /home/pavel/Programs/miniconda3/bin/conda "shell.fish" "hook" $argv | source
 # <<< conda initialize <<<
+
+if ! test -n "$TMUX"; and ! test -n "$IS_EMACS";
+    colorscript random
+end

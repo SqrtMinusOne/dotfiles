@@ -36,6 +36,10 @@
   (load-file (expand-file-name file user-init-dir)))
 #+end_src
 ** Misc
+*** Environment variable
+#+begin_src emacs-lisp
+(setenv "IS_EMACS" "true")
+#+end_src
 *** Add rust stuff to =exec-path=
 #+begin_src emacs-lisp
 (add-to-list 'exec-path (expand-file-name "~/.cargo/bin"))
@@ -92,34 +96,93 @@
 
 (general-define-key "C-c c" 'my-edit-configuration)
 #+end_src
-*** Intercept map for evil
+*** Editing
 #+begin_src emacs-lisp
-(defvar my-intercept-mode-map (make-sparse-keymap)
-  "High precedence keymap.")
-
-(define-minor-mode my-intercept-mode
-  "Global minor mode for higher precedence evil keybindings."
-  :global t)
-
-(my-intercept-mode)
+(general-def :states '(normal insert visual)
+  "<home>" 'beginning-of-line
+  "<end>" 'end-of-line)
 #+end_src
+*** Escape
+#+begin_src emacs-lisp
+(defun minibuffer-keyboard-quit ()
+  "Abort recursive edit.
+In Delete Selection mode, if the mark is active, just deactivate it;
+then it takes a second \\[keyboard-quit] to abort the minibuffer."
+  (interactive)
+  (if (and delete-selection-mode transient-mark-mode mark-active)
+      (setq deactivate-mark  t)
+    (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
+    (abort-recursive-edit)))
+
+(general-define-key
+ :keymaps '(normal visual global)
+ [escape] 'keyboard-quit)
+
+(general-define-key
+ :keymaps '(minibuffer-local-map
+            minibuffer-local-ns-map
+            minibuffer-local-completion-map
+            minibuffer-local-must-match-map
+            minibuffer-local-isearch-map)
+ [escape] 'minibuffer-keyboard-quit)
+
+#+end_src
+* General editing & setup
+** Evil-mode
+#+begin_src emacs-lisp
+(use-package evil
+  :straight t
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  :config
+  (evil-mode 1)
+  (setq evil-search-module 'evil-search)
+  (setq evil-split-window-below t)
+  (setq evil-vsplit-window-right t)
+  ;; (setq evil-respect-visual-line-mode t)
+  (evil-set-undo-system 'undo-tree)
+  ;; (add-to-list 'evil-emacs-state-modes 'dired-mode)
+  )
+  
+(use-package evil-numbers
+  :straight t)
+
+(use-package evil-surround
+  :straight t
+  :config
+  (global-evil-surround-mode 1))
+
+(use-package evil-commentary
+  :straight t
+  :config
+  (evil-commentary-mode))
+  
+(use-package evil-collection
+  :straight t
+  :config
+  (evil-collection-init '(eww dired dasboard company vterm flycheck ebuku)))
+  
+(use-package evil-quickscope
+  :straight t
+  :config
+  :hook (
+         (prog-mode . turn-on-evil-quickscope-mode)
+         (LaTeX-mode . turn-on-evil-quickscope-mode)
+         ))
+#+end_src
+** Keybindgs to override evil
 *** My leader
 #+begin_src emacs-lisp
 (general-create-definer my-leader-def
   :prefix "SPC"
-  :keymaps 'my-intercept-mode-map
+  :keymaps 'override
   :states '(normal motion emacs))
 
 (general-def :states '(normal motion emacs) "SPC" nil)
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
-#+end_src
-*** Editing
-#+begin_src emacs-lisp
-(general-def :states '(normal insert visual)
-  "<home>" 'beginning-of-line
-  "<end>" 'end-of-line)
 #+end_src
 *** Help
 #+begin_src emacs-lisp
@@ -172,35 +235,10 @@
   "C-w" 'describe-no-warranty
   )
 #+end_src
-*** Escape
-#+begin_src emacs-lisp
-(defun minibuffer-keyboard-quit ()
-  "Abort recursive edit.
-In Delete Selection mode, if the mark is active, just deactivate it;
-then it takes a second \\[keyboard-quit] to abort the minibuffer."
-  (interactive)
-  (if (and delete-selection-mode transient-mark-mode mark-active)
-      (setq deactivate-mark  t)
-    (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
-    (abort-recursive-edit)))
-
-(general-define-key
- :keymaps '(normal visual global)
- [escape] 'keyboard-quit)
-
-(general-define-key
- :keymaps '(minibuffer-local-map
-            minibuffer-local-ns-map
-            minibuffer-local-completion-map
-            minibuffer-local-must-match-map
-            minibuffer-local-isearch-map)
- [escape] 'minibuffer-keyboard-quit)
-
-#+end_src
 *** Buffer switch
 #+begin_src emacs-lisp
 (general-define-key
-  :keymaps 'my-intercept-mode-map
+  :keymaps 'override
   "C-<right>" 'evil-window-right
   "C-<left>" 'evil-window-left
   "C-<up>" 'evil-window-up
@@ -208,56 +246,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "C-h" 'evil-window-left
   "C-l" 'evil-window-right
   "C-k" 'evil-window-up
-  "C-j" 'evil-window-down)
-#+end_src
-* General editing & setup
-** Evil-mode
-#+begin_src emacs-lisp
-(use-package evil
-  :straight t
-  :init
-  (setq evil-want-integration t)
-  (setq evil-want-keybinding nil)
-  :config
-  (evil-mode 1)
-  (setq evil-search-module 'evil-search)
-  (setq evil-split-window-below t)
-  (setq evil-vsplit-window-right t)
-  ;; (setq evil-respect-visual-line-mode t)
-  (evil-set-undo-system 'undo-tree)
-  ;; (add-to-list 'evil-emacs-state-modes 'dired-mode)
+  "C-j" 'evil-window-down
+  "C-x h" 'previous-buffer
+  "C-x l" 'next-buffer
   )
-  
-(dolist (state '(normal visual insert))
-  (evil-make-intercept-map
-   (evil-get-auxiliary-keymap my-intercept-mode-map state t t)
-   state))
-  
-(use-package evil-numbers
-  :straight t)
-
-(use-package evil-surround
-  :straight t
-  :config
-  (global-evil-surround-mode 1))
-
-(use-package evil-commentary
-  :straight t
-  :config
-  (evil-commentary-mode))
-  
-(use-package evil-collection
-  :straight t
-  :config
-  (evil-collection-init '(eww dired dasboard company vterm flycheck)))
-  
-(use-package evil-quickscope
-  :straight t
-  :config
-  :hook (
-         (prog-mode . turn-on-evil-quickscope-mode)
-         (LaTeX-mode . turn-on-evil-quickscope-mode)
-         ))
 #+end_src
 ** Multiple cursors
 #+begin_src emacs-lisp
@@ -735,7 +727,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (toggle-truncate-lines 1)
             (display-line-numbers-mode 0)))
   (evil-org-agenda-set-keys))
-
 #+end_src
 ** Programming languages
 *** Python
@@ -763,6 +754,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    (jupyter . t)))
 
 (org-babel-jupyter-override-src-block "python")
+
+(use-package ob-async
+  :straight t
+  )
 #+end_src
 ** Export
 #+begin_src emacs-lisp
@@ -885,7 +880,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ** Tab bar
 #+begin_src emacs-lisp
 (general-define-key
- :keymaps 'my-intercept-mode-map
+ :keymaps 'override
  :states '(normal emacs)
  "gt" 'tab-bar-switch-to-next-tab
  "gT" 'tab-bar-switch-to-prev-tab
@@ -1121,6 +1116,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (require 'dap-chrome)
   (dap-chrome-setup)
   
+  (require 'dap-python)
+  
   (dap-mode 1)
   (dap-ui-mode 1)
   (dap-tooltip-mode 1)
@@ -1302,9 +1299,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :keymaps 'plantuml-mode-map
   "RET" 'plantuml-preview)
 #+end_src
+** fish
+#+begin_src emacs-lisp
+(use-package fish-mode
+  :straight t)
+#+end_src
 ** CLIPS
 #+begin_src emacs-lisp
 (use-package clips-mode
+  :straight t)
+#+end_src
+** Docker
+#+begin_src emacs-lisp
+(use-package dockerfile-mode
   :straight t)
 #+end_src
 ** Image view
@@ -1333,6 +1340,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  :keymaps 'eww-mode-map
  "+" 'text-scale-increase
  "-" 'text-scale-decrease)
+#+end_src
+** Buku
+#+begin_src emacs-lisp
+(use-package ebuku
+  :straight t)
+  
+(my-leader-def "ae" 'ebuku)
 #+end_src
 ** mpd.el
 #+begin_src emacs-lisp

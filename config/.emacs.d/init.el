@@ -26,6 +26,8 @@
   (interactive "f")
   (load-file (expand-file-name file user-init-dir)))
 
+(setenv "IS_EMACS" "true")
+
 (add-to-list 'exec-path (expand-file-name "~/.cargo/bin"))
 
 (setq custom-file (concat user-emacs-directory "custom.el"))
@@ -66,28 +68,82 @@
 
 (general-define-key "C-c c" 'my-edit-configuration)
 
-(defvar my-intercept-mode-map (make-sparse-keymap)
-  "High precedence keymap.")
+(general-def :states '(normal insert visual)
+  "<home>" 'beginning-of-line
+  "<end>" 'end-of-line)
 
-(define-minor-mode my-intercept-mode
-  "Global minor mode for higher precedence evil keybindings."
-  :global t)
+(defun minibuffer-keyboard-quit ()
+  "Abort recursive edit.
+In Delete Selection mode, if the mark is active, just deactivate it;
+then it takes a second \\[keyboard-quit] to abort the minibuffer."
+  (interactive)
+  (if (and delete-selection-mode transient-mark-mode mark-active)
+      (setq deactivate-mark  t)
+    (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
+    (abort-recursive-edit)))
 
-(my-intercept-mode)
+(general-define-key
+ :keymaps '(normal visual global)
+ [escape] 'keyboard-quit)
+
+(general-define-key
+ :keymaps '(minibuffer-local-map
+            minibuffer-local-ns-map
+            minibuffer-local-completion-map
+            minibuffer-local-must-match-map
+            minibuffer-local-isearch-map)
+ [escape] 'minibuffer-keyboard-quit)
+
+(use-package evil
+  :straight t
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-keybinding nil)
+  :config
+  (evil-mode 1)
+  (setq evil-search-module 'evil-search)
+  (setq evil-split-window-below t)
+  (setq evil-vsplit-window-right t)
+  ;; (setq evil-respect-visual-line-mode t)
+  (evil-set-undo-system 'undo-tree)
+  ;; (add-to-list 'evil-emacs-state-modes 'dired-mode)
+  )
+  
+(use-package evil-numbers
+  :straight t)
+
+(use-package evil-surround
+  :straight t
+  :config
+  (global-evil-surround-mode 1))
+
+(use-package evil-commentary
+  :straight t
+  :config
+  (evil-commentary-mode))
+  
+(use-package evil-collection
+  :straight t
+  :config
+  (evil-collection-init '(eww dired dasboard company vterm flycheck ebuku)))
+  
+(use-package evil-quickscope
+  :straight t
+  :config
+  :hook (
+         (prog-mode . turn-on-evil-quickscope-mode)
+         (LaTeX-mode . turn-on-evil-quickscope-mode)
+         ))
 
 (general-create-definer my-leader-def
   :prefix "SPC"
-  :keymaps 'my-intercept-mode-map
+  :keymaps 'override
   :states '(normal motion emacs))
 
 (general-def :states '(normal motion emacs) "SPC" nil)
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
-
-(general-def :states '(normal insert visual)
-  "<home>" 'beginning-of-line
-  "<end>" 'end-of-line)
 
 (my-leader-def
   :infix "h"
@@ -138,30 +194,8 @@
   "C-w" 'describe-no-warranty
   )
 
-(defun minibuffer-keyboard-quit ()
-  "Abort recursive edit.
-In Delete Selection mode, if the mark is active, just deactivate it;
-then it takes a second \\[keyboard-quit] to abort the minibuffer."
-  (interactive)
-  (if (and delete-selection-mode transient-mark-mode mark-active)
-      (setq deactivate-mark  t)
-    (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
-    (abort-recursive-edit)))
-
 (general-define-key
- :keymaps '(normal visual global)
- [escape] 'keyboard-quit)
-
-(general-define-key
- :keymaps '(minibuffer-local-map
-            minibuffer-local-ns-map
-            minibuffer-local-completion-map
-            minibuffer-local-must-match-map
-            minibuffer-local-isearch-map)
- [escape] 'minibuffer-keyboard-quit)
-
-(general-define-key
-  :keymaps 'my-intercept-mode-map
+  :keymaps 'override
   "C-<right>" 'evil-window-right
   "C-<left>" 'evil-window-left
   "C-<up>" 'evil-window-up
@@ -169,53 +203,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "C-h" 'evil-window-left
   "C-l" 'evil-window-right
   "C-k" 'evil-window-up
-  "C-j" 'evil-window-down)
-
-(use-package evil
-  :straight t
-  :init
-  (setq evil-want-integration t)
-  (setq evil-want-keybinding nil)
-  :config
-  (evil-mode 1)
-  (setq evil-search-module 'evil-search)
-  (setq evil-split-window-below t)
-  (setq evil-vsplit-window-right t)
-  ;; (setq evil-respect-visual-line-mode t)
-  (evil-set-undo-system 'undo-tree)
-  ;; (add-to-list 'evil-emacs-state-modes 'dired-mode)
+  "C-j" 'evil-window-down
+  "C-x h" 'previous-buffer
+  "C-x l" 'next-buffer
   )
-  
-(dolist (state '(normal visual insert))
-  (evil-make-intercept-map
-   (evil-get-auxiliary-keymap my-intercept-mode-map state t t)
-   state))
-  
-(use-package evil-numbers
-  :straight t)
-
-(use-package evil-surround
-  :straight t
-  :config
-  (global-evil-surround-mode 1))
-
-(use-package evil-commentary
-  :straight t
-  :config
-  (evil-commentary-mode))
-  
-(use-package evil-collection
-  :straight t
-  :config
-  (evil-collection-init '(eww dired dasboard company vterm flycheck)))
-  
-(use-package evil-quickscope
-  :straight t
-  :config
-  :hook (
-         (prog-mode . turn-on-evil-quickscope-mode)
-         (LaTeX-mode . turn-on-evil-quickscope-mode)
-         ))
 
 ;; (use-package evil-mc
 ;;   :straight t
@@ -511,7 +502,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     "h" 'dired-single-up-directory
     "l" 'dired-single-buffer
     "=" 'dired-narrow
-    "gc" 'dired-create-empty-file
+    "-" 'dired-create-empty-file
     (kbd "<left>") 'dired-single-up-directory
     (kbd "<right>") 'dired-single-buffer))
     
@@ -767,7 +758,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (global-hl-line-mode 1)
 
 (general-define-key
- :keymaps 'my-intercept-mode-map
+ :keymaps 'override
  :states '(normal emacs)
  "gt" 'tab-bar-switch-to-next-tab
  "gT" 'tab-bar-switch-to-prev-tab
@@ -952,6 +943,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (require 'dap-chrome)
   (dap-chrome-setup)
   
+  (require 'dap-python)
+  
   (dap-mode 1)
   (dap-ui-mode 1)
   (dap-tooltip-mode 1)
@@ -1109,7 +1102,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :keymaps 'plantuml-mode-map
   "RET" 'plantuml-preview)
 
+(use-package fish-mode
+  :straight t)
+
 (use-package clips-mode
+  :straight t)
+
+(use-package dockerfile-mode
   :straight t)
 
 (general-define-key
@@ -1130,6 +1129,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  :keymaps 'eww-mode-map
  "+" 'text-scale-increase
  "-" 'text-scale-decrease)
+
+(use-package ebuku
+  :straight t)
+  
+(my-leader-def "ae" 'ebuku)
 
 ;; (use-package mpdel
  ;;   :straight t

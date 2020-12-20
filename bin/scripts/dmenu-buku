@@ -1,5 +1,6 @@
 #!/bin/sh
 COMMAND="buku -o %"
+# COMMAND="qutebrowser $(buku -f 10 -p %)"
 if [[ $1 == '-e' ]]; then
     COMMAND="buku -w %"
 fi
@@ -13,4 +14,9 @@ buku -f 5 -p | awk -F'\t' -v OFS='\t' '{
     if ($1 != "waiting for input") {
         printf "%-5s %-40s %s\n", $1, $2, joined
     }
-}' | dmenu -l 20 | cut -d ' ' -f 1 | xargs -I % $COMMAND
+}' | dmenu -l 20 | cut -d ' ' -f 1 | {
+    read index;
+    url=$(buku -f 10 p $index)
+    echo $url
+    # echo ${$()#"waiting for input"} | cut -d ' ' -f 1 | xargs -I % qutebrowser %
+}

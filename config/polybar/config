@@ -119,7 +119,7 @@ label-mode-background = ${colors.blue}
 
 ; focused = Active workspace on focused monitor
 label-focused = %name%
-label-focused-background = ${colors.background-alt}
+label-focused-background = ${colors.background}
 label-focused-underline= ${colors.blue}
 label-focused-padding = 1
 

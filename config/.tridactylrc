@@ -1,0 +1,31 @@
+sanitize tridactyllocal tridactylsync
+
+bind gn tabnew
+bind gN tabclose
+
+bind O fillcmdline tabopen
+
+bind / fillcmdline find
+bind ? fillcmdline find -?
+bind n findnext 1
+bind N findnext -1
+
+bind F hint -t
+
+set smoothscroll false
+set findcase sensitive
+colorscheme base16-dracula
+
+bind j scrollline 3
+bind k scrollline -3
+
+guiset_quiet gui full
+guiset_quiet statuspanel left
+guiset_quiet navbar none
+guiset_quiet tabs always
+
+set searchurls.g https://google.com/search?q=
+
+command fixamo_quiet jsb tri.excmds.setpref("privacy.resistFingerprinting.block_mozAddonManager", "true").then(tri.excmds.setpref("extensions.webextensions.restrictedDomains", '""'))
+command fixamo js tri.excmds.setpref("privacy.resistFingerprinting.block_mozAddonManager", "true").then(tri.excmds.setpref("extensions.webextensions.restrictedDomains", '""').then(tri.excmds.fillcmdline_tmp(3000, "Permissions added to user.js. Please restart Firefox to make them take affect.")))
+fixamo_quiet

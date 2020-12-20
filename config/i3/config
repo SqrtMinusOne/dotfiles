@@ -5,6 +5,8 @@ hide_edge_borders both
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
 
+mouse_warping output
+
 # Apply XFCE Settings
 # exec "bash /home/pavel/.screenlayout/layout.sh"
 exec xfsettingsd
@@ -108,6 +110,7 @@ bindsym $mod+comma workspace prev
 bindsym $mod+period workspace next
 
 assign [class="qutebrowser"] $w2
+assign [class="firefox"] $w2
 assign [class="VK"] $w3
 assign [class="Slack"] $w3
 assign [class="discord"] $w3
@@ -127,6 +130,7 @@ assign [class="Joplin"] $w8
 
 for_window [title="ncmpcpp.*"] move to workspace $w9
 for_window [class="cinnamon-settings*"] floating enable
+for_window [title="Picture-in-Picture"] sticky enable
 # for_window [class=".*"] border pixel 0
 # reload the configuration file
 bindsym $mod+Shift+c reload
@@ -145,7 +149,6 @@ for_window [instance="dropdown_*"] move position center
 bindsym $mod+u exec ~/bin/scripts/dropdown
 
 # Gaps
-
 set $default_inner 0
 set $default_outer 0
 
@@ -238,28 +241,44 @@ mode "move" {
     bindsym Escape mode "default"
 }
 
-# dmenu
-bindsym $mod+d exec i3-dmenu-desktop --dmenu="dmenu -l 10"
-bindsym $mod+apostrophe mode "dmenu"
+# # dmenu
+# bindsym $mod+d exec i3-dmenu-desktop --dmenu="dmenu -l 10"
+# bindsym $mod+apostrophe mode "dmenu"
 
-mode "dmenu" {
-    bindsym d exec i3-dmenu-desktop --dmenu="dmenu -l 10"; mode default
-    bindsym p exec dmenu_run -l 10; mode default
-    bindsym m exec dmenu-man; mode default
-    bindsym b exec dmenu-buku; mode default
-    bindsym f exec dmenu-explore; mode default
-    bindsym t exec dmenu-tmuxp; mode default
+# mode "dmenu" {
+#     bindsym d exec i3-dmenu-desktop --dmenu="dmenu -l 10"; mode default
+#     bindsym p exec dmenu_run -l 10; mode default
+#     bindsym m exec dmenu-man; mode default
+#     bindsym b exec dmenu-buku; mode default
+#     bindsym f exec dmenu-explore; mode default
+#     bindsym t exec dmenu-tmuxp; mode default
+#     bindsym Escape mode "default"
+# }
+
+# bindsym $mod+b exec --no-startup-id dmenu-buku
+
+# rofi
+bindsym $mod+d exec "rofi -modi 'drun,run' -show drun"
+bindsym $mod+apostrophe mode "rofi"
+
+mode "rofi" {
+    bindsym d exec "rofi -modi 'drun,run' -show drun"
+    bindsym m exec rofi-man; mode default
+    bindsym b exec rofi-buku-mine; mode default
+#     bindsym f exec dmenu-explore; mode default
+    bindsym k exec rofi-keepassxc -d ~/MEGAsync/Passwords.kdbx; mode default
     bindsym Escape mode "default"
 }
 
-bindsym $mod+b exec --no-startup-id dmenu-buku
+bindsym $mod+b exec --no-startup-id rofi-buku-mine
+
 
 # Launch apps
 bindsym $mod+semicolon mode "apps"
 
 mode "apps" {
     bindsym Escape mode "default"
-    bindsym b exec qutebrowser; mode default
+    bindsym b exec firefox; mode default
     bindsym v exec vk-messenger; mode default
     bindsym s exec slack; mode default;
     bindsym m exec "st -e ncmpcpp"; mode default
@@ -274,7 +293,7 @@ bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper-2-1.
 
 # Colors
 set $bg-color 	         #292d3e
-set $inactive-bg-color   #434758ee
+set $inactive-bg-color   #434758
 set $text-color          #f3f4f5
 set $inactive-text-color #aaaaaa
 set $urgent-bg-color     #f07178
@@ -283,7 +302,7 @@ set $urgent-text-color   #000000
 # window colors
 #                       border              background         text                 indicator
 client.focused          $bg-color           $bg-color          $text-color          $bg-color
-client.unfocused        $inactive-bg-color  $inactive-bg-color $inactive-text-color $bg-color
+client.unfocused        $bg-color           $inactive-bg-color $inactive-text-color $bg-color
 client.focused_inactive $inactive-bg-color  $inactive-bg-color $inactive-text-color $bg-color
 client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-color   $bg-color
 
