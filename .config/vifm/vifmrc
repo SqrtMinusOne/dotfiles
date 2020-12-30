@@ -1,0 +1,349 @@
+set vicmd=nvim
+set syscalls  " Own utilities for copying & stuff
+set trash  " Paste files after deletion
+set history=100  " This is how many directories to store in the directory history.
+set nofollowlinks  " Automatically resolve symbolic links on l or Enter.
+set sortnumbers  " Natural sort of (version) numbers within text.
+set undolevels=100 " Maximum number of changes that can be undone.
+set vimhelp " Use Vim's format of help file
+set norunexec  " Run an executable with return
+" colorscheme zenburn
+set timefmt=%m/%d\ %H:%M  " Time format in file list
+
+set wildmenu  " Show list of matches on tab completion in command-line mode
+
+set wildstyle=popup  " Display completions in a form of popup with descriptions of the matches
+
+" Display suggestions in normal, visual and view modes for keys, marks and
+" registers (at most 5 files).  In other view, when available.
+
+set suggestoptions=normal,visual,view,otherpane,keys,marks,registers
+
+" Ignore case in search patterns unless it contains at least one uppercase letter
+set ignorecase
+set smartcase
+
+set hlsearch
+set incsearch
+
+" Try to leave some space from cursor to upper/lower border in lists
+set scrolloff=4
+
+" Don't do too many requests to slow file systems
+if !has('win')
+    set slowfs=curlftpfs
+endif
+
+set statusline="  Hint: %z%= %A %10u:%-7g %15s %20d  "
+
+set millerview
+set number
+set sort=+iname
+
+" ------------------------------------------------------------------------------
+" Marks
+
+mark h ~/
+
+" ------------------------------------------------------------------------------
+
+" :com[mand][!] command_name action
+" The following macros can be used in a command
+" %a is replaced with the user arguments.
+" %c the current file under the cursor.
+" %C the current file under the cursor in the other directory.
+" %f the current selected file, or files.
+" %F the current selected file, or files in the other directory.
+" %b same as %f %F.
+" %d the current directory name.
+" %D the other window directory name.
+" %m run the command in a menu window
+
+command! df df -h %m 2> /dev/null
+command! diff vim -d %f %F
+command! zip zip -r %f.zip %f
+command! run !! ./%f
+command! make !!make %a
+command! mkcd :mkdir %a | cd %a
+command! vgrep vim "+grep %a"
+command! reload :write | restart
+
+" ------------------------------------------------------------------------------
+
+" Pdf
+filextype *.pdf zathura %c %i &, apvlv %c, xpdf %c
+fileviewer *.pdf pdftotext -nopgbrk %c -
+
+" PostScript
+filextype *.ps,*.eps,*.ps.gz
+        \ {View in zathura}
+        \ zathura %f
+
+" Djvu
+filextype *.djvu
+        \ {View in zathura}
+        \ zathura %f
+
+" Audio
+filetype *.wav,*.mp3,*.flac,*.m4a,*.wma,*.ape,*.ac3,*.og[agx],*.spx,*.opus
+       \ {Play using ffplay}
+       \ ffplay -nodisp -autoexit %c,
+       \ {Play using MPlayer}
+       \ mplayer %f,
+fileviewer *.mp3 mp3info
+fileviewer *.flac soxi
+
+" Video
+filextype *.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,
+         \*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,
+         \*.as[fx]
+        \ {View using ffplay}
+        \ ffplay -fs -autoexit %f,
+        \ {View using Dragon}
+        \ dragon %f:p,
+        \ {View using mplayer}
+        \ mplayer %f,
+
+fileviewer *.avi,*.mp4,*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,
+          \*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],*.qt,*.divx,
+          \*.as[fx]
+         \ ffprobe -pretty %c 2>&1
+
+" Web
+filextype *.html,*.htm
+        \ {Open with qutebrowser}
+        \ qutebrowser %f %i &,
+        \ {Open with chromium}
+        \ chromium %f &
+filetype *.html,*.htm links, lynx
+
+" Object
+filetype *.o nm %f | less
+
+" Man page
+filetype *.[1-8] man ./%c
+fileviewer *.[1-8] man ./%c | col -b
+
+" Images
+filextype *.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm
+        \ {View in feh}
+        \ feh %f,
+        \ {View in viewnior}
+        \ viewnior %c,
+
+fileviewer *.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm
+         \ identify %f
+
+" CSV
+filetype *.csv
+    \ {Open with SC-IM}
+    \ sc-im %f
+
+" MD5
+filetype *.md5
+       \ {Check MD5 hash sum}
+       \ md5sum -c %f %S,
+
+" SHA1
+filetype *.sha1
+       \ {Check SHA1 hash sum}
+       \ sha1sum -c %f %S,
+
+" SHA256
+filetype *.sha256
+       \ {Check SHA256 hash sum}
+       \ sha256sum -c %f %S,
+
+" SHA512
+filetype *.sha512
+       \ {Check SHA512 hash sum}
+       \ sha512sum -c %f %S,
+
+" GPG signature
+filetype *.asc
+       \ {Check signature}
+       \ !!gpg --verify %c,
+
+" Torrent
+filextype *.torrent qbittorrent %f &
+
+" View archives with dtrx
+fileviewer *.7z,*.tgz,*.tar.gz,*.tar.bz2,*.tbz2,*.tar.txz,*.txz,*.tar,*zip dtrx -t %f
+filetype *.7z,*.tgz,*.tar.gz,*.tar.bz2,*.tbz2,*.tar.txz,*.txz,*.tar,*zip
+    \ {View contents with dtrx}
+    \ dtrx --table %f | less,
+    \ {Extract with dtrx}
+    \ dtrx %f
+
+" FuseZipMount
+filetype *.zip,*.jar,*.war,*.ear,*.oxt,*.apkg
+       \ {Mount with fuse-zip}
+       \ FUSE_MOUNT|fuse-zip %SOURCE_FILE %DESTINATION_DIR,
+       \ {View contents}
+       \ zip -sf %c | less,
+       \ {Extract here}
+       \ tar -xf %c,
+
+" ArchiveMount
+filetype *.tar,*.tar.bz2,*.tbz2,*.tgz,*.tar.gz,*.tar.xz,*.txz
+       \ {Mount with archivemount}
+       \ FUSE_MOUNT|archivemount %SOURCE_FILE %DESTINATION_DIR,
+
+" Rar2FsMount and rar archives
+filetype *.rar
+       \ {Mount with rar2fs}
+       \ FUSE_MOUNT|rar2fs %SOURCE_FILE %DESTINATION_DIR,
+
+" IsoMount
+filetype *.iso
+       \ {Mount with fuseiso}
+       \ FUSE_MOUNT|fuseiso %SOURCE_FILE %DESTINATION_DIR,
+
+" Fuse7z and 7z archives
+filetype *.7z
+       \ {Mount with fuse-7z}
+       \ FUSE_MOUNT|fuse-7z %SOURCE_FILE %DESTINATION_DIR,
+
+" Qt projects
+filextype *.pro qtcreator %f &
+
+" Directories
+filextype */
+        \ {View in thunar}
+        \ Thunar %f &,
+
+" Syntax highlighting in preview
+fileviewer *[^/] pygmentize -O style=monokai -f console256 -g
+
+filetype *
+    \ {Open with xdg-open} xdg-open %f,
+    \ {Open with neovim} nvim %f,
+    \ {Open with vim} vim %f
+
+" Displaying pictures in terminal
+" fileviewer *.jpg,*.png shellpic %c
+
+
+" ------------------------------------------------------------------------------
+
+" What should be saved automatically between vifm sessions.  Drop "savedirs"
+" value if you don't want vifm to remember last visited directories for you.
+set vifminfo=dhistory,savedirs,chistory,state,tui,shistory,
+    \phistory,fhistory,dirstack,registers,bookmarks,bmarks
+
+" Start shell in current directory
+nnoremap s :shell<cr>
+
+" Display sorting dialog
+nnoremap S :sort<cr>
+
+" Toggle visibility of preview window
+nnoremap w :view<cr>
+vnoremap w :view<cr>gv
+
+" Tabs
+nnoremap gn :tabnew<CR>
+nnoremap gN :tabclose<CR>
+nnoremap t1 1gt
+nnoremap t2 2gt
+nnoremap t3 3gt
+nnoremap t4 4gt
+nnoremap t5 5gt
+nnoremap t6 6gt
+nnoremap t7 7gt
+nnoremap t8 8gt
+nnoremap t9 9gt
+
+nnoremap , :noh<CR>
+
+" Interaction with system clipboard
+if has('win')
+    " Yank current directory path to Windows clipboard with forward slashes
+    nnoremap yp :!echo %"d:gs!\!/! %i | clip<cr>
+    " Yank path to current file to Windows clipboard with forward slashes
+    nnoremap yf :!echo %"c:gs!\!/! %i | clip<cr>
+elseif executable('xclip')
+    " Yank current directory path into the clipboard
+    nnoremap yd :!echo %d | xclip %i<cr>
+    " Yank current file path into the clipboard
+    nnoremap yf :!echo %c:p | xclip %i<cr>
+elseif executable('xsel')
+    " Yank current directory path into primary and selection clipboards
+    nnoremap yd :!echo -n %d | xsel --input --primary %i &&
+                \ echo -n %d | xsel --clipboard --input %i<cr>
+    " Yank current file path into into primary and selection clipboards
+    nnoremap yf :!echo -n %c:p | xsel --input --primary %i &&
+                \ echo -n %c:p | xsel --clipboard --input %i<cr>
+endif
+
+" Mappings for faster renaming
+nnoremap I cw<c-a>
+nnoremap cc cw<c-u>
+nnoremap A cw
+
+" Open console in current directory
+nnoremap ,t :!xterm &<cr>
+
+" Open editor to edit vifmrc and apply settings after returning to vifm
+nnoremap ,c :write | edit $MYVIFMRC | restart<cr>
+" Open gvim to edit vifmrc
+nnoremap ,C :!gvim --remote-tab-silent $MYVIFMRC &<cr>
+
+" Toggle wrap setting on ,w key
+nnoremap ,w :set wrap!<cr>
+nnoremap Md :mkdir<space>
+
+nnoremap o :file<CR>
+nnoremap y<Tab> :move<CR>
+
+source ~/.config/vifm/vifm_devicons/SETUP
+
+" ------------------------------------------------------------------------------
+" Colorscheme
+highlight clear
+
+highlight Win cterm=none ctermfg=245 ctermbg=234
+highlight Directory cterm=bold ctermfg=33 ctermbg=234
+highlight Link cterm=bold ctermfg=yellow ctermbg=234
+highlight BrokenLink cterm=reverse ctermfg=red ctermbg=default
+
+highlight Socket cterm=bold ctermfg=125 ctermbg=default
+highlight Device cterm=bold ctermfg=red ctermbg=default
+highlight Fifo cterm=bold ctermfg=cyan ctermbg=default
+highlight Executable cterm=bold ctermfg=34 ctermbg=default
+
+highlight Selected cterm=bold ctermfg=125 ctermbg=235
+highlight CurrLine cterm=bold ctermfg=105 ctermbg=238
+
+highlight TopLine cterm=none ctermfg=black ctermbg=white
+highlight TopLineSel cterm=bold ctermfg=black ctermbg=default
+highlight StatusLine cterm=bold ctermfg=black ctermbg=white
+highlight WildMenu cterm=underline,reverse ctermfg=white ctermbg=black
+highlight CmdLine cterm=none ctermfg=white ctermbg=black
+highlight ErrorMsg cterm=none ctermfg=red ctermbg=black
+highlight Border cterm=none ctermfg=black ctermbg=white
+
+
+" ------------------------------------------------------------------------------
+" Various customization examples
+
+" Use ag (the silver searcher) instead of grep
+"
+" set grepprg='ag --line-numbers %i %a %s'
+
+" Add additional place to look for executables
+"
+" let $PATH = $HOME.'/bin/fuse:'.$PATH
+
+" Block particular shortcut
+"
+" nnoremap <left> <nop>
+
+" Export IPC name of current instance as environment variable and use it to
+" communicate with the instance later.
+"
+" It can be used in some shell script that gets run from inside vifm, for
+" example, like this:
+"     vifm --server-name "$VIFM_SERVER_NAME" --remote +"cd '$PWD'"
+"
+" let $VIFM_SERVER_NAME = v:servername

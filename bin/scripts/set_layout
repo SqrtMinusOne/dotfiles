@@ -1,0 +1,3 @@
+#!/bin/bash
+setxkbmap -layout us,ru
+setxkbmap -model pc105 -option 'grp:win_space_toggle' -option 'grp:alt_shift_toggle'

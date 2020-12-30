@@ -1,0 +1,194 @@
+priority 50
+
+extends eltech
+
+global !p
+import os
+
+def get_last_image():
+	max_time = 0
+	last_image = ''
+	for r, d, files in os.walk(os.path.join(os.getcwd(), 'img')):
+	    for f in files:
+	        time = os.path.getmtime(os.path.join(r, f))
+	        if time > max_time:
+	            max_time = time
+	            last_image = os.path.relpath(os.path.join(r, f))
+	return last_image
+
+endglobal
+
+snippet 'sympy(.*)sympy' "evaluate sympy" wr
+`!p
+from sympy import *
+x, y, z, t, i = symbols('x y z t i')
+k, m, n = symbols('k m n', integer=True)
+f, g, h = symbols('f g h', cls=Function)
+init_printing()
+snip.rv = eval('latex(' + match.group(1).replace('\\', '') \
+    .replace('^', '**') \
+    .replace('{', '(') \
+    .replace('}', ')') + ')')
+`
+endsnippet
+
+snippet lfigp "last figure path"
+`!p
+snip.rv = get_last_image()
+`
+endsnippet
+
+snippet lfig 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=$1\textwidth]{`!p snip.rv = get_last_image()`}
+    \caption{$2}%
+    \label{img:$3}
+\end{figure}
+
+$0
+endsnippet
+
+snippet ' -' "---" wr
+ --- $0
+endsnippet
+
+snippet vec "vector sign"
+\vec{$1} $0
+endsnippet
+
+snippet suml "\sum\limits"
+\sum\limits^{${1:n}}_{${2:i=1}} $0
+endsnippet
+
+snippet part "\partial"
+\partial $0
+endsnippet
+
+snippet vmat "\begin{pmatrix} \end{pmatrix}"
+\begin{pmatrix} $1 \end{pmatrix}$0
+endsnippet
+
+snippet dfn "\dfn{}"
+\dfn{$1} $0
+endsnippet
+
+snippet fig "Default figure here"
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=$1\textwidth]{$2}
+    \caption{$3}%
+    \label{img:$4}
+\end{figure}
+
+$0
+endsnippet
+
+snippet subfig "Figure with subfigures"
+\begin{figure}[h]
+    \centering
+	\begin{subfigure}[b]{$1\textwidth}
+    	\includegraphics[width=\textwidth]{$2}
+    	\caption{$3}
+	\end{subfigure}%
+	\hspace{2cm}
+	\begin{subfigure}[b]{$4\textwidth}
+    	\includegraphics[width=\textwidth]{$5}
+    	\caption{$6}
+	\end{subfigure}
+\end{figure}
+$0
+endsnippet
+
+snippet << "Triangle brackets"
+\left\langle $1 \right\rangle $0
+endsnippet
+
+snippet lorem "\lipsum[1] %TODO"
+\lipsum[1] %TODO
+$0
+endsnippet
+
+snippet /{ "/{  /}"
+/{ $1 /} $0
+endsnippet
+
+snippet \[ "\[ \]"
+\[ $1 \] $0
+endsnippet
+
+snippet <=> "\Reftrightarrow"
+\Leftrightarrow $0
+endsnippet
+
+snippet => "\Rightarrow"
+\Rightarrow $0
+endsnippet
+
+snippet -> "\rightarrow"
+\rightarrow $0
+endsnippet
+
+snippet <= "\Leftarrow"
+\Leftarrow $0
+endsnippet
+
+snippet '(\w+)_' "_\{text}" r
+`!p snip.rv=match.group(1)`_\text{$1} $0
+endsnippet
+
+snippet '".*"' "`` ''" r
+\`\``!p snip.rv=match.group(0)[1:-1]`'' $0
+endsnippet
+
+snippet '<<.*>>' "\enquote{text}" r
+\enquote{`!p snip.rv=match.group(0)[2:-2]`} $0
+endsnippet
+
+snippet <- "\leftarrow"
+\leftarrow $0
+endsnippet
+
+snippet ... "/ldots{}"
+\ldots{} $0
+endsnippet
+
+snippet .. "/ldots"
+\ldots $0
+endsnippet
+
+snippet in "\in"
+\in $0
+endsnippet
+
+snippet a "alpha"
+\alpha $0
+endsnippet
+
+snippet A "Alpha"
+\Alpha $0
+endsnippet
+
+snippet b "beta"
+\beta $0
+endsnippet
+
+snippet d "delta"
+\delta $0
+endsnippet
+
+snippet e "varepsilon"
+\varepsilon $0
+endsnippet
+
+snippet l "lambda"
+\lambda $0
+endsnippet
+
+snippet w "omega"
+\omega $0
+endsnippet
+
+snippet S "Sigma"
+\Sigma $0
+endsnippet

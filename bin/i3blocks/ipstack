@@ -1,0 +1,10 @@
+#!/bin/bash
+ip=$(dig +short +timeout=1 myip.opendns.com @resolver1.opendns.com)
+if [[ -z $ip || $ip == *"timed out"* ]]; then
+    echo '??'
+    exit
+fi
+ip_info=$(curl -s http://api.ipstack.com/${ip}?access_key=${API_KEY})
+emoji=$(echo $ip_info | jq -r '.location.country_flag_emoji')
+echo "$emoji $ip"
+echo "$emoji"

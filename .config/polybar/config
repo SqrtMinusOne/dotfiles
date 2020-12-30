@@ -1,0 +1,287 @@
+[colors]
+; Palenight colorscheme https://github.com/JonathanSpeek/palenight-iterm2
+black = #292d3e
+red = #f07178
+green = #c3e88d
+yellow = #ffcb6b
+blue = #82aaff
+magenta = #c792ea
+cyan = #89ddff
+white = #d0d0d0
+
+black-lighter = #434758
+red-lighter = #ff8b92
+green-lighter = #ddffa7
+yellow-lighter = #ffe585
+blue-lighter = #9cc4ff
+magenta-lighter = #9cc4ff
+cyan-lighter = #9cc4ff
+white-lighter = ffffff
+
+background = ${colors.black}
+; background = #ee292d3e
+foreground = ${colors.white}
+
+[bar/mybar]
+monitor = ${env:MONITOR:}
+width = 100%
+height = ${env:HEIGHT:27}
+offset-x = 0
+offset-y = 0
+radius = 0.0
+fixed-center = false
+bottom=true
+
+background = ${colors.background}
+foreground = ${colors.foreground}
+
+line-size = 3
+line-color = #f00
+
+padding-left = 0
+padding-right = 0
+
+module-margin-left = 1
+module-margin-right = 1
+
+font-0 = ${env:FONT0:pango:monospace:size=10;1}
+font-1 = ${env:FONT1:NotoEmoji:scale=10:antialias=false;0}
+font-2 = ${env:FONT2:fontawesome:pixelsize=10;1}
+font-3 = ${env:FONT3:JetBrains Mono Nerd Font:monospace:size=10;1}
+
+modules-left = i3
+; modules-center = test
+modules-right = ${env:RIGHT_BLOCKS}
+
+tray-position = ${env:TRAY:right}
+tray-padding = 0
+tray-maxsize = 16
+;tray-background = #0063ff
+
+wm-restack = i3
+; override-redirect = true
+
+scroll-up = i3wm-wsnext
+scroll-down = i3wm-wsprev
+
+; cursor-click = pointer
+; cursor-scroll = ns-resize
+
+[module/test]
+type = custom/script
+exec = echo "%{u#0000ff}%{+u} hello %{u-}"
+
+[module/ipstack]
+type = custom/script
+exec = /home/pavel/bin/polybar/ipstack.sh
+interval = 1200
+
+[module/ipstack-vpn]
+type = custom/script
+exec = /home/pavel/bin/polybar/ipstack-vpn.sh
+interval = 1200
+
+[module/aw-afk]
+type = custom/script
+exec = /home/pavel/bin/polybar/aw_afk.sh
+interval = 60
+
+[module/sun]
+type = custom/script
+exec = /home/pavel/bin/polybar/sun.sh
+interval = 60
+
+[module/SEP]
+type = custom/text
+content = "|"
+content-foreground = ${colors.magenta}
+content-padding = 0
+content-margin = 0
+
+[module/TSEP]
+type = custom/script
+exec = /home/pavel/bin/polybar/tray-sep.sh
+format-foreground = ${colors.magenta}
+interval = 0
+
+[module/i3]
+type = internal/i3
+format = <label-state> <label-mode>
+index-sort = true
+wrapping-scroll = false
+
+; Only show workspaces on the same output as the bar
+pin-workspaces = true
+
+label-mode-padding = 1
+label-mode-foreground = #000
+label-mode-background = ${colors.blue}
+
+; focused = Active workspace on focused monitor
+label-focused = %name%
+label-focused-background = ${colors.background}
+label-focused-underline= ${colors.blue}
+label-focused-padding = 1
+
+; unfocused = Inactive workspace on any monitor
+label-unfocused = %name%
+label-unfocused-padding = 1
+
+; visible = Active workspace on unfocused monitor
+label-visible = %name%
+label-visible-background = ${self.label-focused-background}
+label-visible-underline = ${self.label-focused-underline}
+label-visible-padding = ${self.label-focused-padding}
+
+; urgent = Workspace with urgency hint set
+label-urgent = %name%
+label-urgent-background = ${colors.red}
+label-urgent-foreground = ${colors.black}
+label-urgent-padding = 1
+
+; Separator in between workspaces
+; label-separator = |
+
+[module/xkeyboard]
+type = internal/xkeyboard
+format = <label-layout>
+
+format-underline = ${colors.magenta}
+label-layout = %icon%
+layout-icon-0 = ru;RU
+layout-icon-1 = us;US
+
+[module/mpd]
+type = internal/mpd
+
+format-playing = <toggle> <label-time> <label-song>
+format-paused = <toggle> <label-time> <label-song>
+format-stopped = 
+label-song = [%album-artist%] %title%
+label-time = %elapsed%/%total%
+
+label-song-maxlen = 30
+label-song-ellipsis = true
+
+format-playing-underline = ${colors.yellow}
+format-paused-underline = ${colors.yellow}
+format-stopped-underline = ${colors.yellow}
+
+label-separator = kek
+separator-foreground = ${colors.red}
+
+icon-pause = 
+icon-play = 
+icon-stop = 
+icon-prev = 1
+icon-next = 2
+
+[module/pulseaudio]
+type = internal/pulseaudio
+use-ui-max = true
+
+bar-volume-width = 7
+bar-volume-foreground-0 = ${colors.white}
+bar-volume-foreground-1 = ${colors.yellow}
+bar-volume-foreground-2 = ${colors.yellor}
+bar-volume-foreground-3 = ${colors.blue}
+bar-volume-foreground-4 = ${colors.blue}
+bar-volume-foreground-5 = ${colors.green}
+bar-volume-foreground-6 = ${colors.green}
+bar-volume-gradient = false
+bar-volume-indicator = |
+bar-volume-indicator-font = 2
+bar-volume-fill = ─
+bar-volume-fill-font = 2
+bar-volume-empty = ─
+bar-volume-empty-font = 2
+bar-volume-empty-foreground = ${colors.white-lighter}
+
+format-volume = ♪ <bar-volume> <label-volume>
+label-volume = %percentage%%
+
+format-mute = ♪ <label-muted>
+label-muted = MUTE
+
+format-volume-underline = ${colors.white}
+format-muted-underline = ${colors.black-lighter}
+
+[module/cpu]
+type = internal/cpu
+format =   <label>
+label = %percentage%%
+
+format-underline = ${colors.green-lighter}
+
+[module/ram-memory]
+type = internal/memory
+interval = 10
+
+ramp-used-0 = ▁
+ramp-used-1 = ▂
+ramp-used-2 = ▃
+ramp-used-3 = ▄
+ramp-used-4 = ▅
+ramp-used-5 = ▆
+ramp-used-6 = ▇
+ramp-used-7 = █
+
+format =  <label>
+label=%gb_used:.1f%
+
+format-underline = ${colors.blue}
+
+[module/swap-memory]
+type = internal/memory
+interval = 10
+
+label= %gb_swap_used:.1f%
+format-underline = ${colors.yellow}
+
+[module/network]
+type = internal/network
+interval = 1
+
+interface = wlp35s0f3u2
+
+; format-connected = [<ramp-signal>] <label-connected>
+
+label-connected = ↓ %downspeed% ↑ %upspeed%
+label-disconnected = X
+
+format-connected-underline = ${colors.green}
+format-disconnected-underline = ${colors.red}
+
+ramp-signal-0 = 0
+ramp-signal-1 = 1
+ramp-signal-2 = 2
+ramp-signal-3 = 3
+ramp-signal-4 = 4	
+ramp-signal-5 = 5
+
+[module/date]
+type = internal/date
+interval = 5
+
+date =
+date-alt = "%Y-%m-%d"
+
+time = %H:%M
+time-alt = %H:%M:%S
+
+format-underline = ${colors.cyan}
+label = "%date% %time%"
+
+[settings]
+screenchange-reload = true
+;compositing-background = xor
+;compositing-background = screen
+;compositing-foreground = source
+;compositing-border = over
+;pseudo-transparency = false
+
+[global/wm]
+margin-top = 0
+margin-bottom = 0
+
+; vim:ft=dosini

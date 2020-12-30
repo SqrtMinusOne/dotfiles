@@ -1,0 +1,28 @@
+#!/bin/sh
+COMMAND="buku -o %"
+# COMMAND="qutebrowser $(buku -f 10 -p %)"
+if [[ $1 == '-e' ]]; then
+    COMMAND="buku -w %"
+fi
+buku -f 4 -p | awk -F'\t' -v OFS='\t' '{
+    split($4, tags, ",")
+    joined = sep = ""
+    for (i = 1; i in tags; i++) {
+        joined = joined sep "[" tags[i] "]"
+        sep = " "
+    }
+    url = substr($2, 1, 40)
+    if (length($2) > 40) {
+        url = url "..."
+    }
+    if ($1 != "waiting for input") {
+        printf "%-5s %-60s %-45s %s\n", $1, $3, url, joined
+    }
+}' | sort -k 2 | rofi -dmenu -matching fuzzy -sort -sorting-method fzf -width 80 -l 20 | cut -d ' ' -f 1 | {
+    read index;
+    if [[ -z "$index" ]]; then
+        exit 0
+    fi
+    url=$(buku -f 10 -p $index)
+    echo ${url#"waiting for input"} | cut -d ' ' -f 1 | xargs -I % firefox %
+}

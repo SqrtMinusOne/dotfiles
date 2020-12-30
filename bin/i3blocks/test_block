@@ -1,0 +1,6 @@
+#!/bin/sh
+echo "Hello"
+
+if [ ! -z "${BLOCK_BUTTON}" ]; then
+    notify-send clicked $BLOCK_BUTTON
+fi
