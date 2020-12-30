@@ -389,9 +389,8 @@ exec --no-startup-id mpd
 
 # Stuff
 exec aw-qt
-exec "bash /home/pavel/bin/bukuserver.sh"
 exec dunst
 exec kde-connect-indicator
 exec copyq
-exec "bash /home/pavel/bin/tabliss.sh"
+exec "bash ~/bin/autostart.sh"
 # exec emacs --daemon
