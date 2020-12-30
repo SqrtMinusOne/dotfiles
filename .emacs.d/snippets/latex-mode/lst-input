@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: lst-input
+# key: lsti
+# --
+\begin{listing}[h]
+  \frame${1:text}file[fontsize=\small]{$2}
+  \caption{$3}%
+  \label{lst:$4}
+\end{listing}
+$0

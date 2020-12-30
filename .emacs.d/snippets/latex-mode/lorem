@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: lorem
+# key: lorem
+# --
+\lipsum[1]{} % TODO
+$0

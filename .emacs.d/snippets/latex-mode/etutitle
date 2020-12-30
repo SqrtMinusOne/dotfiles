@@ -1,0 +1,35 @@
+# -*- mode: snippet -*-
+# name: etutitle
+# key: etutitle
+# --
+
+\begin{titlepage}
+    \centering
+    {\bfseries
+        \uppercase{
+            Минобрнауки России \\\\
+            Санкт-Петербургский государственный \\\\
+            Электротехнический университет \\\\
+            \enquote{ЛЭТИ} им. В.И.Ульянова (Ленина)\\\\
+        }
+        Кафедра ${1:МО ЭВМ}
+
+        \vspace{\fill}
+		\uppercase{${2:Отчёт}} \\\\
+		по ${3:лабораторной работе} ${4:№1} \\\\
+        по дисциплине \enquote{$5} \\\\
+        Тема: $6
+    }
+
+    \vspace{\fill}
+    \begin{tabularx}{0.8\textwidth}{l X c r}
+        Студент гр. 6304 & & \underline{\hspace{3cm}} & Корытов П.В.\\\\
+        Преподаватель & & \underline{\hspace{3cm}} & $7
+    \end{tabularx}
+
+    \vspace{1cm}
+    Санкт-Петербург \\\\
+    \the\year{}
+\end{titlepage}
+
+$0
