@@ -119,7 +119,7 @@ label-mode-background = ${colors.blue}
 
 ; focused = Active workspace on focused monitor
 label-focused = %name%
-label-focused-background = ${colors.background}
+; label-focused-background = ${colors.background-alt}
 label-focused-underline= ${colors.blue}
 label-focused-padding = 1
 
@@ -129,9 +129,9 @@ label-unfocused-padding = 1
 
 ; visible = Active workspace on unfocused monitor
 label-visible = %name%
-label-visible-background = ${self.label-focused-background}
-label-visible-underline = ${self.label-focused-underline}
-label-visible-padding = ${self.label-focused-padding}
+; label-visible-background = ${self.label-focused-background}
+; label-visible-underline = ${self.label-focused-underline}
+; label-visible-padding = ${self.label-focused-padding}
 
 ; urgent = Workspace with urgency hint set
 label-urgent = %name%
@@ -242,7 +242,7 @@ format-underline = ${colors.yellow}
 type = internal/network
 interval = 1
 
-interface = wlp35s0f3u2
+interface = ${env:WLAN_INTERFACE}
 
 ; format-connected = [<ramp-signal>] <label-connected>
 

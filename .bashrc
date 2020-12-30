@@ -15,10 +15,17 @@ export MANPATH="/usr/local/texlive/2020/texmf-dist/doc/man:$MANPATH"
 export INFOPATH="/usr/local/texlive/2020/texmf-dist/doc/info:$INFOPATH"
 export PATH="/usr/local/texlive/2020/bin/x86_64-linux:$PATH"
 
-export PATH="$HOME/.cargo/bin:$PATH"
+if [ -d "$HOME/.cargo" ] ; then
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
+if [ -d "$HOME/.rvm" ] ; then
+    export PATH="$PATH:$HOME/.rvm/bin"
+fi
+if [ -d "$HOME/go" ] ; then
+    export PATH="$HOME/go/bin:$PATH"
+fi
 # export PATH="$HOME/.gem/ruby/2.7.0/bin/:$PATH"
 
-export PATH="$PATH:$HOME/.rvm/bin"
 
 if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} ]]
 then

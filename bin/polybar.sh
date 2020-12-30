@@ -1,21 +1,31 @@
 #!/bin/bash
-# TRAY_MONITOR="HDMI-A-0"
-TRAY_MONITOR="DVI-D-0"
+hostname=$(hostname)
+if [ "$hostname" = "pntk" ]; then
+    TRAY_MONITOR="eDP1"
+    export WLAN_INTERFACE="wlp3s0"
+else
+    TRAY_MONITOR="HDMI-A-0"
+    export WLAN_INTERFACE="wlp35s0f3u2"
+fi
 declare -A FONT_SIZES=(
+    ["eDP1"]="13"
     ["DVI-D-0"]="11"
     ["HDMI-A-0"]="13"
 )
 declare -A EMOJI_SCALE=(
+    ["eDP1"]="9"
     ["DVI-D-0"]="10"
     ["HDMI-A-0"]="10"
 )
 declare -A BAR_HEIGHT=(
+    ["eDP1"]="29"
     ["DVI-D-0"]="23"
     ["HDMI-A-0"]="29"
 )
 declare -A BLOCKS=(
     ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP sun aw-afk date TSEP"
     ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP sun aw-afk date TSEP"
+    ["eDP1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP sun aw-afk date TSEP"
 )
 
 pkill polybar
