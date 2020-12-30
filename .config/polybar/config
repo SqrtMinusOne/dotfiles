@@ -183,7 +183,7 @@ use-ui-max = true
 bar-volume-width = 7
 bar-volume-foreground-0 = ${colors.white}
 bar-volume-foreground-1 = ${colors.yellow}
-bar-volume-foreground-2 = ${colors.yellor}
+bar-volume-foreground-2 = ${colors.yellow}
 bar-volume-foreground-3 = ${colors.blue}
 bar-volume-foreground-4 = ${colors.blue}
 bar-volume-foreground-5 = ${colors.green}
@@ -271,6 +271,25 @@ time-alt = %H:%M:%S
 
 format-underline = ${colors.cyan}
 label = "%date% %time%"
+
+[module/battery]
+type = internal/battery
+battery = BAT0
+adapter = ADP0
+
+time-format = %H:%M
+format-discharging = <ramp-capacity> <label-discharging>
+format-discharging-underline = ${colors.cyan}
+format-charging-underline = ${colors.yellow}
+format-full-underline = ${colors.green}
+label-discharging = %percentage%% %time%
+label-charging =  %percentage%% %time%
+
+ramp-capacity-0 = 
+ramp-capacity-1 = 
+ramp-capacity-2 = 
+ramp-capacity-3 = 
+ramp-capacity-4 = 
 
 [settings]
 screenchange-reload = true

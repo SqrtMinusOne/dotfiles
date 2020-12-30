@@ -25,7 +25,7 @@ declare -A BAR_HEIGHT=(
 declare -A BLOCKS=(
     ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP sun aw-afk date TSEP"
     ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP sun aw-afk date TSEP"
-    ["eDP1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP sun aw-afk date TSEP"
+    ["eDP1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
 )
 
 pkill polybar
