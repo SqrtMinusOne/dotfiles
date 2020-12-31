@@ -14,6 +14,8 @@
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
 
+(setq my/lowpower (string= (system-name) "pntk"))
+
 (defconst user-init-dir
   (cond ((boundp 'user-emacs-directory)
          user-emacs-directory)
@@ -53,7 +55,7 @@
 
 (use-package which-key
   :config
-  (setq which-key-idle-delay 0.3)
+  (setq which-key-idle-delay (if my/lowpower 1 0.3))
   (setq which-key-popup-type 'frame)
   (which-key-mode)
   (which-key-setup-side-window-bottom)
@@ -126,7 +128,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package evil-collection
   :straight t
   :config
-  (evil-collection-init '(eww dired dasboard company vterm flycheck ebuku)))
+  (evil-collection-init '(eww dired company vterm flycheck profiler)))
   
 (use-package evil-quickscope
   :straight t
@@ -151,6 +153,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
+(my-leader-def "Ps" 'profiler-start)
+(my-leader-def "Pe" 'profiler-stop)
+(my-leader-def "Pp" 'profiler-report)
 
 (my-leader-def
   :infix "h"
@@ -366,11 +371,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (global-company-mode)
-  (setq company-idle-delay 0.125)
+  (setq company-idle-delay (if my/lowpower 0.5 0.125))
   (setq company-show-numbers t))
 
 (use-package company-box
   :straight t
+  :if (not my/lowpower)
   :hook (company-mode . company-box-mode))
   
 (general-imap "C-SPC" 'company-complete)
@@ -523,6 +529,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package all-the-icons-dired
   :straight t
+  :if (not my/lowpower)
   :config
   (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
   
@@ -815,6 +822,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package emojify
   :straight t
+  :if (not my/lowpower)
   :hook (after-init . global-emojify-mode))
 
 (use-package all-the-icons
@@ -849,6 +857,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package highlight-indent-guides
   :straight t
+  :if (not my/lowpower)
   :hook (
          (prog-mode . highlight-indent-guides-mode)
          (vue-mode . highlight-indent-guides-mode)
@@ -859,6 +868,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (use-package rainbow-delimiters
   :straight t
+  :if (not my/lowpower)
   :config
   (add-hook 'org-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))

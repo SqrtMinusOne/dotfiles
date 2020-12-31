@@ -22,6 +22,10 @@
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
 #+end_src
+** System
+#+begin_src emacs-lisp
+(setq my/lowpower (string= (system-name) "pntk"))
+#+end_src
 ** Load user files
 #+begin_src emacs-lisp
 (defconst user-init-dir
@@ -79,7 +83,7 @@
 #+begin_src emacs-lisp
 (use-package which-key
   :config
-  (setq which-key-idle-delay 0.3)
+  (setq which-key-idle-delay (if my/lowpower 1 0.3))
   (setq which-key-popup-type 'frame)
   (which-key-mode)
   (which-key-setup-side-window-bottom)
@@ -163,7 +167,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package evil-collection
   :straight t
   :config
-  (evil-collection-init '(eww dired dasboard company vterm flycheck ebuku)))
+  (evil-collection-init '(eww dired company vterm flycheck profiler)))
   
 (use-package evil-quickscope
   :straight t
@@ -191,6 +195,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
+(my-leader-def "Ps" 'profiler-start)
+(my-leader-def "Pe" 'profiler-stop)
+(my-leader-def "Pp" 'profiler-report)
 #+end_src
 *** Help
 #+begin_src emacs-lisp
@@ -424,11 +431,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (global-company-mode)
-  (setq company-idle-delay 0.125)
+  (setq company-idle-delay (if my/lowpower 0.5 0.125))
   (setq company-show-numbers t))
 
 (use-package company-box
   :straight t
+  :if (not my/lowpower)
   :hook (company-mode . company-box-mode))
   
 (general-imap "C-SPC" 'company-complete)
@@ -613,6 +621,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package all-the-icons-dired
   :straight t
+  :if (not my/lowpower)
   :config
   (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
   
@@ -948,10 +957,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq doom-modeline-minor-modes nil)
   (setq doom-modeline-buffer-state-icon nil))
 #+end_src
-** Emoji
+** CHECK Emoji
 #+begin_src emacs-lisp
 (use-package emojify
   :straight t
+  :if (not my/lowpower)
   :hook (after-init . global-emojify-mode))
 #+end_src
 ** Icons
@@ -959,7 +969,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package all-the-icons
   :straight t)
 #+end_src
-** Dashboard
+** OFF Dashboard
 #+begin_src emacs-lisp
 ;; (use-package dashboard
 ;;   :straight t
@@ -994,6 +1004,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+begin_src emacs-lisp
 (use-package highlight-indent-guides
   :straight t
+  :if (not my/lowpower)
   :hook (
          (prog-mode . highlight-indent-guides-mode)
          (vue-mode . highlight-indent-guides-mode)
@@ -1004,6 +1015,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (use-package rainbow-delimiters
   :straight t
+  :if (not my/lowpower)
   :config
   (add-hook 'org-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
