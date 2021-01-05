@@ -97,6 +97,7 @@ content = "|"
 content-foreground = ${colors.magenta}
 content-padding = 0
 content-margin = 0
+interval = 0
 
 [module/TSEP]
 type = custom/script

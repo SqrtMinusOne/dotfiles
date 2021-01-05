@@ -44,5 +44,5 @@ for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     export FONT3="JetBrains Mono Nerd Font:monospace:size=$SIZE;1"
     export HEIGHT=${BAR_HEIGHT[$MONITOR]}
     export RIGHT_BLOCKS=${BLOCKS[$MONITOR]}
-    polybar --reload mybar &
+    polybar mybar &
 done

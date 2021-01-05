@@ -30,8 +30,6 @@
 
 (setenv "IS_EMACS" "true")
 
-(add-to-list 'exec-path (expand-file-name "~/.cargo/bin"))
-
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
 
@@ -128,7 +126,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package evil-collection
   :straight t
   :config
-  (evil-collection-init '(eww dired company vterm flycheck profiler)))
+  (evil-collection-init '(eww dired company vterm flycheck profiler cider)))
   
 (use-package evil-quickscope
   :straight t
@@ -433,7 +431,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'visual-fill-column-mode-hook
             (lambda () (setq visual-fill-column-center-text t))))
 
-(electric-pair-mode)
+(use-package smartparens
+  :straight t)
+
+(use-package aggressive-indent
+  :straight t)
 
 (setq tab-always-indent nil)
 
@@ -624,7 +626,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "M-h" 'vterm-send-left)
 
 (straight-override-recipe
-   '(org :type git :host github :repo "emacsmirror/org" :no-build t))
+   '(org :repo "emacsmirror/org" :no-build t))
 
 (use-package org
   :straight t)
@@ -634,6 +636,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :after (org evil-collection)
   :config
   (add-hook 'org-mode-hook 'evil-org-mode)
+  (add-hook 'org-mode-hook #'smartparens-mode)
   (add-hook 'evil-org-mode-hook
             (lambda ()
               (evil-org-set-key-theme '(navigation insert textobjects additional calendar todo))))
@@ -673,7 +676,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package org-latex-impatient
   :straight (
-    :repo "https://github.com/yangsheng6810/org-latex-impatient.git",
+    :repo "yangsheng6810/org-latex-impatient"
     :branch "master")
   :hook (org-mode . org-latex-impatient-mode)
   :init
@@ -936,6 +939,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq lsp-eslint-server-command '("node" "/home/pavel/.emacs.d/.cache/lsp/eslint/unzipped/extension/server/out/eslintServer.js" "--stdio"))
   (setq lsp-eslint-run "onSave")
   (setq lsp-signature-render-documentation nil)
+ ;  (lsp-headerline-breadcrumb-mode nil)
+  (setq lsp-headerline-breadcrumb-enable nil)
   (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte"))
   )
   
@@ -993,6 +998,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package dap-mode
   :straight t
+  :defer t
   :init
   (setq lsp-enable-dap-auto-configure nil)
   :config
@@ -1036,6 +1042,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package typescript-mode
   :straight t)
+  
+(add-hook 'typescript-mode-hook #'smartparens-mode)
 
 (defun set-flycheck-eslint()
   "Override flycheck checker with eslint."
@@ -1052,6 +1060,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;;          #'set-flycheck-eslint)
 
 (add-hook 'vue-mode-hook #'hs-minor-mode)
+(add-hook 'vue-mode-hook #'smartparens-mode)
          
 (with-eval-after-load 'editorconfig
   (add-to-list 'editorconfig-indentation-alist
@@ -1064,10 +1073,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
 
-(use-package haskell-mode
+(use-package clojure-mode
   :straight t)
   
-(use-package lsp-haskell
+(add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+(add-hook 'clojure-mode-hook #'aggressive-indent-mode)
+
+(use-package cider
   :straight t)
 
 (use-package svelte-mode
@@ -1205,6 +1217,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package clips-mode
   :straight t)
 
+(use-package haskell-mode
+  :straight t)
+  
+(use-package lsp-haskell
+  :straight t)
+
 (use-package dockerfile-mode
   :straight t)
 
@@ -1243,4 +1261,4 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  "-" 'text-scale-decrease)
 
 (use-package snow
-  :straight (:repo "https://github.com/alphapapa/snow.el"))
+  :straight (:repo "alphapapa/snow.el"))

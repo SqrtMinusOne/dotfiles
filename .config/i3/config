@@ -288,7 +288,7 @@ mode "apps" {
     bindsym c exec "copyq toggle"; mode default
     bindsym k exec "keepassxc"; mode default
     bindsym e exec mailspring; mode default
-    bindsym a exec emacs; mode default
+    bindsym a exec "bash /home/pavel/bin/emacs.sh"; mode default
     # bindsym a exec emacsclient -c; mode default
     # bindsym Shift+a exec emacs; mode default
 }

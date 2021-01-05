@@ -26,6 +26,7 @@ if [ -d "$HOME/go" ] ; then
 fi
 # export PATH="$HOME/.gem/ruby/2.7.0/bin/:$PATH"
 
+[ -f "/home/pavel/.ghcup/env" ] && source "/home/pavel/.ghcup/env" # ghcup-env
 
 if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} ]]
 then
@@ -135,5 +136,4 @@ alias ls="exa --icons"
 alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
-
 

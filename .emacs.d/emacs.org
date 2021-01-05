@@ -45,9 +45,12 @@
 #+begin_src emacs-lisp
 (setenv "IS_EMACS" "true")
 #+end_src
-*** Add rust stuff to =exec-path=
-#+begin_src emacs-lisp
-(add-to-list 'exec-path (expand-file-name "~/.cargo/bin"))
+*** OFF Add stuff to PATH and =exec-path=
+#+begin_src emacs-lisp :tangle no
+(setq my/extra-paths '("~/.cargo/bin" "~/.cabal/bin" "~/.ghcup/bin"))
+
+(dolist (path my/extra-paths) (add-to-list 'exec-path (expand-file-name path)))
+(setenv "PATH" (concat (string-join my/extra-paths ":") ":" (getenv "PATH")))
 #+end_src
 *** Custom file location
 #+begin_src emacs-lisp
@@ -167,7 +170,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package evil-collection
   :straight t
   :config
-  (evil-collection-init '(eww dired company vterm flycheck profiler)))
+  (evil-collection-init '(eww dired company vterm flycheck profiler cider)))
   
 (use-package evil-quickscope
   :straight t
@@ -502,9 +505,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'visual-fill-column-mode-hook
             (lambda () (setq visual-fill-column-center-text t))))
 #+end_src
-*** Electric pair
-#+begin_src emacs-lisp
+*** OFF Electric pair
+#+begin_src emacs-lisp :tangle no
 (electric-pair-mode)
+#+end_src
+*** Smart Parens
+#+begin_src emacs-lisp
+(use-package smartparens
+  :straight t)
+#+end_src
+*** Aggressive Indent
+#+begin_src emacs-lisp
+(use-package aggressive-indent
+  :straight t)
 #+end_src
 *** Tabs
 #+begin_src emacs-lisp
@@ -721,7 +734,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ** Installation
 #+begin_src emacs-lisp
 (straight-override-recipe
-   '(org :type git :host github :repo "emacsmirror/org" :no-build t))
+   '(org :repo "emacsmirror/org" :no-build t))
 
 (use-package org
   :straight t)
@@ -733,6 +746,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :after (org evil-collection)
   :config
   (add-hook 'org-mode-hook 'evil-org-mode)
+  (add-hook 'org-mode-hook #'smartparens-mode)
   (add-hook 'evil-org-mode-hook
             (lambda ()
               (evil-org-set-key-theme '(navigation insert textobjects additional calendar todo))))
@@ -781,7 +795,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+begin_src emacs-lisp
 (use-package org-latex-impatient
   :straight (
-    :repo "https://github.com/yangsheng6810/org-latex-impatient.git",
+    :repo "yangsheng6810/org-latex-impatient"
     :branch "master")
   :hook (org-mode . org-latex-impatient-mode)
   :init
@@ -1097,6 +1111,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq lsp-eslint-server-command '("node" "/home/pavel/.emacs.d/.cache/lsp/eslint/unzipped/extension/server/out/eslintServer.js" "--stdio"))
   (setq lsp-eslint-run "onSave")
   (setq lsp-signature-render-documentation nil)
+ ;  (lsp-headerline-breadcrumb-mode nil)
+  (setq lsp-headerline-breadcrumb-enable nil)
   (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte"))
   )
   
@@ -1163,6 +1179,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+begin_src emacs-lisp
 (use-package dap-mode
   :straight t
+  :defer t
   :init
   (setq lsp-enable-dap-auto-configure nil)
   :config
@@ -1222,7 +1239,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+begin_src emacs-lisp :tangle no
 (use-package code-compass
   :straight (
-  :repo "https://github.com/ag91/code-compass"
+  :repo "ag91/code-compass"
   :files ("code-compass.el")
   :branch "main"
   ))
@@ -1232,6 +1249,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+begin_src emacs-lisp
 (use-package typescript-mode
   :straight t)
+  
+(add-hook 'typescript-mode-hook #'smartparens-mode)
 #+end_src
 *** Override flycheck checker with eslint
 #+begin_src emacs-lisp
@@ -1253,6 +1272,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;;          #'set-flycheck-eslint)
 
 (add-hook 'vue-mode-hook #'hs-minor-mode)
+(add-hook 'vue-mode-hook #'smartparens-mode)
          
 (with-eval-after-load 'editorconfig
   (add-to-list 'editorconfig-indentation-alist
@@ -1265,12 +1285,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
 #+end_src
-** Haskell
+** Clojure
 #+begin_src emacs-lisp
-(use-package haskell-mode
+(use-package clojure-mode
   :straight t)
   
-(use-package lsp-haskell
+(add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+(add-hook 'clojure-mode-hook #'aggressive-indent-mode)
+
+(use-package cider
   :straight t)
 #+end_src
 ** Svelte
@@ -1431,6 +1454,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package clips-mode
   :straight t)
 #+end_src
+** Haskell
+#+begin_src emacs-lisp
+(use-package haskell-mode
+  :straight t)
+  
+(use-package lsp-haskell
+  :straight t)
+#+end_src
 ** Docker
 #+begin_src emacs-lisp
 (use-package dockerfile-mode
@@ -1483,7 +1514,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ** Snow
 #+begin_src emacs-lisp
 (use-package snow
-  :straight (:repo "https://github.com/alphapapa/snow.el"))
+  :straight (:repo "alphapapa/snow.el"))
 #+end_src
 ** OFF Buku
 #+begin_src emacs-lisp :tangle no
