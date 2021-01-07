@@ -843,12 +843,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package auto-dim-other-buffers
   :straight t
+  :if (display-graphic-p)
   :config
   (set-face-attribute 'auto-dim-other-buffers-face nil
                       :background "#212533")
   (auto-dim-other-buffers-mode t))
   
-  (use-package doom-themes
+(use-package doom-themes
   :straight t
   :config
   (setq doom-themes-enable-bold t   
@@ -1044,6 +1045,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t)
   
 (add-hook 'typescript-mode-hook #'smartparens-mode)
+(defun my/set-smartparens-indent (mode)
+  (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+)
+(my/set-smartparens-indent 'typescript-mode)
 
 (defun set-flycheck-eslint()
   "Override flycheck checker with eslint."
@@ -1053,6 +1059,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; (add-hook 'typescript-mode-hook
 ;;           #'set-flycheck-eslint)
 
+(add-hook 'javascript-mode-hook #'smartparens-mode)
+(my/set-smartparens-indent 'javascript-mode)
+
 (use-package vue-mode
   :straight t)
   
@@ -1061,6 +1070,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'vue-mode-hook #'hs-minor-mode)
 (add-hook 'vue-mode-hook #'smartparens-mode)
+(my/set-smartparens-indent 'vue-mode)
          
 (with-eval-after-load 'editorconfig
   (add-to-list 'editorconfig-indentation-alist
@@ -1093,6 +1103,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package json-mode
   :straight t)
+  
+(add-hook 'json-mode #'smartparens-mode)
+(my/set-smartparens-indent 'json-mode)
 
 (use-package yaml-mode
   :straight t
