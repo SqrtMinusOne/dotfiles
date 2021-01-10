@@ -76,6 +76,12 @@ type = custom/script
 exec = /home/pavel/bin/polybar/ipstack.sh
 interval = 1200
 
+[module/weather]
+type = custom/script
+exec = /home/pavel/bin/polybar/weather.sh
+format-underline = ${colors.red}
+interval = 1200
+
 [module/ipstack-vpn]
 type = custom/script
 exec = /home/pavel/bin/polybar/ipstack-vpn.sh

@@ -944,6 +944,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; Hightlight line
 (global-hl-line-mode 1)
 #+end_src
+** Frame title
+#+begin_src emacs-lisp
+(setq frame-title-format
+    '(""
+      "emacs"
+      (:eval
+       (let ((project-name (projectile-project-name)))
+         (if (not (string= "-" project-name))
+           (format ":%s@%s" project-name (system-name))
+           (format "@%s" (system-name)))))
+       ))
+#+end_src
 ** Tab bar
 #+begin_src emacs-lisp
 (general-define-key
@@ -1271,10 +1283,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+end_src
 ** JavaScript
 #+begin_src emacs-lisp
-(add-hook 'javascript-mode-hook #'smartparens-mode)
-(my/set-smartparens-indent 'javascript-mode)
+(add-hook 'js-mode-hook #'smartparens-mode)
+(my/set-smartparens-indent 'js-mode)
 #+end_src
-
 ** Vue.js
 #+begin_src emacs-lisp
 (use-package vue-mode
@@ -1316,6 +1327,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'svelte-mode-hook
           'set-flycheck-eslint)
+#+end_src
+** SCSS
+#+begin_src emacs-lisp
+(add-hook 'scss-mode-hook #'smartparens-mode)
+(my/set-smartparens-indent 'scss-mode)
 #+end_src
 ** PHP
 #+begin_src emacs-lisp
@@ -1375,11 +1391,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
              
 (add-hook 'LaTeX-mode-hook
           #'(lambda ()
-              (lsp)
+              (unless (string-match "\.hogan\.tex$" (buffer-name))
+                (lsp))
               (setq-local lsp-diagnostic-package :none)
               (setq-local flycheck-checker 'tex-chktex)))
               
 (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
+(add-hook 'LaTeX-mode-hook #'smartparens-mode)
+
+(my/set-smartparens-indent 'LaTeX-mode)
 
 (general-nmap
   :keymaps '(LaTeX-mode-map latex-mode-map)

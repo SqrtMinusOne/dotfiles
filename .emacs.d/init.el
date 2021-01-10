@@ -800,6 +800,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; Hightlight line
 (global-hl-line-mode 1)
 
+(setq frame-title-format
+    '(""
+      "emacs"
+      (:eval
+       (let ((project-name (projectile-project-name)))
+         (if (not (string= "-" project-name))
+           (format ":%s@%s" project-name (system-name))
+           (format "@%s" (system-name)))))
+       ))
+
 (general-define-key
  :keymaps 'override
  :states '(normal emacs)
@@ -1059,8 +1069,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; (add-hook 'typescript-mode-hook
 ;;           #'set-flycheck-eslint)
 
-(add-hook 'javascript-mode-hook #'smartparens-mode)
-(my/set-smartparens-indent 'javascript-mode)
+(add-hook 'js-mode-hook #'smartparens-mode)
+(my/set-smartparens-indent 'js-mode)
 
 (use-package vue-mode
   :straight t)
@@ -1097,6 +1107,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'svelte-mode-hook
           'set-flycheck-eslint)
+
+(add-hook 'scss-mode-hook #'smartparens-mode)
+(my/set-smartparens-indent 'scss-mode)
 
 (use-package php-mode
   :straight t)
@@ -1145,11 +1158,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
              
 (add-hook 'LaTeX-mode-hook
           #'(lambda ()
-              (lsp)
+              (unless (string-match "\.hogan\.tex$" (buffer-name))
+                (lsp))
               (setq-local lsp-diagnostic-package :none)
               (setq-local flycheck-checker 'tex-chktex)))
               
 (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
+(add-hook 'LaTeX-mode-hook #'smartparens-mode)
+
+(my/set-smartparens-indent 'LaTeX-mode)
 
 (general-nmap
   :keymaps '(LaTeX-mode-map latex-mode-map)
