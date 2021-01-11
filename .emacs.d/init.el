@@ -262,59 +262,40 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq undo-strong-limit 100663296)
 (setq undo-outer-limit 1006632960)
 
-(use-package helm
-  :init
-  (require 'helm-config)
-  (setq helm-split-window-in-side-p t)
-  (setq helm-move-to-line-cycle-in-source t)
+(use-package ivy
   :straight t
   :config
-  (helm-mode 1)
-  (helm-autoresize-mode 1))
+  (setq ivy-use-virtual-buffers t)
+  (ivy-mode))
 
-(use-package helm-ag
+(use-package counsel
+  :straight t
+  :config
+  (counsel-mode))
+  
+(use-package swiper
   :straight t)
   
-(use-package helm-rg
-  :straight t)
-
-(general-nmap
-  :keymaps 'helm-ag-mode-map
-  "RET" 'helm-ag-mode-jump
-  "M-RET" 'helm-ag-mode-jump-other-window)
-  
-(general-nmap
-  :keymaps 'helm-occur-mode-map
-  "RET" 'helm-occur-mode-goto-line
-  "M-RET" 'helm-occur-mode-goto-line-ow)
-  
-(general-define-key "M-x" 'helm-M-x)
 (my-leader-def
-  "fb" 'helm-buffers-list
-  "fs" 'helm-lsp-workspace-symbol
-  "fw" 'helm-lsp-global-workspace-symbol
-  "fc" 'helm-show-kill-ring
-  ;; "fa" 'helm-do-ag-project-root
-  "fm" 'helm-bookmarks
-  "ff" 'project-find-file
-  "fe" 'conda-env-activate)
+  :infix "f"
+  "b" 'ivy-switch-buffer
+  "e" 'conda-env-activate
+  "f" 'project-find-file
+  "c" 'counsel-yank-pop
+  "a" 'counsel-rg
+  "A" 'counsel-ag
+)
 
-(my-leader-def "s" 'helm-occur)
-(my-leader-def "SPC" 'helm-resume)
+(my-leader-def "SPC" 'ivy-resume)
+(my-leader-def "s" 'swiper-isearch)
 
 (general-define-key
-  :keymaps 'helm-map
-  "C-j" 'helm-next-line
-  "C-k" 'helm-previous-line)
- 
-(general-define-key
-  :keymaps '(helm-find-files-map helm-locate-map)
-  "C-h" 'helm-find-files-up-one-level
-  "C-l" 'helm-execute-persistent-action)
- 
-(general-imap
-  "C-y" 'helm-show-kill-ring)
-;; (general-nmap "C-p" 'project-find-file)
+  :keymaps '(ivy-minibuffer-map swiper-map)
+  "M-j" 'ivy-next-line
+  "M-k" 'ivy-previous-line
+  "<C-return>" 'ivy-call
+  "M-RET" 'ivy-immediate-done
+  [escape] 'minibuffer-keyboard-quit)
 
 (use-package treemacs
   :straight t
@@ -350,20 +331,25 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (projectile-mode +1)
   (setq projectile-project-search-path '("~/Code" "~/Documents")))
   
-(use-package helm-projectile
-  :straight t
-  :config
-  (setq projectile-completion-system 'helm))
-  
+;; (use-package helm-projectile
+;;   :straight t
+;;   :config
+;;   (setq projectile-completion-system 'helm))
+
+(use-package counsel-projectile
+  :straight t)
+
 (use-package treemacs-projectile
   :straight t)
   
 (my-leader-def
   "p" 'projectile-command-map
-  "fa" 'helm-projectile-rg
-  "fA" 'helm-projectile-ag)
+  ;; "fa" 'helm-projectile-rg
+  ;; "fA" 'helm-projectile-ag
+  )
   
-(general-nmap "C-p" 'helm-projectile-find-file)
+;; (general-nmap "C-p" 'helm-projectile-find-file)
+(general-nmap "C-p" 'counsel-projectile-find-file)
 
 (use-package company
   :straight t
@@ -962,9 +948,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq lsp-ui-doc-delay 2)
   (setq lsp-ui-sideline-show-hover nil))
 
-(use-package helm-lsp
-  :straight t
-  :commands helm-lsp-workspace-symbol)
+;; (use-package helm-lsp
+;;   :straight t
+;;   :commands helm-lsp-workspace-symbol)
 
 ;; (use-package origami
 ;;   :straight t
@@ -984,7 +970,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "lr" 'lsp-rename
   "lu" 'lsp-ui-peek-find-references
   "ls" 'lsp-ui-find-workspace-symbol
-  "la" 'helm-lsp-code-actions
+  ;; "la" 'helm-lsp-code-actions
   "le" 'list-flycheck-errors)
 
 (use-package flycheck
