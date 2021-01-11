@@ -276,6 +276,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package swiper
   :straight t)
   
+(use-package ivy-rich
+  :straight t
+  :config
+  (ivy-rich-mode 1)
+  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+  
 (my-leader-def
   :infix "f"
   "b" 'ivy-switch-buffer
@@ -663,7 +669,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package org-latex-impatient
   :straight (
     :repo "yangsheng6810/org-latex-impatient"
-    :branch "master")
+    :branch "master"
+    :host github)
   :hook (org-mode . org-latex-impatient-mode)
   :init
   (setq org-latex-impatient-tex2svg-bin
@@ -1277,4 +1284,4 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  "-" 'text-scale-decrease)
 
 (use-package snow
-  :straight (:repo "alphapapa/snow.el"))
+  :straight (:repo "alphapapa/snow.el" :host github))

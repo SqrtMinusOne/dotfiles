@@ -392,5 +392,6 @@ exec aw-qt
 exec dunst
 exec kde-connect-indicator
 exec copyq
+exec "xmodmap ~/.Xmodmap"
 exec "bash ~/bin/autostart.sh"
 # exec emacs --daemon
