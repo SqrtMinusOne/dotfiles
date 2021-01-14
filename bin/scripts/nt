@@ -1,0 +1,11 @@
+#!/bin/sh
+command="$@"
+if [ ! -z "$command" ]; then
+    start_time="$(date -u +%s)"
+    $command
+    end_time="$(date -u +%s)"
+    elapsed="$(($end_time-$start_time))"
+    notify-send "Terminal" "Command\n$command\nexecuted in $elapsed seconds"
+else
+    notify-send "Terminal" "Command execution complete"
+fi

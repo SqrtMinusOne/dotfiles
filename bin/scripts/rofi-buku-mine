@@ -1,5 +1,10 @@
 #!/bin/sh
-BUKU="/home/pavel/Programs/miniconda3/bin/buku"
+if [ $(hostname) = 'pdsk' ]; then
+    BUKU="/home/pavel/.local/bin/buku"
+else
+    BUKU="/home/pavel/Programs/miniconda3/bin/buku"
+fi
+
 COMMAND="$BUKU -o %"
 # COMMAND="qutebrowser $(buku -f 10 -p %)"
 if [[ $1 == '-e' ]]; then
