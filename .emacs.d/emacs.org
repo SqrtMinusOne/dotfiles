@@ -1551,7 +1551,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+end_src
 ** sh
 #+begin_src emacs-lisp
-(add-hook sh-mode-hook #'smartparens-mode)
+(add-hook 'sh-mode-hook #'smartparens-mode)
 #+end_src
 ** CLIPS
 #+begin_src emacs-lisp

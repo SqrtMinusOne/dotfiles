@@ -1250,7 +1250,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (add-hook 'fish-mode-hook #'smartparens-mode)
 
-(add-hook sh-mode-hook #'smartparens-mode)
+(add-hook 'sh-mode-hook #'smartparens-mode)
 
 (use-package clips-mode
   :straight t)
