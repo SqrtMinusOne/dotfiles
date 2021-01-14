@@ -276,6 +276,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package swiper
   :straight t)
   
+(use-package ivy-rich
+  :straight t
+  :config
+  (ivy-rich-mode 1)
+  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+  
 (my-leader-def
   :infix "f"
   "b" 'ivy-switch-buffer
@@ -287,7 +293,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 )
 
 (my-leader-def "SPC" 'ivy-resume)
-(my-leader-def "s" 'swiper-isearch)
+(my-leader-def "s" 'swiper-isearch
+               "S" 'swiper-all)
 
 (general-define-key
   :keymaps '(ivy-minibuffer-map swiper-map)
@@ -356,6 +363,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (global-company-mode)
   (setq company-idle-delay (if my/lowpower 0.5 0.125))
+  (setq company-dabbrev-downcase nil)
   (setq company-show-numbers t))
 
 (use-package company-box
@@ -519,7 +527,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :if (not my/lowpower)
   :config
-  (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
+  (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
+  (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
+  (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice))
   
 (use-package dired-open
   :straight t)
@@ -1079,6 +1089,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
 
+(add-hook 'python-mode-hook #'smartparens-mode)
+
 (use-package clojure-mode
   :straight t)
   
@@ -1200,7 +1212,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
        ))
   (setq markdown-live-preview-delete-export 'delete-on-export)
   (setq markdown-asymmetric-header t)
-  (setq markdown-open-command "/home/pavel/bin/scripts/vmd-sep")
+  (setq markdown-open-command "/home/pavel/bin/scripts/chromium-sep")
   )
 
 ;; (use-package livedown
@@ -1213,6 +1225,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :keymaps 'markdown-mode-map
   "M-<left>" 'markdown-promote
   "M-<right>" 'markdown-demote)
+  
+(add-hook 'markdown-mode-hook #'smartparens-mode)
+;; (my/set-smartparens-indent 'js-mode)
 
 (use-package plantuml-mode
   :straight t
@@ -1226,6 +1241,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap
   :keymaps 'plantuml-mode-map
   "RET" 'plantuml-preview)
+  
+(add-hook 'plantuml-mode-hook #'smartparens-mode)
 
 (use-package fish-mode
   :straight t)
@@ -1253,7 +1270,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq langtool-mother-tongue "ru"))
   
 (my-leader-def
-  :infix "S"
+  :infix "L"
   "c" 'langtool-check
   "s" 'langtool-server-stop
   "d" 'langtool-check-done

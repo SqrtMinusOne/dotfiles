@@ -21,6 +21,9 @@ fi
 if [ -d "$HOME/.rvm" ] ; then
     export PATH="$PATH:$HOME/.rvm/bin"
 fi
+# if [ -d "$HOME/.gem" ]; then
+#     export PATH="$HOME/.gem/ruby/2.7.0/bin:$PATH"
+# fi
 if [ -d "$HOME/go" ] ; then
     export PATH="$HOME/go/bin:$PATH"
 fi
