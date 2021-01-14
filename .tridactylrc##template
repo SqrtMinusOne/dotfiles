@@ -5,8 +5,6 @@ bind gN tabclose
 
 bind O fillcmdline tabopen
 
-bind / fillcmdline find
-bind ? fillcmdline find -?
 bind n findnext 1
 bind N findnext -1
 

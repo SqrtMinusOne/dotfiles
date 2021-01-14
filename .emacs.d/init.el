@@ -673,7 +673,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package org-latex-impatient
   :straight (
     :repo "yangsheng6810/org-latex-impatient"
-    :branch "master")
+    :branch "master"
+    :host github)
   :hook (org-mode . org-latex-impatient-mode)
   :init
   (setq org-latex-impatient-tex2svg-bin
@@ -1294,4 +1295,4 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  "-" 'text-scale-decrease)
 
 (use-package snow
-  :straight (:repo "alphapapa/snow.el"))
+  :straight (:repo "alphapapa/snow.el" :host github))

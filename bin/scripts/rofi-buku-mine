@@ -1,10 +1,11 @@
 #!/bin/sh
-COMMAND="buku -o %"
+BUKU="/home/pavel/Programs/miniconda3/bin/buku"
+COMMAND="$BUKU -o %"
 # COMMAND="qutebrowser $(buku -f 10 -p %)"
 if [[ $1 == '-e' ]]; then
-    COMMAND="buku -w %"
+    COMMAND="$BUKU -w %"
 fi
-buku -f 4 -p | awk -F'\t' -v OFS='\t' '{
+$BUKU -f 4 -p | awk -F'\t' -v OFS='\t' '{
     split($4, tags, ",")
     joined = sep = ""
     for (i = 1; i in tags; i++) {
@@ -23,6 +24,6 @@ buku -f 4 -p | awk -F'\t' -v OFS='\t' '{
     if [[ -z "$index" ]]; then
         exit 0
     fi
-    url=$(buku -f 10 -p $index)
+    url=$($BUKU -f 10 -p $index)
     echo ${url#"waiting for input"} | cut -d ' ' -f 1 | xargs -I % firefox %
 }
