@@ -1384,6 +1384,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'svelte-mode-hook
           'set-flycheck-eslint)
+          
+(add-hook 'svelte-mode-hook #'smartparens-mode)
+(my/set-smartparens-indent 'svelte-mode)
 #+end_src
 ** SCSS
 #+begin_src emacs-lisp

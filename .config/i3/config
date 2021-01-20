@@ -108,6 +108,10 @@ bindsym $mod+Shift+0 move container to workspace $w10
 bindsym $mod+comma workspace prev
 bindsym $mod+period workspace next
 
+# Layout
+bindsym $mod+slash exec toggle_layout
+
+assign [class="Emacs"] $w1
 assign [class="qutebrowser"] $w2
 assign [class="firefox"] $w2
 assign [class="VK"] $w3
@@ -126,6 +130,8 @@ assign [class="skype"] $w7
 assign [class="Mailspring"] $w8
 assign [class="Thunderbird"] $w8
 assign [class="Joplin"] $w8
+
+for_window [title="VirtScreen"] floating enable
 
 for_window [title="ncmpcpp.*"] move to workspace $w9
 for_window [class="cinnamon-settings*"] floating enable
