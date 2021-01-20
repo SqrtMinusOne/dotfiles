@@ -38,6 +38,9 @@ for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     fi
     SIZE=${FONT_SIZES[$MONITOR]}
     SCALE=${EMOJI_SCALE[$MONITOR]}
+    if [[ -z "$SCALE" ]]; then
+        continue
+    fi
     export FONT0="pango:monospace:size=$SIZE;1"
     export FONT1="NotoEmoji:scale=$SCALE:antialias=false;1"
     export FONT2="fontawesome:pixelsize=$SIZE;1"
