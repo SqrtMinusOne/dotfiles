@@ -296,8 +296,6 @@ nnoremap Md :mkdir<space>
 nnoremap o :file<CR>
 nnoremap y<Tab> :move<CR>
 
-source ~/.config/vifm/vifm_devicons/SETUP
-
 " ------------------------------------------------------------------------------
 " Colorscheme
 highlight clear
