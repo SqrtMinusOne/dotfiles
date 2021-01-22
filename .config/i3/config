@@ -295,6 +295,7 @@ mode "apps" {
     bindsym k exec "keepassxc"; mode default
     bindsym e exec mailspring; mode default
     bindsym a exec "bash /home/pavel/bin/emacs.sh"; mode default
+    bindsym n exec "st -e newsboat"; mode default
     # bindsym a exec emacsclient -c; mode default
     # bindsym Shift+a exec emacs; mode default
 }

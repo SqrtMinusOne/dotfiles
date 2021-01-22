@@ -1,0 +1,21 @@
+bind-key j down
+bind-key k up
+bind-key J next-unread-feed feedlist
+bind-key K prev-unread-feed feedlist
+bind-key j next articlelist
+bind-key k prev articlelist
+
+color background          white    default
+color listnormal          white  default
+color listnormal_unread   magenta default bold
+color listfocus           black  blue 
+color listfocus_unread    black blue   bold
+color info                white  black   bold
+color article             white default
+
+highlight feedlist ".*(0/0)) " black black invis
+highlight feedlist ">>> .*" blue black bold
+highlight article "^(Feed|Title|Author|Link|Date|Links):" magenta default bold
+highlight article \[[1-9]+\] yellow default bold
+
+browser "firefox --new-tab %u"
