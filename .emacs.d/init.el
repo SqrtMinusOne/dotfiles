@@ -43,7 +43,7 @@
   
 (conda-env-activate "base")
 
-(setq gc-cons-threshold 8000000)
+(setq gc-cons-threshold 80000000)
 (setq read-process-output-max (* 1024 1024))
 
 (use-package general
@@ -126,7 +126,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package evil-collection
   :straight t
   :config
-  (evil-collection-init '(eww dired company vterm flycheck profiler cider)))
+  (evil-collection-init '(eww dired company vterm flycheck profiler cider explain-pause-mode)))
   
 (use-package evil-quickscope
   :straight t
@@ -764,7 +764,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
 
 ;; Prettify symbols
-(global-prettify-symbols-mode)
+;; (global-prettify-symbols-mode)
 
 ;; No start screen
 (setq inhibit-startup-screen t)
@@ -883,6 +883,26 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (add-hook 'org-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
+
+(use-package ligature
+  :straight (:host github :repo "mickeynp/ligature.el")
+  :config
+  (ligature-set-ligatures 'prog-mode
+    '("--" "---" "==" "===" "!=" "!==" "=!=" "=:=" "=/=" "<="
+    ">=" "&&" "&&&" "&=" "++" "+++" "***" ";;" "!!" "??"
+    "?:" "?." "?=" "<:" ":<" ":>" ">:" "<>" "<<<" ">>>"
+    "<<" ">>" "||" "-|" "_|_" "|-" "||-" "|=" "||=" "##"
+    "###" "####" "#{" "#[" "]#" "#(" "#?" "#_" "#_(" "#:"
+    "#!" "#=" "^=" "<$>" "<$" "$>" "<+>" "<+" "+>" "<*>"
+    "<*" "*>" "</" "</>" "/>" "<!--" "<#--" "-->" "->" "->>"
+    "<<-" "<-" "<=<" "=<<" "<<=" "<==" "<=>" "<==>" "==>" "=>"
+    "=>>" ">=>" ">>=" ">>-" ">-" ">--" "-<" "-<<" ">->" "<-<"
+    "<-|" "<=|" "|=>" "|->" "<->" "<~~" "<~" "<~>" "~~" "~~>"
+    "~>" "~-" "-~" "~@" "[||]" "|]" "[|" "|}" "{|" "[<"
+    ">]" "|>" "<|" "||>" "<||" "|||>" "<|||" "<|>" "..." ".."
+    ".=" ".-" "..<" ".?" "::" ":::" ":=" "::=" ":?" ":?>"
+    "//" "///" "/*" "*/" "/=" "//=" "/==" "@_" "__"))
+  (global-ligature-mode t))
 
 (defun zoom-in ()
   "Increase font size by 10 points"
@@ -1106,6 +1126,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'svelte-mode-hook
           'set-flycheck-eslint)
+          
+(add-hook 'svelte-mode-hook #'smartparens-mode)
+(my/set-smartparens-indent 'svelte-mode)
 
 (add-hook 'scss-mode-hook #'smartparens-mode)
 (my/set-smartparens-indent 'scss-mode)
@@ -1164,6 +1187,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               
 (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
 (add-hook 'LaTeX-mode-hook #'smartparens-mode)
+(add-hook 'LaTeX-mode-hook #'prettify-symbols-mode)
 
 (my/set-smartparens-indent 'LaTeX-mode)
 
@@ -1300,3 +1324,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package snow
   :straight (:repo "alphapapa/snow.el" :host github))
+
+(use-package explain-pause-mode
+  :straight (explain-pause-mode :type git :host github :repo "lastquestion/explain-pause-mode"))
