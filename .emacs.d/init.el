@@ -485,12 +485,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (global-wakatime-mode))
 
-;; (use-package request
-;;   :straight t)
-;;   
-;; (use-package activity-watch-mode
-;;   :straight t
-;;   (global-activitywatch-mode))
+(use-package request
+  :straight t)
+  
+(use-package activity-watch-mode
+  :straight t
+  :config
+  (global-activity-watch-mode))
 
 (use-package dired
   :ensure nil
@@ -753,6 +754,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq org-crypt-key nil)
 
 (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+(add-hook 'org-mode-hook (lambda () (rainbow-delimiters-mode 0)))
 
 ;; Disable GUI elements
 (tool-bar-mode -1)
