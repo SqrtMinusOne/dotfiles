@@ -126,7 +126,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package evil-collection
   :straight t
   :config
-  (evil-collection-init '(eww dired company vterm flycheck profiler cider explain-pause-mode)))
+  (evil-collection-init '(eww dired company vterm flycheck profiler cider explain-pause-mode notmuch)))
   
 (use-package evil-quickscope
   :straight t
@@ -1111,17 +1111,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                           )))
 
 (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
-
-(add-hook 'python-mode-hook #'smartparens-mode)
-
-(use-package clojure-mode
-  :straight t)
-  
-(add-hook 'clojure-mode-hook #'smartparens-strict-mode)
-(add-hook 'clojure-mode-hook #'aggressive-indent-mode)
-
-(use-package cider
-  :straight t)
+(add-hook 'vue-html-mode 'emmet-mode)
 
 (use-package svelte-mode
   :straight t)
@@ -1136,20 +1126,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (my/set-smartparens-indent 'scss-mode)
 
 (use-package php-mode
-  :straight t)
-
-(use-package json-mode
-  :straight t)
-  
-(add-hook 'json-mode #'smartparens-mode)
-(my/set-smartparens-indent 'json-mode)
-
-(use-package yaml-mode
-  :straight t
-  :config
-  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
-
-(use-package go-mode
   :straight t)
 
 (use-package tex
@@ -1271,6 +1247,46 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (add-hook 'plantuml-mode-hook #'smartparens-mode)
 
+(use-package langtool
+  :straight t
+  :config
+  (setq langtool-language-tool-server-jar "/home/pavel/Programs/LanguageTool-5.1/languagetool-server.jar")
+  (setq langtool-mother-tongue "ru"))
+  
+(my-leader-def
+  :infix "L"
+  "c" 'langtool-check
+  "s" 'langtool-server-stop
+  "d" 'langtool-check-done
+  "n" 'langtool-goto-next-error
+  "p" 'langtool-goto-previous-error
+)
+
+(add-hook 'python-mode-hook #'smartparens-mode)
+
+(use-package clojure-mode
+  :straight t)
+  
+(add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+(add-hook 'clojure-mode-hook #'aggressive-indent-mode)
+
+(use-package cider
+  :straight t)
+
+(use-package json-mode
+  :straight t)
+  
+(add-hook 'json-mode #'smartparens-mode)
+(my/set-smartparens-indent 'json-mode)
+
+(use-package yaml-mode
+  :straight t
+  :config
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+
+(use-package go-mode
+  :straight t)
+
 (use-package fish-mode
   :straight t)
   
@@ -1293,21 +1309,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-define-key
  :keymaps 'image-mode-map
  "q" 'kill-this-buffer)
-
-(use-package langtool
-  :straight t
-  :config
-  (setq langtool-language-tool-server-jar "/home/pavel/Programs/LanguageTool-5.1/languagetool-server.jar")
-  (setq langtool-mother-tongue "ru"))
-  
-(my-leader-def
-  :infix "L"
-  "c" 'langtool-check
-  "s" 'langtool-server-stop
-  "d" 'langtool-check-done
-  "n" 'langtool-goto-next-error
-  "p" 'langtool-goto-previous-error
-)
 
 (setq remote-file-name-inhibit-cache nil)
 (setq tramp-default-method "ssh")

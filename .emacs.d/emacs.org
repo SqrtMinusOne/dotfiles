@@ -170,7 +170,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package evil-collection
   :straight t
   :config
-  (evil-collection-init '(eww dired company vterm flycheck profiler cider explain-pause-mode)))
+  (evil-collection-init '(eww dired company vterm flycheck profiler cider explain-pause-mode notmuch)))
   
 (use-package evil-quickscope
   :straight t
@@ -1181,11 +1181,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq auto-save-default nil)
 #+end_src
 * OFF EAF
+** Installation
 Requirements: Node >= 14
 #+begin_src bash :tangle no
 pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 #+end_src
-
+** Config
 #+begin_src emacs-lisp :tangle no
 (use-package eaf
   :straight (:host github :repo "manateelazycat/emacs-application-framework" :files ("*"))
@@ -1196,6 +1197,11 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   :config
   (require 'eaf-evil)
   (setq eaf-evil-leader-key "SPC"))
+#+end_src
+* OFF Mail
+#+begin_src emacs-lisp :tangle no
+(use-package notmuch
+  :ensure nil)
 #+end_src
 * Programming
 ** LSP
@@ -1352,7 +1358,19 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   ))
 #+end_src
 * Languages & Formats
-** TypeScript
+** Web development
+*** OFF Emmet
+#+begin_src emacs-lisp :tangle no
+(use-package emmet-mode
+  :straight t)
+  
+(general-imap 
+  :keymaps 'emmet-mode-keymap
+  "TAB" 'emmet-expand-line)
+
+(add-hook 'web-mode 'emmet-mode)
+#+end_src
+*** TypeScript
 #+begin_src emacs-lisp
 (use-package typescript-mode
   :straight t)
@@ -1364,7 +1382,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 )
 (my/set-smartparens-indent 'typescript-mode)
 #+end_src
-*** Override flycheck checker with eslint
+**** Override flycheck checker with eslint
 #+begin_src emacs-lisp
 (defun set-flycheck-eslint()
   "Override flycheck checker with eslint."
@@ -1375,12 +1393,12 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 ;;           #'set-flycheck-eslint)
 
 #+end_src
-** JavaScript
+*** JavaScript
 #+begin_src emacs-lisp
 (add-hook 'js-mode-hook #'smartparens-mode)
 (my/set-smartparens-indent 'js-mode)
 #+end_src
-** Vue.js
+*** Vue.js
 #+begin_src emacs-lisp
 (use-package vue-mode
   :straight t)
@@ -1402,23 +1420,27 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
                           )))
 
 (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
+(add-hook 'vue-html-mode 'emmet-mode)
 #+end_src
-** Python
-#+begin_src emacs-lisp
-(add-hook 'python-mode-hook #'smartparens-mode)
+**** mmm-mode fix
+#+begin_src diff :tangle no
+--- a/mmm-region.el
++++ b/mmm-region.el
+@@ -868,9 +868,10 @@ calls each respective submode's `syntax-propertize-function'."
+                     (mmm-set-current-pair mode ovl)
+                     (mmm-set-local-variables mode mmm-current-overlay)
+                     (save-restriction
+-                      (when mmm-current-overlay
++                      (if mmm-current-overlay
+                         (narrow-to-region (overlay-start mmm-current-overlay)
+-                                          (overlay-end mmm-current-overlay)))
++                                          (overlay-end mmm-current-overlay))
++                        (narrow-to-region beg end))
+                       (cond
+                        (func
+                         (funcall func beg end))
 #+end_src
-** Clojure
-#+begin_src emacs-lisp
-(use-package clojure-mode
-  :straight t)
-  
-(add-hook 'clojure-mode-hook #'smartparens-strict-mode)
-(add-hook 'clojure-mode-hook #'aggressive-indent-mode)
-
-(use-package cider
-  :straight t)
-#+end_src
-** Svelte
+*** Svelte
 #+begin_src emacs-lisp
 (use-package svelte-mode
   :straight t)
@@ -1429,38 +1451,19 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 (add-hook 'svelte-mode-hook #'smartparens-mode)
 (my/set-smartparens-indent 'svelte-mode)
 #+end_src
-** SCSS
+*** SCSS
 #+begin_src emacs-lisp
 (add-hook 'scss-mode-hook #'smartparens-mode)
 (my/set-smartparens-indent 'scss-mode)
 #+end_src
-** PHP
+*** PHP
 #+begin_src emacs-lisp
 (use-package php-mode
   :straight t)
 #+end_src
-** JSON
-#+begin_src emacs-lisp
-(use-package json-mode
-  :straight t)
-  
-(add-hook 'json-mode #'smartparens-mode)
-(my/set-smartparens-indent 'json-mode)
-#+end_src
-** YAML
-#+begin_src emacs-lisp
-(use-package yaml-mode
-  :straight t
-  :config
-  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
-#+end_src
-** Go
-#+begin_src emacs-lisp
-(use-package go-mode
-  :straight t)
-#+end_src
-** LaTeX
-*** AucTeX
+** Documents & markup languages
+*** LaTeX
+**** AucTeX
 #+begin_src emacs-lisp
 (use-package tex
   :straight auctex
@@ -1508,7 +1511,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   "RET" 'TeX-command-run-all
   "C-c t" 'orgtbl-mode)
 #+end_src
-*** Import *.sty
+**** Import *.sty
 #+begin_src emacs-lisp
 (defun my/import-sty ()
   (interactive)
@@ -1538,7 +1541,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
             ))))
   )
 #+end_src
-** Markdown
+*** Markdown
 #+begin_src emacs-lisp
 (use-package markdown-mode
   :straight t
@@ -1570,7 +1573,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 (add-hook 'markdown-mode-hook #'smartparens-mode)
 ;; (my/set-smartparens-indent 'js-mode)
 #+end_src
-** PlantUML
+*** PlantUML
 #+begin_src emacs-lisp
 (use-package plantuml-mode
   :straight t
@@ -1586,6 +1589,58 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   "RET" 'plantuml-preview)
   
 (add-hook 'plantuml-mode-hook #'smartparens-mode)
+#+end_src
+*** Natural languages
+#+begin_src emacs-lisp
+(use-package langtool
+  :straight t
+  :config
+  (setq langtool-language-tool-server-jar "/home/pavel/Programs/LanguageTool-5.1/languagetool-server.jar")
+  (setq langtool-mother-tongue "ru"))
+  
+(my-leader-def
+  :infix "L"
+  "c" 'langtool-check
+  "s" 'langtool-server-stop
+  "d" 'langtool-check-done
+  "n" 'langtool-goto-next-error
+  "p" 'langtool-goto-previous-error
+)
+#+end_src
+** Python
+#+begin_src emacs-lisp
+(add-hook 'python-mode-hook #'smartparens-mode)
+#+end_src
+** Clojure
+#+begin_src emacs-lisp
+(use-package clojure-mode
+  :straight t)
+  
+(add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+(add-hook 'clojure-mode-hook #'aggressive-indent-mode)
+
+(use-package cider
+  :straight t)
+#+end_src
+** JSON
+#+begin_src emacs-lisp
+(use-package json-mode
+  :straight t)
+  
+(add-hook 'json-mode #'smartparens-mode)
+(my/set-smartparens-indent 'json-mode)
+#+end_src
+** YAML
+#+begin_src emacs-lisp
+(use-package yaml-mode
+  :straight t
+  :config
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+#+end_src
+** Go
+#+begin_src emacs-lisp
+(use-package go-mode
+  :straight t)
 #+end_src
 ** fish
 #+begin_src emacs-lisp
@@ -1621,23 +1676,6 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 (general-define-key
  :keymaps 'image-mode-map
  "q" 'kill-this-buffer)
-#+end_src
-** Natural languages
-#+begin_src emacs-lisp
-(use-package langtool
-  :straight t
-  :config
-  (setq langtool-language-tool-server-jar "/home/pavel/Programs/LanguageTool-5.1/languagetool-server.jar")
-  (setq langtool-mother-tongue "ru"))
-  
-(my-leader-def
-  :infix "L"
-  "c" 'langtool-check
-  "s" 'langtool-server-stop
-  "d" 'langtool-check-done
-  "n" 'langtool-goto-next-error
-  "p" 'langtool-goto-previous-error
-)
 #+end_src
 * TRAMP
 ** Performance
