@@ -440,12 +440,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq-default tab-width 4)
 (setq-default evil-shift-round nil)
 
-(use-package expand-region
-  :straight t)
-  
-(general-nmap
-  "+" 'er/expand-region)
-
 (use-package winner-mode
   :ensure nil
   :config
@@ -827,6 +821,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package doom-modeline
   :straight t
+  :init
+  ;; (setq doom-modeline-env-enable-python nil)
   :config
   (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)

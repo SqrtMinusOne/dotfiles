@@ -580,8 +580,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq-default tab-width 4)
 (setq-default evil-shift-round nil)
 #+end_src
-*** Expand region
-#+begin_src emacs-lisp
+*** OFF Expand region
+#+begin_src emacs-lisp :tangle no
 (use-package expand-region
   :straight t)
   
@@ -1033,6 +1033,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+begin_src emacs-lisp
 (use-package doom-modeline
   :straight t
+  :init
+  (setq doom-modeline-env-enable-python nil)
   :config
   (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)
