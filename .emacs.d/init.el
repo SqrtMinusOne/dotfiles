@@ -126,7 +126,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package evil-collection
   :straight t
   :config
-  (evil-collection-init '(eww dired company vterm flycheck profiler cider explain-pause-mode notmuch)))
+  (evil-collection-init '(eww dired company vterm flycheck profiler cider explain-pause-mode notmuch custom)))
   
 (use-package evil-quickscope
   :straight t
@@ -822,7 +822,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package doom-modeline
   :straight t
   :init
-  ;; (setq doom-modeline-env-enable-python nil)
+  (setq doom-modeline-env-enable-python nil)
   :config
   (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)
@@ -947,6 +947,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq backup-inhibited t)
 (setq auto-save-default nil)
+
+(use-package notmuch
+  :ensure nil)
 
 (use-package lsp-mode
   :straight t

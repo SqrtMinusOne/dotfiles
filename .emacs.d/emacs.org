@@ -170,7 +170,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package evil-collection
   :straight t
   :config
-  (evil-collection-init '(eww dired company vterm flycheck profiler cider explain-pause-mode notmuch)))
+  (evil-collection-init '(eww dired company vterm flycheck profiler cider explain-pause-mode notmuch custom)))
   
 (use-package evil-quickscope
   :straight t
@@ -1200,8 +1200,8 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (require 'eaf-evil)
   (setq eaf-evil-leader-key "SPC"))
 #+end_src
-* OFF Mail
-#+begin_src emacs-lisp :tangle no
+* Mail
+#+begin_src emacs-lisp
 (use-package notmuch
   :ensure nil)
 #+end_src

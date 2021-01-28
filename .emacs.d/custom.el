@@ -9,9 +9,12 @@
  '(dired-recursive-copies 'always)
  '(doom-modeline-env-enable-python nil)
  '(js-indent-level 2)
+ '(notmuch-search-oldest-first nil)
  '(org-agenda-files
    '("~/Documents/org-mode/ETU/r&d.org" "~/Documents/org-mode/Personal/misc.org" "~/Documents/org-mode/Job/dig-traject.org" "~/Documents/org-mode/Personal/look-forward.org" "~/Documents/org-mode/ETU/sem-9.org"))
  '(sgml-basic-offset 2)
+ '(smtpmail-smtp-server "smtp.gmail.com")
+ '(smtpmail-smtp-service 25)
  '(sp-autoskip-opening-pair t)
  '(sp-highlight-pair-overlay nil)
  '(wakatime-cli-path "/usr/bin/wakatime")
