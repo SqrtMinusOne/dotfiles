@@ -682,8 +682,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
 (setq org-highlight-latex-and-related '(native script entities))
 
-(use-package htmlize
-  :straight t)
+;; (use-package htmlize
+;;   :straight t)
   
 (defun my/setup-org-latex ()
   (setq org-latex-compiler "xelatex")

@@ -867,8 +867,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+end_src
 ** Export
 #+begin_src emacs-lisp
-(use-package htmlize
-  :straight t)
+;; (use-package htmlize
+;;   :straight t)
   
 (defun my/setup-org-latex ()
   (setq org-latex-compiler "xelatex")
@@ -1204,6 +1204,8 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 #+begin_src emacs-lisp
 (use-package notmuch
   :ensure nil)
+  
+(my-leader-def "am" 'notmuch)
 #+end_src
 * Programming
 ** LSP

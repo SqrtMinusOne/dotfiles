@@ -1,0 +1,4 @@
+#!/bin/bash
+eval "$(conda shell.bash hook)"
+conda activate mail
+(cd /home/pavel/Mail/thexcloud/ && gmi sync)
