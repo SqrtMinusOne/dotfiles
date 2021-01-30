@@ -51,7 +51,7 @@ primary_email=thexcloud@gmail.com
 
 [new]
 tags=new
-ignore=
+ignore=.osync_workdir
 
 # Search configuration
 #

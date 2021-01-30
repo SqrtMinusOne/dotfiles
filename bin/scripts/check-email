@@ -1,0 +1,21 @@
+#!/bin/bash
+export DISPLAY=:0
+CHECK_FILE="/home/pavel/Mail/.last_check"
+QUERY="tag:unread"
+ALL_QUERY="tag:unread"
+if [ -f "$CHECK_FILE" ]; then
+    DATE=$(cat "$CHECK_FILE")
+    QUERY="$QUERY and date:@$DATE.."
+fi
+
+notmuch new
+NEW_UNREAD=$(notmuch count "$QUERY")
+ALL_UNREAD=$(notmuch count "$ALL_QUERY")
+
+if [ $NEW_UNREAD -gt 0 ]; then
+    notify-send "New Mail" "$NEW_UNREAD new messages\n$ALL_UNREAD total"
+# elif [ $ALL_UNREAD -gt 0 ]; then
+#     notify-send "New Mail" "$ALL_UNREAD unread messages"
+fi
+
+echo "$(date +%s)" > $CHECK_FILE

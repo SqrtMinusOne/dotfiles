@@ -950,6 +950,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package notmuch
   :ensure nil)
+  
+(my-leader-def "am" 'notmuch)
 
 (use-package lsp-mode
   :straight t
