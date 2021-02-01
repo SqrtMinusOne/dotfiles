@@ -5,7 +5,7 @@ xhost +local:root > /dev/null 2>&1
 
 use_fish=true
 
-# ==================== PATHS ====================
+# ===================== PATHS =====================
 if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin:$PATH"
     export PATH="$HOME/bin/scripts:$PATH"
@@ -36,7 +36,7 @@ then
 	exec fish
 fi
 
-# ==================== COLORS ====================
+# ===================== COLORS =====================
 
 use_color=true
 
@@ -52,7 +52,7 @@ match_lhs=""
 [[ -z ${match_lhs}    ]] \
 	&& type -P dircolors >/dev/null \
 	&& match_lhs=$(dircolors --print-database)
-[[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
+[[ $'\n'${match_lhs} === *$'\n'"TERM "${safe_term}* ]] && use_color=true
 
 if ${use_color} ; then
 	# Enable colors for ls, etc.  Prefer ~/.dir_colors #64489
@@ -64,7 +64,7 @@ if ${use_color} ; then
 		fi
 	fi
 
-	if [[ ${EUID} == 0 ]] ; then
+	if [[ ${EUID} === 0 ]] ; then
 		PS1='\[\033[01;31m\][\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '
 	else
 		PS1='\[\033[01;32m\][\u@\h\[\033[01;37m\] \W\[\033[01;32m\]]\$\[\033[00m\] '
@@ -75,7 +75,7 @@ if ${use_color} ; then
 	alias egrep='egrep --colour=auto'
 	alias fgrep='fgrep --colour=auto'
 else
-	if [[ ${EUID} == 0 ]] ; then
+	if [[ ${EUID} === 0 ]] ; then
 		# show root@ when we don't have colors
 		PS1='\u@\h \W \$ '
 	else
@@ -85,7 +85,7 @@ fi
 
 unset use_color safe_term match_lhs sh
 
-# ==================== Settings ====================
+# ===================== Settings =====================
 
 # Sudo autocompletiong
 complete -cf sudo
@@ -94,7 +94,7 @@ shopt -s checkwinsize
 shopt -s expand_aliases
 shopt -s autocd
 
-# ==================== ANACONDA ====================
+# ===================== ANACONDA =====================
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
@@ -112,7 +112,7 @@ unset __conda_setup
 # <<< conda initialize <<<
 
 
-# ==================== BASH_IT ====================
+# ===================== BASH_IT =====================
 
 # History
 eval "$(starship init bash)"
@@ -125,14 +125,14 @@ export HISTCONTROL=ignoredups:erasedups
 HISTSIZE=
 HISTFILESIZE=
 
-# ==================== AUTOCOMPLETION ====================
+# ===================== AUTOCOMPLETION =====================
 
 [ -r /usr/share/bash-completion/bash_completion ] && . /usr/share/bash-completion/bash_completion
 source /usr/share/fzf/completion.bash
 source /usr/share/fzf/key-bindings.bash
 
 
-# ==================== ALIASES ====================
+# ===================== ALIASES =====================
 alias v="nvim"
 alias gg="lazygit"
 alias ls="exa --icons"
