@@ -130,6 +130,7 @@ assign [class="skype"] $w7
 assign [class="Mailspring"] $w8
 assign [class="Thunderbird"] $w8
 assign [class="Joplin"] $w8
+assign [class="keepassxc"] $w10
 
 for_window [title="VirtScreen"] floating enable
 

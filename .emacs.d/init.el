@@ -756,8 +756,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (scroll-bar-mode -1)
 
 ;; Transparency
-(set-frame-parameter (selected-frame) 'alpha '(90 . 90))
-(add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
+;; (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
 
 ;; Prettify symbols
 ;; (global-prettify-symbols-mode)
