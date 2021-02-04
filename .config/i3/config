@@ -135,6 +135,8 @@ assign [class="keepassxc"] $w10
 for_window [title="VirtScreen"] floating enable
 
 for_window [title="ncmpcpp.*"] move to workspace $w9
+for_window [title="newsboat.*"] move to workspace $w9
+for_window [title=".*run_wego"] move to workspace $w9
 for_window [class="cinnamon-settings*"] floating enable
 for_window [title="Picture-in-Picture"] sticky enable
 # reload the configuration file
@@ -297,6 +299,7 @@ mode "apps" {
     bindsym e exec mailspring; mode default
     bindsym a exec "bash /home/pavel/bin/emacs.sh"; mode default
     bindsym n exec "st -e newsboat"; mode default
+    bindsym w exec "st /home/pavel/bin/scripts/run_wego"; mode default
     # bindsym a exec emacsclient -c; mode default
     # bindsym Shift+a exec emacs; mode default
 }

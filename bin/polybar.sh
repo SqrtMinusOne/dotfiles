@@ -28,6 +28,8 @@ declare -A BLOCKS=(
     ["eDP1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
 )
 
+export LOC="TMN"
+
 pkill polybar
 for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     export MONITOR=$m
