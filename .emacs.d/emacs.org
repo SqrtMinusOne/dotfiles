@@ -1148,20 +1148,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (global-set-key (kbd "C-+") 'zoom-in)
 (global-set-key (kbd "C-=") 'zoom-out)
 #+end_src
-** Transparency
-#+begin_src emacs-lisp
-;; Transparency
-;; (defun toggle-transparency ()
-;;    (interactive)
-;;    (let ((alpha (frame-parameter nil 'alpha)))
-;;      (set-frame-parameter
-;;       nil 'alpha
-;;       (if (eql (cond ((numberp alpha) alpha)
-;;                      ((numberp (cdr alpha)) (cdr alpha))
-;;                      ((numberp (cadr alpha)) (cadr alpha)))
-;;                100)
-;;           '(95 . 95) '(100 . 100)))))
-;; (my-leader-def "dt" 'toggle-transparency)
+** OFF Transparency
+#+begin_src emacs-lisp :tangle no
+(defun toggle-transparency ()
+   (interactive)
+   (let ((alpha (frame-parameter nil 'alpha)))
+     (set-frame-parameter
+      nil 'alpha
+      (if (eql (cond ((numberp alpha) alpha)
+                     ((numberp (cdr alpha)) (cdr alpha))
+                     ((numberp (cadr alpha)) (cadr alpha)))
+               100)
+          '(95 . 95) '(100 . 100)))))
+(my-leader-def "dt" 'toggle-transparency)
 #+end_src
 ** Scrolling
 #+begin_src emacs-lisp
@@ -1292,8 +1291,8 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
                  (window-height   . 0.33)))
   )
 #+end_src
-** DAP
-#+begin_src emacs-lisp
+** OFF DAP
+#+begin_src emacs-lisp :tangle no
 (use-package dap-mode
   :straight t
   :defer t
@@ -1380,9 +1379,11 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   :straight t)
   
 (add-hook 'typescript-mode-hook #'smartparens-mode)
+(add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
 (defun my/set-smartparens-indent (mode)
   (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
   (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
 )
 (my/set-smartparens-indent 'typescript-mode)
 #+end_src
@@ -1615,6 +1616,16 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 #+begin_src emacs-lisp
 (add-hook 'python-mode-hook #'smartparens-mode)
 #+end_src
+** OFF SQL
+#+begin_src emacs-lisp :tangle no
+(use-package ejc-sql
+  :straight t
+  :config
+  (setq clomacs-httpd-default-port 8080)
+  (require 'ejc-company)
+  (push 'ejc-company-backend company-backends)
+  (setq ejc-complete-on-dot t))
+#+end_src
 ** Clojure
 #+begin_src emacs-lisp
 (use-package clojure-mode
@@ -1625,21 +1636,6 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 
 (use-package cider
   :straight t)
-#+end_src
-** JSON
-#+begin_src emacs-lisp
-(use-package json-mode
-  :straight t)
-  
-(add-hook 'json-mode #'smartparens-mode)
-(my/set-smartparens-indent 'json-mode)
-#+end_src
-** YAML
-#+begin_src emacs-lisp
-(use-package yaml-mode
-  :straight t
-  :config
-  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 #+end_src
 ** Go
 #+begin_src emacs-lisp
@@ -1670,16 +1666,25 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 (use-package lsp-haskell
   :straight t)
 #+end_src
+** JSON
+#+begin_src emacs-lisp
+(use-package json-mode
+  :straight t)
+  
+(add-hook 'json-mode #'smartparens-mode)
+(my/set-smartparens-indent 'json-mode)
+#+end_src
+** YAML
+#+begin_src emacs-lisp
+(use-package yaml-mode
+  :straight t
+  :config
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+#+end_src
 ** Docker
 #+begin_src emacs-lisp
 (use-package dockerfile-mode
   :straight t)
-#+end_src
-** Image view
-#+begin_src emacs-lisp
-(general-define-key
- :keymaps 'image-mode-map
- "q" 'kill-this-buffer)
 #+end_src
 * TRAMP
 ** Performance

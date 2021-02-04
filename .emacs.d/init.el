@@ -1265,6 +1265,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'python-mode-hook #'smartparens-mode)
 
+(use-package ejc-sql
+  :straight t
+  :config
+  (setq clomacs-httpd-default-port 8080)
+  (require 'ejc-company)
+  (push 'ejc-company-backend company-backends)
+  (setq ejc-complete-on-dot t))
+
 (use-package clojure-mode
   :straight t)
   
@@ -1273,17 +1281,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package cider
   :straight t)
-
-(use-package json-mode
-  :straight t)
-  
-(add-hook 'json-mode #'smartparens-mode)
-(my/set-smartparens-indent 'json-mode)
-
-(use-package yaml-mode
-  :straight t
-  :config
-  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 
 (use-package go-mode
   :straight t)
@@ -1303,6 +1300,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (use-package lsp-haskell
   :straight t)
+
+(use-package json-mode
+  :straight t)
+  
+(add-hook 'json-mode #'smartparens-mode)
+(my/set-smartparens-indent 'json-mode)
+
+(use-package yaml-mode
+  :straight t
+  :config
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 
 (use-package dockerfile-mode
   :straight t)
