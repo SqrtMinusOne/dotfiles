@@ -31,6 +31,18 @@ fi
 
 [ -f "/home/pavel/.ghcup/env" ] && source "/home/pavel/.ghcup/env" # ghcup-env
 
+# ===================== PERL =====================
+
+if [ -d "$HOME/perl5" ] ; then
+    PATH="/home/pavel/perl5/bin${PATH:+:${PATH}}"
+    PERL5LIB="/home/pavel/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
+    PERL_LOCAL_LIB_ROOT="/home/pavel/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
+    PERL_MB_OPT="--install_base \"/home/pavel/perl5\""; export PERL_MB_OPT;
+    PERL_MM_OPT="INSTALL_BASE=/home/pavel/perl5"; export PERL_MM_OPT;
+fi
+
+# ===================== FISH =====================
+
 if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} ]]
 then
 	exec fish
@@ -52,7 +64,7 @@ match_lhs=""
 [[ -z ${match_lhs}    ]] \
 	&& type -P dircolors >/dev/null \
 	&& match_lhs=$(dircolors --print-database)
-[[ $'\n'${match_lhs} === *$'\n'"TERM "${safe_term}* ]] && use_color=true
+[[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 
 if ${use_color} ; then
 	# Enable colors for ls, etc.  Prefer ~/.dir_colors #64489
@@ -64,7 +76,7 @@ if ${use_color} ; then
 		fi
 	fi
 
-	if [[ ${EUID} === 0 ]] ; then
+	if [[ ${EUID} == 0 ]] ; then
 		PS1='\[\033[01;31m\][\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '
 	else
 		PS1='\[\033[01;32m\][\u@\h\[\033[01;37m\] \W\[\033[01;32m\]]\$\[\033[00m\] '
@@ -75,7 +87,7 @@ if ${use_color} ; then
 	alias egrep='egrep --colour=auto'
 	alias fgrep='fgrep --colour=auto'
 else
-	if [[ ${EUID} === 0 ]] ; then
+	if [[ ${EUID} == 0 ]] ; then
 		# show root@ when we don't have colors
 		PS1='\u@\h \W \$ '
 	else
