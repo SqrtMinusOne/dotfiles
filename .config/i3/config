@@ -385,8 +385,9 @@ exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 exec_always "feh --bg-fill ~/Pictures/wallpaper-2.jpg"
 # exec_always "/home/pavel/bin/scripts/wallgif /home/pavel/Videos/OMSBG7.mov"
 
-# Compton
-exec compton
+# Picom
+exec picom
+exec keynav
 
 # Some scripts
 exec_always --no-startup-id set_layout
