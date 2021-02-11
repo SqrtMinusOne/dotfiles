@@ -934,7 +934,20 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
   :config
-  (ligature-set-ligatures 'prog-mode
+  (ligature-set-ligatures '(
+    typescript-mode
+    js2-mode
+    vue-mode
+    svelte-mode
+    scss-mode
+    php-mode
+    python-mode
+    LaTeX-mode
+    markdown-mode
+    clojure-mode
+    go-mode
+    sh-mode
+    haskell-mode)
     '("--" "---" "==" "===" "!=" "!==" "=!=" "=:=" "=/=" "<="
     ">=" "&&" "&&&" "&=" "++" "+++" "***" ";;" "!!" "??"
     "?:" "?." "?=" "<:" ":<" ":>" ">:" "<>" "<<<" ">>>"
@@ -1000,7 +1013,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          (python-mode . lsp)
          (json-mode . lsp)
          (haskell-mode . lsp)
-         (haskell-literate-mode . lsp)) 
+         (haskell-literate-mode . lsp)
+         (java-mode . lsp)) 
   :commands lsp
   :config
   (setq lsp-idle-delay 1)
@@ -1009,8 +1023,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq lsp-signature-render-documentation nil)
  ;  (lsp-headerline-breadcrumb-mode nil)
   (setq lsp-headerline-breadcrumb-enable nil)
-  (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte"))
-  )
+  (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
   
 (use-package lsp-ui
   :straight t
@@ -1256,6 +1269,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 )
 
 (add-hook 'python-mode-hook #'smartparens-mode)
+
+(use-package lsp-java
+  :straight t
+  :init
+  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz")
+  :after (lsp))
 
 (use-package clojure-mode
   :straight t
