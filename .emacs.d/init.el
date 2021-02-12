@@ -1137,7 +1137,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package tex
   :straight auctex
-  :mode "\\.tex\\'"
+  ;; :mode "\\.tex\\'"
   :config
   (setq-default TeX-auto-save t)
   (setq-default TeX-parse-self t)
@@ -1152,8 +1152,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq-default font-latex-fontify-sectioning 1.3)
 
   (setq-default preview-scale-function 1.4)
-  (assoc-delete-all "--" tex--prettify-symbols-alist)
-  (assoc-delete-all "---" tex--prettify-symbols-alist)
+  ;; (assoc-delete-all "--" tex--prettify-symbols-alist)
+  ;; (assoc-delete-all "---" tex--prettify-symbols-alist)
 
   (add-hook 'LaTeX-mode-hook
             (lambda ()
@@ -1272,9 +1272,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package lsp-java
   :straight t
-  :init
-  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz")
-  :after (lsp))
+  :after (lsp)
+  :config
+  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz"))
 
 (use-package clojure-mode
   :straight t

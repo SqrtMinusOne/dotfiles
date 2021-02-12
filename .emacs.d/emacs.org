@@ -1539,7 +1539,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 #+begin_src emacs-lisp
 (use-package tex
   :straight auctex
-  :mode "\\.tex\\'"
+  ;; :mode "\\.tex\\'"
   :config
   (setq-default TeX-auto-save t)
   (setq-default TeX-parse-self t)
