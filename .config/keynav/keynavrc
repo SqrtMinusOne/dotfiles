@@ -1,6 +1,7 @@
 clear
 ctrl+semicolon start
 Super_L+bracketright start
+Super_R+bracketright start
 Escape end
 ctrl+bracketleft end
 q record ~/.keynav_macros
@@ -22,14 +23,18 @@ shift+Left move-left
 shift+Right move-right
 shift+Up move-up
 shift+Down move-down
-space warp,click 1,end
+space warp,click 3,end
 Return warp,click 1,end
-Shift+Return warp,click 3,end
+Shift+Return warp,doubleclick 1,end
 semicolon warp,end
 w warp
 t windowzoom
 c cursorzoom 300 300
 e end
+u warp,click 4
+d warp,click 5
 1 click 1
 2 click 2
 3 click 3
+4 click 4
+5 click 5

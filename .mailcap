@@ -2,12 +2,12 @@
 ### Begin Red Hat Mailcap
 ###
 
-audio/*; /usr/bin/xdg-open %s
+audio/*; mpc add %s
 
 image/*; /usr/bin/xdg-open %s
 
 application/msword; /usr/bin/xdg-open %s
-application/pdf; /usr/bin/xdg-open %s
+application/pdf; zathura %s
 application/postscript ; /usr/bin/xdg-open %s
 
 text/html; /usr/bin/xdg-open %s
