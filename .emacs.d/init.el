@@ -150,17 +150,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       explain-pause-mode
       notmuch
       custom
-      xref)
-   ))
+      xref
+      eshell
+      helpful)))
   
 (use-package evil-quickscope
   :straight t
   :after evil
   :config
-  :hook (
-         (prog-mode . turn-on-evil-quickscope-mode)
-         (LaTeX-mode . turn-on-evil-quickscope-mode)
-         ))
+  :hook ((prog-mode . turn-on-evil-quickscope-mode)
+         (LaTeX-mode . turn-on-evil-quickscope-mode)))
 
 (general-create-definer my-leader-def
   :prefix "SPC"
@@ -181,6 +180,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (my-leader-def "Pe" 'profiler-stop)
 (my-leader-def "Pp" 'profiler-report)
 
+(use-package helpful
+  :straight t
+  :commands (helpful-callable
+             helpful-variable
+             helpful-key
+             helpful-macro
+             helpful-function
+             helpful-command))
+
 (my-leader-def
   :infix "h"
   "RET" 'view-order-manuals
@@ -198,11 +206,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "c" 'describe-key-briefly
   "d" 'apropos-documentation
   "e" 'view-echo-area-messages
-  "f" 'describe-function
+  "f" 'helpful-function
   "g" 'describe-gnu-project
   "h" 'view-hello-file
   "i" 'info
-  "k" 'describe-key
+  "k" 'helpful-key
   "l" 'view-lossage
   "m" 'describe-mode
   "n" 'view-emacs-news
@@ -212,7 +220,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "r" 'info-emacs-manual
   "s" 'describe-syntax
   "t" 'help-with-tutorial
-  "v" 'describe-variable
+  "v" 'helpful-variable
   "w" 'where-is
   "<f1>" 'help-for-help
   "C-\\" 'describe-input-method
@@ -227,8 +235,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "C-p" 'view-emacs-problems
   "C-s" 'search-forward-help-for-help
   "C-t" 'view-emacs-todo
-  "C-w" 'describe-no-warranty
-  )
+  "C-w" 'describe-no-warranty)
 
 (general-define-key
   :keymaps 'override
@@ -325,6 +332,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "a" 'counsel-rg
   "A" 'counsel-ag
 )
+
+(general-imap
+  "C-y" 'counsel-yank-pop)
 
 (my-leader-def "SPC" 'ivy-resume)
 (my-leader-def "s" 'swiper-isearch
@@ -593,8 +603,43 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package vterm
   :straight t
+  :commands (vterm vterm-other-window)
   :config
-  (setq vterm-kill-buffer-on-exit t))
+  (setq vterm-kill-buffer-on-exit t)
+  
+  (add-hook 'vterm-mode-hook
+            (lambda ()
+              (setq-local global-display-line-numbers-mode nil)
+              (display-line-numbers-mode 0)
+              ))
+  
+  (general-define-key
+    :keymaps 'vterm-mode-map
+    "M-q" 'vterm-send-escape
+    
+    "C-h" 'evil-window-left
+    "C-l" 'evil-window-right
+    "C-k" 'evil-window-up
+    "C-j" 'evil-window-down
+    
+    "C-<right>" 'evil-window-right
+    "C-<left>" 'evil-window-left
+    "C-<up>" 'evil-window-up
+    "C-<down>" 'evil-window-down
+    
+    "M-<left>" 'vterm-send-left
+    "M-<right>" 'vterm-send-right
+    "M-<up>" 'vterm-send-up
+    "M-<down>" 'vterm-send-down)
+    
+  (general-imap
+    :keymaps 'vterm-mode-map
+    "C-r" 'vterm-send-C-r
+    "C-k" 'vterm-send-C-k
+    "C-j" 'vterm-send-C-j
+    "M-l" 'vterm-send-right
+    "M-h" 'vterm-send-left)
+  )
   
 (add-to-list 'display-buffer-alist
              `(,"vterm-subterminal.*"
@@ -604,7 +649,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                (reusable-frames . visible)
                (window-height . 0.33)))
                
-(defun toggle-vterm-subteminal ()
+(defun my/toggle-vterm-subteminal ()
   "Toogle subteminal."
   (interactive)
   (let
@@ -621,46 +666,42 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (kill-buffer (current-buffer))
           (select-window vterm-window)
           )
-      (vterm-other-window "vterm-subterminal")
-      )
-    )
-  )
+      (vterm-other-window "vterm-subterminal"))))
 
-(general-nmap "`" 'toggle-vterm-subteminal)
-(general-nmap "~" 'vterm)
+;; (general-nmap "`" 'my/toggle-vterm-subteminal)
+;; (general-nmap "~" 'vterm)
 
-(add-hook 'vterm-mode-hook
-          (lambda ()
-            (setq-local global-display-line-numbers-mode nil)
-            (display-line-numbers-mode 0)
-            ))
+(defun my/configure-eshell ()
+  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
+  (setq eshell-history-size 10000)
+  (setq eshell-hist-ingnoredups t)
+  (setq eshell-buffer-maximum-lines 10000)
+  
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+  (evil-collection-define-key 'normal 'eshell-mode-map
+    (kbd "C-h") 'evil-window-left
+    (kbd "C-l") 'evil-window-right
+    (kbd "C-k") 'evil-window-up
+    (kbd "C-j") 'evil-window-down))
 
-(general-define-key
-  :keymaps 'vterm-mode-map
-  "M-q" 'vterm-send-escape
+(use-package eshell
+  :ensure nil
+  :after evil-collection
+  :config
+  (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
+  (setq eshell-banner-message ""))
+
+(use-package aweshell
+  :straight (:repo "manateelazycat/aweshell" :host github)
+  :after eshell
+  :config
+  (setq eshell-highlight-prompt nil)
+  (setq eshell-prompt-function 'epe-theme-pipeline))
   
-  "C-h" 'evil-window-left
-  "C-l" 'evil-window-right
-  "C-k" 'evil-window-up
-  "C-j" 'evil-window-down
-  
-  "C-<right>" 'evil-window-right
-  "C-<left>" 'evil-window-left
-  "C-<up>" 'evil-window-up
-  "C-<down>" 'evil-window-down
-  
-  "M-<left>" 'vterm-send-left
-  "M-<right>" 'vterm-send-right
-  "M-<up>" 'vterm-send-up
-  "M-<down>" 'vterm-send-down)
-  
-(general-imap
-  :keymaps 'vterm-mode-map
-  "C-r" 'vterm-send-C-r
-  "C-k" 'vterm-send-C-k
-  "C-j" 'vterm-send-C-j
-  "M-l" 'vterm-send-right
-  "M-h" 'vterm-send-left)
+(general-nmap "`" 'aweshell-dedicated-toggle)
+(general-nmap "~" 'eshell)
 
 (straight-override-recipe
    '(org :repo "emacsmirror/org" :no-build t))
