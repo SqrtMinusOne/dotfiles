@@ -910,6 +910,40 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap "gn" 'tab-new)
 (general-nmap "gN" 'tab-close)
 
+(setq my/project-title-separators "[-_ ]")
+
+(defun my/shorten-project-name-elem (elem crop)
+  (if (string-match "^\\[.*\\]$" elem)
+      (concat "["
+              (my/shorten-project-name-elem (substring elem 1 (- (length elem) 1)) crop)
+              "]")
+    (let ((prefix (car (s-match my/project-title-separators elem))))
+      (let ((rest
+            (substring
+             (if prefix
+                 (substring elem (length prefix))
+               elem)
+             0 (if crop 1 nil))
+            ))
+        (concat prefix rest))
+      )))
+
+(defun my/shorten-project-name (project-name)
+  (let ((elems (s-slice-at my/project-title-separators project-name)))
+    (concat
+     (apply
+      #'concat
+      (cl-mapcar (lambda (elem) (my/shorten-project-name-elem elem t)) (butlast elems)))
+     (my/shorten-project-name-elem (car (last elems)) nil))))
+     
+(defun my/tab-bar-name-function ()
+  (let ((project-name (projectile-project-name)))
+    (if (string= "-" project-name)
+        (tab-bar-tab-name-current-with-count)
+      (concat "[" (my/shorten-project-name project-name) "] " (tab-bar-tab-name-current-with-count)))))
+      
+(setq tab-bar-tab-name-function #'my/tab-bar-name-function)
+
 (use-package doom-modeline
   :straight t
   :init
@@ -1327,6 +1361,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package cider
   :mode "\\.clj[sc]?\\'"
   :straight t)
+
+(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
 
 (use-package go-mode
   :straight t

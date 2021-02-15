@@ -34,4 +34,6 @@
  '(epe-pipeline-delimiter-face ((t (:foreground "#c3e88d"))))
  '(epe-pipeline-host-face ((t (:foreground "#82aaff"))))
  '(epe-pipeline-time-face ((t (:foreground "#ffcb6b"))))
- '(epe-pipeline-user-face ((t (:foreground "#f07178")))))
+ '(epe-pipeline-user-face ((t (:foreground "#f07178"))))
+ '(tab-bar ((t (:background "#242837" :foreground "#242837"))))
+ '(tab-bar-tab ((t (:background "#292D3E" :foreground "#ffcb6b" :underline "#ffcb6b")))))

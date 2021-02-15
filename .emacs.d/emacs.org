@@ -1112,6 +1112,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
        ))
 #+end_src
 ** Tab bar
+*** Setup
 #+begin_src emacs-lisp
 (general-define-key
  :keymaps 'override
@@ -1128,6 +1129,42 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; Tabs
 (general-nmap "gn" 'tab-new)
 (general-nmap "gN" 'tab-close)
+#+end_src
+*** My title
+#+begin_src emacs-lisp
+(setq my/project-title-separators "[-_ ]")
+
+(defun my/shorten-project-name-elem (elem crop)
+  (if (string-match "^\\[.*\\]$" elem)
+      (concat "["
+              (my/shorten-project-name-elem (substring elem 1 (- (length elem) 1)) crop)
+              "]")
+    (let ((prefix (car (s-match my/project-title-separators elem))))
+      (let ((rest
+            (substring
+             (if prefix
+                 (substring elem (length prefix))
+               elem)
+             0 (if crop 1 nil))
+            ))
+        (concat prefix rest))
+      )))
+
+(defun my/shorten-project-name (project-name)
+  (let ((elems (s-slice-at my/project-title-separators project-name)))
+    (concat
+     (apply
+      #'concat
+      (cl-mapcar (lambda (elem) (my/shorten-project-name-elem elem t)) (butlast elems)))
+     (my/shorten-project-name-elem (car (last elems)) nil))))
+     
+(defun my/tab-bar-name-function ()
+  (let ((project-name (projectile-project-name)))
+    (if (string= "-" project-name)
+        (tab-bar-tab-name-current-with-count)
+      (concat "[" (my/shorten-project-name project-name) "] " (tab-bar-tab-name-current-with-count)))))
+      
+(setq tab-bar-tab-name-function #'my/tab-bar-name-function)
 #+end_src
 ** Modeline
 #+begin_src emacs-lisp
@@ -1758,6 +1795,10 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 (use-package cider
   :mode "\\.clj[sc]?\\'"
   :straight t)
+#+end_src
+** Elisp
+#+begin_src emacs-lisp
+(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
 #+end_src
 ** Go
 #+begin_src emacs-lisp
