@@ -1,0 +1,3 @@
+#!/bin/bash
+notmuch tag +main "path:thexcloud/**"
+notmuch tag +progin "path:progin6304/**"

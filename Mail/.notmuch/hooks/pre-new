@@ -1,3 +1,4 @@
 #!/bin/bash
 GMI="/home/pavel/Programs/miniconda3/envs/mail/bin/gmi"
 (cd /home/pavel/Mail/thexcloud/ && $GMI sync)
+(cd /home/pavel/Mail/progin6304/ && $GMI sync)
