@@ -1,0 +1,21 @@
+# -*- mode: snippet -*-
+# name: my-subfig
+# key: subfigg
+# --
+
+\begin{figure}[h]
+    \centering
+	\begin{subfigure}[b]{${1:0.45}\textwidth}
+    	\includegraphics[width=\textwidth]{$2}
+    	\caption{$3}
+	\end{subfigure}%
+	\hspace{1cm}
+	\begin{subfigure}[b]{${4:0.45}\textwidth}
+    	\includegraphics[width=\textwidth]{$5}
+    	\caption{$6}
+	\end{subfigure}%
+    \caption{$7}%
+    \label{fig:$8}
+\end{figure}
+$0
+

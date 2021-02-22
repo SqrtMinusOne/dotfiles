@@ -198,7 +198,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       custom
       xref
       eshell
-      helpful)))
+      helpful
+      compile
+      comint)))
   
 (use-package evil-quickscope
   :straight t
@@ -841,8 +843,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           )
       (vterm-other-window "vterm-subterminal"))))
 
-;; (general-nmap "`" 'my/toggle-vterm-subteminal)
-;; (general-nmap "~" 'vterm)
+(general-nmap "`" 'my/toggle-vterm-subteminal)
+(general-nmap "~" 'vterm)
 
 #+end_src
 ** Eshell
@@ -865,6 +867,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package eshell
   :ensure nil
   :after evil-collection
+  :commands (eshell)
   :config
   (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
   (setq eshell-banner-message ""))
@@ -876,8 +879,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
   
-(general-nmap "`" 'aweshell-dedicated-toggle)
-(general-nmap "~" 'eshell)
+;; (general-nmap "`" 'aweshell-dedicated-toggle)
+;; (general-nmap "~" 'eshell)
 #+end_src
 * Org-mode
 ** Installation
@@ -1037,8 +1040,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :after (org)
   :config
-  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1)))
-)
+  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
+#+end_src
+** Org Agenda
+#+begin_src emacs-lisp
+(setq org-agenda-category-icon-alist `(
+    ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
+    ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
+    ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
+    ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
+    ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
+    ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
+    ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center)
+))
 #+end_src
 ** Other settings
 #+begin_src emacs-lisp
@@ -1172,6 +1186,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :init
   (setq doom-modeline-env-enable-python nil)
+  (setq doom-modeline-env-enable-go nil)
   :config
   (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)
@@ -1441,6 +1456,15 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
                  (window-height   . 0.33)))
   )
 #+end_src
+** OFF TabNine
+#+begin_src emacs-lisp :tangle no
+(use-package company-tabnine
+  :straight t
+  :if (not my/lowpower)
+  :after company
+  :config
+  (add-to-list 'company-backends #'company-tabnine))
+#+end_src
 ** OFF DAP
 #+begin_src emacs-lisp :tangle no
 (use-package dap-mode
@@ -1554,6 +1578,20 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 (add-hook 'js-mode-hook #'smartparens-mode)
 (my/set-smartparens-indent 'js-mode)
 #+end_src
+*** Jest
+#+begin_src emacs-lisp
+(use-package jest-test-mode
+  :straight t
+  :hook ((typescript-mode . jest-test-mode)
+         (js-mode . jest-test-mode))
+  :config
+  (my-leader-def
+    :keymaps 'jest-test-mode-map
+    :infix "t"
+    "t" 'jest-test-run-at-point
+    "r" 'jest-test-run
+    "a" 'jest-test-run-all-tests))
+#+end_src
 *** Vue.js
 #+begin_src emacs-lisp
 (use-package vue-mode
@@ -1659,6 +1697,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (add-hook 'LaTeX-mode-hook #'prettify-symbols-mode)
   
   (my/set-smartparens-indent 'LaTeX-mode)
+  (require 'smartparens-latex)
   
   (general-nmap
     :keymaps '(LaTeX-mode-map latex-mode-map)
@@ -1804,7 +1843,10 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 #+begin_src emacs-lisp
 (use-package go-mode
   :straight t
-  :mode "\\.go\\'")
+  :mode "\\.go\\'"
+  :config
+  (my/set-smartparens-indent 'go-mode)
+  (add-hook 'go-mode-hook 'smartparens-mode))
 #+end_src
 ** fish
 #+begin_src emacs-lisp

@@ -152,7 +152,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       custom
       xref
       eshell
-      helpful)))
+      helpful
+      compile
+      comint)))
   
 (use-package evil-quickscope
   :straight t
@@ -668,8 +670,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           )
       (vterm-other-window "vterm-subterminal"))))
 
-;; (general-nmap "`" 'my/toggle-vterm-subteminal)
-;; (general-nmap "~" 'vterm)
+(general-nmap "`" 'my/toggle-vterm-subteminal)
+(general-nmap "~" 'vterm)
 
 (defun my/configure-eshell ()
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
@@ -689,6 +691,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package eshell
   :ensure nil
   :after evil-collection
+  :commands (eshell)
   :config
   (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
   (setq eshell-banner-message ""))
@@ -700,8 +703,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
   
-(general-nmap "`" 'aweshell-dedicated-toggle)
-(general-nmap "~" 'eshell)
+;; (general-nmap "`" 'aweshell-dedicated-toggle)
+;; (general-nmap "~" 'eshell)
 
 (straight-override-recipe
    '(org :repo "emacsmirror/org" :no-build t))
@@ -827,8 +830,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :after (org)
   :config
-  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1)))
-)
+  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
+
+(setq org-agenda-category-icon-alist `(
+    ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
+    ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
+    ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
+    ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
+    ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
+    ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
+    ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center)
+))
 
 (setq org-startup-indented t)
 
@@ -948,6 +960,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :init
   (setq doom-modeline-env-enable-python nil)
+  (setq doom-modeline-env-enable-go nil)
   :config
   (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)
@@ -1176,6 +1189,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (add-hook 'js-mode-hook #'smartparens-mode)
 (my/set-smartparens-indent 'js-mode)
 
+(use-package jest-test-mode
+  :straight t
+  :hook ((typescript-mode . jest-test-mode)
+         (js-mode . jest-test-mode))
+  :config
+  (my-leader-def
+    :keymaps 'jest-test-mode-map
+    :infix "t"
+    "t" 'jest-test-run-at-point
+    "r" 'jest-test-run
+    "a" 'jest-test-run-all-tests))
+
 (use-package vue-mode
   :straight t
   :mode "\\.vue\\'"
@@ -1250,6 +1275,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'LaTeX-mode-hook #'prettify-symbols-mode)
   
   (my/set-smartparens-indent 'LaTeX-mode)
+  (require 'smartparens-latex)
   
   (general-nmap
     :keymaps '(LaTeX-mode-map latex-mode-map)
@@ -1366,7 +1392,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package go-mode
   :straight t
-  :mode "\\.go\\'")
+  :mode "\\.go\\'"
+  :config
+  (my/set-smartparens-indent 'go-mode)
+  (add-hook 'go-mode-hook 'smartparens-mode))
 
 (use-package fish-mode
   :straight t
