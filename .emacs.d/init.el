@@ -540,6 +540,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (global-activity-watch-mode))
 
+(use-package no-littering
+  :straight t)
+
 (use-package dired
   :ensure nil
   :custom ((dired-listing-switches "-alh --group-directories-first"))
@@ -733,7 +736,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package jupyter
   :straight t
   :config
-  :after (org)
   ;; (add-to-list 'evil-emacs-state-modes 'jupyter-repl-mode)
   )
   
@@ -742,15 +744,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; (use-package ob-typescript
 ;;   :straight t)
 
-(with-eval-after-load 'org-mode
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((emacs-lisp . t)
-     (python . t)
-     ;; (typescript .t)
-     (jupyter . t)))
-  
-  (org-babel-jupyter-override-src-block "python"))
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (python . t)
+   ;; (typescript .t)
+   (shell . t)
+   (jupyter . t)))
+
+(org-babel-jupyter-override-src-block "python")
 
 (use-package ob-async
   :straight t
@@ -793,6 +795,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (with-eval-after-load 'ox-latex
   (my/setup-org-latex))
+
+(use-package ox-hugo
+  :straight t
+  :after ox)
 
 (general-define-key
  :keymaps 'org-mode-map
@@ -1087,7 +1093,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package notmuch
   :ensure nil
-  :commands (notmuch))
+  :commands (notmuch)
+  :config
+  (add-hook 'notmuch-hello-mode-hook
+            (lambda () (display-line-numbers-mode 0))))
   
 (my-leader-def "am" 'notmuch)
 
@@ -1375,7 +1384,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :after (lsp)
   :config
-  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz"))
+  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz")
+  (add-hook 'java-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'java-mode))
 
 (use-package clojure-mode
   :straight t
@@ -1429,6 +1440,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :mode "\\.yml\\'"
   :config
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+
+(use-package csv-mode
+  :straight t
+  :mode "\\.csv\\'")
 
 (use-package dockerfile-mode
   :mode "Dockerfile\\'"
