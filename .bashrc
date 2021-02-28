@@ -5,6 +5,9 @@ xhost +local:root > /dev/null 2>&1
 
 use_fish=true
 
+# ===================== PROGRAMS =====================
+export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
+
 # ===================== PATHS =====================
 if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin:$PATH"
