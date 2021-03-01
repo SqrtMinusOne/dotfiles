@@ -49,8 +49,10 @@ primary_email=thexcloud@gmail.com
 #		in the mail store.
 #
 
+other_email=progin6304@gmail.com;
+
 [new]
-tags=new
+tags=new;
 ignore=.osync_workdir
 
 # Search configuration

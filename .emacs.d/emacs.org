@@ -2,6 +2,16 @@
 #+TODO: CHECK(s) | OFF(o)
 
 * Primary setup
+** Measure startup speed
+#+begin_src emacs-lisp
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "*** Emacs loaded in %s with %d garbage collections."
+                     (format "%.2f seconds"
+                             (float-time
+                              (time-subtract after-init-time before-init-time)))
+                     gcs-done)))
+#+end_src
 ** straight.el
 #+begin_src emacs-lisp
 (defvar bootstrap-version)
@@ -21,6 +31,7 @@
 #+begin_src emacs-lisp
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
+(setq use-package-verbose t)
 #+end_src
 ** System
 #+begin_src emacs-lisp
@@ -155,32 +166,50 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   )
   
 (use-package evil-numbers
-  :straight t)
+  :straight t
+  :commands (evil-numbers/inc-at-pt evil-numbers/dec-at-pt))
 
 (use-package evil-surround
   :straight t
+  :after evil
   :config
   (global-evil-surround-mode 1))
 
 (use-package evil-commentary
   :straight t
+  :after evil
   :config
   (evil-commentary-mode))
   
 (use-package evil-collection
   :straight t
+  :after evil
   :config
-  (evil-collection-init '(eww dired company vterm flycheck profiler cider explain-pause-mode notmuch custom)))
+  (evil-collection-init
+    '(eww
+      dired
+      company
+      vterm
+      flycheck
+      profiler
+      cider
+      explain-pause-mode
+      notmuch
+      custom
+      xref
+      eshell
+      helpful
+      compile
+      comint)))
   
 (use-package evil-quickscope
   :straight t
+  :after evil
   :config
-  :hook (
-         (prog-mode . turn-on-evil-quickscope-mode)
-         (LaTeX-mode . turn-on-evil-quickscope-mode)
-         ))
+  :hook ((prog-mode . turn-on-evil-quickscope-mode)
+         (LaTeX-mode . turn-on-evil-quickscope-mode)))
 #+end_src
-** Keybindgs to override evil
+** Keybindigs to override evil
 *** My leader
 #+begin_src emacs-lisp
 (general-create-definer my-leader-def
@@ -204,6 +233,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+end_src
 *** Help
 #+begin_src emacs-lisp
+(use-package helpful
+  :straight t
+  :commands (helpful-callable
+             helpful-variable
+             helpful-key
+             helpful-macro
+             helpful-function
+             helpful-command))
+
 (my-leader-def
   :infix "h"
   "RET" 'view-order-manuals
@@ -221,11 +259,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "c" 'describe-key-briefly
   "d" 'apropos-documentation
   "e" 'view-echo-area-messages
-  "f" 'describe-function
+  "f" 'helpful-function
   "g" 'describe-gnu-project
   "h" 'view-hello-file
   "i" 'info
-  "k" 'describe-key
+  "k" 'helpful-key
   "l" 'view-lossage
   "m" 'describe-mode
   "n" 'view-emacs-news
@@ -235,7 +273,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "r" 'info-emacs-manual
   "s" 'describe-syntax
   "t" 'help-with-tutorial
-  "v" 'describe-variable
+  "v" 'helpful-variable
   "w" 'where-is
   "<f1>" 'help-for-help
   "C-\\" 'describe-input-method
@@ -250,8 +288,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "C-p" 'view-emacs-problems
   "C-s" 'search-forward-help-for-help
   "C-t" 'view-emacs-todo
-  "C-w" 'describe-no-warranty
-  )
+  "C-w" 'describe-no-warranty)
 #+end_src
 *** Buffer switch
 #+begin_src emacs-lisp
@@ -309,15 +346,23 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (global-undo-tree-mode)
   (setq undo-tree-visualizer-diff t)
-  (setq undo-tree-visualizer-timestamps t))
+  (setq undo-tree-visualizer-timestamps t)
+
+  (my-leader-def "u" 'undo-tree-visualize)
+  (fset 'undo-auto-amalgamate 'ignore)
+  (setq undo-limit 6710886400)
+  (setq undo-strong-limit 100663296)
+  (setq undo-outer-limit 1006632960))
+
+#+end_src
+** xref
+#+begin_src emacs-lisp
+(general-nmap
+  "gD" 'xref-find-definitions-other-window
+  "gr" 'xref-find-references)
   
 (my-leader-def
-  "u" 'undo-tree-visualize)
-  
-  (fset 'undo-auto-amalgamate 'ignore)
-(setq undo-limit 6710886400)
-(setq undo-strong-limit 100663296)
-(setq undo-outer-limit 1006632960)
+  "fx" 'xref-find-apropos)
 #+end_src
 ** OFF Helm
 #+begin_src emacs-lisp :tangle no
@@ -385,18 +430,21 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package counsel
   :straight t
+  :after ivy
   :config
   (counsel-mode))
   
 (use-package swiper
+  :defer t
   :straight t)
   
 (use-package ivy-rich
   :straight t
+  :after ivy
   :config
   (ivy-rich-mode 1)
   (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
-  
+
 (my-leader-def
   :infix "f"
   "b" 'ivy-switch-buffer
@@ -406,6 +454,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "a" 'counsel-rg
   "A" 'counsel-ag
 )
+
+(general-imap
+  "C-y" 'counsel-yank-pop)
 
 (my-leader-def "SPC" 'ivy-resume)
 (my-leader-def "s" 'swiper-isearch
@@ -423,6 +474,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+begin_src emacs-lisp
 (use-package treemacs
   :straight t
+  :commands (treemacs treemacs-switch-workspace treemacs-edit-workspace)
   :config
   (setq treemacs-follow-mode nil)
   (setq treemacs-follow-after-init nil)
@@ -432,6 +484,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (add-to-list 'treemacs-pre-file-insert-predicates #'treemacs-is-file-git-ignored?)))
 
 (use-package treemacs-evil
+  :after (treemacs evil)
   :straight t)
 
 (use-package treemacs-magit
@@ -463,9 +516,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;;   (setq projectile-completion-system 'helm))
 
 (use-package counsel-projectile
+  :after (counsel projectile)
   :straight t)
 
 (use-package treemacs-projectile
+  :after (treemacs projectile)
   :straight t)
   
 (my-leader-def
@@ -498,6 +553,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+begin_src emacs-lisp
 (use-package magit
   :straight t
+  :commands (magit-status magit-file-dispatch)
   :config
   (setq magit-blame-styles
         '((margin
@@ -520,6 +576,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (global-git-gutter-mode +1))
 
 (use-package evil-magit
+  :after (magit)
   :straight t)
   
 (my-leader-def
@@ -609,7 +666,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ** Avy
 #+begin_src emacs-lisp
 (use-package avy
-  :straight t)
+  :straight t
+  :defer t)
   
 (general-nmap "\\\\w" 'avy-goto-word-0-below)
 (general-nmap "\\\\b" 'avy-goto-word-0-above)
@@ -650,11 +708,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (global-activity-watch-mode))
 #+end_src
+** No Littering
+#+begin_src emacs-lisp
+(use-package no-littering
+  :straight t)
+#+end_src
 * Dired
 #+begin_src emacs-lisp
 (use-package dired
   :ensure nil
   :custom ((dired-listing-switches "-alh --group-directories-first"))
+  :commands (dired)
   :config
   (setq dired-dwim-target t)
   (setq wdired-allow-to-change-permissions t)
@@ -673,49 +737,89 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     "=" 'dired-narrow
     "-" 'dired-create-empty-file
     (kbd "<left>") 'dired-single-up-directory
-    (kbd "<right>") 'dired-single-buffer))
+    (kbd "<right>") 'dired-single-buffer)
+  (general-define-key
+    :keymaps 'dired-mode-map
+    [remap dired-find-file] 'dired-single-buffer
+    [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
+    [remap dired-up-directory] 'dired-single-up-directory
+    "M-<return>" 'dired-open-xdg))
     
 (use-package dired+
   :straight t
+  :after dired
   :init
   (setq diredp-hide-details-initially-flag nil))
 
 (use-package dired-single
+  :after dired
   :straight t)
 
 (use-package all-the-icons-dired
   :straight t
   :if (not my/lowpower)
+  :after dired
   :config
   (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
   (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
   (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice))
   
 (use-package dired-open
+  :after dired
   :straight t)
   
 (use-package dired-narrow
-  :straight t)
+  :after dired
+  :straight t
+  :config
+  (general-define-key
+    :keymaps 'dired-narrow-map
+    [escape] 'keyboard-quit))
   
 (my-leader-def "ad" 'dired)
-
-(general-define-key
-  :keymaps 'dired-mode-map
-  [remap dired-find-file] 'dired-single-buffer
-  [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
-  [remap dired-up-directory] 'dired-single-up-directory
-  "M-<return>" 'dired-open-xdg)
-  
-(general-define-key
-  :keymaps 'dired-narrow-map
-  [escape] 'keyboard-quit)
 #+end_src
-* Terminal
+* Shells
+** Vterm
 #+begin_src emacs-lisp
 (use-package vterm
   :straight t
+  :commands (vterm vterm-other-window)
   :config
-  (setq vterm-kill-buffer-on-exit t))
+  (setq vterm-kill-buffer-on-exit t)
+  
+  (add-hook 'vterm-mode-hook
+            (lambda ()
+              (setq-local global-display-line-numbers-mode nil)
+              (display-line-numbers-mode 0)
+              ))
+  
+  (general-define-key
+    :keymaps 'vterm-mode-map
+    "M-q" 'vterm-send-escape
+    
+    "C-h" 'evil-window-left
+    "C-l" 'evil-window-right
+    "C-k" 'evil-window-up
+    "C-j" 'evil-window-down
+    
+    "C-<right>" 'evil-window-right
+    "C-<left>" 'evil-window-left
+    "C-<up>" 'evil-window-up
+    "C-<down>" 'evil-window-down
+    
+    "M-<left>" 'vterm-send-left
+    "M-<right>" 'vterm-send-right
+    "M-<up>" 'vterm-send-up
+    "M-<down>" 'vterm-send-down)
+    
+  (general-imap
+    :keymaps 'vterm-mode-map
+    "C-r" 'vterm-send-C-r
+    "C-k" 'vterm-send-C-k
+    "C-j" 'vterm-send-C-j
+    "M-l" 'vterm-send-right
+    "M-h" 'vterm-send-left)
+  )
   
 (add-to-list 'display-buffer-alist
              `(,"vterm-subterminal.*"
@@ -725,7 +829,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                (reusable-frames . visible)
                (window-height . 0.33)))
                
-(defun toggle-vterm-subteminal ()
+(defun my/toggle-vterm-subteminal ()
   "Toogle subteminal."
   (interactive)
   (let
@@ -742,46 +846,46 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (kill-buffer (current-buffer))
           (select-window vterm-window)
           )
-      (vterm-other-window "vterm-subterminal")
-      )
-    )
-  )
+      (vterm-other-window "vterm-subterminal"))))
 
-(general-nmap "`" 'toggle-vterm-subteminal)
+(general-nmap "`" 'my/toggle-vterm-subteminal)
 (general-nmap "~" 'vterm)
 
-(add-hook 'vterm-mode-hook
-          (lambda ()
-            (setq-local global-display-line-numbers-mode nil)
-            (display-line-numbers-mode 0)
-            ))
+#+end_src
+** Eshell
+#+begin_src emacs-lisp
+(defun my/configure-eshell ()
+  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
+  (setq eshell-history-size 10000)
+  (setq eshell-hist-ingnoredups t)
+  (setq eshell-buffer-maximum-lines 10000)
+  
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+  (evil-collection-define-key 'normal 'eshell-mode-map
+    (kbd "C-h") 'evil-window-left
+    (kbd "C-l") 'evil-window-right
+    (kbd "C-k") 'evil-window-up
+    (kbd "C-j") 'evil-window-down))
 
-(general-define-key
-  :keymaps 'vterm-mode-map
-  "M-q" 'vterm-send-escape
+(use-package eshell
+  :ensure nil
+  :after evil-collection
+  :commands (eshell)
+  :config
+  (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
+  (setq eshell-banner-message ""))
+
+(use-package aweshell
+  :straight (:repo "manateelazycat/aweshell" :host github)
+  :after eshell
+  :config
+  (setq eshell-highlight-prompt nil)
+  (setq eshell-prompt-function 'epe-theme-pipeline))
   
-  "C-h" 'evil-window-left
-  "C-l" 'evil-window-right
-  "C-k" 'evil-window-up
-  "C-j" 'evil-window-down
-  
-  "C-<right>" 'evil-window-right
-  "C-<left>" 'evil-window-left
-  "C-<up>" 'evil-window-up
-  "C-<down>" 'evil-window-down
-  
-  "M-<left>" 'vterm-send-left
-  "M-<right>" 'vterm-send-right
-  "M-<up>" 'vterm-send-up
-  "M-<down>" 'vterm-send-down)
-  
-(general-imap
-  :keymaps 'vterm-mode-map
-  "C-r" 'vterm-send-C-r
-  "C-k" 'vterm-send-C-k
-  "C-j" 'vterm-send-C-j
-  "M-l" 'vterm-send-right
-  "M-h" 'vterm-send-left)
+;; (general-nmap "`" 'aweshell-dedicated-toggle)
+;; (general-nmap "~" 'eshell)
 #+end_src
 * Org-mode
 ** Installation
@@ -835,12 +939,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  '((emacs-lisp . t)
    (python . t)
    ;; (typescript .t)
+   (shell . t)
    (jupyter . t)))
 
 (org-babel-jupyter-override-src-block "python")
 
 (use-package ob-async
   :straight t
+  :after (org)
   :config
   (setq ob-async-no-async-languages-alist '("python" "jupyter-python")))
 #+end_src
@@ -865,7 +971,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
 (setq org-highlight-latex-and-related '(native script entities))
 #+end_src
-** Export
+** Export to LaTeX
 #+begin_src emacs-lisp
 ;; (use-package htmlize
 ;;   :straight t)
@@ -885,6 +991,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (with-eval-after-load 'ox-latex
   (my/setup-org-latex))
+#+end_src
+** Export to Hugo
+#+begin_src emacs-lisp
+(use-package ox-hugo
+  :straight t
+  :after ox)
 #+end_src
 ** Keybindings
 #+begin_src emacs-lisp
@@ -936,9 +1048,21 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+begin_src emacs-lisp
 (use-package org-superstar
   :straight t
+  :after (org)
   :config
-  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1)))
-)
+  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
+#+end_src
+** Org Agenda
+#+begin_src emacs-lisp
+(setq org-agenda-category-icon-alist `(
+    ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
+    ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
+    ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
+    ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
+    ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
+    ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
+    ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center)
+))
 #+end_src
 ** Other settings
 #+begin_src emacs-lisp
@@ -1012,6 +1136,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
        ))
 #+end_src
 ** Tab bar
+*** Setup
 #+begin_src emacs-lisp
 (general-define-key
  :keymaps 'override
@@ -1029,12 +1154,49 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap "gn" 'tab-new)
 (general-nmap "gN" 'tab-close)
 #+end_src
+*** My title
+#+begin_src emacs-lisp
+(setq my/project-title-separators "[-_ ]")
+
+(defun my/shorten-project-name-elem (elem crop)
+  (if (string-match "^\\[.*\\]$" elem)
+      (concat "["
+              (my/shorten-project-name-elem (substring elem 1 (- (length elem) 1)) crop)
+              "]")
+    (let ((prefix (car (s-match my/project-title-separators elem))))
+      (let ((rest
+            (substring
+             (if prefix
+                 (substring elem (length prefix))
+               elem)
+             0 (if crop 1 nil))
+            ))
+        (concat prefix rest))
+      )))
+
+(defun my/shorten-project-name (project-name)
+  (let ((elems (s-slice-at my/project-title-separators project-name)))
+    (concat
+     (apply
+      #'concat
+      (cl-mapcar (lambda (elem) (my/shorten-project-name-elem elem t)) (butlast elems)))
+     (my/shorten-project-name-elem (car (last elems)) nil))))
+     
+(defun my/tab-bar-name-function ()
+  (let ((project-name (projectile-project-name)))
+    (if (string= "-" project-name)
+        (tab-bar-tab-name-current-with-count)
+      (concat "[" (my/shorten-project-name project-name) "] " (tab-bar-tab-name-current-with-count)))))
+      
+(setq tab-bar-tab-name-function #'my/tab-bar-name-function)
+#+end_src
 ** Modeline
 #+begin_src emacs-lisp
 (use-package doom-modeline
   :straight t
   :init
   (setq doom-modeline-env-enable-python nil)
+  (setq doom-modeline-env-enable-go nil)
   :config
   (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)
@@ -1100,16 +1262,28 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package rainbow-delimiters
   :straight t
   :if (not my/lowpower)
-  :config
-  (add-hook 'org-mode-hook #'rainbow-delimiters-mode)
-  (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
+  :hook (
+    (prog-mode . rainbow-delimiters-mode)))
 #+end_src
 ** Ligatures
 #+begin_src emacs-lisp
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
   :config
-  (ligature-set-ligatures 'prog-mode
+  (ligature-set-ligatures '(
+    typescript-mode
+    js2-mode
+    vue-mode
+    svelte-mode
+    scss-mode
+    php-mode
+    python-mode
+    LaTeX-mode
+    markdown-mode
+    clojure-mode
+    go-mode
+    sh-mode
+    haskell-mode)
     '("--" "---" "==" "===" "!=" "!==" "=!=" "=:=" "=/=" "<="
     ">=" "&&" "&&&" "&=" "++" "+++" "***" ";;" "!!" "??"
     "?:" "?." "?=" "<:" ":<" ":>" ">:" "<>" "<<<" ">>>"
@@ -1202,7 +1376,11 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 * Mail
 #+begin_src emacs-lisp
 (use-package notmuch
-  :ensure nil)
+  :ensure nil
+  :commands (notmuch)
+  :config
+  (add-hook 'notmuch-hello-mode-hook
+            (lambda () (display-line-numbers-mode 0))))
   
 (my-leader-def "am" 'notmuch)
 #+end_src
@@ -1220,7 +1398,8 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
          (python-mode . lsp)
          (json-mode . lsp)
          (haskell-mode . lsp)
-         (haskell-literate-mode . lsp)) 
+         (haskell-literate-mode . lsp)
+         (java-mode . lsp)) 
   :commands lsp
   :config
   (setq lsp-idle-delay 1)
@@ -1229,8 +1408,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (setq lsp-signature-render-documentation nil)
  ;  (lsp-headerline-breadcrumb-mode nil)
   (setq lsp-headerline-breadcrumb-enable nil)
-  (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte"))
-  )
+  (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
   
 (use-package lsp-ui
   :straight t
@@ -1290,6 +1468,15 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
                  (reusable-frames . visible)
                  (window-height   . 0.33)))
   )
+#+end_src
+** OFF TabNine
+#+begin_src emacs-lisp :tangle no
+(use-package company-tabnine
+  :straight t
+  :if (not my/lowpower)
+  :after company
+  :config
+  (add-to-list 'company-backends #'company-tabnine))
 #+end_src
 ** OFF DAP
 #+begin_src emacs-lisp :tangle no
@@ -1375,17 +1562,18 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 #+end_src
 *** TypeScript
 #+begin_src emacs-lisp
-(use-package typescript-mode
-  :straight t)
-  
-(add-hook 'typescript-mode-hook #'smartparens-mode)
-(add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
 (defun my/set-smartparens-indent (mode)
   (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
   (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-)
-(my/set-smartparens-indent 'typescript-mode)
+  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
+  
+(use-package typescript-mode
+  :straight t
+  :mode "\\.ts\\'"
+  :config
+  (add-hook 'typescript-mode-hook #'smartparens-mode)
+  (add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
+  (my/set-smartparens-indent 'typescript-mode))
 #+end_src
 **** Override flycheck checker with eslint
 #+begin_src emacs-lisp
@@ -1403,18 +1591,32 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 (add-hook 'js-mode-hook #'smartparens-mode)
 (my/set-smartparens-indent 'js-mode)
 #+end_src
+*** Jest
+#+begin_src emacs-lisp
+(use-package jest-test-mode
+  :straight t
+  :hook ((typescript-mode . jest-test-mode)
+         (js-mode . jest-test-mode))
+  :config
+  (my-leader-def
+    :keymaps 'jest-test-mode-map
+    :infix "t"
+    "t" 'jest-test-run-at-point
+    "r" 'jest-test-run
+    "a" 'jest-test-run-all-tests))
+#+end_src
 *** Vue.js
 #+begin_src emacs-lisp
 (use-package vue-mode
-  :straight t)
-  
-;; (add-hook 'vue-mode-hook
-;;          #'set-flycheck-eslint)
+  :straight t
+  :mode "\\.vue\\'"
+  :config
+  (add-hook 'vue-mode-hook #'hs-minor-mode)
+  (add-hook 'vue-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'vue-mode)
+  (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil))))
 
-(add-hook 'vue-mode-hook #'hs-minor-mode)
-(add-hook 'vue-mode-hook #'smartparens-mode)
-(my/set-smartparens-indent 'vue-mode)
-         
+  
 (with-eval-after-load 'editorconfig
   (add-to-list 'editorconfig-indentation-alist
                '(vue-mode css-indent-offset
@@ -1424,8 +1626,6 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
                           typescript-indent-level
                           )))
 
-(add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
-(add-hook 'vue-html-mode 'emmet-mode)
 #+end_src
 **** mmm-mode fix
 #+begin_src diff :tangle no
@@ -1448,13 +1648,12 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 *** Svelte
 #+begin_src emacs-lisp
 (use-package svelte-mode
-  :straight t)
-
-(add-hook 'svelte-mode-hook
-          'set-flycheck-eslint)
-          
-(add-hook 'svelte-mode-hook #'smartparens-mode)
-(my/set-smartparens-indent 'svelte-mode)
+  :straight t
+  :mode "\\.svelte\\'"
+  :config
+  (add-hook 'svelte-mode-hook 'set-flycheck-eslint)
+  (add-hook 'svelte-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'svelte-mode))
 #+end_src
 *** SCSS
 #+begin_src emacs-lisp
@@ -1464,7 +1663,8 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 *** PHP
 #+begin_src emacs-lisp
 (use-package php-mode
-  :straight t)
+  :straight t
+  :mode "\\.php\\'")
 #+end_src
 ** Documents & markup languages
 *** LaTeX
@@ -1472,7 +1672,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 #+begin_src emacs-lisp
 (use-package tex
   :straight auctex
-  :defer t
+  ;; :mode "\\.tex\\'"
   :config
   (setq-default TeX-auto-save t)
   (setq-default TeX-parse-self t)
@@ -1487,8 +1687,8 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (setq-default font-latex-fontify-sectioning 1.3)
 
   (setq-default preview-scale-function 1.4)
-  (assoc-delete-all "--" tex--prettify-symbols-alist)
-  (assoc-delete-all "---" tex--prettify-symbols-alist)
+  ;; (assoc-delete-all "--" tex--prettify-symbols-alist)
+  ;; (assoc-delete-all "---" tex--prettify-symbols-alist)
 
   (add-hook 'LaTeX-mode-hook
             (lambda ()
@@ -1496,25 +1696,27 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
               (outline-minor-mode)))
   
   (add-to-list 'TeX-view-program-selection
-             '(output-pdf "Zathura")))
+             '(output-pdf "Zathura"))
              
-(add-hook 'LaTeX-mode-hook
-          #'(lambda ()
-              (unless (string-match "\.hogan\.tex$" (buffer-name))
-                (lsp))
-              (setq-local lsp-diagnostic-package :none)
-              (setq-local flycheck-checker 'tex-chktex)))
-              
-(add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
-(add-hook 'LaTeX-mode-hook #'smartparens-mode)
-(add-hook 'LaTeX-mode-hook #'prettify-symbols-mode)
-
-(my/set-smartparens-indent 'LaTeX-mode)
-
-(general-nmap
-  :keymaps '(LaTeX-mode-map latex-mode-map)
-  "RET" 'TeX-command-run-all
-  "C-c t" 'orgtbl-mode)
+  (add-hook 'LaTeX-mode-hook
+            #'(lambda ()
+                (unless (string-match "\.hogan\.tex$" (buffer-name))
+                  (lsp))
+                (setq-local lsp-diagnostic-package :none)
+                (setq-local flycheck-checker 'tex-chktex)))
+                
+  (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
+  (add-hook 'LaTeX-mode-hook #'smartparens-mode)
+  (add-hook 'LaTeX-mode-hook #'prettify-symbols-mode)
+  
+  (my/set-smartparens-indent 'LaTeX-mode)
+  (require 'smartparens-latex)
+  
+  (general-nmap
+    :keymaps '(LaTeX-mode-map latex-mode-map)
+    "RET" 'TeX-command-run-all
+    "C-c t" 'orgtbl-mode)
+)
 #+end_src
 **** Import *.sty
 #+begin_src emacs-lisp
@@ -1550,6 +1752,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 #+begin_src emacs-lisp
 (use-package markdown-mode
   :straight t
+  :mode "\\.md\\'"
   :config
   (setq markdown-command
       (concat
@@ -1562,7 +1765,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (setq markdown-live-preview-delete-export 'delete-on-export)
   (setq markdown-asymmetric-header t)
   (setq markdown-open-command "/home/pavel/bin/scripts/chromium-sep")
-  )
+  (add-hook 'markdown-mode-hook #'smartparens-mode))
 
 ;; (use-package livedown
 ;;   :straight (:host github :repo "shime/emacs-livedown")
@@ -1574,31 +1777,29 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   :keymaps 'markdown-mode-map
   "M-<left>" 'markdown-promote
   "M-<right>" 'markdown-demote)
-  
-(add-hook 'markdown-mode-hook #'smartparens-mode)
-;; (my/set-smartparens-indent 'js-mode)
 #+end_src
 *** PlantUML
 #+begin_src emacs-lisp
 (use-package plantuml-mode
   :straight t
+  :mode "(\\.\\(plantuml?\\|uml\\|puml\\)\\'"
   :config
   (setq plantuml-executable-path "/usr/bin/plantuml")
   (setq plantuml-default-exec-mode 'executable)
   (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
   (add-to-list 'auto-mode-alist '("\\.uml\\'" . plantuml-mode))
-  )
+  (add-hook 'plantuml-mode-hook #'smartparens-mode))
   
 (general-nmap
   :keymaps 'plantuml-mode-map
   "RET" 'plantuml-preview)
   
-(add-hook 'plantuml-mode-hook #'smartparens-mode)
 #+end_src
 *** Natural languages
 #+begin_src emacs-lisp
 (use-package langtool
   :straight t
+  :commands (langtool-check)
   :config
   (setq langtool-language-tool-server-jar "/home/pavel/Programs/LanguageTool-5.1/languagetool-server.jar")
   (setq langtool-mother-tongue "ru"))
@@ -1609,8 +1810,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   "s" 'langtool-server-stop
   "d" 'langtool-check-done
   "n" 'langtool-goto-next-error
-  "p" 'langtool-goto-previous-error
-)
+  "p" 'langtool-goto-previous-error)
 #+end_src
 ** Python
 #+begin_src emacs-lisp
@@ -1626,28 +1826,49 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (push 'ejc-company-backend company-backends)
   (setq ejc-complete-on-dot t))
 #+end_src
+** Java
+#+begin_src emacs-lisp
+(use-package lsp-java
+  :straight t
+  :after (lsp)
+  :config
+  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz")
+  (add-hook 'java-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'java-mode))
+#+end_src
 ** Clojure
 #+begin_src emacs-lisp
 (use-package clojure-mode
-  :straight t)
+  :straight t
+  :mode "\\.clj[sc]?\\'"
+  :config
+  (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+  (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
   
-(add-hook 'clojure-mode-hook #'smartparens-strict-mode)
-(add-hook 'clojure-mode-hook #'aggressive-indent-mode)
-
 (use-package cider
+  :mode "\\.clj[sc]?\\'"
   :straight t)
+#+end_src
+** Elisp
+#+begin_src emacs-lisp
+(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
 #+end_src
 ** Go
 #+begin_src emacs-lisp
 (use-package go-mode
-  :straight t)
+  :straight t
+  :mode "\\.go\\'"
+  :config
+  (my/set-smartparens-indent 'go-mode)
+  (add-hook 'go-mode-hook 'smartparens-mode))
 #+end_src
 ** fish
 #+begin_src emacs-lisp
 (use-package fish-mode
-  :straight t)
-  
-(add-hook 'fish-mode-hook #'smartparens-mode)
+  :straight t
+  :mode "\\.fish\\'"
+  :config
+ (add-hook 'fish-mode-hook #'smartparens-mode))
 #+end_src
 ** sh
 #+begin_src emacs-lisp
@@ -1656,34 +1877,50 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 ** CLIPS
 #+begin_src emacs-lisp
 (use-package clips-mode
-  :straight t)
+  :straight t
+  :mode "\\.cl\\'")
 #+end_src
 ** Haskell
 #+begin_src emacs-lisp
 (use-package haskell-mode
-  :straight t)
+  :straight t
+  :mode "\\.hs\\'")
   
 (use-package lsp-haskell
-  :straight t)
+  :straight t
+  :after (lsp haskell-mode))
 #+end_src
 ** JSON
 #+begin_src emacs-lisp
 (use-package json-mode
-  :straight t)
-  
-(add-hook 'json-mode #'smartparens-mode)
-(my/set-smartparens-indent 'json-mode)
+  :straight t
+  :mode "\\.json\\'"
+  :config
+  (add-hook 'json-mode #'smartparens-mode)
+  (my/set-smartparens-indent 'json-mode))
 #+end_src
 ** YAML
 #+begin_src emacs-lisp
 (use-package yaml-mode
   :straight t
+  :mode "\\.yml\\'"
   :config
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 #+end_src
+** CSL
+#+begin_src emacs-lisp
+(use-package csv-mode
+  :straight t
+  :mode "\\.csv\\'")
+#+end_src
+
+#+RESULTS:
+: ((\.csv\' . csv-mode) (\.tsv\' . tsv-mode) (\.[Cc][Ss][Vv]\' . csv-mode) (Dockerfile\' . dockerfile-mode) (Dockerfile\(?:\..*\)?\' . dockerfile-mode) (\.yml\' . yaml-mode) (\.\(e?ya?\|ra\)ml\' . yaml-mode) (\.json\' . json-mode) (\(?:\(?:\.\(?:b\(?:\(?:abel\|ower\)rc\)\|json\(?:ld\)?\)\|composer\.lock\)\'\) . json-mode) (\.hs\' . haskell-mode) (\.hsc\' . haskell-mode) (\.l[gh]s\' . haskell-literate-mode) (\.hsig\' . haskell-mode) (\.[gh]s\' . haskell-mode) (\.cabal\'\|/cabal\.project\|/\.cabal/config\' . haskell-cabal-mode) (\.chs\' . haskell-c2hs-mode) (\.ghci\' . ghci-script-mode) (\.dump-simpl\' . ghc-core-mode) (\.hcr\' . ghc-core-mode) (\.cl\' . clips-mode) (\.clp$ . clips-mode) (/fish_funced\..*\' . fish-mode) (\.fish\' . fish-mode) (go\.mod\' . go-dot-mod-mode) (\.go\' . go-mode) (\.clj[sc]?\' . cider) (\.clj[sc]?\' . clojure-mode) (\(?:build\|profile\)\.boot\' . clojure-mode) (\.cljs\' . clojurescript-mode) (\.cljc\' . clojurec-mode) (\.\(clj\|dtm\|edn\)\' . clojure-mode) ((\.\(plantuml?\|uml\|puml\)\' . plantuml-mode) (\.\(plantuml\|pum\|plu\)\' . plantuml-mode) (\.md\' . markdown-mode) (\.hva\' . latex-mode) (\.drv\' . latex-mode) (\.php\' . php-mode) (\.\(?:php[s345]?\|phtml\)\' . php-mode-maybe) (\.\(?:php\.inc\|stub\)\' . php-mode) (/\.php_cs\(?:\.dist\)?\' . php-mode) (\.svelte\' . svelte-mode) (\.vue\' . vue-mode) (\.ts\' . typescript-mode) (\.\(?:md\|markdown\|mkd\|mdown\|mkdn\|mdwn\)\' . markdown-mode) (\.editorconfig\' . editorconfig-conf-mode) (/git-rebase-todo\' . git-rebase-mode) (\.gpg\(~\|\.~[0-9]+~\)?\' nil epa-file) (\.elc\' . elisp-byte-code-mode) (\.zst\' nil jka-compr) (\.dz\' nil jka-compr) (\.xz\' nil jka-compr) (\.lzma\' nil jka-compr) (\.lz\' nil jka-compr) (\.g?z\' nil jka-compr) (\.bz2\' nil jka-compr) (\.Z\' nil jka-compr) (\.vr[hi]?\' . vera-mode) (\(?:\.\(?:rbw?\|ru\|rake\|thor\|jbuilder\|rabl\|gemspec\|podspec\)\|/\(?:Gem\|Rake\|Cap\|Thor\|Puppet\|Berks\|Vagrant\|Guard\|Pod\)file\)\' . ruby-mode) (\.re?st\' . rst-mode) (\.py[iw]?\' . python-mode) (\.m\' . octave-maybe-mode) (\.less\' . less-css-mode) (\.scss\' . scss-mode) (\.awk\' . awk-mode) (\.\(u?lpc\|pike\|pmod\(\.in\)?\)\' . pike-mode) (\.idl\' . idl-mode) (\.java\' . java-mode) (\.m\' . objc-mode) (\.ii\' . c++-mode) (\.i\' . c-mode) (\.lex\' . c-mode) (\.y\(acc\)?\' . c-mode) (\.h\' . c-or-c++-mode) (\.c\' . c-mode) (\.\(CC?\|HH?\)\' . c++-mode) (\.[ch]\(pp\|xx\|\+\+\)\' . c++-mode) (\.\(cc\|hh\)\' . c++-mode) (\.\(bat\|cmd\)\' . bat-mode) (\.[sx]?html?\(\.[a-zA-Z_]+\)?\' . mhtml-mode) (\.svgz?\' . image-mode) (\.svgz?\' . xml-mode) (\.x[bp]m\' . image-mode) (\.x[bp]m\' . c-mode) (\.p[bpgn]m\' . image-mode) (\.tiff?\' . image-mode) (\.gif\' . image-mode) (\.png\' . image-mode) (\.jpe?g\' . image-mode) (\.te?xt\' . text-mode) (\.[tT]e[xX]\' . tex-mode) (\.ins\' . tex-mode) (\.ltx\' . latex-mode) (\.dtx\' . doctex-mode) (\.org\' . org-mode) (\.el\' . emacs-lisp-mode) (Project\.ede\' . emacs-lisp-mode) (\.\(scm\|stk\|ss\|sch\)\' . scheme-mode) (\.l\' . lisp-mode) (\.li?sp\' . lisp-mode) (\.[fF]\' . fortran-mode) (\.for\' . fortran-mode) (\.p\' . pascal-mode) (\.pas\' . pascal-mode) (\.\(dpr\|DPR\)\' . delphi-mode) (\.ad[abs]\' . ada-mode) (\.ad[bs]\.dg\' . ada-mode) (\.\([pP]\([Llm]\|erl\|od\)\|al\)\' . perl-mode) (Imakefile\' . makefile-imake-mode) (Makeppfile\(?:\.mk\)?\' . makefile-makepp-mode) (\.makepp\' . makefile-makepp-mode) (\.mk\' . makefile-gmake-mode) (\.make\' . makefile-gmake-mode) ([Mm]akefile\' . makefile-gmake-mode) (\.am\' . makefile-automake-mode) (\.texinfo\' . texinfo-mode) (\.te?xi\' . texinfo-mode) (\.[sS]\' . asm-mode) (\.asm\' . asm-mode) (\.css\' . css-mode) (\.mixal\' . mixal-mode) (\.gcov\' . compilation-mode) (/\.[a-z0-9-]*gdbinit . gdb-script-mode) (-gdb\.gdb . gdb-script-mode) ([cC]hange\.?[lL]og?\' . change-log-mode) ([cC]hange[lL]og[-.][0-9]+\' . change-log-mode) (\$CHANGE_LOG\$\.TXT . change-log-mode) (\.scm\.[0-9]*\' . scheme-mode) (\.[ckz]?sh\'\|\.shar\'\|/\.z?profile\' . sh-mode) (\.bash\' . sh-mode) (\(/\|\`\)\.\(bash_\(profile\|history\|log\(in\|out\)\)\|z?log\(in\|out\)\)\' . sh-mode) (\(/\|\`\)\.\(shrc\|zshrc\|m?kshrc\|bashrc\|t?cshrc\|esrc\)\' . sh-mode) (\(/\|\`\)\.\([kz]shenv\|xinitrc\|startxrc\|xsession\)\' . sh-mode) (\.m?spec\' . sh-mode) (\.m[mes]\' . nroff-mode) (\.man\' . nroff-mode) (\.sty\' . latex-mode) (\.cl[so]\' . latex-mode) (\.bbl\' . latex-mode) (\.bib\' . bibtex-mode) (\.bst\' . bibtex-style-mode) (\.sql\' . sql-mode) (\(acinclude\|aclocal\|acsite\)\.m4\' . autoconf-mode) (\.m[4c]\' . m4-mode) (\.mf\' . metafont-mode) (\.mp\' . metapost-mode) (\.vhdl?\' . vhdl-mode) (\.article\' . text-mode) (\.letter\' . text-mode) (\.i?tcl\' . tcl-mode) (\.exp\' . tcl-mode) (\.itk\' . tcl-mode) (\.icn\' . icon-mode) (\.sim\' . simula-mode) (\.mss\' . scribe-mode) (\.f9[05]\' . f90-mode) (\.f0[38]\' . f90-mode) (\.indent\.pro\' . fundamental-mode) (\.\(pro\|PRO\)\' . idlwave-mode) (\.srt\' . srecode-template-mode) (\.prolog\' . prolog-mode) (\.tar\' . tar-mode) (\.\(arc\|zip\|lzh\|lha\|zoo\|[jew]ar\|xpi\|rar\|cbr\|7z\|ARC\|ZIP\|LZH\|LHA\|ZOO\|[JEW]AR\|XPI\|RAR\|CBR\|7Z\)\' . archive-mode) (\.oxt\' . archive-mode) (\.\(deb\|[oi]pk\)\' . archive-mode) (\`/tmp/Re . text-mode) (/Message[0-9]*\' . text-mode) (\`/tmp/fol/ . text-mode) (\.oak\' . scheme-mode) (\.sgml?\' . sgml-mode) (\.x[ms]l\' . xml-mode) (\.dbk\' . xml-mode) (\.dtd\' . sgml-mode) (\.ds\(ss\)?l\' . dsssl-mode) (\.js[mx]?\' . javascript-mode) (\.har\' . javascript-mode) (\.json\' . javascript-mode) (\.[ds]?va?h?\' . verilog-mode) (\.by\' . bovine-grammar-mode) (\.wy\' . wisent-grammar-mode) ([:/\]\..*\(emacs\|gnus\|viper\)\' . emacs-lisp-mode) (\`\..*emacs\' . emacs-lisp-mode) ([:/]_emacs\' . emacs-lisp-mode) (/crontab\.X*[0-9]+\' . shell-script-mode) (\.ml\' . lisp-mode) (\.ld[si]?\' . ld-script-mode) (ld\.?script\' . ld-script-mode) (\.xs\' . c-mode) (\.x[abdsru]?[cnw]?\' . ld-script-mode) (\.zone\' . dns-mode) (\.soa\' . dns-mode) (\.asd\' . lisp-mode) (\.\(asn\|mib\|smi\)\' . snmp-mode) (\.\(as\|mi\|sm\)2\' . snmpv2-mode) (\.\(diffs?\|patch\|rej\)\' . diff-mode) (\.\(dif\|pat\)\' . diff-mode) (\.[eE]?[pP][sS]\' . ps-mode) (\.\(?:PDF\|DVI\|OD[FGPST]\|DOCX\|XLSX?\|PPTX?\|pdf\|djvu\|dvi\|od[fgpst]\|docx\|xlsx?\|pptx?\)\' . doc-view-mode-maybe) (configure\.\(ac\|in\)\' . autoconf-mode) (\.s\(v\|iv\|ieve\)\' . sieve-mode) (BROWSE\' . ebrowse-tree-mode) (\.ebrowse\' . ebrowse-tree-mode) (#\*mail\* . mail-mode) (\.g\' . antlr-mode) (\.mod\' . m2-mode) (\.ses\' . ses-mode) (\.docbook\' . sgml-mode) (\.com\' . dcl-mode) (/config\.\(?:bat\|log\)\' . fundamental-mode) (/\.\(authinfo\|netrc\)\' . authinfo-mode) (\.\(?:[iI][nN][iI]\|[lL][sS][tT]\|[rR][eE][gG]\|[sS][yY][sS]\)\' . conf-mode) (\.la\' . conf-unix-mode) (\.ppd\' . conf-ppd-mode) (java.+\.conf\' . conf-javaprop-mode) (\.properties\(?:\.[a-zA-Z0-9._-]+\)?\' . conf-javaprop-mode) (\.toml\' . conf-toml-mode) (\.desktop\' . conf-desktop-mode) (/\.redshift\.conf\' . conf-windows-mode) (\`/etc/\(?:DIR_COLORS\|ethers\|.?fstab\|.*hosts\|lesskey\|login\.?de\(?:fs\|vperm\)\|magic\|mtab\|pam\.d/.*\|permissions\(?:\.d/.+\)?\|protocols\|rpc\|services\)\' . conf-space-mode) (\`/etc/\(?:acpid?/.+\|aliases\(?:\.d/.+\)?\|default/.+\|group-?\|hosts\..+\|inittab\|ksysguarddrc\|opera6rc\|passwd-?\|shadow-?\|sysconfig/.+\)\' . conf-mode) ([cC]hange[lL]og[-.][-0-9a-z]+\' . change-log-mode) (/\.?\(?:gitconfig\|gnokiirc\|hgrc\|kde.*rc\|mime\.types\|wgetrc\)\' . conf-mode) (/\.\(?:asound\|enigma\|fetchmail\|gltron\|gtk\|hxplayer\|mairix\|mbsync\|msmtp\|net\|neverball\|nvidia-settings-\|offlineimap\|qt/.+\|realplayer\|reportbug\|rtorrent\.\|screen\|scummvm\|sversion\|sylpheed/.+\|xmp\)rc\' . conf-mode) (/\.\(?:gdbtkinit\|grip\|mpdconf\|notmuch-config\|orbital/.+txt\|rhosts\|tuxracer/options\)\' . conf-mode) (/\.?X\(?:default\|resource\|re\)s\> . conf-xdefaults-mode) (/X11.+app-defaults/\|\.ad\' . conf-xdefaults-mode) (/X11.+locale/.+/Compose\' . conf-colon-mode) (/X11.+locale/compose\.dir\' . conf-javaprop-mode) (\.~?[0-9]+\.[0-9][-.0-9]*~?\' nil t) (\.\(?:orig\|in\|[bB][aA][kK]\)\' nil t) ([/.]c\(?:on\)?f\(?:i?g\)?\(?:\.[a-zA-Z0-9._-]+\)?\' . conf-mode-maybe) (\.[1-9]\' . nroff-mode) (\.art\' . image-mode) (\.avs\' . image-mode) (\.bmp\' . image-mode) (\.cmyk\' . image-mode) (\.cmyka\' . image-mode) (\.crw\' . image-mode) (\.dcr\' . image-mode) (\.dcx\' . image-mode) (\.dng\' . image-mode) (\.dpx\' . image-mode) (\.fax\' . image-mode) (\.hrz\' . image-mode) (\.icb\' . image-mode) (\.icc\' . image-mode) (\.icm\' . image-mode) (\.ico\' . image-mode) (\.icon\' . image-mode) (\.jbg\' . image-mode) (\.jbig\' . image-mode) (\.jng\' . image-mode) (\.jnx\' . image-mode) (\.miff\' . image-mode) (\.mng\' . image-mode) (\.mvg\' . image-mode) (\.otb\' . image-mode) (\.p7\' . image-mode) (\.pcx\' . image-mode) (\.pdb\' . image-mode) (\.pfa\' . image-mode) (\.pfb\' . image-mode) (\.picon\' . image-mode) (\.pict\' . image-mode) (\.rgb\' . image-mode) (\.rgba\' . image-mode) (\.tga\' . image-mode) (\.wbmp\' . image-mode) (\.webp\' . image-mode) (\.wmf\' . image-mode) (\.wpg\' . image-mode) (\.xcf\' . image-mode) (\.xmp\' . image-mode) (\.xwd\' . image-mode) (\.yuv\' . image-mode) (\.tgz\' . tar-mode) (\.tbz2?\' . tar-mode) (\.txz\' . tar-mode) (\.tzst\' . tar-mode))
+
 ** Docker
 #+begin_src emacs-lisp
 (use-package dockerfile-mode
+  :mode "Dockerfile\\'"
   :straight t)
 #+end_src
 * TRAMP
@@ -1710,10 +1947,21 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 ** Snow
 #+begin_src emacs-lisp
 (use-package snow
-  :straight (:repo "alphapapa/snow.el" :host github))
+  :straight (:repo "alphapapa/snow.el" :host github)
+  :commands (snow))
 #+end_src
-** Explain Pause
-#+begin_src emacs-lisp
+** OFF Telegram
+#+begin_src emacs-lisp :tangle no
+(use-package telega
+  :commands (telega)
+  :straight t
+  :config
+  (my-leader-def "aT" telega-prefix-map))
+  
+(my-leader-def "at" 'telega)
+#+end_src
+** OFF Explain Pause
+#+begin_src emacs-lisp :tangle no
 (use-package explain-pause-mode
   :straight (explain-pause-mode :type git :host github :repo "lastquestion/explain-pause-mode"))
 #+end_src

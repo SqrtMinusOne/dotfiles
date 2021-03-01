@@ -1,3 +1,3 @@
 #!/bin/bash
 GMI="/home/pavel/Programs/miniconda3/envs/mail/bin/gmi"
-(cd /home/pavel/Mail/thexcloud/ && $GMI sync)
+parallel -j0 "(cd /home/pavel/Mail/{}/ && $GMI sync)" ::: thexcloud progin6304

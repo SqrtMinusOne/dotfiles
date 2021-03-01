@@ -13,9 +13,15 @@ NEW_UNREAD=$(notmuch count "$QUERY")
 ALL_UNREAD=$(notmuch count "$ALL_QUERY")
 
 if [ $NEW_UNREAD -gt 0 ]; then
-    notify-send "New Mail" "$NEW_UNREAD new messages\n$ALL_UNREAD total"
-# elif [ $ALL_UNREAD -gt 0 ]; then
-#     notify-send "New Mail" "$ALL_UNREAD unread messages"
+    MAIN_UNREAD=$(notmuch count "tag:unread AND tag:main")
+    PROGIN_UNREAD=$(notmuch count "tag:unread AND tag:progin")
+    read -r -d '' NOTIFICATION <<EOM
+$NEW_UNREAD new messages
+$MAIN_UNREAD thexcloud@gmail.com
+$PROGIN_UNREAD progin6304@gmail.com
+$ALL_UNREAD total
+EOM
+    notify-send "New Mail" "$NOTIFICATION"
 fi
 
 echo "$(date +%s)" > $CHECK_FILE
