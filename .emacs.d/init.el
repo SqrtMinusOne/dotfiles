@@ -1458,8 +1458,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :mode "Dockerfile\\'"
   :straight t)
 
-;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+(add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
 (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+
+(sp-with-modes sp-lisp-modes
+  (sp-local-pair "'" nil :actions nil))
 
 (setq remote-file-name-inhibit-cache nil)
 (setq tramp-default-method "ssh")
