@@ -27,6 +27,7 @@
  '(notmuch-search-oldest-first nil)
  '(org-agenda-files
    '("~/Documents/org-mode/ETU/sem-10.org" "~/Documents/org-mode/ETU/r&d.org" "~/Documents/org-mode/Personal/misc.org" "~/Documents/org-mode/Job/dig-traject.org" "~/Documents/org-mode/Personal/look-forward.org" "~/Documents/org-mode/ETU/sem-9.org"))
+ '(org-edit-src-content-indentation 0)
  '(send-mail-function 'smtpmail-send-it)
  '(sgml-basic-offset 2)
  '(smtpmail-smtp-server "smtp.gmail.com")
@@ -34,7 +35,8 @@
  '(sp-autoskip-opening-pair t)
  '(sp-highlight-pair-overlay nil)
  '(wakatime-cli-path "/usr/bin/wakatime")
- '(wakatime-python-bin nil))
+ '(wakatime-python-bin nil)
+ '(warning-suppress-types '((lsp-mode) (comp))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
