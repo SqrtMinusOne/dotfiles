@@ -652,11 +652,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+end_src
 *** Winner mode
 #+begin_src emacs-lisp
-;; (general-define-key
-;;  :maps 'evil-window-map
-;;  "u" 'winner-undo
-;;  "U" 'winner-redo)
 (winner-mode 1)
+(define-key evil-window-map (kbd "u") 'winner-undo)
+(define-key evil-window-map (kbd "U") 'winner-redo)
 #+end_src
 ** Editorconfig
 #+begin_src emacs-lisp

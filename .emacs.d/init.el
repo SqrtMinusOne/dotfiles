@@ -495,11 +495,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq-default tab-width 4)
 (setq-default evil-shift-round nil)
 
-;; (general-define-key
-;;  :maps 'evil-window-map
-;;  "u" 'winner-undo
-;;  "U" 'winner-redo)
 (winner-mode 1)
+(define-key evil-window-map (kbd "u") 'winner-undo)
+(define-key evil-window-map (kbd "U") 'winner-redo)
 
 (use-package editorconfig
   :straight t
