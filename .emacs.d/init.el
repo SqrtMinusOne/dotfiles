@@ -21,7 +21,7 @@
 
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
-(setq use-package-verbose t)
+ ;; (setq use-package-verbose t)
 
 (setq my/lowpower (string= (system-name) "pntk"))
 
@@ -70,12 +70,18 @@
                       :weight 'bold)
   :straight t)
 
-(defun my-edit-configuration ()
+(defun my/edit-configuration ()
   "Open the init file."
   (interactive)
   (find-file "~/.emacs.d/emacs.org"))
-
-(general-define-key "C-c c" 'my-edit-configuration)
+  
+;; (defun my/edit-exwm-configuration ()
+;;   "Open the exwm config file."
+;;   (interactive)
+;;   (find-file "~/.emacs.d/exwm.org"))
+  
+(general-define-key "C-c c" 'my/edit-configuration)
+;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
 
 (general-def :states '(normal insert visual)
   "<home>" 'beginning-of-line
@@ -154,7 +160,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       eshell
       helpful
       compile
-      comint)))
+      comint
+      magit)))
   
 (use-package evil-quickscope
   :straight t
@@ -164,10 +171,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          (LaTeX-mode . turn-on-evil-quickscope-mode)))
 
 (general-create-definer my-leader-def
-  :prefix "SPC"
   :keymaps 'override
+  :prefix "SPC"
   :states '(normal motion emacs))
-  
+
 (general-def
   :keymaps 'override
   :states '(normal motion emacs insert visual)
@@ -447,10 +454,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (global-git-gutter-mode +1))
 
-(use-package evil-magit
-  :after (magit)
-  :straight t)
-  
 (my-leader-def
   "m" 'magit
   "M" 'magit-file-dispatch)
@@ -492,14 +495,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq-default tab-width 4)
 (setq-default evil-shift-round nil)
 
-(use-package winner-mode
-  :ensure nil
-  :config
-  (winner-mode)
-  :bind (:map evil-window-map
-    ("u" . winner-undo)
-    ("U" . winner-redo)
-  ))
+;; (general-define-key
+;;  :maps 'evil-window-map
+;;  "u" 'winner-undo
+;;  "U" 'winner-redo)
+(winner-mode 1)
 
 (use-package editorconfig
   :straight t
@@ -523,7 +523,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (general-imap "M-TAB" 'company-yasnippet)
 
-(add-hook 'prog-mode-hook #'hs-minor-mode)
+(use-package hideshowvis
+  :straight t
+  :config
+  ;; (add-hook 'prog-mode-hook #'hs-minor-mode)
+)
+
 (general-nmap "TAB" 'evil-toggle-fold)
 (general-nmap :keymaps 'hs-minor-mode-map "ze" 'hs-hide-level)
 
@@ -539,9 +544,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (global-activity-watch-mode))
-
-(use-package no-littering
-  :straight t)
 
 (use-package dired
   :ensure nil
@@ -709,11 +711,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; (general-nmap "`" 'aweshell-dedicated-toggle)
 ;; (general-nmap "~" 'eshell)
 
-(straight-override-recipe
-   '(org :repo "emacsmirror/org" :no-build t))
-
 (use-package org
-  :straight t)
+  :straight (:type built-in))
 
 (use-package evil-org
   :straight t
@@ -779,7 +778,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 ;; (use-package htmlize
 ;;   :straight t)
-  
+
 (defun my/setup-org-latex ()
   (setq org-latex-compiler "xelatex")
   (add-to-list 'org-latex-classes
@@ -804,20 +803,25 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  :keymaps 'org-mode-map
  "C-c d" 'org-decrypt-entry
  "C-c e" 'org-encrypt-entry
-  "M-p" 'org-latex-preview
- )
+ "M-p" 'org-latex-preview)
+
+(general-define-key
+ :keymaps 'org-mode-map
+ :states '(normal emacs)
+ "L" 'org-shiftright
+ "H" 'org-shiftleft)
 
 (general-define-key
  :keymaps 'org-agenda-mode-map
  "M-]" 'org-agenda-later
  "M-[" 'org-agenda-earlier)
 
-(general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
+;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
 (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
 
 (my-leader-def
-    "aa" 'org-agenda
-    "ao" 'org-switchb)
+  "aa" 'org-agenda
+  "ao" 'org-switchb)
 
 (defun my/org-link-copy (&optional arg)
   "Extract URL from org-mode link and add it to kill ring."
@@ -1028,34 +1032,35 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
   :config
-  (ligature-set-ligatures '(
-    typescript-mode
-    js2-mode
-    vue-mode
-    svelte-mode
-    scss-mode
-    php-mode
-    python-mode
-    LaTeX-mode
-    markdown-mode
-    clojure-mode
-    go-mode
-    sh-mode
-    haskell-mode)
-    '("--" "---" "==" "===" "!=" "!==" "=!=" "=:=" "=/=" "<="
-    ">=" "&&" "&&&" "&=" "++" "+++" "***" ";;" "!!" "??"
-    "?:" "?." "?=" "<:" ":<" ":>" ">:" "<>" "<<<" ">>>"
-    "<<" ">>" "||" "-|" "_|_" "|-" "||-" "|=" "||=" "##"
-    "###" "####" "#{" "#[" "]#" "#(" "#?" "#_" "#_(" "#:"
-    "#!" "#=" "^=" "<$>" "<$" "$>" "<+>" "<+" "+>" "<*>"
-    "<*" "*>" "</" "</>" "/>" "<!--" "<#--" "-->" "->" "->>"
-    "<<-" "<-" "<=<" "=<<" "<<=" "<==" "<=>" "<==>" "==>" "=>"
-    "=>>" ">=>" ">>=" ">>-" ">-" ">--" "-<" "-<<" ">->" "<-<"
-    "<-|" "<=|" "|=>" "|->" "<->" "<~~" "<~" "<~>" "~~" "~~>"
-    "~>" "~-" "-~" "~@" "[||]" "|]" "[|" "|}" "{|" "[<"
-    ">]" "|>" "<|" "||>" "<||" "|||>" "<|||" "<|>" "..." ".."
-    ".=" ".-" "..<" ".?" "::" ":::" ":=" "::=" ":?" ":?>"
-    "//" "///" "/*" "*/" "/=" "//=" "/==" "@_" "__"))
+  (ligature-set-ligatures
+   '(
+     typescript-mode
+     js2-mode
+     vue-mode
+     svelte-mode
+     scss-mode
+     php-mode
+     python-mode
+     js-mode
+     markdown-mode
+     clojure-mode
+     go-mode
+     sh-mode
+     haskell-mode)
+   '("--" "---" "==" "===" "!=" "!==" "=!=" "=:=" "=/=" "<="
+     ">=" "&&" "&&&" "&=" "++" "+++" "***" ";;" "!!" "??"
+     "?:" "?." "?=" "<:" ":<" ":>" ">:" "<>" "<<<" ">>>"
+     "<<" ">>" "||" "-|" "_|_" "|-" "||-" "|=" "||=" "##"
+     "###" "####" "#{" "#[" "]#" "#(" "#?" "#_" "#_(" "#:"
+     "#!" "#=" "^=" "<$>" "<$" "$>" "<+>" "<+" "+>" "<*>"
+     "<*" "*>" "</" "</>" "/>" "<!--" "<#--" "-->" "->" "->>"
+     "<<-" "<-" "<=<" "=<<" "<<=" "<==" "<=>" "<==>" "==>" "=>"
+     "=>>" ">=>" ">>=" ">>-" ">-" ">--" "-<" "-<<" ">->" "<-<"
+     "<-|" "<=|" "|=>" "|->" "<->" "<~~" "<~" "<~>" "~~" "~~>"
+     "~>" "~-" "-~" "~@" "[||]" "|]" "[|" "|}" "{|" "[<"
+     ">]" "|>" "<|" "||>" "<||" "|||>" "<|||" "<|>" "..." ".."
+     ".=" ".-" "..<" ".?" "::" ":::" ":=" "::=" ":?" ":?>"
+     "//" "///" "/*" "*/" "/=" "//=" "/==" "@_" "__"))
   (global-ligature-mode t))
 
 (defun zoom-in ()
@@ -1185,6 +1190,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (add-hook 'typescript-mode-hook #'smartparens-mode)
   (add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
+  (add-hook 'typescript-mode-hook #'hs-minor-mode)
   (my/set-smartparens-indent 'typescript-mode))
 
 (defun set-flycheck-eslint()
@@ -1196,6 +1202,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;;           #'set-flycheck-eslint)
 
 (add-hook 'js-mode-hook #'smartparens-mode)
+(add-hook 'js-mode-hook #'hs-minor-mode)
 (my/set-smartparens-indent 'js-mode)
 
 (use-package jest-test-mode
@@ -1238,6 +1245,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (my/set-smartparens-indent 'svelte-mode))
 
 (add-hook 'scss-mode-hook #'smartparens-mode)
+(add-hook 'scss-mode-hook #'hs-minor-mode)
 (my/set-smartparens-indent 'scss-mode)
 
 (use-package php-mode
@@ -1375,10 +1383,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "s" 'langtool-server-stop
   "d" 'langtool-check-done
   "n" 'langtool-goto-next-error
-  "p" 'langtool-goto-previous-error
-)
+  "p" 'langtool-goto-previous-error)
 
 (add-hook 'python-mode-hook #'smartparens-mode)
+(add-hook 'python-mode-hook #'hs-minor-mode)
 
 (use-package lsp-java
   :straight t
@@ -1386,6 +1394,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz")
   (add-hook 'java-mode-hook #'smartparens-mode)
+  (add-hook 'java-mode-hook #'hs-minor-mode)
   (my/set-smartparens-indent 'java-mode))
 
 (use-package clojure-mode
@@ -1406,7 +1415,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :mode "\\.go\\'"
   :config
   (my/set-smartparens-indent 'go-mode)
-  (add-hook 'go-mode-hook 'smartparens-mode))
+  (add-hook 'go-mode-hook #'smartparens-mode)
+  (add-hook 'go-mode-hook #'hs-minor-mode))
 
 (use-package fish-mode
   :straight t
@@ -1433,6 +1443,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :mode "\\.json\\'"
   :config
   (add-hook 'json-mode #'smartparens-mode)
+  (add-hook 'json-mode #'hs-minor-mode)
   (my/set-smartparens-indent 'json-mode))
 
 (use-package yaml-mode
@@ -1448,6 +1459,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package dockerfile-mode
   :mode "Dockerfile\\'"
   :straight t)
+
+;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
 
 (setq remote-file-name-inhibit-cache nil)
 (setq tramp-default-method "ssh")
