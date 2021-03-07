@@ -373,7 +373,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t)
 
 (use-package treemacs-magit
-  :after treemacs magit
+  :after (treemacs magit)
   :straight t)
   
 (general-define-key
@@ -503,13 +503,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (editorconfig-mode 1))
-
-(use-package avy
-  :straight t
-  :defer t)
-  
-(general-nmap "\\\\w" 'avy-goto-word-0-below)
-(general-nmap "\\\\b" 'avy-goto-word-0-above)
 
 (use-package yasnippet
   :straight t
@@ -751,6 +744,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (org-babel-jupyter-override-src-block "python")
 
+(add-hook 'org-src-mode-hook
+          (lambda ()
+            (hs-minor-mode 0)))
+
 (use-package ob-async
   :straight t
   :after (org)
@@ -807,7 +804,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  :keymaps 'org-mode-map
  :states '(normal emacs)
  "L" 'org-shiftright
- "H" 'org-shiftleft)
+ "H" 'org-shiftleft
+ "S-<next>" 'org-babel-next-src-block
+ "S-<prior>" 'org-babel-previous-src-block)
 
 (general-define-key
  :keymaps 'org-agenda-mode-map
@@ -849,6 +848,36 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
     ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center)
 ))
+
+(use-package hide-mode-line
+  :straight t)
+
+(use-package org-present
+  :straight (:host github :repo "rlister/org-present")
+  :commands (org-present)
+  :config
+  (general-define-key
+   :keymaps 'org-present-mode-keymap
+   "<next>" 'org-present-next
+   "<prior>" 'org-present-prev)
+  (add-hook 'org-present-mode-hook
+            (lambda ()
+              (org-present-big)
+              (org-display-inline-images)
+              (org-present-hide-cursor)
+              (org-present-read-only)
+              (display-line-numbers-mode 0)
+              (hide-mode-line-mode +1)
+              (tab-bar-mode 0)))
+  (add-hook 'org-present-mode-quit-hook
+            (lambda ()
+              (org-present-small)
+              (org-remove-inline-images)
+              (org-present-show-cursor)
+              (org-present-read-write)
+              (display-line-numbers-mode 1)
+              (hide-mode-line-mode 0)
+              (tab-bar-mode 1))))
 
 (setq org-startup-indented t)
 
@@ -919,8 +948,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  :states '(normal emacs)
  "gt" 'tab-bar-switch-to-next-tab
  "gT" 'tab-bar-switch-to-prev-tab
- "gn" 'tab-bar-new-tab
- )
+ "gn" 'tab-bar-new-tab)
  
 (setq tab-bar-show 1)
 (setq tab-bar-tab-hints t)
@@ -939,12 +967,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               "]")
     (let ((prefix (car (s-match my/project-title-separators elem))))
       (let ((rest
-            (substring
-             (if prefix
-                 (substring elem (length prefix))
-               elem)
-             0 (if crop 1 nil))
-            ))
+             (substring
+              (if prefix
+                  (substring elem (length prefix))
+                elem)
+              0 (if crop 1 nil))
+             ))
         (concat prefix rest))
       )))
 
@@ -955,13 +983,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       #'concat
       (cl-mapcar (lambda (elem) (my/shorten-project-name-elem elem t)) (butlast elems)))
      (my/shorten-project-name-elem (car (last elems)) nil))))
-     
+
 (defun my/tab-bar-name-function ()
   (let ((project-name (projectile-project-name)))
     (if (string= "-" project-name)
         (tab-bar-tab-name-current-with-count)
       (concat "[" (my/shorten-project-name project-name) "] " (tab-bar-tab-name-current-with-count)))))
-      
+
 (setq tab-bar-tab-name-function #'my/tab-bar-name-function)
 
 (use-package doom-modeline
@@ -1061,7 +1089,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
      "//" "///" "/*" "*/" "/=" "//=" "/==" "@_" "__"))
   (global-ligature-mode t))
 
-(defun zoom-in ()
+(defun my/zoom-in ()
   "Increase font size by 10 points"
   (interactive)
   (set-face-attribute 'default nil
@@ -1069,7 +1097,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                       (+ (face-attribute 'default :height)
                          10)))
 
-(defun zoom-out ()
+(defun my/zoom-out ()
   "Decrease font size by 10 points"
   (interactive)
   (set-face-attribute 'default nil
@@ -1078,8 +1106,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                          10)))
 
 ;; change font size, interactively
-(global-set-key (kbd "C-+") 'zoom-in)
-(global-set-key (kbd "C-=") 'zoom-out)
+(global-set-key (kbd "C-+") 'my/zoom-in)
+(global-set-key (kbd "C-=") 'my/zoom-out)
 
 (setq scroll-conservatively scroll-margin)
 (setq scroll-step 1)
@@ -1098,6 +1126,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :ensure nil
   :commands (notmuch)
   :config
+  (setq mail-specify-envelope-from t)
+  (setq message-sendmail-envelope-from 'header)
+  (setq mail-envelope-from 'header)
+  (setq notmuch-always-prompt-for-sender t)
+  (setq sendmail-program "/usr/bin/msmtp")
+  (setq send-mail-function #'sendmail-send-it)
   (add-hook 'notmuch-hello-mode-hook
             (lambda () (display-line-numbers-mode 0))))
   
@@ -1407,6 +1441,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t)
 
 (add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
+(add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+
+(sp-with-modes sp-lisp-modes
+  (sp-local-pair "'" nil :actions nil))
 
 (use-package go-mode
   :straight t
@@ -1458,12 +1497,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :mode "Dockerfile\\'"
   :straight t)
 
-(add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
-(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
-
-(sp-with-modes sp-lisp-modes
-  (sp-local-pair "'" nil :actions nil))
-
 (setq remote-file-name-inhibit-cache nil)
 (setq tramp-default-method "ssh")
 (setq vc-ignore-dir-regexp
@@ -1482,3 +1515,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package snow
   :straight (:repo "alphapapa/snow.el" :host github)
   :commands (snow))
+
+(use-package zone
+  :ensure nil
+  :config
+  (setq original-zone-programs (copy-sequence zone-programs)))
+
+(defun my/zone-with-select ()
+  (interactive)
+  (ivy-read "Zone programs"
+            (cl-pairlis
+             (cl-mapcar 'symbol-name original-zone-programs)
+             original-zone-programs)
+            :action (lambda (elem)
+                      (setq zone-programs (vector (cdr elem)))
+                      (zone))))
