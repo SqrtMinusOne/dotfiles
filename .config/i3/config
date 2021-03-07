@@ -296,7 +296,7 @@ mode "apps" {
     bindsym m exec "st -e ncmpcpp"; mode default
     bindsym c exec "copyq toggle"; mode default
     bindsym k exec "keepassxc"; mode default
-    bindsym e exec mailspring; mode default
+    # bindsym e exec mailspring; mode default
     bindsym a exec "bash /home/pavel/bin/emacs.sh"; mode default
     bindsym n exec "st -e newsboat"; mode default
     bindsym w exec "st /home/pavel/bin/scripts/run_wego"; mode default
