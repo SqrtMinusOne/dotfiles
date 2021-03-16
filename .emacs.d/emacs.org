@@ -892,6 +892,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 #+begin_src emacs-lisp
 (use-package org
   :straight (:type built-in))
+
+(setq org-directory (expand-file-name "~/Documents/org-mode"))
 #+end_src
 ** Integration with evil
 #+begin_src emacs-lisp
@@ -924,8 +926,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (my-leader-def "ar" 'jupyter-run-repl)
 #+end_src
-*** TypeScript
-#+begin_src emacs-lisp
+*** OFF TypeScript
+#+begin_src emacs-lisp :tangle no
 ;; (use-package ob-typescript
 ;;   :straight t)
 #+end_src
@@ -951,6 +953,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq ob-async-no-async-languages-alist '("python" "jupyter-python")))
 #+end_src
+** Capture
+#+begin_src emacs-lisp
+(setq org-default-notes-file (concat org-directory "/notes.org"))
+#+end_src
 ** Equations preview
 #+begin_src emacs-lisp
 (use-package org-latex-impatient
@@ -972,8 +978,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
 (setq org-highlight-latex-and-related '(native script entities))
 #+end_src
-** Export to LaTeX
-#+begin_src emacs-lisp
+** OFF Export to LaTeX
+#+begin_src emacs-lisp :tangle no
 ;; (use-package htmlize
 ;;   :straight t)
 
@@ -1888,10 +1894,11 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   :straight t
   :after (lsp)
   :config
-  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz")
-  (add-hook 'java-mode-hook #'smartparens-mode)
+  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz"))
+
+(add-hook 'java-mode-hook #'smartparens-mode)
   (add-hook 'java-mode-hook #'hs-minor-mode)
-  (my/set-smartparens-indent 'java-mode))
+  (my/set-smartparens-indent 'java-mode)
 #+end_src
 ** Clojure
 #+begin_src emacs-lisp
