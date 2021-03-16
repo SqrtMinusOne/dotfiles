@@ -839,16 +839,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
 
-(setq org-agenda-category-icon-alist `(
-    ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
-    ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
-    ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
-    ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
-    ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
-    ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
-    ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center)
-))
-
 (use-package hide-mode-line
   :straight t)
 
