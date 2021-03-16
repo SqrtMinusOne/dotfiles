@@ -705,6 +705,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package org
   :straight (:type built-in))
 
+(setq org-directory (expand-file-name "~/Documents/org-mode"))
+
 (use-package evil-org
   :straight t
   :after (org evil-collection)
@@ -731,9 +733,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (my-leader-def "ar" 'jupyter-run-repl)
 
-;; (use-package ob-typescript
-;;   :straight t)
-
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((emacs-lisp . t)
@@ -754,6 +753,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq ob-async-no-async-languages-alist '("python" "jupyter-python")))
 
+(setq org-default-notes-file (concat org-directory "/notes.org"))
+
 (use-package org-latex-impatient
   :straight (
     :repo "yangsheng6810/org-latex-impatient"
@@ -770,25 +771,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
 (setq org-highlight-latex-and-related '(native script entities))
-
-;; (use-package htmlize
-;;   :straight t)
-
-(defun my/setup-org-latex ()
-  (setq org-latex-compiler "xelatex")
-  (add-to-list 'org-latex-classes
-                 '("extarticle"
-                   "\\documentclass[a4paper, 14pt]{extarticle}"
-                 ("\\section{%s}" . "\\section*{%s}")
-                 ("\\subsection{%s}" . "\\subsection*{%s}")
-                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
-                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
-                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
-  )
-)
-  
-(with-eval-after-load 'ox-latex
-  (my/setup-org-latex))
 
 (use-package ox-hugo
   :straight t
@@ -1414,10 +1396,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :after (lsp)
   :config
-  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz")
-  (add-hook 'java-mode-hook #'smartparens-mode)
+  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz"))
+
+(add-hook 'java-mode-hook #'smartparens-mode)
   (add-hook 'java-mode-hook #'hs-minor-mode)
-  (my/set-smartparens-indent 'java-mode))
+  (my/set-smartparens-indent 'java-mode)
 
 (use-package clojure-mode
   :straight t
