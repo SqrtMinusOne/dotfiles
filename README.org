@@ -40,3 +40,4 @@ Deployed with [[https://yadm.io/][yadm]]
 | dev       | [[https://github.com/inducer/pudb][pudb]]           | Python Debugger                | archive           | -           |                                                                            |
 | misc      | [[https://yadm.io][yadm]]           | dotfiles manager               | *active*          | -           |                                                                            |
 | misc      | [[https://github.com/risacher/sunwait][sunwait]]        | sunrise calculator             | *active*          | -           |                                                                            |
+| misc      | [[https://github.com/vergoh/vnstat][vnstat]]         | traffic stats                  | *active*          | -           |                                                                            |
