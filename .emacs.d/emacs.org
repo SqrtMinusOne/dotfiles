@@ -1067,7 +1067,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
 #+end_src
 ** Org Agenda
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq org-agenda-category-icon-alist `(
     ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
     ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
