@@ -401,6 +401,7 @@ exec --no-startup-id mpd
 
 # Stuff
 exec aw-qt
+exec "vnstat -d"
 exec dunst
 exec kde-connect-indicator
 exec copyq
