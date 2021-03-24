@@ -3,7 +3,8 @@ disabledTrayIcon=false
 drawColor=#ff0000
 drawThickness=0
 saveAfterCopyPath=/home/pavel/Pictures
-savePath=/home/pavel/Pictures/
+savePath=/home/pavel/Code/SEM10_DataP/L3/img
+savePathFixed=false
 showStartupLaunchMessage=false
 
 [Shortcuts]
