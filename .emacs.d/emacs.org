@@ -77,10 +77,10 @@ Watch out for the GitHub org renderer, it does not show =:tangle no=
   :config
   (setq conda-anaconda-home (expand-file-name "~/Programs/miniconda3/"))
   (setq conda-env-home-directory (expand-file-name "~/Programs/miniconda3/"))
-  (setq conda-env-subdirectory "envs")
-  )
-  
-(conda-env-activate "base")
+  (setq conda-env-subdirectory "envs"))
+
+(if (not (getenv "CONDA_DEFAULT_ENV"))
+  (conda-env-activate "base"))
 #+end_src
 *** Performance
 #+begin_src emacs-lisp

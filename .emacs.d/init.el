@@ -47,10 +47,10 @@
   :config
   (setq conda-anaconda-home (expand-file-name "~/Programs/miniconda3/"))
   (setq conda-env-home-directory (expand-file-name "~/Programs/miniconda3/"))
-  (setq conda-env-subdirectory "envs")
-  )
-  
-(conda-env-activate "base")
+  (setq conda-env-subdirectory "envs"))
+
+(if (not (getenv "CONDA_DEFAULT_ENV"))
+  (conda-env-activate "base"))
 
 (setq gc-cons-threshold 80000000)
 (setq read-process-output-max (* 1024 1024))
