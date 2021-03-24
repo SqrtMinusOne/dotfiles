@@ -1,0 +1,12 @@
+#!/bin/bash
+LINKS=(
+    "$HOME/.config/tridactyl/themes $HOME/themes"
+    "$HOME/.config/tridactyl/.tridactylrc $HOME/.tridactylrc"
+    "$HOME/.config/vnstat/.vnstatrc $HOME/.vnstatrc"
+)
+for item in "${LINKS[@]}"
+do
+    ln -svf $item
+done
+
+# ln -s ~/.config/tridactyl/themes ~/themes

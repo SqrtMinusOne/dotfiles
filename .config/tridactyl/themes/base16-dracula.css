@@ -1,20 +1,20 @@
 :root {    /* Dracula by Chris Kempson (http://chriskempson.com) */
-    --base00: #292d3e;
+    --base00: #282936;
     --base01: #3a3c4e;
-    --base02: #434758;
+    --base02: #4d4f68;
     --base03: #626483;
-    --base04: #82aaff;
+    --base04: #62d6e8;
     --base05: #e9e9f4;
     --base06: #f1f2f8;
     --base07: #f7f7fb;
-    --base08: #f07178;
-    --base09: #c792ea;
-    --base0A: #c3e88d;
-    --base0B: #ffcb6b;
-    --base0C: #89ddff;
-    --base0D: #82aaff;
-    --base0E: #c792ea;
-    --base0F: #c3e88d;
+    --base08: #ea51b2;
+    --base09: #b45bcf;
+    --base0A: #00f769;
+    --base0B: #ebff87;
+    --base0C: #a1efe4;
+    --base0D: #62d6e8;
+    --base0E: #b45bcf;
+    --base0F: #00f769;
 
     --tridactyl-fg: var(--base05);
     --tridactyl-bg: var(--base00);
@@ -31,15 +31,9 @@
     --tridactyl-hint-active-fg: none;
     --tridactyl-hint-active-bg: none;
     --tridactyl-hint-active-outline: none;
-    /* --tridactyl-hint-activy-outline: var(--base08); */
     --tridactyl-hint-bg: none;
     --tridactyl-hint-outline: none;
-    /* --tridactyl-hint-outline: var(--base08); */
 }
-
-/* a { */
-/*   color: var(--base04); */
-/* } */
 
 #command-line-holder {    order: 1;
     border: 2px solid var(--base0B);
@@ -49,7 +43,7 @@
 #tridactyl-input {    padding: 1rem;
     color: var(--tridactyl-fg);
     width: 90%;
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     line-height: 1.5;
     background: var(--tridactyl-bg);
     padding-left: unset;
@@ -89,7 +83,7 @@
 }
 
 #completions .HistoryCompletionSource table {    width: 100%;
-    font-size: 11pt;
+    font-size: 9pt;
     border-spacing: 0;
     table-layout: fixed;
 }

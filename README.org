@@ -41,3 +41,7 @@ Deployed with [[https://yadm.io/][yadm]]
 | misc      | [[https://yadm.io][yadm]]           | dotfiles manager               | *active*          | -           |                                                                            |
 | misc      | [[https://github.com/risacher/sunwait][sunwait]]        | sunrise calculator             | *active*          | -           |                                                                            |
 | misc      | [[https://github.com/vergoh/vnstat][vnstat]]         | traffic stats                  | *active*          | -           |                                                                            |
+
+
+* Misc
+Uses yadm's =post_alt= hook to create symlinks
