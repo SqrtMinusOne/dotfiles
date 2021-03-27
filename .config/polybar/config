@@ -67,24 +67,27 @@ scroll-down = i3wm-wsprev
 ; cursor-click = pointer
 ; cursor-scroll = ns-resize
 
-[module/test]
-type = custom/script
-exec = echo "%{u#0000ff}%{+u} hello %{u-}"
+[settings]
+screenchange-reload = true
+;compositing-background = xor
+;compositing-background = screen
+;compositing-foreground = source
+;compositing-border = over
+;pseudo-transparency = false
 
-[module/ipstack]
+[global/wm]
+margin-top = 0
+margin-bottom = 0
+
+[module/ipstack-vpn]
 type = custom/script
-exec = /home/pavel/bin/polybar/ipstack.sh
+exec = /home/pavel/bin/polybar/ipstack-vpn.sh
 interval = 1200
 
 [module/weather]
 type = custom/script
 exec = /home/pavel/bin/polybar/weather.sh
 format-underline = ${colors.red}
-interval = 1200
-
-[module/ipstack-vpn]
-type = custom/script
-exec = /home/pavel/bin/polybar/ipstack-vpn.sh
 interval = 1200
 
 [module/aw-afk]
@@ -146,9 +149,6 @@ label-urgent-background = ${colors.red}
 label-urgent-foreground = ${colors.black}
 label-urgent-padding = 1
 
-; Separator in between workspaces
-; label-separator = |
-
 [module/xkeyboard]
 type = internal/xkeyboard
 format = <label-layout>
@@ -174,7 +174,7 @@ format-playing-underline = ${colors.yellow}
 format-paused-underline = ${colors.yellow}
 format-stopped-underline = ${colors.yellow}
 
-label-separator = kek
+label-separator = 0
 separator-foreground = ${colors.red}
 
 icon-pause = 
@@ -217,7 +217,6 @@ format-muted-underline = ${colors.black-lighter}
 type = internal/cpu
 format =   <label>
 label = %percentage%%
-
 format-underline = ${colors.green-lighter}
 
 [module/ram-memory]
@@ -297,17 +296,3 @@ ramp-capacity-1 = 
 ramp-capacity-2 = 
 ramp-capacity-3 = 
 ramp-capacity-4 = 
-
-[settings]
-screenchange-reload = true
-;compositing-background = xor
-;compositing-background = screen
-;compositing-foreground = source
-;compositing-border = over
-;pseudo-transparency = false
-
-[global/wm]
-margin-top = 0
-margin-bottom = 0
-
-; vim:ft=dosini

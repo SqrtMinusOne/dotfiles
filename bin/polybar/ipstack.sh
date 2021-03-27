@@ -1,6 +1,6 @@
 #!/bin/bash
 ip=$(dig +short +timeout=1 myip.opendns.com @resolver1.opendns.com 2> /dev/null)
-API_KEY="8948d12cd68a3b7ac60d405ed4118b43"
+API_KEY="$(cat ~/secrets/ipstack-api-key)"
 if [[ -z $ip || $ip == *"timed out"* ]]; then
     echo "%{u#f07178}%{+u} ?? %{u-}"
     exit

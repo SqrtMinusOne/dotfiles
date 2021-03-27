@@ -1,4 +1,5 @@
-#/bin/sh
+#!/bin/bash
+# [[file:../../Desktop.org::*weather][weather:1]]
 bar_format="${BAR_FORMAT:-"%t"}"
 location="${LOCATION:-"Saint-Petersburg"}"
 format_1=${FORMAT_1:-"qF"}
@@ -13,3 +14,4 @@ elif [[ "$bar_weather" == *"Unknown"* || "$bar_weather" == *"Sorry"* || "$bar_we
 else
     echo ${bar_weather}
 fi
+# weather:1 ends here

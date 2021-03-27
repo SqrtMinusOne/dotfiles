@@ -1,5 +1,7 @@
 #!/bin/bash
+# [[file:../Desktop.org::*Launching][Launching:1]]
 hostname=$(hostname)
+# Settings varying on the hostname
 if [ "$hostname" = "pntk" ]; then
     TRAY_MONITOR="eDP1"
     export WLAN_INTERFACE="wlp3s0"
@@ -7,6 +9,8 @@ else
     TRAY_MONITOR="HDMI-A-0"
     export WLAN_INTERFACE="wlp35s0f3u2"
 fi
+
+# Setting varying on the monitor
 declare -A FONT_SIZES=(
     ["eDP1"]="13"
     ["DVI-D-0"]="11"
@@ -28,6 +32,7 @@ declare -A BLOCKS=(
     ["eDP1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
 )
 
+# Geolocation for some modules
 export LOC="SPB"
 
 pkill polybar
@@ -51,3 +56,4 @@ for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     export RIGHT_BLOCKS=${BLOCKS[$MONITOR]}
     polybar mybar &
 done
+# Launching:1 ends here

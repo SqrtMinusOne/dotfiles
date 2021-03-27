@@ -1,9 +1,10 @@
 #+TITLE: Desktop
 #+TODO: TODO(t) CHECK(s) | OFF(o)
 #+PROPERTY: header-args :mkdirp yes
-#+PROPERTY: header-args:conf-space :comments link
-#+PROPERTY: header-args:sh         :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
-#+PROPERTY: header-args:bash       :tangle-mode (identity #o755) :comments link :shebang "#!/bin/bash"
+#+PROPERTY: header-args:conf-space   :comments link
+#+PROPERTY: header-args:conf-windows :comments link
+#+PROPERTY: header-args:sh           :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
+#+PROPERTY: header-args:bash         :tangle-mode (identity #o755) :comments link :shebang "#!/bin/bash"
 
 My general desktop environment configuration.
 
@@ -533,4 +534,530 @@ exec kde-connect-indicator
 exec copyq
 exec "xmodmap ~/.Xmodmap"
 exec "bash ~/bin/autostart.sh"
+#+end_src
+* Polybar
+:PROPERTIES:
+:header-args+: :tangle ./.config/polybar/config
+:END:
+
+[[https://github.com/polybar/polybar][Polybar]] is a nice looking, WM-agnostic statusbar program.
+
+I switched to polybar because I wanted to try out some WMs other that i3, but decided to stick with i3 for now.
+
+References:
+- [[https://github.com/polybar/polybar/wiki][polybar docs]]
+** Launching
+The script below allows me to:
+- have different blocks on my two different-sized monitors and my laptop;
+- have different settings on my desktop PC and laptop;
+
+#+begin_src bash :tangle ./bin/polybar.sh
+hostname=$(hostname)
+# Settings varying on the hostname
+if [ "$hostname" = "pntk" ]; then
+    TRAY_MONITOR="eDP1"
+    export WLAN_INTERFACE="wlp3s0"
+else
+    TRAY_MONITOR="HDMI-A-0"
+    export WLAN_INTERFACE="wlp35s0f3u2"
+fi
+
+# Setting varying on the monitor
+declare -A FONT_SIZES=(
+    ["eDP1"]="13"
+    ["DVI-D-0"]="11"
+    ["HDMI-A-0"]="13"
+)
+declare -A EMOJI_SCALE=(
+    ["eDP1"]="9"
+    ["DVI-D-0"]="10"
+    ["HDMI-A-0"]="10"
+)
+declare -A BAR_HEIGHT=(
+    ["eDP1"]="29"
+    ["DVI-D-0"]="23"
+    ["HDMI-A-0"]="29"
+)
+declare -A BLOCKS=(
+    ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
+    ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
+    ["eDP1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
+)
+
+# Geolocation for some modules
+export LOC="SPB"
+
+pkill polybar
+for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
+    export MONITOR=$m
+    if [ "$MONITOR" = "$TRAY_MONITOR" ]; then
+        export TRAY="right"
+    else
+        export TRAY="none"
+    fi
+    SIZE=${FONT_SIZES[$MONITOR]}
+    SCALE=${EMOJI_SCALE[$MONITOR]}
+    if [[ -z "$SCALE" ]]; then
+        continue
+    fi
+    export FONT0="pango:monospace:size=$SIZE;1"
+    export FONT1="NotoEmoji:scale=$SCALE:antialias=false;1"
+    export FONT2="fontawesome:pixelsize=$SIZE;1"
+    export FONT3="JetBrains Mono Nerd Font:monospace:size=$SIZE;1"
+    export HEIGHT=${BAR_HEIGHT[$MONITOR]}
+    export RIGHT_BLOCKS=${BLOCKS[$MONITOR]}
+    polybar mybar &
+done
+#+end_src
+** General settings
+*** Colors
+#+begin_src conf-windows
+[colors]
+; Palenight colorscheme https://github.com/JonathanSpeek/palenight-iterm2
+black = #292d3e
+red = #f07178
+green = #c3e88d
+yellow = #ffcb6b
+blue = #82aaff
+magenta = #c792ea
+cyan = #89ddff
+white = #d0d0d0
+
+black-lighter = #434758
+red-lighter = #ff8b92
+green-lighter = #ddffa7
+yellow-lighter = #ffe585
+blue-lighter = #9cc4ff
+magenta-lighter = #9cc4ff
+cyan-lighter = #9cc4ff
+white-lighter = ffffff
+
+background = ${colors.black}
+; background = #ee292d3e
+foreground = ${colors.white}
+#+end_src
+*** Bar config
+#+begin_src conf-windows
+[bar/mybar]
+monitor = ${env:MONITOR:}
+width = 100%
+height = ${env:HEIGHT:27}
+offset-x = 0
+offset-y = 0
+radius = 0.0
+fixed-center = false
+bottom=true
+
+background = ${colors.background}
+foreground = ${colors.foreground}
+
+line-size = 3
+line-color = #f00
+
+padding-left = 0
+padding-right = 0
+
+module-margin-left = 1
+module-margin-right = 1
+
+font-0 = ${env:FONT0:pango:monospace:size=10;1}
+font-1 = ${env:FONT1:NotoEmoji:scale=10:antialias=false;0}
+font-2 = ${env:FONT2:fontawesome:pixelsize=10;1}
+font-3 = ${env:FONT3:JetBrains Mono Nerd Font:monospace:size=10;1}
+
+modules-left = i3
+; modules-center = test
+modules-right = ${env:RIGHT_BLOCKS}
+
+tray-position = ${env:TRAY:right}
+tray-padding = 0
+tray-maxsize = 16
+;tray-background = #0063ff
+
+wm-restack = i3
+; override-redirect = true
+
+scroll-up = i3wm-wsnext
+scroll-down = i3wm-wsprev
+
+; cursor-click = pointer
+; cursor-scroll = ns-resize
+
+[settings]
+screenchange-reload = true
+;compositing-background = xor
+;compositing-background = screen
+;compositing-foreground = source
+;compositing-border = over
+;pseudo-transparency = false
+
+[global/wm]
+margin-top = 0
+margin-bottom = 0
+#+end_src
+** Modules
+*** ipstack-vpn
+A module to get a country of the current IP and openvpn status. Uses [[https://ipstack.com/][ipstack]] API.
+
+#+begin_src bash :tangle ./bin/polybar/ipstack-vpn.sh
+ip=$(dig +short +timeout=1 myip.opendns.com @resolver1.opendns.com 2> /dev/null)
+API_KEY="$(cat ~/secrets/ipstack-api-key)"
+if [[ -z $ip || $ip == *"timed out"* ]]; then
+    echo "%{u#f07178}%{+u} ?? %{u-}"
+    exit
+fi
+ip_info=$(curl -s http://api.ipstack.com/${ip}?access_key=${API_KEY})
+# emoji=$(echo $ip_info | jq -r '.location.country_flag_emoji')
+code=$(echo $ip_info | jq -r '.country_code')
+vpn=$(pgrep -a openvpn$ | head -n 1 | awk '{print $NF }' | cut -d '.' -f 1)
+
+if [ -n "$vpn" ]; then
+    echo "%{u#9cc4ff}%{+u}  $code %{u-}"
+else
+    echo "%{u#f07178}%{+u}  $code %{u-}"
+fi
+#+end_src
+
+#+begin_src conf-windows
+[module/ipstack-vpn]
+type = custom/script
+exec = /home/pavel/bin/polybar/ipstack-vpn.sh
+interval = 1200
+#+end_src
+*** weather
+Gets current weather from [[http://wttr.in/][wttr.in]]
+#+begin_src bash :tangle ./bin/polybar/weather.sh
+bar_format="${BAR_FORMAT:-"%t"}"
+location="${LOCATION:-"Saint-Petersburg"}"
+format_1=${FORMAT_1:-"qF"}
+format_2=${FORMAT_1:-"format=v2n"}
+
+bar_weather=$(curl -s wttr.in/${location}?format=${bar_format} || echo "??")
+if [ -z "$bar_weather" ]; then
+    exit 1
+elif [[ "$bar_weather" == *"Unknown"* || "$bar_weather" == *"Sorry"* || "$bar_weather" == *"Bad Gateway"* ]]; then
+    echo "??"
+    exit 1
+else
+    echo ${bar_weather}
+fi
+#+end_src
+
+#+begin_src conf-windows
+[module/weather]
+type = custom/script
+exec = /home/pavel/bin/polybar/weather.sh
+format-underline = ${colors.red}
+interval = 1200
+#+end_src
+*** aw-afk
+Prints out a current uptime and non-AFK time from [[https://github.com/ActivityWatch][ActivityWatch]] server
+
+| Type | Note                      |
+|------+---------------------------|
+| TODO | Fix crash on uptime > 99h |
+
+#+begin_src bash :tangle ./bin/polybar/aw_afk.sh
+afk_event=$(curl -s -X GET "http://localhost:5600/api/0/buckets/aw-watcher-afk_$(hostname)/events?limit=1" -H "accept: application/json")
+status=$(echo ${afk_event} | jq -r '.[0].data.status')
+afk_time=$(echo "${afk_event}" | jq -r '.[0].duration' | xargs -I !  date -u -d @! +"%H:%M")
+
+uptime=$(datediff "$(uptime -s | xargs -I ! date -d ! -Iseconds)" "$(date -Iseconds)" -f '%H:%M' | xargs -I ! date -d ! +"%H:%M")
+res="${afk_time} / ${uptime}"
+if [[ $status == 'afk' ]]; then
+    echo "%{u#f07178}%{+u} [AFK] $res %{u-}"
+else
+    echo "%{u#82aaff}%{+u} $res %{u-}"
+fi
+#+end_src
+
+#+begin_src conf-windows
+[module/aw-afk]
+type = custom/script
+exec = /home/pavel/bin/polybar/aw_afk.sh
+interval = 60
+#+end_src
+*** sun
+Prints out the time of sunrise/sunset. Uses [[https://github.com/risacher/sunwait][sunwait]]
+
+#+begin_src bash :tangle ./bin/polybar/sun.sh
+declare -A LAT_DATA=(
+    ["TMN"]="57.15N"
+    ["SPB"]="59.9375N"
+)
+declare -A LON_DATA=(
+    ["TMN"]="65.533333E"
+    ["SPB"]="30.308611E"
+)
+if [ -z "$LOC" ]; then
+    echo "LOC?"
+    exit -1
+fi
+LAT=${LAT_DATA[$LOC]}
+LON=${LON_DATA[$LOC]}
+
+time=$(sunwait poll daylight rise ${LAT} $LON)
+
+if [[ ${time} == 'DAY' ]]; then
+    sunset=$(sunwait list daylight set ${LAT} ${LON})
+    echo "%{u#ffcb6b}%{+u} $sunset %{u-}"
+else
+    sunrise=$(sunwait list daylight rise ${LAT} ${LON})
+    echo "%{u#f07178}%{+u} $sunrise %{u-}"
+fi
+#+end_src
+
+#+begin_src conf-windows
+[module/sun]
+type = custom/script
+exec = /home/pavel/bin/polybar/sun.sh
+interval = 60
+#+end_src
+*** SEP
+A simple separator
+#+begin_src conf-windows
+[module/SEP]
+type = custom/text
+content = "|"
+content-foreground = ${colors.magenta}
+content-padding = 0
+content-margin = 0
+interval = 0
+#+end_src
+*** TSEP
+A separator, which appears only if monitor is set to have a tray in the launch script
+#+begin_src bash :tangle ./bin/polybar/tray-sep.sh
+if [ ! -z "$TRAY" ] && [ "$TRAY" != "none" ]; then
+    echo "| "
+fi
+#+end_src
+
+#+begin_src conf-windows
+[module/TSEP]
+type = custom/script
+exec = /home/pavel/bin/polybar/tray-sep.sh
+format-foreground = ${colors.magenta}
+interval = 0
+#+end_src
+
+*** i3
+Show i3wm workspaces
+#+begin_src conf-windows
+[module/i3]
+type = internal/i3
+format = <label-state> <label-mode>
+index-sort = true
+wrapping-scroll = false
+
+; Only show workspaces on the same output as the bar
+pin-workspaces = true
+
+label-mode-padding = 1
+label-mode-foreground = #000
+label-mode-background = ${colors.blue}
+
+; focused = Active workspace on focused monitor
+label-focused = %name%
+; label-focused-background = ${colors.background-alt}
+label-focused-underline= ${colors.blue}
+label-focused-padding = 1
+
+; unfocused = Inactive workspace on any monitor
+label-unfocused = %name%
+label-unfocused-padding = 1
+
+; visible = Active workspace on unfocused monitor
+label-visible = %name%
+; label-visible-background = ${self.label-focused-background}
+label-visible-underline = ${self.label-focused-underline}
+label-visible-padding = ${self.label-focused-padding}
+
+; urgent = Workspace with urgency hint set
+label-urgent = %name%
+label-urgent-background = ${colors.red}
+label-urgent-foreground = ${colors.black}
+label-urgent-padding = 1
+#+end_src
+
+*** xkeyboard
+Current keyboard layout
+#+begin_src conf-windows
+[module/xkeyboard]
+type = internal/xkeyboard
+format = <label-layout>
+
+format-underline = ${colors.magenta}
+label-layout = %icon%
+layout-icon-0 = ru;RU
+layout-icon-1 = us;US
+#+end_src
+
+*** mpd
+[[https://www.musicpd.org/][Music Player Daemon]] status
+#+begin_src conf-windows
+[module/mpd]
+type = internal/mpd
+
+format-playing = <toggle> <label-time> <label-song>
+format-paused = <toggle> <label-time> <label-song>
+format-stopped = 
+label-song = [%album-artist%] %title%
+label-time = %elapsed%/%total%
+
+label-song-maxlen = 30
+label-song-ellipsis = true
+
+format-playing-underline = ${colors.yellow}
+format-paused-underline = ${colors.yellow}
+format-stopped-underline = ${colors.yellow}
+
+label-separator = 0
+separator-foreground = ${colors.red}
+
+icon-pause = 
+icon-play = 
+icon-stop = 
+icon-prev = 1
+icon-next = 2
+#+end_src
+
+*** pulseaudio
+PulseAudio status
+#+begin_src conf-windows
+[module/pulseaudio]
+type = internal/pulseaudio
+use-ui-max = true
+
+bar-volume-width = 7
+bar-volume-foreground-0 = ${colors.white}
+bar-volume-foreground-1 = ${colors.yellow}
+bar-volume-foreground-2 = ${colors.yellow}
+bar-volume-foreground-3 = ${colors.blue}
+bar-volume-foreground-4 = ${colors.blue}
+bar-volume-foreground-5 = ${colors.green}
+bar-volume-foreground-6 = ${colors.green}
+bar-volume-gradient = false
+bar-volume-indicator = |
+bar-volume-indicator-font = 2
+bar-volume-fill = ─
+bar-volume-fill-font = 2
+bar-volume-empty = ─
+bar-volume-empty-font = 2
+bar-volume-empty-foreground = ${colors.white-lighter}
+
+format-volume = ♪ <bar-volume> <label-volume>
+label-volume = %percentage%%
+
+format-mute = ♪ <label-muted>
+label-muted = MUTE
+
+format-volume-underline = ${colors.white}
+format-muted-underline = ${colors.black-lighter}
+#+end_src
+
+*** cpu
+CPU usage
+#+begin_src conf-windows
+[module/cpu]
+type = internal/cpu
+format =   <label>
+label = %percentage%%
+format-underline = ${colors.green-lighter}
+#+end_src
+
+*** ram-memory
+RAM usage
+#+begin_src conf-windows
+[module/ram-memory]
+type = internal/memory
+interval = 10
+
+ramp-used-0 = ▁
+ramp-used-1 = ▂
+ramp-used-2 = ▃
+ramp-used-3 = ▄
+ramp-used-4 = ▅
+ramp-used-5 = ▆
+ramp-used-6 = ▇
+ramp-used-7 = █
+
+format =  <label>
+label=%gb_used:.1f%
+
+format-underline = ${colors.blue}
+#+end_src
+
+*** swap-memory
+Swap usage
+#+begin_src conf-windows
+[module/swap-memory]
+type = internal/memory
+interval = 10
+
+label= %gb_swap_used:.1f%
+format-underline = ${colors.yellow}
+#+end_src
+
+*** network
+Upload/download speed
+#+begin_src conf-windows
+[module/network]
+type = internal/network
+interval = 1
+
+interface = ${env:WLAN_INTERFACE}
+
+; format-connected = [<ramp-signal>] <label-connected>
+
+label-connected = ↓ %downspeed% ↑ %upspeed%
+label-disconnected = X
+
+format-connected-underline = ${colors.green}
+format-disconnected-underline = ${colors.red}
+
+ramp-signal-0 = 0
+ramp-signal-1 = 1
+ramp-signal-2 = 2
+ramp-signal-3 = 3
+ramp-signal-4 = 4	
+ramp-signal-5 = 5
+#+end_src
+
+*** date
+Current date
+#+begin_src conf-windows
+[module/date]
+type = internal/date
+interval = 5
+
+date =
+date-alt = "%Y-%m-%d"
+
+time = %H:%M
+time-alt = %H:%M:%S
+
+format-underline = ${colors.cyan}
+label = "%date% %time%"
+#+end_src
+
+*** battery
+#+begin_src conf-windows
+[module/battery]
+type = internal/battery
+battery = BAT0
+adapter = ADP0
+
+time-format = %H:%M
+format-discharging = <ramp-capacity> <label-discharging>
+format-discharging-underline = ${colors.cyan}
+format-charging-underline = ${colors.yellow}
+format-full-underline = ${colors.green}
+label-discharging = %percentage%% %time%
+label-charging =  %percentage%% %time%
+
+ramp-capacity-0 = 
+ramp-capacity-1 = 
+ramp-capacity-2 = 
+ramp-capacity-3 = 
+ramp-capacity-4 = 
 #+end_src
