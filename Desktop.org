@@ -1,8 +1,9 @@
 #+TITLE: Desktop
 #+TODO: TODO(t) CHECK(s) | OFF(o)
 #+PROPERTY: header-args :mkdirp yes
-#+PROPERTY: header-args:sh   :tangle-mode (identity #o755)
-#+PROPERTY: header-args:bash   :tangle-mode (identity #o755)
+#+PROPERTY: header-args:conf-space :comments link
+#+PROPERTY: header-args:sh         :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
+#+PROPERTY: header-args:bash       :tangle-mode (identity #o755) :comments link :shebang "#!/bin/bash"
 
 My general desktop environment configuration.
 
@@ -201,7 +202,6 @@ First of all, we have to distinguish scratchpad terminal from a normal one. To d
 
 Then, it would be cool not to duplicate scratchpads, so the following script first looks for a window with a created classname. If it exists, the script just toggles the scratchpad visibilty. Otherwise, a new instance of a window is created.
 #+begin_src bash :tangle ./bin/scripts/dropdown
-#!/bin/bash
 CLASSNAME="dropdown_tmux"
 COMMAND="st -n $CLASSNAME -e tmux new-session -s $CLASSNAME"
 pid=$(xdotool search --classname "dropdown_tmux")
@@ -477,14 +477,12 @@ bar {
 ** Keyboard Layout
 A script to set Russian-English keyboard layout:
 #+begin_src bash :tangle ./bin/scripts/set_layout
-#!/bin/bash
 setxkbmap -layout us,ru
 setxkbmap -model pc105 -option 'grp:win_space_toggle' -option 'grp:alt_shift_toggle'
 #+end_src
 
 A script to toggle the layout
 #+begin_src bash :tangle ./bin/scripts/toggle_layout
-#!/bin/bash
 if setxkbmap -query | grep -q us,ru; then
     setxkbmap -layout us
     setxkbmap -option

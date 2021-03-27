@@ -1,3 +1,5 @@
 #!/bin/bash
+# [[file:../../Desktop.org::*Keyboard Layout][Keyboard Layout:1]]
 setxkbmap -layout us,ru
 setxkbmap -model pc105 -option 'grp:win_space_toggle' -option 'grp:alt_shift_toggle'
+# Keyboard Layout:1 ends here

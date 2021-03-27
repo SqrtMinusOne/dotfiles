@@ -1,4 +1,5 @@
 #!/bin/bash
+# [[file:../../Desktop.org::*Keyboard Layout][Keyboard Layout:2]]
 if setxkbmap -query | grep -q us,ru; then
     setxkbmap -layout us
     setxkbmap -option
@@ -6,3 +7,4 @@ else
     setxkbmap -layout us,ru
     setxkbmap -model pc105 -option 'grp:win_space_toggle' -option 'grp:alt_shift_toggle'
 fi
+# Keyboard Layout:2 ends here

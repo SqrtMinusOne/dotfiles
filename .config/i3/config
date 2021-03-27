@@ -1,3 +1,4 @@
+# [[file:../../Desktop.org::*General settings][General settings:1]]
 set $mod Mod4
 font pango:monospace 10
 
@@ -20,7 +21,9 @@ bindsym $mod+Shift+r restart
 
 # exit i3 (logs you out of your X session)
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
+# General settings:1 ends here
 
+# [[file:../../Desktop.org::*Managing windows][Managing windows:1]]
 # kill focused window
 bindsym $mod+Shift+q kill
 
@@ -76,7 +79,9 @@ bindsym $mod+a focus parent
 
 # focus the child container
 bindsym $mod+Shift+A focus child
+# Managing windows:1 ends here
 
+# [[file:../../Desktop.org::*Workspaces][Workspaces:1]]
 set $w1 "1 🚀"
 set $w2 "2 🌍"
 set $w3 "3 💬"
@@ -112,7 +117,9 @@ bindsym $mod+Shift+0 move container to workspace $w10
 # Cycle workspaces
 bindsym $mod+comma workspace prev
 bindsym $mod+period workspace next
+# Workspaces:1 ends here
 
+# [[file:../../Desktop.org::*Rules][Rules:1]]
 assign [class="Emacs"] $w1
 assign [class="qutebrowser"] $w2
 assign [class="firefox"] $w2
@@ -141,7 +148,9 @@ for_window [title="newsboat.*"] move to workspace $w9
 for_window [title=".*run_wego"] move to workspace $w9
 for_window [class="cinnamon-settings*"] floating enable
 for_window [title="Picture-in-Picture"] sticky enable
+# Rules:1 ends here
 
+# [[file:../../Desktop.org::*i3 config][i3 config:1]]
 # Scratchpad
 for_window [instance="dropdown_*"] floating enable
 for_window [instance="dropdown_*"] move scratchpad
@@ -150,7 +159,9 @@ for_window [instance="dropdown_*"] scratchpad show
 for_window [instance="dropdown_*"] move position center
 
 bindsym $mod+u exec ~/bin/scripts/dropdown
+# i3 config:1 ends here
 
+# [[file:../../Desktop.org::*Gaps & borders][Gaps & borders:1]]
 # Borders
 # for_window [class=".*"] border pixel 0
 default_border pixel 3
@@ -164,7 +175,9 @@ gaps inner $default_inner
 gaps outer $default_outer
 
 smart_gaps on
+# Gaps & borders:1 ends here
 
+# [[file:../../Desktop.org::*Keybindings][Keybindings:1]]
 mode "inner gaps" {
     bindsym plus gaps inner current plus 5
     bindsym minus gaps inner current minus 5
@@ -197,7 +210,9 @@ mode "outer gaps" {
 
 bindsym $mod+g mode "inner gaps"
 bindsym $mod+Shift+g mode "outer gaps"
+# Keybindings:1 ends here
 
+# [[file:../../Desktop.org::*Move & resize windows][Move & resize windows:1]]
 # resize window (you can also use the mouse for that)
 mode "resize" {
     # These bindings trigger as soon as you enter the resize mode
@@ -249,7 +264,9 @@ mode "move" {
 }
 
 bindsym $mod+m mode "move" focus floating
+# Move & resize windows:1 ends here
 
+# [[file:../../Desktop.org::*Integration with rofi][Integration with rofi:1]]
 bindsym $mod+d exec "rofi -modi 'drun,run' -show drun"
 bindsym $mod+b exec --no-startup-id rofi-buku-mine
 
@@ -262,7 +279,9 @@ mode "rofi" {
     bindsym k exec rofi-keepassxc -d ~/MEGAsync/Passwords.kdbx; mode default
     bindsym Escape mode "default"
 }
+# Integration with rofi:1 ends here
 
+# [[file:../../Desktop.org::*Apps][Apps:1]]
 # Launch apps
 # start a terminal at workspace 1
 bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec st'"
@@ -287,7 +306,9 @@ mode "apps" {
     # bindsym a exec emacsclient -c; mode default
     # bindsym Shift+a exec emacs; mode default
 }
+# Apps:1 ends here
 
+# [[file:../../Desktop.org::*Media controls & brightness][Media controls & brightness:1]]
 # Pulse Audio controls
 bindsym XF86AudioRaiseVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ +5%"
 bindsym XF86AudioLowerVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ -5%"
@@ -302,11 +323,15 @@ bindsym XF86AudioPrev exec mpc prev
 # Screen brightness
 bindsym XF86MonBrightnessUp exec xbacklight -inc 5
 bindsym XF86MonBrightnessDown exec xbacklight -dec 5
+# Media controls & brightness:1 ends here
 
+# [[file:../../Desktop.org::*Screenshots][Screenshots:1]]
 # Screenshots
 bindsym --release Print exec "flameshot gui"
 bindsym --release Shift+Print exec "xfce4-screenshooter"
+# Screenshots:1 ends here
 
+# [[file:../../Desktop.org::*Colors][Colors:1]]
 # Colors
 set $bg-color 	         #292d3e
 set $active-color        #82aaff
@@ -322,11 +347,15 @@ client.focused          $active-color       $bg-color          $text-color      
 client.unfocused        $bg-color           $inactive-bg-color $inactive-text-color $bg-color       $bg-color
 client.focused_inactive $active-color  $inactive-bg-color $inactive-text-color $bg-color       $bg-color
 client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-color   $bg-color       $urgent-bg-color
+# Colors:1 ends here
 
+# [[file:../../Desktop.org::*Keyboard Layout][Keyboard Layout:3]]
 # Layout
 exec_always --no-startup-id set_layout
 bindsym $mod+slash exec toggle_layout
+# Keyboard Layout:3 ends here
 
+# [[file:../../Desktop.org::*Autostart][Autostart:1]]
 # Polybar
 exec_always --no-startup-id "bash /home/pavel/bin/polybar.sh"
 
@@ -360,3 +389,4 @@ exec kde-connect-indicator
 exec copyq
 exec "xmodmap ~/.Xmodmap"
 exec "bash ~/bin/autostart.sh"
+# Autostart:1 ends here
