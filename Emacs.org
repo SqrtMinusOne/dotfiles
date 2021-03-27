@@ -110,21 +110,6 @@ One day we won't hate one another, no young boy will march to war and I will cle
   :straight t)
 #+end_src
 ** My keybindings
-*** Open config
-#+begin_src emacs-lisp
-(defun my/edit-configuration ()
-  "Open the init file."
-  (interactive)
-  (find-file "~/Emacs.org"))
-  
-;; (defun my/edit-exwm-configuration ()
-;;   "Open the exwm config file."
-;;   (interactive)
-;;   (find-file "~/.emacs.d/exwm.org"))
-  
-(general-define-key "C-c c" 'my/edit-configuration)
-;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
-#+end_src
 *** Editing
 #+begin_src emacs-lisp
 (general-def :states '(normal insert visual)
@@ -1126,6 +1111,38 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
 (add-hook 'org-mode-hook (lambda () (rainbow-delimiters-mode 0)))
+#+end_src
+* Managing dotfiles
+** Open Emacs config
+#+begin_src emacs-lisp
+(defun my/edit-configuration ()
+  "Open the init file."
+  (interactive)
+  (find-file "~/Emacs.org"))
+  
+;; (defun my/edit-exwm-configuration ()
+;;   "Open the exwm config file."
+;;   (interactive)
+;;   (find-file "~/.emacs.d/exwm.org"))
+  
+(general-define-key "C-c c" 'my/edit-configuration)
+;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
+#+end_src
+** Open dotfile
+Open a file managed by yadm
+#+begin_src emacs-lisp
+(defun my/open-yadm-file ()
+  "Open a file managed by yadm"
+  (interactive)
+  (find-file
+   (concat
+    (file-name-as-directory (getenv "HOME"))
+    (completing-read
+     "yadm files: "
+     (split-string
+      (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
+
+(general-define-key "C-c f" 'my/open-yadm-file)
 #+end_src
 * UI & UX
 ** GUI Settings

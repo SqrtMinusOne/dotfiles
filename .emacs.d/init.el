@@ -70,19 +70,6 @@
                       :weight 'bold)
   :straight t)
 
-(defun my/edit-configuration ()
-  "Open the init file."
-  (interactive)
-  (find-file "~/Emacs.org"))
-  
-;; (defun my/edit-exwm-configuration ()
-;;   "Open the exwm config file."
-;;   (interactive)
-;;   (find-file "~/.emacs.d/exwm.org"))
-  
-(general-define-key "C-c c" 'my/edit-configuration)
-;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
-
 (general-def :states '(normal insert visual)
   "<home>" 'beginning-of-line
   "<end>" 'end-of-line)
@@ -873,6 +860,32 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
 (add-hook 'org-mode-hook (lambda () (rainbow-delimiters-mode 0)))
+
+(defun my/edit-configuration ()
+  "Open the init file."
+  (interactive)
+  (find-file "~/Emacs.org"))
+  
+;; (defun my/edit-exwm-configuration ()
+;;   "Open the exwm config file."
+;;   (interactive)
+;;   (find-file "~/.emacs.d/exwm.org"))
+  
+(general-define-key "C-c c" 'my/edit-configuration)
+;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
+
+(defun my/open-yadm-file ()
+  "Open a file managed by yadm"
+  (interactive)
+  (find-file
+   (concat
+    (file-name-as-directory (getenv "HOME"))
+    (completing-read
+     "yadm files: "
+     (split-string
+      (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
+
+(general-define-key "C-c f" 'my/open-yadm-file)
 
 ;; Disable GUI elements
 (tool-bar-mode -1)
