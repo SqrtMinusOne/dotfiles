@@ -73,7 +73,7 @@
 (defun my/edit-configuration ()
   "Open the init file."
   (interactive)
-  (find-file "~/.emacs.d/emacs.org"))
+  (find-file "~/Emacs.org"))
   
 ;; (defun my/edit-exwm-configuration ()
 ;;   "Open the exwm config file."
@@ -745,7 +745,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'org-src-mode-hook
           (lambda ()
-            (hs-minor-mode 0)))
+            (hs-minor-mode 0)
+            (highlight-indent-guides-mode 0)))
 
 (use-package ob-async
   :straight t
@@ -820,6 +821,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :after (org)
   :config
   (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
+
+(if (not my/lowpower)
+    (setq org-agenda-category-icon-alist
+          `(
+            ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
+            ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
+            ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
+            ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
+            ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
+            ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
+            ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
 
 (use-package hide-mode-line
   :straight t)

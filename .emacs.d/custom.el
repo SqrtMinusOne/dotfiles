@@ -26,7 +26,7 @@
      (:name "drafts" :query "tag:draft")))
  '(notmuch-search-oldest-first nil)
  '(org-agenda-files
-   '("~/Documents/org-mode/ETU/sem-10.org" "~/Documents/org-mode/ETU/r&d.org" "~/Documents/org-mode/Personal/misc.org" "~/Documents/org-mode/Job/dig-traject.org" "~/Documents/org-mode/Personal/look-forward.org" "~/Documents/org-mode/ETU/sem-9.org"))
+   '("~/Documents/org-mode/Personal/life-4.org" "~/Documents/org-mode/ETU/sem-10.org" "~/Documents/org-mode/ETU/r&d.org" "~/Documents/org-mode/Job/dig-traject.org"))
  '(org-edit-src-content-indentation 0)
  '(send-mail-function 'smtpmail-send-it)
  '(sgml-basic-offset 2)
