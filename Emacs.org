@@ -3,6 +3,8 @@
 
 Watch out for the GitHub org renderer, it does not show =:tangle no=
 
+One day we won't hate one another, no young boy will march to war and I will clean up my Emacs config. But that day isn't today.
+
 * Primary setup
 ** Measure startup speed
 #+begin_src emacs-lisp
