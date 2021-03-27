@@ -1,3 +1,41 @@
+#+TITLE: Desktop
+#+TODO: TODO(t) CHECK(s) | OFF(o)
+#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args:sh   :tangle-mode (identity #o755)
+#+PROPERTY: header-args:bash   :tangle-mode (identity #o755)
+
+My general desktop environment configuration.
+
+Parts prefexed with [OFF] are not used, but kept for historic purposes. For some reason GitHub's org renderer ignores TODO status, hence such a prefix.
+
+Most of the colors are from the Palenight theme. Colorcodes are taken from [[https://github.com/JonathanSpeek/palenight-iterm2][this repo]]:
+
+| Color   | Default | Lighter |
+|---------+---------+---------|
+| Black   | #292d3e | #434758 |
+| Red     | #f07178 | #ff8b92 |
+| Green   | #c3e88d | #ddffa7 |
+| Yellow  | #ffcb6b | #ffe585 |
+| Blue    | #82aaff | #9cc4ff |
+| Magenta | #c792ea | #e1acff |
+| Cyan    | #89ddff | #a3f7ff |
+| White   | #d0d0d0 | #ffffff |
+
+* i3wm
+:PROPERTIES:
+:header-args+: :tangle ./.config/i3/config
+:END:
+
+[[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], but i3 seems to fit my workflow best.
+
+[[https://github.com/Airblader/i3][i3-gaps]] is a i3 fork with a few features like window gaps. I like to enable inner gaps when there is at least one container in a workspace.
+
+References:
+- [[https://i3wm.org/docs/][i3wm docs]]
+- [[https://github.com/Airblader/i3/wiki][i3-gaps wiki]]
+
+** General settings
+#+begin_src conf-space
 set $mod Mod4
 font pango:monospace 10
 
@@ -20,7 +58,9 @@ bindsym $mod+Shift+r restart
 
 # exit i3 (logs you out of your X session)
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
-
+#+end_src
+** Managing windows
+#+begin_src conf-space
 # kill focused window
 bindsym $mod+Shift+q kill
 
@@ -76,7 +116,10 @@ bindsym $mod+a focus parent
 
 # focus the child container
 bindsym $mod+Shift+A focus child
+#+end_src
 
+** Workspaces
+#+begin_src conf-space
 set $w1 "1 🚀"
 set $w2 "2 🌍"
 set $w3 "3 💬"
@@ -112,7 +155,16 @@ bindsym $mod+Shift+0 move container to workspace $w10
 # Cycle workspaces
 bindsym $mod+comma workspace prev
 bindsym $mod+period workspace next
+#+end_src
 
+** Rules
+Rules to automatically assign applications to workspaces and do other stuff, like enable floating.
+
+Most apps can be distinguished by a WM class (you can get one with [[https://www.x.org/releases/X11R7.5/doc/man/man1/xprop.1.html][xprop]]), but in some cases it doesn't work, e.g. for terminal applications. In that case rules can be based on a window title, for instance.
+
+However, watch out for the following: rule such as ~for_window [title="ncmpcpp.*"] move to workspace $w9~ will move *any* windows with a title, starting with =ncmpcpp= to workspace =$w9=, which, for instance, may move your browser there if you google "ncmpcpp".
+
+#+begin_src conf-space
 assign [class="Emacs"] $w1
 assign [class="qutebrowser"] $w2
 assign [class="firefox"] $w2
@@ -141,7 +193,26 @@ for_window [title="newsboat.*"] move to workspace $w9
 for_window [title=".*run_wego"] move to workspace $w9
 for_window [class="cinnamon-settings*"] floating enable
 for_window [title="Picture-in-Picture"] sticky enable
+#+end_src
+** Scratchpad
+Scratch terminal, inspired by [[https://www.youtube.com/watch?v=q-l7DnDbiiU][this Luke Smith's video]].
+*** Launch script
+First of all, we have to distinguish scratchpad terminal from a normal one. To do that, one can create st with a required classname.
 
+Then, it would be cool not to duplicate scratchpads, so the following script first looks for a window with a created classname. If it exists, the script just toggles the scratchpad visibilty. Otherwise, a new instance of a window is created.
+#+begin_src bash :tangle ./bin/scripts/dropdown
+#!/bin/bash
+CLASSNAME="dropdown_tmux"
+COMMAND="st -n $CLASSNAME -e tmux new-session -s $CLASSNAME"
+pid=$(xdotool search --classname "dropdown_tmux")
+if [[ ! -z $pid  ]]; then
+    i3-msg scratchpad show
+else
+    setsid -f ${COMMAND}
+fi
+#+end_src
+*** i3 config
+#+begin_src conf-space
 # Scratchpad
 for_window [instance="dropdown_*"] floating enable
 for_window [instance="dropdown_*"] move scratchpad
@@ -150,7 +221,10 @@ for_window [instance="dropdown_*"] scratchpad show
 for_window [instance="dropdown_*"] move position center
 
 bindsym $mod+u exec ~/bin/scripts/dropdown
-
+#+end_src
+** Gaps & borders
+The main reason to use i3-gaps
+#+begin_src conf-space
 # Borders
 # for_window [class=".*"] border pixel 0
 default_border pixel 3
@@ -164,7 +238,9 @@ gaps inner $default_inner
 gaps outer $default_outer
 
 smart_gaps on
-
+#+end_src
+*** Keybindings
+#+begin_src conf-space
 mode "inner gaps" {
     bindsym plus gaps inner current plus 5
     bindsym minus gaps inner current minus 5
@@ -197,7 +273,12 @@ mode "outer gaps" {
 
 bindsym $mod+g mode "inner gaps"
 bindsym $mod+Shift+g mode "outer gaps"
+#+end_src
+** Move & resize windows
+More or less standard set of keybindings to move & resize floating windows.
 
+Just be careful to always make a way to return from these new modes, otherwise you'd end up in a rather precarious position.
+#+begin_src conf-space
 # resize window (you can also use the mouse for that)
 mode "resize" {
     # These bindings trigger as soon as you enter the resize mode
@@ -249,7 +330,31 @@ mode "move" {
 }
 
 bindsym $mod+m mode "move" focus floating
+#+end_src
+** OFF [OFF] Intergration with dmenu
+[[https://tools.suckless.org/dmenu/][dmenu]] is a dynamic menu program for X. I've opted out of using in favour of rofi, but here is a relevant bit of config.
 
+Scripts are located in the =bin/scripts= folder.
+#+begin_src conf-space :tangle no
+# dmenu
+bindsym $mod+d exec i3-dmenu-desktop --dmenu="dmenu -l 10"
+bindsym $mod+apostrophe mode "dmenu"
+
+mode "dmenu" {
+    bindsym d exec i3-dmenu-desktop --dmenu="dmenu -l 10"; mode default
+    bindsym p exec dmenu_run -l 10; mode default
+    bindsym m exec dmenu-man; mode default
+    bindsym b exec dmenu-buku; mode default
+    bindsym f exec dmenu-explore; mode default
+    bindsym t exec dmenu-tmuxp; mode default
+    bindsym Escape mode "default"
+}
+
+bindsym $mod+b exec --no-startup-id dmenu-buku
+#+end_src
+** Integration with rofi
+Keybindings to launch [[https://github.com/davatorium/rofi][rofi]]. For more detail, look the [[*Rofi]] section.
+#+begin_src conf-space
 bindsym $mod+d exec "rofi -modi 'drun,run' -show drun"
 bindsym $mod+b exec --no-startup-id rofi-buku-mine
 
@@ -262,7 +367,11 @@ mode "rofi" {
     bindsym k exec rofi-keepassxc -d ~/MEGAsync/Passwords.kdbx; mode default
     bindsym Escape mode "default"
 }
-
+#+end_src
+** Launching apps & misc keybindings
+I prefer to use a separate mode to launch most of my apps, with some exceptions.
+*** Apps
+#+begin_src conf-space
 # Launch apps
 # start a terminal at workspace 1
 bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec st'"
@@ -287,7 +396,9 @@ mode "apps" {
     # bindsym a exec emacsclient -c; mode default
     # bindsym Shift+a exec emacs; mode default
 }
-
+#+end_src
+*** Media controls & brightness
+#+begin_src conf-space
 # Pulse Audio controls
 bindsym XF86AudioRaiseVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ +5%"
 bindsym XF86AudioLowerVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ -5%"
@@ -303,10 +414,16 @@ bindsym XF86AudioPrev exec mpc prev
 bindsym XF86MonBrightnessUp exec xbacklight -inc 5
 bindsym XF86MonBrightnessDown exec xbacklight -dec 5
 
+#+end_src
+*** Screenshots
+#+begin_src conf-space
 # Screenshots
 bindsym --release Print exec "flameshot gui"
 bindsym --release Shift+Print exec "xfce4-screenshooter"
-
+#+end_src
+** Colors
+Application of the palenight theme to the WM.
+#+begin_src conf-space
 # Colors
 set $bg-color 	         #292d3e
 set $active-color        #82aaff
@@ -322,11 +439,69 @@ client.focused          $active-color       $bg-color          $text-color      
 client.unfocused        $bg-color           $inactive-bg-color $inactive-text-color $bg-color       $bg-color
 client.focused_inactive $active-color  $inactive-bg-color $inactive-text-color $bg-color       $bg-color
 client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-color   $bg-color       $urgent-bg-color
+#+end_src
+** OFF [OFF] i3blocks
+I've opted out of i3bar & [[https://github.com/vivien/i3blocks][i3blocks]] for [[https://github.com/polybar/polybar][polybar]]
+#+begin_src conf-space :tangle no
+bar {
+    status_command i3blocks -c ~/.config/i3/i3blocks.conf
+    i3bar_command i3bar
+    font pango:monospace 12
+    output HDMI-A-0
+    tray_output none
+    colors {
+        background $bg-color
+        separator #757575
+        #                  border             background         text
+        focused_workspace  $bg-color          $bg-color          $text-color
+        inactive_workspace $inactive-bg-color $inactive-bg-color $inactive-text-color
+        urgent_workspace   $urgent-bg-color   $urgent-bg-color   $urgent-text-color
+    }
+}
 
+bar {
+    status_command i3blocks -c ~/.config/i3/i3blocks.conf
+    i3bar_command i3bar
+    font pango:monospace 10
+    output DVI-D-0
+    colors {
+        background $bg-color
+        separator #757575
+        #                  border             background         text
+        focused_workspace  $bg-color          $bg-color          $text-color
+        inactive_workspace $inactive-bg-color $inactive-bg-color $inactive-text-color
+        urgent_workspace   $urgent-bg-color   $urgent-bg-color   $urgent-text-color
+    }
+}
+#+end_src
+** Keyboard Layout
+A script to set Russian-English keyboard layout:
+#+begin_src bash :tangle ./bin/scripts/set_layout
+#!/bin/bash
+setxkbmap -layout us,ru
+setxkbmap -model pc105 -option 'grp:win_space_toggle' -option 'grp:alt_shift_toggle'
+#+end_src
+
+A script to toggle the layout
+#+begin_src bash :tangle ./bin/scripts/toggle_layout
+#!/bin/bash
+if setxkbmap -query | grep -q us,ru; then
+    setxkbmap -layout us
+    setxkbmap -option
+else
+    setxkbmap -layout us,ru
+    setxkbmap -model pc105 -option 'grp:win_space_toggle' -option 'grp:alt_shift_toggle'
+fi
+#+end_src
+
+And the relevant i3 settings:
+#+begin_src conf-space
 # Layout
 exec_always --no-startup-id set_layout
 bindsym $mod+slash exec toggle_layout
-
+#+end_src
+** Autostart
+#+begin_src conf-space
 # Polybar
 exec_always --no-startup-id "bash /home/pavel/bin/polybar.sh"
 
@@ -360,3 +535,4 @@ exec kde-connect-indicator
 exec copyq
 exec "xmodmap ~/.Xmodmap"
 exec "bash ~/bin/autostart.sh"
+#+end_src

@@ -21,7 +21,7 @@ Deployed with [[https://yadm.io/][yadm]]
 | documents | [[https://mg.readthedocs.io/latexmk.html][latexmk]]        | LaTeX build tool               | *active*          | -           |                                                                            |
 | documents | [[https://pwmt.org/projects/zathura/][zathura]]        | pdf viewer                     | *active*          | -           |                                                                            |
 | desktop   | [[https://github.com/dunst-project/dunst][dunst]]          | notification manager           | *active*          | -           |                                                                            |
-| desktop   | [[https://i3wm.org/][i3wm]]           | tiling WM                      | *active*          | -           |                                                                            |
+| desktop   | [[https://i3wm.org/][i3wm]]           | tiling WM                      | *active*          | [[file:Desktop.org][Desktop.org]] |                                                                            |
 | desktop   | [[https://github.com/jordansissel/keynav][keynav]]         | control mouse with keyboard    | *active*          | -           |                                                                            |
 | desktop   | [[https://github.com/polybar/polybar][polybar]]        | status bar                     | *active*          | -           |                                                                            |
 | desktop   | [[https://github.com/yshui/picom][picom]]          | X11 compositor                 | *active*          | -           |                                                                            |
