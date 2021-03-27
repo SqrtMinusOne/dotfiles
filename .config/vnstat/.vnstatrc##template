@@ -92,8 +92,8 @@ MaxBandwidth 1000
 #MaxBWeth0 8
 
 # data retention durations (-1 = unlimited, 0 = feature disabled)
-5MinuteHours   72
-HourlyDays      7
+5MinuteHours   144
+HourlyDays     14
 DailyDays      62
 MonthlyMonths  25
 YearlyYears    -1
