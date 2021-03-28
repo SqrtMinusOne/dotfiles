@@ -1,11 +1,19 @@
+# [[file:../../Desktop.org::*Config][Config:1]]
+# clear all previous keybindings
 clear
+
+# Start & stop
 ctrl+semicolon start
 Super_L+bracketright start
 Super_R+bracketright start
 Escape end
 ctrl+bracketleft end
+
+# Macros
 q record ~/.keynav_macros
 shift+at playback
+
+# Bisecting
 a history-back
 Left cut-left
 Right cut-right
@@ -15,6 +23,10 @@ h cut-left
 j cut-down
 k cut-up
 l cut-right
+t windowzoom                          # Zoom to the current window
+c cursorzoom 300 300                  # Limit the bisection area by 300x300
+
+# Move the bisecting area
 shift+h move-left
 shift+j move-down
 shift+k move-up
@@ -23,18 +35,19 @@ shift+Left move-left
 shift+Right move-right
 shift+Up move-up
 shift+Down move-down
-space warp,click 3,end
-Return warp,click 1,end
-Shift+Return warp,doubleclick 1,end
-semicolon warp,end
-w warp
-t windowzoom
-c cursorzoom 300 300
-e end
-u warp,click 4
-d warp,click 5
+
+# Actions
+space warp,click 3,end                # Right click
+Return warp,click 1,end               # Left click
+Shift+Return warp,doubleclick 1,end   # Double left click
+semicolon warp,end                    # Move the cursor and exit
+w warp                                # Just move the cursor
+e end                                 # exit
+u warp,click 4                        # scroll up
+d warp,click 5                        # scroll down
 1 click 1
 2 click 2
 3 click 3
 4 click 4
 5 click 5
+# Config:1 ends here
