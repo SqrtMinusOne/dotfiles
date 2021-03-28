@@ -850,6 +850,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (hide-mode-line-mode 0)
               (tab-bar-mode 1))))
 
+(use-package org-make-toc
+  :straight t)
+
 (setq org-startup-indented t)
 
 (setq org-return-follows-link t)

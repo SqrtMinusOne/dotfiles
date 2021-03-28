@@ -1099,6 +1099,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (hide-mode-line-mode 0)
               (tab-bar-mode 1))))
 #+end_src
+** Contents
+Make a TOC inside the org file.
+
+References:
+- [[https://github.com/alphapapa/org-make-toc][alphapapa/org-make-toc]]
+
+#+begin_src emacs-lisp
+(use-package org-make-toc
+  :straight t)
+#+end_src
 ** Other settings
 #+begin_src emacs-lisp
 (setq org-startup-indented t)

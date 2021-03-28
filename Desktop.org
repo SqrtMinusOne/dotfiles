@@ -8,7 +8,7 @@
 
 My general desktop environment configuration.
 
-Parts prefexed with [OFF] are not used, but kept for historic purposes. For some reason GitHub's org renderer ignores TODO status, hence such a prefix.
+Parts prefexed with (OFF) are not used, but kept for historic purposes. For some reason GitHub's org renderer ignores TODO status, hence such a prefix. Round brackets instead of square ones to prevent Github's org renderer from screwing up
 
 Most of the colors are from the Palenight theme. Colorcodes are taken from [[https://github.com/JonathanSpeek/palenight-iterm2][this repo]]:
 
@@ -23,6 +23,56 @@ Most of the colors are from the Palenight theme. Colorcodes are taken from [[htt
 | Cyan    | #89ddff | #a3f7ff |
 | White   | #d0d0d0 | #ffffff |
 
+* Contents
+:PROPERTIES:
+:TOC:      :include all :depth 3
+:END:
+:CONTENTS:
+- [[#contents][Contents]]
+- [[#i3wm][i3wm]]
+  - [[#general-settings][General settings]]
+  - [[#managing-windows][Managing windows]]
+  - [[#workspaces][Workspaces]]
+  - [[#rules][Rules]]
+  - [[#scratchpad][Scratchpad]]
+    - [[#launch-script][Launch script]]
+    - [[#i3-config][i3 config]]
+  - [[#gaps--borders][Gaps & borders]]
+    - [[#keybindings][Keybindings]]
+  - [[#move--resize-windows][Move & resize windows]]
+  - [[#off-intergration-with-dmenu][(OFF) Intergration with dmenu]]
+  - [[#integration-with-rofi][Integration with rofi]]
+  - [[#launching-apps--misc-keybindings][Launching apps & misc keybindings]]
+    - [[#apps][Apps]]
+    - [[#media-controls--brightness][Media controls & brightness]]
+    - [[#screenshots][Screenshots]]
+  - [[#colors][Colors]]
+  - [[#off-i3blocks][(OFF) i3blocks]]
+  - [[#keyboard-layout][Keyboard Layout]]
+  - [[#autostart][Autostart]]
+- [[#polybar][Polybar]]
+  - [[#launching][Launching]]
+  - [[#general-settings][General settings]]
+    - [[#colors][Colors]]
+    - [[#bar-config][Bar config]]
+  - [[#modules][Modules]]
+    - [[#ipstack-vpn][ipstack-vpn]]
+    - [[#weather][weather]]
+    - [[#aw-afk][aw-afk]]
+    - [[#sun][sun]]
+    - [[#sep][SEP]]
+    - [[#tsep][TSEP]]
+    - [[#i3][i3]]
+    - [[#xkeyboard][xkeyboard]]
+    - [[#mpd][mpd]]
+    - [[#pulseaudio][pulseaudio]]
+    - [[#cpu][cpu]]
+    - [[#ram-memory][ram-memory]]
+    - [[#swap-memory][swap-memory]]
+    - [[#network][network]]
+    - [[#date][date]]
+    - [[#battery][battery]]
+:END:
 * i3wm
 :PROPERTIES:
 :header-args+: :tangle ./.config/i3/config
@@ -332,7 +382,7 @@ mode "move" {
 
 bindsym $mod+m mode "move" focus floating
 #+end_src
-** OFF [OFF] Intergration with dmenu
+** OFF (OFF) Intergration with dmenu
 [[https://tools.suckless.org/dmenu/][dmenu]] is a dynamic menu program for X. I've opted out of using in favour of rofi, but here is a relevant bit of config.
 
 Scripts are located in the =bin/scripts= folder.
@@ -441,7 +491,7 @@ client.unfocused        $bg-color           $inactive-bg-color $inactive-text-co
 client.focused_inactive $active-color  $inactive-bg-color $inactive-text-color $bg-color       $bg-color
 client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-color   $bg-color       $urgent-bg-color
 #+end_src
-** OFF [OFF] i3blocks
+** OFF (OFF) i3blocks
 I've opted out of i3bar & [[https://github.com/vivien/i3blocks][i3blocks]] for [[https://github.com/polybar/polybar][polybar]]
 #+begin_src conf-space :tangle no
 bar {
