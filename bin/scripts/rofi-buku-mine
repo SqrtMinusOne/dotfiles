@@ -1,12 +1,14 @@
-#!/bin/sh
+#!/bin/bash
+# [[file:../../Desktop.org::*Buku bookmarks][Buku bookmarks:1]]
 if [ $(hostname) = 'pdsk' ]; then
     BUKU="/home/pavel/.local/bin/buku"
 else
     BUKU="/home/pavel/Programs/miniconda3/bin/buku"
 fi
 
-COMMAND="$BUKU -o %"
+# COMMAND="$BUKU -o %"
 # COMMAND="qutebrowser $(buku -f 10 -p %)"
+COMMAND="firefox %"
 if [[ $1 == '-e' ]]; then
     COMMAND="$BUKU -w %"
 fi
@@ -30,5 +32,6 @@ $BUKU -f 4 -p | awk -F'\t' -v OFS='\t' '{
         exit 0
     fi
     url=$($BUKU -f 10 -p $index)
-    echo ${url#"waiting for input"} | cut -d ' ' -f 1 | xargs -I % firefox %
+    echo ${url#"waiting for input"} | cut -d ' ' -f 1 | xargs -I % $COMMAND
 }
+# Buku bookmarks:1 ends here

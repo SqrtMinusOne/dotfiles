@@ -1,4 +1,5 @@
-* {
+/* Generated from [[file:../../Desktop.org::*Theme][Theme:1]] */
+ * {
     black: #292d3e;
     red: #f07178;
     green: #c3e88d;

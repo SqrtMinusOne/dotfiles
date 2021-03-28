@@ -8,7 +8,7 @@
 
 My general desktop environment configuration.
 
-Parts prefexed with (OFF) are not used, but kept for historic purposes. For some reason GitHub's org renderer ignores TODO status, hence such a prefix. Round brackets instead of square ones to prevent Github's org renderer from screwing up
+Parts prefixed with (OFF) are not used, but kept for historic purposes. For some reason GitHub's org renderer ignores TODO status, hence such a prefix. Round brackets instead of square ones to prevent GitHub's org renderer from screwing up.
 
 Most of the colors are from the Palenight theme. Colorcodes are taken from [[https://github.com/JonathanSpeek/palenight-iterm2][this repo]]:
 
@@ -72,6 +72,11 @@ Most of the colors are from the Palenight theme. Colorcodes are taken from [[htt
     - [[#network][network]]
     - [[#date][date]]
     - [[#battery][battery]]
+- [[#rofi][Rofi]]
+  - [[#theme][Theme]]
+  - [[#scripts][Scripts]]
+    - [[#buku-bookmarks][Buku bookmarks]]
+    - [[#man-pages][Man pages]]
 :END:
 * i3wm
 :PROPERTIES:
@@ -80,7 +85,7 @@ Most of the colors are from the Palenight theme. Colorcodes are taken from [[htt
 
 [[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], but i3 seems to fit my workflow best.
 
-[[https://github.com/Airblader/i3][i3-gaps]] is a i3 fork with a few features like window gaps. I like to enable inner gaps when there is at least one container in a workspace.
+[[https://github.com/Airblader/i3][i3-gaps]] is an i3 fork with a few features like window gaps. I like to enable inner gaps when there is at least one container in a workspace.
 
 References:
 - [[https://i3wm.org/docs/][i3wm docs]]
@@ -249,9 +254,9 @@ for_window [title="Picture-in-Picture"] sticky enable
 ** Scratchpad
 Scratch terminal, inspired by [[https://www.youtube.com/watch?v=q-l7DnDbiiU][this Luke Smith's video]].
 *** Launch script
-First of all, we have to distinguish scratchpad terminal from a normal one. To do that, one can create st with a required classname.
+First of all, we have to distinguish a scratchpad terminal from a normal one. To do that, one can create st with a required classname.
 
-Then, it would be cool not to duplicate scratchpads, so the following script first looks for a window with a created classname. If it exists, the script just toggles the scratchpad visibilty. Otherwise, a new instance of a window is created.
+Then, it would be cool not to duplicate scratchpads, so the following script first looks for a window with a created classname. If it exists, the script just toggles the scratchpad visibility. Otherwise, a new instance of a window is created.
 #+begin_src bash :tangle ./bin/scripts/dropdown
 CLASSNAME="dropdown_tmux"
 COMMAND="st -n $CLASSNAME -e tmux new-session -s $CLASSNAME"
@@ -326,9 +331,9 @@ bindsym $mod+g mode "inner gaps"
 bindsym $mod+Shift+g mode "outer gaps"
 #+end_src
 ** Move & resize windows
-More or less standard set of keybindings to move & resize floating windows.
+A more or less standard set of keybindings to move & resize floating windows.
 
-Just be careful to always make a way to return from these new modes, otherwise you'd end up in a rather precarious position.
+Just be careful to always make a way to return from these new modes, otherwise, you'd end up in a rather precarious position.
 #+begin_src conf-space
 # resize window (you can also use the mouse for that)
 mode "resize" {
@@ -383,7 +388,7 @@ mode "move" {
 bindsym $mod+m mode "move" focus floating
 #+end_src
 ** OFF (OFF) Intergration with dmenu
-[[https://tools.suckless.org/dmenu/][dmenu]] is a dynamic menu program for X. I've opted out of using in favour of rofi, but here is a relevant bit of config.
+[[https://tools.suckless.org/dmenu/][dmenu]] is a dynamic menu program for X. I've opted out of using it in favour of rofi, but here is a relevant bit of config.
 
 Scripts are located in the =bin/scripts= folder.
 #+begin_src conf-space :tangle no
@@ -592,7 +597,7 @@ exec "bash ~/bin/autostart.sh"
 
 [[https://github.com/polybar/polybar][Polybar]] is a nice-looking, WM-agnostic statusbar program.
 
-I switched to polybar because I wanted to try out some WMs other that i3, but decided to stick with i3 for now.
+I switched to polybar because I wanted to try out some WMs other than i3, but decided to stick with i3 for now.
 
 References:
 - [[https://github.com/polybar/polybar/wiki][polybar docs]]
@@ -1110,4 +1115,215 @@ ramp-capacity-1 = 
 ramp-capacity-2 = 
 ramp-capacity-3 = 
 ramp-capacity-4 = 
+#+end_src
+
+* Rofi
+[[https://github.com/davatorium/rofi][rofi]] is another dynamic menu generator. It can act as dmenu replacement but offers a superset of dmenu's features.
+
+** Theme
+A theme is based on [[https://github.com/dracula/rofi][dracula theme]] for rofi. Probably no reason to keep it in this file.
+#+begin_src conf-colon :tangle ./.config/rofi/config.rasi
+/* Generated from [[file:../../Desktop.org::*Theme][Theme:1]] */
+ * {
+    black: #292d3e;
+    red: #f07178;
+    green: #c3e88d;
+    yellow: #ffcb6b;
+    blue: #82aaff;
+    magenta: #82aaff;
+    cyan: #89ddff;
+    white: #d0d0d0;
+    black-alternate: #393F57;
+    black-lighter: #434758;
+    red-lighter: #ff8b92;
+    green-lighter: #ddffa7;
+    yellow-lighter: #ffe585;
+    blue-lighter: #9cc4ff;
+    magenta-lighter: #e1acff;
+    cyan-lighter: #a3f7ff;
+    white-lighter: #ffffff;
+
+    foreground:                  @white;
+    background:                  @black;
+    background-color:            @black;
+    separatorcolor:              @magenta;
+    border-color:                @magenta;
+    selected-normal-foreground:  @black;
+    selected-normal-background:  @magenta;
+    selected-active-foreground:  @black;
+    selected-active-background:  @blue;
+    selected-urgent-foreground:  @foreground;
+    selected-urgent-background:  @red;
+    normal-foreground:           @foreground;
+    normal-background:           @background;
+    active-foreground:           @blue;
+    active-background:           @background;
+    urgent-foreground:           @red;
+    urgent-background:           @background;
+    alternate-normal-foreground: @foreground;
+    alternate-normal-background: @black-alternate;
+    alternate-active-foreground: @blue;
+    alternate-active-background: @black-alternate;
+    alternate-urgent-foreground: @red;
+    alternate-urgent-background: @black-alternate;
+    spacing:                     2;
+}
+window {
+    background-color: @background;
+    border:           1;
+    padding:          5;
+}
+mainbox {
+    border:           0;
+    padding:          0;
+}
+message {
+    border:           1px dash 0px 0px ;
+    border-color:     @separatorcolor;
+    padding:          1px ;
+}
+textbox {
+    text-color:       @foreground;
+}
+listview {
+    fixed-height:     0;
+    border:           2px dash 0px 0px ;
+    border-color:     @separatorcolor;
+    spacing:          2px ;
+    scrollbar:        true;
+    padding:          2px 0px 0px ;
+}
+element {
+    border:           0;
+    padding:          1px ;
+}
+element normal.normal {
+    background-color: @normal-background;
+    text-color:       @normal-foreground;
+}
+element normal.urgent {
+    background-color: @urgent-background;
+    text-color:       @urgent-foreground;
+}
+element normal.active {
+    background-color: @active-background;
+    text-color:       @active-foreground;
+}
+element selected.normal {
+    background-color: @selected-normal-background;
+    text-color:       @selected-normal-foreground;
+}
+element selected.urgent {
+    background-color: @selected-urgent-background;
+    text-color:       @selected-urgent-foreground;
+}
+element selected.active {
+    background-color: @selected-active-background;
+    text-color:       @selected-active-foreground;
+}
+element alternate.normal {
+    background-color: @alternate-normal-background;
+    text-color:       @alternate-normal-foreground;
+}
+element alternate.urgent {
+    background-color: @alternate-urgent-background;
+    text-color:       @alternate-urgent-foreground;
+}
+element alternate.active {
+    background-color: @alternate-active-background;
+    text-color:       @alternate-active-foreground;
+}
+scrollbar {
+    width:            4px ;
+    border:           0;
+    handle-color:     @normal-foreground;
+    handle-width:     8px ;
+    padding:          0;
+}
+sidebar {
+    border:           2px dash 0px 0px ;
+    border-color:     @separatorcolor;
+}
+button {
+    spacing:          0;
+    text-color:       @normal-foreground;
+}
+button selected {
+    background-color: @selected-normal-background;
+    text-color:       @selected-normal-foreground;
+}
+inputbar {
+    spacing:          0px;
+    text-color:       @normal-foreground;
+    padding:          1px ;
+    children:         [ prompt,textbox-prompt-colon,entry,case-indicator ];
+}
+case-indicator {
+    spacing:          0;
+    text-color:       @normal-foreground;
+}
+entry {
+    spacing:          0;
+    text-color:       @normal-foreground;
+}
+prompt {
+    spacing:          0;
+    text-color:       @normal-foreground;
+}
+textbox-prompt-colon {
+    expand:           false;
+    str:              ":";
+    margin:           0px 0.3000em 0.0000em 0.0000em ;
+    text-color:       inherit;
+}
+#+end_src
+
+** Scripts
+*** Buku bookmarks
+Inspired by the [[https://github.com/knatsakis/rofi-buku][knatsakis/rofi-buku]] script.
+#+begin_src bash :tangle ./bin/scripts/rofi-buku-mine
+if [ $(hostname) = 'pdsk' ]; then
+    BUKU="/home/pavel/.local/bin/buku"
+else
+    BUKU="/home/pavel/Programs/miniconda3/bin/buku"
+fi
+
+# COMMAND="$BUKU -o %"
+# COMMAND="qutebrowser $(buku -f 10 -p %)"
+COMMAND="firefox %"
+if [[ $1 == '-e' ]]; then
+    COMMAND="$BUKU -w %"
+fi
+$BUKU -f 4 -p | awk -F'\t' -v OFS='\t' '{
+    split($4, tags, ",")
+    joined = sep = ""
+    for (i = 1; i in tags; i++) {
+        joined = joined sep "[" tags[i] "]"
+        sep = " "
+    }
+    url = substr($2, 1, 40)
+    if (length($2) > 40) {
+        url = url "..."
+    }
+    if ($1 != "waiting for input") {
+        printf "%-5s %-60s %-45s %s\n", $1, $3, url, joined
+    }
+}' | sort -k 2 | rofi -dmenu -matching normal -sort -sorting-method fzf -width 80 -l 20 | cut -d ' ' -f 1 | {
+    read index;
+    if [[ -z "$index" ]]; then
+        exit 0
+    fi
+    url=$($BUKU -f 10 -p $index)
+    echo ${url#"waiting for input"} | cut -d ' ' -f 1 | xargs -I % $COMMAND
+}
+#+end_src
+*** Man pages
+Inspired by [[https://www.youtube.com/watch?v=8E8sUNHdzG8][this Luke Smith's video]].
+
+A script to open a man page with zathura. There is no particular reason why one should look through man pages in pdf viewer rather than in console, but why not.
+#+begin_src bash :tangle ./bin/scripts/rofi-man
+SELECTED=$(man -k . | rofi -dmenu -l 20 | awk '{print $1}')
+if [[ ! -z $SELECTED ]]; then
+    man -Tpdf $SELECTED | zathura -
+fi
 #+end_src
