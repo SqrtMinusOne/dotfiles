@@ -1,3 +1,4 @@
+; [[file:../../Desktop.org::*Colors][Colors:1]]
 [colors]
 ; Palenight colorscheme https://github.com/JonathanSpeek/palenight-iterm2
 black = #292d3e
@@ -21,7 +22,9 @@ white-lighter = ffffff
 background = ${colors.black}
 ; background = #ee292d3e
 foreground = ${colors.white}
+; Colors:1 ends here
 
+; [[file:../../Desktop.org::*Bar config][Bar config:1]]
 [bar/mybar]
 monitor = ${env:MONITOR:}
 width = 100%
@@ -78,28 +81,38 @@ screenchange-reload = true
 [global/wm]
 margin-top = 0
 margin-bottom = 0
+; Bar config:1 ends here
 
+; [[file:../../Desktop.org::*ipstack-vpn][ipstack-vpn:2]]
 [module/ipstack-vpn]
 type = custom/script
 exec = /home/pavel/bin/polybar/ipstack-vpn.sh
 interval = 1200
+; ipstack-vpn:2 ends here
 
+; [[file:../../Desktop.org::*weather][weather:2]]
 [module/weather]
 type = custom/script
 exec = /home/pavel/bin/polybar/weather.sh
 format-underline = ${colors.red}
 interval = 1200
+; weather:2 ends here
 
+; [[file:../../Desktop.org::*aw-afk][aw-afk:2]]
 [module/aw-afk]
 type = custom/script
 exec = /home/pavel/bin/polybar/aw_afk.sh
 interval = 60
+; aw-afk:2 ends here
 
+; [[file:../../Desktop.org::*sun][sun:2]]
 [module/sun]
 type = custom/script
 exec = /home/pavel/bin/polybar/sun.sh
 interval = 60
+; sun:2 ends here
 
+; [[file:../../Desktop.org::*SEP][SEP:1]]
 [module/SEP]
 type = custom/text
 content = "|"
@@ -107,13 +120,17 @@ content-foreground = ${colors.magenta}
 content-padding = 0
 content-margin = 0
 interval = 0
+; SEP:1 ends here
 
+; [[file:../../Desktop.org::*TSEP][TSEP:2]]
 [module/TSEP]
 type = custom/script
 exec = /home/pavel/bin/polybar/tray-sep.sh
 format-foreground = ${colors.magenta}
 interval = 0
+; TSEP:2 ends here
 
+; [[file:../../Desktop.org::*i3][i3:1]]
 [module/i3]
 type = internal/i3
 format = <label-state> <label-mode>
@@ -148,7 +165,9 @@ label-urgent = %name%
 label-urgent-background = ${colors.red}
 label-urgent-foreground = ${colors.black}
 label-urgent-padding = 1
+; i3:1 ends here
 
+; [[file:../../Desktop.org::*xkeyboard][xkeyboard:1]]
 [module/xkeyboard]
 type = internal/xkeyboard
 format = <label-layout>
@@ -157,7 +176,9 @@ format-underline = ${colors.magenta}
 label-layout = %icon%
 layout-icon-0 = ru;RU
 layout-icon-1 = us;US
+; xkeyboard:1 ends here
 
+; [[file:../../Desktop.org::*mpd][mpd:1]]
 [module/mpd]
 type = internal/mpd
 
@@ -182,7 +203,9 @@ icon-play = 
 icon-stop = 
 icon-prev = 1
 icon-next = 2
+; mpd:1 ends here
 
+; [[file:../../Desktop.org::*pulseaudio][pulseaudio:1]]
 [module/pulseaudio]
 type = internal/pulseaudio
 use-ui-max = true
@@ -212,13 +235,17 @@ label-muted = MUTE
 
 format-volume-underline = ${colors.white}
 format-muted-underline = ${colors.black-lighter}
+; pulseaudio:1 ends here
 
+; [[file:../../Desktop.org::*cpu][cpu:1]]
 [module/cpu]
 type = internal/cpu
 format =   <label>
 label = %percentage%%
 format-underline = ${colors.green-lighter}
+; cpu:1 ends here
 
+; [[file:../../Desktop.org::*ram-memory][ram-memory:1]]
 [module/ram-memory]
 type = internal/memory
 interval = 10
@@ -236,14 +263,18 @@ format =  <label>
 label=%gb_used:.1f%
 
 format-underline = ${colors.blue}
+; ram-memory:1 ends here
 
+; [[file:../../Desktop.org::*swap-memory][swap-memory:1]]
 [module/swap-memory]
 type = internal/memory
 interval = 10
 
 label= %gb_swap_used:.1f%
 format-underline = ${colors.yellow}
+; swap-memory:1 ends here
 
+; [[file:../../Desktop.org::*network][network:1]]
 [module/network]
 type = internal/network
 interval = 1
@@ -264,7 +295,9 @@ ramp-signal-2 = 2
 ramp-signal-3 = 3
 ramp-signal-4 = 4	
 ramp-signal-5 = 5
+; network:1 ends here
 
+; [[file:../../Desktop.org::*date][date:1]]
 [module/date]
 type = internal/date
 interval = 5
@@ -277,7 +310,9 @@ time-alt = %H:%M:%S
 
 format-underline = ${colors.cyan}
 label = "%date% %time%"
+; date:1 ends here
 
+; [[file:../../Desktop.org::*battery][battery:1]]
 [module/battery]
 type = internal/battery
 battery = BAT0
@@ -296,3 +331,4 @@ ramp-capacity-1 = 
 ramp-capacity-2 = 
 ramp-capacity-3 = 
 ramp-capacity-4 = 
+; battery:1 ends here

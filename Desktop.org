@@ -540,7 +540,7 @@ exec "bash ~/bin/autostart.sh"
 :header-args+: :tangle ./.config/polybar/config
 :END:
 
-[[https://github.com/polybar/polybar][Polybar]] is a nice looking, WM-agnostic statusbar program.
+[[https://github.com/polybar/polybar][Polybar]] is a nice-looking, WM-agnostic statusbar program.
 
 I switched to polybar because I wanted to try out some WMs other that i3, but decided to stick with i3 for now.
 
