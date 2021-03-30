@@ -2,6 +2,7 @@
 #+TODO: TODO(t) CHECK(s) | OFF(o)
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:conf-space   :comments link
+#+PROPERTY: header-args:conf-unix :comments link
 #+PROPERTY: header-args:conf-windows :comments link
 #+PROPERTY: header-args:sh           :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
 #+PROPERTY: header-args:bash         :tangle-mode (identity #o755) :comments link :shebang "#!/bin/bash"
@@ -82,6 +83,11 @@ Most of the colors are from the Palenight theme. Colorcodes are taken from [[htt
 - [[#keynav][keynav]]
   - [[#config][Config]]
   - [[#using-with-picom][Using with picom]]
+- [[#picom][Picom]]
+  - [[#shadows][Shadows]]
+  - [[#fading][Fading]]
+  - [[#opacity][Opacity]]
+  - [[#general-settings][General settings]]
 :END:
 * i3wm
 :PROPERTIES:
@@ -1713,4 +1719,94 @@ fade-exclude = [
   "class_i = 'keynav'",
   "class_g = 'keynav'",
 ]
+#+end_src
+* Picom
+:PROPERTIES:
+:header-args+: :tangle ./.config/picom.conf
+:END:
+[[https://github.com/yshui/picom][picom]] is a compositor for X11. It allows effects such as transparency, blurring, etc.
+
+Sample configuration is a good resource for getting an overview of the available settings. I have only a bunch of necessary settings in mine.
+
+There are a bunch of forks for picom (e.g. [[https://github.com/ibhagwan/picom][ibhagwan/picom]] adds rounded corners) which seem to have some popularity, but I use the base one.
+
+References:
+- [[https://github.com/yshui/picom/wiki][picom wiki]]
+- [[https://wiki.archlinux.org/index.php/Picom][Picom on ArchWiki]]
+- [[https://github.com/yshui/picom/blob/next/picom.sample.conf][Sample configuration]]
+** Shadows
+#+begin_src conf-unix
+shadow = true;
+shadow-radius = 2;
+shadow-offset-x = -2;
+shadow-offset-y = -2;
+
+shadow-exclude = [
+  "name = 'Notification'",
+  "class_g = 'Conky'",
+  "name ?= 'cpt_frame_window'",
+  "class_g ?= 'Notify-osd'",
+  "class_g = 'Cairo-clock'",
+  "_GTK_FRAME_EXTENTS@:c"
+];
+#+end_src
+** Fading
+#+begin_src conf-unix
+fading = true
+
+fade-in-step = 0.03;
+fade-out-step = 0.03;
+fade-delta = 10
+
+fade-exclude = [
+  "class_i = 'keynav'",
+  "class_g = 'keynav'",
+]
+#+end_src
+** Opacity
+I don't use stuff like transparency for inactive windows.
+
+The first 5 lines of =opacity-rule= make i3wm's hidden windows 100% transparent, so I see the background behind the semi-transparent windows in i3wm's stacked and tabbed layout. Here is [[https://unix.stackexchange.com/questions/281131/compton-i3-tabbed-stacked-transparency-background-image][StackExchange question]] about that.
+
+I also noticed that for some reason it doesn't play well with Emacs's built-in transparency, so the last line sets up Emacs transparency at 90%.
+
+#+begin_src conf-unix
+inactive-opacity = 1;
+
+frame-opacity = 1.0;
+inactive-opacity-override = false;
+focus-exclude = [ "class_g = 'Cairo-clock'" ];
+
+opacity-rule = [
+  "0:_NET_WM_STATE@[0]:32a = '_NET_WM_STATE_HIDDEN'",
+  "0:_NET_WM_STATE@[1]:32a = '_NET_WM_STATE_HIDDEN'",
+  "0:_NET_WM_STATE@[2]:32a = '_NET_WM_STATE_HIDDEN'",
+  "0:_NET_WM_STATE@[3]:32a = '_NET_WM_STATE_HIDDEN'",
+  "0:_NET_WM_STATE@[4]:32a = '_NET_WM_STATE_HIDDEN'",
+  "90:class_g = 'Emacs'"
+];
+#+end_src
+** General settings
+Default general settings. Editing some of these may be neeeded in case of performance issues.
+#+begin_src conf-unix
+backend = "xrender";
+vsync = true
+mark-wmwin-focused = true;
+mark-ovredir-focused = true;
+detect-rounded-corners = true;
+detect-client-opacity = true;
+refresh-rate = 0
+detect-transient = true
+detect-client-leader = true
+use-damage = true
+log-level = "warn";
+
+wintypes:
+{
+  tooltip = { fade = true; shadow = true; opacity = 0.75; focus = true; full-shadow = false; };
+  dock = { shadow = false; }
+  dnd = { shadow = false; }
+  popup_menu = { opacity = 1; }
+  dropdown_menu = { opacity = 1; }
+};
 #+end_src
