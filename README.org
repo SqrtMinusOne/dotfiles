@@ -1,46 +1,47 @@
 * My dotfiles
 Deployed with [[https://yadm.io/][yadm]]
 
-| Group     | Program        | Purpose                        | Status            | Documented? | Notes                                                                      |
-|-----------+----------------+--------------------------------+-------------------+-------------+----------------------------------------------------------------------------|
-| console   | bash           | shell                          | launches fish :) | -           |                                                                            |
-| console   | [[https://fishshell.com/][fish]]           | shell                          | *active*          | -           |                                                                            |
-| console   | [[https://github.com/starship/starship][starship]]       | prompt                         | *active*          | -           |                                                                            |
-| console   | [[https://st.suckless.org/][st]]             | terminal                       | *active*          | -           | I compiled it 1.5 years ago and lost the source, so I just copy the binary |
-| console   | [[https://github.com/tmux/tmux][tmux]]           | terminal multiplexer           | *active*          | -           |                                                                            |
-| console   | [[https://github.com/ogham/exa][exa]]            | ls clone                       | *active*          | -           |                                                                            |
-| console   | [[https://github.com/moonpyk/dtrx][dtrx]]           | archive extractor              | *active*          | -           |                                                                            |
-| console   | [[https://github.com/jhspetersson/fselect][fselect]]        | SQL-like find                  | *active*          | -           |                                                                            |
-| console   | [[https://github.com/sharkdp/bat][bat]]            | cat clone                      | *active*          | -           |                                                                            |
-| console   | [[https://vifm.info/][vifm]]           | file manager with vim bindings | archive           | -           |                                                                            |
-| mail      | [[https://notmuchmail.org/][notmuch]]        | mail indexer                   | *active*          | [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][post]]        |                                                                            |
-| mail      | [[https://github.com/gauteh/lieer][lieer]]          | gmail API client               | *active*          | [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][post]]        | credentials are encrypted                                                  |
-| mail      | [[https://marlam.de/msmtp/][msmtp]]          | SMTP client                    | *active*          | -           | encrypted                                                                  |
-| editor    | [[https://www.gnu.org/software/emacs/][emacs]]          | everything                     | *active*          | -           | GitHub renders .org files without labels and =tangle: no=                  |
-| editor    | [[https://neovim.io/][neovim]]         | text edtior                    | archive           | -           |                                                                            |
-| documents | [[https://mg.readthedocs.io/latexmk.html][latexmk]]        | LaTeX build tool               | *active*          | -           |                                                                            |
-| documents | [[https://pwmt.org/projects/zathura/][zathura]]        | pdf viewer                     | *active*          | -           |                                                                            |
-| desktop   | [[https://github.com/dunst-project/dunst][dunst]]          | notification manager           | *active*          | [[file:Desktop.org::*dunst][Desktop.org]] |                                                                            |
-| desktop   | [[https://i3wm.org/][i3wm]]           | tiling WM                      | *active*          | [[file:Desktop.org::*i3wm][Desktop.org]] |                                                                            |
-| desktop   | [[https://github.com/jordansissel/keynav][keynav]]         | control mouse with keyboard    | *active*          | [[file:Desktop.org::*keynav][Desktop.org]] |                                                                            |
-| desktop   | [[https://github.com/polybar/polybar][polybar]]        | status bar                     | *active*          | [[file:Desktop.org::*Polybar][Desktop.org]] |                                                                            |
-| desktop   | [[https://github.com/davatorium/rofi][rofi]]           | generic menu                   | *active*          | [[file:Desktop.org::*Rofi][Desktop.org]] |                                                                            |
-| desktop   | [[https://github.com/flameshot-org/flameshot][flameshot]]      | screenshot                     | *active*          | [[file:Desktop.org::Flameshot][Desktop.org]] |                                                                            |
-| desktop   | [[https://github.com/yshui/picom][picom]]          | X11 compositor                 | *active*          | [[file:Desktop.org::*Picom][Desktop.org]] |                                                                            |
-| desktop   | [[https://github.com/vivien/i3blocks][i3blocks]]       | status bar                     | archive           | -           |                                                                            |
-| internet  | [[https://github.com/tridactyl/tridactyl][tridactyl]]      | vim bindings for Firefox       | *active*          | -           | templated with yadm                                                        |
-| internet  | [[https://newsboat.org/][newsboat]]       | terminal RSS reader            | *active*          | -           | urls are encrypted                                                         |
-| internet  | [[https://qutebrowser.org/][qutebrowser]]    | browser with vim bindings      | archive           | -           |                                                                            |
-| internet  | [[https://github.com/jarun/buku][buku]]           | bookmarks manager              | archive           | -           |                                                                            |
-| internet  | [[https://tabliss.io/][tabliss]]        | new tab page                   | *active*          | -           | runned as server to work with tridactyl                                    |
-| audio     | [[https://www.musicpd.org/][mpd]]            | music player daemon            | *active*          | -           |                                                                            |
-| audio     | [[https://github.com/ncmpcpp/ncmpcpp][ncmpcpp]]        | MPD frontend                   | *active*          | -           |                                                                            |
-| audio     | [[https://github.com/graysky2/pulseaudio-ctl][pulseaudio-ctl]] | PulseAudio controller          | archive           | -           |                                                                            |
-| dev       | [[https://github.com/prompt-toolkit/ptpython][ptpython]]       | Python REPL                    | archive           | -           |                                                                            |
-| dev       | [[https://github.com/inducer/pudb][pudb]]           | Python Debugger                | archive           | -           |                                                                            |
-| misc      | [[https://yadm.io][yadm]]           | dotfiles manager               | *active*          | -           |                                                                            |
-| misc      | [[https://github.com/risacher/sunwait][sunwait]]        | sunrise calculator             | *active*          | -           |                                                                            |
-| misc      | [[https://github.com/vergoh/vnstat][vnstat]]         | traffic stats                  | *active*          | -           |                                                                            |
+| Group     | Program        | Purpose                        | Status            | Documented? | Notes                                                     |
+|-----------+----------------+--------------------------------+-------------------+-------------+-----------------------------------------------------------|
+| console   | bash           | shell                          | launches fish :) | -           |                                                           |
+| console   | [[https://fishshell.com/][fish]]           | shell                          | *active*          | -           |                                                           |
+| console   | [[https://github.com/starship/starship][starship]]       | prompt                         | *active*          | -           |                                                           |
+| console   | [[https://github.com/tmux/tmux][tmux]]           | terminal multiplexer           | *active*          | -           |                                                           |
+| console   | [[https://github.com/ogham/exa][exa]]            | ls clone                       | *active*          | -           |                                                           |
+| console   | [[https://github.com/moonpyk/dtrx][dtrx]]           | archive extractor              | *active*          | -           |                                                           |
+| console   | [[https://github.com/jhspetersson/fselect][fselect]]        | SQL-like find                  | *active*          | -           |                                                           |
+| console   | [[https://github.com/sharkdp/bat][bat]]            | cat clone                      | *active*          | -           |                                                           |
+| console   | [[https://github.com/alacritty/alacritty][alacritty]]      | terminal emulator              | *active*          | -           |                                                           |
+| console   | [[https://vifm.info/][vifm]]           | file manager with vim bindings | archive           | -           |                                                           |
+| mail      | [[https://notmuchmail.org/][notmuch]]        | mail indexer                   | *active*          | [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][post]]        |                                                           |
+| mail      | [[https://github.com/gauteh/lieer][lieer]]          | gmail API client               | *active*          | [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][post]]        | credentials are encrypted                                 |
+| mail      | [[https://marlam.de/msmtp/][msmtp]]          | SMTP client                    | *active*          | -           | encrypted                                                 |
+| editor    | [[https://www.gnu.org/software/emacs/][emacs]]          | everything                     | *active*          | -           | GitHub renders .org files without labels and =tangle: no= |
+| editor    | [[https://www.vim.org/][vim]]            | text edtior                    | *active*          | -           | A minimal config to have a lightweight terminal $EDITOR   |
+| editor    | [[https://neovim.io/][neovim]]         | text edtior                    | archive           | -           |                                                           |
+| documents | [[https://mg.readthedocs.io/latexmk.html][latexmk]]        | LaTeX build tool               | *active*          | -           |                                                           |
+| documents | [[https://pwmt.org/projects/zathura/][zathura]]        | pdf viewer                     | *active*          | -           |                                                           |
+| desktop   | [[https://github.com/dunst-project/dunst][dunst]]          | notification manager           | *active*          | [[file:Desktop.org::*dunst][Desktop.org]] |                                                           |
+| desktop   | [[https://i3wm.org/][i3wm]]           | tiling WM                      | *active*          | [[file:Desktop.org::*i3wm][Desktop.org]] |                                                           |
+| desktop   | [[https://github.com/jordansissel/keynav][keynav]]         | control mouse with keyboard    | *active*          | [[file:Desktop.org::*keynav][Desktop.org]] |                                                           |
+| desktop   | [[https://github.com/polybar/polybar][polybar]]        | status bar                     | *active*          | [[file:Desktop.org::*Polybar][Desktop.org]] |                                                           |
+| desktop   | [[https://github.com/davatorium/rofi][rofi]]           | generic menu                   | *active*          | [[file:Desktop.org::*Rofi][Desktop.org]] |                                                           |
+| desktop   | [[https://github.com/flameshot-org/flameshot][flameshot]]      | screenshot                     | *active*          | [[file:Desktop.org::Flameshot][Desktop.org]] |                                                           |
+| desktop   | [[https://github.com/yshui/picom][picom]]          | X11 compositor                 | *active*          | [[file:Desktop.org::*Picom][Desktop.org]] |                                                           |
+| desktop   | [[https://github.com/vivien/i3blocks][i3blocks]]       | status bar                     | archive           | -           |                                                           |
+| internet  | [[https://github.com/tridactyl/tridactyl][tridactyl]]      | vim bindings for Firefox       | *active*          | -           | templated with yadm                                       |
+| internet  | [[https://newsboat.org/][newsboat]]       | terminal RSS reader            | *active*          | -           | urls are encrypted                                        |
+| internet  | [[https://qutebrowser.org/][qutebrowser]]    | browser with vim bindings      | archive           | -           |                                                           |
+| internet  | [[https://github.com/jarun/buku][buku]]           | bookmarks manager              | archive           | -           |                                                           |
+| internet  | [[https://tabliss.io/][tabliss]]        | new tab page                   | *active*          | -           | runned as server to work with tridactyl                   |
+| audio     | [[https://www.musicpd.org/][mpd]]            | music player daemon            | *active*          | -           |                                                           |
+| audio     | [[https://github.com/ncmpcpp/ncmpcpp][ncmpcpp]]        | MPD frontend                   | *active*          | -           |                                                           |
+| audio     | [[https://github.com/graysky2/pulseaudio-ctl][pulseaudio-ctl]] | PulseAudio controller          | archive           | -           |                                                           |
+| dev       | [[https://github.com/prompt-toolkit/ptpython][ptpython]]       | Python REPL                    | archive           | -           |                                                           |
+| dev       | [[https://github.com/inducer/pudb][pudb]]           | Python Debugger                | archive           | -           |                                                           |
+| misc      | [[https://yadm.io][yadm]]           | dotfiles manager               | *active*          | -           |                                                           |
+| misc      | [[https://github.com/risacher/sunwait][sunwait]]        | sunrise calculator             | *active*          | -           |                                                           |
+| misc      | [[https://github.com/vergoh/vnstat][vnstat]]         | traffic stats                  | *active*          | -           |                                                           |
 
 
 * Misc

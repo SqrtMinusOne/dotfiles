@@ -1,7 +1,7 @@
 #!/bin/bash
 # [[file:../../Desktop.org::*Launch script][Launch script:1]]
 CLASSNAME="dropdown_tmux"
-COMMAND="st -n $CLASSNAME -e tmux new-session -s $CLASSNAME"
+COMMAND="alacritty --class $CLASSNAME -e tmux new-session -s $CLASSNAME"
 pid=$(xdotool search --classname "dropdown_tmux")
 if [[ ! -z $pid  ]]; then
     i3-msg scratchpad show

@@ -1,0 +1,62 @@
+decorations: none
+
+font:
+  normal:
+    family: JetBrainsMono Nerd Font
+    style: Regular
+
+  size: 10
+    
+env:
+  TERM: xterm-256color
+    
+colors:
+  primary:
+    background: '#292d3e'
+    foreground: '#d0d0d0'
+  normal:
+    black: '#292d3e'
+    red: '#f07178'
+    green: '#c3e88d'
+    yellow: '#ffcb6b'
+    blue: '#82aaff'
+    magenta: '#c792ea'
+    cyan: '#89ddff'
+    white: '#d0d0d0'
+  bright:
+    Black: '#434758'
+    Red: '#ff8b92'
+    Green: '#ddffa7'
+    Yellow: '#ffe585'
+    Blue: '#9cc4ff'
+    Magenta: '#e1acff'
+    Cyan: '#a3f7ff'
+    White: '#ffffff'
+
+background_opacity: 0.80
+
+key_bindings:
+  - { key: Paste,                                       action: Paste          }
+  - { key: Copy,                                        action: Copy           }
+  - { key: L,         mods: Control,                    action: ClearLogNotice }
+  - { key: L,         mods: Control, mode: ~Vi|~Search, chars: "\x0c"          }
+  - { key: PageUp,    mods: Shift,   mode: ~Alt,        action: ScrollPageUp,  }
+  - { key: PageDown,  mods: Shift,   mode: ~Alt,        action: ScrollPageDown }
+  - { key: Home,      mods: Shift,   mode: ~Alt,        action: ScrollToTop,   }
+  - { key: End,       mods: Shift,   mode: ~Alt,        action: ScrollToBottom }
+
+  #  Turn off vi mode
+  - { key: Space,  mods: Shift|Control, mode: ~Search,    action: ReceiveChar             }
+
+  # (Windows, Linux, and BSD only)
+  - { key: V,              mods: Control|Shift, mode: ~Vi,        action: Paste            }
+  - { key: C,              mods: Control|Shift,                   action: Copy             }
+  - { key: F,              mods: Control|Shift, mode: ~Search,    action: ReceiveChar    }
+  - { key: B,              mods: Control|Shift, mode: ~Search,    action: ReceiveChar   }
+  - { key: Insert,         mods: Shift,                           action: PasteSelection   }
+  - { key: Key0,           mods: Control,                         action: ResetFontSize    }
+  - { key: Equals,         mods: Control,                         action: IncreaseFontSize }
+  - { key: Plus,           mods: Control,                         action: IncreaseFontSize }
+  - { key: NumpadAdd,      mods: Control,                         action: IncreaseFontSize }
+  - { key: Minus,          mods: Control,                         action: DecreaseFontSize }
+  - { key: NumpadSubtract, mods: Control,                         action: DecreaseFontSize }

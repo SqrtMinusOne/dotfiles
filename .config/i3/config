@@ -284,7 +284,7 @@ mode "rofi" {
 # [[file:../../Desktop.org::*Apps][Apps:1]]
 # Launch apps
 # start a terminal at workspace 1
-bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec st'"
+bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec alacritty'"
 
 bindsym $mod+p exec "copyq menu"
 bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper-2-1.png"
@@ -296,13 +296,13 @@ mode "apps" {
     bindsym b exec firefox; mode default
     bindsym v exec vk-messenger; mode default
     bindsym s exec slack; mode default;
-    bindsym m exec "st -e ncmpcpp"; mode default
+    bindsym m exec "alacritty -e ncmpcpp"; mode default
     bindsym c exec "copyq toggle"; mode default
     bindsym k exec "keepassxc"; mode default
     # bindsym e exec mailspring; mode default
     bindsym a exec "bash /home/pavel/bin/emacs.sh"; mode default
-    bindsym n exec "st -e newsboat"; mode default
-    bindsym w exec "st /home/pavel/bin/scripts/run_wego"; mode default
+    bindsym n exec "alacritty -e newsboat"; mode default
+    bindsym w exec "alacritty /home/pavel/bin/scripts/run_wego"; mode default
     # bindsym a exec emacsclient -c; mode default
     # bindsym Shift+a exec emacs; mode default
 }
@@ -313,6 +313,10 @@ mode "apps" {
 bindsym XF86AudioRaiseVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ +5%"
 bindsym XF86AudioLowerVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ -5%"
 bindsym XF86AudioMute exec --no-startup-id "pactl set-sink-mute @DEFAULT_SINK@ toggle"
+
+exec --no-startup-id xmodmap -e 'keycode 135 = Super_R' && xset -r 135
+bindsym $mod+F2 exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ -5%"
+bindsym $mod+F3 exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ +5%"
 
 # Media player controls
 bindsym XF86AudioPlay exec mpc toggle

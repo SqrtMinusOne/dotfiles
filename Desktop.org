@@ -2,7 +2,7 @@
 #+TODO: TODO(t) CHECK(s) | OFF(o)
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:conf-space   :comments link
-#+PROPERTY: header-args:conf-unix :comments link
+#+PROPERTY: header-args:conf-unix    :comments link
 #+PROPERTY: header-args:conf-windows :comments link
 #+PROPERTY: header-args:sh           :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
 #+PROPERTY: header-args:bash         :tangle-mode (identity #o755) :comments link :shebang "#!/bin/bash"
@@ -270,7 +270,7 @@ First of all, we have to distinguish a scratchpad terminal from a normal one. To
 Then, it would be cool not to duplicate scratchpads, so the following script first looks for a window with a created classname. If it exists, the script just toggles the scratchpad visibility. Otherwise, a new instance of a window is created.
 #+begin_src bash :tangle ./bin/scripts/dropdown
 CLASSNAME="dropdown_tmux"
-COMMAND="st -n $CLASSNAME -e tmux new-session -s $CLASSNAME"
+COMMAND="alacritty --class $CLASSNAME -e tmux new-session -s $CLASSNAME"
 pid=$(xdotool search --classname "dropdown_tmux")
 if [[ ! -z $pid  ]]; then
     i3-msg scratchpad show
@@ -441,7 +441,7 @@ I prefer to use a separate mode to launch most of my apps, with some exceptions.
 #+begin_src conf-space
 # Launch apps
 # start a terminal at workspace 1
-bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec st'"
+bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec alacritty'"
 
 bindsym $mod+p exec "copyq menu"
 bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper-2-1.png"
@@ -453,13 +453,13 @@ mode "apps" {
     bindsym b exec firefox; mode default
     bindsym v exec vk-messenger; mode default
     bindsym s exec slack; mode default;
-    bindsym m exec "st -e ncmpcpp"; mode default
+    bindsym m exec "alacritty -e ncmpcpp"; mode default
     bindsym c exec "copyq toggle"; mode default
     bindsym k exec "keepassxc"; mode default
     # bindsym e exec mailspring; mode default
     bindsym a exec "bash /home/pavel/bin/emacs.sh"; mode default
-    bindsym n exec "st -e newsboat"; mode default
-    bindsym w exec "st /home/pavel/bin/scripts/run_wego"; mode default
+    bindsym n exec "alacritty -e newsboat"; mode default
+    bindsym w exec "alacritty /home/pavel/bin/scripts/run_wego"; mode default
     # bindsym a exec emacsclient -c; mode default
     # bindsym Shift+a exec emacs; mode default
 }
@@ -470,6 +470,10 @@ mode "apps" {
 bindsym XF86AudioRaiseVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ +5%"
 bindsym XF86AudioLowerVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ -5%"
 bindsym XF86AudioMute exec --no-startup-id "pactl set-sink-mute @DEFAULT_SINK@ toggle"
+
+exec --no-startup-id xmodmap -e 'keycode 135 = Super_R' && xset -r 135
+bindsym $mod+F2 exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ -5%"
+bindsym $mod+F3 exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ +5%"
 
 # Media player controls
 bindsym XF86AudioPlay exec mpc toggle
