@@ -3,7 +3,7 @@ starship init fish | source
 fish_vi_key_bindings
 
 alias c="clear"
-alias v="nvim"
+alias v="vim"
 alias gg="lazygit"
 alias ls="exa --icons"
 alias ll="exa -lah --icons"

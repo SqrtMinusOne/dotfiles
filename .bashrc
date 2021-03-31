@@ -8,42 +8,6 @@ use_fish=true
 # ===================== PROGRAMS =====================
 export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
 
-# ===================== PATHS =====================
-if [ -d "$HOME/bin" ] ; then
-    export PATH="$HOME/bin:$PATH"
-    export PATH="$HOME/bin/scripts:$PATH"
-fi
-
-export MANPATH="/usr/local/texlive/2020/texmf-dist/doc/man:$MANPATH"
-export INFOPATH="/usr/local/texlive/2020/texmf-dist/doc/info:$INFOPATH"
-export PATH="/usr/local/texlive/2020/bin/x86_64-linux:$PATH"
-
-if [ -d "$HOME/.cargo" ] ; then
-    export PATH="$HOME/.cargo/bin:$PATH"
-fi
-if [ -d "$HOME/.rvm" ] ; then
-    export PATH="$PATH:$HOME/.rvm/bin"
-fi
-# if [ -d "$HOME/.gem" ]; then
-#     export PATH="$HOME/.gem/ruby/2.7.0/bin:$PATH"
-# fi
-if [ -d "$HOME/go" ] ; then
-    export PATH="$HOME/go/bin:$PATH"
-fi
-# export PATH="$HOME/.gem/ruby/2.7.0/bin/:$PATH"
-
-[ -f "/home/pavel/.ghcup/env" ] && source "/home/pavel/.ghcup/env" # ghcup-env
-
-# ===================== PERL =====================
-
-if [ -d "$HOME/perl5" ] ; then
-    PATH="/home/pavel/perl5/bin${PATH:+:${PATH}}"
-    PERL5LIB="/home/pavel/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
-    PERL_LOCAL_LIB_ROOT="/home/pavel/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
-    PERL_MB_OPT="--install_base \"/home/pavel/perl5\""; export PERL_MB_OPT;
-    PERL_MM_OPT="INSTALL_BASE=/home/pavel/perl5"; export PERL_MM_OPT;
-fi
-
 # ===================== FISH =====================
 
 if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} ]]
@@ -148,7 +112,7 @@ source /usr/share/fzf/key-bindings.bash
 
 
 # ===================== ALIASES =====================
-alias v="nvim"
+alias v="vim"
 alias gg="lazygit"
 alias ls="exa --icons"
 alias ll="exa -lah --icons"
