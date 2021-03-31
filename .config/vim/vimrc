@@ -1,0 +1,110 @@
+set hidden
+set wildmenu
+
+set exrc
+set secure
+set number
+set relativenumber
+set linebreak
+set nojoinspaces
+
+set hidden
+
+set hlsearch
+set cursorline
+set mouse=a
+set splitbelow
+set splitright
+
+set tabstop=4
+set shiftwidth=4
+set smarttab
+set expandtab
+set autoindent
+
+nnoremap - ddkP
+nnoremap _ ddp
+nnoremap gn :tabnew<CR>
+nnoremap gN :tabclose<CR>
+
+nnoremap H ^
+nnoremap L $
+nnoremap <End> $
+
+nnoremap <Leader>r :%s/\<<C-r><C-w>\>/
+tnoremap <Esc> <C-\><C-n>
+tnoremap <A-q> <C-\><C-n> :call chansend(b:terminal_job_id, "\<lt>Esc>")<CR>i
+nnoremap <Leader>q :lclose<CR> :pclose<CR> :cclose<CR> :noh<CR>
+
+function! GetSubTerminalName()
+    let current_tabpage = tabpagenr()
+    return current_tabpage . '_terminal'
+endfunction
+
+function! SubTerminal()
+    let subterminal_name = GetSubTerminalName()
+    let terminal_num = bufnr(subterminal_name)
+    if terminal_num == -1
+        execute ':new ' . subterminal_name
+        execute ':resize 10'
+        execute ':terminal ++curwin'
+        " normal i
+    else
+        execute ':bwipeout! ' . terminal_num
+        execute ':bwipeout! ' . (terminal_num + 1)
+    endif
+endfunction
+
+function! WipeSubTerminalBuffer()
+    let subterminal_name = GetSubTerminalName()
+    let terminal_num = bufnr(subterminal_name)
+    if terminal_num != -1
+        execute ':bwipeout! ' . terminal_num
+    endif
+endfunction
+
+autocmd BufWipeout term://* call WipeSubTerminalBuffer()
+
+nnoremap ` :call SubTerminal()<CR>
+
+" Terminal in tab {{{
+function! OpenTerminalInTab()
+    execute ':tabnew'
+    execute ':terminal ++curwin'
+    normal i
+endfunction
+
+nnoremap ~ :call OpenTerminalInTab()<CR>
+
+function! s:DiffWithSaved()
+  let filetype=&ft
+  diffthis
+  vnew | r # | normal! 1Gdd
+  diffthis
+  exe "setlocal bt=nofile bh=wipe nobl noswf ro ft=" . filetype
+endfunction
+
+com! DiffSaved call s:DiffWithSaved()
+
+function! Home()
+    let l:before = getpos('.')
+    normal ^
+    let l:after = getpos('.')
+    if l:before[2] == l:after[2]
+        call cursor(l:after[0], 1)
+    endif
+endfunction
+
+nnoremap <silent> <Home> :call Home()<CR>
+
+let g:netrw_banner = 0
+let g:netrw_liststyle = 3
+let g:netrw_browse_split = 4
+let g:netrw_altv = 1
+let g:netrw_winsize = 25
+
+nnoremap <C-n> :Lexplore<CR>
+
+set background=dark
+set laststatus=2
+colorscheme slate

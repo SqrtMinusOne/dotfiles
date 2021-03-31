@@ -3,6 +3,7 @@ LINKS=(
     "$HOME/.config/tridactyl/themes $HOME/themes"
     "$HOME/.config/tridactyl/.tridactylrc $HOME/.tridactylrc"
     "$HOME/.config/vnstat/.vnstatrc $HOME/.vnstatrc"
+    "$HOME/.config/vim/vimrc $HOME/.vimrc"
 )
 for item in "${LINKS[@]}"
 do
