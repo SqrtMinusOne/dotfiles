@@ -1380,6 +1380,32 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (my-leader-def "am" 'notmuch)
 
+(use-package google-translate
+  :straight t
+  :functions (my-google-translate-at-point google-translate--search-tkk)
+  :custom
+  (google-translate-backend-method 'curl)
+  :config
+  (defun google-translate--search-tkk ()
+    "Search TKK."
+    (list 430675 2721866130))
+  (defun my-google-translate-at-point()
+    "reverse translate if prefix"
+    (interactive)
+    (if current-prefix-arg
+        (google-translate-at-point)
+      (google-translate-at-point-reverse)))
+  (setq google-translate-translation-directions-alist
+	'(("en" . "ru")
+	  ("ru" . "en"))))
+
+(my-leader-def
+  "atp" 'google-translate-at-point
+  "atP" 'google-translate-at-point-reverse
+  "atq" 'google-translate-query-translate
+  "atQ" 'google-translate-query-translate-reverse
+  "att" 'google-translate-smooth-translate)
+
 (my-leader-def "aw" 'eww)
 
 (general-define-key

@@ -141,7 +141,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
       - [[#import-sty][Import *.sty]]
     - [[#markdown][Markdown]]
     - [[#plantuml][PlantUML]]
-    - [[#natural-languages][Natural languages]]
+    - [[#languagetool][LanguageTool]]
   - [[#emacs-lisp][Emacs Lisp]]
   - [[#python][Python]]
   - [[#java][Java]]
@@ -160,6 +160,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#open-emacs-config][Open Emacs config]]
     - [[#open-dotfile][Open dotfile]]
   - [[#notmuch][Notmuch]]
+  - [[#google-translate][Google Translate]]
   - [[#eww][EWW]]
   - [[#snow][Snow]]
   - [[#zone][Zone]]
@@ -2171,7 +2172,14 @@ A function to import =.sty= files to the LaTeX document.
   "RET" 'plantuml-preview)
   
 #+end_src
-*** Natural languages
+*** LanguageTool
+LanguageTool is a great offline spell checker. For some reason the download link is nowhere to be found on the home page, so it is listed in the references as well.
+
+References:
+- [[https://languagetool.org/][LanguageTool homepage]]
+- [[https://dev.languagetool.org/http-server][LanguageTool http server]]
+- [[https://github.com/mhayashi1120/Emacs-langtool][LanguageTool for Emacs repo]]
+
 #+begin_src emacs-lisp
 (use-package langtool
   :straight t
@@ -2186,7 +2194,8 @@ A function to import =.sty= files to the LaTeX document.
   "s" 'langtool-server-stop
   "d" 'langtool-check-done
   "n" 'langtool-goto-next-error
-  "p" 'langtool-goto-previous-error)
+  "p" 'langtool-goto-previous-error
+  "l" 'langtool-correct-buffer)
 #+end_src
 ** Emacs Lisp
 #+begin_src emacs-lisp
@@ -2344,6 +2353,42 @@ References:
 (my-leader-def "am" 'notmuch)
 #+end_src
 
+** Google Translate
+Emacs interface to Google Translate.
+
+Can't make it load lazily for some strange reason.
+
+References:
+- [[https://github.com/atykhonov/google-translate][google-translate repo]]
+- [[https://github.com/atykhonov/google-translate/issues/137#issuecomment-728278849][issue with ttk error fix]]
+
+#+begin_src emacs-lisp
+(use-package google-translate
+  :straight t
+  :functions (my-google-translate-at-point google-translate--search-tkk)
+  :custom
+  (google-translate-backend-method 'curl)
+  :config
+  (defun google-translate--search-tkk ()
+    "Search TKK."
+    (list 430675 2721866130))
+  (defun my-google-translate-at-point()
+    "reverse translate if prefix"
+    (interactive)
+    (if current-prefix-arg
+        (google-translate-at-point)
+      (google-translate-at-point-reverse)))
+  (setq google-translate-translation-directions-alist
+	'(("en" . "ru")
+	  ("ru" . "en"))))
+
+(my-leader-def
+  "atp" 'google-translate-at-point
+  "atP" 'google-translate-at-point-reverse
+  "atq" 'google-translate-query-translate
+  "atQ" 'google-translate-query-translate-reverse
+  "att" 'google-translate-smooth-translate)
+#+end_src
 ** EWW
 Emacs built-in web browser. I wonder if anyone actually uses it.
 
