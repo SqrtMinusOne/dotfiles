@@ -23,24 +23,19 @@
 (eval-when-compile (require 'use-package))
  ;; (setq use-package-verbose t)
 
+(setq gc-cons-threshold 80000000)
+(setq read-process-output-max (* 1024 1024))
+
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (if (boundp 'after-focus-change-function)
+                (add-function :after after-focus-change-function
+                              (lambda ()
+                                (unless (frame-focus-state)
+                                  (garbage-collect))))
+              (add-hook 'after-focus-change-function 'garbage-collect))))
+
 (setq my/lowpower (string= (system-name) "pntk"))
-
-(defconst user-init-dir
-  (cond ((boundp 'user-emacs-directory)
-         user-emacs-directory)
-        ((boundp 'user-init-directory)
-         user-init-directory)
-        (t "~/.emacs.d/")))
-
-(defun load-user-file (file)
-  "Load a file in current user's configuration directory."
-  (interactive "f")
-  (load-file (expand-file-name file user-init-dir)))
-
-(setenv "IS_EMACS" "true")
-
-(setq custom-file (concat user-emacs-directory "custom.el"))
-(load custom-file 'noerror)
 
 (use-package conda
   :straight t
@@ -52,8 +47,10 @@
 (if (not (getenv "CONDA_DEFAULT_ENV"))
   (conda-env-activate "base"))
 
-(setq gc-cons-threshold 80000000)
-(setq read-process-output-max (* 1024 1024))
+(setenv "IS_EMACS" "true")
+
+(setq custom-file (concat user-emacs-directory "custom.el"))
+(load custom-file 'noerror)
 
 (use-package general
   :straight t
@@ -70,9 +67,62 @@
                       :weight 'bold)
   :straight t)
 
-(general-def :states '(normal insert visual)
-  "<home>" 'beginning-of-line
-  "<end>" 'end-of-line)
+(use-package evil
+  :straight t
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-C-u-scroll t)
+  (setq evil-want-keybinding nil)
+  :config
+  (evil-mode 1)
+  (setq evil-search-module 'evil-search)
+  (setq evil-split-window-below t)
+  (setq evil-vsplit-window-right t)
+  ;; (setq evil-respect-visual-line-mode t)
+  (evil-set-undo-system 'undo-tree)
+  ;; (add-to-list 'evil-emacs-state-modes 'dired-mode)
+  )
+
+(use-package evil-surround
+  :straight t
+  :after evil
+  :config
+  (global-evil-surround-mode 1))
+
+(use-package evil-commentary
+  :straight t
+  :after evil
+  :config
+  (evil-commentary-mode))
+
+(use-package evil-quickscope
+  :straight t
+  :after evil
+  :config
+  :hook ((prog-mode . turn-on-evil-quickscope-mode)
+         (LaTeX-mode . turn-on-evil-quickscope-mode)))
+
+(use-package evil-collection
+  :straight t
+  :after evil
+  :config
+  (evil-collection-init
+    '(eww
+      dired
+      company
+      vterm
+      flycheck
+      profiler
+      cider
+      explain-pause-mode
+      notmuch
+      custom
+      xref
+      eshell
+      helpful
+      compile
+      comint
+      magit)))
 
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
@@ -96,66 +146,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             minibuffer-local-isearch-map)
  [escape] 'minibuffer-keyboard-quit)
 
-(use-package evil
-  :straight t
-  :init
-  (setq evil-want-integration t)
-  (setq evil-want-C-u-scroll t)
-  (setq evil-want-keybinding nil)
-  :config
-  (evil-mode 1)
-  (setq evil-search-module 'evil-search)
-  (setq evil-split-window-below t)
-  (setq evil-vsplit-window-right t)
-  ;; (setq evil-respect-visual-line-mode t)
-  (evil-set-undo-system 'undo-tree)
-  ;; (add-to-list 'evil-emacs-state-modes 'dired-mode)
-  )
-  
-(use-package evil-numbers
-  :straight t
-  :commands (evil-numbers/inc-at-pt evil-numbers/dec-at-pt))
-
-(use-package evil-surround
-  :straight t
-  :after evil
-  :config
-  (global-evil-surround-mode 1))
-
-(use-package evil-commentary
-  :straight t
-  :after evil
-  :config
-  (evil-commentary-mode))
-  
-(use-package evil-collection
-  :straight t
-  :after evil
-  :config
-  (evil-collection-init
-    '(eww
-      dired
-      company
-      vterm
-      flycheck
-      profiler
-      cider
-      explain-pause-mode
-      notmuch
-      custom
-      xref
-      eshell
-      helpful
-      compile
-      comint
-      magit)))
-  
-(use-package evil-quickscope
-  :straight t
-  :after evil
-  :config
-  :hook ((prog-mode . turn-on-evil-quickscope-mode)
-         (LaTeX-mode . turn-on-evil-quickscope-mode)))
+(general-def :states '(normal insert visual)
+  "<home>" 'beginning-of-line
+  "<end>" 'end-of-line)
 
 (general-create-definer my-leader-def
   :keymaps 'override
@@ -165,16 +158,110 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-def
   :keymaps 'override
   :states '(normal motion emacs insert visual)
-  "M-u" 'universal-argument
-)
+  "M-u" 'universal-argument)
 
 (general-def :states '(normal motion emacs) "SPC" nil)
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
+
 (my-leader-def "Ps" 'profiler-start)
 (my-leader-def "Pe" 'profiler-stop)
 (my-leader-def "Pp" 'profiler-report)
+
+(general-define-key
+  :keymaps 'override
+  "C-<right>" 'evil-window-right
+  "C-<left>" 'evil-window-left
+  "C-<up>" 'evil-window-up
+  "C-<down>" 'evil-window-down
+  "C-h" 'evil-window-left
+  "C-l" 'evil-window-right
+  "C-k" 'evil-window-up
+  "C-j" 'evil-window-down
+  "C-x h" 'previous-buffer
+  "C-x l" 'next-buffer)
+
+(winner-mode 1)
+(define-key evil-window-map (kbd "u") 'winner-undo)
+(define-key evil-window-map (kbd "U") 'winner-redo)
+
+(general-nmap
+  "gD" 'xref-find-definitions-other-window
+  "gr" 'xref-find-references)
+  
+(my-leader-def
+  "fx" 'xref-find-apropos)
+
+(general-nmap "TAB" 'evil-toggle-fold)
+(general-nmap :keymaps 'hs-minor-mode-map "ze" 'hs-hide-level)
+
+(defun my/zoom-in ()
+  "Increase font size by 10 points"
+  (interactive)
+  (set-face-attribute 'default nil
+                      :height
+                      (+ (face-attribute 'default :height)
+                         10)))
+
+(defun my/zoom-out ()
+  "Decrease font size by 10 points"
+  (interactive)
+  (set-face-attribute 'default nil
+                      :height
+                      (- (face-attribute 'default :height)
+                         10)))
+
+;; change font size, interactively
+(global-set-key (kbd "C-+") 'my/zoom-in)
+(global-set-key (kbd "C-=") 'my/zoom-out)
+
+(use-package visual-fill-column
+  :straight t
+  :config
+  (add-hook 'visual-fill-column-mode-hook
+            (lambda () (setq visual-fill-column-center-text t))))
+
+(use-package smartparens
+  :straight t)
+
+(use-package aggressive-indent
+  :straight t)
+
+(setq tab-always-indent nil)
+
+(setq default-tab-width 4)
+(setq tab-width 4)
+(setq evil-indent-convert-tabs nil)
+(setq indent-tabs-mode nil)
+(setq tab-width 4)
+(setq evil-shift-round nil)
+
+(setq scroll-conservatively scroll-margin)
+(setq scroll-step 1)
+(setq scroll-preserve-screen-position t)
+(setq scroll-error-top-bottom t)
+(setq mouse-wheel-progressive-speed nil)
+(setq mouse-wheel-inhibit-click-time nil)
+
+(setq select-enable-clipboard t)
+(setq mouse-yank-at-point t)
+
+(setq backup-inhibited t)
+(setq auto-save-default nil)
+
+(use-package undo-tree
+  :straight t
+  :config
+  (global-undo-tree-mode)
+  (setq undo-tree-visualizer-diff t)
+  (setq undo-tree-visualizer-timestamps t)
+
+  (my-leader-def "u" 'undo-tree-visualize)
+  (fset 'undo-auto-amalgamate 'ignore)
+  (setq undo-limit 6710886400)
+  (setq undo-strong-limit 100663296)
+  (setq undo-outer-limit 1006632960))
 
 (use-package helpful
   :straight t
@@ -233,69 +320,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "C-t" 'view-emacs-todo
   "C-w" 'describe-no-warranty)
 
-(general-define-key
-  :keymaps 'override
-  "C-<right>" 'evil-window-right
-  "C-<left>" 'evil-window-left
-  "C-<up>" 'evil-window-up
-  "C-<down>" 'evil-window-down
-  "C-h" 'evil-window-left
-  "C-l" 'evil-window-right
-  "C-k" 'evil-window-up
-  "C-j" 'evil-window-down
-  "C-x h" 'previous-buffer
-  "C-x l" 'next-buffer
-  )
-
-;; (use-package evil-mc
-;;   :straight t
-;;   :config
-;;   (define-key evil-mc-key-map (kbd "C-n") nil)
-;;   (define-key evil-mc-key-map (kbd "C-p") nil)
-;;   (define-key evil-mc-key-map (kbd "g") nil)
-;;   (evil-define-key 'normal evil-mc-key-map
-;;     (kbd "C-n") nil
-;;     (kbd "g") nil
-;;     (kbd "C-p") nil
-;;   )
-;;   (evil-define-key 'visual evil-mc-key-map
-;;     "A" #'evil-mc-make-cursor-in-visual-selection-end
-;;     "I" #'evil-mc-make-cursor-in-visual-selection-beg
-;;     (kbd "C-n") nil
-;;     (kbd "g") nil
-;;     (kbd "C-p") nil
-;;   )
-;;   (global-evil-mc-mode 1))
-;;   
-;; (general-nmap "gr" evil-mc-cursors-map)
-
-;; (use-package multiple-cursors
-;;   :straight t)
-;;  
-;; (general-vmap
-;;   "I" #'mc/edit-lines
-;; )
-
-(use-package undo-tree
-  :straight t
-  :config
-  (global-undo-tree-mode)
-  (setq undo-tree-visualizer-diff t)
-  (setq undo-tree-visualizer-timestamps t)
-
-  (my-leader-def "u" 'undo-tree-visualize)
-  (fset 'undo-auto-amalgamate 'ignore)
-  (setq undo-limit 6710886400)
-  (setq undo-strong-limit 100663296)
-  (setq undo-outer-limit 1006632960))
-
-(general-nmap
-  "gD" 'xref-find-definitions-other-window
-  "gr" 'xref-find-references)
-  
-(my-leader-def
-  "fx" 'xref-find-apropos)
-
 (use-package ivy
   :straight t
   :config
@@ -311,7 +335,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package swiper
   :defer t
   :straight t)
-  
+
 (use-package ivy-rich
   :straight t
   :after ivy
@@ -326,23 +350,22 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "f" 'project-find-file
   "c" 'counsel-yank-pop
   "a" 'counsel-rg
-  "A" 'counsel-ag
-)
+  "A" 'counsel-ag)
 
 (general-imap
   "C-y" 'counsel-yank-pop)
 
 (my-leader-def "SPC" 'ivy-resume)
 (my-leader-def "s" 'swiper-isearch
-               "S" 'swiper-all)
+  "S" 'swiper-all)
 
 (general-define-key
-  :keymaps '(ivy-minibuffer-map swiper-map)
-  "M-j" 'ivy-next-line
-  "M-k" 'ivy-previous-line
-  "<C-return>" 'ivy-call
-  "M-RET" 'ivy-immediate-done
-  [escape] 'minibuffer-keyboard-quit)
+ :keymaps '(ivy-minibuffer-map swiper-map)
+ "M-j" 'ivy-next-line
+ "M-k" 'ivy-previous-line
+ "<C-return>" 'ivy-call
+ "M-RET" 'ivy-immediate-done
+ [escape] 'minibuffer-keyboard-quit)
 
 (use-package treemacs
   :straight t
@@ -379,11 +402,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (projectile-mode +1)
   (setq projectile-project-search-path '("~/Code" "~/Documents")))
-  
-;; (use-package helm-projectile
-;;   :straight t
-;;   :config
-;;   (setq projectile-completion-system 'helm))
 
 (use-package counsel-projectile
   :after (counsel projectile)
@@ -392,14 +410,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package treemacs-projectile
   :after (treemacs projectile)
   :straight t)
-  
+
 (my-leader-def
-  "p" 'projectile-command-map
-  ;; "fa" 'helm-projectile-rg
-  ;; "fA" 'helm-projectile-ag
-  )
-  
-;; (general-nmap "C-p" 'helm-projectile-find-file)
+  "p" 'projectile-command-map)
+
 (general-nmap "C-p" 'counsel-projectile-find-file)
 
 (use-package company
@@ -410,12 +424,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq company-dabbrev-downcase nil)
   (setq company-show-numbers t))
 
+(general-imap "C-SPC" 'company-complete)
+
 (use-package company-box
   :straight t
   :if (not my/lowpower)
+  :after (company)
   :hook (company-mode . company-box-mode))
-  
-(general-imap "C-SPC" 'company-complete)
 
 (use-package magit
   :straight t
@@ -445,47 +460,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "m" 'magit
   "M" 'magit-file-dispatch)
 
-;; (use-package better-jumper
-;;   :straight t
-;;   :config
-;;   (better-jumper-mode +1)
-;;   (setq better-jumper-add-jump-behavior 'replace))
-;; 
-;; (general-nmap
-;;   "go" 'better-jumper-jump-forward
-;;   "gp" 'better-jumper-jump-backward)
-
-;; (use-package smart-backspace
-;;   :straight t)
-
-;; (general-imap [?\C-?] 'smart-backspace)
-;; (general-imap [(shift backspace)] 'backward-delete-char)
-
-(use-package visual-fill-column
-  :straight t
-  :config
-  (add-hook 'visual-fill-column-mode-hook
-            (lambda () (setq visual-fill-column-center-text t))))
-
-(use-package smartparens
-  :straight t)
-
-(use-package aggressive-indent
-  :straight t)
-
-(setq tab-always-indent nil)
-
-(setq default-tab-width 4)
-(setq tab-width 4)
-(setq-default evil-indent-convert-tabs nil)
-(setq-default indent-tabs-mode nil)
-(setq-default tab-width 4)
-(setq-default evil-shift-round nil)
-
-(winner-mode 1)
-(define-key evil-window-map (kbd "u") 'winner-undo)
-(define-key evil-window-map (kbd "U") 'winner-redo)
-
 (use-package editorconfig
   :straight t
   :config
@@ -500,15 +474,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t)
   
 (general-imap "M-TAB" 'company-yasnippet)
-
-(use-package hideshowvis
-  :straight t
-  :config
-  ;; (add-hook 'prog-mode-hook #'hs-minor-mode)
-)
-
-(general-nmap "TAB" 'evil-toggle-fold)
-(general-nmap :keymaps 'hs-minor-mode-map "ze" 'hs-hide-level)
 
 (use-package wakatime-mode
   :straight t
@@ -552,7 +517,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
     [remap dired-up-directory] 'dired-single-up-directory
     "M-<return>" 'dired-open-xdg))
-    
+
+(my-leader-def "ad" 'dired)
+
 (use-package dired+
   :straight t
   :after dired
@@ -571,11 +538,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
   (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
   (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice))
-  
+
 (use-package dired-open
   :after dired
   :straight t)
-  
+
 (use-package dired-narrow
   :after dired
   :straight t
@@ -583,8 +550,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-define-key
     :keymaps 'dired-narrow-map
     [escape] 'keyboard-quit))
-  
-(my-leader-def "ad" 'dired)
 
 (use-package vterm
   :straight t
@@ -595,37 +560,37 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'vterm-mode-hook
             (lambda ()
               (setq-local global-display-line-numbers-mode nil)
-              (display-line-numbers-mode 0)
-              ))
+              (display-line-numbers-mode 0)))
   
   (general-define-key
-    :keymaps 'vterm-mode-map
-    "M-q" 'vterm-send-escape
-    
-    "C-h" 'evil-window-left
-    "C-l" 'evil-window-right
-    "C-k" 'evil-window-up
-    "C-j" 'evil-window-down
-    
-    "C-<right>" 'evil-window-right
-    "C-<left>" 'evil-window-left
-    "C-<up>" 'evil-window-up
-    "C-<down>" 'evil-window-down
-    
-    "M-<left>" 'vterm-send-left
-    "M-<right>" 'vterm-send-right
-    "M-<up>" 'vterm-send-up
-    "M-<down>" 'vterm-send-down)
-    
+   :keymaps 'vterm-mode-map
+   "M-q" 'vterm-send-escape
+   
+   "C-h" 'evil-window-left
+   "C-l" 'evil-window-right
+   "C-k" 'evil-window-up
+   "C-j" 'evil-window-down
+   
+   "C-<right>" 'evil-window-right
+   "C-<left>" 'evil-window-left
+   "C-<up>" 'evil-window-up
+   "C-<down>" 'evil-window-down
+   
+   "M-<left>" 'vterm-send-left
+   "M-<right>" 'vterm-send-right
+   "M-<up>" 'vterm-send-up
+   "M-<down>" 'vterm-send-down)
+  
   (general-imap
     :keymaps 'vterm-mode-map
     "C-r" 'vterm-send-C-r
     "C-k" 'vterm-send-C-k
     "C-j" 'vterm-send-C-j
     "M-l" 'vterm-send-right
-    "M-h" 'vterm-send-left)
-  )
-  
+    "M-h" 'vterm-send-left))
+
+(general-nmap "~" 'vterm)
+
 (add-to-list 'display-buffer-alist
              `(,"vterm-subterminal.*"
                (display-buffer-reuse-window
@@ -633,7 +598,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                (side . bottom)
                (reusable-frames . visible)
                (window-height . 0.33)))
-               
+
 (defun my/toggle-vterm-subteminal ()
   "Toogle subteminal."
   (interactive)
@@ -643,18 +608,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          (lambda (window)
            (string-match
             "vterm-subterminal.*"
-            (buffer-name (window-buffer window)))
-           )
+            (buffer-name (window-buffer window))))
          (window-list))))
     (if vterm-window
         (if (eq (get-buffer-window (current-buffer)) vterm-window)
             (kill-buffer (current-buffer))
-          (select-window vterm-window)
-          )
+          (select-window vterm-window))
       (vterm-other-window "vterm-subterminal"))))
 
 (general-nmap "`" 'my/toggle-vterm-subteminal)
-(general-nmap "~" 'vterm)
 
 (defun my/configure-eshell ()
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
@@ -693,6 +655,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight (:type built-in))
 
 (setq org-directory (expand-file-name "~/Documents/org-mode"))
+(setq org-default-notes-file (concat org-directory "/notes.org"))
+
+(setq org-startup-indented t)
+(setq org-return-follows-link t)
+(add-hook 'org-mode-hook (lambda () (rainbow-delimiters-mode 0)))
+
+(require 'org-crypt)
+(org-crypt-use-before-save-magic)
+(setq org-tags-exclude-from-inheritance (quote ("crypt")))
+(setq org-crypt-key nil)
 
 (use-package evil-org
   :straight t
@@ -713,10 +685,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (evil-org-agenda-set-keys))
 
 (use-package jupyter
-  :straight t
-  :config
-  ;; (add-to-list 'evil-emacs-state-modes 'jupyter-repl-mode)
-  )
+  :straight t)
   
 (my-leader-def "ar" 'jupyter-run-repl)
 
@@ -727,6 +696,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    ;; (typescript .t)
    (shell . t)
    (jupyter . t)))
+
+(add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
 
 (org-babel-jupyter-override-src-block "python")
 
@@ -741,24 +712,34 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq ob-async-no-async-languages-alist '("python" "jupyter-python")))
 
-(setq org-default-notes-file (concat org-directory "/notes.org"))
-
 (use-package org-latex-impatient
-  :straight (
-    :repo "yangsheng6810/org-latex-impatient"
-    :branch "master"
-    :host github)
+  :straight (:repo "yangsheng6810/org-latex-impatient"
+                   :branch "master"
+                   :host github)
   :hook (org-mode . org-latex-impatient-mode)
   :init
   (setq org-latex-impatient-tex2svg-bin
         "/home/pavel/Programs/miniconda3/lib/node_modules/mathjax-node-cli/bin/tex2svg")
   (setq org-latex-impatient-scale 2)
   (setq org-latex-impatient-delay 1)
-  (setq org-latex-impatient-border-color "#ffffff")
-)
+  (setq org-latex-impatient-border-color "#ffffff"))
 
-(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
-(setq org-highlight-latex-and-related '(native script entities))
+(use-package org-superstar
+  :straight t
+  :after (org)
+  :config
+  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
+
+(if (not my/lowpower)
+    (setq org-agenda-category-icon-alist
+          `(
+            ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
+            ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
+            ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
+            ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
+            ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
+            ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
+            ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
 
 (use-package ox-hugo
   :straight t
@@ -803,23 +784,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap :keymaps 'org-mode-map
     "C-x C-l" 'my/org-link-copy)
 
-(use-package org-superstar
-  :straight t
-  :after (org)
-  :config
-  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
-
-(if (not my/lowpower)
-    (setq org-agenda-category-icon-alist
-          `(
-            ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
-            ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
-            ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
-            ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
-            ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
-            ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
-            ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
-
 (use-package hide-mode-line
   :straight t)
 
@@ -851,97 +815,48 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (tab-bar-mode 1))))
 
 (use-package org-make-toc
+  :after (org)
   :straight t)
 
-(setq org-startup-indented t)
-
-(setq org-return-follows-link t)
-(require 'org-crypt)
-(org-crypt-use-before-save-magic)
-(setq org-tags-exclude-from-inheritance (quote ("crypt")))
-(setq org-crypt-key nil)
-
-(add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
-(add-hook 'org-mode-hook (lambda () (rainbow-delimiters-mode 0)))
-
-(defun my/edit-configuration ()
-  "Open the init file."
-  (interactive)
-  (find-file "~/Emacs.org"))
-  
-;; (defun my/edit-exwm-configuration ()
-;;   "Open the exwm config file."
-;;   (interactive)
-;;   (find-file "~/.emacs.d/exwm.org"))
-  
-(general-define-key "C-c c" 'my/edit-configuration)
-;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
-
-(defun my/open-yadm-file ()
-  "Open a file managed by yadm"
-  (interactive)
-  (find-file
-   (concat
-    (file-name-as-directory (getenv "HOME"))
-    (completing-read
-     "yadm files: "
-     (split-string
-      (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
-
-(general-define-key "C-c f" 'my/open-yadm-file)
-
-;; Disable GUI elements
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
 
-;; Transparency
 ;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
 ;; (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
 
-;; Prettify symbols
 ;; (global-prettify-symbols-mode)
 
-;; No start screen
 (setq inhibit-startup-screen t)
-;; Visual bell
+
 (setq visible-bell 0)
 
-;; y or n instead of yes or no
 (defalias 'yes-or-no-p 'y-or-n-p)
 
-;; Hide mouse cursor while typing
 (setq make-pointer-invisible t)
 
-;; Font
 (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
-;; (load-user-file "jetbrains-ligatures.el")
 
-;; Line numbers
 (global-display-line-numbers-mode 1)
 (line-number-mode nil)
 (setq display-line-numbers-type 'visual)
 (column-number-mode)
 
-;; Parenteses
 (show-paren-mode 1)
 
-;; Wrap
 (setq word-wrap 1)
 (global-visual-line-mode t)
 
-;; Hightlight line
 (global-hl-line-mode 1)
 
 (setq frame-title-format
-    '(""
-      "emacs"
-      (:eval
-       (let ((project-name (projectile-project-name)))
-         (if (not (string= "-" project-name))
-           (format ":%s@%s" project-name (system-name))
-           (format "@%s" (system-name)))))
-       ))
+      '(""
+        "emacs"
+        (:eval
+         (let ((project-name (projectile-project-name)))
+           (if (not (string= "-" project-name))
+               (format ":%s@%s" project-name (system-name))
+             (format "@%s" (system-name)))))))
 
 (general-define-key
  :keymaps 'override
@@ -971,10 +886,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (if prefix
                   (substring elem (length prefix))
                 elem)
-              0 (if crop 1 nil))
-             ))
-        (concat prefix rest))
-      )))
+              0 (if crop 1 nil))))
+        (concat prefix rest)))))
 
 (defun my/shorten-project-name (project-name)
   (let ((elems (s-slice-at my/project-title-separators project-name)))
@@ -1006,54 +919,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :if (not my/lowpower)
   :hook (after-init . global-emojify-mode))
-
-(use-package all-the-icons
-  :straight t)
-
-;; (use-package dashboard
-;;   :straight t
-;;   :config
-;;   (dashboard-setup-startup-hook))
-
-;; (use-package solaire-mode
-;;   :straight t
-;;   :config
-;;   (solaire-global-mode +1))
-
-(use-package auto-dim-other-buffers
-  :straight t
-  :if (display-graphic-p)
-  :config
-  (set-face-attribute 'auto-dim-other-buffers-face nil
-                      :background "#212533")
-  (auto-dim-other-buffers-mode t))
-  
-(use-package doom-themes
-  :straight t
-  :config
-  (setq doom-themes-enable-bold t   
-        doom-themes-enable-italic t)
-  (load-theme 'doom-palenight t)
-  (doom-themes-visual-bell-config)
-  (setq doom-themes-treemacs-theme "doom-colors")
-  (doom-themes-treemacs-config))
-
-(use-package highlight-indent-guides
-  :straight t
-  :if (not my/lowpower)
-  :hook (
-         (prog-mode . highlight-indent-guides-mode)
-         (vue-mode . highlight-indent-guides-mode)
-         (LaTeX-mode . highlight-indent-guides-mode))
-  :config
-  (setq highlight-indent-guides-method 'bitmap)
-  (setq highlight-indent-guides-bitmap-function 'highlight-indent-guides--bitmap-line))
-  
-(use-package rainbow-delimiters
-  :straight t
-  :if (not my/lowpower)
-  :hook (
-    (prog-mode . rainbow-delimiters-mode)))
 
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
@@ -1089,53 +954,43 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
      "//" "///" "/*" "*/" "/=" "//=" "/==" "@_" "__"))
   (global-ligature-mode t))
 
-(defun my/zoom-in ()
-  "Increase font size by 10 points"
-  (interactive)
-  (set-face-attribute 'default nil
-                      :height
-                      (+ (face-attribute 'default :height)
-                         10)))
+(use-package all-the-icons
+  :straight t)
 
-(defun my/zoom-out ()
-  "Decrease font size by 10 points"
-  (interactive)
-  (set-face-attribute 'default nil
-                      :height
-                      (- (face-attribute 'default :height)
-                         10)))
-
-;; change font size, interactively
-(global-set-key (kbd "C-+") 'my/zoom-in)
-(global-set-key (kbd "C-=") 'my/zoom-out)
-
-(setq scroll-conservatively scroll-margin)
-(setq scroll-step 1)
-(setq scroll-preserve-screen-position t)
-(setq scroll-error-top-bottom t)
-(setq mouse-wheel-progressive-speed nil)
-(setq mouse-wheel-inhibit-click-time nil)
-
-(setq select-enable-clipboard t)
-(setq mouse-yank-at-point t)
-
-(setq backup-inhibited t)
-(setq auto-save-default nil)
-
-(use-package notmuch
-  :ensure nil
-  :commands (notmuch)
+(use-package auto-dim-other-buffers
+  :straight t
+  :if (display-graphic-p)
   :config
-  (setq mail-specify-envelope-from t)
-  (setq message-sendmail-envelope-from 'header)
-  (setq mail-envelope-from 'header)
-  (setq notmuch-always-prompt-for-sender t)
-  (setq sendmail-program "/usr/bin/msmtp")
-  (setq send-mail-function #'sendmail-send-it)
-  (add-hook 'notmuch-hello-mode-hook
-            (lambda () (display-line-numbers-mode 0))))
-  
-(my-leader-def "am" 'notmuch)
+  (set-face-attribute 'auto-dim-other-buffers-face nil
+                      :background "#212533")
+  (auto-dim-other-buffers-mode t))
+
+(use-package doom-themes
+  :straight t
+  :config
+  (setq doom-themes-enable-bold t   
+        doom-themes-enable-italic t)
+  (load-theme 'doom-palenight t)
+  (doom-themes-visual-bell-config)
+  (setq doom-themes-treemacs-theme "doom-colors")
+  (doom-themes-treemacs-config))
+
+(use-package highlight-indent-guides
+  :straight t
+  :if (not my/lowpower)
+  :hook (
+         (prog-mode . highlight-indent-guides-mode)
+         (vue-mode . highlight-indent-guides-mode)
+         (LaTeX-mode . highlight-indent-guides-mode))
+  :config
+  (setq highlight-indent-guides-method 'bitmap)
+  (setq highlight-indent-guides-bitmap-function 'highlight-indent-guides--bitmap-line))
+
+(use-package rainbow-delimiters
+  :straight t
+  :if (not my/lowpower)
+  :hook (
+    (prog-mode . rainbow-delimiters-mode)))
 
 (use-package lsp-mode
   :straight t
@@ -1208,14 +1063,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                   display-buffer-in-side-window)
                  (side            . bottom)
                  (reusable-frames . visible)
-                 (window-height   . 0.33)))
-  )
+                 (window-height   . 0.33))))
 
 (defun my/set-smartparens-indent (mode)
   (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
   (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
   (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
-  
+
+(defun set-flycheck-eslint()
+  "Override flycheck checker with eslint."
+  (setq-local lsp-diagnostic-package :none)
+  (setq-local flycheck-checker 'javascript-eslint))
+
 (use-package typescript-mode
   :straight t
   :mode "\\.ts\\'"
@@ -1224,14 +1083,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'typescript-mode-hook #'hs-minor-mode)
   (my/set-smartparens-indent 'typescript-mode))
-
-(defun set-flycheck-eslint()
-  "Override flycheck checker with eslint."
-  (setq-local lsp-diagnostic-package :none)
-  (setq-local flycheck-checker 'javascript-eslint))
-
-;; (add-hook 'typescript-mode-hook
-;;           #'set-flycheck-eslint)
 
 (add-hook 'js-mode-hook #'smartparens-mode)
 (add-hook 'js-mode-hook #'hs-minor-mode)
@@ -1258,7 +1109,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (my/set-smartparens-indent 'vue-mode)
   (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil))))
 
-  
 (with-eval-after-load 'editorconfig
   (add-to-list 'editorconfig-indentation-alist
                '(vue-mode css-indent-offset
@@ -1291,6 +1141,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq-default TeX-auto-save t)
   (setq-default TeX-parse-self t)
   (TeX-PDF-mode)
+  ;; Use XeLaTeX & stuff
   (setq-default TeX-engine 'xetex)
   (setq-default TeX-command-extra-options "-shell-escape")
   (setq-default TeX-source-correlate-method 'synctex)
@@ -1300,6 +1151,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
   (setq-default font-latex-fontify-sectioning 1.3)
 
+  ;; Scale preview for my DPI
   (setq-default preview-scale-function 1.4)
   ;; (assoc-delete-all "--" tex--prettify-symbols-alist)
   ;; (assoc-delete-all "---" tex--prettify-symbols-alist)
@@ -1310,15 +1162,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (outline-minor-mode)))
   
   (add-to-list 'TeX-view-program-selection
-             '(output-pdf "Zathura"))
-             
+               '(output-pdf "Zathura"))
+  
+  ;; Do not run lsp within templated TeX files
   (add-hook 'LaTeX-mode-hook
             #'(lambda ()
                 (unless (string-match "\.hogan\.tex$" (buffer-name))
                   (lsp))
                 (setq-local lsp-diagnostic-package :none)
                 (setq-local flycheck-checker 'tex-chktex)))
-                
+  
   (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'LaTeX-mode-hook #'smartparens-mode)
   (add-hook 'LaTeX-mode-hook #'prettify-symbols-mode)
@@ -1329,8 +1182,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-nmap
     :keymaps '(LaTeX-mode-map latex-mode-map)
     "RET" 'TeX-command-run-all
-    "C-c t" 'orgtbl-mode)
-)
+    "C-c t" 'orgtbl-mode))
 
 (defun my/import-sty ()
   (interactive)
@@ -1350,15 +1202,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                        (lambda (file) (string-match ".*\.sty$" file))
                        (directory-files dir))
                       ) dir nil))
-               (list "./styles" "../styles/" "." "..")) :full)
-             )
+               (list "./styles" "../styles/" "." "..")) :full))
             (lambda (f1 f2)
               (pcase f1
                 ("gostBibTex.sty" 2)
                 ("russianlocale.sty" 1)
-                (_ nil)))
-            ))))
-  )
+                (_ nil))))))))
 
 (use-package markdown-mode
   :straight t
@@ -1417,6 +1266,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "n" 'langtool-goto-next-error
   "p" 'langtool-goto-previous-error)
 
+(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
+(add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+
+(sp-with-modes sp-lisp-modes
+  (sp-local-pair "'" nil :actions nil))
+
 (add-hook 'python-mode-hook #'smartparens-mode)
 (add-hook 'python-mode-hook #'hs-minor-mode)
 
@@ -1440,21 +1296,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package cider
   :mode "\\.clj[sc]?\\'"
   :straight t)
-
-(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
-(add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
-(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
-
-(sp-with-modes sp-lisp-modes
-  (sp-local-pair "'" nil :actions nil))
-
-(use-package go-mode
-  :straight t
-  :mode "\\.go\\'"
-  :config
-  (my/set-smartparens-indent 'go-mode)
-  (add-hook 'go-mode-hook #'smartparens-mode)
-  (add-hook 'go-mode-hook #'hs-minor-mode))
 
 (use-package fish-mode
   :straight t
@@ -1498,13 +1339,46 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :mode "Dockerfile\\'"
   :straight t)
 
-(setq remote-file-name-inhibit-cache nil)
-(setq tramp-default-method "ssh")
-(setq vc-ignore-dir-regexp
-      (format "%s\\|%s"
-                    vc-ignore-dir-regexp
-                    tramp-file-name-regexp))
-(setq tramp-verbose 6)
+(defun my/edit-configuration ()
+  "Open the init file."
+  (interactive)
+  (find-file "~/Emacs.org"))
+  
+;; (defun my/edit-exwm-configuration ()
+;;   "Open the exwm config file."
+;;   (interactive)
+;;   (find-file "~/.emacs.d/exwm.org"))
+  
+(general-define-key "C-c c" 'my/edit-configuration)
+;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
+
+(defun my/open-yadm-file ()
+  "Open a file managed by yadm"
+  (interactive)
+  (find-file
+   (concat
+    (file-name-as-directory (getenv "HOME"))
+    (completing-read
+     "yadm files: "
+     (split-string
+      (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
+
+(general-define-key "C-c f" 'my/open-yadm-file)
+
+(use-package notmuch
+  :ensure nil
+  :commands (notmuch)
+  :config
+  (setq mail-specify-envelope-from t)
+  (setq message-sendmail-envelope-from 'header)
+  (setq mail-envelope-from 'header)
+  (setq notmuch-always-prompt-for-sender t)
+  (setq sendmail-program "/usr/bin/msmtp")
+  (setq send-mail-function #'sendmail-send-it)
+  (add-hook 'notmuch-hello-mode-hook
+            (lambda () (display-line-numbers-mode 0))))
+  
+(my-leader-def "am" 'notmuch)
 
 (my-leader-def "aw" 'eww)
 

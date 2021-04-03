@@ -1,12 +1,21 @@
 #+PROPERTY: header-args:emacs-lisp :tangle ./.emacs.d/init.el :mkdirp yes
 #+TODO: CHECK(s) | OFF(o)
 
-Watch out for the GitHub org renderer, it does not show =:tangle no=
-
+#+begin_quote
 One day we won't hate one another, no young boy will march to war and I will clean up my Emacs config. But that day isn't today.
+#+end_quote
+
+My [[https://www.gnu.org/software/emacs/][Emacs]] configuration.
+
+As with other files in the repo, parts prefixed with (OFF) are not used, but kept for historic purposes.
+
+| Note | Type                               |
+|------+------------------------------------|
+| TODO | Find a way to specify dependencies |
 
 * Primary setup
 ** Measure startup speed
+A small function to print out the loading time and number of GCs during the loading. Can be useful as a point of data for optimizing Emacs startup time.
 #+begin_src emacs-lisp
 (add-hook 'emacs-startup-hook
           (lambda ()
@@ -17,6 +26,13 @@ One day we won't hate one another, no young boy will march to war and I will cle
                      gcs-done)))
 #+end_src
 ** straight.el
+Straight.el is my Emacs package manager of choice. Its advanatages & disadvantages over other options are listed pretty thoroughly in the README file in the repo.
+
+The following is a straight.el booststrap script.
+
+References:
+- [[https://github.com/raxod502/straight.el][straight.el repo]]
+
 #+begin_src emacs-lisp
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -32,47 +48,57 @@ One day we won't hate one another, no young boy will march to war and I will cle
       (load bootstrap-file nil 'nomessage))
 #+end_src
 ** use-package
+A macro to simplify package specification & configuration. Integrates with straight.el.
+
+Set ~use-package-verbose~ to ~t~ to print out individual package loading time.
+
+References:
+- [[https://github.com/jwiegley/use-package][use-package repo]]
+
 #+begin_src emacs-lisp
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
  ;; (setq use-package-verbose t)
 #+end_src
-** Variables
+** Performance
+*** Garbage collection
+Just setting ~gc-cons-treshold~ to a larger value.
+
+| Note  | Type                                              |
+|-------+---------------------------------------------------|
+| CHECK | The value may be too large for an interactive use |
+
+#+begin_src emacs-lisp
+(setq gc-cons-threshold 80000000)
+(setq read-process-output-max (* 1024 1024))
+#+end_src
+*** Run garbage collection when Emacs is unfocused
+Run GC when Emacs looses focus. Time will tell if that's a good idea.
+
+#+begin_src emacs-lisp
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (if (boundp 'after-focus-change-function)
+                (add-function :after after-focus-change-function
+                              (lambda ()
+                                (unless (frame-focus-state)
+                                  (garbage-collect))))
+              (add-hook 'after-focus-change-function 'garbage-collect))))
+#+end_src
+*** Misc
+The following variable is true when my machine is not powerful enough for some resource-heavy packages.
 #+begin_src emacs-lisp
 (setq my/lowpower (string= (system-name) "pntk"))
 #+end_src
-** Load user files
-#+begin_src emacs-lisp
-(defconst user-init-dir
-  (cond ((boundp 'user-emacs-directory)
-         user-emacs-directory)
-        ((boundp 'user-init-directory)
-         user-init-directory)
-        (t "~/.emacs.d/")))
+** Anaconda & environment
+[[https://www.anaconda.com/][Anaconda]] is a free package and environment manager. I currently use it to manage multiple versions of Python and Node.js
 
-(defun load-user-file (file)
-  "Load a file in current user's configuration directory."
-  (interactive "f")
-  (load-file (expand-file-name file user-init-dir)))
-#+end_src
-** Misc
-*** Environment variable
-#+begin_src emacs-lisp
-(setenv "IS_EMACS" "true")
-#+end_src
-*** OFF Add stuff to PATH and =exec-path=
-#+begin_src emacs-lisp :tangle no
-(setq my/extra-paths '("~/.cargo/bin" "~/.cabal/bin" "~/.ghcup/bin"))
+The following code uses the conda package to activate the base environment on startup, if Emacs is launched outside the environment.
 
-(dolist (path my/extra-paths) (add-to-list 'exec-path (expand-file-name path)))
-(setenv "PATH" (concat (string-join my/extra-paths ":") ":" (getenv "PATH")))
-#+end_src
-*** Custom file location
-#+begin_src emacs-lisp
-(setq custom-file (concat user-emacs-directory "custom.el"))
-(load custom-file 'noerror)
-#+end_src
-*** Anaconda
+References:
+- [[https://docs.anaconda.com/][Anaconda docs]]
+- [[https://github.com/necaris/conda.el][conda.el repo]]
+
 #+begin_src emacs-lisp
 (use-package conda
   :straight t
@@ -84,20 +110,39 @@ One day we won't hate one another, no young boy will march to war and I will cle
 (if (not (getenv "CONDA_DEFAULT_ENV"))
   (conda-env-activate "base"))
 #+end_src
-*** Performance
+
+Also, I sometimes need to know if a program is ran inside Emacs (say, inside a terminal emulator). To do that, I set the following environment variable:
 #+begin_src emacs-lisp
-(setq gc-cons-threshold 80000000)
-(setq read-process-output-max (* 1024 1024))
+(setenv "IS_EMACS" "true")
 #+end_src
-* Keybindings
-** general.el
+** Custom file location
+By default, custom writes stuff to =init.el=, which is somewhat annoying. The following makes a separate file =custom.el=
+#+begin_src emacs-lisp
+(setq custom-file (concat user-emacs-directory "custom.el"))
+(load custom-file 'noerror)
+#+end_src
+* Global editing configuration
+** General keybindings stuff
+*** general.el
+general.el provides a convinient inteface to manage Emacs keybindigs.
+
+References:
+- [[https://github.com/noctuid/general.el][general.el repo]]
+
 #+begin_src emacs-lisp
 (use-package general
   :straight t
   :config
   (general-evil-setup))
 #+end_src
-** which-key
+*** which-key
+A package which displays the available keybindigs in a popup.
+
+Pretty useful, as Emacs seems to have more keybindings than I can remember at any given point.
+
+References:
+- [[https://github.com/justbur/emacs-which-key][which-key repo]]
+
 #+begin_src emacs-lisp
 (use-package which-key
   :config
@@ -109,14 +154,101 @@ One day we won't hate one another, no young boy will march to war and I will cle
                       :weight 'bold)
   :straight t)
 #+end_src
-** My keybindings
-*** Editing
+** Evil mode
+A whole ecosystem of packages which emulates the main features of Vim. Probably the best vim emulator out there.
+
+The only problem is that the package name makes it hard to google anything by just typing "evil".
+
+References:
+- [[https://github.com/emacs-evil/evil][evil repo]]
+- [[https://www.youtube.com/watch?v=JWD1Fpdd4Pc][(YouTube) Evil Mode: Or, How I Learned to Stop Worrying and Love Emacs]]
+*** evil
+Basic evil configuration
+
 #+begin_src emacs-lisp
-(general-def :states '(normal insert visual)
-  "<home>" 'beginning-of-line
-  "<end>" 'end-of-line)
+(use-package evil
+  :straight t
+  :init
+  (setq evil-want-integration t)
+  (setq evil-want-C-u-scroll t)
+  (setq evil-want-keybinding nil)
+  :config
+  (evil-mode 1)
+  (setq evil-search-module 'evil-search)
+  (setq evil-split-window-below t)
+  (setq evil-vsplit-window-right t)
+  ;; (setq evil-respect-visual-line-mode t)
+  (evil-set-undo-system 'undo-tree)
+  ;; (add-to-list 'evil-emacs-state-modes 'dired-mode)
+  )
 #+end_src
-*** Escape
+*** Addons
+[[https://github.com/emacs-evil/evil-surround][evil-surround]] emulates one of my favourite vim plugins, surround.vim. Adds a lot of parentheses mananagement options.
+
+#+begin_src emacs-lisp
+(use-package evil-surround
+  :straight t
+  :after evil
+  :config
+  (global-evil-surround-mode 1))
+#+end_src
+
+[[https://github.com/linktohack/evil-commentary][evil-commentary]] emulates commentary.vim.
+
+#+begin_src emacs-lisp
+(use-package evil-commentary
+  :straight t
+  :after evil
+  :config
+  (evil-commentary-mode))
+#+end_src
+
+[[https://github.com/blorbx/evil-quickscope][evil-quickscope]] emulates quickscope.vim. It hightlights the important target characters for f, F, t, T keys.
+
+#+begin_src emacs-lisp
+(use-package evil-quickscope
+  :straight t
+  :after evil
+  :config
+  :hook ((prog-mode . turn-on-evil-quickscope-mode)
+         (LaTeX-mode . turn-on-evil-quickscope-mode)))
+#+end_src
+*** evil-collection
+[[https://github.com/emacs-evil/evil-collection][evil-collection]] is a package which provides evil bindings for a lot of different packages. One can see the whole list in the [[https://github.com/emacs-evil/evil-collection/tree/master/modes][modes]] folder.
+
+I don't enable the entire package, just the modes I need.
+
+#+begin_src emacs-lisp
+(use-package evil-collection
+  :straight t
+  :after evil
+  :config
+  (evil-collection-init
+    '(eww
+      dired
+      company
+      vterm
+      flycheck
+      profiler
+      cider
+      explain-pause-mode
+      notmuch
+      custom
+      xref
+      eshell
+      helpful
+      compile
+      comint
+      magit)))
+#+end_src
+** More keybindigs
+The main keybindigs setup is positioned after evil mode to take the latter into account.
+*** Escape key
+Use escape key instead of =C-g= whenever possible.
+
+I must have copied it from somewhere, but as I googled to find out the original source, I discovered quite a number of variations of the following code over time.
+
+I wonder if Richard Dawkins was inspired with something like this a few decades ago.
 #+begin_src emacs-lisp
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
@@ -139,74 +271,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             minibuffer-local-must-match-map
             minibuffer-local-isearch-map)
  [escape] 'minibuffer-keyboard-quit)
-
 #+end_src
-* General editing & setup
-** Evil-mode
+*** Home & end
 #+begin_src emacs-lisp
-(use-package evil
-  :straight t
-  :init
-  (setq evil-want-integration t)
-  (setq evil-want-C-u-scroll t)
-  (setq evil-want-keybinding nil)
-  :config
-  (evil-mode 1)
-  (setq evil-search-module 'evil-search)
-  (setq evil-split-window-below t)
-  (setq evil-vsplit-window-right t)
-  ;; (setq evil-respect-visual-line-mode t)
-  (evil-set-undo-system 'undo-tree)
-  ;; (add-to-list 'evil-emacs-state-modes 'dired-mode)
-  )
-  
-(use-package evil-numbers
-  :straight t
-  :commands (evil-numbers/inc-at-pt evil-numbers/dec-at-pt))
-
-(use-package evil-surround
-  :straight t
-  :after evil
-  :config
-  (global-evil-surround-mode 1))
-
-(use-package evil-commentary
-  :straight t
-  :after evil
-  :config
-  (evil-commentary-mode))
-  
-(use-package evil-collection
-  :straight t
-  :after evil
-  :config
-  (evil-collection-init
-    '(eww
-      dired
-      company
-      vterm
-      flycheck
-      profiler
-      cider
-      explain-pause-mode
-      notmuch
-      custom
-      xref
-      eshell
-      helpful
-      compile
-      comint
-      magit)))
-  
-(use-package evil-quickscope
-  :straight t
-  :after evil
-  :config
-  :hook ((prog-mode . turn-on-evil-quickscope-mode)
-         (LaTeX-mode . turn-on-evil-quickscope-mode)))
+(general-def :states '(normal insert visual)
+  "<home>" 'beginning-of-line
+  "<end>" 'end-of-line)
 #+end_src
-** Keybindigs to override evil
 *** My leader
+Using the =SPC= key as a sort of a leader key.
+
 #+begin_src emacs-lisp
 (general-create-definer my-leader-def
   :keymaps 'override
@@ -216,18 +290,166 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-def
   :keymaps 'override
   :states '(normal motion emacs insert visual)
-  "M-u" 'universal-argument
-)
+  "M-u" 'universal-argument)
 
 (general-def :states '(normal motion emacs) "SPC" nil)
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
+#+end_src
+*** Profiler
+The built-in profiler is a magnificent tool to troubleshoot performance issues.
+
+#+begin_src emacs-lisp
 (my-leader-def "Ps" 'profiler-start)
 (my-leader-def "Pe" 'profiler-stop)
 (my-leader-def "Pp" 'profiler-report)
 #+end_src
-*** Help
+*** Buffer switching
+Some keybindings I used in vim to switch buffer and can't let go of:
+#+begin_src emacs-lisp
+(general-define-key
+  :keymaps 'override
+  "C-<right>" 'evil-window-right
+  "C-<left>" 'evil-window-left
+  "C-<up>" 'evil-window-up
+  "C-<down>" 'evil-window-down
+  "C-h" 'evil-window-left
+  "C-l" 'evil-window-right
+  "C-k" 'evil-window-up
+  "C-j" 'evil-window-down
+  "C-x h" 'previous-buffer
+  "C-x l" 'next-buffer)
+#+end_src
+
+And winner-mode to keep a history of window states.
+#+begin_src emacs-lisp
+(winner-mode 1)
+(define-key evil-window-map (kbd "u") 'winner-undo)
+(define-key evil-window-map (kbd "U") 'winner-redo)
+#+end_src
+*** xref
+Some keybindings for xref, Emacs' built-in systems for managing identifiers.
+#+begin_src emacs-lisp
+(general-nmap
+  "gD" 'xref-find-definitions-other-window
+  "gr" 'xref-find-references)
+  
+(my-leader-def
+  "fx" 'xref-find-apropos)
+#+end_src
+*** Folding
+#+begin_src emacs-lisp
+(general-nmap "TAB" 'evil-toggle-fold)
+(general-nmap :keymaps 'hs-minor-mode-map "ze" 'hs-hide-level)
+#+end_src
+*** Zoom
+#+begin_src emacs-lisp
+(defun my/zoom-in ()
+  "Increase font size by 10 points"
+  (interactive)
+  (set-face-attribute 'default nil
+                      :height
+                      (+ (face-attribute 'default :height)
+                         10)))
+
+(defun my/zoom-out ()
+  "Decrease font size by 10 points"
+  (interactive)
+  (set-face-attribute 'default nil
+                      :height
+                      (- (face-attribute 'default :height)
+                         10)))
+
+;; change font size, interactively
+(global-set-key (kbd "C-+") 'my/zoom-in)
+(global-set-key (kbd "C-=") 'my/zoom-out)
+#+end_src
+** Editing helpers & config
+*** Visual fill column mode
+#+begin_src emacs-lisp
+(use-package visual-fill-column
+  :straight t
+  :config
+  (add-hook 'visual-fill-column-mode-hook
+            (lambda () (setq visual-fill-column-center-text t))))
+#+end_src
+*** smartparens
+A minor mode to deal with pairs. Its functionality overlaps with evil-surround, but smartparens provides the most comfortable way to do stuff like automatically insert pairs.
+
+References:
+- [[https://github.com/Fuco1/smartparens][smartparens repo]]
+
+#+begin_src emacs-lisp
+(use-package smartparens
+  :straight t)
+#+end_src
+*** Aggressive Indent
+A package to keep the code intended.
+
+Doesn't work too good with js ecosystem, because the lsp-based intendation is rather slow, but nice for Lisps.
+
+References:
+- [[https://github.com/Malabarba/aggressive-indent-mode][aggressive-indent-mode repo]]
+
+#+begin_src emacs-lisp
+(use-package aggressive-indent
+  :straight t)
+#+end_src
+*** Tabs
+Some default settings to manage tabs.
+#+begin_src emacs-lisp
+(setq tab-always-indent nil)
+
+(setq default-tab-width 4)
+(setq tab-width 4)
+(setq evil-indent-convert-tabs nil)
+(setq indent-tabs-mode nil)
+(setq tab-width 4)
+(setq evil-shift-round nil)
+#+end_src
+*** Scrolling config
+#+begin_src emacs-lisp
+(setq scroll-conservatively scroll-margin)
+(setq scroll-step 1)
+(setq scroll-preserve-screen-position t)
+(setq scroll-error-top-bottom t)
+(setq mouse-wheel-progressive-speed nil)
+(setq mouse-wheel-inhibit-click-time nil)
+#+end_src
+*** Clipboard config
+#+begin_src emacs-lisp
+(setq select-enable-clipboard t)
+(setq mouse-yank-at-point t)
+#+end_src
+*** Backups
+#+begin_src emacs-lisp
+(setq backup-inhibited t)
+(setq auto-save-default nil)
+#+end_src
+** Undo Tree
+Replaces Emacs build-in sequential undo system with a tree-based one. Probably one of the greatest features of Emacs as a text editor.
+
+References:
+- [[https://www.emacswiki.org/emacs/UndoTree][UndoTree on EmacsWiki]]
+
+#+begin_src emacs-lisp
+(use-package undo-tree
+  :straight t
+  :config
+  (global-undo-tree-mode)
+  (setq undo-tree-visualizer-diff t)
+  (setq undo-tree-visualizer-timestamps t)
+
+  (my-leader-def "u" 'undo-tree-visualize)
+  (fset 'undo-auto-amalgamate 'ignore)
+  (setq undo-limit 6710886400)
+  (setq undo-strong-limit 100663296)
+  (setq undo-outer-limit 1006632960))
+#+end_src
+
+** Help
+[[https://github.com/Wilfred/helpful][helpful]] package improves the =*help*= buffer.
 #+begin_src emacs-lisp
 (use-package helpful
   :straight t
@@ -238,6 +460,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
              helpful-function
              helpful-command))
 
+#+end_src
+
+As I use =C-h= to switch buffers, I moved the help to =SPC-h= with the code below. Of course, I didn't type it all by hand.
+#+begin_src emacs-lisp
 (my-leader-def
   :infix "h"
   "RET" 'view-order-manuals
@@ -286,81 +512,71 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "C-t" 'view-emacs-todo
   "C-w" 'describe-no-warranty)
 #+end_src
-*** Buffer switch
-#+begin_src emacs-lisp
-(general-define-key
-  :keymaps 'override
-  "C-<right>" 'evil-window-right
-  "C-<left>" 'evil-window-left
-  "C-<up>" 'evil-window-up
-  "C-<down>" 'evil-window-down
-  "C-h" 'evil-window-left
-  "C-l" 'evil-window-right
-  "C-k" 'evil-window-up
-  "C-j" 'evil-window-down
-  "C-x h" 'previous-buffer
-  "C-x l" 'next-buffer
-  )
-#+end_src
-** OFF Multiple cursors
-#+begin_src emacs-lisp
-;; (use-package evil-mc
-;;   :straight t
-;;   :config
-;;   (define-key evil-mc-key-map (kbd "C-n") nil)
-;;   (define-key evil-mc-key-map (kbd "C-p") nil)
-;;   (define-key evil-mc-key-map (kbd "g") nil)
-;;   (evil-define-key 'normal evil-mc-key-map
-;;     (kbd "C-n") nil
-;;     (kbd "g") nil
-;;     (kbd "C-p") nil
-;;   )
-;;   (evil-define-key 'visual evil-mc-key-map
-;;     "A" #'evil-mc-make-cursor-in-visual-selection-end
-;;     "I" #'evil-mc-make-cursor-in-visual-selection-beg
-;;     (kbd "C-n") nil
-;;     (kbd "g") nil
-;;     (kbd "C-p") nil
-;;   )
-;;   (global-evil-mc-mode 1))
-;;   
-;; (general-nmap "gr" evil-mc-cursors-map)
-#+end_src
+
+** Ivy, counsel, swiper
+Minibuffer completion tools for Emacs.
+
+References:
+- [[https://oremacs.com/swiper/][repo]]
+- [[https://oremacs.com/swiper/][User Manual]]
 
 #+begin_src emacs-lisp
-;; (use-package multiple-cursors
-;;   :straight t)
-;;  
-;; (general-vmap
-;;   "I" #'mc/edit-lines
-;; )
-#+end_src
-** Undo-redo & undo-tree
-#+begin_src emacs-lisp
-(use-package undo-tree
+(use-package ivy
   :straight t
   :config
-  (global-undo-tree-mode)
-  (setq undo-tree-visualizer-diff t)
-  (setq undo-tree-visualizer-timestamps t)
+  (setq ivy-use-virtual-buffers t)
+  (ivy-mode))
 
-  (my-leader-def "u" 'undo-tree-visualize)
-  (fset 'undo-auto-amalgamate 'ignore)
-  (setq undo-limit 6710886400)
-  (setq undo-strong-limit 100663296)
-  (setq undo-outer-limit 1006632960))
-
-#+end_src
-** xref
-#+begin_src emacs-lisp
-(general-nmap
-  "gD" 'xref-find-definitions-other-window
-  "gr" 'xref-find-references)
+(use-package counsel
+  :straight t
+  :after ivy
+  :config
+  (counsel-mode))
   
-(my-leader-def
-  "fx" 'xref-find-apropos)
+(use-package swiper
+  :defer t
+  :straight t)
 #+end_src
-** OFF Helm
+
+*** ivy-rich
+[[https://github.com/Yevgnen/ivy-rich][ivy-rich]] provides more informative interface for ivy.
+#+begin_src emacs-lisp
+(use-package ivy-rich
+  :straight t
+  :after ivy
+  :config
+  (ivy-rich-mode 1)
+  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+#+end_src
+
+*** Keybindings
+#+begin_src emacs-lisp
+(my-leader-def
+  :infix "f"
+  "b" 'ivy-switch-buffer
+  "e" 'conda-env-activate
+  "f" 'project-find-file
+  "c" 'counsel-yank-pop
+  "a" 'counsel-rg
+  "A" 'counsel-ag)
+
+(general-imap
+  "C-y" 'counsel-yank-pop)
+
+(my-leader-def "SPC" 'ivy-resume)
+(my-leader-def "s" 'swiper-isearch
+  "S" 'swiper-all)
+
+(general-define-key
+ :keymaps '(ivy-minibuffer-map swiper-map)
+ "M-j" 'ivy-next-line
+ "M-k" 'ivy-previous-line
+ "<C-return>" 'ivy-call
+ "M-RET" 'ivy-immediate-done
+ [escape] 'minibuffer-keyboard-quit)
+#+end_src
+** OFF (OFF) Helm
+Config for the Helm incremental completion framework. I switched to Ivy some time ago, but keep the configuration just in case.
 #+begin_src emacs-lisp :tangle no
 (use-package helm
   :init
@@ -416,57 +632,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "C-y" 'helm-show-kill-ring)
 ;; (general-nmap "C-p" 'project-find-file)
 #+end_src
-** Ivy
-#+begin_src emacs-lisp
-(use-package ivy
-  :straight t
-  :config
-  (setq ivy-use-virtual-buffers t)
-  (ivy-mode))
-
-(use-package counsel
-  :straight t
-  :after ivy
-  :config
-  (counsel-mode))
-  
-(use-package swiper
-  :defer t
-  :straight t)
-  
-(use-package ivy-rich
-  :straight t
-  :after ivy
-  :config
-  (ivy-rich-mode 1)
-  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
-
-(my-leader-def
-  :infix "f"
-  "b" 'ivy-switch-buffer
-  "e" 'conda-env-activate
-  "f" 'project-find-file
-  "c" 'counsel-yank-pop
-  "a" 'counsel-rg
-  "A" 'counsel-ag
-)
-
-(general-imap
-  "C-y" 'counsel-yank-pop)
-
-(my-leader-def "SPC" 'ivy-resume)
-(my-leader-def "s" 'swiper-isearch
-               "S" 'swiper-all)
-
-(general-define-key
-  :keymaps '(ivy-minibuffer-map swiper-map)
-  "M-j" 'ivy-next-line
-  "M-k" 'ivy-previous-line
-  "<C-return>" 'ivy-call
-  "M-RET" 'ivy-immediate-done
-  [escape] 'minibuffer-keyboard-quit)
-#+end_src
 ** Treemacs
+[[https://github.com/Alexander-Miller/treemacs][Treemacs]] calls itself a tree layout file explorer, but looks more like a project and workspace management system.
+
+Integrates with evil, magit and projectile.
+
 #+begin_src emacs-lisp
 (use-package treemacs
   :straight t
@@ -498,18 +668,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "tw" 'treemacs-switch-workspace
   "te" 'treemacs-edit-workspaces)
 #+end_src
+
 ** Projectile
+[[https://github.com/bbatsov/projectile][Projectile]] gives a bunch of useful functions for managing projects, like finding files withing project, fuzzy-find, replace, etc.
+
 #+begin_src emacs-lisp
 (use-package projectile
   :straight t
   :config
   (projectile-mode +1)
   (setq projectile-project-search-path '("~/Code" "~/Documents")))
-  
-;; (use-package helm-projectile
-;;   :straight t
-;;   :config
-;;   (setq projectile-completion-system 'helm))
 
 (use-package counsel-projectile
   :after (counsel projectile)
@@ -518,17 +686,20 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package treemacs-projectile
   :after (treemacs projectile)
   :straight t)
-  
+
 (my-leader-def
-  "p" 'projectile-command-map
-  ;; "fa" 'helm-projectile-rg
-  ;; "fA" 'helm-projectile-ag
-  )
-  
-;; (general-nmap "C-p" 'helm-projectile-find-file)
+  "p" 'projectile-command-map)
+
 (general-nmap "C-p" 'counsel-projectile-find-file)
 #+end_src
+
 ** Company
+A completion framework for Emacs.
+
+References:
+- [[http://company-mode.github.io/][company homepage]]
+- [[https://github.com/sebastiencs/company-box][company-box homepage]]
+  
 #+begin_src emacs-lisp
 (use-package company
   :straight t
@@ -538,14 +709,24 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq company-dabbrev-downcase nil)
   (setq company-show-numbers t))
 
+(general-imap "C-SPC" 'company-complete)
+#+end_src
+
+A company frontend with nice icons.
+#+begin_src emacs-lisp
 (use-package company-box
   :straight t
   :if (not my/lowpower)
+  :after (company)
   :hook (company-mode . company-box-mode))
   
-(general-imap "C-SPC" 'company-complete)
 #+end_src
+
 ** Git & Magit
+[[https://magit.vc/][Magic]] is a git interface for Emacs. The closest non-Emacs alternative (sans actual clones) I know is [[https://github.com/jesseduffield/lazygit][lazygit]], which I used before Emacs.
+
+Also, [[https://github.com/emacsorphanage/git-gutter][git-gutter]] is plugin which shows git changes for each line (added/changed/deleted lines).
+
 #+begin_src emacs-lisp
 (use-package magit
   :straight t
@@ -575,90 +756,35 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "m" 'magit
   "M" 'magit-file-dispatch)
 #+end_src
-** Misc editing helpers
-*** OFF Better jumplist
-#+begin_src emacs-lisp
-;; (use-package better-jumper
-;;   :straight t
-;;   :config
-;;   (better-jumper-mode +1)
-;;   (setq better-jumper-add-jump-behavior 'replace))
-;; 
-;; (general-nmap
-;;   "go" 'better-jumper-jump-forward
-;;   "gp" 'better-jumper-jump-backward)
-#+end_src
-*** OFF Smart backspace
-#+begin_src emacs-lisp
-;; (use-package smart-backspace
-;;   :straight t)
 
-;; (general-imap [?\C-?] 'smart-backspace)
-;; (general-imap [(shift backspace)] 'backward-delete-char)
-#+end_src
-*** Visual fill column
-#+begin_src emacs-lisp
-(use-package visual-fill-column
-  :straight t
-  :config
-  (add-hook 'visual-fill-column-mode-hook
-            (lambda () (setq visual-fill-column-center-text t))))
-#+end_src
-*** OFF Electric pair
-#+begin_src emacs-lisp :tangle no
-(electric-pair-mode)
-#+end_src
-*** Smart Parens
-#+begin_src emacs-lisp
-(use-package smartparens
-  :straight t)
-#+end_src
-*** Aggressive Indent
-#+begin_src emacs-lisp
-(use-package aggressive-indent
-  :straight t)
-#+end_src
-*** Tabs
-#+begin_src emacs-lisp
-(setq tab-always-indent nil)
-
-(setq default-tab-width 4)
-(setq tab-width 4)
-(setq-default evil-indent-convert-tabs nil)
-(setq-default indent-tabs-mode nil)
-(setq-default tab-width 4)
-(setq-default evil-shift-round nil)
-#+end_src
-*** OFF Expand region
-#+begin_src emacs-lisp :tangle no
-(use-package expand-region
-  :straight t)
-  
-(general-nmap
-  "+" 'er/expand-region)
-#+end_src
-*** Winner mode
-#+begin_src emacs-lisp
-(winner-mode 1)
-(define-key evil-window-map (kbd "u") 'winner-undo)
-(define-key evil-window-map (kbd "U") 'winner-redo)
-#+end_src
 ** Editorconfig
+Editorconfig support for Emacs.
+
+References:
+- [[https://editorconfig.org/][Editorconfig reference]]
+
 #+begin_src emacs-lisp
 (use-package editorconfig
   :straight t
   :config
   (editorconfig-mode 1))
 #+end_src
-** OFF Avy
+
+** OFF (OFF) Avy
 #+begin_src emacs-lisp :tangle no
 (use-package avy
   :straight t)
   
-(general-nmap "\\\\w" 'avy-goto-word-0-below)
-(general-nmap "\\\\b" 'avy-goto-word-0-above)
+(general-nmap "\\w" 'avy-goto-word-0-below)
+(general-nmap "\\b" 'avy-goto-word-0-above)
 #+end_src
+
 ** Snippets
+A snippet system for Emacs and a collection of pre-built snippets.
+
+References:
+- [[http://joaotavora.github.io/yasnippet/][yasnippet documentation]]
+
 #+begin_src emacs-lisp
 (use-package yasnippet
   :straight t
@@ -670,18 +796,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (general-imap "M-TAB" 'company-yasnippet)
 #+end_src
-** Folding
-#+begin_src emacs-lisp
-(use-package hideshowvis
-  :straight t
-  :config
-  ;; (add-hook 'prog-mode-hook #'hs-minor-mode)
-)
 
-(general-nmap "TAB" 'evil-toggle-fold)
-(general-nmap :keymaps 'hs-minor-mode-map "ze" 'hs-hide-level)
-#+end_src
 ** Time trackers
+A bunch of timetrackers I use.
+
+References:
+- [[https://wakatime.com][WakaTime]]
+- [[https://activitywatch.net/][ActivityWatch]]
+  
 *** WakaTime
 #+begin_src emacs-lisp
 (use-package wakatime-mode
@@ -699,8 +821,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (global-activity-watch-mode))
 #+end_src
-
+*** 
 * Dired
+Dired is a built-in file manager. I use it as my primary file manager, hence the top level of config.
+** Basic config & keybindings
+My config mostly follows ranger's and vifm's keybindings which I'm used to.
+
 #+begin_src emacs-lisp
 (use-package dired
   :ensure nil
@@ -731,17 +857,33 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
     [remap dired-up-directory] 'dired-single-up-directory
     "M-<return>" 'dired-open-xdg))
-    
+
+(my-leader-def "ad" 'dired)
+#+end_src
+** Addons
+[[https://www.emacswiki.org/emacs/DiredPlus][Dired+]] provides a lot of extensions for dired functionality.
+#+begin_src emacs-lisp
 (use-package dired+
   :straight t
   :after dired
   :init
   (setq diredp-hide-details-initially-flag nil))
+#+end_src
 
+Reuse the current dired buffer instead of spamming new ones.
+#+begin_src emacs-lisp
 (use-package dired-single
   :after dired
   :straight t)
+  #+end_src
 
+Display icons for files.
+
+| Note      | Type                                    |
+|-----------+-----------------------------------------|
+| *ACHTUNG* | This plugin is slow as hell with TRAMP  |
+
+#+begin_src emacs-lisp
 (use-package all-the-icons-dired
   :straight t
   :if (not my/lowpower)
@@ -750,11 +892,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
   (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
   (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice))
-  
+#+end_src
+
+Provides stuff like =dired-open-xdg=
+#+begin_src emacs-lisp
 (use-package dired-open
   :after dired
   :straight t)
-  
+#+end_src
+
+vifm-like filter
+#+begin_src emacs-lisp
 (use-package dired-narrow
   :after dired
   :straight t
@@ -762,11 +910,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-define-key
     :keymaps 'dired-narrow-map
     [escape] 'keyboard-quit))
-  
-(my-leader-def "ad" 'dired)
 #+end_src
 * Shells
-** Vterm
+** vterm
+My terminal emulator of choice
+References:
+- [[https://github.com/akermu/emacs-libvterm][emacs-libvterm repo]]
+*** Configuration
 #+begin_src emacs-lisp
 (use-package vterm
   :straight t
@@ -777,37 +927,41 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'vterm-mode-hook
             (lambda ()
               (setq-local global-display-line-numbers-mode nil)
-              (display-line-numbers-mode 0)
-              ))
+              (display-line-numbers-mode 0)))
   
   (general-define-key
-    :keymaps 'vterm-mode-map
-    "M-q" 'vterm-send-escape
-    
-    "C-h" 'evil-window-left
-    "C-l" 'evil-window-right
-    "C-k" 'evil-window-up
-    "C-j" 'evil-window-down
-    
-    "C-<right>" 'evil-window-right
-    "C-<left>" 'evil-window-left
-    "C-<up>" 'evil-window-up
-    "C-<down>" 'evil-window-down
-    
-    "M-<left>" 'vterm-send-left
-    "M-<right>" 'vterm-send-right
-    "M-<up>" 'vterm-send-up
-    "M-<down>" 'vterm-send-down)
-    
+   :keymaps 'vterm-mode-map
+   "M-q" 'vterm-send-escape
+   
+   "C-h" 'evil-window-left
+   "C-l" 'evil-window-right
+   "C-k" 'evil-window-up
+   "C-j" 'evil-window-down
+   
+   "C-<right>" 'evil-window-right
+   "C-<left>" 'evil-window-left
+   "C-<up>" 'evil-window-up
+   "C-<down>" 'evil-window-down
+   
+   "M-<left>" 'vterm-send-left
+   "M-<right>" 'vterm-send-right
+   "M-<up>" 'vterm-send-up
+   "M-<down>" 'vterm-send-down)
+  
   (general-imap
     :keymaps 'vterm-mode-map
     "C-r" 'vterm-send-C-r
     "C-k" 'vterm-send-C-k
     "C-j" 'vterm-send-C-j
     "M-l" 'vterm-send-right
-    "M-h" 'vterm-send-left)
-  )
-  
+    "M-h" 'vterm-send-left))
+
+(general-nmap "~" 'vterm)
+#+end_src
+*** Subterminal
+Open a terminal in the lower third of frame with the =`= key. That's mostly how I use vterm.
+
+#+begin_src emacs-lisp
 (add-to-list 'display-buffer-alist
              `(,"vterm-subterminal.*"
                (display-buffer-reuse-window
@@ -815,7 +969,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                (side . bottom)
                (reusable-frames . visible)
                (window-height . 0.33)))
-               
+
 (defun my/toggle-vterm-subteminal ()
   "Toogle subteminal."
   (interactive)
@@ -825,21 +979,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          (lambda (window)
            (string-match
             "vterm-subterminal.*"
-            (buffer-name (window-buffer window)))
-           )
+            (buffer-name (window-buffer window))))
          (window-list))))
     (if vterm-window
         (if (eq (get-buffer-window (current-buffer)) vterm-window)
             (kill-buffer (current-buffer))
-          (select-window vterm-window)
-          )
+          (select-window vterm-window))
       (vterm-other-window "vterm-subterminal"))))
 
 (general-nmap "`" 'my/toggle-vterm-subteminal)
-(general-nmap "~" 'vterm)
-
 #+end_src
 ** Eshell
+A shell written in Emacs lisp. I don't use it as of now, but keep the config just in case.
 #+begin_src emacs-lisp
 (defun my/configure-eshell ()
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
@@ -874,13 +1025,34 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; (general-nmap "`" 'aweshell-dedicated-toggle)
 ;; (general-nmap "~" 'eshell)
 #+end_src
-* Org-mode
-** Installation
+* Org Mode
+The best feature of Emacs. Just after every other best feature of Emacs, probably.
+
+References:
+- [[https://orgmode.org/][Org Mode homepage]]
+- [[https://orgmode.org/manual/][Manual]]
+
+** Installation & basic settings
+Use the built-in org mode.
+
 #+begin_src emacs-lisp
 (use-package org
   :straight (:type built-in))
 
 (setq org-directory (expand-file-name "~/Documents/org-mode"))
+(setq org-default-notes-file (concat org-directory "/notes.org"))
+
+(setq org-startup-indented t)
+(setq org-return-follows-link t)
+(add-hook 'org-mode-hook (lambda () (rainbow-delimiters-mode 0)))
+#+end_src
+
+*** Encryption
+#+begin_src emacs-lisp
+(require 'org-crypt)
+(org-crypt-use-before-save-magic)
+(setq org-tags-exclude-from-inheritance (quote ("crypt")))
+(setq org-crypt-key nil)
 #+end_src
 ** Integration with evil
 #+begin_src emacs-lisp
@@ -902,23 +1074,29 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (display-line-numbers-mode 0)))
   (evil-org-agenda-set-keys))
 #+end_src
-** Programming languages
+
+** Literate programing
 *** Python
+Use jupyter kernels for Org Mode.
+
+| Note | Type                      |
+|------+---------------------------|
+| TODO | Connect to remote kernels |
+| TODO | View HTML?                |
+
+References:
+- [[https://github.com/nnicandro/emacs-jupyter][emacs-jupyter repo]]
+- [[https://github.com/jkitchin/scimax/blob/master/scimax.org][SCIMAX manual]]
+
 #+begin_src emacs-lisp
 (use-package jupyter
-  :straight t
-  :config
-  ;; (add-to-list 'evil-emacs-state-modes 'jupyter-repl-mode)
-  )
+  :straight t)
   
 (my-leader-def "ar" 'jupyter-run-repl)
 #+end_src
-*** OFF TypeScript
-#+begin_src emacs-lisp :tangle no
-;; (use-package ob-typescript
-;;   :straight t)
-#+end_src
+
 *** Setup
+Enable languages
 #+begin_src emacs-lisp
 (org-babel-do-load-languages
  'org-babel-load-languages
@@ -928,45 +1106,84 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    (shell . t)
    (jupyter . t)))
 
-(org-babel-jupyter-override-src-block "python")
+(add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+#+end_src
 
+Use Jupyter block instead of built-in Python.
+#+begin_src emacs-lisp
+(org-babel-jupyter-override-src-block "python")
+#+end_src
+
+Turn of some minor modes in source blocks.
+#+begin_src emacs-lisp
 (add-hook 'org-src-mode-hook
           (lambda ()
             (hs-minor-mode 0)
             (highlight-indent-guides-mode 0)))
+#+end_src
 
+Async code blocks evaluations. Jupyter blocks have a built-in async.
+#+begin_src emacs-lisp
 (use-package ob-async
   :straight t
   :after (org)
   :config
   (setq ob-async-no-async-languages-alist '("python" "jupyter-python")))
 #+end_src
-** Capture
-#+begin_src emacs-lisp
-(setq org-default-notes-file (concat org-directory "/notes.org"))
-#+end_src
-** Equations preview
+
+** UI
+*** Equations preview
+Instant math previews for org mode.
+
+References:
+- [[https://github.com/yangsheng6810/org-latex-impatient][org-latex-impatient repo]]
+
 #+begin_src emacs-lisp
 (use-package org-latex-impatient
-  :straight (
-    :repo "yangsheng6810/org-latex-impatient"
-    :branch "master"
-    :host github)
+  :straight (:repo "yangsheng6810/org-latex-impatient"
+                   :branch "master"
+                   :host github)
   :hook (org-mode . org-latex-impatient-mode)
   :init
   (setq org-latex-impatient-tex2svg-bin
         "/home/pavel/Programs/miniconda3/lib/node_modules/mathjax-node-cli/bin/tex2svg")
   (setq org-latex-impatient-scale 2)
   (setq org-latex-impatient-delay 1)
-  (setq org-latex-impatient-border-color "#ffffff")
-)
+  (setq org-latex-impatient-border-color "#ffffff"))
 #+end_src
-** LaTeX stuff
+*** Better headers
 #+begin_src emacs-lisp
-(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
-(setq org-highlight-latex-and-related '(native script entities))
+(use-package org-superstar
+  :straight t
+  :after (org)
+  :config
+  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
 #+end_src
-** OFF Export to LaTeX
+*** Org Agenda Icons
+#+begin_src emacs-lisp
+(if (not my/lowpower)
+    (setq org-agenda-category-icon-alist
+          `(
+            ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
+            ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
+            ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
+            ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
+            ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
+            ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
+            ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
+#+end_src
+** Export
+*** Hugo
+#+begin_src emacs-lisp
+(use-package ox-hugo
+  :straight t
+  :after ox)
+#+end_src
+*** OFF (OFF) LaTeX
+| Type | Note                   |
+|------+------------------------|
+| TODO | Make LaTeX export work |
+
 #+begin_src emacs-lisp :tangle no
 ;; (use-package htmlize
 ;;   :straight t)
@@ -987,13 +1204,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (with-eval-after-load 'ox-latex
   (my/setup-org-latex))
 #+end_src
-** Export to Hugo
-#+begin_src emacs-lisp
-(use-package ox-hugo
-  :straight t
-  :after ox)
-#+end_src
-** Keybindings
+
+** Keybindings & stuff
 #+begin_src emacs-lisp
 (general-define-key
  :keymaps 'org-mode-map
@@ -1021,17 +1233,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "aa" 'org-agenda
   "ao" 'org-switchb)
 #+end_src
-** OFF Pairs
-#+begin_src emacs-lisp :tangle no
-(defvar org-electric-pairs '((?/ . ?/)))
 
-(defun my/org-add-electric-pairs ()
-  (setq-local electric-pair-pairs (append electric-pair-pairs org-electric-pairs))
-  (setq-local electric-pair-text-pairs electric-pair-pairs))
-
-(add-hook 'org-mode-hook 'my/org-add-electric-pairs)
-#+end_src
-** Copy link
+*** Copy a link
 #+begin_src emacs-lisp
 (defun my/org-link-copy (&optional arg)
   "Extract URL from org-mode link and add it to kill ring."
@@ -1046,28 +1249,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap :keymaps 'org-mode-map
     "C-x C-l" 'my/org-link-copy)
 #+end_src
-** UI improvements
-#+begin_src emacs-lisp
-(use-package org-superstar
-  :straight t
-  :after (org)
-  :config
-  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
-#+end_src
-** Org Agenda
-#+begin_src emacs-lisp
-(if (not my/lowpower)
-    (setq org-agenda-category-icon-alist
-          `(
-            ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
-            ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
-            ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
-            ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
-            ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
-            ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
-            ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
-#+end_src
+
 ** Presentations
+Doing presentations with [[https://github.com/rlister/org-present][org-present]]
+
 #+begin_src emacs-lisp
 (use-package hide-mode-line
   :straight t)
@@ -1099,7 +1284,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (hide-mode-line-mode 0)
               (tab-bar-mode 1))))
 #+end_src
-** Contents
+
+** TOC
 Make a TOC inside the org file.
 
 References:
@@ -1107,112 +1293,91 @@ References:
 
 #+begin_src emacs-lisp
 (use-package org-make-toc
+  :after (org)
   :straight t)
 #+end_src
-** Other settings
-#+begin_src emacs-lisp
-(setq org-startup-indented t)
 
-(setq org-return-follows-link t)
-(require 'org-crypt)
-(org-crypt-use-before-save-magic)
-(setq org-tags-exclude-from-inheritance (quote ("crypt")))
-(setq org-crypt-key nil)
-
-(add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
-(add-hook 'org-mode-hook (lambda () (rainbow-delimiters-mode 0)))
-#+end_src
-* Managing dotfiles
-** Open Emacs config
+* UI
+** General UI & GUI Settings
+Disable GUI elements
 #+begin_src emacs-lisp
-(defun my/edit-configuration ()
-  "Open the init file."
-  (interactive)
-  (find-file "~/Emacs.org"))
-  
-;; (defun my/edit-exwm-configuration ()
-;;   "Open the exwm config file."
-;;   (interactive)
-;;   (find-file "~/.emacs.d/exwm.org"))
-  
-(general-define-key "C-c c" 'my/edit-configuration)
-;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
-#+end_src
-** Open dotfile
-Open a file managed by yadm
-#+begin_src emacs-lisp
-(defun my/open-yadm-file ()
-  "Open a file managed by yadm"
-  (interactive)
-  (find-file
-   (concat
-    (file-name-as-directory (getenv "HOME"))
-    (completing-read
-     "yadm files: "
-     (split-string
-      (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
-
-(general-define-key "C-c f" 'my/open-yadm-file)
-#+end_src
-* UI & UX
-** GUI Settings
-#+begin_src emacs-lisp
-;; Disable GUI elements
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
+#+end_src
 
-;; Transparency
+Transparency
+#+begin_src emacs-lisp
 ;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
 ;; (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+#+end_src
 
-;; Prettify symbols
+Prettify symbols
+#+begin_src emacs-lisp
 ;; (global-prettify-symbols-mode)
+#+end_src
 
-;; No start screen
+No start screen
+#+begin_src emacs-lisp
 (setq inhibit-startup-screen t)
-;; Visual bell
+#+end_src
+
+Visual bell
+#+begin_src emacs-lisp
 (setq visible-bell 0)
+#+end_src
 
-;; y or n instead of yes or no
+y or n instead of yes or no
+#+begin_src emacs-lisp
 (defalias 'yes-or-no-p 'y-or-n-p)
+#+end_src
 
-;; Hide mouse cursor while typing
+Hide mouse cursor while typing
+#+begin_src emacs-lisp
 (setq make-pointer-invisible t)
+#+end_src
 
-;; Font
+Font
+#+begin_src emacs-lisp
 (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
-;; (load-user-file "jetbrains-ligatures.el")
+#+end_src
 
-;; Line numbers
+Line numbers
+#+begin_src emacs-lisp
 (global-display-line-numbers-mode 1)
 (line-number-mode nil)
 (setq display-line-numbers-type 'visual)
 (column-number-mode)
+#+end_src
 
-;; Parenteses
+Show pairs
+#+begin_src emacs-lisp
 (show-paren-mode 1)
+#+end_src
 
-;; Wrap
+Word wrap
+#+begin_src emacs-lisp
 (setq word-wrap 1)
 (global-visual-line-mode t)
+#+end_src
 
-;; Hightlight line
+Hightlight line
+#+begin_src emacs-lisp
 (global-hl-line-mode 1)
 #+end_src
-** Frame title
+** Custom frame title
 #+begin_src emacs-lisp
 (setq frame-title-format
-    '(""
-      "emacs"
-      (:eval
-       (let ((project-name (projectile-project-name)))
-         (if (not (string= "-" project-name))
-           (format ":%s@%s" project-name (system-name))
-           (format "@%s" (system-name)))))
-       ))
+      '(""
+        "emacs"
+        (:eval
+         (let ((project-name (projectile-project-name)))
+           (if (not (string= "-" project-name))
+               (format ":%s@%s" project-name (system-name))
+             (format "@%s" (system-name)))))))
 #+end_src
 ** Tab bar
+I rely rather heavily on tab-bar in my workflow. I have a suspicion I'm not using it the intended way, but that works for me.
 *** Setup
 #+begin_src emacs-lisp
 (general-define-key
@@ -1231,6 +1396,8 @@ Open a file managed by yadm
 (general-nmap "gN" 'tab-close)
 #+end_src
 *** My title
+Prepend tab name with the shortened projectile project title
+
 #+begin_src emacs-lisp
 (setq my/project-title-separators "[-_ ]")
 
@@ -1245,10 +1412,8 @@ Open a file managed by yadm
               (if prefix
                   (substring elem (length prefix))
                 elem)
-              0 (if crop 1 nil))
-             ))
-        (concat prefix rest))
-      )))
+              0 (if crop 1 nil))))
+        (concat prefix rest)))))
 
 (defun my/shorten-project-name (project-name)
   (let ((elems (s-slice-at my/project-title-separators project-name)))
@@ -1267,6 +1432,11 @@ Open a file managed by yadm
 (setq tab-bar-tab-name-function #'my/tab-bar-name-function)
 #+end_src
 ** Modeline
+A modeline from Doom Emacs.
+
+References:
+- [[https://github.com/seagle0128/doom-modeline][Doom Modeline]]
+
 #+begin_src emacs-lisp
 (use-package doom-modeline
   :straight t
@@ -1278,70 +1448,20 @@ Open a file managed by yadm
   (setq doom-modeline-minor-modes nil)
   (setq doom-modeline-buffer-state-icon nil))
 #+end_src
-** CHECK Emoji
+** Font stuff
+*** Emojis
+| Note | Type                                                      |
+|------+-----------------------------------------------------------|
+| TODO | Figure out how to display emojis without prettify symbols |
+
 #+begin_src emacs-lisp
 (use-package emojify
   :straight t
   :if (not my/lowpower)
   :hook (after-init . global-emojify-mode))
 #+end_src
-** Icons
-#+begin_src emacs-lisp
-(use-package all-the-icons
-  :straight t)
-#+end_src
-** OFF Dashboard
-#+begin_src emacs-lisp
-;; (use-package dashboard
-;;   :straight t
-;;   :config
-;;   (dashboard-setup-startup-hook))
-#+end_src
-** Theme & global stuff
-#+begin_src emacs-lisp
-;; (use-package solaire-mode
-;;   :straight t
-;;   :config
-;;   (solaire-global-mode +1))
-
-(use-package auto-dim-other-buffers
-  :straight t
-  :if (display-graphic-p)
-  :config
-  (set-face-attribute 'auto-dim-other-buffers-face nil
-                      :background "#212533")
-  (auto-dim-other-buffers-mode t))
-  
-(use-package doom-themes
-  :straight t
-  :config
-  (setq doom-themes-enable-bold t   
-        doom-themes-enable-italic t)
-  (load-theme 'doom-palenight t)
-  (doom-themes-visual-bell-config)
-  (setq doom-themes-treemacs-theme "doom-colors")
-  (doom-themes-treemacs-config))
-#+end_src
-** Text highlight improvements
-#+begin_src emacs-lisp
-(use-package highlight-indent-guides
-  :straight t
-  :if (not my/lowpower)
-  :hook (
-         (prog-mode . highlight-indent-guides-mode)
-         (vue-mode . highlight-indent-guides-mode)
-         (LaTeX-mode . highlight-indent-guides-mode))
-  :config
-  (setq highlight-indent-guides-method 'bitmap)
-  (setq highlight-indent-guides-bitmap-function 'highlight-indent-guides--bitmap-line))
-  
-(use-package rainbow-delimiters
-  :straight t
-  :if (not my/lowpower)
-  :hook (
-    (prog-mode . rainbow-delimiters-mode)))
-#+end_src
-** Ligatures
+*** Ligatures
+Ligature setup for the JetBrainsMono font.
 #+begin_src emacs-lisp
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
@@ -1377,62 +1497,62 @@ Open a file managed by yadm
      "//" "///" "/*" "*/" "/=" "//=" "/==" "@_" "__"))
   (global-ligature-mode t))
 #+end_src
-** Zoom
+*** Icons
 #+begin_src emacs-lisp
-(defun my/zoom-in ()
-  "Increase font size by 10 points"
-  (interactive)
-  (set-face-attribute 'default nil
-                      :height
-                      (+ (face-attribute 'default :height)
-                         10)))
+(use-package all-the-icons
+  :straight t)
+#+end_src
+** Theme & global stuff
+Dim inactive buffers.
+#+begin_src emacs-lisp
+(use-package auto-dim-other-buffers
+  :straight t
+  :if (display-graphic-p)
+  :config
+  (set-face-attribute 'auto-dim-other-buffers-face nil
+                      :background "#212533")
+  (auto-dim-other-buffers-mode t))
+#+end_src
+  
+My colorscheme of choice.
+#+begin_src emacs-lisp
+(use-package doom-themes
+  :straight t
+  :config
+  (setq doom-themes-enable-bold t   
+        doom-themes-enable-italic t)
+  (load-theme 'doom-palenight t)
+  (doom-themes-visual-bell-config)
+  (setq doom-themes-treemacs-theme "doom-colors")
+  (doom-themes-treemacs-config))
+#+end_src
+** Text highlight improvements
+Hightlight indent guides.
+#+begin_src emacs-lisp
+(use-package highlight-indent-guides
+  :straight t
+  :if (not my/lowpower)
+  :hook (
+         (prog-mode . highlight-indent-guides-mode)
+         (vue-mode . highlight-indent-guides-mode)
+         (LaTeX-mode . highlight-indent-guides-mode))
+  :config
+  (setq highlight-indent-guides-method 'bitmap)
+  (setq highlight-indent-guides-bitmap-function 'highlight-indent-guides--bitmap-line))
+#+end_src
 
-(defun my/zoom-out ()
-  "Decrease font size by 10 points"
-  (interactive)
-  (set-face-attribute 'default nil
-                      :height
-                      (- (face-attribute 'default :height)
-                         10)))
+Rainbow parentheses.
+#+begin_src emacs-lisp
+(use-package rainbow-delimiters
+  :straight t
+  :if (not my/lowpower)
+  :hook (
+    (prog-mode . rainbow-delimiters-mode)))
+#+end_src
+* OFF (OFF) EAF
+[[https://github.com/manateelazycat/emacs-application-framework][Emacs Application Framework]] provides a way to integrate PyQt applications with Emacs.
 
-;; change font size, interactively
-(global-set-key (kbd "C-+") 'my/zoom-in)
-(global-set-key (kbd "C-=") 'my/zoom-out)
-#+end_src
-** OFF Transparency
-#+begin_src emacs-lisp :tangle no
-(defun toggle-transparency ()
-   (interactive)
-   (let ((alpha (frame-parameter nil 'alpha)))
-     (set-frame-parameter
-      nil 'alpha
-      (if (eql (cond ((numberp alpha) alpha)
-                     ((numberp (cdr alpha)) (cdr alpha))
-                     ((numberp (cadr alpha)) (cadr alpha)))
-               100)
-          '(95 . 95) '(100 . 100)))))
-(my-leader-def "dt" 'toggle-transparency)
-#+end_src
-** Scrolling
-#+begin_src emacs-lisp
-(setq scroll-conservatively scroll-margin)
-(setq scroll-step 1)
-(setq scroll-preserve-screen-position t)
-(setq scroll-error-top-bottom t)
-(setq mouse-wheel-progressive-speed nil)
-(setq mouse-wheel-inhibit-click-time nil)
-#+end_src
-** Clipboard
-#+begin_src emacs-lisp
-(setq select-enable-clipboard t)
-(setq mouse-yank-at-point t)
-#+end_src
-** Backups
-#+begin_src emacs-lisp
-(setq backup-inhibited t)
-(setq auto-save-default nil)
-#+end_src
-* OFF EAF
+I've made it work, but don't find any uses cases for me at the moment
 ** Installation
 Requirements: Node >= 14
 #+begin_src bash :tangle no
@@ -1450,26 +1570,14 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (require 'eaf-evil)
   (setq eaf-evil-leader-key "SPC"))
 #+end_src
-* Mail
-#+begin_src emacs-lisp
-(use-package notmuch
-  :ensure nil
-  :commands (notmuch)
-  :config
-  (setq mail-specify-envelope-from t)
-  (setq message-sendmail-envelope-from 'header)
-  (setq mail-envelope-from 'header)
-  (setq notmuch-always-prompt-for-sender t)
-  (setq sendmail-program "/usr/bin/msmtp")
-  (setq send-mail-function #'sendmail-send-it)
-  (add-hook 'notmuch-hello-mode-hook
-            (lambda () (display-line-numbers-mode 0))))
-  
-(my-leader-def "am" 'notmuch)
-#+end_src
 * Programming
-** LSP
-*** lsp-mode
+** General setup
+*** LSP
+LSP-mode provides IDE-like experience for Emacs - real-time diagnostic, code actions, intelligent autocompletion, etc.
+
+References:
+- [[https://emacs-lsp.github.io/lsp-mode/][lsp-mode homepage]]
+**** Setup
 #+begin_src emacs-lisp
 (use-package lsp-mode
   :straight t
@@ -1500,7 +1608,10 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (setq lsp-ui-doc-delay 2)
   (setq lsp-ui-sideline-show-hover nil))
 #+end_src
-*** Integrations
+**** Integrations
+The only integration left now is treemacs.
+
+Origami should've leveraged LSP folding, but it was too unstable at the moment I tried it.
 #+begin_src emacs-lisp
 ;; (use-package helm-lsp
 ;;   :straight t
@@ -1518,9 +1629,8 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 (use-package lsp-treemacs
   :straight t
   :commands lsp-treemacs-errors-list)
-
 #+end_src
-*** Keybindings
+**** Keybindings
 #+begin_src emacs-lisp
 (my-leader-def
   "ld" 'lsp-ui-peek-find-definitions
@@ -1530,7 +1640,12 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   ;; "la" 'helm-lsp-code-actions
   "le" 'list-flycheck-errors)
 #+end_src
-** Flycheck
+*** Flycheck
+A syntax checking extension for Emacs. Integrates with LSP-mode, but can also use various standalone checkers.
+
+References:
+- [[https://www.flycheck.org/en/latest/][Flycheck homepage]]
+
 #+begin_src emacs-lisp
 (use-package flycheck
   :straight t
@@ -1549,19 +1664,15 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
                   display-buffer-in-side-window)
                  (side            . bottom)
                  (reusable-frames . visible)
-                 (window-height   . 0.33)))
-  )
+                 (window-height   . 0.33))))
 #+end_src
-** OFF TabNine
-#+begin_src emacs-lisp :tangle no
-(use-package company-tabnine
-  :straight t
-  :if (not my/lowpower)
-  :after company
-  :config
-  (add-to-list 'company-backends #'company-tabnine))
-#+end_src
-** OFF DAP
+*** OFF (OFF) DAP
+An Emacs client for Debugger Adapter Protocol.
+
+I don't use it now, because there are debuggers I like more for the technologies I'm currently using.
+
+References:
+- [[https://emacs-lsp.github.io/dap-mode/][dap-mode homepage]]
 #+begin_src emacs-lisp :tangle no
 (use-package dap-mode
   :straight t
@@ -1594,21 +1705,39 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   "wb" 'dap-ui-breakpoints
   "wr" 'dap-ui-repl
   "ws" 'dap-ui-sessions
-  "we" 'dap-ui-expressions
-  )
+  "we" 'dap-ui-expressions)
 
 (my-leader-def
   :infix "d"
   :keymaps 'dap-mode-map
-  "h" 'dap-hydra
-  )
+  "h" 'dap-hydra)
   
 (defun my/dap-yank-value-at-point (node)
   (interactive (list (treemacs-node-at-point)))
   (kill-new (message (plist-get (button-get node :item) :value))))
 #+end_src
-** OFF Code Compass
-*** Dependencies
+*** OFF (OFF) TabNine
+A ML-based autocompletion system.
+
+More often than not gives really good results, but slow as hell & consumes a lot of RAM. Also, LSP-provided completions were more useful in my experience.
+
+References:
+- [[https://www.tabnine.com/][TabNine Homepage]]
+#+begin_src emacs-lisp :tangle no
+(use-package company-tabnine
+  :straight t
+  :if (not my/lowpower)
+  :after company
+  :config
+  (add-to-list 'company-backends #'company-tabnine))
+#+end_src
+*** OFF (OFF) Code Compass
+A set of code analysing tools.
+
+References:
+- [[https://github.com/ag91/code-compass][code-compass repo]]
+
+**** Dependencies
 #+begin_src emacs-lisp :tangle no
 (use-package async
   :straight t)
@@ -1621,7 +1750,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 (use-package simple-httpd
   :straight t)
 #+end_src
-*** Plugin
+**** Plugin
 #+begin_src emacs-lisp :tangle no
 (use-package code-compass
   :straight (
@@ -1630,9 +1759,29 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   :branch "main"
   ))
 #+end_src
-* Languages & Formats
+*** General additional config
+Make smartparens behave the way I like
+#+begin_src emacs-lisp
+(defun my/set-smartparens-indent (mode)
+  (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
+#+end_src
+
+Override flycheck checker with eslint
+#+begin_src emacs-lisp
+(defun set-flycheck-eslint()
+  "Override flycheck checker with eslint."
+  (setq-local lsp-diagnostic-package :none)
+  (setq-local flycheck-checker 'javascript-eslint))
+#+end_src
 ** Web development
-*** OFF Emmet
+Configs for various web development technologies I'm using.
+*** OFF (OFF) Emmet
+| Note | Type                                               |
+|------+----------------------------------------------------|
+| TODO | I really want Emmet :( find a way to make it work |
+
 #+begin_src emacs-lisp :tangle no
 (use-package emmet-mode
   :straight t)
@@ -1645,11 +1794,6 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 #+end_src
 *** TypeScript
 #+begin_src emacs-lisp
-(defun my/set-smartparens-indent (mode)
-  (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-  (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
-  
 (use-package typescript-mode
   :straight t
   :mode "\\.ts\\'"
@@ -1658,17 +1802,6 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'typescript-mode-hook #'hs-minor-mode)
   (my/set-smartparens-indent 'typescript-mode))
-#+end_src
-**** Override flycheck checker with eslint
-#+begin_src emacs-lisp
-(defun set-flycheck-eslint()
-  "Override flycheck checker with eslint."
-  (setq-local lsp-diagnostic-package :none)
-  (setq-local flycheck-checker 'javascript-eslint))
-
-;; (add-hook 'typescript-mode-hook
-;;           #'set-flycheck-eslint)
-
 #+end_src
 *** JavaScript
 #+begin_src emacs-lisp
@@ -1701,7 +1834,6 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (my/set-smartparens-indent 'vue-mode)
   (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil))))
 
-  
 (with-eval-after-load 'editorconfig
   (add-to-list 'editorconfig-indentation-alist
                '(vue-mode css-indent-offset
@@ -1710,9 +1842,11 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
                           ssass-tab-width
                           typescript-indent-level
                           )))
-
 #+end_src
 **** mmm-mode fix
+References:
+- [[https://github.com/purcell/mmm-mode/issues/112][mmm-mode issue]]
+
 #+begin_src diff :tangle no
 --- a/mmm-region.el
 +++ b/mmm-region.el
@@ -1754,7 +1888,12 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 #+end_src
 ** Documents & markup languages
 *** LaTeX
-**** AucTeX
+**** AUCTeX
+The best LaTeX editing environment I've found so far.
+
+References:
+- [[https://www.gnu.org/software/auctex/][AUCTeX homepage]]
+
 #+begin_src emacs-lisp
 (use-package tex
   :straight auctex
@@ -1763,6 +1902,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (setq-default TeX-auto-save t)
   (setq-default TeX-parse-self t)
   (TeX-PDF-mode)
+  ;; Use XeLaTeX & stuff
   (setq-default TeX-engine 'xetex)
   (setq-default TeX-command-extra-options "-shell-escape")
   (setq-default TeX-source-correlate-method 'synctex)
@@ -1772,6 +1912,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 
   (setq-default font-latex-fontify-sectioning 1.3)
 
+  ;; Scale preview for my DPI
   (setq-default preview-scale-function 1.4)
   ;; (assoc-delete-all "--" tex--prettify-symbols-alist)
   ;; (assoc-delete-all "---" tex--prettify-symbols-alist)
@@ -1782,15 +1923,16 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
               (outline-minor-mode)))
   
   (add-to-list 'TeX-view-program-selection
-             '(output-pdf "Zathura"))
-             
+               '(output-pdf "Zathura"))
+  
+  ;; Do not run lsp within templated TeX files
   (add-hook 'LaTeX-mode-hook
             #'(lambda ()
                 (unless (string-match "\.hogan\.tex$" (buffer-name))
                   (lsp))
                 (setq-local lsp-diagnostic-package :none)
                 (setq-local flycheck-checker 'tex-chktex)))
-                
+  
   (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'LaTeX-mode-hook #'smartparens-mode)
   (add-hook 'LaTeX-mode-hook #'prettify-symbols-mode)
@@ -1801,10 +1943,11 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   (general-nmap
     :keymaps '(LaTeX-mode-map latex-mode-map)
     "RET" 'TeX-command-run-all
-    "C-c t" 'orgtbl-mode)
-)
+    "C-c t" 'orgtbl-mode))
 #+end_src
 **** Import *.sty
+A function to import =.sty= files to the LaTeX document.
+
 #+begin_src emacs-lisp
 (defun my/import-sty ()
   (interactive)
@@ -1824,15 +1967,12 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
                        (lambda (file) (string-match ".*\.sty$" file))
                        (directory-files dir))
                       ) dir nil))
-               (list "./styles" "../styles/" "." "..")) :full)
-             )
+               (list "./styles" "../styles/" "." "..")) :full))
             (lambda (f1 f2)
               (pcase f1
                 ("gostBibTex.sty" 2)
                 ("russianlocale.sty" 1)
-                (_ nil)))
-            ))))
-  )
+                (_ nil))))))))
 #+end_src
 *** Markdown
 #+begin_src emacs-lisp
@@ -1898,26 +2038,19 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   "n" 'langtool-goto-next-error
   "p" 'langtool-goto-previous-error)
 #+end_src
+** Emacs Lisp
+#+begin_src emacs-lisp
+(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
+(add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+
+(sp-with-modes sp-lisp-modes
+  (sp-local-pair "'" nil :actions nil))
+#+end_src
 ** Python
-*** Python mode
 #+begin_src emacs-lisp
 (add-hook 'python-mode-hook #'smartparens-mode)
 (add-hook 'python-mode-hook #'hs-minor-mode)
-#+end_src
-*** OFF Jupyter Notebooks
-#+begin_src emacs-lisp :tangle no
-(use-package ein
-  :straight (:build (:not native-compile) :source melpa))
-#+end_src
-** OFF SQL
-#+begin_src emacs-lisp :tangle no
-(use-package ejc-sql
-  :straight t
-  :config
-  (setq clomacs-httpd-default-port 8080)
-  (require 'ejc-company)
-  (push 'ejc-company-backend company-backends)
-  (setq ejc-complete-on-dot t))
 #+end_src
 ** Java
 #+begin_src emacs-lisp
@@ -1944,25 +2077,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   :mode "\\.clj[sc]?\\'"
   :straight t)
 #+end_src
-** Emacs Lisp
-#+begin_src emacs-lisp
-(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
-(add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
-(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
-
-(sp-with-modes sp-lisp-modes
-  (sp-local-pair "'" nil :actions nil))
-#+end_src
 ** Go
-#+begin_src emacs-lisp
-(use-package go-mode
-  :straight t
-  :mode "\\.go\\'"
-  :config
-  (my/set-smartparens-indent 'go-mode)
-  (add-hook 'go-mode-hook #'smartparens-mode)
-  (add-hook 'go-mode-hook #'hs-minor-mode))
-#+end_src
 ** fish
 #+begin_src emacs-lisp
 (use-package fish-mode
@@ -2021,19 +2136,66 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
   :mode "Dockerfile\\'"
   :straight t)
 #+end_src
-* TRAMP
-** Performance
+* Apps & Misc
+** Managing dotfiles
+*** Open Emacs config
 #+begin_src emacs-lisp
-(setq remote-file-name-inhibit-cache nil)
-(setq tramp-default-method "ssh")
-(setq vc-ignore-dir-regexp
-      (format "%s\\|%s"
-                    vc-ignore-dir-regexp
-                    tramp-file-name-regexp))
-(setq tramp-verbose 6)
+(defun my/edit-configuration ()
+  "Open the init file."
+  (interactive)
+  (find-file "~/Emacs.org"))
+  
+;; (defun my/edit-exwm-configuration ()
+;;   "Open the exwm config file."
+;;   (interactive)
+;;   (find-file "~/.emacs.d/exwm.org"))
+  
+(general-define-key "C-c c" 'my/edit-configuration)
+;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
 #+end_src
-* Different apps
+*** Open dotfile
+Open a file managed by yadm
+#+begin_src emacs-lisp
+(defun my/open-yadm-file ()
+  "Open a file managed by yadm"
+  (interactive)
+  (find-file
+   (concat
+    (file-name-as-directory (getenv "HOME"))
+    (completing-read
+     "yadm files: "
+     (split-string
+      (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
+
+(general-define-key "C-c f" 'my/open-yadm-file)
+#+end_src
+
+** Notmuch 
+My notmuch config.
+
+References:
+- [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][My post about notmuch configuration]]
+
+#+begin_src emacs-lisp
+(use-package notmuch
+  :ensure nil
+  :commands (notmuch)
+  :config
+  (setq mail-specify-envelope-from t)
+  (setq message-sendmail-envelope-from 'header)
+  (setq mail-envelope-from 'header)
+  (setq notmuch-always-prompt-for-sender t)
+  (setq sendmail-program "/usr/bin/msmtp")
+  (setq send-mail-function #'sendmail-send-it)
+  (add-hook 'notmuch-hello-mode-hook
+            (lambda () (display-line-numbers-mode 0))))
+  
+(my-leader-def "am" 'notmuch)
+#+end_src
+
 ** EWW
+Emacs built-in web browser. I wonder if anyone actually uses it.
+
 #+begin_src emacs-lisp
 (my-leader-def "aw" 'eww)
 
@@ -2042,6 +2204,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
  "+" 'text-scale-increase
  "-" 'text-scale-decrease)
 #+end_src
+
 ** Snow
 #+begin_src emacs-lisp
 (use-package snow
@@ -2064,35 +2227,4 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
             :action (lambda (elem)
                       (setq zone-programs (vector (cdr elem)))
                       (zone))))
-#+end_src
-** OFF Telegram
-#+begin_src emacs-lisp :tangle no
-(use-package telega
-  :commands (telega)
-  :straight t
-  :config
-  (my-leader-def "aT" telega-prefix-map))
-  
-(my-leader-def "at" 'telega)
-#+end_src
-** OFF Explain Pause
-#+begin_src emacs-lisp :tangle no
-(use-package explain-pause-mode
-  :straight (explain-pause-mode :type git :host github :repo "lastquestion/explain-pause-mode"))
-#+end_src
-** OFF Buku
-#+begin_src emacs-lisp :tangle no
-(use-package ebuku
-  :straight t)
-  
-(my-leader-def "ae" 'ebuku)
-#+end_src
-** OFF mpd.el
-#+begin_src emacs-lisp :tangle no
-(use-package mpdel
-  :straight t
-  :init
-  (setq mpdel-prefix-key (kbd "SPC am"))
-  :config
-(mpdel-mode))
 #+end_src

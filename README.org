@@ -16,7 +16,7 @@ Deployed with [[https://yadm.io/][yadm]]
 | mail      | [[https://notmuchmail.org/][notmuch]]        | mail indexer                   | *active*          | [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][post]]        |                                                           |
 | mail      | [[https://github.com/gauteh/lieer][lieer]]          | gmail API client               | *active*          | [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][post]]        | credentials are encrypted                                 |
 | mail      | [[https://marlam.de/msmtp/][msmtp]]          | SMTP client                    | *active*          | -           | encrypted                                                 |
-| editor    | [[https://www.gnu.org/software/emacs/][emacs]]          | everything                     | *active*          | -           | GitHub renders .org files without labels and =tangle: no= |
+| editor    | [[https://www.gnu.org/software/emacs/][emacs]]          | everything                     | *active*          | [[file:Emacs.org][Emacs.org]]   | GitHub renders .org files without labels and =tangle: no= |
 | editor    | [[https://www.vim.org/][vim]]            | text edtior                    | *active*          | -           | A minimal config to have a lightweight terminal $EDITOR   |
 | editor    | [[https://neovim.io/][neovim]]         | text edtior                    | archive           | -           |                                                           |
 | documents | [[https://mg.readthedocs.io/latexmk.html][latexmk]]        | LaTeX build tool               | *active*          | -           |                                                           |
