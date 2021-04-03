@@ -1264,7 +1264,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "s" 'langtool-server-stop
   "d" 'langtool-check-done
   "n" 'langtool-goto-next-error
-  "p" 'langtool-goto-previous-error)
+  "p" 'langtool-goto-previous-error
+  "l" 'langtool-correct-buffer)
 
 (add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
 (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
@@ -1296,6 +1297,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package cider
   :mode "\\.clj[sc]?\\'"
   :straight t)
+
+(use-package go-mode
+  :straight t
+  :mode "\\.go\\'"
+  :config
+  (my/set-smartparens-indent 'go-mode)
+  (add-hook 'go-mode-hook #'smartparens-mode)
+  (add-hook 'go-mode-hook #'hs-minor-mode))
 
 (use-package fish-mode
   :straight t

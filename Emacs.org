@@ -2237,6 +2237,15 @@ References:
   :straight t)
 #+end_src
 ** Go
+#+begin_src emacs-lisp
+(use-package go-mode
+  :straight t
+  :mode "\\.go\\'"
+  :config
+  (my/set-smartparens-indent 'go-mode)
+  (add-hook 'go-mode-hook #'smartparens-mode)
+  (add-hook 'go-mode-hook #'hs-minor-mode))
+#+end_src
 ** fish
 #+begin_src emacs-lisp
 (use-package fish-mode
