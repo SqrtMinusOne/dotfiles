@@ -6,7 +6,7 @@ font:
     style: Regular
 
   size: 10
-    
+   
 env:
   TERM: xterm-256color
     
@@ -34,6 +34,12 @@ colors:
     White: '#ffffff'
 
 background_opacity: 0.80
+
+window:
+  padding:
+    x: 0
+    y: 0
+  dynamic_padding: true
 
 key_bindings:
   - { key: Paste,                                       action: Paste          }
