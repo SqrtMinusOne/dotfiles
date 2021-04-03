@@ -7,7 +7,7 @@ One day we won't hate one another, no young boy will march to war and I will cle
 
 My [[https://www.gnu.org/software/emacs/][Emacs]] configuration.
 
-As with other files in the repo, parts prefixed with (OFF) are not used, but kept for historic purposes.
+As with other files in the repo, parts prefixed with (OFF) are not used but kept for historic purposes.
 
 | Note | Type                               |
 |------+------------------------------------|
@@ -26,9 +26,9 @@ A small function to print out the loading time and number of GCs during the load
                      gcs-done)))
 #+end_src
 ** straight.el
-Straight.el is my Emacs package manager of choice. Its advanatages & disadvantages over other options are listed pretty thoroughly in the README file in the repo.
+Straight.el is my Emacs package manager of choice. Its advantages & disadvantages over other options are listed pretty thoroughly in the README file in the repo.
 
-The following is a straight.el booststrap script.
+The following is a straight.el bootstrap script.
 
 References:
 - [[https://github.com/raxod502/straight.el][straight.el repo]]
@@ -73,7 +73,7 @@ Just setting ~gc-cons-treshold~ to a larger value.
 (setq read-process-output-max (* 1024 1024))
 #+end_src
 *** Run garbage collection when Emacs is unfocused
-Run GC when Emacs looses focus. Time will tell if that's a good idea.
+Run GC when Emacs loses focus. Time will tell if that's a good idea.
 
 #+begin_src emacs-lisp
 (add-hook 'emacs-startup-hook
@@ -93,7 +93,7 @@ The following variable is true when my machine is not powerful enough for some r
 ** Anaconda & environment
 [[https://www.anaconda.com/][Anaconda]] is a free package and environment manager. I currently use it to manage multiple versions of Python and Node.js
 
-The following code uses the conda package to activate the base environment on startup, if Emacs is launched outside the environment.
+The following code uses the conda package to activate the base environment on startup if Emacs is launched outside the environment.
 
 References:
 - [[https://docs.anaconda.com/][Anaconda docs]]
@@ -111,7 +111,7 @@ References:
   (conda-env-activate "base"))
 #+end_src
 
-Also, I sometimes need to know if a program is ran inside Emacs (say, inside a terminal emulator). To do that, I set the following environment variable:
+Also, I sometimes need to know if a program is running inside Emacs (say, inside a terminal emulator). To do that, I set the following environment variable:
 #+begin_src emacs-lisp
 (setenv "IS_EMACS" "true")
 #+end_src
@@ -124,7 +124,7 @@ By default, custom writes stuff to =init.el=, which is somewhat annoying. The fo
 * Global editing configuration
 ** General keybindings stuff
 *** general.el
-general.el provides a convinient inteface to manage Emacs keybindigs.
+general.el provides a convenient interface to manage Emacs keybindings.
 
 References:
 - [[https://github.com/noctuid/general.el][general.el repo]]
@@ -136,7 +136,7 @@ References:
   (general-evil-setup))
 #+end_src
 *** which-key
-A package which displays the available keybindigs in a popup.
+A package that displays the available keybindings in a popup.
 
 Pretty useful, as Emacs seems to have more keybindings than I can remember at any given point.
 
@@ -155,7 +155,7 @@ References:
   :straight t)
 #+end_src
 ** Evil mode
-A whole ecosystem of packages which emulates the main features of Vim. Probably the best vim emulator out there.
+A whole ecosystem of packages that emulates the main features of Vim. Probably the best vim emulator out there.
 
 The only problem is that the package name makes it hard to google anything by just typing "evil".
 
@@ -163,7 +163,7 @@ References:
 - [[https://github.com/emacs-evil/evil][evil repo]]
 - [[https://www.youtube.com/watch?v=JWD1Fpdd4Pc][(YouTube) Evil Mode: Or, How I Learned to Stop Worrying and Love Emacs]]
 *** evil
-Basic evil configuration
+Basic evil configuration.
 
 #+begin_src emacs-lisp
 (use-package evil
@@ -183,7 +183,7 @@ Basic evil configuration
   )
 #+end_src
 *** Addons
-[[https://github.com/emacs-evil/evil-surround][evil-surround]] emulates one of my favourite vim plugins, surround.vim. Adds a lot of parentheses mananagement options.
+[[https://github.com/emacs-evil/evil-surround][evil-surround]] emulates one of my favorite vim plugins, surround.vim. Adds a lot of parentheses management options.
 
 #+begin_src emacs-lisp
 (use-package evil-surround
@@ -203,7 +203,7 @@ Basic evil configuration
   (evil-commentary-mode))
 #+end_src
 
-[[https://github.com/blorbx/evil-quickscope][evil-quickscope]] emulates quickscope.vim. It hightlights the important target characters for f, F, t, T keys.
+[[https://github.com/blorbx/evil-quickscope][evil-quickscope]] emulates quickscope.vim. It highlights the important target characters for f, F, t, T keys.
 
 #+begin_src emacs-lisp
 (use-package evil-quickscope
@@ -214,7 +214,7 @@ Basic evil configuration
          (LaTeX-mode . turn-on-evil-quickscope-mode)))
 #+end_src
 *** evil-collection
-[[https://github.com/emacs-evil/evil-collection][evil-collection]] is a package which provides evil bindings for a lot of different packages. One can see the whole list in the [[https://github.com/emacs-evil/evil-collection/tree/master/modes][modes]] folder.
+[[https://github.com/emacs-evil/evil-collection][evil-collection]] is a package that provides evil bindings for a lot of different packages. One can see the whole list in the [[https://github.com/emacs-evil/evil-collection/tree/master/modes][modes]] folder.
 
 I don't enable the entire package, just the modes I need.
 
@@ -248,7 +248,7 @@ Use escape key instead of =C-g= whenever possible.
 
 I must have copied it from somewhere, but as I googled to find out the original source, I discovered quite a number of variations of the following code over time.
 
-I wonder if Richard Dawkins was inspired with something like this a few decades ago.
+I wonder if Richard Dawkins was inspired by something like this a few decades ago.
 #+begin_src emacs-lisp
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
@@ -306,7 +306,7 @@ The built-in profiler is a magnificent tool to troubleshoot performance issues.
 (my-leader-def "Pp" 'profiler-report)
 #+end_src
 *** Buffer switching
-Some keybindings I used in vim to switch buffer and can't let go of:
+Some keybindings I used in vim to switch buffer and can't let go of.
 #+begin_src emacs-lisp
 (general-define-key
   :keymaps 'override
@@ -387,7 +387,7 @@ References:
 *** Aggressive Indent
 A package to keep the code intended.
 
-Doesn't work too good with js ecosystem, because the lsp-based intendation is rather slow, but nice for Lisps.
+Doesn't work too well with js ecosystem, because the lsp-based indentation is rather slow, but nice for Lisps.
 
 References:
 - [[https://github.com/Malabarba/aggressive-indent-mode][aggressive-indent-mode repo]]
@@ -670,7 +670,7 @@ Integrates with evil, magit and projectile.
 #+end_src
 
 ** Projectile
-[[https://github.com/bbatsov/projectile][Projectile]] gives a bunch of useful functions for managing projects, like finding files withing project, fuzzy-find, replace, etc.
+[[https://github.com/bbatsov/projectile][Projectile]] gives a bunch of useful functions for managing projects, like finding files within a project, fuzzy-find, replace, etc.
 
 #+begin_src emacs-lisp
 (use-package projectile
@@ -821,7 +821,6 @@ References:
   :config
   (global-activity-watch-mode))
 #+end_src
-*** 
 * Dired
 Dired is a built-in file manager. I use it as my primary file manager, hence the top level of config.
 ** Basic config & keybindings
@@ -913,7 +912,8 @@ vifm-like filter
 #+end_src
 * Shells
 ** vterm
-My terminal emulator of choice
+My terminal emulator of choice.
+
 References:
 - [[https://github.com/akermu/emacs-libvterm][emacs-libvterm repo]]
 *** Configuration
@@ -959,7 +959,7 @@ References:
 (general-nmap "~" 'vterm)
 #+end_src
 *** Subterminal
-Open a terminal in the lower third of frame with the =`= key. That's mostly how I use vterm.
+Open a terminal in the lower third of the frame with the =`= key. That's mostly how I use vterm.
 
 #+begin_src emacs-lisp
 (add-to-list 'display-buffer-alist
@@ -1251,7 +1251,7 @@ References:
 #+end_src
 
 ** Presentations
-Doing presentations with [[https://github.com/rlister/org-present][org-present]]
+Doing presentations with [[https://github.com/rlister/org-present][org-present]].
 
 #+begin_src emacs-lisp
 (use-package hide-mode-line
@@ -1296,7 +1296,6 @@ References:
   :after (org)
   :straight t)
 #+end_src
-
 * UI
 ** General UI & GUI Settings
 Disable GUI elements
@@ -1573,7 +1572,7 @@ pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
 * Programming
 ** General setup
 *** LSP
-LSP-mode provides IDE-like experience for Emacs - real-time diagnostic, code actions, intelligent autocompletion, etc.
+LSP-mode provides an IDE-like experience for Emacs - real-time diagnostic, code actions, intelligent autocompletion, etc.
 
 References:
 - [[https://emacs-lsp.github.io/lsp-mode/][lsp-mode homepage]]
@@ -1760,7 +1759,7 @@ References:
   ))
 #+end_src
 *** General additional config
-Make smartparens behave the way I like
+Make smartparens behave the way I like for C-like languages.
 #+begin_src emacs-lisp
 (defun my/set-smartparens-indent (mode)
   (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
@@ -1768,7 +1767,7 @@ Make smartparens behave the way I like
   (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
 #+end_src
 
-Override flycheck checker with eslint
+Override flycheck checker with eslint.
 #+begin_src emacs-lisp
 (defun set-flycheck-eslint()
   "Override flycheck checker with eslint."
@@ -2154,7 +2153,8 @@ A function to import =.sty= files to the LaTeX document.
 ;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
 #+end_src
 *** Open dotfile
-Open a file managed by yadm
+Open a file managed by yadm.
+
 #+begin_src emacs-lisp
 (defun my/open-yadm-file ()
   "Open a file managed by yadm"
