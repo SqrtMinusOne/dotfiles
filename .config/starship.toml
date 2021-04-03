@@ -1,5 +1,5 @@
 [character]
-symbol = "➤ "
+success_symbol = "➤ "
 vicmd_symbol = "ᐊ "
 error_symbol = " "
 use_symbol_for_status = true
@@ -17,7 +17,7 @@ symbol = " "
 
 [cmd_duration]
 min_time = 500
-prefix = "祥"
+format = " [$duration]($style) "
 
 [docker]
 symbol = " "
