@@ -22,6 +22,8 @@ set smarttab
 set expandtab
 set autoindent
 
+syntax on
+
 nnoremap - ddkP
 nnoremap _ ddp
 nnoremap gn :tabnew<CR>
