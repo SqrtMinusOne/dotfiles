@@ -155,15 +155,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :prefix "SPC"
   :states '(normal motion emacs))
 
-(general-def
-  :keymaps 'override
-  :states '(normal motion emacs insert visual)
-  "M-u" 'universal-argument)
 
 (general-def :states '(normal motion emacs) "SPC" nil)
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
+
+(general-def
+  :keymaps 'universal-argument-map
+  "M-u" 'universal-argument-more)
+(general-def
+  :keymaps 'override
+  :states '(normal motion emacs insert visual)
+  "M-u" 'universal-argument)
 
 (my-leader-def "Ps" 'profiler-start)
 (my-leader-def "Pe" 'profiler-stop)

@@ -41,6 +41,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#escape-key][Escape key]]
     - [[#home--end][Home & end]]
     - [[#my-leader][My leader]]
+    - [[#universal-argument][Universal argument]]
     - [[#profiler][Profiler]]
     - [[#buffer-switching][Buffer switching]]
     - [[#xref][xref]]
@@ -439,19 +440,25 @@ Using the =SPC= key as a sort of a leader key.
   :prefix "SPC"
   :states '(normal motion emacs))
 
-(general-def
-  :keymaps 'override
-  :states '(normal motion emacs insert visual)
-  "M-u" 'universal-argument)
 
 (general-def :states '(normal motion emacs) "SPC" nil)
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
 #+end_src
+*** Universal argument
+Change the universal argument to =M-u=
+#+begin_src emacs-lisp
+(general-def
+  :keymaps 'universal-argument-map
+  "M-u" 'universal-argument-more)
+(general-def
+  :keymaps 'override
+  :states '(normal motion emacs insert visual)
+  "M-u" 'universal-argument)
+#+end_src
 *** Profiler
 The built-in profiler is a magnificent tool to troubleshoot performance issues.
-
 #+begin_src emacs-lisp
 (my-leader-def "Ps" 'profiler-start)
 (my-leader-def "Pe" 'profiler-stop)
