@@ -44,5 +44,9 @@ Deployed with [[https://yadm.io/][yadm]]
 | misc      | [[https://github.com/vergoh/vnstat][vnstat]]         | traffic stats                  | *active*          | -           |                                                           |
 
 
-* Misc
+* Notes
+- =M-u C-c C-v t= to tangle a particular block
+- =M-u M-u C-c C-v t= to tangle a particular file
+
 Uses yadm's =post_alt= hook to create symlinks
+
