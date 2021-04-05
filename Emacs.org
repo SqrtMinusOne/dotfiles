@@ -85,6 +85,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#integration-with-evil][Integration with evil]]
   - [[#literate-programing][Literate programing]]
     - [[#python][Python]]
+    - [[#view-html-in-browser][View HTML in browser]]
     - [[#setup][Setup]]
   - [[#ui][UI]]
     - [[#equations-preview][Equations preview]]
@@ -1263,6 +1264,26 @@ Kernelspecs by default are hashed, so even switching Anaconda environments doesn
   "Refresh Jupyter kernelspecs"
   (interactive)
   (jupyter-available-kernelspecs t))
+#+end_src
+*** View HTML in browser
+Open HTML in the ~begin_export~ block with xdg-open.
+
+#+begin_src emacs-lisp
+(setq my/org-view-html-tmp-dir "/var/tmp/org-html-preview/")
+
+(defun my/org-view-html ()
+  (interactive)
+  (let ((elem (org-element-at-point))
+        (temp-file-path (concat my/org-view-html-tmp-dir (number-to-string (random (expt 2 32))) ".html")))
+    (cond
+     ((not (eq 'export-block (car elem)))
+      (message "Not in an export block!"))
+     ((not (string-equal (plist-get (car (cdr elem)) :type) "HTML"))
+      (message "Export block is not HTML!"))
+     (t (progn
+          (f-mkdir my/org-view-html-tmp-dir)
+          (f-write (plist-get (car (cdr elem)) :value) 'utf-8 temp-file-path)
+          (start-process "org-html-preview" nil "xdg-open" temp-file-path))))))
 #+end_src
 *** Setup
 Enable languages

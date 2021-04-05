@@ -698,6 +698,22 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (interactive)
   (jupyter-available-kernelspecs t))
 
+(setq my/org-view-html-tmp-dir "/var/tmp/org-html-preview/")
+
+(defun my/org-view-html ()
+  (interactive)
+  (let ((elem (org-element-at-point))
+        (temp-file-path (concat my/org-view-html-tmp-dir (number-to-string (random (expt 2 32))) ".html")))
+    (cond
+     ((not (eq 'export-block (car elem)))
+      (message "Not in an export block!"))
+     ((not (string-equal (plist-get (car (cdr elem)) :type) "HTML"))
+      (message "Export block is not HTML!"))
+     (t (progn
+          (f-mkdir my/org-view-html-tmp-dir)
+          (f-write (plist-get (car (cdr elem)) :value) 'utf-8 temp-file-path)
+          (start-process "org-html-preview" nil "xdg-open" temp-file-path))))))
+
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((emacs-lisp . t)
@@ -1225,13 +1241,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :mode "\\.md\\'"
   :config
   (setq markdown-command
-	(concat
-	 "pandoc" 
-	 " --from=markdown --to=html"
-	 " --standalone --mathjax --highlight-style=pygments"
-	 " --css=pandoc.css"
-	 " --quiet"
-	 ))
+        (concat
+         "pandoc" 
+         " --from=markdown --to=html"
+         " --standalone --mathjax --highlight-style=pygments"
+         " --css=pandoc.css"
+         " --quiet"
+         ))
   (setq markdown-live-preview-delete-export 'delete-on-export)
   (setq markdown-asymmetric-header t)
   (setq markdown-open-command "/home/pavel/bin/scripts/chromium-sep")
@@ -1289,8 +1305,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :init (setq lsp-python-ms-auto-install-server t)
   :hook (python-mode . (lambda ()
-                          (require 'lsp-python-ms)
-                          (lsp))))
+                         (require 'lsp-python-ms)
+                         (lsp))))
 
 (add-hook 'python-mode-hook #'smartparens-mode)
 (add-hook 'python-mode-hook #'hs-minor-mode)
@@ -1423,8 +1439,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         (google-translate-at-point)
       (google-translate-at-point-reverse)))
   (setq google-translate-translation-directions-alist
-	'(("en" . "ru")
-	  ("ru" . "en"))))
+        '(("en" . "ru")
+          ("ru" . "en"))))
 
 (my-leader-def
   "atp" 'google-translate-at-point
