@@ -234,12 +234,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq tab-always-indent nil)
 
-(setq default-tab-width 4)
-(setq tab-width 4)
-(setq evil-indent-convert-tabs nil)
-(setq indent-tabs-mode nil)
-(setq tab-width 4)
-(setq evil-shift-round nil)
+(setq-default default-tab-width 4)
+(setq-default tab-width 4)
+(setq-default evil-indent-convert-tabs nil)
+(setq-default indent-tabs-mode nil)
+(setq-default tab-width 4)
+(setq-default evil-shift-round nil)
 
 (setq scroll-conservatively scroll-margin)
 (setq scroll-step 1)
@@ -693,6 +693,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (my-leader-def "ar" 'jupyter-run-repl)
 
+(defun my/jupyter-refresh-kernelspecs ()
+  "Refresh Jupyter kernelspecs"
+  (interactive)
+  (jupyter-available-kernelspecs t))
+
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((emacs-lisp . t)
@@ -801,6 +806,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    "<prior>" 'org-present-prev)
   (add-hook 'org-present-mode-hook
             (lambda ()
+              (blink-cursor-mode 0)
               (org-present-big)
               (org-display-inline-images)
               (org-present-hide-cursor)
@@ -810,6 +816,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (tab-bar-mode 0)))
   (add-hook 'org-present-mode-quit-hook
             (lambda ()
+              (blink-cursor-mode 1)
               (org-present-small)
               (org-remove-inline-images)
               (org-present-show-cursor)
@@ -1003,7 +1010,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          (vue-mode . lsp)
          (go-mode . lsp)
          (svelte-mode . lsp)
-         (python-mode . lsp)
+         ;; (python-mode . lsp)
          (json-mode . lsp)
          (haskell-mode . lsp)
          (haskell-literate-mode . lsp)
@@ -1218,13 +1225,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :mode "\\.md\\'"
   :config
   (setq markdown-command
-      (concat
-       "pandoc"
-       " --from=markdown --to=html"
-       " --standalone --mathjax --highlight-style=pygments"
-       " --css=pandoc.css"
-       " --quiet"
-       ))
+	(concat
+	 "pandoc" 
+	 " --from=markdown --to=html"
+	 " --standalone --mathjax --highlight-style=pygments"
+	 " --css=pandoc.css"
+	 " --quiet"
+	 ))
   (setq markdown-live-preview-delete-export 'delete-on-export)
   (setq markdown-asymmetric-header t)
   (setq markdown-open-command "/home/pavel/bin/scripts/chromium-sep")
@@ -1237,9 +1244,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;;   (setq livedown-browser "qutebrowser"))
 
 (general-define-key
-  :keymaps 'markdown-mode-map
-  "M-<left>" 'markdown-promote
-  "M-<right>" 'markdown-demote)
+ :keymaps 'markdown-mode-map
+ "M-<left>" 'markdown-promote
+ "M-<right>" 'markdown-demote)
 
 (use-package plantuml-mode
   :straight t
@@ -1277,6 +1284,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (sp-with-modes sp-lisp-modes
   (sp-local-pair "'" nil :actions nil))
+
+(use-package lsp-python-ms
+  :straight t
+  :init (setq lsp-python-ms-auto-install-server t)
+  :hook (python-mode . (lambda ()
+                          (require 'lsp-python-ms)
+                          (lsp))))
 
 (add-hook 'python-mode-hook #'smartparens-mode)
 (add-hook 'python-mode-hook #'hs-minor-mode)

@@ -560,12 +560,12 @@ Some default settings to manage tabs.
 #+begin_src emacs-lisp
 (setq tab-always-indent nil)
 
-(setq default-tab-width 4)
-(setq tab-width 4)
-(setq evil-indent-convert-tabs nil)
-(setq indent-tabs-mode nil)
-(setq tab-width 4)
-(setq evil-shift-round nil)
+(setq-default default-tab-width 4)
+(setq-default tab-width 4)
+(setq-default evil-indent-convert-tabs nil)
+(setq-default indent-tabs-mode nil)
+(setq-default tab-width 4)
+(setq-default evil-shift-round nil)
 #+end_src
 *** Scrolling config
 #+begin_src emacs-lisp
@@ -1254,6 +1254,16 @@ References:
 (my-leader-def "ar" 'jupyter-run-repl)
 #+end_src
 
+Refresh kernelspecs.
+
+Kernelspecs by default are hashed, so even switching Anaconda environments doesn't change kernel (i.e. kernel from the first environment is ran after the switch to the second one).
+
+#+begin_src emacs-lisp
+(defun my/jupyter-refresh-kernelspecs ()
+  "Refresh Jupyter kernelspecs"
+  (interactive)
+  (jupyter-available-kernelspecs t))
+#+end_src
 *** Setup
 Enable languages
 #+begin_src emacs-lisp
@@ -1281,7 +1291,7 @@ Turn of some minor modes in source blocks.
             (highlight-indent-guides-mode 0)))
 #+end_src
 
-Async code blocks evaluations. Jupyter blocks have a built-in async.
+Async code blocks evaluations. Jupyter blocks have a built-in async, so they are set as ignored.
 #+begin_src emacs-lisp
 (use-package ob-async
   :straight t
@@ -1426,6 +1436,7 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
    "<prior>" 'org-present-prev)
   (add-hook 'org-present-mode-hook
             (lambda ()
+              (blink-cursor-mode 0)
               (org-present-big)
               (org-display-inline-images)
               (org-present-hide-cursor)
@@ -1435,6 +1446,7 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
               (tab-bar-mode 0)))
   (add-hook 'org-present-mode-quit-hook
             (lambda ()
+              (blink-cursor-mode 1)
               (org-present-small)
               (org-remove-inline-images)
               (org-present-show-cursor)
@@ -1443,7 +1455,6 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
               (hide-mode-line-mode 0)
               (tab-bar-mode 1))))
 #+end_src
-
 ** TOC
 Make a TOC inside the org file.
 
@@ -1744,7 +1755,7 @@ References:
          (vue-mode . lsp)
          (go-mode . lsp)
          (svelte-mode . lsp)
-         (python-mode . lsp)
+         ;; (python-mode . lsp)
          (json-mode . lsp)
          (haskell-mode . lsp)
          (haskell-literate-mode . lsp)
@@ -2139,13 +2150,13 @@ A function to import =.sty= files to the LaTeX document.
   :mode "\\.md\\'"
   :config
   (setq markdown-command
-      (concat
-       "pandoc"
-       " --from=markdown --to=html"
-       " --standalone --mathjax --highlight-style=pygments"
-       " --css=pandoc.css"
-       " --quiet"
-       ))
+        (concat
+         "pandoc" 
+         " --from=markdown --to=html"
+         " --standalone --mathjax --highlight-style=pygments"
+         " --css=pandoc.css"
+         " --quiet"
+         ))
   (setq markdown-live-preview-delete-export 'delete-on-export)
   (setq markdown-asymmetric-header t)
   (setq markdown-open-command "/home/pavel/bin/scripts/chromium-sep")
@@ -2158,9 +2169,9 @@ A function to import =.sty= files to the LaTeX document.
 ;;   (setq livedown-browser "qutebrowser"))
 
 (general-define-key
-  :keymaps 'markdown-mode-map
-  "M-<left>" 'markdown-promote
-  "M-<right>" 'markdown-demote)
+ :keymaps 'markdown-mode-map
+ "M-<left>" 'markdown-promote
+ "M-<right>" 'markdown-demote)
 #+end_src
 *** PlantUML
 #+begin_src emacs-lisp
@@ -2214,7 +2225,15 @@ References:
   (sp-local-pair "'" nil :actions nil))
 #+end_src
 ** Python
+Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Server for Python]]
 #+begin_src emacs-lisp
+(use-package lsp-python-ms
+  :straight t
+  :init (setq lsp-python-ms-auto-install-server t)
+  :hook (python-mode . (lambda ()
+                         (require 'lsp-python-ms)
+                         (lsp))))
+
 (add-hook 'python-mode-hook #'smartparens-mode)
 (add-hook 'python-mode-hook #'hs-minor-mode)
 #+end_src
@@ -2395,8 +2414,8 @@ References:
         (google-translate-at-point)
       (google-translate-at-point-reverse)))
   (setq google-translate-translation-directions-alist
-	'(("en" . "ru")
-	  ("ru" . "en"))))
+        '(("en" . "ru")
+          ("ru" . "en"))))
 
 (my-leader-def
   "atp" 'google-translate-at-point
