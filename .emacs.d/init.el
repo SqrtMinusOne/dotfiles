@@ -663,7 +663,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq org-startup-indented t)
 (setq org-return-follows-link t)
-(add-hook 'org-mode-hook (lambda () (rainbow-delimiters-mode 0)))
 
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
@@ -675,17 +674,21 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :after (org evil-collection)
   :config
   (add-hook 'org-mode-hook 'evil-org-mode)
-  (add-hook 'org-mode-hook #'smartparens-mode)
+  (add-hook 'org-mode-hook 'smartparens-mode)
   (add-hook 'evil-org-mode-hook
             (lambda ()
               (evil-org-set-key-theme '(navigation insert textobjects additional calendar todo))))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (rainbow-delimiters-mode 0)
+              (electric-indent-local-mode -1)))
   (add-to-list 'evil-emacs-state-modes 'org-agenda-mode)
   (require 'evil-org-agenda)
   (add-hook 'org-agenda-mode-hook
-          (lambda ()
-            (visual-line-mode -1)
-            (toggle-truncate-lines 1)
-            (display-line-numbers-mode 0)))
+            (lambda ()
+              (visual-line-mode -1)
+              (toggle-truncate-lines 1)
+              (display-line-numbers-mode 0)))
   (evil-org-agenda-set-keys))
 
 (use-package jupyter
@@ -728,8 +731,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'org-src-mode-hook
           (lambda ()
-            (hs-minor-mode 0)
-            (highlight-indent-guides-mode 0)))
+            (hs-minor-mode -1)
+            ;; (electric-indent-local-mode -1)
+            (highlight-indent-guides-mode -1)))
 
 (use-package ob-async
   :straight t
