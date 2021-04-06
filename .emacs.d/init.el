@@ -770,6 +770,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :after ox)
 
+(use-package ox-ipynb
+  :straight (:host github :repo "jkitchin/ox-ipynb"))
+
 (general-define-key
  :keymaps 'org-mode-map
  "C-c d" 'org-decrypt-entry

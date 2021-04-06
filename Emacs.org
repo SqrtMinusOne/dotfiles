@@ -1369,6 +1369,11 @@ References:
   :straight t
   :after ox)
 #+end_src
+*** Jupyter Notebook
+#+begin_src emacs-lisp
+(use-package ox-ipynb
+  :straight (:host github :repo "jkitchin/ox-ipynb"))
+#+end_src
 *** OFF (OFF) LaTeX
 | Type | Note                   |
 |------+------------------------|
