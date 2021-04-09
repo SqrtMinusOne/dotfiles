@@ -44,7 +44,7 @@
   (setq conda-env-home-directory (expand-file-name "~/Programs/miniconda3/"))
   (setq conda-env-subdirectory "envs"))
 
-(if (not (getenv "CONDA_DEFAULT_ENV"))
+(unless (getenv "CONDA_DEFAULT_ENV")
   (conda-env-activate "base"))
 
 (setenv "IS_EMACS" "true")
@@ -701,7 +701,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (interactive)
   (jupyter-available-kernelspecs t))
 
-(setq my/org-view-html-tmp-dir "/var/tmp/org-html-preview/")
+(setq my/org-view-html-tmp-dir "/tmp/org-html-preview/")
 
 (defun my/org-view-html ()
   (interactive)
@@ -723,6 +723,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    (python . t)
    ;; (typescript .t)
    (shell . t)
+   (octave . t)
    (jupyter . t)))
 
 (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
@@ -739,7 +740,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :after (org)
   :config
-  (setq ob-async-no-async-languages-alist '("python" "jupyter-python")))
+  (setq ob-async-no-async-languages-alist '("python" "jupyter-python" "jupyter-octave")))
 
 (use-package org-latex-impatient
   :straight (:repo "yangsheng6810/org-latex-impatient"

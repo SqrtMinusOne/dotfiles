@@ -93,6 +93,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#org-agenda-icons][Org Agenda Icons]]
   - [[#export][Export]]
     - [[#hugo][Hugo]]
+    - [[#jupyter-notebook][Jupyter Notebook]]
     - [[#off-latex][(OFF) LaTeX]]
   - [[#keybindings--stuff][Keybindings & stuff]]
     - [[#copy-a-link][Copy a link]]
@@ -109,6 +110,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#emojis][Emojis]]
     - [[#ligatures][Ligatures]]
     - [[#icons][Icons]]
+    - [[#highlight-todo][Highlight todo]]
   - [[#theme--global-stuff][Theme & global stuff]]
   - [[#text-highlight-improvements][Text highlight improvements]]
 - [[#off-eaf][(OFF) EAF]]
@@ -261,7 +263,7 @@ References:
   (setq conda-env-home-directory (expand-file-name "~/Programs/miniconda3/"))
   (setq conda-env-subdirectory "envs"))
 
-(if (not (getenv "CONDA_DEFAULT_ENV"))
+(unless (getenv "CONDA_DEFAULT_ENV")
   (conda-env-activate "base"))
 #+end_src
 
@@ -1272,7 +1274,10 @@ Kernelspecs by default are hashed, so even switching Anaconda environments doesn
 Open HTML in the ~begin_export~ block with xdg-open.
 
 #+begin_src emacs-lisp
-(setq my/org-view-html-tmp-dir "/var/tmp/org-html-preview/")
+(setq my/org-view-html-tmp-dir "/tmp/org-html-preview/")
+
+(use-package f
+  :straight t)
 
 (defun my/org-view-html ()
   (interactive)
@@ -1297,6 +1302,7 @@ Enable languages
    (python . t)
    ;; (typescript .t)
    (shell . t)
+   (octave . t)
    (jupyter . t)))
 
 (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
@@ -1322,7 +1328,7 @@ Async code blocks evaluations. Jupyter blocks have a built-in async, so they are
   :straight t
   :after (org)
   :config
-  (setq ob-async-no-async-languages-alist '("python" "jupyter-python")))
+  (setq ob-async-no-async-languages-alist '("python" "jupyter-python" "jupyter-octave")))
 #+end_src
 
 ** UI
@@ -1699,6 +1705,12 @@ Ligature setup for the JetBrainsMono font.
 *** Icons
 #+begin_src emacs-lisp
 (use-package all-the-icons
+  :straight t)
+#+end_src
+*** Highlight todo
+#+begin_src emacs-lisp
+(use-package hl-todo
+  :hook (prog-mode . hl-todo-mode)
   :straight t)
 #+end_src
 ** Theme & global stuff
