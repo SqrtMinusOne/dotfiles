@@ -6,7 +6,7 @@
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
 
-(setq use-package-verbose t)
+;; (setq use-package-verbose t)
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -495,378 +495,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (global-activity-watch-mode))
 
-(use-package dired
-  :ensure nil
-  :custom ((dired-listing-switches "-alh --group-directories-first"))
-  :commands (dired)
-  :config
-  (setq dired-dwim-target t)
-  (setq wdired-allow-to-change-permissions t)
-  (setq wdired-create-parent-directories t)
-  (setq dired-recursive-copies 'always)
-  (setq dired-recursive-deletes 'always)
-  (add-hook 'dired-mode-hook
-    (lambda ()
-      (setq truncate-lines t)
-      (visual-line-mode nil)))
-  (evil-collection-define-key 'normal 'dired-mode-map
-    "h" 'dired-single-up-directory
-    "l" 'dired-single-buffer
-    "h" 'dired-single-up-directory
-    "l" 'dired-single-buffer
-    "=" 'dired-narrow
-    "-" 'dired-create-empty-file
-    (kbd "<left>") 'dired-single-up-directory
-    (kbd "<right>") 'dired-single-buffer)
-  (general-define-key
-    :keymaps 'dired-mode-map
-    [remap dired-find-file] 'dired-single-buffer
-    [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
-    [remap dired-up-directory] 'dired-single-up-directory
-    "M-<return>" 'dired-open-xdg))
-
-(my-leader-def "ad" 'dired)
-
-(use-package dired+
-  :straight t
-  :after dired
-  :init
-  (setq diredp-hide-details-initially-flag nil))
-
-(use-package dired-single
-  :after dired
-  :straight t)
-
-(use-package all-the-icons-dired
-  :straight t
-  :if (not my/lowpower)
-  :after dired
-  :config
-  (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
-  (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
-  (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice))
-
-(use-package dired-open
-  :after dired
-  :straight t)
-
-(use-package dired-narrow
-  :after dired
-  :straight t
-  :config
-  (general-define-key
-    :keymaps 'dired-narrow-map
-    [escape] 'keyboard-quit))
-
-(use-package vterm
-  :straight t
-  :commands (vterm vterm-other-window)
-  :config
-  (setq vterm-kill-buffer-on-exit t)
-  
-  (add-hook 'vterm-mode-hook
-            (lambda ()
-              (setq-local global-display-line-numbers-mode nil)
-              (display-line-numbers-mode 0)))
-  
-  (general-define-key
-   :keymaps 'vterm-mode-map
-   "M-q" 'vterm-send-escape
-   
-   "C-h" 'evil-window-left
-   "C-l" 'evil-window-right
-   "C-k" 'evil-window-up
-   "C-j" 'evil-window-down
-   
-   "C-<right>" 'evil-window-right
-   "C-<left>" 'evil-window-left
-   "C-<up>" 'evil-window-up
-   "C-<down>" 'evil-window-down
-   
-   "M-<left>" 'vterm-send-left
-   "M-<right>" 'vterm-send-right
-   "M-<up>" 'vterm-send-up
-   "M-<down>" 'vterm-send-down)
-  
-  (general-imap
-    :keymaps 'vterm-mode-map
-    "C-r" 'vterm-send-C-r
-    "C-k" 'vterm-send-C-k
-    "C-j" 'vterm-send-C-j
-    "M-l" 'vterm-send-right
-    "M-h" 'vterm-send-left))
-
-(general-nmap "~" 'vterm)
-
-(add-to-list 'display-buffer-alist
-             `(,"vterm-subterminal.*"
-               (display-buffer-reuse-window
-                display-buffer-in-side-window)
-               (side . bottom)
-               (reusable-frames . visible)
-               (window-height . 0.33)))
-
-(defun my/toggle-vterm-subteminal ()
-  "Toogle subteminal."
-  (interactive)
-  (let
-      ((vterm-window
-        (seq-find
-         (lambda (window)
-           (string-match
-            "vterm-subterminal.*"
-            (buffer-name (window-buffer window))))
-         (window-list))))
-    (if vterm-window
-        (if (eq (get-buffer-window (current-buffer)) vterm-window)
-            (kill-buffer (current-buffer))
-          (select-window vterm-window))
-      (vterm-other-window "vterm-subterminal"))))
-
-(general-nmap "`" 'my/toggle-vterm-subteminal)
-
-(defun my/configure-eshell ()
-  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
-  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-  (setq eshell-history-size 10000)
-  (setq eshell-hist-ingnoredups t)
-  (setq eshell-buffer-maximum-lines 10000)
-  
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
-  (evil-collection-define-key 'normal 'eshell-mode-map
-    (kbd "C-h") 'evil-window-left
-    (kbd "C-l") 'evil-window-right
-    (kbd "C-k") 'evil-window-up
-    (kbd "C-j") 'evil-window-down))
-
-(use-package eshell
-  :ensure nil
-  :after evil-collection
-  :commands (eshell)
-  :config
-  (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
-  (setq eshell-banner-message ""))
-
-(use-package aweshell
-  :straight (:repo "manateelazycat/aweshell" :host github)
-  :after eshell
-  :config
-  (setq eshell-highlight-prompt nil)
-  (setq eshell-prompt-function 'epe-theme-pipeline))
-  
-;; (general-nmap "`" 'aweshell-dedicated-toggle)
-;; (general-nmap "~" 'eshell)
-
-(use-package org
-  :straight (:type built-in))
-
-(setq org-directory (expand-file-name "~/Documents/org-mode"))
-(setq org-default-notes-file (concat org-directory "/notes.org"))
-
-(setq org-startup-indented t)
-(setq org-return-follows-link t)
-
-(require 'org-crypt)
-(org-crypt-use-before-save-magic)
-(setq org-tags-exclude-from-inheritance (quote ("crypt")))
-(setq org-crypt-key nil)
-
-(use-package evil-org
-  :straight t
-  :after (org evil-collection)
-  :config
-  (add-hook 'org-mode-hook 'evil-org-mode)
-  (add-hook 'org-mode-hook 'smartparens-mode)
-  (add-hook 'evil-org-mode-hook
-            (lambda ()
-              (evil-org-set-key-theme '(navigation insert textobjects additional calendar todo))))
-  (add-hook 'org-mode-hook
-            (lambda ()
-              (rainbow-delimiters-mode 0)
-              (electric-indent-local-mode -1)))
-  (add-to-list 'evil-emacs-state-modes 'org-agenda-mode)
-  (require 'evil-org-agenda)
-  (add-hook 'org-agenda-mode-hook
-            (lambda ()
-              (visual-line-mode -1)
-              (toggle-truncate-lines 1)
-              (display-line-numbers-mode 0)))
-  (evil-org-agenda-set-keys))
-
-(use-package jupyter
-  :straight t)
-  
-(my-leader-def "ar" 'jupyter-run-repl)
-
-(defun my/jupyter-refresh-kernelspecs ()
-  "Refresh Jupyter kernelspecs"
-  (interactive)
-  (jupyter-available-kernelspecs t))
-
-(setq my/org-view-html-tmp-dir "/tmp/org-html-preview/")
-
-(use-package f
-  :straight t)
-
-(defun my/org-view-html ()
-  (interactive)
-  (let ((elem (org-element-at-point))
-        (temp-file-path (concat my/org-view-html-tmp-dir (number-to-string (random (expt 2 32))) ".html")))
-    (cond
-     ((not (eq 'export-block (car elem)))
-      (message "Not in an export block!"))
-     ((not (string-equal (plist-get (car (cdr elem)) :type) "HTML"))
-      (message "Export block is not HTML!"))
-     (t (progn
-          (f-mkdir my/org-view-html-tmp-dir)
-          (f-write (plist-get (car (cdr elem)) :value) 'utf-8 temp-file-path)
-          (start-process "org-html-preview" nil "xdg-open" temp-file-path))))))
-
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((emacs-lisp . t)
-   (python . t)
-   ;; (typescript .t)
-   (shell . t)
-   (octave . t)
-   (jupyter . t)))
-
-(add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
-
-(org-babel-jupyter-override-src-block "python")
-
-(add-hook 'org-src-mode-hook
-          (lambda ()
-            (hs-minor-mode -1)
-            ;; (electric-indent-local-mode -1)
-            (highlight-indent-guides-mode -1)))
-
-(use-package ob-async
-  :straight t
-  :after (org)
-  :config
-  (setq ob-async-no-async-languages-alist '("python" "jupyter-python" "jupyter-octave")))
-
-(use-package org-latex-impatient
-  :straight (:repo "yangsheng6810/org-latex-impatient"
-                   :branch "master"
-                   :host github)
-  :hook (org-mode . org-latex-impatient-mode)
-  :init
-  (setq org-latex-impatient-tex2svg-bin
-        "/home/pavel/Programs/miniconda3/lib/node_modules/mathjax-node-cli/bin/tex2svg")
-  (setq org-latex-impatient-scale 2)
-  (setq org-latex-impatient-delay 1)
-  (setq org-latex-impatient-border-color "#ffffff"))
-
-(defun my/enable-org-latex ()
-  (interactive)
-  (setq org-highlight-latex-and-related '(native))
-  (yas-activate-extra-mode 'LaTeX-mode))
-
-(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
-
-(use-package org-superstar
-  :straight t
-  :after (org)
-  :config
-  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
-
-(if (not my/lowpower)
-    (setq org-agenda-category-icon-alist
-          `(
-            ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
-            ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
-            ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
-            ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
-            ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
-            ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
-            ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
-
-(use-package ox-hugo
-  :straight t
-  :after ox)
-
-(use-package ox-ipynb
-  :straight (:host github :repo "jkitchin/ox-ipynb"))
-
-(general-define-key
- :keymaps 'org-mode-map
- "C-c d" 'org-decrypt-entry
- "C-c e" 'org-encrypt-entry
- "M-p" 'org-latex-preview)
-
-(general-define-key
- :keymaps 'org-mode-map
- :states '(normal emacs)
- "L" 'org-shiftright
- "H" 'org-shiftleft
- "S-<next>" 'org-babel-next-src-block
- "S-<prior>" 'org-babel-previous-src-block)
-
-(general-define-key
- :keymaps 'org-agenda-mode-map
- "M-]" 'org-agenda-later
- "M-[" 'org-agenda-earlier)
-
-;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
-(general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
-
-(my-leader-def
-  "aa" 'org-agenda
-  "ao" 'org-switchb)
-
-(defun my/org-link-copy (&optional arg)
-  "Extract URL from org-mode link and add it to kill ring."
-  (interactive "P")
-  (let* ((link (org-element-lineage (org-element-context) '(link) t))
-          (type (org-element-property :type link))
-          (url (org-element-property :path link))
-          (url (concat type ":" url)))
-    (kill-new url)
-    (message (concat "Copied URL: " url))))
-    
-(general-nmap :keymaps 'org-mode-map
-    "C-x C-l" 'my/org-link-copy)
-
-(use-package hide-mode-line
-  :straight t
-  :after (org-present))
-
-(use-package org-present
-  :straight (:host github :repo "rlister/org-present")
-  :commands (org-present)
-  :config
-  (general-define-key
-   :keymaps 'org-present-mode-keymap
-   "<next>" 'org-present-next
-   "<prior>" 'org-present-prev)
-  (add-hook 'org-present-mode-hook
-            (lambda ()
-              (blink-cursor-mode 0)
-              (org-present-big)
-              (org-display-inline-images)
-              (org-present-hide-cursor)
-              (org-present-read-only)
-              (display-line-numbers-mode 0)
-              (hide-mode-line-mode +1)
-              (tab-bar-mode 0)))
-  (add-hook 'org-present-mode-quit-hook
-            (lambda ()
-              (blink-cursor-mode 1)
-              (org-present-small)
-              (org-remove-inline-images)
-              (org-present-show-cursor)
-              (org-present-read-write)
-              (display-line-numbers-mode 1)
-              (hide-mode-line-mode 0)
-              (tab-bar-mode 1))))
-
-(use-package org-make-toc
-  :after (org)
-  :straight t)
-
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
@@ -1044,6 +672,381 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :if (not my/lowpower)
   :hook (
     (prog-mode . rainbow-delimiters-mode)))
+
+(use-package dired
+  :ensure nil
+  :custom ((dired-listing-switches "-alh --group-directories-first"))
+  :commands (dired)
+  :config
+  (setq dired-dwim-target t)
+  (setq wdired-allow-to-change-permissions t)
+  (setq wdired-create-parent-directories t)
+  (setq dired-recursive-copies 'always)
+  (setq dired-recursive-deletes 'always)
+  (add-hook 'dired-mode-hook
+    (lambda ()
+      (setq truncate-lines t)
+      (visual-line-mode nil)))
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "h" 'dired-single-up-directory
+    "l" 'dired-single-buffer
+    "h" 'dired-single-up-directory
+    "l" 'dired-single-buffer
+    "=" 'dired-narrow
+    "-" 'dired-create-empty-file
+    (kbd "<left>") 'dired-single-up-directory
+    (kbd "<right>") 'dired-single-buffer)
+  (general-define-key
+    :keymaps 'dired-mode-map
+    [remap dired-find-file] 'dired-single-buffer
+    [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
+    [remap dired-up-directory] 'dired-single-up-directory
+    "M-<return>" 'dired-open-xdg))
+
+(my-leader-def "ad" 'dired)
+
+(use-package dired+
+  :straight t
+  :after dired
+  :init
+  (setq diredp-hide-details-initially-flag nil))
+
+(use-package dired-single
+  :after dired
+  :straight t)
+
+(use-package all-the-icons-dired
+  :straight t
+  :if (not my/lowpower)
+  :hook (dired-mode . all-the-icons-dired-mode)
+  :config
+  (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
+  (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice))
+
+(use-package dired-open
+  :after dired
+  :straight t)
+
+(use-package dired-narrow
+  :after dired
+  :straight t
+  :config
+  (general-define-key
+    :keymaps 'dired-narrow-map
+    [escape] 'keyboard-quit))
+
+(use-package vterm
+  :straight t
+  :commands (vterm vterm-other-window)
+  :config
+  (setq vterm-kill-buffer-on-exit t)
+  
+  (add-hook 'vterm-mode-hook
+            (lambda ()
+              (setq-local global-display-line-numbers-mode nil)
+              (display-line-numbers-mode 0)))
+  
+  (general-define-key
+   :keymaps 'vterm-mode-map
+   "M-q" 'vterm-send-escape
+   
+   "C-h" 'evil-window-left
+   "C-l" 'evil-window-right
+   "C-k" 'evil-window-up
+   "C-j" 'evil-window-down
+   
+   "C-<right>" 'evil-window-right
+   "C-<left>" 'evil-window-left
+   "C-<up>" 'evil-window-up
+   "C-<down>" 'evil-window-down
+   
+   "M-<left>" 'vterm-send-left
+   "M-<right>" 'vterm-send-right
+   "M-<up>" 'vterm-send-up
+   "M-<down>" 'vterm-send-down)
+  
+  (general-imap
+    :keymaps 'vterm-mode-map
+    "C-r" 'vterm-send-C-r
+    "C-k" 'vterm-send-C-k
+    "C-j" 'vterm-send-C-j
+    "M-l" 'vterm-send-right
+    "M-h" 'vterm-send-left))
+
+(general-nmap "~" 'vterm)
+
+(add-to-list 'display-buffer-alist
+             `(,"vterm-subterminal.*"
+               (display-buffer-reuse-window
+                display-buffer-in-side-window)
+               (side . bottom)
+               (reusable-frames . visible)
+               (window-height . 0.33)))
+
+(defun my/toggle-vterm-subteminal ()
+  "Toogle subteminal."
+  (interactive)
+  (let
+      ((vterm-window
+        (seq-find
+         (lambda (window)
+           (string-match
+            "vterm-subterminal.*"
+            (buffer-name (window-buffer window))))
+         (window-list))))
+    (if vterm-window
+        (if (eq (get-buffer-window (current-buffer)) vterm-window)
+            (kill-buffer (current-buffer))
+          (select-window vterm-window))
+      (vterm-other-window "vterm-subterminal"))))
+
+(general-nmap "`" 'my/toggle-vterm-subteminal)
+
+(defun my/configure-eshell ()
+  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
+  (setq eshell-history-size 10000)
+  (setq eshell-hist-ingnoredups t)
+  (setq eshell-buffer-maximum-lines 10000)
+  
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+  (evil-collection-define-key 'normal 'eshell-mode-map
+    (kbd "C-h") 'evil-window-left
+    (kbd "C-l") 'evil-window-right
+    (kbd "C-k") 'evil-window-up
+    (kbd "C-j") 'evil-window-down))
+
+(use-package eshell
+  :ensure nil
+  :after evil-collection
+  :commands (eshell)
+  :config
+  (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
+  (setq eshell-banner-message ""))
+
+(use-package aweshell
+  :straight (:repo "manateelazycat/aweshell" :host github)
+  :after eshell
+  :config
+  (setq eshell-highlight-prompt nil)
+  (setq eshell-prompt-function 'epe-theme-pipeline))
+  
+;; (general-nmap "`" 'aweshell-dedicated-toggle)
+;; (general-nmap "~" 'eshell)
+
+(use-package org
+  :straight (:type built-in)
+  :config
+  (setq org-directory (expand-file-name "~/Documents/org-mode"))
+  (setq org-default-notes-file (concat org-directory "/notes.org"))
+
+  (setq org-startup-indented t)
+  (setq org-return-follows-link t)
+  (add-hook 'org-mode-hook 'smartparens-mode)
+  (add-hook 'org-agenda-mode-hook
+            (lambda ()
+              (visual-line-mode -1)
+              (toggle-truncate-lines 1)
+              (display-line-numbers-mode 0))))
+
+(require 'org-crypt)
+(org-crypt-use-before-save-magic)
+(setq org-tags-exclude-from-inheritance (quote ("crypt")))
+(setq org-crypt-key nil)
+
+(use-package evil-org
+  :straight t
+  :hook (org-mode . evil-org-mode)
+  :config
+  (add-hook 'evil-org-mode-hook
+            (lambda ()
+              (evil-org-set-key-theme '(navigation insert textobjects additional calendar todo))))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (rainbow-delimiters-mode 0)
+              (electric-indent-local-mode -1)))
+  (add-to-list 'evil-emacs-state-modes 'org-agenda-mode)
+  (require 'evil-org-agenda)
+  (evil-org-agenda-set-keys))
+
+(use-package jupyter
+  :straight t)
+  
+(my-leader-def "ar" 'jupyter-run-repl)
+
+(defun my/jupyter-refresh-kernelspecs ()
+  "Refresh Jupyter kernelspecs"
+  (interactive)
+  (jupyter-available-kernelspecs t))
+
+(setq my/org-view-html-tmp-dir "/tmp/org-html-preview/")
+
+(use-package f
+  :straight t)
+
+(defun my/org-view-html ()
+  (interactive)
+  (let ((elem (org-element-at-point))
+        (temp-file-path (concat my/org-view-html-tmp-dir (number-to-string (random (expt 2 32))) ".html")))
+    (cond
+     ((not (eq 'export-block (car elem)))
+      (message "Not in an export block!"))
+     ((not (string-equal (plist-get (car (cdr elem)) :type) "HTML"))
+      (message "Export block is not HTML!"))
+     (t (progn
+          (f-mkdir my/org-view-html-tmp-dir)
+          (f-write (plist-get (car (cdr elem)) :value) 'utf-8 temp-file-path)
+          (start-process "org-html-preview" nil "xdg-open" temp-file-path))))))
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (python . t)
+   ;; (typescript .t)
+   (shell . t)
+   (octave . t)
+   (jupyter . t)))
+
+(add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+
+(org-babel-jupyter-override-src-block "python")
+
+(add-hook 'org-src-mode-hook
+          (lambda ()
+            (hs-minor-mode -1)
+            ;; (electric-indent-local-mode -1)
+            (highlight-indent-guides-mode -1)))
+
+(use-package ob-async
+  :straight t
+  :after (org)
+  :config
+  (setq ob-async-no-async-languages-alist '("python" "jupyter-python" "jupyter-octave")))
+
+(use-package org-latex-impatient
+  :straight (:repo "yangsheng6810/org-latex-impatient"
+                   :branch "master"
+                   :host github)
+  :hook (org-mode . org-latex-impatient-mode)
+  :init
+  (setq org-latex-impatient-tex2svg-bin
+        "/home/pavel/Programs/miniconda3/lib/node_modules/mathjax-node-cli/bin/tex2svg")
+  (setq org-latex-impatient-scale 2)
+  (setq org-latex-impatient-delay 1)
+  (setq org-latex-impatient-border-color "#ffffff"))
+
+(defun my/enable-org-latex ()
+  (interactive)
+  (setq org-highlight-latex-and-related '(native))
+  (yas-activate-extra-mode 'LaTeX-mode))
+
+(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
+
+(use-package org-superstar
+  :straight t
+  :hook (org-mode . org-superstar-mode)
+  :config
+  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
+
+(if (not my/lowpower)
+    (setq org-agenda-category-icon-alist
+          `(
+            ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
+            ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
+            ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
+            ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
+            ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
+            ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
+            ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
+
+(use-package ox-hugo
+  :straight t
+  :after ox)
+
+(use-package ox-ipynb
+  :straight (:host github :repo "jkitchin/ox-ipynb")
+  :after ox)
+
+(general-define-key
+ :keymaps 'org-mode-map
+ "C-c d" 'org-decrypt-entry
+ "C-c e" 'org-encrypt-entry
+ "M-p" 'org-latex-preview)
+
+(general-define-key
+ :keymaps 'org-mode-map
+ :states '(normal emacs)
+ "L" 'org-shiftright
+ "H" 'org-shiftleft
+ "S-<next>" 'org-babel-next-src-block
+ "S-<prior>" 'org-babel-previous-src-block)
+
+(general-define-key
+ :keymaps 'org-agenda-mode-map
+ "M-]" 'org-agenda-later
+ "M-[" 'org-agenda-earlier)
+
+;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
+(general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
+
+(my-leader-def
+  "aa" 'org-agenda
+  "ao" 'org-switchb)
+
+(defun my/org-link-copy (&optional arg)
+  "Extract URL from org-mode link and add it to kill ring."
+  (interactive "P")
+  (let* ((link (org-element-lineage (org-element-context) '(link) t))
+          (type (org-element-property :type link))
+          (url (org-element-property :path link))
+          (url (concat type ":" url)))
+    (kill-new url)
+    (message (concat "Copied URL: " url))))
+    
+(general-nmap :keymaps 'org-mode-map
+    "C-x C-l" 'my/org-link-copy)
+
+(use-package hide-mode-line
+  :straight t
+  :after (org-present))
+
+(use-package org-present
+  :straight (:host github :repo "rlister/org-present")
+  :commands (org-present)
+  :config
+  (general-define-key
+   :keymaps 'org-present-mode-keymap
+   "<next>" 'org-present-next
+   "<prior>" 'org-present-prev)
+  (add-hook 'org-present-mode-hook
+            (lambda ()
+              (blink-cursor-mode 0)
+              (org-present-big)
+              (org-display-inline-images)
+              (org-present-hide-cursor)
+              (org-present-read-only)
+              (display-line-numbers-mode 0)
+              (hide-mode-line-mode +1)
+              (tab-bar-mode 0)))
+  (add-hook 'org-present-mode-quit-hook
+            (lambda ()
+              (blink-cursor-mode 1)
+              (org-present-small)
+              (org-remove-inline-images)
+              (org-present-show-cursor)
+              (org-present-read-write)
+              (display-line-numbers-mode 1)
+              (hide-mode-line-mode 0)
+              (tab-bar-mode 1))))
+
+(use-package org-make-toc
+  :commands
+  (org-make-toc
+   org-make-toc-insert
+   org-make-toc-set
+   org-make-toc-at-point)
+  :straight t)
 
 (use-package lsp-mode
   :straight t
