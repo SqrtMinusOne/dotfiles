@@ -6,6 +6,8 @@
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
 
+(setq use-package-verbose t)
+
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -230,6 +232,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t)
 
 (use-package aggressive-indent
+  :commands (aggressive-indent-mode)
   :straight t)
 
 (setq tab-always-indent nil)
@@ -703,6 +706,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq my/org-view-html-tmp-dir "/tmp/org-html-preview/")
 
+(use-package f
+  :straight t)
+
 (defun my/org-view-html ()
   (interactive)
   (let ((elem (org-element-at-point))
@@ -753,6 +759,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq org-latex-impatient-scale 2)
   (setq org-latex-impatient-delay 1)
   (setq org-latex-impatient-border-color "#ffffff"))
+
+(defun my/enable-org-latex ()
+  (interactive)
+  (setq org-highlight-latex-and-related '(native))
+  (yas-activate-extra-mode 'LaTeX-mode))
+
+(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
 
 (use-package org-superstar
   :straight t
@@ -818,7 +831,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     "C-x C-l" 'my/org-link-copy)
 
 (use-package hide-mode-line
-  :straight t)
+  :straight t
+  :after (org-present))
 
 (use-package org-present
   :straight (:host github :repo "rlister/org-present")
@@ -990,6 +1004,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (global-ligature-mode t))
 
 (use-package all-the-icons
+  :straight t)
+
+(use-package hl-todo
+  :hook (prog-mode . hl-todo-mode)
   :straight t)
 
 (use-package auto-dim-other-buffers
@@ -1171,7 +1189,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package tex
   :straight auctex
-  ;; :mode "\\.tex\\'"
+  :defer t
   :config
   (setq-default TeX-auto-save t)
   (setq-default TeX-parse-self t)
@@ -1259,18 +1277,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq markdown-live-preview-delete-export 'delete-on-export)
   (setq markdown-asymmetric-header t)
   (setq markdown-open-command "/home/pavel/bin/scripts/chromium-sep")
-  (add-hook 'markdown-mode-hook #'smartparens-mode))
+  (add-hook 'markdown-mode-hook #'smartparens-mode)
+  (general-define-key
+   :keymaps 'markdown-mode-map
+   "M-<left>" 'markdown-promote
+   "M-<right>" 'markdown-demote))
 
 ;; (use-package livedown
 ;;   :straight (:host github :repo "shime/emacs-livedown")
 ;;   :commands livedown-preview
 ;;   :config
 ;;   (setq livedown-browser "qutebrowser"))
-
-(general-define-key
- :keymaps 'markdown-mode-map
- "M-<left>" 'markdown-promote
- "M-<right>" 'markdown-demote)
 
 (use-package plantuml-mode
   :straight t
@@ -1302,15 +1319,25 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "p" 'langtool-goto-previous-error
   "l" 'langtool-correct-buffer)
 
-(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
-(add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
-(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+(use-package lispy
+  :commands (lispy-mode)
+  :straight t)
+
+(use-package lispyville
+  :hook (lispy-mode . lispyville-mode)
+  :straight t)
 
 (sp-with-modes sp-lisp-modes
   (sp-local-pair "'" nil :actions nil))
 
+(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+(add-hook 'emacs-lisp-mode-hook #'lispy-mode)
+(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
+
 (use-package lsp-python-ms
   :straight t
+  :defer t
   :init (setq lsp-python-ms-auto-install-server t)
   :hook (python-mode . (lambda ()
                          (require 'lsp-python-ms)
@@ -1333,7 +1360,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :mode "\\.clj[sc]?\\'"
   :config
-  (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+  ;; (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+  (add-hook 'clojure-mode-hook #'lispy-mode)
   (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
   
 (use-package cider
@@ -1358,7 +1386,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package clips-mode
   :straight t
-  :mode "\\.cl\\'")
+  :mode "\\.cl\\'"
+  :config
+  (add-hook 'clips-mode 'lispy-mode))
 
 (use-package haskell-mode
   :straight t

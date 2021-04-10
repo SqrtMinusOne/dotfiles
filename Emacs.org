@@ -88,7 +88,8 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#view-html-in-browser][View HTML in browser]]
     - [[#setup][Setup]]
   - [[#ui][UI]]
-    - [[#equations-preview][Equations preview]]
+    - [[#instant-equations-preview][Instant equations preview]]
+    - [[#latex-fragments][LaTeX fragments]]
     - [[#better-headers][Better headers]]
     - [[#org-agenda-icons][Org Agenda Icons]]
   - [[#export][Export]]
@@ -146,6 +147,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#markdown][Markdown]]
     - [[#plantuml][PlantUML]]
     - [[#languagetool][LanguageTool]]
+  - [[#meta-lisp][Meta Lisp]]
   - [[#emacs-lisp][Emacs Lisp]]
   - [[#python][Python]]
   - [[#java][Java]]
@@ -180,6 +182,8 @@ A small function to print out the loading time and number of GCs during the load
                              (float-time
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
+
+(setq use-package-verbose t)
 #+end_src
 ** straight.el
 Straight.el is my Emacs package manager of choice. Its advantages & disadvantages over other options are listed pretty thoroughly in the README file in the repo.
@@ -556,6 +560,7 @@ References:
 
 #+begin_src emacs-lisp
 (use-package aggressive-indent
+  :commands (aggressive-indent-mode)
   :straight t)
 #+end_src
 *** Tabs
@@ -1332,7 +1337,7 @@ Async code blocks evaluations. Jupyter blocks have a built-in async, so they are
 #+end_src
 
 ** UI
-*** Equations preview
+*** Instant equations preview
 Instant math previews for org mode.
 
 References:
@@ -1350,6 +1355,20 @@ References:
   (setq org-latex-impatient-scale 2)
   (setq org-latex-impatient-delay 1)
   (setq org-latex-impatient-border-color "#ffffff"))
+#+end_src
+*** LaTeX fragments
+A function to enable LaTeX native highlighting. Not setting as default, because it loads LaTeX stuff.
+#+begin_src emacs-lisp
+(defun my/enable-org-latex ()
+  (interactive)
+  (setq org-highlight-latex-and-related '(native))
+  (yas-activate-extra-mode 'LaTeX-mode))
+#+end_src
+Reopen a buffer after calling the function.
+
+Scale latex fragments preview
+#+begin_src emacs-lisp
+(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
 #+end_src
 *** Better headers
 #+begin_src emacs-lisp
@@ -1460,7 +1479,8 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
 
 #+begin_src emacs-lisp
 (use-package hide-mode-line
-  :straight t)
+  :straight t
+  :after (org-present))
 
 (use-package org-present
   :straight (:host github :repo "rlister/org-present")
@@ -2108,7 +2128,7 @@ References:
 #+begin_src emacs-lisp
 (use-package tex
   :straight auctex
-  ;; :mode "\\.tex\\'"
+  :defer t
   :config
   (setq-default TeX-auto-save t)
   (setq-default TeX-parse-self t)
@@ -2202,7 +2222,11 @@ A function to import =.sty= files to the LaTeX document.
   (setq markdown-live-preview-delete-export 'delete-on-export)
   (setq markdown-asymmetric-header t)
   (setq markdown-open-command "/home/pavel/bin/scripts/chromium-sep")
-  (add-hook 'markdown-mode-hook #'smartparens-mode))
+  (add-hook 'markdown-mode-hook #'smartparens-mode)
+  (general-define-key
+   :keymaps 'markdown-mode-map
+   "M-<left>" 'markdown-promote
+   "M-<right>" 'markdown-demote))
 
 ;; (use-package livedown
 ;;   :straight (:host github :repo "shime/emacs-livedown")
@@ -2210,10 +2234,6 @@ A function to import =.sty= files to the LaTeX document.
 ;;   :config
 ;;   (setq livedown-browser "qutebrowser"))
 
-(general-define-key
- :keymaps 'markdown-mode-map
- "M-<left>" 'markdown-promote
- "M-<right>" 'markdown-demote)
 #+end_src
 *** PlantUML
 #+begin_src emacs-lisp
@@ -2257,20 +2277,33 @@ References:
   "p" 'langtool-goto-previous-error
   "l" 'langtool-correct-buffer)
 #+end_src
-** Emacs Lisp
+** Meta Lisp
+Some packages for editing various Lisps.
 #+begin_src emacs-lisp
-(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
-(add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
-(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+(use-package lispy
+  :commands (lispy-mode)
+  :straight t)
+
+(use-package lispyville
+  :hook (lispy-mode . lispyville-mode)
+  :straight t)
 
 (sp-with-modes sp-lisp-modes
   (sp-local-pair "'" nil :actions nil))
+#+end_src
+** Emacs Lisp
+#+begin_src emacs-lisp
+(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+(add-hook 'emacs-lisp-mode-hook #'lispy-mode)
+(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
 #+end_src
 ** Python
 Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Server for Python]]
 #+begin_src emacs-lisp
 (use-package lsp-python-ms
   :straight t
+  :defer t
   :init (setq lsp-python-ms-auto-install-server t)
   :hook (python-mode . (lambda ()
                          (require 'lsp-python-ms)
@@ -2297,7 +2330,8 @@ Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Se
   :straight t
   :mode "\\.clj[sc]?\\'"
   :config
-  (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+  ;; (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+  (add-hook 'clojure-mode-hook #'lispy-mode)
   (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
   
 (use-package cider
@@ -2330,7 +2364,9 @@ Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Se
 #+begin_src emacs-lisp
 (use-package clips-mode
   :straight t
-  :mode "\\.cl\\'")
+  :mode "\\.cl\\'"
+  :config
+  (add-hook 'clips-mode 'lispy-mode))
 #+end_src
 ** Haskell
 #+begin_src emacs-lisp
