@@ -183,7 +183,7 @@ A small function to print out the loading time and number of GCs during the load
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
 
-;; (setq use-package-verbose t)
+(setq use-package-verbose t)
 #+end_src
 ** straight.el
 Straight.el is my Emacs package manager of choice. Its advantages & disadvantages over other options are listed pretty thoroughly in the README file in the repo.
@@ -720,7 +720,7 @@ References:
 #+begin_src emacs-lisp
 (my-leader-def
   :infix "f"
-  "b" 'ivy-switch-buffer
+  "b" 'counsel-switch-buffer
   "e" 'conda-env-activate
   "f" 'project-find-file
   "c" 'counsel-yank-pop
@@ -1327,12 +1327,12 @@ Provides stuff like =dired-open-xdg=
 vifm-like filter
 #+begin_src emacs-lisp
 (use-package dired-narrow
-  :after dired
   :straight t
+  :commands (dired-narrow)
   :config
   (general-define-key
-    :keymaps 'dired-narrow-map
-    [escape] 'keyboard-quit))
+   :keymaps 'dired-narrow-map
+   [escape] 'keyboard-quit))
 #+end_src
 * Shells
 ** vterm
@@ -1459,9 +1459,10 @@ References:
 ** Installation & basic settings
 Use the built-in org mode.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb yes
 (use-package org
   :straight (:type built-in)
+  :defer t
   :config
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
   (setq org-default-notes-file (concat org-directory "/notes.org"))
@@ -1473,11 +1474,15 @@ Use the built-in org mode.
             (lambda ()
               (visual-line-mode -1)
               (toggle-truncate-lines 1)
-              (display-line-numbers-mode 0))))
+              (display-line-numbers-mode 0)))
+  <<org-crypt-setup>>
+  <<org-lang-setup>>
+  <<org-ui-setup>>
+  <<org-keys-setup>>)
 #+end_src
 
 *** Encryption
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-crypt-setup
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
 (setq org-tags-exclude-from-inheritance (quote ("crypt")))
@@ -1513,11 +1518,11 @@ References:
 - [[https://github.com/nnicandro/emacs-jupyter][emacs-jupyter repo]]
 - [[https://github.com/jkitchin/scimax/blob/master/scimax.org][SCIMAX manual]]
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-lang-setup
 (use-package jupyter
-  :straight t)
-  
-(my-leader-def "ar" 'jupyter-run-repl)
+  :straight t
+  :init
+  (my-leader-def "ar" 'jupyter-run-repl))
 #+end_src
 
 Refresh kernelspecs.
@@ -1555,7 +1560,7 @@ Open HTML in the ~begin_export~ block with xdg-open.
 #+end_src
 *** Setup
 Enable languages
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no :noweb-ref org-lang-setup
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((emacs-lisp . t)
@@ -1569,12 +1574,12 @@ Enable languages
 #+end_src
 
 Use Jupyter block instead of built-in Python.
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no :noweb-ref org-lang-setup
 (org-babel-jupyter-override-src-block "python")
 #+end_src
 
 Turn of some minor modes in source blocks.
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no :noweb-ref org-lang-setup
 (add-hook 'org-src-mode-hook
           (lambda ()
             (hs-minor-mode -1)
@@ -1606,7 +1611,7 @@ References:
   :init
   (setq org-latex-impatient-tex2svg-bin
         "/home/pavel/Programs/miniconda3/lib/node_modules/mathjax-node-cli/bin/tex2svg")
-  (setq org-latex-impatient-scale 2)
+  (setq org-latex-impatient-scale 1.75)
   (setq org-latex-impatient-delay 1)
   (setq org-latex-impatient-border-color "#ffffff"))
 #+end_src
@@ -1621,19 +1626,19 @@ A function to enable LaTeX native highlighting. Not setting as default, because 
 Reopen a buffer after calling the function.
 
 Scale latex fragments preview
-#+begin_src emacs-lisp
-(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
+#+begin_src emacs-lisp :noweb-ref org-ui-setup :tangle no
+(setq my/org-latex-scale 1.75)
+(setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
 #+end_src
+
 *** Better headers
 #+begin_src emacs-lisp
 (use-package org-superstar
   :straight t
-  :hook (org-mode . org-superstar-mode)
-  :config
-  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
+  :hook (org-mode . org-superstar-mode))
 #+end_src
 *** Org Agenda Icons
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-ui-setup :tangle no
 (if (not my/lowpower)
     (setq org-agenda-category-icon-alist
           `(
@@ -1685,12 +1690,13 @@ Scale latex fragments preview
 #+end_src
 
 ** Keybindings & stuff
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no :noweb-ref org-keys-setup
 (general-define-key
  :keymaps 'org-mode-map
  "C-c d" 'org-decrypt-entry
  "C-c e" 'org-encrypt-entry
- "M-p" 'org-latex-preview)
+ "M-p" 'org-latex-preview
+ "M-o" 'org-redisplay-inline-images)
 
 (general-define-key
  :keymaps 'org-mode-map
@@ -1708,13 +1714,11 @@ Scale latex fragments preview
 ;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
 (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
 
-(my-leader-def
-  "aa" 'org-agenda
-  "ao" 'org-switchb)
+(my-leader-def "ao" 'org-switchb)
+(my-leader-def "aa" 'org-agenda)
 #+end_src
-
 *** Copy a link
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref org-keys-setup
 (defun my/org-link-copy (&optional arg)
   "Extract URL from org-mode link and add it to kill ring."
   (interactive "P")
@@ -1728,7 +1732,6 @@ Scale latex fragments preview
 (general-nmap :keymaps 'org-mode-map
     "C-x C-l" 'my/org-link-copy)
 #+end_src
-
 ** Presentations
 Doing presentations with [[https://github.com/rlister/org-present][org-present]].
 
@@ -1737,33 +1740,49 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
   :straight t
   :after (org-present))
 
+(defun my/present-next-with-latex ()
+  (interactive)
+  (org-present-next)
+  (org-latex-preview '(16)))
+
+(defun my/present-prev-with-latex ()
+  (interactive)
+  (org-present-prev)
+  (org-latex-preview '(16)))
+
 (use-package org-present
   :straight (:host github :repo "rlister/org-present")
   :commands (org-present)
   :config
   (general-define-key
    :keymaps 'org-present-mode-keymap
-   "<next>" 'org-present-next
-   "<prior>" 'org-present-prev)
+   "<next>" 'my/present-next-with-latex
+   "<prior>" 'my/present-prev-with-latex)
   (add-hook 'org-present-mode-hook
             (lambda ()
               (blink-cursor-mode 0)
               (org-present-big)
-              (org-display-inline-images)
+              ;; (org-display-inline-images)
               (org-present-hide-cursor)
               (org-present-read-only)
               (display-line-numbers-mode 0)
               (hide-mode-line-mode +1)
+              (setq-local org-format-latex-options
+                          (plist-put org-format-latex-options
+                                     :scale (* org-present-text-scale my/org-latex-scale 0.5)))
+              (org-latex-preview '(16))
               (tab-bar-mode 0)))
   (add-hook 'org-present-mode-quit-hook
             (lambda ()
               (blink-cursor-mode 1)
               (org-present-small)
-              (org-remove-inline-images)
+              ;; (org-remove-inline-images)
               (org-present-show-cursor)
               (org-present-read-write)
               (display-line-numbers-mode 1)
               (hide-mode-line-mode 0)
+              (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
+              (org-latex-preview '(64))
               (tab-bar-mode 1))))
 #+end_src
 ** TOC
@@ -1774,6 +1793,7 @@ References:
 
 #+begin_src emacs-lisp
 (use-package org-make-toc
+  :after (org)
   :commands
   (org-make-toc
    org-make-toc-insert
@@ -2146,8 +2166,8 @@ References:
 
   ;; Scale preview for my DPI
   (setq-default preview-scale-function 1.4)
-  ;; (assoc-delete-all "--" tex--prettify-symbols-alist)
-  ;; (assoc-delete-all "---" tex--prettify-symbols-alist)
+  (assoc-delete-all "--" tex--prettify-symbols-alist)
+  (assoc-delete-all "---" tex--prettify-symbols-alist)
 
   (add-hook 'LaTeX-mode-hook
             (lambda ()
@@ -2176,6 +2196,16 @@ References:
     :keymaps '(LaTeX-mode-map latex-mode-map)
     "RET" 'TeX-command-run-all
     "C-c t" 'orgtbl-mode))
+#+end_src
+**** BibTex
+#+begin_src emacs-lisp
+(use-package ivy-bibtex
+  :commands (ivy-bibtex)
+  :straight t
+  :init
+  (my-leader-def "fB" 'ivy-bibtex))
+
+(add-hook 'bibtex-mode 'smartparens-mode)
 #+end_src
 **** Import *.sty
 A function to import =.sty= files to the LaTeX document.

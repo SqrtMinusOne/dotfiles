@@ -6,7 +6,7 @@
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
 
-;; (setq use-package-verbose t)
+(setq use-package-verbose t)
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -352,7 +352,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def
   :infix "f"
-  "b" 'ivy-switch-buffer
+  "b" 'counsel-switch-buffer
   "e" 'conda-env-activate
   "f" 'project-find-file
   "c" 'counsel-yank-pop
@@ -728,12 +728,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t)
 
 (use-package dired-narrow
-  :after dired
   :straight t
+  :commands (dired-narrow)
   :config
   (general-define-key
-    :keymaps 'dired-narrow-map
-    [escape] 'keyboard-quit))
+   :keymaps 'dired-narrow-map
+   [escape] 'keyboard-quit))
 
 (use-package vterm
   :straight t
@@ -837,6 +837,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package org
   :straight (:type built-in)
+  :defer t
   :config
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
   (setq org-default-notes-file (concat org-directory "/notes.org"))
@@ -848,7 +849,80 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (lambda ()
               (visual-line-mode -1)
               (toggle-truncate-lines 1)
-              (display-line-numbers-mode 0))))
+              (display-line-numbers-mode 0)))
+  (require 'org-crypt)
+  (org-crypt-use-before-save-magic)
+  (setq org-tags-exclude-from-inheritance (quote ("crypt")))
+  (setq org-crypt-key nil)
+  (use-package jupyter
+    :straight t
+    :init
+    (my-leader-def "ar" 'jupyter-run-repl))
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (python . t)
+     ;; (typescript .t)
+     (shell . t)
+     (octave . t)
+     (jupyter . t)))
+  
+  (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+  (org-babel-jupyter-override-src-block "python")
+  (add-hook 'org-src-mode-hook
+            (lambda ()
+              (hs-minor-mode -1)
+              ;; (electric-indent-local-mode -1)
+              (highlight-indent-guides-mode -1)))
+  (setq my/org-latex-scale 1.75)
+  (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
+  (if (not my/lowpower)
+      (setq org-agenda-category-icon-alist
+            `(
+              ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
+              ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
+              ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
+              ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
+              ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
+              ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
+              ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c d" 'org-decrypt-entry
+   "C-c e" 'org-encrypt-entry
+   "M-p" 'org-latex-preview
+   "M-o" 'org-redisplay-inline-images)
+  
+  (general-define-key
+   :keymaps 'org-mode-map
+   :states '(normal emacs)
+   "L" 'org-shiftright
+   "H" 'org-shiftleft
+   "S-<next>" 'org-babel-next-src-block
+   "S-<prior>" 'org-babel-previous-src-block)
+  
+  (general-define-key
+   :keymaps 'org-agenda-mode-map
+   "M-]" 'org-agenda-later
+   "M-[" 'org-agenda-earlier)
+  
+  ;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
+  (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
+  
+  (my-leader-def "ao" 'org-switchb)
+  (my-leader-def "aa" 'org-agenda)
+  (defun my/org-link-copy (&optional arg)
+    "Extract URL from org-mode link and add it to kill ring."
+    (interactive "P")
+    (let* ((link (org-element-lineage (org-element-context) '(link) t))
+            (type (org-element-property :type link))
+            (url (org-element-property :path link))
+            (url (concat type ":" url)))
+      (kill-new url)
+      (message (concat "Copied URL: " url))))
+      
+  (general-nmap :keymaps 'org-mode-map
+      "C-x C-l" 'my/org-link-copy))
 
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
@@ -871,9 +945,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (evil-org-agenda-set-keys))
 
 (use-package jupyter
-  :straight t)
-  
-(my-leader-def "ar" 'jupyter-run-repl)
+  :straight t
+  :init
+  (my-leader-def "ar" 'jupyter-run-repl))
 
 (defun my/jupyter-refresh-kernelspecs ()
   "Refresh Jupyter kernelspecs"
@@ -899,25 +973,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (f-write (plist-get (car (cdr elem)) :value) 'utf-8 temp-file-path)
           (start-process "org-html-preview" nil "xdg-open" temp-file-path))))))
 
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((emacs-lisp . t)
-   (python . t)
-   ;; (typescript .t)
-   (shell . t)
-   (octave . t)
-   (jupyter . t)))
-
-(add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
-
-(org-babel-jupyter-override-src-block "python")
-
-(add-hook 'org-src-mode-hook
-          (lambda ()
-            (hs-minor-mode -1)
-            ;; (electric-indent-local-mode -1)
-            (highlight-indent-guides-mode -1)))
-
 (use-package ob-async
   :straight t
   :after (org)
@@ -932,7 +987,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :init
   (setq org-latex-impatient-tex2svg-bin
         "/home/pavel/Programs/miniconda3/lib/node_modules/mathjax-node-cli/bin/tex2svg")
-  (setq org-latex-impatient-scale 2)
+  (setq org-latex-impatient-scale 1.75)
   (setq org-latex-impatient-delay 1)
   (setq org-latex-impatient-border-color "#ffffff"))
 
@@ -941,24 +996,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq org-highlight-latex-and-related '(native))
   (yas-activate-extra-mode 'LaTeX-mode))
 
-(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.75))
-
 (use-package org-superstar
   :straight t
-  :hook (org-mode . org-superstar-mode)
-  :config
-  (add-hook 'org-mode-hook (lambda () (org-superstar-mode 1))))
-
-(if (not my/lowpower)
-    (setq org-agenda-category-icon-alist
-          `(
-            ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
-            ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
-            ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
-            ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
-            ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
-            ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
-            ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
+  :hook (org-mode . org-superstar-mode))
 
 (use-package ox-hugo
   :straight t
@@ -967,32 +1007,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package ox-ipynb
   :straight (:host github :repo "jkitchin/ox-ipynb")
   :after ox)
-
-(general-define-key
- :keymaps 'org-mode-map
- "C-c d" 'org-decrypt-entry
- "C-c e" 'org-encrypt-entry
- "M-p" 'org-latex-preview)
-
-(general-define-key
- :keymaps 'org-mode-map
- :states '(normal emacs)
- "L" 'org-shiftright
- "H" 'org-shiftleft
- "S-<next>" 'org-babel-next-src-block
- "S-<prior>" 'org-babel-previous-src-block)
-
-(general-define-key
- :keymaps 'org-agenda-mode-map
- "M-]" 'org-agenda-later
- "M-[" 'org-agenda-earlier)
-
-;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
-(general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
-
-(my-leader-def
-  "aa" 'org-agenda
-  "ao" 'org-switchb)
 
 (defun my/org-link-copy (&optional arg)
   "Extract URL from org-mode link and add it to kill ring."
@@ -1011,36 +1025,53 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :after (org-present))
 
+(defun my/present-next-with-latex ()
+  (interactive)
+  (org-present-next)
+  (org-latex-preview '(16)))
+
+(defun my/present-prev-with-latex ()
+  (interactive)
+  (org-present-prev)
+  (org-latex-preview '(16)))
+
 (use-package org-present
   :straight (:host github :repo "rlister/org-present")
   :commands (org-present)
   :config
   (general-define-key
    :keymaps 'org-present-mode-keymap
-   "<next>" 'org-present-next
-   "<prior>" 'org-present-prev)
+   "<next>" 'my/present-next-with-latex
+   "<prior>" 'my/present-prev-with-latex)
   (add-hook 'org-present-mode-hook
             (lambda ()
               (blink-cursor-mode 0)
               (org-present-big)
-              (org-display-inline-images)
+              ;; (org-display-inline-images)
               (org-present-hide-cursor)
               (org-present-read-only)
               (display-line-numbers-mode 0)
               (hide-mode-line-mode +1)
+              (setq-local org-format-latex-options
+                          (plist-put org-format-latex-options
+                                     :scale (* org-present-text-scale my/org-latex-scale 0.5)))
+              (org-latex-preview '(16))
               (tab-bar-mode 0)))
   (add-hook 'org-present-mode-quit-hook
             (lambda ()
               (blink-cursor-mode 1)
               (org-present-small)
-              (org-remove-inline-images)
+              ;; (org-remove-inline-images)
               (org-present-show-cursor)
               (org-present-read-write)
               (display-line-numbers-mode 1)
               (hide-mode-line-mode 0)
+              (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
+              (org-latex-preview '(64))
               (tab-bar-mode 1))))
 
 (use-package org-make-toc
+  :after (org)
   :commands
   (org-make-toc
    org-make-toc-insert
@@ -1209,8 +1240,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
   ;; Scale preview for my DPI
   (setq-default preview-scale-function 1.4)
-  ;; (assoc-delete-all "--" tex--prettify-symbols-alist)
-  ;; (assoc-delete-all "---" tex--prettify-symbols-alist)
+  (assoc-delete-all "--" tex--prettify-symbols-alist)
+  (assoc-delete-all "---" tex--prettify-symbols-alist)
 
   (add-hook 'LaTeX-mode-hook
             (lambda ()
@@ -1239,6 +1270,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     :keymaps '(LaTeX-mode-map latex-mode-map)
     "RET" 'TeX-command-run-all
     "C-c t" 'orgtbl-mode))
+
+(use-package ivy-bibtex
+  :commands (ivy-bibtex)
+  :straight t
+  :init
+  (my-leader-def "fB" 'ivy-bibtex))
+
+(add-hook 'bibtex-mode 'smartparens-mode)
 
 (defun my/import-sty ()
   (interactive)
