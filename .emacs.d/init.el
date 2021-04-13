@@ -1474,6 +1474,21 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
 (general-define-key "C-c c" 'my/edit-configuration)
 ;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
+(my-leader-def "cc" 'my/edit-configuration)
+
+(add-to-list 'tramp-methods
+             '("yadm"
+               (tramp-login-program "yadm")
+               (tramp-login-args (("enter")))
+               (tramp-login-env (("SHELL") ("/bin/sh")))
+               (tramp-remote-shell "/bin/sh")
+               (tramp-remote-shell-args ("-c"))))
+
+(defun my/yadm-magit ()
+  (interactive)
+  (magit-status "/yadm::"))
+
+(my-leader-def "cm" 'my/yadm-magit)
 
 (defun my/open-yadm-file ()
   "Open a file managed by yadm"
@@ -1487,6 +1502,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
 
 (general-define-key "C-c f" 'my/open-yadm-file)
+(my-leader-def "cf" 'my/open-yadm-file)
 
 (use-package notmuch
   :ensure nil

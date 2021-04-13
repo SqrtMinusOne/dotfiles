@@ -143,6 +143,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#documents--markup-languages][Documents & markup languages]]
     - [[#latex][LaTeX]]
       - [[#auctex][AUCTeX]]
+      - [[#bibtex][BibTex]]
       - [[#import-sty][Import *.sty]]
     - [[#markdown][Markdown]]
     - [[#plantuml][PlantUML]]
@@ -164,6 +165,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
 - [[#apps--misc][Apps & Misc]]
   - [[#managing-dotfiles][Managing dotfiles]]
     - [[#open-emacs-config][Open Emacs config]]
+    - [[#open-magit-for-yadm][Open Magit for yadm]]
     - [[#open-dotfile][Open dotfile]]
   - [[#notmuch][Notmuch]]
   - [[#google-translate][Google Translate]]
@@ -183,7 +185,7 @@ A small function to print out the loading time and number of GCs during the load
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
 
-(setq use-package-verbose t)
+;; (setq use-package-verbose t)
 #+end_src
 ** straight.el
 Straight.el is my Emacs package manager of choice. Its advantages & disadvantages over other options are listed pretty thoroughly in the README file in the repo.
@@ -2441,6 +2443,8 @@ Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Se
 #+end_src
 * Apps & Misc
 ** Managing dotfiles
+A bunch of functions for managing dotfiles with yadm.
+
 *** Open Emacs config
 #+begin_src emacs-lisp
 (defun my/edit-configuration ()
@@ -2455,6 +2459,27 @@ Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Se
   
 (general-define-key "C-c c" 'my/edit-configuration)
 ;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
+(my-leader-def "cc" 'my/edit-configuration)
+#+end_src
+*** Open Magit for yadm
+Idea:
+
+- [[https://www.reddit.com/r/emacs/comments/gjukb3/yadm_magit/]]
+
+#+begin_src emacs-lisp
+(add-to-list 'tramp-methods
+             '("yadm"
+               (tramp-login-program "yadm")
+               (tramp-login-args (("enter")))
+               (tramp-login-env (("SHELL") ("/bin/sh")))
+               (tramp-remote-shell "/bin/sh")
+               (tramp-remote-shell-args ("-c"))))
+
+(defun my/yadm-magit ()
+  (interactive)
+  (magit-status "/yadm::"))
+
+(my-leader-def "cm" 'my/yadm-magit)
 #+end_src
 *** Open dotfile
 Open a file managed by yadm.
@@ -2472,6 +2497,7 @@ Open a file managed by yadm.
       (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
 
 (general-define-key "C-c f" 'my/open-yadm-file)
+(my-leader-def "cf" 'my/open-yadm-file)
 #+end_src
 
 ** Notmuch 
