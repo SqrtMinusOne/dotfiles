@@ -131,7 +131,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
       - [[#plugin][Plugin]]
     - [[#general-additional-config][General additional config]]
   - [[#web-development][Web development]]
-    - [[#off-emmet][(OFF) Emmet]]
+    - [[#emmet][Emmet]]
     - [[#typescript][TypeScript]]
     - [[#javascript][JavaScript]]
     - [[#jest][Jest]]
@@ -508,8 +508,9 @@ Some keybindings for xref, Emacs' built-in systems for managing identifiers.
 #+end_src
 *** Folding
 #+begin_src emacs-lisp
-(general-nmap "TAB" 'evil-toggle-fold)
-(general-nmap :keymaps 'hs-minor-mode-map "ze" 'hs-hide-level)
+(general-nmap :keymaps '(hs-minor-mode-map outline-minor-mode-map)
+  "ze" 'hs-hide-level
+  "TAB" 'evil-toggle-fold)
 #+end_src
 *** Zoom
 #+begin_src emacs-lisp
@@ -936,7 +937,9 @@ References:
 (use-package editorconfig
   :straight t
   :config
-  (editorconfig-mode 1))
+  (editorconfig-mode 1)
+  (add-to-list 'editorconfig-indentation-alist
+               '(emmet-mode emmet-indentation)))
 #+end_src
 
 ** OFF (OFF) Avy
@@ -2031,20 +2034,41 @@ Override flycheck checker with eslint.
 #+end_src
 ** Web development
 Configs for various web development technologies I'm using.
-*** OFF (OFF) Emmet
-| Note | Type                                               |
-|------+----------------------------------------------------|
-| TODO | I really want Emmet :( find a way to make it work |
+*** Emmet
+[[https://emmet.io/][Emmet]] is a toolkit which greatly speeds up typing HTML & CSS.
 
-#+begin_src emacs-lisp :tangle no
-(use-package emmet-mode
-  :straight t)
+| Type | Note                                |
+|------+-------------------------------------|
+| TODO | Do not enable for every Svelte mode |
+
+My bit of config here:
+- makes Emmet activate only in certain mmm-mode submodes.
+- makes =TAB= the only key I have to use
   
-(general-imap 
-  :keymaps 'emmet-mode-keymap
-  "TAB" 'emmet-expand-line)
-
-(add-hook 'web-mode 'emmet-mode)
+#+begin_src emacs-lisp
+(use-package emmet-mode
+  :straight t
+  :hook ((vue-html-mode . emmet-mode)
+         (svelte-mode . emmet-mode)
+         (html-mode . emmet-mode)
+         (css-mode . emmet-mode)
+         (scss-mode . emmet-mode))
+  :config
+  ;; (setq emmet-indent-after-insert nil)
+  (setq my/emmet-mmm-submodes '(vue-html-mode css-mode))
+  (defun my/emmet-or-tab (&optional arg)
+    (interactive)
+    (if (and
+         (boundp 'mmm-current-submode)
+         mmm-current-submode
+         (not (member mmm-current-submode my/emmet-mmm-submodes)))
+        (indent-for-tab-command arg)
+      (or (emmet-expand-line arg)
+          (emmet-go-to-edit-point 1)
+          (indent-for-tab-command arg))))
+  (general-imap :keymaps 'emmet-mode-keymap
+    "TAB" 'my/emmet-or-tab
+    "<backtab>" 'emmet-prev-edit-point))
 #+end_src
 *** TypeScript
 #+begin_src emacs-lisp
@@ -2095,7 +2119,8 @@ Configs for various web development technologies I'm using.
                           sgml-basic-offset
                           ssass-tab-width
                           typescript-indent-level
-                          )))
+                          emmet-indentation
+                          vue-html-extra-indent)))
 #+end_src
 **** mmm-mode fix
 References:
@@ -2126,7 +2151,10 @@ References:
   :config
   (add-hook 'svelte-mode-hook 'set-flycheck-eslint)
   (add-hook 'svelte-mode-hook #'smartparens-mode)
-  (my/set-smartparens-indent 'svelte-mode))
+  (my/set-smartparens-indent 'svelte-mode)
+  ;; I have my own Emmet
+  (setq lsp-svelte-plugin-css-completions-emmet nil)
+  (setq lsp-svelte-plugin-html-completions-emmet nil))
 #+end_src
 *** SCSS
 #+begin_src emacs-lisp

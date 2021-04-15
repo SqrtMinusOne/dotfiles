@@ -6,7 +6,7 @@
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
 
-(setq use-package-verbose t)
+;; (setq use-package-verbose t)
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -199,8 +199,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (my-leader-def
   "fx" 'xref-find-apropos)
 
-(general-nmap "TAB" 'evil-toggle-fold)
-(general-nmap :keymaps 'hs-minor-mode-map "ze" 'hs-hide-level)
+(general-nmap :keymaps '(hs-minor-mode-map outline-minor-mode-map)
+  "ze" 'hs-hide-level
+  "TAB" 'evil-toggle-fold)
 
 (defun my/zoom-in ()
   "Increase font size by 10 points"
@@ -470,7 +471,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package editorconfig
   :straight t
   :config
-  (editorconfig-mode 1))
+  (editorconfig-mode 1)
+  (add-to-list 'editorconfig-indentation-alist
+               '(emmet-mode emmet-indentation)))
 
 (use-package yasnippet
   :straight t
@@ -1162,6 +1165,30 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq-local lsp-diagnostic-package :none)
   (setq-local flycheck-checker 'javascript-eslint))
 
+(use-package emmet-mode
+  :straight t
+  :hook ((vue-html-mode . emmet-mode)
+         (svelte-mode . emmet-mode)
+         (html-mode . emmet-mode)
+         (css-mode . emmet-mode)
+         (scss-mode . emmet-mode))
+  :config
+  ;; (setq emmet-indent-after-insert nil)
+  (setq my/emmet-mmm-submodes '(vue-html-mode css-mode))
+  (defun my/emmet-or-tab (&optional arg)
+    (interactive)
+    (if (and
+         (boundp 'mmm-current-submode)
+         mmm-current-submode
+         (not (member mmm-current-submode my/emmet-mmm-submodes)))
+        (indent-for-tab-command arg)
+      (or (emmet-expand-line arg)
+          (emmet-go-to-edit-point 1)
+          (indent-for-tab-command arg))))
+  (general-imap :keymaps 'emmet-mode-keymap
+    "TAB" 'my/emmet-or-tab
+    "<backtab>" 'emmet-prev-edit-point))
+
 (use-package typescript-mode
   :straight t
   :mode "\\.ts\\'"
@@ -1203,7 +1230,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                           sgml-basic-offset
                           ssass-tab-width
                           typescript-indent-level
-                          )))
+                          emmet-indentation
+                          vue-html-extra-indent)))
 
 (use-package svelte-mode
   :straight t
@@ -1211,7 +1239,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (add-hook 'svelte-mode-hook 'set-flycheck-eslint)
   (add-hook 'svelte-mode-hook #'smartparens-mode)
-  (my/set-smartparens-indent 'svelte-mode))
+  (my/set-smartparens-indent 'svelte-mode)
+  ;; I have my own Emmet
+  (setq lsp-svelte-plugin-css-completions-emmet nil)
+  (setq lsp-svelte-plugin-html-completions-emmet nil))
 
 (add-hook 'scss-mode-hook #'smartparens-mode)
 (add-hook 'scss-mode-hook #'hs-minor-mode)
