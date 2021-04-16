@@ -1,0 +1,377 @@
+[
+  {
+    "title": "OS/Distro",
+    "elements": [
+      {
+        "name": "Manjaro",
+        "states": [
+          {
+            "startDate": "2020-08-24"
+          }
+        ],
+        "color": "g"
+      },
+      {
+        "name": "Linux Mint",
+        "states": [
+          {
+            "startDate": "TODO 2018-03-12",
+            "endDate": "2020-08-24"
+          }
+        ],
+        "color": "m"
+      },
+      {
+        "name": "Windows",
+        "states": [
+          {
+            "startDate": "TODO 2018-11-25",
+            "endDate": "2019-10-07",
+            "state": "dashed",
+            "hatchColor": "y",
+            "note": "Dual boot, rarely used"
+          },
+          {
+            "startDate": "2016-09-01",
+            "endDate": "TODO 2018-11-25"
+          }
+        ],
+        "color": "b"
+      }
+    ]
+  },
+  {
+    "title": "DE stuff",
+    "elements": [
+      {
+        "name": "KDE",
+        "color": "y",
+        "states": [
+          {
+            "startDate": "2018-03-12",
+            "endDate": "2018-08-01"
+          }
+        ]
+      },
+      {
+        "name": "Cinnamon",
+        "color": "g",
+        "states": [
+          {
+            "startDate": "2018-08-01",
+            "endDate": "2020-05-08"
+          }
+        ]
+      },
+      {
+        "name": "i3(-gaps)",
+        "color": "b",
+        "states": [
+          {
+            "startDate": "2020-05-08"
+          }
+        ]
+      },
+      {
+        "name": "i3blocks",
+        "color": "b-l",
+        "states": [
+          {
+            "startDate": "2020-05-08",
+            "endDate": "2020-12-11"
+          }
+        ]
+      },
+      {
+        "name": "polybar",
+        "color": "m",
+        "states": [
+          {
+            "startDate": "2020-12-11"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "shell",
+    "elements": [
+      {
+        "name": "bash",
+        "color": "w",
+        "states": [
+          {
+            "startDate": "TODO 2018-03-12",
+            "endDate": "2020-09-09"
+          }
+        ]
+      },
+      {
+        "name": "fish",
+        "color": "c",
+        "states": [
+          {
+            "startDate": "2020-09-09"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "CLI tools",
+    "elements": [
+      {
+        "name": "ranger",
+        "states": [
+          {
+            "startDate": "2019-04-03",
+            "endDate": "2020-02-17"
+          }
+        ],
+        "color": "y"
+      },
+      {
+        "name": "vifm",
+        "states": [
+          {
+            "startDate": "2020-02-17",
+            "endDate": "2020-11-11"
+          }
+        ],
+        "color": "g"
+      },
+      {
+        "name": "tmux",
+        "states": [
+          {
+            "startDate": "2020-01-22"
+          }
+        ],
+        "color": "b"
+      }
+    ]
+  },
+  {
+    "title": "Office",
+    "elements": [
+      {
+        "name": "LaTeX",
+        "color": "b",
+        "states": [
+          {
+            "startDate": "2019-04-12"
+          }
+        ]
+      },
+      {
+        "name": "Zathura",
+        "color": "c",
+        "states": [
+          {
+            "startDate": "2019-04-12"
+          }
+        ]
+      },
+      {
+        "name": "OneNote",
+        "color": "m",
+        "states": [
+          {
+            "startDate": "2016-09-01",
+            "endDate": "2019-03-21"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Editor/IDE",
+    "elements": [
+      {
+        "name": "Emacs",
+        "color": "m",
+        "states": [
+          {
+            "startDate": "2020-10-12"
+          }
+        ]
+      },
+      {
+        "name": "NeoVim",
+        "color": "g",
+        "states": [
+          {
+            "startDate": "2019-03-30",
+            "endDate": "2020-10-12"
+          }
+        ]
+      },
+      {
+        "name": "Qt Creator",
+        "color": "y",
+        "states": [
+          {
+            "startDate": "2017-09-01",
+            "endDate": "2018-07-17"
+          },
+          {
+            "startDate": "2019-09-11",
+            "endDate": "2019-12-04"
+          }
+        ]
+      },
+      {
+        "name": "Notepad++",
+        "color": "w",
+        "states": [
+          {
+            "startDate": "2017-09-01",
+            "endDate": "2018-05-25"
+          }
+        ]
+      },
+      {
+        "name": "Various JetBrains",
+        "color": "c",
+        "states": [
+          {
+            "startDate": "2018-09-01",
+            "endDate": "2019-03-30"
+          }
+        ]
+      },
+      {
+        "name": "DataGrip",
+        "color": "b",
+        "states": [
+          {
+            "startDate": "2020-02-01"
+          }
+        ]
+      },
+      {
+        "name": "Jupyter (Notebook|Lab)",
+        "color": "r",
+        "states": [
+          {
+            "startDate": "2018-10-24",
+            "endDate": "2020-11-01"
+          },
+          {
+            "startDate": "2020-11-01",
+            "state": "dashed",
+            "note": "Mostly replaced by Org Mode",
+            "hatchColor": "w"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Browser",
+    "elements": [
+      {
+        "name": "Opera",
+        "color": "r",
+        "states": [
+          {
+            "startDate": "2018-09-01",
+            "endDate": "2019-02-01"
+          },
+          {
+            "startDate": "2019-09-01",
+            "endDate": "2020-02-11"
+          }
+        ]
+      },
+      {
+        "name": "Chromium",
+        "states": [
+          {
+            "startDate": "2018-04-01",
+            "endDate": "2018-09-01"
+          }
+        ],
+        "color": "c"
+      },
+      {
+        "name": "qutebrowser",
+        "color": "b",
+        "states": [
+          {
+            "startDate": "2020-02-11",
+            "endDate": "2020-12-20"
+          }
+        ]
+      },
+      {
+        "name": "Vivaldi",
+        "color": "r-l",
+        "states": [
+          {
+            "startDate": "2019-02-01",
+            "endDate": "2019-09-01"
+          }
+        ]
+      },
+      {
+        "name": "Firefox",
+        "color": "y",
+        "states": [
+          {
+            "startDate": "2017-05-14",
+            "endDate": "2018-04-01"
+          },
+          {
+            "startDate": "2020-12-20",
+            "state": "dashed",
+            "note": "+ Tridactyl",
+            "hatchColor": "k-l"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Misc",
+    "elements": [
+      {
+        "name": "ncmpcpp & mpd",
+        "color": "c",
+        "states": [
+          {
+            "startDate": "2020-07-26"
+          }
+        ]
+      },
+      {
+        "name": "newsboat",
+        "color": "r",
+        "states": [
+          {
+            "startDate": "2021-01-22"
+          }
+        ]
+      },
+      {
+        "name": "Mailspring",
+        "color": "g",
+        "states": [
+          {
+            "startDate": "TODO 2019-01-28",
+            "endDate": "2021-01-29"
+          }
+        ]
+      },
+      {
+        "name": "notmuch",
+        "color": "b",
+        "states": [
+          {
+            "startDate": "2021-01-29"
+          }
+        ]
+      }
+    ]
+  }
+]

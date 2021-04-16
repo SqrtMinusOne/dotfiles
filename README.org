@@ -1,4 +1,6 @@
-* My dotfiles
+#+TITLE: My dotfiles
+
+* Programs used
 Deployed with [[https://yadm.io/][yadm]]
 
 | Group     | Program        | Purpose                        | Status            | Documented? | Notes                                                     |
@@ -43,10 +45,17 @@ Deployed with [[https://yadm.io/][yadm]]
 | misc      | [[https://github.com/risacher/sunwait][sunwait]]        | sunrise calculator             | *active*          | -           |                                                           |
 | misc      | [[https://github.com/vergoh/vnstat][vnstat]]         | traffic stats                  | *active*          | -           |                                                           |
 
+* Some statistics
+Run the following to show the pictures with reasonable width:
+#+begin_src elisp :results none
+(setq-local org-image-actual-width '(1024))
+#+end_src
+
+** History
+[[./dot-stats/img/all.png]]
 
 * Notes
 - =M-u C-c C-v t= to tangle a particular block
 - =M-u M-u C-c C-v t= to tangle a particular file
 
 Uses yadm's =post_alt= hook to create symlinks
-

@@ -1,0 +1,23 @@
+### FONT
+text.color: D0D0D0
+
+### AXES
+axes.facecolor: 363B52
+axes.edgecolor: FFFFFF
+axes.labelcolor: FFFFFF
+
+### TICKS
+xtick.color: FFFFFF
+ytick.color: FFFFFF
+
+### GRIDS
+grid.color:   FFFFFF
+
+### Legend
+legend.facecolor: inherit
+legend.edgecolor: C792EA
+
+### FIGURE
+
+figure.facecolor: 292D3E
+savefig.facecolor: 292D3E
