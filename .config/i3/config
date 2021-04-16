@@ -287,7 +287,7 @@ mode "rofi" {
 bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec alacritty'"
 
 bindsym $mod+p exec "copyq menu"
-bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper-2-1.png"
+bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"
 
 bindsym $mod+semicolon mode "apps"
 
