@@ -143,8 +143,10 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#documents--markup-languages][Documents & markup languages]]
     - [[#latex][LaTeX]]
       - [[#auctex][AUCTeX]]
-      - [[#bibtex][BibTex]]
+      - [[#bibtex][BibTeX]]
       - [[#import-sty][Import *.sty]]
+      - [[#greek-letters][Greek letters]]
+      - [[#english-letters][English letters]]
     - [[#markdown][Markdown]]
     - [[#plantuml][PlantUML]]
     - [[#languagetool][LanguageTool]]
@@ -2176,7 +2178,7 @@ The best LaTeX editing environment I've found so far.
 References:
 - [[https://www.gnu.org/software/auctex/][AUCTeX homepage]]
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb yes
 (use-package tex
   :straight auctex
   :defer t
@@ -2209,11 +2211,11 @@ References:
   
   ;; Do not run lsp within templated TeX files
   (add-hook 'LaTeX-mode-hook
-            #'(lambda ()
-                (unless (string-match "\.hogan\.tex$" (buffer-name))
-                  (lsp))
-                (setq-local lsp-diagnostic-package :none)
-                (setq-local flycheck-checker 'tex-chktex)))
+            '(lambda ()
+               (unless (string-match "\.hogan\.tex$" (buffer-name))
+                 (lsp))
+               (setq-local lsp-diagnostic-package :none)
+               (setq-local flycheck-checker 'tex-chktex)))
   
   (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'LaTeX-mode-hook #'smartparens-mode)
@@ -2225,9 +2227,12 @@ References:
   (general-nmap
     :keymaps '(LaTeX-mode-map latex-mode-map)
     "RET" 'TeX-command-run-all
-    "C-c t" 'orgtbl-mode))
+    "C-c t" 'orgtbl-mode)
+  
+  <<init-greek-latex-snippets>>
+  <<init-english-latex-snippets>>)
 #+end_src
-**** BibTex
+**** BibTeX
 #+begin_src emacs-lisp
 (use-package ivy-bibtex
   :commands (ivy-bibtex)
@@ -2265,6 +2270,73 @@ A function to import =.sty= files to the LaTeX document.
                 ("gostBibTex.sty" 2)
                 ("russianlocale.sty" 1)
                 (_ nil))))))))
+#+end_src
+**** Greek letters
+Autogenerate snippets for greek letters.
+
+Noweb points to the AUCTeX config block.
+
+#+begin_src emacs-lisp :noweb-ref init-greek-latex-snippets
+(setq my/greek-alphabet
+      '(("a" . "\\alpha")
+        ("b" . "\\beta" )
+        ("g" . "\\gamma")
+        ("d" . "\\delta")
+        ("e" . "\\epsilon")
+        ("z" . "\\zeta")
+        ("h" . "\\eta")
+        ("t" . "\\theta")
+        ("i" . "\\iota")
+        ("k" . "\\kappa")
+        ("l" . "\\lambda")
+        ("m" . "\\mu")
+        ("n" . "\\nu")
+        ("x" . "\\xi")
+        ("p" . "\\pi")
+        ("r" . "\\rho")
+        ("s" . "\\sigma")
+        ("t" . "\\tau")
+        ("u" . "\\upsilon")
+        ("f" . "\\phi")
+        ("c" . "\\chi")
+        ("v" . "\\psi")
+        ("g" . "\\omega")))
+
+;; The same for capitalized letters
+(dolist (elem my/greek-alphabet)
+  (let ((key (car elem))
+        (value (cdr elem)))
+    (when (string-equal key (downcase key))
+      (add-to-list 'my/greek-alphabet
+                   (cons
+                    (capitalize (car elem))
+                    (concat
+                     (substring value 0 1)
+                     (capitalize (substring value 1 2))
+                     (substring value 2)))))))
+
+(yas-define-snippets
+ 'latex-mode
+ (mapcar
+  (lambda (elem)
+    (list (concat "'" (car elem)) (cdr elem) (concat "Greek letter " (car elem))))
+  my/greek-alphabet))
+#+end_src
+**** English letters
+#+begin_src emacs-lisp :noweb-ref init-english-latex-snippets
+(setq my/english-alphabet
+      '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
+
+(dolist (elem my/english-alphabet)
+  (when (string-equal elem (downcase elem))
+    (add-to-list 'my/english-alphabet (upcase elem))))
+
+(yas-define-snippets
+ 'latex-mode
+ (mapcar
+  (lambda (elem)
+    (list (concat "`" elem) (concat "\\mathbb{" elem "}")))
+  my/english-alphabet))
 #+end_src
 *** Markdown
 #+begin_src emacs-lisp
@@ -2382,8 +2454,8 @@ Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Se
   (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz"))
 
 (add-hook 'java-mode-hook #'smartparens-mode)
-  (add-hook 'java-mode-hook #'hs-minor-mode)
-  (my/set-smartparens-indent 'java-mode)
+(add-hook 'java-mode-hook #'hs-minor-mode)
+(my/set-smartparens-indent 'java-mode)
 #+end_src
 ** Clojure
 #+begin_src emacs-lisp

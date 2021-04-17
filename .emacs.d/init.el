@@ -1284,11 +1284,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
   ;; Do not run lsp within templated TeX files
   (add-hook 'LaTeX-mode-hook
-            #'(lambda ()
-                (unless (string-match "\.hogan\.tex$" (buffer-name))
-                  (lsp))
-                (setq-local lsp-diagnostic-package :none)
-                (setq-local flycheck-checker 'tex-chktex)))
+            '(lambda ()
+               (unless (string-match "\.hogan\.tex$" (buffer-name))
+                 (lsp))
+               (setq-local lsp-diagnostic-package :none)
+               (setq-local flycheck-checker 'tex-chktex)))
   
   (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'LaTeX-mode-hook #'smartparens-mode)
@@ -1300,7 +1300,65 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-nmap
     :keymaps '(LaTeX-mode-map latex-mode-map)
     "RET" 'TeX-command-run-all
-    "C-c t" 'orgtbl-mode))
+    "C-c t" 'orgtbl-mode)
+  
+  (setq my/greek-alphabet
+        '(("a" . "\\alpha")
+          ("b" . "\\beta" )
+          ("g" . "\\gamma")
+          ("d" . "\\delta")
+          ("e" . "\\epsilon")
+          ("z" . "\\zeta")
+          ("h" . "\\eta")
+          ("t" . "\\theta")
+          ("i" . "\\iota")
+          ("k" . "\\kappa")
+          ("l" . "\\lambda")
+          ("m" . "\\mu")
+          ("n" . "\\nu")
+          ("x" . "\\xi")
+          ("p" . "\\pi")
+          ("r" . "\\rho")
+          ("s" . "\\sigma")
+          ("t" . "\\tau")
+          ("u" . "\\upsilon")
+          ("f" . "\\phi")
+          ("c" . "\\chi")
+          ("v" . "\\psi")
+          ("g" . "\\omega")))
+  
+  ;; The same for capitalized letters
+  (dolist (elem my/greek-alphabet)
+    (let ((key (car elem))
+          (value (cdr elem)))
+      (when (string-equal key (downcase key))
+        (add-to-list 'my/greek-alphabet
+                     (cons
+                      (capitalize (car elem))
+                      (concat
+                       (substring value 0 1)
+                       (capitalize (substring value 1 2))
+                       (substring value 2)))))))
+  
+  (yas-define-snippets
+   'latex-mode
+   (mapcar
+    (lambda (elem)
+      (list (concat "'" (car elem)) (cdr elem) (concat "Greek letter " (car elem))))
+    my/greek-alphabet))
+  (setq my/english-alphabet
+        '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
+  
+  (dolist (elem my/english-alphabet)
+    (when (string-equal elem (downcase elem))
+      (add-to-list 'my/english-alphabet (upcase elem))))
+  
+  (yas-define-snippets
+   'latex-mode
+   (mapcar
+    (lambda (elem)
+      (list (concat "`" elem) (concat "\\mathbb{" elem "}")))
+    my/english-alphabet)))
 
 (use-package ivy-bibtex
   :commands (ivy-bibtex)
@@ -1334,6 +1392,65 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                 ("gostBibTex.sty" 2)
                 ("russianlocale.sty" 1)
                 (_ nil))))))))
+
+(setq my/greek-alphabet
+      '(("a" . "\\alpha")
+        ("b" . "\\beta" )
+        ("g" . "\\gamma")
+        ("d" . "\\delta")
+        ("e" . "\\epsilon")
+        ("z" . "\\zeta")
+        ("h" . "\\eta")
+        ("t" . "\\theta")
+        ("i" . "\\iota")
+        ("k" . "\\kappa")
+        ("l" . "\\lambda")
+        ("m" . "\\mu")
+        ("n" . "\\nu")
+        ("x" . "\\xi")
+        ("p" . "\\pi")
+        ("r" . "\\rho")
+        ("s" . "\\sigma")
+        ("t" . "\\tau")
+        ("u" . "\\upsilon")
+        ("f" . "\\phi")
+        ("c" . "\\chi")
+        ("v" . "\\psi")
+        ("g" . "\\omega")))
+
+;; The same for capitalized letters
+(dolist (elem my/greek-alphabet)
+  (let ((key (car elem))
+        (value (cdr elem)))
+    (when (string-equal key (downcase key))
+      (add-to-list 'my/greek-alphabet
+                   (cons
+                    (capitalize (car elem))
+                    (concat
+                     (substring value 0 1)
+                     (capitalize (substring value 1 2))
+                     (substring value 2)))))))
+
+(yas-define-snippets
+ 'latex-mode
+ (mapcar
+  (lambda (elem)
+    (list (concat "'" (car elem)) (cdr elem) (concat "Greek letter " (car elem))))
+  my/greek-alphabet))
+
+(setq my/english-alphabet
+      '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
+
+(dolist (elem my/english-alphabet)
+  (when (string-equal elem (downcase elem))
+    (add-to-list 'my/english-alphabet (upcase elem))))
+
+(yas-define-snippets
+ 'latex-mode
+ (mapcar
+  (lambda (elem)
+    (list (concat "`" elem) (concat "\\mathbb{" elem "}")))
+  my/english-alphabet))
 
 (use-package markdown-mode
   :straight t
