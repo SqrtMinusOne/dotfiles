@@ -370,7 +370,7 @@ exec --no-startup-id pulseeffects --gapplication-service
 exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 
 # Wallpaper
-exec_always "feh --bg-fill ~/Pictures/wallpaper-2.jpg"
+exec_always "feh --bg-fill ~/Pictures/wallpaper.jpg"
 
 # Picom
 exec picom
