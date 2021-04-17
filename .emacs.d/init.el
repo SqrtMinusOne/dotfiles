@@ -560,14 +560,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (concat "["
               (my/shorten-project-name-elem (substring elem 1 (- (length elem) 1)) crop)
               "]")
-    (let ((prefix (car (s-match my/project-title-separators elem))))
-      (let ((rest
-             (substring
-              (if prefix
-                  (substring elem (length prefix))
-                elem)
-              0 (if crop 1 nil))))
-        (concat prefix rest)))))
+    (let* ((prefix (car (s-match my/project-title-separators elem)))
+           (rest
+            (substring
+             (if prefix
+                 (substring elem (length prefix))
+               elem)
+             0 (if crop 1 nil))))
+      (concat prefix rest))))
 
 (defun my/shorten-project-name (project-name)
   (let ((elems (s-slice-at my/project-title-separators project-name)))
@@ -1543,8 +1543,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz"))
 
 (add-hook 'java-mode-hook #'smartparens-mode)
-  (add-hook 'java-mode-hook #'hs-minor-mode)
-  (my/set-smartparens-indent 'java-mode)
+(add-hook 'java-mode-hook #'hs-minor-mode)
+(my/set-smartparens-indent 'java-mode)
 
 (use-package clojure-mode
   :straight t

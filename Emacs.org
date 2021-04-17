@@ -1104,14 +1104,14 @@ Prepend tab name with the shortened projectile project title
       (concat "["
               (my/shorten-project-name-elem (substring elem 1 (- (length elem) 1)) crop)
               "]")
-    (let ((prefix (car (s-match my/project-title-separators elem))))
-      (let ((rest
-             (substring
-              (if prefix
-                  (substring elem (length prefix))
-                elem)
-              0 (if crop 1 nil))))
-        (concat prefix rest)))))
+    (let* ((prefix (car (s-match my/project-title-separators elem)))
+           (rest
+            (substring
+             (if prefix
+                 (substring elem (length prefix))
+               elem)
+             0 (if crop 1 nil))))
+      (concat prefix rest))))
 
 (defun my/shorten-project-name (project-name)
   (let ((elems (s-slice-at my/project-title-separators project-name)))
@@ -1129,6 +1129,7 @@ Prepend tab name with the shortened projectile project title
 
 (setq tab-bar-tab-name-function #'my/tab-bar-name-function)
 #+end_src
+
 ** Modeline
 A modeline from Doom Emacs.
 
