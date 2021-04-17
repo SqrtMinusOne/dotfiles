@@ -1,22 +1,23 @@
-# Return if not run interactively
+# [[file:Shell.org::*Startup & environment][Startup & environment:1]]
 [[ $- != *i* ]] && return
 
 xhost +local:root > /dev/null 2>&1
 
 use_fish=true
+# Startup & environment:1 ends here
 
-# ===================== PROGRAMS =====================
+# [[file:Shell.org::*Startup & environment][Startup & environment:2]]
 export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
+# Startup & environment:2 ends here
 
-# ===================== FISH =====================
-
+# [[file:Shell.org::*Launch fish][Launch fish:1]]
 if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} ]]
 then
-	exec fish
+    exec fish
 fi
+# Launch fish:1 ends here
 
-# ===================== COLORS =====================
-
+# [[file:Shell.org::*Colors][Colors:1]]
 use_color=true
 
 # Set colorful PS1 only on colorful terminals.
@@ -29,52 +30,75 @@ match_lhs=""
 [[ -f ~/.dir_colors   ]] && match_lhs="${match_lhs}$(<~/.dir_colors)"
 [[ -f /etc/DIR_COLORS ]] && match_lhs="${match_lhs}$(</etc/DIR_COLORS)"
 [[ -z ${match_lhs}    ]] \
-	&& type -P dircolors >/dev/null \
-	&& match_lhs=$(dircolors --print-database)
+    && type -P dircolors >/dev/null \
+    && match_lhs=$(dircolors --print-database)
 [[ $'\n'${match_lhs} == *$'\n'"TERM "${safe_term}* ]] && use_color=true
 
 if ${use_color} ; then
-	# Enable colors for ls, etc.  Prefer ~/.dir_colors #64489
-	if type -P dircolors >/dev/null ; then
-		if [[ -f ~/.dir_colors ]] ; then
-			eval $(dircolors -b ~/.dir_colors)
-		elif [[ -f /etc/DIR_COLORS ]] ; then
-			eval $(dircolors -b /etc/DIR_COLORS)
-		fi
-	fi
+    # Enable colors for ls, etc.  Prefer ~/.dir_colors #64489
+    if type -P dircolors >/dev/null ; then
+        if [[ -f ~/.dir_colors ]] ; then
+            eval $(dircolors -b ~/.dir_colors)
+        elif [[ -f /etc/DIR_COLORS ]] ; then
+            eval $(dircolors -b /etc/DIR_COLORS)
+        fi
+    fi
 
-	if [[ ${EUID} == 0 ]] ; then
-		PS1='\[\033[01;31m\][\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '
-	else
-		PS1='\[\033[01;32m\][\u@\h\[\033[01;37m\] \W\[\033[01;32m\]]\$\[\033[00m\] '
-	fi
+    if [[ ${EUID} == 0 ]] ; then
+        PS1='\[\033[01;31m\][\h\[\033[01;36m\] \W\[\033[01;31m\]]\$\[\033[00m\] '
+    else
+        PS1='\[\033[01;32m\][\u@\h\[\033[01;37m\] \W\[\033[01;32m\]]\$\[\033[00m\] '
+    fi
 
-	alias ls='ls --color=auto'
-	alias grep='grep --colour=auto'
-	alias egrep='egrep --colour=auto'
-	alias fgrep='fgrep --colour=auto'
+    alias ls='ls --color=auto'
+    alias grep='grep --colour=auto'
+    alias egrep='egrep --colour=auto'
+    alias fgrep='fgrep --colour=auto'
 else
-	if [[ ${EUID} == 0 ]] ; then
-		# show root@ when we don't have colors
-		PS1='\u@\h \W \$ '
-	else
-		PS1='\u@\h \w \$ '
-	fi
+    if [[ ${EUID} == 0 ]] ; then
+        # show root@ when we don't have colors
+        PS1='\u@\h \W \$ '
+    else
+        PS1='\u@\h \w \$ '
+    fi
 fi
 
 unset use_color safe_term match_lhs sh
+# Colors:1 ends here
 
-# ===================== Settings =====================
+# [[file:Shell.org::*Settings][Settings:1]]
+complete -cf sudo           # Sudo autocompletion
 
-# Sudo autocompletiong
-complete -cf sudo
+shopt -s checkwinsize       # Check windows size after each command
+shopt -s expand_aliases     # Aliases
+shopt -s autocd             # Cd to directory just by typing its name (without cd)
+# Settings:1 ends here
 
-shopt -s checkwinsize
-shopt -s expand_aliases
-shopt -s autocd
+# [[file:Shell.org::*Settings][Settings:2]]
+shopt -s histappend
+export HISTCONTROL=ignoredups:erasedups
+HISTSIZE=
+HISTFILESIZE=
+# Settings:2 ends here
 
-# ===================== ANACONDA =====================
+# [[file:Shell.org::*Settings][Settings:3]]
+[ -r /usr/share/bash-completion/bash_completion ] && . /usr/share/bash-completion/bash_completion
+if [ -d "/usr/share/fzf" ]; then
+    source /usr/share/fzf/completion.bash
+    source /usr/share/fzf/key-bindings.bash
+fi
+# Settings:3 ends here
 
+# [[file:Shell.org::*Aliases][Aliases:1]]
+alias v="vim"
+alias gg="lazygit"
+alias ls="exa --icons"
+alias ll="exa -lah --icons"
+alias q="exit"
+alias c="clear"
+# Aliases:1 ends here
+
+# [[file:Shell.org::*Anaconda][Anaconda:1]]
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/home/pavel/Programs/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
@@ -89,33 +113,8 @@ else
 fi
 unset __conda_setup
 # <<< conda initialize <<<
+# Anaconda:1 ends here
 
-
-# ===================== BASH_IT =====================
-
-# History
+# [[file:Shell.org::*Starship prompt][Starship prompt:1]]
 eval "$(starship init bash)"
-
-shopt -s histappend
-export HISTCONTROL=ignoredups:erasedups
-# if [[ (! $PROMPT_COMMAND =~ .*history.*) && -z $TMUX ]]; then
-#     export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
-# fi
-HISTSIZE=
-HISTFILESIZE=
-
-# ===================== AUTOCOMPLETION =====================
-
-[ -r /usr/share/bash-completion/bash_completion ] && . /usr/share/bash-completion/bash_completion
-source /usr/share/fzf/completion.bash
-source /usr/share/fzf/key-bindings.bash
-
-
-# ===================== ALIASES =====================
-alias v="vim"
-alias gg="lazygit"
-alias ls="exa --icons"
-alias ll="exa -lah --icons"
-alias q="exit"
-alias c="clear"
-
+# Starship prompt:1 ends here

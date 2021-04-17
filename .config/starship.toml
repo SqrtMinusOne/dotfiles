@@ -1,3 +1,4 @@
+# [[file:../Shell.org::*Starship prompt][Starship prompt:1]]
 [character]
 success_symbol = "➤ "
 vicmd_symbol = "ᐊ "
@@ -74,3 +75,4 @@ symbol = " "
 
 [rust]
 symbol = " "
+# Starship prompt:1 ends here

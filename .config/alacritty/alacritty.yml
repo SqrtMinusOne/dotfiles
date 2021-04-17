@@ -1,3 +1,4 @@
+# [[file:../../Shell.org::*Alacritty][Alacritty:1]]
 decorations: none
 
 font:
@@ -9,7 +10,7 @@ font:
    
 env:
   TERM: xterm-256color
-    
+   
 colors:
   primary:
     background: '#292d3e'
@@ -66,3 +67,4 @@ key_bindings:
   - { key: NumpadAdd,      mods: Control,                         action: IncreaseFontSize }
   - { key: Minus,          mods: Control,                         action: DecreaseFontSize }
   - { key: NumpadSubtract, mods: Control,                         action: DecreaseFontSize }
+# Alacritty:1 ends here

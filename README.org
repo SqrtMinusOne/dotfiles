@@ -5,15 +5,15 @@ Deployed with [[https://yadm.io/][yadm]]
 
 | Group     | Program        | Purpose                        | Status            | Documented? | Notes                                                     |
 |-----------+----------------+--------------------------------+-------------------+-------------+-----------------------------------------------------------|
-| console   | bash           | shell                          | launches fish :) | -           |                                                           |
-| console   | [[https://fishshell.com/][fish]]           | shell                          | *active*          | -           |                                                           |
-| console   | [[https://github.com/starship/starship][starship]]       | prompt                         | *active*          | -           |                                                           |
-| console   | [[https://github.com/tmux/tmux][tmux]]           | terminal multiplexer           | *active*          | -           |                                                           |
+| console   | bash           | shell                          | launches fish :) | [[file:Console.org::*Bash][Console.org]] |                                                           |
+| console   | [[https://fishshell.com/][fish]]           | shell                          | *active*          | [[file:Console.org::*Fish][Console.org]] |                                                           |
+| console   | [[https://github.com/starship/starship][starship]]       | prompt                         | *active*          | [[file:Console.org::*Starship][Console.org]] |                                                           |
+| console   | [[https://github.com/tmux/tmux][tmux]]           | terminal multiplexer           | *active*          | [[file:Console.org::*Tmux][Console.org]] |                                                           |
 | console   | [[https://github.com/ogham/exa][exa]]            | ls clone                       | *active*          | -           |                                                           |
 | console   | [[https://github.com/moonpyk/dtrx][dtrx]]           | archive extractor              | *active*          | -           |                                                           |
 | console   | [[https://github.com/jhspetersson/fselect][fselect]]        | SQL-like find                  | *active*          | -           |                                                           |
 | console   | [[https://github.com/sharkdp/bat][bat]]            | cat clone                      | *active*          | -           |                                                           |
-| console   | [[https://github.com/alacritty/alacritty][alacritty]]      | terminal emulator              | *active*          | -           |                                                           |
+| console   | [[https://github.com/alacritty/alacritty][alacritty]]      | terminal emulator              | *active*          | [[file:Console.org::*Alacritty][Console.org]] |                                                           |
 | console   | [[https://vifm.info/][vifm]]           | file manager with vim bindings | archive           | -           |                                                           |
 | mail      | [[https://notmuchmail.org/][notmuch]]        | mail indexer                   | *active*          | [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][post]]        |                                                           |
 | mail      | [[https://github.com/gauteh/lieer][lieer]]          | gmail API client               | *active*          | [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][post]]        | credentials are encrypted                                 |
