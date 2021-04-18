@@ -109,22 +109,24 @@
   :after evil
   :config
   (evil-collection-init
-    '(eww
-      dired
-      company
-      vterm
-      flycheck
-      profiler
-      cider
-      explain-pause-mode
-      notmuch
-      custom
-      xref
-      eshell
-      helpful
-      compile
-      comint
-      magit)))
+   '(eww
+     dired
+     debug
+     edebug
+     company
+     vterm
+     flycheck
+     profiler
+     cider
+     explain-pause-mode
+     notmuch
+     custom
+     xref
+     eshell
+     helpful
+     compile
+     comint
+     magit)))
 
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
@@ -478,6 +480,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package yasnippet
   :straight t
   :config
+  (setq yas-triggers-in-field t)
   (yas-global-mode 1))
 
 (use-package yasnippet-snippets
@@ -847,6 +850,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
   (setq org-startup-indented t)
   (setq org-return-follows-link t)
+  (setq org-src-tab-acts-natively nil)
   (add-hook 'org-mode-hook 'smartparens-mode)
   (add-hook 'org-agenda-mode-hook
             (lambda ()
@@ -874,7 +878,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (org-babel-jupyter-override-src-block "python")
   (add-hook 'org-src-mode-hook
             (lambda ()
-              (hs-minor-mode -1)
+              ;; (hs-minor-mode -1)
               ;; (electric-indent-local-mode -1)
               (highlight-indent-guides-mode -1)))
   (setq my/org-latex-scale 1.75)
@@ -942,7 +946,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'org-mode-hook
             (lambda ()
               (rainbow-delimiters-mode 0)
-              (electric-indent-local-mode -1)))
+              ;; (electric-indent-local-mode -1)
+              ))
   (add-to-list 'evil-emacs-state-modes 'org-agenda-mode)
   (require 'evil-org-agenda)
   (evil-org-agenda-set-keys))
@@ -1327,6 +1332,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           ("v" . "\\psi")
           ("g" . "\\omega")))
   
+  (setq my/latex-greek-prefix "'")
+  
   ;; The same for capitalized letters
   (dolist (elem my/greek-alphabet)
     (let ((key (car elem))
@@ -1344,7 +1351,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    'latex-mode
    (mapcar
     (lambda (elem)
-      (list (concat "'" (car elem)) (cdr elem) (concat "Greek letter " (car elem))))
+      (list (concat my/latex-greek-prefix (car elem)) (cdr elem) (concat "Greek letter " (car elem))))
     my/greek-alphabet))
   (setq my/english-alphabet
         '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
@@ -1353,12 +1360,28 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (when (string-equal elem (downcase elem))
       (add-to-list 'my/english-alphabet (upcase elem))))
   
+  (setq my/latex-mathbb-prefix "`")
+  
   (yas-define-snippets
    'latex-mode
    (mapcar
     (lambda (elem)
-      (list (concat "`" elem) (concat "\\mathbb{" elem "}")))
-    my/english-alphabet)))
+      (list (concat my/latex-mathbb-prefix elem) (concat "\\mathbb{" elem "}") (concat "Mathbb letter " elem)))
+    my/english-alphabet))
+  (setq my/latex-math-symbols
+        '(("x" . "\\times")
+          ("." . "\\cdot")))
+  
+  (setq my/latex-math-prefix "''")
+  
+  (yas-define-snippets
+   'latex-mode
+   (mapcar
+    (lambda (elem)
+      (let ((key (car elem))
+            (value (cdr elem)))
+        (list (concat my/latex-math-prefix key) value (concat "Math symbol " value))))
+    my/latex-math-symbols)))
 
 (use-package ivy-bibtex
   :commands (ivy-bibtex)
@@ -1418,6 +1441,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         ("v" . "\\psi")
         ("g" . "\\omega")))
 
+(setq my/latex-greek-prefix "'")
+
 ;; The same for capitalized letters
 (dolist (elem my/greek-alphabet)
   (let ((key (car elem))
@@ -1435,7 +1460,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  'latex-mode
  (mapcar
   (lambda (elem)
-    (list (concat "'" (car elem)) (cdr elem) (concat "Greek letter " (car elem))))
+    (list (concat my/latex-greek-prefix (car elem)) (cdr elem) (concat "Greek letter " (car elem))))
   my/greek-alphabet))
 
 (setq my/english-alphabet
@@ -1445,12 +1470,29 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (when (string-equal elem (downcase elem))
     (add-to-list 'my/english-alphabet (upcase elem))))
 
+(setq my/latex-mathbb-prefix "`")
+
 (yas-define-snippets
  'latex-mode
  (mapcar
   (lambda (elem)
-    (list (concat "`" elem) (concat "\\mathbb{" elem "}")))
+    (list (concat my/latex-mathbb-prefix elem) (concat "\\mathbb{" elem "}") (concat "Mathbb letter " elem)))
   my/english-alphabet))
+
+(setq my/latex-math-symbols
+      '(("x" . "\\times")
+        ("." . "\\cdot")))
+
+(setq my/latex-math-prefix "''")
+
+(yas-define-snippets
+ 'latex-mode
+ (mapcar
+  (lambda (elem)
+    (let ((key (car elem))
+          (value (cdr elem)))
+      (list (concat my/latex-math-prefix key) value (concat "Math symbol " value))))
+  my/latex-math-symbols))
 
 (use-package markdown-mode
   :straight t
@@ -1543,7 +1585,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz"))
 
 (add-hook 'java-mode-hook #'smartparens-mode)
-(add-hook 'java-mode-hook #'hs-minor-mode)
+;; (add-hook 'java-mode-hook #'hs-minor-mode)
 (my/set-smartparens-indent 'java-mode)
 
 (use-package clojure-mode
