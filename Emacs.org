@@ -101,6 +101,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#python][Python]]
     - [[#view-html-in-browser][View HTML in browser]]
     - [[#setup][Setup]]
+    - [[#select-active-jupyter-kernel][Select active Jupyter kernel]]
   - [[#ui][UI]]
     - [[#instant-equations-preview][Instant equations preview]]
     - [[#latex-fragments][LaTeX fragments]]
@@ -109,6 +110,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#export][Export]]
     - [[#hugo][Hugo]]
     - [[#jupyter-notebook][Jupyter Notebook]]
+    - [[#html-export][Html export]]
     - [[#off-latex][(OFF) LaTeX]]
   - [[#keybindings--stuff][Keybindings & stuff]]
     - [[#copy-a-link][Copy a link]]
@@ -169,7 +171,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#managing-dotfiles][Managing dotfiles]]
     - [[#open-emacs-config][Open Emacs config]]
     - [[#open-magit-for-yadm][Open Magit for yadm]]
-    - [[#open-dotfile][Open dotfile]]
+    - [[#open-a-dotfile][Open a dotfile]]
   - [[#notmuch][Notmuch]]
   - [[#google-translate][Google Translate]]
   - [[#eww][EWW]]
@@ -1254,8 +1256,14 @@ Rainbow parentheses.
 (use-package rainbow-delimiters
   :straight t
   :if (not my/lowpower)
-  :hook (
-    (prog-mode . rainbow-delimiters-mode)))
+  :hook ((prog-mode . rainbow-delimiters-mode))
+  ;; :commands (rainbow-delimiters-mode)
+  ;; :init
+  ;; (add-hook 'prog-mode-hook
+  ;;           (lambda ()
+  ;;             (unless (org-in-src-block-p)
+  ;;               (rainbow-delimiters-mode))))
+  )
 #+end_src
 * Dired
 Dired is a built-in file manager. I use it as my primary file manager, hence the top level of config.
@@ -1487,6 +1495,9 @@ Use the built-in org mode.
               (visual-line-mode -1)
               (toggle-truncate-lines 1)
               (display-line-numbers-mode 0)))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (rainbow-delimiters-mode -1)))
   <<org-crypt-setup>>
   <<org-lang-setup>>
   <<org-ui-setup>>
@@ -1509,11 +1520,6 @@ Use the built-in org mode.
   (add-hook 'evil-org-mode-hook
             (lambda ()
               (evil-org-set-key-theme '(navigation insert textobjects additional calendar todo))))
-  (add-hook 'org-mode-hook
-            (lambda ()
-              (rainbow-delimiters-mode 0)
-              ;; (electric-indent-local-mode -1)
-              ))
   (add-to-list 'evil-emacs-state-modes 'org-agenda-mode)
   (require 'evil-org-agenda)
   (evil-org-agenda-set-keys))
@@ -1521,11 +1527,6 @@ Use the built-in org mode.
 ** Literate programing
 *** Python
 Use jupyter kernels for Org Mode.
-
-| Note | Type                      |
-|------+---------------------------|
-| TODO | Connect to remote kernels |
-| TODO | View HTML?                |
 
 References:
 - [[https://github.com/nnicandro/emacs-jupyter][emacs-jupyter repo]]
@@ -1597,6 +1598,7 @@ Turn of some minor modes in source blocks.
           (lambda ()
             ;; (hs-minor-mode -1)
             ;; (electric-indent-local-mode -1)
+            ;; (rainbow-delimiters-mode -1)
             (highlight-indent-guides-mode -1)))
 #+end_src
 
@@ -1607,6 +1609,43 @@ Async code blocks evaluations. Jupyter blocks have a built-in async, so they are
   :after (org)
   :config
   (setq ob-async-no-async-languages-alist '("python" "jupyter-python" "jupyter-octave")))
+#+end_src
+*** Select active Jupyter kernel
+A functions for managing local Jupyter kernels.
+
+~my/insert-jupyter-kernel~ inserts a path to an active Jupyter kernel to the buffer. Useful to quickly write a header like:
+#+begin_example
+#+PROPERTY: header-args:python :session <path-to-kernel>
+#+end_example
+
+~my/jupyter-connect-repl~ a REPL to an active kernel.
+
+Requirements: =ss=
+
+#+begin_src emacs-lisp
+(setq my/jupyter-runtime-folder (expand-file-name "~/.local/share/jupyter/runtime"))
+
+(defun my/select-jupyter-kernel ()
+  (let ((ports (mapcar
+                #'string-to-number
+                (split-string (shell-command-to-string "ss -tulpnH | awk '{print $5}' | sed -e 's/.*://'") "\n")))
+        (files (mapcar
+                (lambda (file) (cons file (cdr (assq 'shell_port (json-read-file file)))))
+                (directory-files my/jupyter-runtime-folder t ".*kernel.*json$"))))
+    (completing-read
+     "Jupyter kernels: "
+     (seq-filter
+      (lambda (file)
+        (member (cdr file) ports))
+      files))))
+
+(defun my/insert-jupyter-kernel ()
+  (interactive)
+  (insert (my/select-jupyter-kernel)))
+
+(defun my/jupyter-connect-repl ()
+  (interactive)
+  (jupyter-connect-repl (my/select-jupyter-kernel) nil nil nil t))
 #+end_src
 ** UI
 *** Instant equations preview
@@ -1676,15 +1715,20 @@ Scale latex fragments preview
   :straight (:host github :repo "jkitchin/ox-ipynb")
   :after ox)
 #+end_src
+*** Html export
+#+begin_src emacs-lisp
+(use-package htmlize
+  :straight t
+  :after ox
+  :config
+  (setq org-html-htmlize-output-type 'css))
+#+end_src
 *** OFF (OFF) LaTeX
 | Type | Note                   |
 |------+------------------------|
 | TODO | Make LaTeX export work |
 
 #+begin_src emacs-lisp :tangle no
-;; (use-package htmlize
-;;   :straight t)
-
 (defun my/setup-org-latex ()
   (setq org-latex-compiler "xelatex")
   (add-to-list 'org-latex-classes
@@ -2609,7 +2653,7 @@ Idea:
 
 (my-leader-def "cm" 'my/yadm-magit)
 #+end_src
-*** Open dotfile
+*** Open a dotfile
 Open a file managed by yadm.
 
 #+begin_src emacs-lisp

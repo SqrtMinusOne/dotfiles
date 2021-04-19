@@ -676,8 +676,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package rainbow-delimiters
   :straight t
   :if (not my/lowpower)
-  :hook (
-    (prog-mode . rainbow-delimiters-mode)))
+  :hook ((prog-mode . rainbow-delimiters-mode))
+  ;; :commands (rainbow-delimiters-mode)
+  ;; :init
+  ;; (add-hook 'prog-mode-hook
+  ;;           (lambda ()
+  ;;             (unless (org-in-src-block-p)
+  ;;               (rainbow-delimiters-mode))))
+  )
 
 (use-package dired
   :ensure nil
@@ -857,6 +863,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (visual-line-mode -1)
               (toggle-truncate-lines 1)
               (display-line-numbers-mode 0)))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (rainbow-delimiters-mode -1)))
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
   (setq org-tags-exclude-from-inheritance (quote ("crypt")))
@@ -880,6 +889,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (lambda ()
               ;; (hs-minor-mode -1)
               ;; (electric-indent-local-mode -1)
+              ;; (rainbow-delimiters-mode -1)
               (highlight-indent-guides-mode -1)))
   (setq my/org-latex-scale 1.75)
   (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
@@ -943,11 +953,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'evil-org-mode-hook
             (lambda ()
               (evil-org-set-key-theme '(navigation insert textobjects additional calendar todo))))
-  (add-hook 'org-mode-hook
-            (lambda ()
-              (rainbow-delimiters-mode 0)
-              ;; (electric-indent-local-mode -1)
-              ))
   (add-to-list 'evil-emacs-state-modes 'org-agenda-mode)
   (require 'evil-org-agenda)
   (evil-org-agenda-set-keys))
@@ -987,6 +992,30 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq ob-async-no-async-languages-alist '("python" "jupyter-python" "jupyter-octave")))
 
+(setq my/jupyter-runtime-folder (expand-file-name "~/.local/share/jupyter/runtime"))
+
+(defun my/select-jupyter-kernel ()
+  (let ((ports (mapcar
+                #'string-to-number
+                (split-string (shell-command-to-string "ss -tulpnH | awk '{print $5}' | sed -e 's/.*://'") "\n")))
+        (files (mapcar
+                (lambda (file) (cons file (cdr (assq 'shell_port (json-read-file file)))))
+                (directory-files my/jupyter-runtime-folder t ".*kernel.*json$"))))
+    (completing-read
+     "Jupyter kernels: "
+     (seq-filter
+      (lambda (file)
+        (member (cdr file) ports))
+      files))))
+
+(defun my/insert-jupyter-kernel ()
+  (interactive)
+  (insert (my/select-jupyter-kernel)))
+
+(defun my/jupyter-connect-repl ()
+  (interactive)
+  (jupyter-connect-repl (my/select-jupyter-kernel) nil nil nil t))
+
 (use-package org-latex-impatient
   :straight (:repo "yangsheng6810/org-latex-impatient"
                    :branch "master"
@@ -1015,6 +1044,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package ox-ipynb
   :straight (:host github :repo "jkitchin/ox-ipynb")
   :after ox)
+
+(use-package htmlize
+  :straight t
+  :after ox
+  :config
+  (setq org-html-htmlize-output-type 'css))
 
 (defun my/org-link-copy (&optional arg)
   "Extract URL from org-mode link and add it to kill ring."
