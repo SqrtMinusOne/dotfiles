@@ -54,6 +54,8 @@ Run the following to show the pictures with reasonable width:
 ** History
 [[./dot-stats/img/all.png]]
 
+[[./dot-stats/img/emacs-vim.png]]
+
 * Notes
 - =M-u C-c C-v t= to tangle a particular block
 - =M-u M-u C-c C-v t= to tangle a particular file

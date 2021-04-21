@@ -24,7 +24,7 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 
-mpl.rcParams['figure.dpi'] = 200
+mpl.rcParams['figure.dpi'] = 125
 mpl.rcParams['figure.facecolor'] = '0.1'
 mpl.rcParams['hatch.linewidth'] = 4.0
 #+end_src
@@ -204,7 +204,7 @@ notes
 #+RESULTS:
 :RESULTS:
 | Dual boot, rarely used |
-[[file:./.ob-jupyter/755e058676d772859fe9f7ed207011006268ac2b.png]]
+[[file:./.ob-jupyter/8bea76e66079f4a0cfd52a954142b58ac6e546b2.png]]
 :END:
 
 * Plot all separately
@@ -247,6 +247,7 @@ def plot_all(data):
     plot_notes(fig, ax, notes, y=0.09)
     # fig.tight_layout()
     fig.subplots_adjust(hspace=0.15)
+    ax.text(0.075, 0.08, f'upd. {datetime.now().strftime("%Y-%m-%d")}', transform=fig.transFigure, va='top', ha='left')
 
 plot_all(data)
 #+end_src

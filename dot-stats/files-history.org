@@ -1,0 +1,182 @@
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+#+PROPERTY: header-args:sh :session files-history
+#+PROPERTY: header-args:python :session files-history
+#+PROPERTY: header-args:python+ :exports both
+#+PROPERTY: header-args:python+ :tangle yes
+#+PROPERTY: header-args:python+ :async yes
+
+#+begin_src elisp :exports none
+(setq-local org-image-actual-width '(1024))
+#+end_src
+
+#+RESULTS:
+| 1024 |
+
+* Get the data
+** Commit history
+#+begin_src sh
+REPO='/home/pavel/.config/yadm/repo.git'
+
+if [ ! -d "data" ]; then
+    mkdir data
+fi
+
+# echo hash,time > data/commits.csv
+# git -C $REPO log --pretty="%H,%cI" >> data/commits.csv
+#+end_src
+
+#+RESULTS:
+** File lengths
+#+begin_src sh
+declare -A paths
+
+keys=("Emacs.org" "init.el" "init.vim" "Desktop.org" "Console.org")
+
+paths["Emacs.org"]="Emacs.org;.emacs.d/emacs.org;config/.emacs.d/emacs.org"
+paths["init.el"]=".emacs.d/init.el;config/.emacs.d/init.el"
+paths["init.vim"]=".config/nvim/init.vim;config/nvim/init.vim;nvim/init.vim"
+paths["Desktop.org"]="Desktop.org"
+paths["Console.org"]="Console.org"
+#+end_src
+
+#+RESULTS:
+
+#+begin_src sh :results output verbatim
+get_lengths () {
+    while IFS=' ' read commit date; do
+
+        result="$commit,$date"
+        
+        for key in "${keys[@]}"
+        do
+            val=0
+            IFS=';' read -r -a files <<< "${paths[$key]}"
+            for file in "${files[@]}"
+            do
+                if (( val == 0 )); then
+                    val=$(git -C $REPO show $commit:$file 2>/dev/null | wc -l || 0)
+                fi
+            done
+            result+=",$val"
+        done
+        # result=${result%,*}
+        echo $result
+    done
+}
+
+echo $(git -C $REPO log --pretty="%H %cI" | head -n 1 | get_lengths)
+echo $(git -C $REPO log --pretty="%H %cI" | tail -n 1 | get_lengths)
+#+end_src
+
+#+RESULTS:
+: 
+: e49d12622ee3e14751215df9aed907e3fa069e14,2021-04-21T18:01:56+03:00,2781,1801,1053,1857,544
+: 5044283019dc34c95d2836485ed492b34f49230e,2019-03-31T13:52:50+03:00,0,0,62,0,0
+
+#+begin_src sh :results output verbatim
+header="commit,date"
+for key in "${keys[@]}"
+do
+    header+=",$key"
+done
+echo $header > data/lengths.csv
+git -C $REPO log --pretty="%H %cI" | get_lengths >> data/lengths.csv
+#+end_src
+
+#+RESULTS:
+* Plot
+** Load the data
+#+begin_src python
+from datetime import datetime
+from matplotlib import pyplot as plt
+from IPython.display import display
+
+import matplotlib as mpl
+import numpy as np
+import pandas as pd
+
+mpl.rcParams['figure.dpi'] = 125
+mpl.rcParams['hatch.linewidth'] = 4.0
+#+end_src
+
+#+RESULTS:
+
+#+begin_src python
+plt.style.use('./palenight.mplstyle')
+#+end_src
+
+#+RESULTS:
+
+#+begin_src python 
+def remove_zeros(data):
+    last = -1
+    result = []
+    for datum in data:
+        if last <=0 and datum > 0:
+            if len(result) > 0:
+                result[-1] = 0
+            result.append(datum)
+            last = datum
+        elif last <= 0 and datum <= 0:
+            result.append(np.nan)
+        elif last > 0 and datum <= 0:
+            result.append(last)
+        else:
+            result.append(datum)
+            last = datum
+            
+    return result
+
+test = [0, 0, 0, 1, 2, 3, 0, 0, 4, 0, 0, 5, 1, 1, 6]
+remove_zeros(test)
+#+end_src
+
+#+RESULTS:
+| nan | nan | 0 | 1 | 2 | 3 | 3 | 3 | 4 | 4 | 4 | 5 | 1 | 1 | 6 |
+
+#+begin_src python :pandoc t
+df = pd.read_csv('./data/lengths.csv', parse_dates=['date'])
+files = [c for c in df.columns if c not in ['commit', 'date']]
+df = df[df[files].sum(axis=1) > 0]
+df = df.drop('commit', axis=1)
+df = df.sort_values('date').set_index('date')
+df = df.apply(lambda col: remove_zeros(col) if col.name not in ['commit', 'date'] else col)
+# df = df.replace(0, np.nan)
+
+with pd.option_context('display.max_rows', 10):
+    display(df)
+#+end_src
+
+#+RESULTS:
+:RESULTS:
+|                           | Emacs.org | init.el | init.vim | Desktop.org | Console.org |
+|---------------------------+-----------+---------+----------+-------------+-------------|
+| date                      |           |         |          |             |             |
+| 2019-03-31 13:52:50+03:00 | NaN       | NaN     | 62       | NaN         | NaN         |
+| 2019-03-31 20:06:29+03:00 | NaN       | NaN     | 62       | NaN         | NaN         |
+| 2019-04-02 17:52:05+03:00 | NaN       | NaN     | 91       | NaN         | NaN         |
+| 2019-04-03 10:36:35+03:00 | NaN       | NaN     | 91       | NaN         | NaN         |
+| 2019-04-09 12:47:05+03:00 | NaN       | NaN     | 91       | NaN         | NaN         |
+| ...                       | ...       | ...     | ...      | ...         | ...         |
+| 2021-04-18 19:20:58+03:00 | 2724.0    | 1762.0  | 1053     | 1857.0      | 544.0       |
+| 2021-04-19 15:05:27+03:00 | 2768.0    | 1797.0  | 1053     | 1857.0      | 544.0       |
+| 2021-04-21 17:55:42+03:00 | 2780.0    | 1801.0  | 1053     | 1857.0      | 544.0       |
+| 2021-04-21 17:57:41+03:00 | 2780.0    | 1801.0  | 1053     | 1857.0      | 544.0       |
+| 2021-04-21 18:01:56+03:00 | 2781.0    | 1801.0  | 1053     | 1857.0      | 544.0       |
+
+241 rows × 5 columns
+:END:
+** Plot
+#+begin_src python :file img/emacs-vim.png
+fig, ax = plt.subplots(figsize=(12, 6))
+df[['Emacs.org', 'init.vim', 'init.el']].plot(ax=ax)
+ax.grid(True, alpha=0.25)
+ax.set_axisbelow(True)
+ax.set_title('Emacs vs neovim config size growth')
+ax.set_ylabel('LoC')
+ax.text(0.075, 0.08, f'upd. {datetime.now().strftime("%Y-%m-%d")}', transform=fig.transFigure, va='top', ha='left')
+pass
+#+end_src
+
+#+RESULTS:
+[[file:img/emacs-vim.png]]
