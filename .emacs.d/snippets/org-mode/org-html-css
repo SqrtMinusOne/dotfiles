@@ -1,0 +1,13 @@
+# -*- mode: snippet -*-
+# name: org-html-css
+# key: org-html-css
+# --
+#+begin_export html
+<style type="text/css">
+  .org-rainbow-delimiters-depth-1, .org-rainbow-delimiters-depth-2, .org-rainbow-delimiters-depth-3, .org-rainbow-delimiters-depth-4 {
+    color: black
+  }
+</style>
+#+end_export
+
+$0

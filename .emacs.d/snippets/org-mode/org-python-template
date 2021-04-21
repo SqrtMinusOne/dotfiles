@@ -1,17 +1,15 @@
 # -*- mode: snippet -*-
-# name: org-mode-python-template
+# name: org-python-template
 # key: orgpy
 # --
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
-#+PROPERTY: header-args:python :session *$1*
+#+PROPERTY: header-args:python :session $1
 #+PROPERTY: header-args:python+ :exports both
 #+PROPERTY: header-args:python+ :tangle yes
 #+PROPERTY: header-args:python+ :async yes
 
 #+begin_src elisp :exports none
 (setq-local org-image-actual-width '(1024))
-(setq-local org-html-htmlize-output-type 'css)
-(setq-local org-latex-listings 'minted)
 #+end_src
 
 $0

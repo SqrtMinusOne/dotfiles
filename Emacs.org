@@ -1611,14 +1611,14 @@ Async code blocks evaluations. Jupyter blocks have a built-in async, so they are
   (setq ob-async-no-async-languages-alist '("python" "jupyter-python" "jupyter-octave")))
 #+end_src
 *** Select active Jupyter kernel
-A functions for managing local Jupyter kernels.
+Functions for managing local Jupyter kernels.
 
 ~my/insert-jupyter-kernel~ inserts a path to an active Jupyter kernel to the buffer. Useful to quickly write a header like:
 #+begin_example
 #+PROPERTY: header-args:python :session <path-to-kernel>
 #+end_example
 
-~my/jupyter-connect-repl~ a REPL to an active kernel.
+~my/jupyter-connect-repl~ opens a REPL, connected to an active kernel.
 
 Requirements: =ss=
 
@@ -1630,8 +1630,10 @@ Requirements: =ss=
                 #'string-to-number
                 (split-string (shell-command-to-string "ss -tulpnH | awk '{print $5}' | sed -e 's/.*://'") "\n")))
         (files (mapcar
-                (lambda (file) (cons file (cdr (assq 'shell_port (json-read-file file)))))
-                (directory-files my/jupyter-runtime-folder t ".*kernel.*json$"))))
+                (lambda (file) (cons (car file) (cdr (assq 'shell_port (json-read-file (car file))))))
+                (sort
+                 (directory-files-and-attributes my/jupyter-runtime-folder t ".*kernel.*json$")
+                 (lambda (x y) (not (time-less-p (nth 6 x) (nth 6 y))))))))
     (completing-read
      "Jupyter kernels: "
      (seq-filter
@@ -1672,12 +1674,12 @@ A function to enable LaTeX native highlighting. Not setting as default, because 
 #+begin_src emacs-lisp
 (defun my/enable-org-latex ()
   (interactive)
-  (setq org-highlight-latex-and-related '(native))
-  (yas-activate-extra-mode 'LaTeX-mode))
+  (customize-set-variable 'org-highlight-latex-and-related '(native))
+  (add-hook 'org-mode-hook (lambda () (yas-activate-extra-mode 'LaTeX-mode))))
 #+end_src
-Reopen a buffer after calling the function.
+Call the function before opening an org file or reopen a buffer after calling the function.
 
-Scale latex fragments preview
+Scale latex fragments preview.
 #+begin_src emacs-lisp :noweb-ref org-ui-setup :tangle no
 (setq my/org-latex-scale 1.75)
 (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
@@ -1761,7 +1763,9 @@ Scale latex fragments preview
  "L" 'org-shiftright
  "H" 'org-shiftleft
  "S-<next>" 'org-babel-next-src-block
- "S-<prior>" 'org-babel-previous-src-block)
+ "S-<prior>" 'org-babel-previous-src-block
+ "M-]" 'org-babel-next-src-block
+ "M-[" 'org-babel-previous-src-block)
 
 (general-define-key
  :keymaps 'org-agenda-mode-map
@@ -2303,24 +2307,28 @@ A function to import =.sty= files to the LaTeX document.
    (apply #'concat
           (cl-mapcar
            (lambda (file) (concat "\\usepackage{" (file-name-sans-extension (file-relative-name file default-directory)) "}\n"))
-           (sort 
-            (seq-filter
-             (lambda (file) (if (string-match ".*\.sty$" file) 1 nil))
-             (directory-files
-              (seq-some
-               (lambda (dir)
-                 (if (and
-                      (f-directory-p dir)
-                      (seq-some
-                       (lambda (file) (string-match ".*\.sty$" file))
-                       (directory-files dir))
-                      ) dir nil))
-               (list "./styles" "../styles/" "." "..")) :full))
-            (lambda (f1 f2)
-              (pcase f1
-                ("gostBibTex.sty" 2)
-                ("russianlocale.sty" 1)
-                (_ nil))))))))
+           (reverse
+            (sort 
+             (seq-filter
+              (lambda (file) (if (string-match ".*\.sty$" file) 1 nil))
+              (directory-files
+               (seq-some
+                (lambda (dir)
+                  (if (and
+                       (f-directory-p dir)
+                       (seq-some
+                        (lambda (file) (string-match ".*\.sty$" file))
+                        (directory-files dir))
+                       ) dir nil))
+                (list "./styles" "../styles/" "." "..")) :full))
+             (lambda (f1 f2)
+               (let ((f1b (file-name-base f1))
+                     (f1b (file-name-base f2)))
+                 (cond
+                  ((string-match-p ".*BibTex" f1) t)
+                  ((and (string-match-p ".*Locale" f1) (not (string-match-p ".*BibTex" f2))) t)
+                  ((string-match-p ".*Preamble" f2) t)
+                  (t (string-lessp f1 f2)))))))))))
 #+end_src
 **** Greek letters
 Autogenerate snippets for greek letters. I have a few blocks like this because it's faster & more flexible than usual yasnippet snippets.
@@ -2482,7 +2490,9 @@ References:
   "p" 'langtool-goto-previous-error
   "l" 'langtool-correct-buffer)
 #+end_src
-** Meta Lisp
+** Lisp
+These are your father's parentheses. Elegant weapons for a more... civilized age.
+*** Meta Lisp
 Some packages for editing various Lisps.
 #+begin_src emacs-lisp
 (use-package lispy
@@ -2496,12 +2506,36 @@ Some packages for editing various Lisps.
 (sp-with-modes sp-lisp-modes
   (sp-local-pair "'" nil :actions nil))
 #+end_src
-** Emacs Lisp
+*** Emacs Lisp
 #+begin_src emacs-lisp
 (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
 (add-hook 'emacs-lisp-mode-hook #'lispy-mode)
 (add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
+#+end_src
+*** Clojure
+#+begin_src emacs-lisp
+(use-package clojure-mode
+  :straight t
+  :mode "\\.clj[sc]?\\'"
+  :config
+  ;; (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+  (add-hook 'clojure-mode-hook #'lispy-mode)
+  (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
+  
+(use-package cider
+  :mode "\\.clj[sc]?\\'"
+  :straight t)
+#+end_src
+*** CLIPS
+An honorable Lisp
+
+#+begin_src emacs-lisp
+(use-package clips-mode
+  :straight t
+  :mode "\\.cl\\'"
+  :config
+  (add-hook 'clips-mode 'lispy-mode))
 #+end_src
 ** Python
 Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Server for Python]]
@@ -2529,20 +2563,6 @@ Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Se
 ;; (add-hook 'java-mode-hook #'hs-minor-mode)
 (my/set-smartparens-indent 'java-mode)
 #+end_src
-** Clojure
-#+begin_src emacs-lisp
-(use-package clojure-mode
-  :straight t
-  :mode "\\.clj[sc]?\\'"
-  :config
-  ;; (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
-  (add-hook 'clojure-mode-hook #'lispy-mode)
-  (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
-  
-(use-package cider
-  :mode "\\.clj[sc]?\\'"
-  :straight t)
-#+end_src
 ** Go
 #+begin_src emacs-lisp
 (use-package go-mode
@@ -2564,14 +2584,6 @@ Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Se
 ** sh
 #+begin_src emacs-lisp
 (add-hook 'sh-mode-hook #'smartparens-mode)
-#+end_src
-** CLIPS
-#+begin_src emacs-lisp
-(use-package clips-mode
-  :straight t
-  :mode "\\.cl\\'"
-  :config
-  (add-hook 'clips-mode 'lispy-mode))
 #+end_src
 ** Haskell
 #+begin_src emacs-lisp

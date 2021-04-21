@@ -916,7 +916,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    "L" 'org-shiftright
    "H" 'org-shiftleft
    "S-<next>" 'org-babel-next-src-block
-   "S-<prior>" 'org-babel-previous-src-block)
+   "S-<prior>" 'org-babel-previous-src-block
+   "M-]" 'org-babel-next-src-block
+   "M-[" 'org-babel-previous-src-block)
   
   (general-define-key
    :keymaps 'org-agenda-mode-map
@@ -999,8 +1001,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                 #'string-to-number
                 (split-string (shell-command-to-string "ss -tulpnH | awk '{print $5}' | sed -e 's/.*://'") "\n")))
         (files (mapcar
-                (lambda (file) (cons file (cdr (assq 'shell_port (json-read-file file)))))
-                (directory-files my/jupyter-runtime-folder t ".*kernel.*json$"))))
+                (lambda (file) (cons (car file) (cdr (assq 'shell_port (json-read-file (car file))))))
+                (sort
+                 (directory-files-and-attributes my/jupyter-runtime-folder t ".*kernel.*json$")
+                 (lambda (x y) (not (time-less-p (nth 6 x) (nth 6 y))))))))
     (completing-read
      "Jupyter kernels: "
      (seq-filter
@@ -1602,6 +1606,24 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (add-hook 'emacs-lisp-mode-hook #'lispy-mode)
 (add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
 
+(use-package clojure-mode
+  :straight t
+  :mode "\\.clj[sc]?\\'"
+  :config
+  ;; (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+  (add-hook 'clojure-mode-hook #'lispy-mode)
+  (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
+  
+(use-package cider
+  :mode "\\.clj[sc]?\\'"
+  :straight t)
+
+(use-package clips-mode
+  :straight t
+  :mode "\\.cl\\'"
+  :config
+  (add-hook 'clips-mode 'lispy-mode))
+
 (use-package lsp-python-ms
   :straight t
   :defer t
@@ -1623,18 +1645,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; (add-hook 'java-mode-hook #'hs-minor-mode)
 (my/set-smartparens-indent 'java-mode)
 
-(use-package clojure-mode
-  :straight t
-  :mode "\\.clj[sc]?\\'"
-  :config
-  ;; (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
-  (add-hook 'clojure-mode-hook #'lispy-mode)
-  (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
-  
-(use-package cider
-  :mode "\\.clj[sc]?\\'"
-  :straight t)
-
 (use-package go-mode
   :straight t
   :mode "\\.go\\'"
@@ -1650,12 +1660,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  (add-hook 'fish-mode-hook #'smartparens-mode))
 
 (add-hook 'sh-mode-hook #'smartparens-mode)
-
-(use-package clips-mode
-  :straight t
-  :mode "\\.cl\\'"
-  :config
-  (add-hook 'clips-mode 'lispy-mode))
 
 (use-package haskell-mode
   :straight t
