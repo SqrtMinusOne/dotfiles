@@ -1,5 +1,7 @@
 #+TITLE: My dotfiles
 
+[[https://forthebadge.com/images/badges/works-on-my-machine.svg]]
+
 * Programs used
 Deployed with [[https://yadm.io/][yadm]]
 
