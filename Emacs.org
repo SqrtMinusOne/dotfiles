@@ -151,6 +151,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
       - [[#greek-letters][Greek letters]]
       - [[#english-letters][English letters]]
       - [[#math-symbols][Math symbols]]
+      - [[#section-snippets][Section snippets]]
     - [[#markdown][Markdown]]
     - [[#plantuml][PlantUML]]
     - [[#languagetool][LanguageTool]]
@@ -978,18 +979,20 @@ References:
 ** Snippets
 A snippet system for Emacs and a collection of pre-built snippets.
 
+~yasnippet-snippets~ has to be loaded before ~yasnippet~ for user snippets to override the pre-built ones.
+
 References:
 - [[http://joaotavora.github.io/yasnippet/][yasnippet documentation]]
 
 #+begin_src emacs-lisp
+(use-package yasnippet-snippets
+  :straight t)
+
 (use-package yasnippet
   :straight t
   :config
   (setq yas-triggers-in-field t)
   (yas-global-mode 1))
-
-(use-package yasnippet-snippets
-  :straight t)
 
 (general-imap "M-TAB" 'company-yasnippet)
 #+end_src
@@ -2302,7 +2305,8 @@ References:
 
   <<init-greek-latex-snippets>>
   <<init-english-latex-snippets>>
-  <<init-math-latex-snippets>>)
+  <<init-math-latex-snippets>>
+  <<init-section-latex-snippets>>)
 #+end_src
 **** BibTeX
 #+begin_src emacs-lisp
@@ -2422,7 +2426,11 @@ Noweb points to the AUCTeX config block.
 #+begin_src emacs-lisp :noweb-ref init-math-latex-snippets
 (setq my/latex-math-symbols
       '(("x" . "\\times")
-        ("." . "\\cdot")))
+        ("." . "\\cdot")
+        ("v" . "\\forall")
+        ("s" . "\\sum_{$1}^{$2}$0")
+        ("e" . "\\exists")
+        ("i" . "\\int_{$1}^{$2}$0")))
 
 (setq my/latex-math-prefix "''")
 
@@ -2434,6 +2442,51 @@ Noweb points to the AUCTeX config block.
           (value (cdr elem)))
       (list (concat my/latex-math-prefix key) value (concat "Math symbol " value))))
   my/latex-math-symbols))
+#+end_src
+**** Section snippets
+Section snippets. The code turned out to be more complicated than just writing the snippets by hand.
+
+#+begin_src emacs-lisp :noweb-ref init-section-latex-snippets
+(setq my/latex-section-snippets
+      '(("ch" . "\\chapter{$1}")
+        ("sec" . "\\section{$1}")
+        ("ssec" . "\\subsection{$1}")
+        ("sssec" . "\\subsubsection{$1}")
+        ("par" . "\\paragraph{$1}}")))
+
+(setq my/latex-section-snippets
+      (mapcar
+       (lambda (elem)
+         `(,(car elem)
+           ,(cdr elem)
+           ,(progn
+              (string-match "[a-z]+" (cdr elem))
+              (match-string 0 (cdr elem)))))
+       my/latex-section-snippets))
+
+(dolist (elem my/latex-section-snippets)
+  (let* ((key (nth 0 elem))
+         (value (nth 1 elem))
+         (desc (nth 2 elem))
+         (star-index (string-match "\{\$1\}" value)))
+    (add-to-list 'my/latex-section-snippets
+                 `(,(concat key "*")
+                   ,(concat
+                     (substring value 0 star-index)
+                     "*"
+                     (substring value star-index))
+                   ,(concat desc " with *")))
+    (add-to-list 'my/latex-section-snippets
+                 `(,(concat key "l")
+                   ,(concat value "%\n\\label{sec:$2}")
+                   ,(concat desc " with label")))))
+
+(dolist (elem my/latex-section-snippets)
+  (setf (nth 1 elem) (concat (nth 1 elem) "\n$0")))
+
+(yas-define-snippets
+ 'latex-mode
+ my/latex-section-snippets)
 #+end_src
 *** Markdown
 #+begin_src emacs-lisp

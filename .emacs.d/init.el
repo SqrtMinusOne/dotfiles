@@ -486,14 +486,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-to-list 'editorconfig-indentation-alist
                '(emmet-mode emmet-indentation)))
 
+(use-package yasnippet-snippets
+  :straight t)
+
 (use-package yasnippet
   :straight t
   :config
   (setq yas-triggers-in-field t)
   (yas-global-mode 1))
-
-(use-package yasnippet-snippets
-  :straight t)
 
 (general-imap "M-TAB" 'company-yasnippet)
 
@@ -1418,7 +1418,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     my/english-alphabet))
   (setq my/latex-math-symbols
         '(("x" . "\\times")
-          ("." . "\\cdot")))
+          ("." . "\\cdot")
+          ("v" . "\\forall")
+          ("s" . "\\sum_{$1}^{$2}$0")
+          ("e" . "\\exists")
+          ("i" . "\\int_{$1}^{$2}$0")))
   
   (setq my/latex-math-prefix "''")
   
@@ -1429,7 +1433,47 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (let ((key (car elem))
             (value (cdr elem)))
         (list (concat my/latex-math-prefix key) value (concat "Math symbol " value))))
-    my/latex-math-symbols)))
+    my/latex-math-symbols))
+  (setq my/latex-section-snippets
+        '(("ch" . "\\chapter{$1}")
+          ("sec" . "\\section{$1}")
+          ("ssec" . "\\subsection{$1}")
+          ("sssec" . "\\subsubsection{$1}")
+          ("par" . "\\paragraph{$1}}")))
+  
+  (setq my/latex-section-snippets
+        (mapcar
+         (lambda (elem)
+           `(,(car elem)
+             ,(cdr elem)
+             ,(progn
+                (string-match "[a-z]+" (cdr elem))
+                (match-string 0 (cdr elem)))))
+         my/latex-section-snippets))
+  
+  (dolist (elem my/latex-section-snippets)
+    (let* ((key (nth 0 elem))
+           (value (nth 1 elem))
+           (desc (nth 2 elem))
+           (star-index (string-match "\{\$1\}" value)))
+      (add-to-list 'my/latex-section-snippets
+                   `(,(concat key "*")
+                     ,(concat
+                       (substring value 0 star-index)
+                       "*"
+                       (substring value star-index))
+                     ,(concat desc " with *")))
+      (add-to-list 'my/latex-section-snippets
+                   `(,(concat key "l")
+                     ,(concat value "%\n\\label{sec:$2}")
+                     ,(concat desc " with label")))))
+  
+  (dolist (elem my/latex-section-snippets)
+    (setf (nth 1 elem) (concat (nth 1 elem) "\n$0")))
+  
+  (yas-define-snippets
+   'latex-mode
+   my/latex-section-snippets))
 
 (use-package ivy-bibtex
   :commands (ivy-bibtex)
@@ -1533,7 +1577,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq my/latex-math-symbols
       '(("x" . "\\times")
-        ("." . "\\cdot")))
+        ("." . "\\cdot")
+        ("v" . "\\forall")
+        ("s" . "\\sum_{$1}^{$2}$0")
+        ("e" . "\\exists")
+        ("i" . "\\int_{$1}^{$2}$0")))
 
 (setq my/latex-math-prefix "''")
 
@@ -1545,6 +1593,47 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (value (cdr elem)))
       (list (concat my/latex-math-prefix key) value (concat "Math symbol " value))))
   my/latex-math-symbols))
+
+(setq my/latex-section-snippets
+      '(("ch" . "\\chapter{$1}")
+        ("sec" . "\\section{$1}")
+        ("ssec" . "\\subsection{$1}")
+        ("sssec" . "\\subsubsection{$1}")
+        ("par" . "\\paragraph{$1}}")))
+
+(setq my/latex-section-snippets
+      (mapcar
+       (lambda (elem)
+         `(,(car elem)
+           ,(cdr elem)
+           ,(progn
+              (string-match "[a-z]+" (cdr elem))
+              (match-string 0 (cdr elem)))))
+       my/latex-section-snippets))
+
+(dolist (elem my/latex-section-snippets)
+  (let* ((key (nth 0 elem))
+         (value (nth 1 elem))
+         (desc (nth 2 elem))
+         (star-index (string-match "\{\$1\}" value)))
+    (add-to-list 'my/latex-section-snippets
+                 `(,(concat key "*")
+                   ,(concat
+                     (substring value 0 star-index)
+                     "*"
+                     (substring value star-index))
+                   ,(concat desc " with *")))
+    (add-to-list 'my/latex-section-snippets
+                 `(,(concat key "l")
+                   ,(concat value "%\n\\label{sec:$2}")
+                   ,(concat desc " with label")))))
+
+(dolist (elem my/latex-section-snippets)
+  (setf (nth 1 elem) (concat (nth 1 elem) "\n$0")))
+
+(yas-define-snippets
+ 'latex-mode
+ my/latex-section-snippets)
 
 (use-package markdown-mode
   :straight t
