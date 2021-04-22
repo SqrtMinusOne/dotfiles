@@ -2512,7 +2512,6 @@ Some packages for editing various Lisps.
 (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
 (add-hook 'emacs-lisp-mode-hook #'lispy-mode)
-(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
 #+end_src
 *** Clojure
 #+begin_src emacs-lisp
@@ -2528,8 +2527,21 @@ Some packages for editing various Lisps.
   :mode "\\.clj[sc]?\\'"
   :straight t)
 #+end_src
+*** Hy
+Python requirements:
+- =hy=
+- =jedhy=
+
+#+begin_src emacs-lisp
+(use-package hy-mode
+  :straight t
+  :mode "\\.hy\\'"
+  :config
+  (add-hook 'hy-mode-hook #'lispy-mode)
+  (add-hook 'hy-mode-hook #'aggressive-indent-mode))
+#+end_src
 *** CLIPS
-An honorable Lisp
+An honorary Lisp
 
 #+begin_src emacs-lisp
 (use-package clips-mode

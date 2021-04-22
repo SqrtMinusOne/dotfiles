@@ -1034,8 +1034,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (defun my/enable-org-latex ()
   (interactive)
-  (setq org-highlight-latex-and-related '(native))
-  (yas-activate-extra-mode 'LaTeX-mode))
+  (customize-set-variable 'org-highlight-latex-and-related '(native))
+  (add-hook 'org-mode-hook (lambda () (yas-activate-extra-mode 'LaTeX-mode))))
 
 (use-package org-superstar
   :straight t
@@ -1436,24 +1436,28 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    (apply #'concat
           (cl-mapcar
            (lambda (file) (concat "\\usepackage{" (file-name-sans-extension (file-relative-name file default-directory)) "}\n"))
-           (sort 
-            (seq-filter
-             (lambda (file) (if (string-match ".*\.sty$" file) 1 nil))
-             (directory-files
-              (seq-some
-               (lambda (dir)
-                 (if (and
-                      (f-directory-p dir)
-                      (seq-some
-                       (lambda (file) (string-match ".*\.sty$" file))
-                       (directory-files dir))
-                      ) dir nil))
-               (list "./styles" "../styles/" "." "..")) :full))
-            (lambda (f1 f2)
-              (pcase f1
-                ("gostBibTex.sty" 2)
-                ("russianlocale.sty" 1)
-                (_ nil))))))))
+           (reverse
+            (sort 
+             (seq-filter
+              (lambda (file) (if (string-match ".*\.sty$" file) 1 nil))
+              (directory-files
+               (seq-some
+                (lambda (dir)
+                  (if (and
+                       (f-directory-p dir)
+                       (seq-some
+                        (lambda (file) (string-match ".*\.sty$" file))
+                        (directory-files dir))
+                       ) dir nil))
+                (list "./styles" "../styles/" "." "..")) :full))
+             (lambda (f1 f2)
+               (let ((f1b (file-name-base f1))
+                     (f1b (file-name-base f2)))
+                 (cond
+                  ((string-match-p ".*BibTex" f1) t)
+                  ((and (string-match-p ".*Locale" f1) (not (string-match-p ".*BibTex" f2))) t)
+                  ((string-match-p ".*Preamble" f2) t)
+                  (t (string-lessp f1 f2)))))))))))
 
 (setq my/greek-alphabet
       '(("a" . "\\alpha")
@@ -1604,7 +1608,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
 (add-hook 'emacs-lisp-mode-hook #'lispy-mode)
-(add-hook 'lisp-interaction-mode-hook #'smartparens-mode)
 
 (use-package clojure-mode
   :straight t
@@ -1617,6 +1620,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package cider
   :mode "\\.clj[sc]?\\'"
   :straight t)
+
+(use-package hy-mode
+  :straight t
+  ;; :mode "\\.hy\\'"
+  :config
+  (add-hook 'hy-mode-hook #'lispy-mode))
 
 (use-package clips-mode
   :straight t
