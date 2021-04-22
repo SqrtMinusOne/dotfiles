@@ -197,7 +197,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-nmap
   "gD" 'xref-find-definitions-other-window
   "gr" 'xref-find-references)
-  
+
 (my-leader-def
   "fx" 'xref-find-apropos)
 
@@ -237,6 +237,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package aggressive-indent
   :commands (aggressive-indent-mode)
   :straight t)
+
+(setq my/trailing-whitespace-modes '(markdown-mode))
+
+(require 'cl-extra)
+
+(add-hook 'before-save-hook
+          (lambda ()
+            (unless (cl-some #'derived-mode-p my/trailing-whitespace-modes)
+              (delete-trailing-whitespace))))
 
 (setq tab-always-indent nil)
 
@@ -341,7 +350,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :after ivy
   :config
   (counsel-mode))
-  
+
 (use-package swiper
   :defer t
   :straight t)
@@ -395,14 +404,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package treemacs-magit
   :after (treemacs magit)
   :straight t)
-  
+
 (general-define-key
  :keymaps '(normal override global)
  "C-n" 'treemacs)
 
 (general-define-key
  :keymaps '(treemacs-mode-map) [mouse-1] #'treemacs-single-click-expand-action)
- 
+
 (my-leader-def
   "tw" 'treemacs-switch-workspace
   "te" 'treemacs-edit-workspaces)
@@ -485,7 +494,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package yasnippet-snippets
   :straight t)
-  
+
 (general-imap "M-TAB" 'company-yasnippet)
 
 (use-package wakatime-mode
@@ -495,7 +504,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package request
   :straight t)
-  
+
 (use-package activity-watch-mode
   :straight t
   :config
@@ -547,7 +556,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  "gt" 'tab-bar-switch-to-next-tab
  "gT" 'tab-bar-switch-to-prev-tab
  "gn" 'tab-bar-new-tab)
- 
+
 (setq tab-bar-show 1)
 (setq tab-bar-tab-hints t)
 (setq tab-bar-tab-name-function 'tab-bar-tab-name-current-with-count)
@@ -655,7 +664,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package doom-themes
   :straight t
   :config
-  (setq doom-themes-enable-bold t   
+  (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
   (load-theme 'doom-palenight t)
   (doom-themes-visual-bell-config)
@@ -752,31 +761,31 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :commands (vterm vterm-other-window)
   :config
   (setq vterm-kill-buffer-on-exit t)
-  
+
   (add-hook 'vterm-mode-hook
             (lambda ()
               (setq-local global-display-line-numbers-mode nil)
               (display-line-numbers-mode 0)))
-  
+
   (general-define-key
    :keymaps 'vterm-mode-map
    "M-q" 'vterm-send-escape
-   
+
    "C-h" 'evil-window-left
    "C-l" 'evil-window-right
    "C-k" 'evil-window-up
    "C-j" 'evil-window-down
-   
+
    "C-<right>" 'evil-window-right
    "C-<left>" 'evil-window-left
    "C-<up>" 'evil-window-up
    "C-<down>" 'evil-window-down
-   
+
    "M-<left>" 'vterm-send-left
    "M-<right>" 'vterm-send-right
    "M-<up>" 'vterm-send-up
    "M-<down>" 'vterm-send-down)
-  
+
   (general-imap
     :keymaps 'vterm-mode-map
     "C-r" 'vterm-send-C-r
@@ -820,7 +829,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq eshell-history-size 10000)
   (setq eshell-hist-ingnoredups t)
   (setq eshell-buffer-maximum-lines 10000)
-  
+
   (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
   (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
   (evil-collection-define-key 'normal 'eshell-mode-map
@@ -843,7 +852,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
-  
+
 ;; (general-nmap "`" 'aweshell-dedicated-toggle)
 ;; (general-nmap "~" 'eshell)
 
@@ -939,7 +948,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (url (concat type ":" url)))
       (kill-new url)
       (message (concat "Copied URL: " url))))
-      
+  
   (general-nmap :keymaps 'org-mode-map
       "C-x C-l" 'my/org-link-copy))
 
@@ -1064,7 +1073,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (url (concat type ":" url)))
     (kill-new url)
     (message (concat "Copied URL: " url))))
-    
+
 (general-nmap :keymaps 'org-mode-map
     "C-x C-l" 'my/org-link-copy)
 
@@ -1137,7 +1146,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          (json-mode . lsp)
          (haskell-mode . lsp)
          (haskell-literate-mode . lsp)
-         (java-mode . lsp)) 
+         (java-mode . lsp))
   :commands lsp
   :config
   (setq lsp-idle-delay 1)
@@ -1147,7 +1156,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  ;  (lsp-headerline-breadcrumb-mode nil)
   (setq lsp-headerline-breadcrumb-enable nil)
   (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
-  
+
 (use-package lsp-ui
   :straight t
   :commands lsp-ui-mode
@@ -1322,10 +1331,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (lambda ()
               (TeX-fold-mode 1)
               (outline-minor-mode)))
-  
+
   (add-to-list 'TeX-view-program-selection
                '(output-pdf "Zathura"))
-  
+
   ;; Do not run lsp within templated TeX files
   (add-hook 'LaTeX-mode-hook
             '(lambda ()
@@ -1333,19 +1342,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                  (lsp))
                (setq-local lsp-diagnostic-package :none)
                (setq-local flycheck-checker 'tex-chktex)))
-  
+
   (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'LaTeX-mode-hook #'smartparens-mode)
   (add-hook 'LaTeX-mode-hook #'prettify-symbols-mode)
-  
+
   (my/set-smartparens-indent 'LaTeX-mode)
   (require 'smartparens-latex)
-  
+
   (general-nmap
     :keymaps '(LaTeX-mode-map latex-mode-map)
     "RET" 'TeX-command-run-all
     "C-c t" 'orgtbl-mode)
-  
+
   (setq my/greek-alphabet
         '(("a" . "\\alpha")
           ("b" . "\\beta" )
@@ -1432,12 +1441,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (defun my/import-sty ()
   (interactive)
-  (insert 
+  (insert
    (apply #'concat
           (cl-mapcar
            (lambda (file) (concat "\\usepackage{" (file-name-sans-extension (file-relative-name file default-directory)) "}\n"))
            (reverse
-            (sort 
+            (sort
              (seq-filter
               (lambda (file) (if (string-match ".*\.sty$" file) 1 nil))
               (directory-files
@@ -1543,7 +1552,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq markdown-command
         (concat
-         "pandoc" 
+         "pandoc"
          " --from=markdown --to=html"
          " --standalone --mathjax --highlight-style=pygments"
          " --css=pandoc.css"
@@ -1573,7 +1582,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
   (add-to-list 'auto-mode-alist '("\\.uml\\'" . plantuml-mode))
   (add-hook 'plantuml-mode-hook #'smartparens-mode))
-  
+
 (general-nmap
   :keymaps 'plantuml-mode-map
   "RET" 'plantuml-preview)
@@ -1584,7 +1593,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq langtool-language-tool-server-jar "/home/pavel/Programs/LanguageTool-5.1/languagetool-server.jar")
   (setq langtool-mother-tongue "ru"))
-  
+
 (my-leader-def
   :infix "L"
   "c" 'langtool-check
@@ -1616,16 +1625,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   ;; (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
   (add-hook 'clojure-mode-hook #'lispy-mode)
   (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
-  
+
 (use-package cider
   :mode "\\.clj[sc]?\\'"
   :straight t)
 
 (use-package hy-mode
   :straight t
-  ;; :mode "\\.hy\\'"
+  :mode "\\.hy\\'"
   :config
-  (add-hook 'hy-mode-hook #'lispy-mode))
+  (add-hook 'hy-mode-hook #'lispy-mode)
+  (add-hook 'hy-mode-hook #'aggressive-indent-mode))
 
 (use-package clips-mode
   :straight t
@@ -1673,7 +1683,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package haskell-mode
   :straight t
   :mode "\\.hs\\'")
-  
+
 (use-package lsp-haskell
   :straight t
   :after (lsp haskell-mode))
@@ -1704,12 +1714,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "Open the init file."
   (interactive)
   (find-file "~/Emacs.org"))
-  
+
 ;; (defun my/edit-exwm-configuration ()
 ;;   "Open the exwm config file."
 ;;   (interactive)
 ;;   (find-file "~/.emacs.d/exwm.org"))
-  
+
 (general-define-key "C-c c" 'my/edit-configuration)
 ;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
 (my-leader-def "cc" 'my/edit-configuration)
@@ -1754,7 +1764,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq send-mail-function #'sendmail-send-it)
   (add-hook 'notmuch-hello-mode-hook
             (lambda () (display-line-numbers-mode 0))))
-  
+
 (my-leader-def "am" 'notmuch)
 
 (use-package google-translate

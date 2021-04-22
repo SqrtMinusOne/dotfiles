@@ -51,6 +51,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#visual-fill-column-mode][Visual fill column mode]]
     - [[#smartparens][smartparens]]
     - [[#aggressive-indent][Aggressive Indent]]
+    - [[#delete-trailing-whitespace][Delete trailing whitespace]]
     - [[#tabs][Tabs]]
     - [[#scrolling-config][Scrolling config]]
     - [[#clipboard-config][Clipboard config]]
@@ -157,6 +158,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#meta-lisp][Meta Lisp]]
     - [[#emacs-lisp][Emacs Lisp]]
     - [[#clojure][Clojure]]
+    - [[#hy][Hy]]
     - [[#clips][CLIPS]]
   - [[#python][Python]]
   - [[#java][Java]]
@@ -510,7 +512,7 @@ Some keybindings for xref, Emacs' built-in systems for managing identifiers.
 (general-nmap
   "gD" 'xref-find-definitions-other-window
   "gr" 'xref-find-references)
-  
+
 (my-leader-def
   "fx" 'xref-find-apropos)
 #+end_src
@@ -574,6 +576,20 @@ References:
   :commands (aggressive-indent-mode)
   :straight t)
 #+end_src
+*** Delete trailing whitespace
+Delete trailing whitespace on save, unless in particular modes where trailing whitespace is important, like Markdown.
+
+#+begin_src emacs-lisp
+(setq my/trailing-whitespace-modes '(markdown-mode))
+
+(require 'cl-extra)
+
+(add-hook 'before-save-hook
+          (lambda ()
+            (unless (cl-some #'derived-mode-p my/trailing-whitespace-modes)
+              (delete-trailing-whitespace))))
+#+end_src
+
 *** Tabs
 Some default settings to manage tabs.
 #+begin_src emacs-lisp
@@ -710,7 +726,7 @@ References:
   :after ivy
   :config
   (counsel-mode))
-  
+
 (use-package swiper
   :defer t
   :straight t)
@@ -768,7 +784,7 @@ Config for the Helm incremental completion framework. I switched to Ivy some tim
 
 (use-package helm-ag
   :straight t)
-  
+
 (use-package helm-rg
   :straight t)
 
@@ -776,12 +792,12 @@ Config for the Helm incremental completion framework. I switched to Ivy some tim
   :keymaps 'helm-ag-mode-map
   "RET" 'helm-ag-mode-jump
   "M-RET" 'helm-ag-mode-jump-other-window)
-  
+
 (general-nmap
   :keymaps 'helm-occur-mode-map
   "RET" 'helm-occur-mode-goto-line
   "M-RET" 'helm-occur-mode-goto-line-ow)
-  
+
 (general-define-key "M-x" 'helm-M-x)
 (my-leader-def
   "fb" 'helm-buffers-list
@@ -800,12 +816,12 @@ Config for the Helm incremental completion framework. I switched to Ivy some tim
   :keymaps 'helm-map
   "C-j" 'helm-next-line
   "C-k" 'helm-previous-line)
- 
+
 (general-define-key
   :keymaps '(helm-find-files-map helm-locate-map)
   "C-h" 'helm-find-files-up-one-level
   "C-l" 'helm-execute-persistent-action)
- 
+
 (general-imap
   "C-y" 'helm-show-kill-ring)
 ;; (general-nmap "C-p" 'project-find-file)
@@ -834,14 +850,14 @@ Integrates with evil, magit and projectile.
 (use-package treemacs-magit
   :after (treemacs magit)
   :straight t)
-  
+
 (general-define-key
  :keymaps '(normal override global)
  "C-n" 'treemacs)
 
 (general-define-key
  :keymaps '(treemacs-mode-map) [mouse-1] #'treemacs-single-click-expand-action)
- 
+
 (my-leader-def
   "tw" 'treemacs-switch-workspace
   "te" 'treemacs-edit-workspaces)
@@ -877,7 +893,7 @@ A completion framework for Emacs.
 References:
 - [[http://company-mode.github.io/][company homepage]]
 - [[https://github.com/sebastiencs/company-box][company-box homepage]]
-  
+
 #+begin_src emacs-lisp
 (use-package company
   :straight t
@@ -897,7 +913,7 @@ A company frontend with nice icons.
   :if (not my/lowpower)
   :after (company)
   :hook (company-mode . company-box-mode))
-  
+
 #+end_src
 
 ** Git & Magit
@@ -954,7 +970,7 @@ References:
 #+begin_src emacs-lisp :tangle no
 (use-package avy
   :straight t)
-  
+
 (general-nmap "\\w" 'avy-goto-word-0-below)
 (general-nmap "\\b" 'avy-goto-word-0-above)
 #+end_src
@@ -974,7 +990,7 @@ References:
 
 (use-package yasnippet-snippets
   :straight t)
-  
+
 (general-imap "M-TAB" 'company-yasnippet)
 #+end_src
 ** Time trackers
@@ -983,7 +999,7 @@ A bunch of timetrackers I use.
 References:
 - [[https://wakatime.com][WakaTime]]
 - [[https://activitywatch.net/][ActivityWatch]]
-  
+
 *** WakaTime
 #+begin_src emacs-lisp
 (use-package wakatime-mode
@@ -995,7 +1011,7 @@ References:
 #+begin_src emacs-lisp
 (use-package request
   :straight t)
-  
+
 (use-package activity-watch-mode
   :straight t
   :config
@@ -1090,7 +1106,7 @@ I rely rather heavily on tab-bar in my workflow. I have a suspicion I'm not usin
  "gt" 'tab-bar-switch-to-next-tab
  "gT" 'tab-bar-switch-to-prev-tab
  "gn" 'tab-bar-new-tab)
- 
+
 (setq tab-bar-show 1)
 (setq tab-bar-tab-hints t)
 (setq tab-bar-tab-name-function 'tab-bar-tab-name-current-with-count)
@@ -1224,13 +1240,13 @@ Dim inactive buffers.
                       :background "#212533")
   (auto-dim-other-buffers-mode t))
 #+end_src
-  
+
 My colorscheme of choice.
 #+begin_src emacs-lisp
 (use-package doom-themes
   :straight t
   :config
-  (setq doom-themes-enable-bold t   
+  (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
   (load-theme 'doom-palenight t)
   (doom-themes-visual-bell-config)
@@ -1367,31 +1383,31 @@ References:
   :commands (vterm vterm-other-window)
   :config
   (setq vterm-kill-buffer-on-exit t)
-  
+
   (add-hook 'vterm-mode-hook
             (lambda ()
               (setq-local global-display-line-numbers-mode nil)
               (display-line-numbers-mode 0)))
-  
+
   (general-define-key
    :keymaps 'vterm-mode-map
    "M-q" 'vterm-send-escape
-   
+
    "C-h" 'evil-window-left
    "C-l" 'evil-window-right
    "C-k" 'evil-window-up
    "C-j" 'evil-window-down
-   
+
    "C-<right>" 'evil-window-right
    "C-<left>" 'evil-window-left
    "C-<up>" 'evil-window-up
    "C-<down>" 'evil-window-down
-   
+
    "M-<left>" 'vterm-send-left
    "M-<right>" 'vterm-send-right
    "M-<up>" 'vterm-send-up
    "M-<down>" 'vterm-send-down)
-  
+
   (general-imap
     :keymaps 'vterm-mode-map
     "C-r" 'vterm-send-C-r
@@ -1442,7 +1458,7 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
   (setq eshell-history-size 10000)
   (setq eshell-hist-ingnoredups t)
   (setq eshell-buffer-maximum-lines 10000)
-  
+
   (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
   (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
   (evil-collection-define-key 'normal 'eshell-mode-map
@@ -1465,7 +1481,7 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
   :config
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
-  
+
 ;; (general-nmap "`" 'aweshell-dedicated-toggle)
 ;; (general-nmap "~" 'eshell)
 #+end_src
@@ -1744,7 +1760,7 @@ Scale latex fragments preview.
                  ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
   )
 )
-  
+
 (with-eval-after-load 'ox-latex
   (my/setup-org-latex))
 #+end_src
@@ -1790,7 +1806,7 @@ Scale latex fragments preview.
           (url (concat type ":" url)))
     (kill-new url)
     (message (concat "Copied URL: " url))))
-    
+
 (general-nmap :keymaps 'org-mode-map
     "C-x C-l" 'my/org-link-copy)
 #+end_src
@@ -1904,7 +1920,7 @@ References:
          (json-mode . lsp)
          (haskell-mode . lsp)
          (haskell-literate-mode . lsp)
-         (java-mode . lsp)) 
+         (java-mode . lsp))
   :commands lsp
   :config
   (setq lsp-idle-delay 1)
@@ -1914,7 +1930,7 @@ References:
  ;  (lsp-headerline-breadcrumb-mode nil)
   (setq lsp-headerline-breadcrumb-enable nil)
   (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
-  
+
 (use-package lsp-ui
   :straight t
   :commands lsp-ui-mode
@@ -2001,9 +2017,9 @@ References:
 
   (require 'dap-chrome)
   (dap-chrome-setup)
-  
+
   (require 'dap-python)
-  
+
   (dap-mode 1)
   (dap-ui-mode 1)
   (dap-tooltip-mode 1)
@@ -2025,7 +2041,7 @@ References:
   :infix "d"
   :keymaps 'dap-mode-map
   "h" 'dap-hydra)
-  
+
 (defun my/dap-yank-value-at-point (node)
   (interactive (list (treemacs-node-at-point)))
   (kill-new (message (plist-get (button-get node :item) :value))))
@@ -2101,7 +2117,7 @@ Configs for various web development technologies I'm using.
 My bit of config here:
 - makes Emmet activate only in certain mmm-mode submodes.
 - makes =TAB= the only key I have to use
-  
+
 #+begin_src emacs-lisp
 (use-package emmet-mode
   :straight t
@@ -2260,10 +2276,10 @@ References:
             (lambda ()
               (TeX-fold-mode 1)
               (outline-minor-mode)))
-  
+
   (add-to-list 'TeX-view-program-selection
                '(output-pdf "Zathura"))
-  
+
   ;; Do not run lsp within templated TeX files
   (add-hook 'LaTeX-mode-hook
             '(lambda ()
@@ -2271,19 +2287,19 @@ References:
                  (lsp))
                (setq-local lsp-diagnostic-package :none)
                (setq-local flycheck-checker 'tex-chktex)))
-  
+
   (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'LaTeX-mode-hook #'smartparens-mode)
   (add-hook 'LaTeX-mode-hook #'prettify-symbols-mode)
-  
+
   (my/set-smartparens-indent 'LaTeX-mode)
   (require 'smartparens-latex)
-  
+
   (general-nmap
     :keymaps '(LaTeX-mode-map latex-mode-map)
     "RET" 'TeX-command-run-all
     "C-c t" 'orgtbl-mode)
-  
+
   <<init-greek-latex-snippets>>
   <<init-english-latex-snippets>>
   <<init-math-latex-snippets>>)
@@ -2304,12 +2320,12 @@ A function to import =.sty= files to the LaTeX document.
 #+begin_src emacs-lisp
 (defun my/import-sty ()
   (interactive)
-  (insert 
+  (insert
    (apply #'concat
           (cl-mapcar
            (lambda (file) (concat "\\usepackage{" (file-name-sans-extension (file-relative-name file default-directory)) "}\n"))
            (reverse
-            (sort 
+            (sort
              (seq-filter
               (lambda (file) (if (string-match ".*\.sty$" file) 1 nil))
               (directory-files
@@ -2427,7 +2443,7 @@ Noweb points to the AUCTeX config block.
   :config
   (setq markdown-command
         (concat
-         "pandoc" 
+         "pandoc"
          " --from=markdown --to=html"
          " --standalone --mathjax --highlight-style=pygments"
          " --css=pandoc.css"
@@ -2460,11 +2476,11 @@ Noweb points to the AUCTeX config block.
   (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
   (add-to-list 'auto-mode-alist '("\\.uml\\'" . plantuml-mode))
   (add-hook 'plantuml-mode-hook #'smartparens-mode))
-  
+
 (general-nmap
   :keymaps 'plantuml-mode-map
   "RET" 'plantuml-preview)
-  
+
 #+end_src
 *** LanguageTool
 LanguageTool is a great offline spell checker. For some reason the download link is nowhere to be found on the home page, so it is listed in the references as well.
@@ -2481,7 +2497,7 @@ References:
   :config
   (setq langtool-language-tool-server-jar "/home/pavel/Programs/LanguageTool-5.1/languagetool-server.jar")
   (setq langtool-mother-tongue "ru"))
-  
+
 (my-leader-def
   :infix "L"
   "c" 'langtool-check
@@ -2522,7 +2538,7 @@ Some packages for editing various Lisps.
   ;; (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
   (add-hook 'clojure-mode-hook #'lispy-mode)
   (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
-  
+
 (use-package cider
   :mode "\\.clj[sc]?\\'"
   :straight t)
@@ -2603,7 +2619,7 @@ Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Se
 (use-package haskell-mode
   :straight t
   :mode "\\.hs\\'")
-  
+
 (use-package lsp-haskell
   :straight t
   :after (lsp haskell-mode))
@@ -2648,12 +2664,12 @@ A bunch of functions for managing dotfiles with yadm.
   "Open the init file."
   (interactive)
   (find-file "~/Emacs.org"))
-  
+
 ;; (defun my/edit-exwm-configuration ()
 ;;   "Open the exwm config file."
 ;;   (interactive)
 ;;   (find-file "~/.emacs.d/exwm.org"))
-  
+
 (general-define-key "C-c c" 'my/edit-configuration)
 ;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
 (my-leader-def "cc" 'my/edit-configuration)
@@ -2697,7 +2713,7 @@ Open a file managed by yadm.
 (my-leader-def "cf" 'my/open-yadm-file)
 #+end_src
 
-** Notmuch 
+** Notmuch
 My notmuch config.
 
 References:
@@ -2716,7 +2732,7 @@ References:
   (setq send-mail-function #'sendmail-send-it)
   (add-hook 'notmuch-hello-mode-hook
             (lambda () (display-line-numbers-mode 0))))
-  
+
 (my-leader-def "am" 'notmuch)
 #+end_src
 
