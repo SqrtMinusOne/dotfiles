@@ -84,6 +84,7 @@ git -C $REPO log --pretty="%H %cI" | get_lengths >> data/lengths.csv
 #+end_src
 
 #+RESULTS:
+
 * Plot
 ** Load the data
 #+begin_src python
@@ -166,6 +167,7 @@ with pd.option_context('display.max_rows', 10):
 
 241 rows × 5 columns
 :END:
+
 ** Plot
 #+begin_src python :file img/emacs-vim.png
 fig, ax = plt.subplots(figsize=(12, 6))
