@@ -104,6 +104,14 @@
   :hook ((prog-mode . turn-on-evil-quickscope-mode)
          (LaTeX-mode . turn-on-evil-quickscope-mode)))
 
+(use-package evil-numbers
+  :straight t
+  :commands (evil-numbers/inc-at-pt evil-numbers/dec-at-pt)
+  :init
+  (general-nmap
+    "g+" 'evil-numbers/inc-at-pt
+    "g-" 'evil-numbers/dec-at-pt))
+
 (use-package evil-collection
   :straight t
   :after evil
@@ -246,6 +254,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (lambda ()
             (unless (cl-some #'derived-mode-p my/trailing-whitespace-modes)
               (delete-trailing-whitespace))))
+
+(use-package expand-region
+  :straight t
+  :commands (er/expand-region)
+  :init
+  (general-nmap "+" 'er/expand-region))
 
 (setq tab-always-indent nil)
 

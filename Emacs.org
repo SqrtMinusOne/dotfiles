@@ -47,14 +47,16 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#xref][xref]]
     - [[#folding][Folding]]
     - [[#zoom][Zoom]]
-  - [[#editing-helpers--config][Editing helpers & config]]
+  - [[#editing-helpers][Editing helpers]]
     - [[#visual-fill-column-mode][Visual fill column mode]]
     - [[#smartparens][smartparens]]
     - [[#aggressive-indent][Aggressive Indent]]
     - [[#delete-trailing-whitespace][Delete trailing whitespace]]
+    - [[#expand-region][Expand region]]
+  - [[#various-settings][Various settings]]
     - [[#tabs][Tabs]]
     - [[#scrolling-config][Scrolling config]]
-    - [[#clipboard-config][Clipboard config]]
+    - [[#clipboard][Clipboard]]
     - [[#backups][Backups]]
   - [[#undo-tree][Undo Tree]]
   - [[#help][Help]]
@@ -143,15 +145,16 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#svelte][Svelte]]
     - [[#scss][SCSS]]
     - [[#php][PHP]]
-  - [[#documents--markup-languages][Documents & markup languages]]
-    - [[#latex][LaTeX]]
-      - [[#auctex][AUCTeX]]
-      - [[#bibtex][BibTeX]]
-      - [[#import-sty][Import *.sty]]
+  - [[#latex][LaTeX]]
+    - [[#auctex][AUCTeX]]
+    - [[#bibtex][BibTeX]]
+    - [[#import-sty][Import *.sty]]
+    - [[#snippets][Snippets]]
       - [[#greek-letters][Greek letters]]
       - [[#english-letters][English letters]]
       - [[#math-symbols][Math symbols]]
       - [[#section-snippets][Section snippets]]
+  - [[#other-markup-languages][Other markup languages]]
     - [[#markdown][Markdown]]
     - [[#plantuml][PlantUML]]
     - [[#languagetool][LanguageTool]]
@@ -384,6 +387,17 @@ Basic evil configuration.
   :hook ((prog-mode . turn-on-evil-quickscope-mode)
          (LaTeX-mode . turn-on-evil-quickscope-mode)))
 #+end_src
+
+[[https://github.com/cofi/evil-numbers][evil-numbers]] allows incrementing and decrementing numbers at point.
+#+begin_src emacs-lisp
+(use-package evil-numbers
+  :straight t
+  :commands (evil-numbers/inc-at-pt evil-numbers/dec-at-pt)
+  :init
+  (general-nmap
+    "g+" 'evil-numbers/inc-at-pt
+    "g-" 'evil-numbers/dec-at-pt))
+#+end_src
 *** evil-collection
 [[https://github.com/emacs-evil/evil-collection][evil-collection]] is a package that provides evil bindings for a lot of different packages. One can see the whole list in the [[https://github.com/emacs-evil/evil-collection/tree/master/modes][modes]] folder.
 
@@ -545,7 +559,7 @@ Some keybindings for xref, Emacs' built-in systems for managing identifiers.
 (global-set-key (kbd "C-+") 'my/zoom-in)
 (global-set-key (kbd "C-=") 'my/zoom-out)
 #+end_src
-** Editing helpers & config
+** Editing helpers
 *** Visual fill column mode
 #+begin_src emacs-lisp
 (use-package visual-fill-column
@@ -590,7 +604,15 @@ Delete trailing whitespace on save, unless in particular modes where trailing wh
             (unless (cl-some #'derived-mode-p my/trailing-whitespace-modes)
               (delete-trailing-whitespace))))
 #+end_src
-
+*** Expand region
+#+begin_src emacs-lisp
+(use-package expand-region
+  :straight t
+  :commands (er/expand-region)
+  :init
+  (general-nmap "+" 'er/expand-region))
+#+end_src
+** Various settings
 *** Tabs
 Some default settings to manage tabs.
 #+begin_src emacs-lisp
@@ -612,7 +634,7 @@ Some default settings to manage tabs.
 (setq mouse-wheel-progressive-speed nil)
 (setq mouse-wheel-inhibit-click-time nil)
 #+end_src
-*** Clipboard config
+*** Clipboard
 #+begin_src emacs-lisp
 (setq select-enable-clipboard t)
 (setq mouse-yank-at-point t)
@@ -2244,9 +2266,8 @@ References:
   :straight t
   :mode "\\.php\\'")
 #+end_src
-** Documents & markup languages
-*** LaTeX
-**** AUCTeX
+** LaTeX
+*** AUCTeX
 The best LaTeX editing environment I've found so far.
 
 References:
@@ -2308,7 +2329,7 @@ References:
   <<init-math-latex-snippets>>
   <<init-section-latex-snippets>>)
 #+end_src
-**** BibTeX
+*** BibTeX
 #+begin_src emacs-lisp
 (use-package ivy-bibtex
   :commands (ivy-bibtex)
@@ -2318,7 +2339,7 @@ References:
 
 (add-hook 'bibtex-mode 'smartparens-mode)
 #+end_src
-**** Import *.sty
+*** Import *.sty
 A function to import =.sty= files to the LaTeX document.
 
 #+begin_src emacs-lisp
@@ -2351,6 +2372,10 @@ A function to import =.sty= files to the LaTeX document.
                   ((string-match-p ".*Preamble" f2) t)
                   (t (string-lessp f1 f2)))))))))))
 #+end_src
+*** Snippets
+| Note | Type                                                            |
+|------+-----------------------------------------------------------------|
+| TODO | Move yasnippet snippets here? Maybe extract to a separate file? |
 **** Greek letters
 Autogenerate snippets for greek letters. I have a few blocks like this because it's faster & more flexible than usual yasnippet snippets.
 
@@ -2488,6 +2513,7 @@ Section snippets. The code turned out to be more complicated than just writing t
  'latex-mode
  my/latex-section-snippets)
 #+end_src
+** Other markup languages
 *** Markdown
 #+begin_src emacs-lisp
 (use-package markdown-mode
