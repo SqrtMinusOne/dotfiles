@@ -1019,15 +1019,21 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq my/jupyter-runtime-folder (expand-file-name "~/.local/share/jupyter/runtime"))
 
+(defun my/get-open-ports ()
+  (mapcar
+   #'string-to-number
+   (split-string (shell-command-to-string "ss -tulpnH | awk '{print $5}' | sed -e 's/.*://'") "\n")))
+
+(defun my/list-jupyter-kernel-files ()
+  (mapcar
+   (lambda (file) (cons (car file) (cdr (assq 'shell_port (json-read-file (car file))))))
+   (sort
+    (directory-files-and-attributes my/jupyter-runtime-folder t ".*kernel.*json$")
+    (lambda (x y) (not (time-less-p (nth 6 x) (nth 6 y)))))))
+
 (defun my/select-jupyter-kernel ()
-  (let ((ports (mapcar
-                #'string-to-number
-                (split-string (shell-command-to-string "ss -tulpnH | awk '{print $5}' | sed -e 's/.*://'") "\n")))
-        (files (mapcar
-                (lambda (file) (cons (car file) (cdr (assq 'shell_port (json-read-file (car file))))))
-                (sort
-                 (directory-files-and-attributes my/jupyter-runtime-folder t ".*kernel.*json$")
-                 (lambda (x y) (not (time-less-p (nth 6 x) (nth 6 y))))))))
+  (let ((ports (my/get-open-ports))
+        (files (my/list-jupyter-kernel-files)))
     (completing-read
      "Jupyter kernels: "
      (seq-filter
@@ -1042,6 +1048,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (defun my/jupyter-connect-repl ()
   (interactive)
   (jupyter-connect-repl (my/select-jupyter-kernel) nil nil nil t))
+
+(defun my/jupyter-qtconsole ()
+  (interactive)
+  (start-process "jupyter-qtconsole" nil "setsid" "jupyter" "qtconsole" "--existing"
+                 (file-name-nondirectory (my/select-jupyter-kernel))))
 
 (use-package org-latex-impatient
   :straight (:repo "yangsheng6810/org-latex-impatient"
@@ -1497,34 +1508,45 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (add-hook 'bibtex-mode 'smartparens-mode)
 
+(defun my/list-sty ()
+  (reverse
+   (sort
+    (seq-filter
+     (lambda (file) (if (string-match ".*\.sty$" file) 1 nil))
+     (directory-files
+      (seq-some
+       (lambda (dir)
+         (if (and
+              (f-directory-p dir)
+              (seq-some
+               (lambda (file) (string-match ".*\.sty$" file))
+               (directory-files dir))
+              ) dir nil))
+       (list "./styles" "../styles/" "." "..")) :full))
+    (lambda (f1 f2)
+      (let ((f1b (file-name-base f1))
+            (f1b (file-name-base f2)))
+        (cond
+         ((string-match-p ".*BibTex" f1) t)
+         ((and (string-match-p ".*Locale" f1) (not (string-match-p ".*BibTex" f2))) t)
+         ((string-match-p ".*Preamble" f2) t)
+         (t (string-lessp f1 f2))))))))
+
 (defun my/import-sty ()
   (interactive)
   (insert
    (apply #'concat
           (cl-mapcar
            (lambda (file) (concat "\\usepackage{" (file-name-sans-extension (file-relative-name file default-directory)) "}\n"))
-           (reverse
-            (sort
-             (seq-filter
-              (lambda (file) (if (string-match ".*\.sty$" file) 1 nil))
-              (directory-files
-               (seq-some
-                (lambda (dir)
-                  (if (and
-                       (f-directory-p dir)
-                       (seq-some
-                        (lambda (file) (string-match ".*\.sty$" file))
-                        (directory-files dir))
-                       ) dir nil))
-                (list "./styles" "../styles/" "." "..")) :full))
-             (lambda (f1 f2)
-               (let ((f1b (file-name-base f1))
-                     (f1b (file-name-base f2)))
-                 (cond
-                  ((string-match-p ".*BibTex" f1) t)
-                  ((and (string-match-p ".*Locale" f1) (not (string-match-p ".*BibTex" f2))) t)
-                  ((string-match-p ".*Preamble" f2) t)
-                  (t (string-lessp f1 f2)))))))))))
+           (my/list-sty)))))
+
+(defun my/import-sty-org ()
+  (interactive)
+  (insert
+   (apply #'concat
+          (cl-mapcar
+           (lambda (file) (concat "#+LATEX_HEADER: \\usepackage{" (file-name-sans-extension (file-relative-name file default-directory)) "}\n"))
+           (my/list-sty)))))
 
 (setq my/greek-alphabet
       '(("a" . "\\alpha")

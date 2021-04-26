@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: org-latex
+# key: org-latex
+# --
+#+LATEX_CLASS: org-plain-extarticle
+#+LATEX_CLASS_OPTIONS: [a4paper, 14pt]
+$0
