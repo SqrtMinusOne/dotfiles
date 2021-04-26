@@ -104,7 +104,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#python][Python]]
     - [[#view-html-in-browser][View HTML in browser]]
     - [[#setup][Setup]]
-    - [[#managing-jupyter-kernels][Managing Jupyter kernels]]
+    - [[#select-active-jupyter-kernel][Select active Jupyter kernel]]
   - [[#ui][UI]]
     - [[#instant-equations-preview][Instant equations preview]]
     - [[#latex-fragments][LaTeX fragments]]
@@ -114,7 +114,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#hugo][Hugo]]
     - [[#jupyter-notebook][Jupyter Notebook]]
     - [[#html-export][Html export]]
-    - [[#latex][LaTeX]]
+    - [[#off-latex][(OFF) LaTeX]]
   - [[#keybindings--stuff][Keybindings & stuff]]
     - [[#copy-a-link][Copy a link]]
   - [[#presentations][Presentations]]
@@ -1172,7 +1172,8 @@ Prepend tab name with the shortened projectile project title
   (let ((project-name (projectile-project-name)))
     (if (string= "-" project-name)
         (tab-bar-tab-name-current-with-count)
-      (concat "[" (my/shorten-project-name project-name) "] " (tab-bar-tab-name-current-with-count)))))
+      (concat "[" (my/shorten-project-name project-name) "] "
+              (replace-regexp-in-string "<.*>" "" (tab-bar-tab-name-current-with-count))))))
 
 (setq tab-bar-tab-name-function #'my/tab-bar-name-function)
 #+end_src

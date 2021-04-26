@@ -607,7 +607,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (let ((project-name (projectile-project-name)))
     (if (string= "-" project-name)
         (tab-bar-tab-name-current-with-count)
-      (concat "[" (my/shorten-project-name project-name) "] " (tab-bar-tab-name-current-with-count)))))
+      (concat "[" (my/shorten-project-name project-name) "] "
+              (replace-regexp-in-string "<.*>" "" (tab-bar-tab-name-current-with-count))))))
 
 (setq tab-bar-tab-name-function #'my/tab-bar-name-function)
 
@@ -1053,6 +1054,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (interactive)
   (start-process "jupyter-qtconsole" nil "setsid" "jupyter" "qtconsole" "--existing"
                  (file-name-nondirectory (my/select-jupyter-kernel))))
+
+(defun my/jupyter-cleanup-kernels ()
+  (interactive)
+  (let* ((ports (my/get-open-ports))
+         (files (my/list-jupyter-kernel-files))
+         (to-delete (seq-filter
+                     (lambda (file)
+                       (not (member (cdr file) ports)))
+                     files)))
+    (when (and (length> to-delete 0)
+               (y-or-n-p (format "Delete %d files?" (length to-delete))))
+      (dolist (file to-delete)
+        (delete-file (car file))))))
 
 (use-package org-latex-impatient
   :straight (:repo "yangsheng6810/org-latex-impatient"
