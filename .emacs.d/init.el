@@ -39,6 +39,8 @@
 
 (setq my/lowpower (string= (system-name) "pntk"))
 
+(setq my/slow-ssh (string= (getenv "IS_TRAMP") "true"))
+
 (use-package conda
   :straight t
   :config
@@ -434,7 +436,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (projectile-mode +1)
-  (setq projectile-project-search-path '("~/Code" "~/Documents")))
+  (setq projectile-project-search-path '("~/Code" "~/Documents"))
+  (defadvice projectile-project-root (around ignore-remote first activate)
+    (unless (file-remote-p default-directory) ad-do-it)))
 
 (use-package counsel-projectile
   :after (counsel projectile)
@@ -486,6 +490,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package git-gutter
   :straight t
+  :if (not my/slow-ssh)
   :config
   (global-git-gutter-mode +1))
 
@@ -496,7 +501,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package editorconfig
   :straight t
   :config
-  (editorconfig-mode 1)
+  (unless my/slow-ssh (editorconfig-mode 1))
   (add-to-list 'editorconfig-indentation-alist
                '(emmet-mode emmet-indentation)))
 
@@ -753,7 +758,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package all-the-icons-dired
   :straight t
-  :if (not my/lowpower)
+  :if (not (or my/lowpower my/slow-ssh))
   :hook (dired-mode . all-the-icons-dired-mode)
   :config
   (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
@@ -770,6 +775,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-define-key
    :keymaps 'dired-narrow-map
    [escape] 'keyboard-quit))
+
+(setq tramp-verbose 1)
+
+(setq remote-file-name-inhibit-cache nil)
+(setq vc-ignore-dir-regexp
+      (format "\\(%s\\)\\|\\(%s\\)"
+              vc-ignore-dir-regexp
+              tramp-file-name-regexp))
 
 (use-package vterm
   :straight t
@@ -809,8 +822,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     "M-l" 'vterm-send-right
     "M-h" 'vterm-send-left))
 
-(general-nmap "~" 'vterm)
-
 (add-to-list 'display-buffer-alist
              `(,"vterm-subterminal.*"
                (display-buffer-reuse-window
@@ -835,8 +846,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (kill-buffer (current-buffer))
           (select-window vterm-window))
       (vterm-other-window "vterm-subterminal"))))
-
-(general-nmap "`" 'my/toggle-vterm-subteminal)
+(unless my/slow-ssh
+  (general-nmap "`" 'my/toggle-vterm-subteminal)
+  (general-nmap "~" 'vterm))
 
 (defun my/configure-eshell ()
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
@@ -868,8 +880,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
 
-;; (general-nmap "`" 'aweshell-dedicated-toggle)
-;; (general-nmap "~" 'eshell)
+(when my/slow-ssh
+  (general-nmap "`" 'aweshell-dedicated-toggle)
+  (general-nmap "~" 'eshell))
 
 (use-package org
   :straight (:type built-in)
@@ -939,8 +952,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    :states '(normal emacs)
    "L" 'org-shiftright
    "H" 'org-shiftleft
-   "S-<next>" 'org-babel-next-src-block
-   "S-<prior>" 'org-babel-previous-src-block
+   "S-<next>" 'org-next-visible-heading
+   "S-<prior>" 'org-previous-visible-heading
+   "M-0" 'org-next-visible-heading
+   "M-9" 'org-previous-visible-heading
    "M-]" 'org-babel-next-src-block
    "M-[" 'org-babel-previous-src-block)
   
@@ -1043,14 +1058,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       files))))
 
 (defun my/insert-jupyter-kernel ()
+  "Insert a path to an active Jupyter kernel into the buffer"
   (interactive)
   (insert (my/select-jupyter-kernel)))
 
 (defun my/jupyter-connect-repl ()
+  "Open an emacs-jupyter REPL, connected to a Jupyter kernel"
   (interactive)
   (jupyter-connect-repl (my/select-jupyter-kernel) nil nil nil t))
 
 (defun my/jupyter-qtconsole ()
+  "Open Jupyter QtConsole, connected to a Jupyter kernel"
   (interactive)
   (start-process "jupyter-qtconsole" nil "setsid" "jupyter" "qtconsole" "--existing"
                  (file-name-nondirectory (my/select-jupyter-kernel))))
@@ -1176,6 +1194,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package lsp-mode
   :straight t
+  :if (not my/slow-ssh)
   :hook (
          (typescript-mode . lsp)
          (vue-mode . lsp)
@@ -1192,7 +1211,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq lsp-eslint-server-command '("node" "/home/pavel/.emacs.d/.cache/lsp/eslint/unzipped/extension/server/out/eslintServer.js" "--stdio"))
   (setq lsp-eslint-run "onSave")
   (setq lsp-signature-render-documentation nil)
- ;  (lsp-headerline-breadcrumb-mode nil)
+  ;; (lsp-headerline-breadcrumb-mode nil)
   (setq lsp-headerline-breadcrumb-enable nil)
   (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
 
@@ -1460,8 +1479,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           ("." . "\\cdot")
           ("v" . "\\forall")
           ("s" . "\\sum_{$1}^{$2}$0")
+          ("p" . "\\prod_{$1}^{$2}$0")
           ("e" . "\\exists")
-          ("i" . "\\int_{$1}^{$2}$0")))
+          ("i" . "\\int_{$1}^{$2}$0")
+          ("c" . "\\cap")
+          ("u" . "\\cup")
+          ("0" . "\\emptyset")))
   
   (setq my/latex-math-prefix "''")
   
@@ -1630,8 +1653,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         ("." . "\\cdot")
         ("v" . "\\forall")
         ("s" . "\\sum_{$1}^{$2}$0")
+        ("p" . "\\prod_{$1}^{$2}$0")
         ("e" . "\\exists")
-        ("i" . "\\int_{$1}^{$2}$0")))
+        ("i" . "\\int_{$1}^{$2}$0")
+        ("c" . "\\cap")
+        ("u" . "\\cup")
+        ("0" . "\\emptyset")))
 
 (setq my/latex-math-prefix "''")
 
@@ -1840,6 +1867,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :mode "\\.yml\\'"
   :config
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+
+(use-package dotenv-mode
+  :straight t
+  :mode "\\.env\\..*\\'")
 
 (use-package csv-mode
   :straight t
