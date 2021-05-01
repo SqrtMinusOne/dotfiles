@@ -420,6 +420,7 @@ I don't enable the entire package, just the modes I need.
      dired
      debug
      edebug
+     bookmark
      company
      vterm
      flycheck
@@ -1319,6 +1320,13 @@ Rainbow parentheses.
   ;;               (rainbow-delimiters-mode))))
   )
 #+end_src
+
+Highlight colors
+#+begin_src emacs-lisp
+(use-package rainbow-mode
+  :commands (rainbow-mode)
+  :straight t)
+#+end_src
 * Dired
 Dired is a built-in file manager. I use it as my primary file manager, hence the top level of config.
 ** Basic config & keybindings
@@ -1336,9 +1344,9 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
   (setq dired-recursive-copies 'always)
   (setq dired-recursive-deletes 'always)
   (add-hook 'dired-mode-hook
-    (lambda ()
-      (setq truncate-lines t)
-      (visual-line-mode nil)))
+            (lambda ()
+              (setq truncate-lines t)
+              (visual-line-mode nil)))
   (evil-collection-define-key 'normal 'dired-mode-map
     "h" 'dired-single-up-directory
     "l" 'dired-single-buffer
@@ -1349,13 +1357,20 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
     (kbd "<left>") 'dired-single-up-directory
     (kbd "<right>") 'dired-single-buffer)
   (general-define-key
-    :keymaps 'dired-mode-map
-    [remap dired-find-file] 'dired-single-buffer
-    [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
-    [remap dired-up-directory] 'dired-single-up-directory
-    "M-<return>" 'dired-open-xdg))
+   :keymaps 'dired-mode-map
+   [remap dired-find-file] 'dired-single-buffer
+   [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
+   [remap dired-up-directory] 'dired-single-up-directory
+   "M-<return>" 'dired-open-xdg))
 
-(my-leader-def "ad" 'dired)
+(defun my/dired-home ()
+  "Open dired at $HOME"
+  (interactive)
+  (dired (expand-file-name "~")))
+
+(my-leader-def
+  "ad" #'dired
+  "aD" #'my/dired-home)
 #+end_src
 ** Addons
 [[https://www.emacswiki.org/emacs/DiredPlus][Dired+]] provides a lot of extensions for dired functionality.
@@ -1410,7 +1425,7 @@ vifm-like filter
 ** TRAMP
 TRAMP is a package which provides remote editing capacities. It is particularly useful for remote server management.
 
-One of the reasons why TRAMP may be slow is that some plugins do too much requests to filesystem. To debug these issues, set the following variable to 6:
+One of the reasons why TRAMP may be slow is that some plugins do too much requests to the filesystem. To debug these issues, set the following variable to 6:
 #+begin_src emacs-lisp
 (setq tramp-verbose 1)
 #+end_src
@@ -1549,6 +1564,14 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
   :config
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
+
+(use-package eshell-info-banner
+  :defer t
+  :if (not my/slow-ssh)
+  :straight (eshell-info-banner :type git
+                                :host github
+                                :repo "phundrak/eshell-info-banner.el")
+  :hook (eshell-banner-load . eshell-info-banner-update-banner))
 
 (when my/slow-ssh
   (general-nmap "`" 'aweshell-dedicated-toggle)

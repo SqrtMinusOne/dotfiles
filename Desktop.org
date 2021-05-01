@@ -127,8 +127,9 @@ Test:
 
 #+RESULTS:
 : #f07178
+
 ** Xresources
-However, I'd rather use the =Xresources= file is mostly easier. Here is the code to generate an Xresources file from this table:
+However, I'd rather use the =Xresources= file wherever possible. Here is the code to generate an Xresources file from this table:
 
 #+NAME: get-xresources
 #+begin_src emacs-lisp :var table=colors

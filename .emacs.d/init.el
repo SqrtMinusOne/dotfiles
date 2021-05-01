@@ -123,6 +123,7 @@
      dired
      debug
      edebug
+     bookmark
      company
      vterm
      flycheck
@@ -725,9 +726,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq dired-recursive-copies 'always)
   (setq dired-recursive-deletes 'always)
   (add-hook 'dired-mode-hook
-    (lambda ()
-      (setq truncate-lines t)
-      (visual-line-mode nil)))
+            (lambda ()
+              (setq truncate-lines t)
+              (visual-line-mode nil)))
   (evil-collection-define-key 'normal 'dired-mode-map
     "h" 'dired-single-up-directory
     "l" 'dired-single-buffer
@@ -738,13 +739,20 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (kbd "<left>") 'dired-single-up-directory
     (kbd "<right>") 'dired-single-buffer)
   (general-define-key
-    :keymaps 'dired-mode-map
-    [remap dired-find-file] 'dired-single-buffer
-    [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
-    [remap dired-up-directory] 'dired-single-up-directory
-    "M-<return>" 'dired-open-xdg))
+   :keymaps 'dired-mode-map
+   [remap dired-find-file] 'dired-single-buffer
+   [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
+   [remap dired-up-directory] 'dired-single-up-directory
+   "M-<return>" 'dired-open-xdg))
 
-(my-leader-def "ad" 'dired)
+(defun my/dired-home ()
+  "Open dired at $HOME"
+  (interactive)
+  (dired (expand-file-name "~")))
+
+(my-leader-def
+  "ad" #'dired
+  "aD" #'my/dired-home)
 
 (use-package dired+
   :straight t
@@ -879,6 +887,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
+
+(use-package eshell-info-banner
+  :defer t
+  :if (not my/slow-ssh)
+  :straight (eshell-info-banner :type git
+                                :host github
+                                :repo "phundrak/eshell-info-banner.el")
+  :hook (eshell-banner-load . eshell-info-banner-update-banner))
 
 (when my/slow-ssh
   (general-nmap "`" 'aweshell-dedicated-toggle)
