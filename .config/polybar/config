@@ -1,27 +1,26 @@
 ; [[file:../../Desktop.org::*Colors][Colors:1]]
 [colors]
 ; Palenight colorscheme https://github.com/JonathanSpeek/palenight-iterm2
-black = #292d3e
-red = #f07178
-green = #c3e88d
-yellow = #ffcb6b
-blue = #82aaff
-magenta = #c792ea
-cyan = #89ddff
-white = #d0d0d0
+black = ${xrdb:color0}
+red = ${xrdb:color1}
+green = ${xrdb:color2}
+yellow = ${xrdb:color3}
+blue = ${xrdb:color4}
+magenta = ${xrdb:color5}
+cyan = ${xrdb:color6}
+white = ${xrdb:color7}
 
-black-lighter = #434758
-red-lighter = #ff8b92
-green-lighter = #ddffa7
-yellow-lighter = #ffe585
-blue-lighter = #9cc4ff
-magenta-lighter = #9cc4ff
-cyan-lighter = #9cc4ff
-white-lighter = ffffff
+black-lighter = ${xrdb:color8}
+red-lighter = ${xrdb:color9}
+green-lighter = ${xrdb:color10}
+yellow-lighter = ${xrdb:color11}
+blue-lighter = ${xrdb:color12}
+magenta-lighter = ${xrdb:color13}
+cyan-lighter = ${xrdb:color14}
+white-lighter = ${xrdb:color15}
 
-background = ${colors.black}
-; background = #ee292d3e
-foreground = ${colors.white}
+background = ${xrdb:background}
+foreground = ${xrdb:foreground}
 ; Colors:1 ends here
 
 ; [[file:../../Desktop.org::*Bar config][Bar config:1]]
@@ -293,7 +292,7 @@ ramp-signal-0 = 0
 ramp-signal-1 = 1
 ramp-signal-2 = 2
 ramp-signal-3 = 3
-ramp-signal-4 = 4	
+ramp-signal-4 = 4
 ramp-signal-5 = 5
 ; network:1 ends here
 

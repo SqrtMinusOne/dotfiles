@@ -1,3 +1,4 @@
+# [[file:../../Desktop.org::*Zathura][Zathura:1]]
 set abort-clear-search false
 set show-scrollbars true
 set show-h-scrollbar true
@@ -7,3 +8,4 @@ set recolor-lightcolor "#292d3e"
 set recolor true
 map <C-r> set recolor false
 map <C-R> set recolor true
+# Zathura:1 ends here

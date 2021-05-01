@@ -469,10 +469,21 @@ source ~/.tmux.line.conf
 
 [[https://github.com/alacritty/alacritty][Alacritty]] is a GPU-accelerated terminal emulator. I haven't found it to be an inch faster than st, but configuration the in yml format is way more convinient than patches.
 
+Once again, we have an application which doesn't support reading Xresources, so here goes noweb.
+
+#+name: get-xrdb
+#+begin_src bash :var color="color0" :tangle no
+xrdb -query all | grep "$color:" | cut -f 2
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+(setq-local org-confirm-babel-evaluate nil)
+#+end_src
+
 References:
 - [[https://github.com/alacritty/alacritty/blob/master/alacritty.yml][default config]]
 
-#+begin_src yaml
+#+begin_src yaml :noweb yes
 decorations: none
 
 font:
@@ -481,32 +492,32 @@ font:
     style: Regular
 
   size: 10
-   
+
 env:
   TERM: xterm-256color
-   
+
 colors:
   primary:
-    background: '#292d3e'
-    foreground: '#d0d0d0'
+    background: '<<get-xrdb(color="color0")>>'
+    foreground: '<<get-xrdb(color="color7")>>'
   normal:
-    black: '#292d3e'
-    red: '#f07178'
-    green: '#c3e88d'
-    yellow: '#ffcb6b'
-    blue: '#82aaff'
-    magenta: '#c792ea'
-    cyan: '#89ddff'
-    white: '#d0d0d0'
+    black: '<<get-xrdb(color="color0")>>'
+    red: '<<get-xrdb(color="color1")>>'
+    green: '<<get-xrdb(color="color2")>>'
+    yellow: '<<get-xrdb(color="color3")>>'
+    blue: '<<get-xrdb(color="color4")>>'
+    magenta: '<<get-xrdb(color="color5")>>'
+    cyan: '<<get-xrdb(color="color6")>>'
+    white: '<<get-xrdb(color="color7")>>'
   bright:
-    Black: '#434758'
-    Red: '#ff8b92'
-    Green: '#ddffa7'
-    Yellow: '#ffe585'
-    Blue: '#9cc4ff'
-    Magenta: '#e1acff'
-    Cyan: '#a3f7ff'
-    White: '#ffffff'
+    Black: '<<get-xrdb(color="color8")>>'
+    Red: '<<get-xrdb(color="color9")>>'
+    Green: '<<get-xrdb(color="color10")>>'
+    Yellow: '<<get-xrdb(color="color11")>>'
+    Blue: '<<get-xrdb(color="color12")>>'
+    Magenta: '<<get-xrdb(color="color13")>>'
+    Cyan: '<<get-xrdb(color="color14")>>'
+    White: '<<get-xrdb(color="color15")>>'
 
 background_opacity: 0.80
 

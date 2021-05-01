@@ -336,20 +336,22 @@ bindsym --release Shift+Print exec "xfce4-screenshooter"
 # Screenshots:1 ends here
 
 # [[file:../../Desktop.org::*Colors][Colors:1]]
+exec xrdb -merge $HOME/.Xresources
+
 # Colors
-set $bg-color 	         #292d3e
-set $active-color        #82aaff
-set $inactive-bg-color   #434758
-set $text-color          #f3f4f5
-set $inactive-text-color #aaaaaa
-set $urgent-bg-color     #f07178
-set $urgent-text-color   #000000
+set_from_resource $bg-color            background
+set_from_resource $active-color        color4
+set_from_resource $inactive-bg-color   color8
+set_from_resource $text-color          foreground
+set_from_resource $inactive-text-color color7
+set_from_resource $urgent-bg-color     color1
+set_from_resource $urgent-text-color   color0
 
 # window colors
 #                       border              background         text                 indicator       child border
 client.focused          $active-color       $bg-color          $text-color          $bg-color       $active-color
 client.unfocused        $bg-color           $inactive-bg-color $inactive-text-color $bg-color       $bg-color
-client.focused_inactive $active-color  $inactive-bg-color $inactive-text-color $bg-color       $bg-color
+client.focused_inactive $active-color       $inactive-bg-color $inactive-text-color $bg-color       $bg-color
 client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-color   $bg-color       $urgent-bg-color
 # Colors:1 ends here
 

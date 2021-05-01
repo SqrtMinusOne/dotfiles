@@ -12,7 +12,7 @@ code=$(echo $ip_info | jq -r '.country_code')
 vpn=$(pgrep -a openvpn$ | head -n 1 | awk '{print $NF }' | cut -d '.' -f 1)
 
 if [ -n "$vpn" ]; then
-    echo "%{u#9cc4ff}%{+u}  $code %{u-}"
+    echo "%{u#82aaff}%{+u}  $code %{u-}"
 else
     echo "%{u#f07178}%{+u}  $code %{u-}"
 fi

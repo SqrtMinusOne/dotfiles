@@ -1,28 +1,17 @@
 #+TITLE: Desktop
 #+TODO: TODO(t) CHECK(s) | OFF(o)
 #+PROPERTY: header-args :mkdirp yes
-#+PROPERTY: header-args:conf-space   :comments link
-#+PROPERTY: header-args:conf-unix    :comments link
-#+PROPERTY: header-args:conf-windows :comments link
-#+PROPERTY: header-args:sh           :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
-#+PROPERTY: header-args:bash         :tangle-mode (identity #o755) :comments link :shebang "#!/bin/bash"
+#+PROPERTY: header-args:conf-space     :comments link
+#+PROPERTY: header-args:conf-unix      :comments link
+#+PROPERTY: header-args:conf-windows   :comments link
+#+PROPERTY: header-args:conf-xdefaults :comments link
+#+PROPERTY: header-args:sh             :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
+#+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/bin/bash"
 
 My general desktop environment configuration.
 
 Parts prefixed with (OFF) are not used, but kept for historic purposes. For some reason GitHub's org renderer ignores TODO status, hence such a prefix. Round brackets instead of square ones to prevent GitHub's org renderer from screwing up.
 
-Most of the colors are from the Palenight theme. Colorcodes are taken from [[https://github.com/JonathanSpeek/palenight-iterm2][this repo]]:
-
-| Color   | Default | Lighter |
-|---------+---------+---------|
-| Black   | #292d3e | #434758 |
-| Red     | #f07178 | #ff8b92 |
-| Green   | #c3e88d | #ddffa7 |
-| Yellow  | #ffcb6b | #ffe585 |
-| Blue    | #82aaff | #9cc4ff |
-| Magenta | #c792ea | #e1acff |
-| Cyan    | #89ddff | #a3f7ff |
-| White   | #d0d0d0 | #ffffff |
 
 * Contents
 :PROPERTIES:
@@ -30,6 +19,8 @@ Most of the colors are from the Palenight theme. Colorcodes are taken from [[htt
 :END:
 :CONTENTS:
 - [[#contents][Contents]]
+- [[#colors][Colors]]
+  - [[#xresources][Xresources]]
 - [[#i3wm][i3wm]]
   - [[#general-settings][General settings]]
   - [[#managing-windows][Managing windows]]
@@ -88,7 +79,76 @@ Most of the colors are from the Palenight theme. Colorcodes are taken from [[htt
   - [[#fading][Fading]]
   - [[#opacity][Opacity]]
   - [[#general-settings][General settings]]
+- [[#zathura][Zathura]]
 :END:
+* Colors
+Most of the colors are from the Palenight theme. Colorcodes are taken from [[https://github.com/JonathanSpeek/palenight-iterm2][this repo]]:
+
+#+tblname: colors
+| color         | key     | value   |
+|---------------+---------+---------|
+| black         | color0  | #292d3e |
+| red           | color1  | #f07178 |
+| green         | color2  | #c3e88d |
+| yellow        | color3  | #ffcb6b |
+| blue          | color4  | #82aaff |
+| magenta       | color5  | #c792ea |
+| cyan          | color6  | #89ddff |
+| white         | color7  | #d0d0d0 |
+| light-black   | color8  | #434758 |
+| light-red     | color9  | #ff8b92 |
+| light-green   | color10 | #ddffa7 |
+| light-yellow  | color11 | #ffe585 |
+| light-blue    | color12 | #9cc4ff |
+| light-magenta | color13 | #e1acff |
+| light-cyan    | color14 | #a3f7ff |
+| light-white   | color15 | #ffffff |
+
+The table above is the only source of truth for colors in this config.
+
+The first way to get colors of it is to use the following noweb:
+#+NAME: get-color
+#+begin_src emacs-lisp :var table=colors name="black" quote=0
+(let ((color (seq-some (lambda (e) (and (string= name (car e)) (nth 2 e))) table)))
+  (if (> quote 0)
+      (concat "\"" color "\"")
+    color))
+#+end_src
+
+Also, run the following to disable configuration for noweb evaluations:
+#+begin_src emacs-lisp
+(setq-local org-confirm-babel-evaluate nil)
+#+end_src
+
+Test:
+#+begin_src emacs-lisp :noweb yes
+<<get-color(name="red", quote=1)>>
+#+end_src
+
+#+RESULTS:
+: #f07178
+** Xresources
+However, I'd rather use the =Xresources= file is mostly easier. Here is the code to generate an Xresources file from this table:
+
+#+NAME: get-xresources
+#+begin_src emacs-lisp :var table=colors
+(apply
+ #'concat
+ (mapcar
+  (lambda (elem)
+    (concat "*" (nth 1 elem) ": " (nth 2 elem) "\n"))
+  (seq-filter
+   (lambda (elem) (nth 1 elem))
+   table)))
+#+end_src
+
+#+begin_src conf-xdefaults :noweb yes :tangle ~/.Xresources
+<<get-xresources()>>
+
+*background: <<get-color(name="black")>>
+*foreground: <<get-color(name="white")>>
+#+end_src
+
 * i3wm
 :PROPERTIES:
 :header-args+: :tangle ./.config/i3/config
@@ -493,22 +553,24 @@ bindsym --release Print exec "flameshot gui"
 bindsym --release Shift+Print exec "xfce4-screenshooter"
 #+end_src
 ** Colors
-Application of the palenight theme to the WM.
+Application of the XResources theme to the WM.
 #+begin_src conf-space
+exec xrdb -merge $HOME/.Xresources
+
 # Colors
-set $bg-color 	         #292d3e
-set $active-color        #82aaff
-set $inactive-bg-color   #434758
-set $text-color          #f3f4f5
-set $inactive-text-color #aaaaaa
-set $urgent-bg-color     #f07178
-set $urgent-text-color   #000000
+set_from_resource $bg-color            background
+set_from_resource $active-color        color4
+set_from_resource $inactive-bg-color   color8
+set_from_resource $text-color          foreground
+set_from_resource $inactive-text-color color7
+set_from_resource $urgent-bg-color     color1
+set_from_resource $urgent-text-color   color0
 
 # window colors
 #                       border              background         text                 indicator       child border
 client.focused          $active-color       $bg-color          $text-color          $bg-color       $active-color
 client.unfocused        $bg-color           $inactive-bg-color $inactive-text-color $bg-color       $bg-color
-client.focused_inactive $active-color  $inactive-bg-color $inactive-text-color $bg-color       $bg-color
+client.focused_inactive $active-color       $inactive-bg-color $inactive-text-color $bg-color       $bg-color
 client.urgent           $urgent-bg-color    $urgent-bg-color   $urgent-text-color   $bg-color       $urgent-bg-color
 #+end_src
 ** OFF (OFF) i3blocks
@@ -684,27 +746,26 @@ done
 #+begin_src conf-windows
 [colors]
 ; Palenight colorscheme https://github.com/JonathanSpeek/palenight-iterm2
-black = #292d3e
-red = #f07178
-green = #c3e88d
-yellow = #ffcb6b
-blue = #82aaff
-magenta = #c792ea
-cyan = #89ddff
-white = #d0d0d0
+black = ${xrdb:color0}
+red = ${xrdb:color1}
+green = ${xrdb:color2}
+yellow = ${xrdb:color3}
+blue = ${xrdb:color4}
+magenta = ${xrdb:color5}
+cyan = ${xrdb:color6}
+white = ${xrdb:color7}
 
-black-lighter = #434758
-red-lighter = #ff8b92
-green-lighter = #ddffa7
-yellow-lighter = #ffe585
-blue-lighter = #9cc4ff
-magenta-lighter = #9cc4ff
-cyan-lighter = #9cc4ff
-white-lighter = ffffff
+black-lighter = ${xrdb:color8}
+red-lighter = ${xrdb:color9}
+green-lighter = ${xrdb:color10}
+yellow-lighter = ${xrdb:color11}
+blue-lighter = ${xrdb:color12}
+magenta-lighter = ${xrdb:color13}
+cyan-lighter = ${xrdb:color14}
+white-lighter = ${xrdb:color15}
 
-background = ${colors.black}
-; background = #ee292d3e
-foreground = ${colors.white}
+background = ${xrdb:background}
+foreground = ${xrdb:foreground}
 #+end_src
 *** Bar config
 #+begin_src conf-windows
@@ -766,14 +827,17 @@ margin-top = 0
 margin-bottom = 0
 #+end_src
 ** Modules
+Some of the custom modules below use Org mode noweb to evaluate colors, because it's faster than querying =xrdb= at runtime. I wish I could reference polybar values there, but [[https://github.com/polybar/polybar/issues/615][it looks like this is impossible]].
+
+If you want to copy something, you can go to the [[file:bin/polybar/][bin/polybar]] folder.
 *** ipstack-vpn
 A module to get a country of the current IP and openvpn status. Uses [[https://ipstack.com/][ipstack]] API.
 
-#+begin_src bash :tangle ./bin/polybar/ipstack-vpn.sh
+#+begin_src bash :tangle ./bin/polybar/ipstack-vpn.sh :noweb yes
 ip=$(dig +short +timeout=1 myip.opendns.com @resolver1.opendns.com 2> /dev/null)
 API_KEY="$(cat ~/secrets/ipstack-api-key)"
 if [[ -z $ip || $ip == *"timed out"* ]]; then
-    echo "%{u#f07178}%{+u} ?? %{u-}"
+    echo "%{u<<get-color(name="red")>>}%{+u} ?? %{u-}"
     exit
 fi
 ip_info=$(curl -s http://api.ipstack.com/${ip}?access_key=${API_KEY})
@@ -782,9 +846,9 @@ code=$(echo $ip_info | jq -r '.country_code')
 vpn=$(pgrep -a openvpn$ | head -n 1 | awk '{print $NF }' | cut -d '.' -f 1)
 
 if [ -n "$vpn" ]; then
-    echo "%{u#9cc4ff}%{+u}  $code %{u-}"
+    echo "%{u<<get-color(name="blue")>>}%{+u}  $code %{u-}"
 else
-    echo "%{u#f07178}%{+u}  $code %{u-}"
+    echo "%{u<<get-color(name="red")>>}%{+u}  $code %{u-}"
 fi
 #+end_src
 
@@ -827,7 +891,7 @@ Prints out a current uptime and non-AFK time from [[https://github.com/ActivityW
 |------+---------------------------|
 | TODO | Fix crash on uptime > 99h |
 
-#+begin_src bash :tangle ./bin/polybar/aw_afk.sh
+#+begin_src bash :tangle ./bin/polybar/aw_afk.sh :noweb yes
 afk_event=$(curl -s -X GET "http://localhost:5600/api/0/buckets/aw-watcher-afk_$(hostname)/events?limit=1" -H "accept: application/json")
 status=$(echo ${afk_event} | jq -r '.[0].data.status')
 afk_time=$(echo "${afk_event}" | jq -r '.[0].duration' | xargs -I !  date -u -d @! +"%H:%M")
@@ -835,9 +899,9 @@ afk_time=$(echo "${afk_event}" | jq -r '.[0].duration' | xargs -I !  date -u -d 
 uptime=$(datediff "$(uptime -s | xargs -I ! date -d ! -Iseconds)" "$(date -Iseconds)" -f '%H:%M' | xargs -I ! date -d ! +"%H:%M")
 res="${afk_time} / ${uptime}"
 if [[ $status == 'afk' ]]; then
-    echo "%{u#f07178}%{+u} [AFK] $res %{u-}"
+    echo "%{u<<get-color(name="red")>>}%{+u} [AFK] $res %{u-}"
 else
-    echo "%{u#82aaff}%{+u} $res %{u-}"
+    echo "%{u<<get-color(name="blue")>>}%{+u} $res %{u-}"
 fi
 #+end_src
 
@@ -850,7 +914,7 @@ interval = 60
 *** sun
 Prints out the time of sunrise/sunset. Uses [[https://github.com/risacher/sunwait][sunwait]]
 
-#+begin_src bash :tangle ./bin/polybar/sun.sh
+#+begin_src bash :tangle ./bin/polybar/sun.sh :noweb yes
 declare -A LAT_DATA=(
     ["TMN"]="57.15N"
     ["SPB"]="59.9375N"
@@ -870,10 +934,10 @@ time=$(sunwait poll daylight rise ${LAT} $LON)
 
 if [[ ${time} == 'DAY' ]]; then
     sunset=$(sunwait list daylight set ${LAT} ${LON})
-    echo "%{u#ffcb6b}%{+u} $sunset %{u-}"
+    echo "%{u<<get-color(name="yellow")>>}%{+u} $sunset %{u-}"
 else
     sunrise=$(sunwait list daylight rise ${LAT} ${LON})
-    echo "%{u#f07178}%{+u} $sunrise %{u-}"
+    echo "%{u<<get-color(name="red")>>}%{+u} $sunrise %{u-}"
 fi
 #+end_src
 
@@ -1089,7 +1153,7 @@ ramp-signal-0 = 0
 ramp-signal-1 = 1
 ramp-signal-2 = 2
 ramp-signal-3 = 3
-ramp-signal-4 = 4	
+ramp-signal-4 = 4
 ramp-signal-5 = 5
 #+end_src
 
@@ -1136,35 +1200,30 @@ ramp-capacity-4 = 
 [[https://github.com/davatorium/rofi][rofi]] is another dynamic menu generator. It can act as dmenu replacement but offers a superset of dmenu's features.
 
 ** Theme
-A theme is based on [[https://github.com/dracula/rofi][dracula theme]] for rofi. Probably no reason to keep it in this file.
-#+begin_src conf-colon :tangle ./.config/rofi/config.rasi
+A theme, based on [[https://github.com/dracula/rofi][dracula theme]] for rofi, but with palenight colorscheme.
+
+#+name: get-rofi-colors
+#+begin_src emacs-lisp :var table=colors
+(apply
+ #'concat
+ (mapcar
+  (lambda (elem)
+    (concat (nth 0 elem) ": " (nth 2 elem) ";\n"))
+  table))
+#+end_src
+
+#+begin_src conf-colon :tangle ./.config/rofi/config.rasi :noweb yes
 /* Generated from [[file:../../Desktop.org::*Theme][Theme:1]] */
- * {
-    black: #292d3e;
-    red: #f07178;
-    green: #c3e88d;
-    yellow: #ffcb6b;
-    blue: #82aaff;
-    magenta: #82aaff;
-    cyan: #89ddff;
-    white: #d0d0d0;
-    black-alternate: #393F57;
-    black-lighter: #434758;
-    red-lighter: #ff8b92;
-    green-lighter: #ddffa7;
-    yellow-lighter: #ffe585;
-    blue-lighter: #9cc4ff;
-    magenta-lighter: #e1acff;
-    cyan-lighter: #a3f7ff;
-    white-lighter: #ffffff;
+ ,* {
+    <<get-rofi-colors()>>
 
     foreground:                  @white;
     background:                  @black;
     background-color:            @black;
-    separatorcolor:              @magenta;
-    border-color:                @magenta;
+    separatorcolor:              @blue;
+    border-color:                @blue;
     selected-normal-foreground:  @black;
-    selected-normal-background:  @magenta;
+    selected-normal-background:  @blue;
     selected-active-foreground:  @black;
     selected-active-background:  @blue;
     selected-urgent-foreground:  @foreground;
@@ -1176,11 +1235,11 @@ A theme is based on [[https://github.com/dracula/rofi][dracula theme]] for rofi.
     urgent-foreground:           @red;
     urgent-background:           @background;
     alternate-normal-foreground: @foreground;
-    alternate-normal-background: @black-alternate;
+    alternate-normal-background: @light-black;
     alternate-active-foreground: @blue;
-    alternate-active-background: @black-alternate;
+    alternate-active-background: @light-black;
     alternate-urgent-foreground: @red;
-    alternate-urgent-background: @black-alternate;
+    alternate-urgent-background: @light-black;
     spacing:                     2;
 }
 window {
@@ -1347,7 +1406,7 @@ fi
 
 As it overwrites its own config all the time, I do not keep the file in VC.
 
-#+begin_src conf-unix :tangle ./.config/flameshot/flameshot.ini :comments no
+#+begin_src conf-unix :tangle ./.config/flameshot/flameshot.ini :comments no :noweb yes
 [General]
 disabledTrayIcon=false
 drawColor=#ff0000
@@ -1356,7 +1415,7 @@ saveAfterCopyPath=/home/pavel/Pictures
 savePath=/home/pavel/Pictures
 savePathFixed=false
 showStartupLaunchMessage=false
-uiColor=#82aaff
+uiColor=<<get-color(name="blue")>>
 
 [Shortcuts]
 TYPE_ARROW=A
@@ -1403,7 +1462,7 @@ My customizations of the original config consist mostly of changing colors.
 References:
 - [[https://dunst-project.org/documentation/][dunst documentation]]
 
-#+begin_src conf-space :tangle ./.config/dunst/dunstrc
+#+begin_src conf-space :tangle ./.config/dunst/dunstrc :noweb yes
 [global]
     monitor = 0
 
@@ -1456,7 +1515,7 @@ References:
     frame_width = 1
 
     # Defines color of the frame around the notification window.
-    frame_color = "#aaaaaa"
+    frame_color = <<get-color(name="white", quote=1)>>
 
     # Define a color for the separator.
     # possible values are:
@@ -1667,25 +1726,25 @@ References:
 [urgency_low]
     # IMPORTANT: colors have to be defined in quotation marks.
     # Otherwise the "#" and following would be interpreted as a comment.
-    background = "#434758"
-    frame_color = "#ffffff"
-    foreground = "#d0d0d0"
+    background = <<get-color(name="light-black", quote=1)>>
+    frame_color = <<get-color(name="white", quote=1)>>
+    foreground = <<get-color(name="light-white", quote=1)>>
     timeout = 10
     # Icon for notifications with low urgency, uncomment to enable
     #icon = /path/to/icon
 
 [urgency_normal]
-    background = "#292d3e"
-    foreground = "#d0d0d0"
-    frame_color = "#ffffff"
+    background = <<get-color(name="black", quote=1)>>
+    frame_color = <<get-color(name="white", quote=1)>>
+    foreground = <<get-color(name="light-white", quote=1)>>
     timeout = 10
     # Icon for notifications with normal urgency, uncomment to enable
     #icon = /path/to/icon
 
 [urgency_critical]
-    background = "#f07178"
-    foreground = "#ffffff"
-    frame_color = "#f07178"
+    background = <<get-color(name="red", quote=1)>>
+    foreground = <<get-color(name="light-white", quote=1)>>
+    frame_color = <<get-color(name="red", quote=1)>>
     timeout = 0
     # Icon for notifications with critical urgency, uncomment to enable
     #icon = /path/to/icon
@@ -1854,4 +1913,18 @@ wintypes:
   popup_menu = { opacity = 1; }
   dropdown_menu = { opacity = 1; }
 };
+#+end_src
+* Zathura
+[[https://pwmt.org/projects/zathura/][Zathura]] is a pdf viewer with vim-like keybindings. One of my favorite features is an ability to invert the document colors.
+
+#+begin_src conf-space :noweb yes :tangle .config/zathura/zathurarc
+set abort-clear-search false
+set show-scrollbars true
+set show-h-scrollbar true
+set show-v-scrollbar true
+set selection-clipboard clipboard
+set recolor-lightcolor <<get-color(name="black", quote=1)>>
+set recolor true
+map <C-r> set recolor false
+map <C-R> set recolor true
 #+end_src
