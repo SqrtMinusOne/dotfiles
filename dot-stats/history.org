@@ -101,7 +101,7 @@ def preprocess_data(data):
             except KeyError:
                 pass
         category['elements'].sort(key=lambda k: k['states'][0]['startDate'])
-     
+
     return data
 
 data = preprocess_data(data_o)
@@ -158,7 +158,7 @@ def process_category(category, ax, is_last=True, notes=None):
             min_start_date = min(min_start_date, start_date)
             kwargs = {}
             kwargs['color'] = elem.get('color', None)
-            
+
             if state.get('state', None) == 'dashed':
                 kwargs['hatch'] = '//'
                 kwargs['edgecolor'] = state.get('hatchColor', 'y')
@@ -175,7 +175,7 @@ def process_category(category, ax, is_last=True, notes=None):
                 (k - CAT_W, CAT_W * 2),
                 ,**kwargs
             )
-            
+
     ax.set_yticks(ticks)
     ax.set_yticklabels([elem['name'] for elem in category['elements']])
     ax.set_axisbelow(True)
@@ -184,7 +184,7 @@ def process_category(category, ax, is_last=True, notes=None):
         ax.tick_params(axis='x', which='both', labelbottom=False, length=0)
     else:
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-            
+
     return notes
 
 def plot_notes(fig, ax, notes, x=0.9, y = 0.03):
@@ -204,7 +204,7 @@ notes
 #+RESULTS:
 :RESULTS:
 | Dual boot, rarely used |
-[[file:./.ob-jupyter/8bea76e66079f4a0cfd52a954142b58ac6e546b2.png]]
+[[file:./.ob-jupyter/c1be31055726c333300f950d82c2c9d15f9b0205.png]]
 :END:
 
 * Plot all separately

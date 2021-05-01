@@ -24,7 +24,7 @@ Deployed with [[https://yadm.io/][yadm]]
 | editor    | [[https://www.vim.org/][vim]]            | text edtior                    | *active*          | -           | A minimal config to have a lightweight terminal $EDITOR   |
 | editor    | [[https://neovim.io/][neovim]]         | text edtior                    | archive           | -           |                                                           |
 | documents | [[https://mg.readthedocs.io/latexmk.html][latexmk]]        | LaTeX build tool               | *active*          | -           |                                                           |
-| documents | [[https://pwmt.org/projects/zathura/][zathura]]        | pdf viewer                     | *active*          | -           |                                                           |
+| documents | [[https://pwmt.org/projects/zathura/][zathura]]        | pdf viewer                     | *active*          | [[file:Desktop.org::*dunst][Desktop.org]] |                                                           |
 | desktop   | [[https://github.com/dunst-project/dunst][dunst]]          | notification manager           | *active*          | [[file:Desktop.org::*dunst][Desktop.org]] |                                                           |
 | desktop   | [[https://i3wm.org/][i3wm]]           | tiling WM                      | *active*          | [[file:Desktop.org::*i3wm][Desktop.org]] |                                                           |
 | desktop   | [[https://github.com/jordansissel/keynav][keynav]]         | control mouse with keyboard    | *active*          | [[file:Desktop.org::*keynav][Desktop.org]] |                                                           |
@@ -46,6 +46,10 @@ Deployed with [[https://yadm.io/][yadm]]
 | misc      | [[https://yadm.io][yadm]]           | dotfiles manager               | *active*          | -           |                                                           |
 | misc      | [[https://github.com/risacher/sunwait][sunwait]]        | sunrise calculator             | *active*          | -           |                                                           |
 | misc      | [[https://github.com/vergoh/vnstat][vnstat]]         | traffic stats                  | *active*          | -           |                                                           |
+
+* Posts about my configuration
+- [[https://sqrtminusone.xyz/posts/2021-05-01-org-python/][Replacing Jupyter Notebook with Org Mode]]
+- [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][Multiple Gmail accounts & labels with Emacs]]
 
 * Some statistics
 Run the following to show the pictures with reasonable width:

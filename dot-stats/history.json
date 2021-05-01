@@ -259,6 +259,7 @@
           },
           {
             "startDate": "2020-11-01",
+            "endDate": "2021-04-01",
             "state": "dashed",
             "note": "Mostly replaced by Org Mode",
             "hatchColor": "w"
