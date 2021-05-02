@@ -92,6 +92,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#basic-config--keybindings][Basic config & keybindings]]
   - [[#addons][Addons]]
   - [[#tramp][TRAMP]]
+  - [[#bookmarks][Bookmarks]]
 - [[#shells][Shells]]
   - [[#vterm][vterm]]
     - [[#configuration][Configuration]]
@@ -1440,7 +1441,7 @@ So far I found the following problematic plugins:
 | projectile          | looks for .git, .svn, etc                | advice ~projectile-file-name~ |
 | lsp                 | does a whole lot of stuff                | disable                       |
 | git-gutter          | runs git                                 | disable                       |
-| vterm               | no proper TRAMP integration              | use eshell                    |
+| vterm               | no proper TRAMP integration              | use eshell or shell           |
 
 At any rate, it's usable, although not perfect.
 
@@ -1451,6 +1452,32 @@ Some other optimization settings:
       (format "\\(%s\\)\\|\\(%s\\)"
               vc-ignore-dir-regexp
               tramp-file-name-regexp))
+#+end_src
+** Bookmarks
+A simple bookmark list for Dired, mainly to use with TRAMP. I may look into a proper bookmarking system later.
+
+Bookmarks are listed in the [[file:.emacs.d/dired-bookmarks.el][dired-bookmarks.el]] file, which looks like this:
+#+begin_example emacs-lisp :tangle no
+(setq my/dired-bookmarks
+      '(("sudo" . "/sudo::/")))
+#+end_example
+
+The file itself is encrypted with yadm.
+
+#+begin_src emacs-lisp
+(defun my/dired-bookmark-open ()
+  (interactive)
+  (unless (boundp 'my/dired-bookmarks)
+    (load (concat user-emacs-directory "dired-bookmarks")))
+  (let ((bookmarks
+         (mapcar
+          (lambda (el) (cons (format "%-30s %s" (car el) (cdr el)) (cdr el)))
+          my/dired-bookmarks)))
+    (dired
+     (cdr
+      (assoc
+       (completing-read "Dired: " bookmarks nil nil "^")
+       bookmarks)))))
 #+end_src
 * Shells
 ** vterm

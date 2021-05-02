@@ -715,6 +715,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   ;;               (rainbow-delimiters-mode))))
   )
 
+(use-package rainbow-mode
+  :commands (rainbow-mode)
+  :straight t)
+
 (use-package dired
   :ensure nil
   :custom ((dired-listing-switches "-alh --group-directories-first"))
@@ -791,6 +795,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (format "\\(%s\\)\\|\\(%s\\)"
               vc-ignore-dir-regexp
               tramp-file-name-regexp))
+
+(defun my/dired-bookmark-open ()
+  (interactive)
+  (unless (boundp 'my/dired-bookmarks)
+    (load (concat user-emacs-directory "dired-bookmarks")))
+  (dired
+   (cdr
+    (assoc
+     (completing-read "Dired: " my/dired-bookmarks)
+     my/dired-bookmarks))))
 
 (use-package vterm
   :straight t
