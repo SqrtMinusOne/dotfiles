@@ -297,10 +297,9 @@ References:
 
 #+begin_src conf-toml :tangle ./.config/starship.toml
 [character]
-success_symbol = "➤ "
-vicmd_symbol = "ᐊ "
-error_symbol = " "
-use_symbol_for_status = true
+success_symbol = "[➤ ](bold green)"
+error_symbol = "[ ](bold red)"
+vicmd_symbol = "[ᐊ ](bold green)"
 
 [aws]
 symbol = " "
@@ -317,7 +316,7 @@ symbol = " "
 min_time = 500
 format = " [$duration]($style) "
 
-[docker]
+[docker_context]
 symbol = " "
 
 [elixir]
@@ -333,8 +332,8 @@ truncation_length = 20
 [golang]
 symbol = " "
 
-[haskell]
-symbol = " "
+# [haskell]
+# symbol = " "
 
 [hg_branch]
 symbol = " "
