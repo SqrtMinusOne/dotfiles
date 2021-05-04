@@ -167,6 +167,8 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#hy][Hy]]
     - [[#clips][CLIPS]]
   - [[#python][Python]]
+    - [[#pipenv][pipenv]]
+    - [[#yapf][yapf]]
   - [[#java][Java]]
   - [[#go][Go]]
   - [[#fish][fish]]
@@ -2798,18 +2800,66 @@ An honorary Lisp
   (add-hook 'clips-mode 'lispy-mode))
 #+end_src
 ** Python
-Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Server for Python]]
+Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Server for Python]].
+
+For some reason it doesn't use pipenv python executable, so here is a small workaround.
 #+begin_src emacs-lisp
+(setq my/pipenv-python-alist '())
+
+(defun my/get-pipenv-python ()
+  (let ((default-directory (projectile-project-root)))
+    (if (file-exists-p "Pipfile")
+        (let ((asc (assoc default-directory my/pipenv-python-alist)))
+          (if asc
+              (cdr asc)
+            (let ((python-executable
+                   (string-trim (shell-command-to-string "PIPENV_IGNORE_VIRTUALENVS=1 pipenv run which python"))))
+              (if (string-match-p ".*not found.*" python-executable)
+                  (message "Pipfile found, but not pipenv executable!")
+                (message (format "Found pipenv python: %s" python-executable))
+                (add-to-list 'my/pipenv-python-alist (cons default-directory python-executable))
+                python-executable))))
+      "python")))
+
 (use-package lsp-python-ms
   :straight t
   :defer t
   :init (setq lsp-python-ms-auto-install-server t)
   :hook (python-mode . (lambda ()
                          (require 'lsp-python-ms)
+                         (setq-local lsp-python-ms-python-executable (my/get-pipenv-python))
                          (lsp))))
 
 (add-hook 'python-mode-hook #'smartparens-mode)
 (add-hook 'python-mode-hook #'hs-minor-mode)
+#+end_src
+*** pipenv
+[[https://github.com/pypa/pipenv][Pipenv]] is a package manager for Python.
+
+Automatically creates & manages virtualenvs and stores data in =Pipfile= and =Pipfile.lock= (like npm's =package.json= and =package-lock.json=).
+
+#+begin_src emacs-lisp
+(use-package pipenv
+  :straight t
+  :hook (python-mode . pipenv-mode)
+  :init
+  (setq
+   pipenv-projectile-after-switch-function
+   #'pipenv-projectile-after-switch-extended))
+#+end_src
+*** yapf
+[[https://github.com/google/yapf][yapf]] is a formatter for Python files.
+#+begin_src emacs-lisp
+(use-package yapfify
+  :straight (:repo "JorisE/yapfify" :host github)
+  :commands (yapfify-region
+             yapfify-buffer
+             yapfify-region-or-buffer
+             yapf-mode)
+  :init
+  (my-leader-def
+    :keymaps 'python-mode-map
+    "rr" 'yapfify-region-or-buffer))
 #+end_src
 ** Java
 #+begin_src emacs-lisp

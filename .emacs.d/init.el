@@ -800,11 +800,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (interactive)
   (unless (boundp 'my/dired-bookmarks)
     (load (concat user-emacs-directory "dired-bookmarks")))
-  (dired
-   (cdr
-    (assoc
-     (completing-read "Dired: " my/dired-bookmarks)
-     my/dired-bookmarks))))
+  (let ((bookmarks
+         (mapcar
+          (lambda (el) (cons (format "%-30s %s" (car el) (cdr el)) (cdr el)))
+          my/dired-bookmarks)))
+    (dired
+     (cdr
+      (assoc
+       (completing-read "Dired: " bookmarks nil nil "^")
+       bookmarks)))))
 
 (use-package vterm
   :straight t
@@ -1839,16 +1843,53 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (add-hook 'clips-mode 'lispy-mode))
 
+(setq my/pipenv-python-alist '())
+
+(defun my/get-pipenv-python ()
+  (let ((default-directory (projectile-project-root)))
+    (if (file-exists-p "Pipfile")
+        (let ((asc (assoc default-directory my/pipenv-python-alist)))
+          (if asc
+              (cdr asc)
+            (let ((python-executable
+                   (string-trim (shell-command-to-string "PIPENV_IGNORE_VIRTUALENVS=1 pipenv run which python"))))
+              (if (string-match-p ".*not found.*" python-executable)
+                  (message "Pipfile found, but not pipenv executable!")
+                (message (format "Found pipenv python: %s" python-executable))
+                (add-to-list 'my/pipenv-python-alist (cons default-directory python-executable))
+                python-executable))))
+      "python")))
+
 (use-package lsp-python-ms
   :straight t
   :defer t
   :init (setq lsp-python-ms-auto-install-server t)
   :hook (python-mode . (lambda ()
                          (require 'lsp-python-ms)
+                         (setq-local lsp-python-ms-python-executable (my/get-pipenv-python))
                          (lsp))))
 
 (add-hook 'python-mode-hook #'smartparens-mode)
 (add-hook 'python-mode-hook #'hs-minor-mode)
+
+(use-package pipenv
+  :straight t
+  :hook (python-mode . pipenv-mode)
+  :init
+  (setq
+   pipenv-projectile-after-switch-function
+   #'pipenv-projectile-after-switch-extended))
+
+(use-package yapfify
+  :straight (:repo "JorisE/yapfify" :host github)
+  :commands (yapfify-region
+             yapfify-buffer
+             yapfify-region-or-buffer
+             yapf-mode)
+  :init
+  (my-leader-def
+    :keymaps 'python-mode-map
+    "rr" 'yapfify-region-or-buffer))
 
 (use-package lsp-java
   :straight t
