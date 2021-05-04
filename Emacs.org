@@ -169,6 +169,9 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#python][Python]]
     - [[#pipenv][pipenv]]
     - [[#yapf][yapf]]
+    - [[#isort][isort]]
+    - [[#pytest][pytest]]
+      - [[#fix-comint-buffer-width][Fix comint buffer width]]
   - [[#java][Java]]
   - [[#go][Go]]
   - [[#fish][fish]]
@@ -2849,17 +2852,103 @@ Automatically creates & manages virtualenvs and stores data in =Pipfile= and =Pi
 #+end_src
 *** yapf
 [[https://github.com/google/yapf][yapf]] is a formatter for Python files.
+
+References:
+- [[https://github.com/google/yapf][yapf repo]]
+- [[https://github.com/JorisE/yapfify][yapfify.el repo]]
 #+begin_src emacs-lisp
 (use-package yapfify
   :straight (:repo "JorisE/yapfify" :host github)
   :commands (yapfify-region
              yapfify-buffer
              yapfify-region-or-buffer
-             yapf-mode)
-  :init
+             yapf-mode))
+#+end_src
+*** isort
+[[https://github.com/PyCQA/isort][isort]] is a Python package to sort Python imports.
+
+References:
+- [[https://pycqa.github.io/isort/][isort docs]]
+- [[https://github.com/paetzke/py-isort.el][py-isort.el repo]]
+
+#+begin_src emacs-lisp
+(use-package py-isort
+  :straight t
+  :commands (py-isort-buffer py-isort-region))
+#+end_src
+
+The following bindings calls yapf & isort on the buffer
+#+begin_src emacs-lisp
+(my-leader-def
+  :keymaps 'python-mode-map
+  "rr" (lambda ()
+         (interactive)
+         (py-isort-buffer)
+         (yapfify-buffer)))
+#+end_src
+*** pytest
+[[https://docs.pytest.org/en/6.2.x/][pytest]] is an unit testing framework for Python.
+
+Once again a function to set pytest executable from pipenv.
+
+References:
+- [[https://docs.pytest.org/en/6.2.x/][pytest docs]]
+- [[https://github.com/wbolster/emacs-python-pytest][emacs-python-pytest]]
+
+#+begin_src emacs-lisp :noweb yes
+(defun my/set-pipenv-pytest ()
+  (setq-local
+   python-pytest-executable
+   (concat (my/get-pipenv-python) " -m pytest")))
+
+(use-package python-pytest
+  :straight t
+  :after python
+  :config
   (my-leader-def
     :keymaps 'python-mode-map
-    "rr" 'yapfify-region-or-buffer))
+    :infix "t"
+    "t" 'python-pytest-dispatch)
+  <<override-pytest-run>>
+  (add-hook 'python-mode-hook #'my/set-pipenv-pytest))
+#+end_src
+**** Fix comint buffer width
+For some reason default comint output width is way too large.
+
+To fix that, I've modified the following function in the =python-pytest= package.
+#+begin_src emacs-lisp :noweb-ref override-pytest-run :tangle no
+(cl-defun python-pytest--run-as-comint (&key command)
+  "Run a pytest comint session for COMMAND."
+  (let* ((buffer (python-pytest--get-buffer))
+         (process (get-buffer-process buffer)))
+    (with-current-buffer buffer
+      (when (comint-check-proc buffer)
+        (unless (or compilation-always-kill
+                    (yes-or-no-p "Kill running pytest process?"))
+          (user-error "Aborting; pytest still running")))
+      (when process
+        (delete-process process))
+      (let ((inhibit-read-only t))
+        (erase-buffer))
+      (unless (eq major-mode 'python-pytest-mode)
+        (python-pytest-mode))
+      (compilation-forget-errors)
+      (display-buffer buffer)
+      (setq command (format "export COLUMNS=%s; %s"
+                            (- (window-width (get-buffer-window buffer)) 5)
+                            command))
+      (insert (format "cwd: %s\ncmd: %s\n\n" default-directory command))
+      (setq python-pytest--current-command command)
+      (when python-pytest-pdb-track
+        (add-hook
+         'comint-output-filter-functions
+         'python-pdbtrack-comint-output-filter-function
+         nil t))
+      (run-hooks 'python-pytest-setup-hook)
+      (make-comint-in-buffer "pytest" buffer "bash" nil "-c" command)
+      (run-hooks 'python-pytest-started-hook)
+      (setq process (get-buffer-process buffer))
+      (set-process-sentinel process #'python-pytest--process-sentinel))))
 #+end_src
 ** Java
 #+begin_src emacs-lisp
@@ -2921,6 +3010,8 @@ Automatically creates & manages virtualenvs and stores data in =Pipfile= and =Pi
   :straight t
   :mode "\\.yml\\'"
   :config
+  (add-hook 'yaml-mode 'smartparens-mode)
+  (add-hook 'yaml-mode 'highlight-indent-guides-mode)
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 #+end_src
 ** .env

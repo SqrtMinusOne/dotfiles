@@ -1885,11 +1885,65 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :commands (yapfify-region
              yapfify-buffer
              yapfify-region-or-buffer
-             yapf-mode)
-  :init
+             yapf-mode))
+
+(use-package py-isort
+  :straight t
+  :commands (py-isort-buffer py-isort-region))
+
+(my-leader-def
+  :keymaps 'python-mode-map
+  "rr" (lambda ()
+         (interactive)
+         (py-isort-buffer)
+         (yapfify-buffer)))
+
+(defun my/set-pipenv-pytest ()
+  (setq-local
+   python-pytest-executable
+   (concat (my/get-pipenv-python) " -m pytest")))
+
+(use-package python-pytest
+  :straight t
+  :after python
+  :config
   (my-leader-def
     :keymaps 'python-mode-map
-    "rr" 'yapfify-region-or-buffer))
+    :infix "t"
+    "t" 'python-pytest-dispatch)
+  (cl-defun python-pytest--run-as-comint (&key command)
+    "Run a pytest comint session for COMMAND."
+    (let* ((buffer (python-pytest--get-buffer))
+           (process (get-buffer-process buffer)))
+      (with-current-buffer buffer
+        (when (comint-check-proc buffer)
+          (unless (or compilation-always-kill
+                      (yes-or-no-p "Kill running pytest process?"))
+            (user-error "Aborting; pytest still running")))
+        (when process
+          (delete-process process))
+        (let ((inhibit-read-only t))
+          (erase-buffer))
+        (unless (eq major-mode 'python-pytest-mode)
+          (python-pytest-mode))
+        (compilation-forget-errors)
+        (display-buffer buffer)
+        (setq command (format "export COLUMNS=%s; %s"
+                              (- (window-width (get-buffer-window buffer)) 5)
+                              command))
+        (insert (format "cwd: %s\ncmd: %s\n\n" default-directory command))
+        (setq python-pytest--current-command command)
+        (when python-pytest-pdb-track
+          (add-hook
+           'comint-output-filter-functions
+           'python-pdbtrack-comint-output-filter-function
+           nil t))
+        (run-hooks 'python-pytest-setup-hook)
+        (make-comint-in-buffer "pytest" buffer "bash" nil "-c" command)
+        (run-hooks 'python-pytest-started-hook)
+        (setq process (get-buffer-process buffer))
+        (set-process-sentinel process #'python-pytest--process-sentinel))))
+  (add-hook 'python-mode-hook #'my/set-pipenv-pytest))
 
 (use-package lsp-java
   :straight t
@@ -1937,6 +1991,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :mode "\\.yml\\'"
   :config
+  (add-hook 'yaml-mode 'smartparens-mode)
+  (add-hook 'yaml-mode 'highlight-indent-guides-mode)
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 
 (use-package dotenv-mode
