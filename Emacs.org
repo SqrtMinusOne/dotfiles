@@ -62,6 +62,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#help][Help]]
   - [[#ivy-counsel-swiper][Ivy, counsel, swiper]]
     - [[#ivy-rich][ivy-rich]]
+    - [[#prescient][prescient]]
     - [[#keybindings][Keybindings]]
   - [[#off-helm][(OFF) Helm]]
   - [[#treemacs][Treemacs]]
@@ -780,6 +781,38 @@ References:
   (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
 #+end_src
 
+*** prescient
+A package which enhances sorting & filtering of candidates. =ivy-prescient= adds integration with Ivy.
+
+References:
+- [[https://github.com/raxod502/prescient.el][prescient.el repo]]
+#+begin_src emacs-lisp
+(use-package ivy-prescient
+  :straight t
+  :after counsel
+  :config
+  (ivy-prescient-mode +1)
+  (setq ivy-prescient-retain-classic-highlighting t)
+  (prescient-persist-mode 1)
+  (setq ivy-prescient-sort-commands
+        '(:not swiper
+               swiper-isearch
+               ivy-switch-buffer
+               ;; ivy-resume
+               ;; ivy--restore-session
+               lsp-ivy-workspace-symbol
+               counsel-grep
+               counsel-git-grep
+               counsel-rg
+               counsel-ag
+               counsel-ack
+               counsel-fzf
+               counsel-pt
+               counsel-imenu
+               counsel-yank-pop
+               counsel-recentf
+               counsel-buffer-or-recentf)))
+#+end_src
 *** Keybindings
 #+begin_src emacs-lisp
 (my-leader-def

@@ -379,6 +379,32 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (ivy-rich-mode 1)
   (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
 
+(use-package ivy-prescient
+  :straight t
+  :after counsel
+  :config
+  (ivy-prescient-mode +1)
+  (setq ivy-prescient-retain-classic-highlighting t)
+  (prescient-persist-mode 1)
+  (setq ivy-prescient-sort-commands
+        '(:not swiper
+               swiper-isearch
+               ivy-switch-buffer
+               ;; ivy-resume
+               ;; ivy--restore-session
+               lsp-ivy-workspace-symbol
+               counsel-grep
+               counsel-git-grep
+               counsel-rg
+               counsel-ag
+               counsel-ack
+               counsel-fzf
+               counsel-pt
+               counsel-imenu
+               counsel-yank-pop
+               counsel-recentf
+               counsel-buffer-or-recentf)))
+
 (my-leader-def
   :infix "f"
   "b" 'counsel-switch-buffer
