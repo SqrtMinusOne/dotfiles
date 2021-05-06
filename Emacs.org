@@ -137,9 +137,11 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#off-code-compass][(OFF) Code Compass]]
       - [[#dependencies][Dependencies]]
       - [[#plugin][Plugin]]
+    - [[#off-format-all][(OFF) Format-all]]
     - [[#general-additional-config][General additional config]]
   - [[#web-development][Web development]]
     - [[#emmet][Emmet]]
+    - [[#prettier][Prettier]]
     - [[#typescript][TypeScript]]
     - [[#javascript][JavaScript]]
     - [[#jest][Jest]]
@@ -171,8 +173,10 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#pipenv][pipenv]]
     - [[#yapf][yapf]]
     - [[#isort][isort]]
+    - [[#sphinx-doc][sphinx-doc]]
     - [[#pytest][pytest]]
       - [[#fix-comint-buffer-width][Fix comint buffer width]]
+    - [[#code-cells][code-cells]]
   - [[#java][Java]]
   - [[#go][Go]]
   - [[#fish][fish]]
@@ -189,6 +193,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#open-magit-for-yadm][Open Magit for yadm]]
     - [[#open-a-dotfile][Open a dotfile]]
   - [[#notmuch][Notmuch]]
+  - [[#docker][Docker]]
   - [[#google-translate][Google Translate]]
   - [[#eww][EWW]]
   - [[#snow][Snow]]
@@ -426,6 +431,7 @@ I don't enable the entire package, just the modes I need.
    '(eww
      dired
      debug
+     docker
      edebug
      bookmark
      company
@@ -1447,8 +1453,8 @@ Display icons for files.
 Provides stuff like =dired-open-xdg=
 #+begin_src emacs-lisp
 (use-package dired-open
-  :after dired
-  :straight t)
+  :straight t
+  :commands (dired-open-xdg))
 #+end_src
 
 vifm-like filter
@@ -1562,8 +1568,6 @@ References:
     "C-j" 'vterm-send-C-j
     "M-l" 'vterm-send-right
     "M-h" 'vterm-send-left))
-
-
 #+end_src
 *** Subterminal
 Open a terminal in the lower third of the frame with the =`= key. That's mostly how I use vterm.
@@ -1991,7 +1995,6 @@ Add a custom LaTeX template without default packages. Packages are indented to b
 ;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
 (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
 
-(my-leader-def "ao" 'org-switchb)
 (my-leader-def "aa" 'org-agenda)
 #+end_src
 *** Copy a link
@@ -2183,10 +2186,10 @@ References:
   (global-flycheck-mode)
   (setq flycheck-check-syntax-automatically '(save idle-buffer-switch mode-enabled))
   (add-hook 'evil-insert-state-exit-hook
-            '(lambda ()
-               (if flycheck-checker
-                   (flycheck-buffer))
-               ))
+            (lambda ()
+              (if flycheck-checker
+                  (flycheck-buffer))
+              ))
   (advice-add 'flycheck-eslint-config-exists-p :override (lambda() t))
   (add-to-list 'display-buffer-alist
                `(,(rx bos "*Flycheck errors*" eos)
@@ -2289,6 +2292,11 @@ References:
   :branch "main"
   ))
 #+end_src
+*** CHECK (OFF) Format-all
+#+begin_src emacs-lisp :tangle no
+(use-package format-all
+  :straight t)
+#+end_src
 *** General additional config
 Make smartparens behave the way I like for C-like languages.
 #+begin_src emacs-lisp
@@ -2342,6 +2350,16 @@ My bit of config here:
   (general-imap :keymaps 'emmet-mode-keymap
     "TAB" 'my/emmet-or-tab
     "<backtab>" 'emmet-prev-edit-point))
+#+end_src
+*** Prettier
+#+begin_src emacs-lisp
+(use-package prettier
+  :commands (prettier-prettify)
+  :straight t
+  :init
+  (my-leader-def
+    :keymaps '(js-mode-map typescript-mode-map vue-mode-map svelte-mode-map)
+    "rr" #'prettier-prettify))
 #+end_src
 *** TypeScript
 #+begin_src emacs-lisp
@@ -2481,7 +2499,7 @@ References:
 
   ;; Do not run lsp within templated TeX files
   (add-hook 'LaTeX-mode-hook
-            '(lambda ()
+            (lambda ()
                (unless (string-match "\.hogan\.tex$" (buffer-name))
                  (lsp))
                (setq-local lsp-diagnostic-package :none)
@@ -2919,6 +2937,18 @@ The following bindings calls yapf & isort on the buffer
          (py-isort-buffer)
          (yapfify-buffer)))
 #+end_src
+*** sphinx-doc
+A package to generate sphinx-compatible docstrings.
+
+#+begin_src emacs-lisp
+(use-package sphinx-doc
+  :straight t
+  :hook (python-mode . sphinx-doc-mode)
+  :config
+  (my-leader-def
+    :keymaps 'sphinx-doc-mode-map
+    "rd" 'sphinx-doc))
+#+end_src
 *** pytest
 [[https://docs.pytest.org/en/6.2.x/][pytest]] is an unit testing framework for Python.
 
@@ -2936,7 +2966,7 @@ References:
 
 (use-package python-pytest
   :straight t
-  :after python
+  :after python-mode
   :config
   (my-leader-def
     :keymaps 'python-mode-map
@@ -2982,6 +3012,14 @@ To fix that, I've modified the following function in the =python-pytest= package
       (run-hooks 'python-pytest-started-hook)
       (setq process (get-buffer-process buffer))
       (set-process-sentinel process #'python-pytest--process-sentinel))))
+#+end_src
+*** code-cells
+Support for text with magic comments.
+
+#+begin_src emacs-lisp
+(use-package code-cells
+  :straight t
+  :commands (code-cells-mode))
 #+end_src
 ** Java
 #+begin_src emacs-lisp
@@ -3043,8 +3081,8 @@ To fix that, I've modified the following function in the =python-pytest= package
   :straight t
   :mode "\\.yml\\'"
   :config
-  (add-hook 'yaml-mode 'smartparens-mode)
-  (add-hook 'yaml-mode 'highlight-indent-guides-mode)
+  (add-hook 'yaml-mode-hook 'smartparens-mode)
+  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 #+end_src
 ** .env
@@ -3063,7 +3101,9 @@ To fix that, I've modified the following function in the =python-pytest= package
 #+begin_src emacs-lisp
 (use-package dockerfile-mode
   :mode "Dockerfile\\'"
-  :straight t)
+  :straight t
+  :config
+  (add-hook 'dockerfile-mode 'smartparens-mode))
 #+end_src
 * Apps & Misc
 ** Managing dotfiles
@@ -3147,6 +3187,16 @@ References:
 (my-leader-def "am" 'notmuch)
 #+end_src
 
+** Docker
+A package to manage docker containers from Emacs.
+
+#+begin_src emacs-lisp
+(use-package docker
+  :straight t
+  :commands (docker)
+  :init
+  (my-leader-def "ao" 'docker))
+#+end_src
 ** Google Translate
 Emacs interface to Google Translate.
 

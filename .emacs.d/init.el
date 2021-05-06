@@ -122,6 +122,7 @@
    '(eww
      dired
      debug
+     docker
      edebug
      bookmark
      company
@@ -803,8 +804,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice))
 
 (use-package dired-open
-  :after dired
-  :straight t)
+  :straight t
+  :commands (dired-open-xdg))
 
 (use-package dired-narrow
   :straight t
@@ -1027,7 +1028,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   ;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
   (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
   
-  (my-leader-def "ao" 'org-switchb)
   (my-leader-def "aa" 'org-agenda)
   (defun my/org-link-copy (&optional arg)
     "Extract URL from org-mode link and add it to kill ring."
@@ -1313,10 +1313,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (global-flycheck-mode)
   (setq flycheck-check-syntax-automatically '(save idle-buffer-switch mode-enabled))
   (add-hook 'evil-insert-state-exit-hook
-            '(lambda ()
-               (if flycheck-checker
-                   (flycheck-buffer))
-               ))
+            (lambda ()
+              (if flycheck-checker
+                  (flycheck-buffer))
+              ))
   (advice-add 'flycheck-eslint-config-exists-p :override (lambda() t))
   (add-to-list 'display-buffer-alist
                `(,(rx bos "*Flycheck errors*" eos)
@@ -1359,6 +1359,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-imap :keymaps 'emmet-mode-keymap
     "TAB" 'my/emmet-or-tab
     "<backtab>" 'emmet-prev-edit-point))
+
+(use-package prettier
+  :commands (prettier-prettify)
+  :straight t
+  :init
+  (my-leader-def
+    :keymaps '(js-mode-map typescript-mode-map vue-mode-map svelte-mode-map)
+    "rr" #'prettier-prettify))
 
 (use-package typescript-mode
   :straight t
@@ -1455,7 +1463,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
   ;; Do not run lsp within templated TeX files
   (add-hook 'LaTeX-mode-hook
-            '(lambda ()
+            (lambda ()
                (unless (string-match "\.hogan\.tex$" (buffer-name))
                  (lsp))
                (setq-local lsp-diagnostic-package :none)
@@ -1924,6 +1932,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          (py-isort-buffer)
          (yapfify-buffer)))
 
+(use-package sphinx-doc
+  :straight t
+  :hook (python-mode . sphinx-doc-mode)
+  :config
+  (my-leader-def
+    :keymaps 'sphinx-doc-mode-map
+    "rd" 'sphinx-doc))
+
 (defun my/set-pipenv-pytest ()
   (setq-local
    python-pytest-executable
@@ -1931,7 +1947,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package python-pytest
   :straight t
-  :after python
+  :after python-mode
   :config
   (my-leader-def
     :keymaps 'python-mode-map
@@ -1970,6 +1986,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         (setq process (get-buffer-process buffer))
         (set-process-sentinel process #'python-pytest--process-sentinel))))
   (add-hook 'python-mode-hook #'my/set-pipenv-pytest))
+
+(use-package code-cells
+  :straight t
+  :commands (code-cells-mode))
 
 (use-package lsp-java
   :straight t
@@ -2017,8 +2037,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :mode "\\.yml\\'"
   :config
-  (add-hook 'yaml-mode 'smartparens-mode)
-  (add-hook 'yaml-mode 'highlight-indent-guides-mode)
+  (add-hook 'yaml-mode-hook 'smartparens-mode)
+  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 
 (use-package dotenv-mode
@@ -2031,7 +2051,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package dockerfile-mode
   :mode "Dockerfile\\'"
-  :straight t)
+  :straight t
+  :config
+  (add-hook 'dockerfile-mode 'smartparens-mode))
 
 (defun my/edit-configuration ()
   "Open the init file."
@@ -2089,6 +2111,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (lambda () (display-line-numbers-mode 0))))
 
 (my-leader-def "am" 'notmuch)
+
+(use-package docker
+  :straight t
+  :commands (docker)
+  :init
+  (my-leader-def "ao" 'docker))
 
 (use-package google-translate
   :straight t
