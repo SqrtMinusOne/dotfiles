@@ -2966,14 +2966,17 @@ References:
 
 (use-package python-pytest
   :straight t
-  :after python-mode
-  :config
+  :commands (python-pytest-dispatch)
+  :init
   (my-leader-def
     :keymaps 'python-mode-map
     :infix "t"
     "t" 'python-pytest-dispatch)
+  :config
   <<override-pytest-run>>
-  (add-hook 'python-mode-hook #'my/set-pipenv-pytest))
+  (add-hook 'python-mode-hook #'my/set-pipenv-pytest)
+  (when (derived-mode-p 'python-mode)
+    (my/set-pipenv-pytest)))
 #+end_src
 **** Fix comint buffer width
 For some reason default comint output width is way too large.

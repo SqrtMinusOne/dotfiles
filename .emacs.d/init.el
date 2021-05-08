@@ -1947,12 +1947,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package python-pytest
   :straight t
-  :after python-mode
-  :config
+  :commands (python-pytest-dispatch)
+  :init
   (my-leader-def
     :keymaps 'python-mode-map
     :infix "t"
     "t" 'python-pytest-dispatch)
+  :config
   (cl-defun python-pytest--run-as-comint (&key command)
     "Run a pytest comint session for COMMAND."
     (let* ((buffer (python-pytest--get-buffer))
@@ -1985,7 +1986,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         (run-hooks 'python-pytest-started-hook)
         (setq process (get-buffer-process buffer))
         (set-process-sentinel process #'python-pytest--process-sentinel))))
-  (add-hook 'python-mode-hook #'my/set-pipenv-pytest))
+  (add-hook 'python-mode-hook #'my/set-pipenv-pytest)
+  (when (derived-mode-p 'python-mode)
+    (my/set-pipenv-pytest)))
 
 (use-package code-cells
   :straight t
