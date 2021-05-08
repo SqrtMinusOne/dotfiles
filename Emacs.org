@@ -2915,6 +2915,13 @@ References:
              yapfify-region-or-buffer
              yapf-mode))
 #+end_src
+
+Global config:
+#+begin_src conf-windows :tangle .config/yapf/style :comments link
+[style]
+based_on_style = facebook
+column_limit = 80
+#+end_src
 *** isort
 [[https://github.com/PyCQA/isort][isort]] is a Python package to sort Python imports.
 
@@ -2934,7 +2941,8 @@ The following bindings calls yapf & isort on the buffer
   :keymaps 'python-mode-map
   "rr" (lambda ()
          (interactive)
-         (py-isort-buffer)
+         (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
+           (py-isort-buffer))
          (yapfify-buffer)))
 #+end_src
 *** sphinx-doc

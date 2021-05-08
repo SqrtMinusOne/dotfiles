@@ -1929,7 +1929,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :keymaps 'python-mode-map
   "rr" (lambda ()
          (interactive)
-         (py-isort-buffer)
+         (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
+           (py-isort-buffer))
          (yapfify-buffer)))
 
 (use-package sphinx-doc
