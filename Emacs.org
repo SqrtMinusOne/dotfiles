@@ -177,6 +177,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#pytest][pytest]]
       - [[#fix-comint-buffer-width][Fix comint buffer width]]
     - [[#code-cells][code-cells]]
+    - [[#tensorboard][tensorboard]]
   - [[#java][Java]]
   - [[#go][Go]]
   - [[#fish][fish]]
@@ -432,6 +433,7 @@ I don't enable the entire package, just the modes I need.
      dired
      debug
      docker
+     geiser
      edebug
      bookmark
      company
@@ -792,7 +794,7 @@ A package which enhances sorting & filtering of candidates. =ivy-prescient= adds
 
 References:
 - [[https://github.com/raxod502/prescient.el][prescient.el repo]]
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb yes
 (use-package ivy-prescient
   :straight t
   :after counsel
@@ -808,6 +810,7 @@ References:
                ;; ivy--restore-session
                lsp-ivy-workspace-symbol
                counsel-grep
+               ;; counsel-find-file
                counsel-git-grep
                counsel-rg
                counsel-ag
@@ -817,7 +820,9 @@ References:
                counsel-imenu
                counsel-yank-pop
                counsel-recentf
-               counsel-buffer-or-recentf)))
+               counsel-buffer-or-recentf))
+  ;; Do not use prescient in find-file
+  (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 #+end_src
 *** Keybindings
 #+begin_src emacs-lisp
@@ -2081,6 +2086,35 @@ References:
    org-make-toc-at-point)
   :straight t)
 #+end_src
+** System configuration
+Functions used across my literate config files.
+
+*** Tables for Guix Dependencies
+A function to extract Guix dependencies from the org file. If column name matches =[G|g]uix.*dep=, its contents will be added to the result.
+
+That seems pretty nice as I'm planning to move to Guix unless I encounter some unmovable obstacles.
+#+begin_src emacs-lisp
+(defun my/extract-guix-dependencies ()
+  (let ((dependencies '()))
+    (org-table-map-tables
+     (lambda ()
+       (let* ((table
+               (seq-filter
+                (lambda (q) (not (eq q 'hline)))
+                (org-table-to-lisp)))
+              (dep-name-index
+               (cl-position
+                nil
+                (mapcar #'substring-no-properties (nth 0 table))
+                :test (lambda (_ elem)
+                        (string-match-p "[G|g]uix.*dep" elem)))))
+         (when dep-name-index
+           (dolist (elem (cdr table))
+             (add-to-list
+              dependencies
+              (substring-no-properties (nth dep-name-index elem))))))))
+    dependencies))
+#+end_src
 * OFF (OFF) EAF
 [[https://github.com/manateelazycat/emacs-application-framework][Emacs Application Framework]] provides a way to integrate PyQt applications with Emacs.
 
@@ -2843,6 +2877,16 @@ Python requirements:
   (add-hook 'hy-mode-hook #'lispy-mode)
   (add-hook 'hy-mode-hook #'aggressive-indent-mode))
 #+end_src
+*** Scheme
+#+begin_src emacs-lisp
+(use-package geiser
+  :straight t
+  :config
+  (setq geiser-default-implementation 'guile))
+
+(add-hook 'scheme-mode #'aggressive-indent-mode)
+(add-hook 'scheme-mode #'lispy-mode)
+#+end_src
 *** CLIPS
 An honorary Lisp
 
@@ -3031,6 +3075,23 @@ Support for text with magic comments.
 (use-package code-cells
   :straight t
   :commands (code-cells-mode))
+#+end_src
+*** tensorboard
+A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
+
+#+begin_src emacs-lisp
+(setq my/tensorboard-buffer "TensorBoard-out")
+
+(defun my/tensorboard ()
+  (interactive)
+  (start-process
+   "tensorboard"
+   my/tensorboard-buffer
+   "tensorboard"
+   "serve"
+   "--logdir"
+   (car (find-file-read-args "Directory: " t)))
+  (display-buffer my/tensorboard-buffer))
 #+end_src
 ** Java
 #+begin_src emacs-lisp

@@ -123,6 +123,7 @@
      dired
      debug
      docker
+     geiser
      edebug
      bookmark
      company
@@ -395,6 +396,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                ;; ivy--restore-session
                lsp-ivy-workspace-symbol
                counsel-grep
+               ;; counsel-find-file
                counsel-git-grep
                counsel-rg
                counsel-ag
@@ -404,7 +406,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                counsel-imenu
                counsel-yank-pop
                counsel-recentf
-               counsel-buffer-or-recentf)))
+               counsel-buffer-or-recentf))
+  ;; Do not use prescient in find-file
+  (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 
 (my-leader-def
   :infix "f"
@@ -1252,6 +1256,27 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    org-make-toc-at-point)
   :straight t)
 
+(defun my/extract-guix-dependencies ()
+  (let ((dependencies '()))
+    (org-table-map-tables
+     (lambda ()
+       (let* ((table
+               (seq-filter
+                (lambda (q) (not (eq q 'hline)))
+                (org-table-to-lisp)))
+              (dep-name-index
+               (cl-position
+                nil
+                (mapcar #'substring-no-properties (nth 0 table))
+                :test (lambda (_ elem)
+                        (string-match-p "[G|g]uix.*dep" elem)))))
+         (when dep-name-index
+           (dolist (elem (cdr table))
+             (add-to-list
+              dependencies
+              (substring-no-properties (nth dep-name-index elem))))))))
+    dependencies))
+
 (use-package lsp-mode
   :straight t
   :if (not my/slow-ssh)
@@ -1871,6 +1896,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'hy-mode-hook #'lispy-mode)
   (add-hook 'hy-mode-hook #'aggressive-indent-mode))
 
+(use-package geiser
+  :straight t
+  :config
+  (setq geiser-default-implementation 'guile))
+
+(add-hook 'scheme-mode #'aggressive-indent-mode)
+(add-hook 'scheme-mode #'lispy-mode)
+
 (use-package clips-mode
   :straight t
   :mode "\\.cl\\'"
@@ -1994,6 +2027,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package code-cells
   :straight t
   :commands (code-cells-mode))
+
+(setq my/tensorboard-buffer "TensorBoard-out")
+
+(defun my/tensorboard ()
+  (interactive)
+  (start-process
+   "tensorboard"
+   my/tensorboard-buffer
+   "tensorboard"
+   "serve"
+   "--logdir"
+   (car (find-file-read-args "Directory: " t)))
+  (display-buffer my/tensorboard-buffer))
 
 (use-package lsp-java
   :straight t
