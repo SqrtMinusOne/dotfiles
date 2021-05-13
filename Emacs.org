@@ -1,3 +1,4 @@
+#+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:emacs-lisp :tangle ./.emacs.d/init.el :mkdirp yes
 #+TODO: CHECK(s) | OFF(o)
 
@@ -75,6 +76,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
 - [[#ui][UI]]
   - [[#general-ui--gui-settings][General UI & GUI Settings]]
   - [[#theme--global-stuff][Theme & global stuff]]
+    - [[#font][Font]]
   - [[#custom-frame-title][Custom frame title]]
   - [[#tab-bar][Tab bar]]
     - [[#setup][Setup]]
@@ -126,6 +128,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#org-ref][org-ref]]
   - [[#system-configuration][System configuration]]
     - [[#tables-for-guix-dependencies][Tables for Guix Dependencies]]
+    - [[#noweb-evaluations][Noweb evaluations]]
 - [[#off-eaf][(OFF) EAF]]
   - [[#installation][Installation]]
   - [[#config][Config]]
@@ -214,6 +217,8 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#snow][Snow]]
   - [[#zone][Zone]]
   - [[#discord-integration][Discord integration]]
+  - [[#guix][Guix]]
+- [[#guix-settings][Guix settings]]
 :END:
 * Primary setup
 ** Measure startup speed
@@ -317,13 +322,14 @@ References:
 #+begin_src emacs-lisp
 (use-package conda
   :straight t
+  :if (executable-find "conda")
   :config
   (setq conda-anaconda-home (expand-file-name "~/Programs/miniconda3/"))
   (setq conda-env-home-directory (expand-file-name "~/Programs/miniconda3/"))
-  (setq conda-env-subdirectory "envs"))
+  (setq conda-env-subdirectory "envs")
+  (unless (getenv "CONDA_DEFAULT_ENV")
+    (conda-env-activate "base")))
 
-(unless (getenv "CONDA_DEFAULT_ENV")
-  (conda-env-activate "base"))
 #+end_src
 
 Also, I sometimes need to know if a program is running inside Emacs (say, inside a terminal emulator). To do that, I set the following environment variable:
@@ -454,6 +460,7 @@ I don't enable the entire package, just the modes I need.
    '(eww
      dired
      debug
+     guix
      docker
      geiser
      pdf
@@ -1113,10 +1120,16 @@ References:
 - [[https://activitywatch.net/][ActivityWatch]]
 
 *** WakaTime
+Before I figure out how to package this for Guix:
+- Clone [[https://github.com/wakatime/wakatime-cli][the repo]]
+- Run ~go build~
+- Copy the binary to the =~/bin= folder
+
 #+begin_src emacs-lisp
 (use-package wakatime-mode
   :straight t
   :config
+  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime-cli")))
   (global-wakatime-mode))
 #+end_src
 *** ActivityWatch
@@ -1126,6 +1139,7 @@ References:
 
 (use-package activity-watch-mode
   :straight t
+  :disabled
   :config
   (global-activity-watch-mode))
 #+end_src
@@ -1167,11 +1181,6 @@ y or n instead of yes or no
 Hide mouse cursor while typing
 #+begin_src emacs-lisp
 (setq make-pointer-invisible t)
-#+end_src
-
-Font
-#+begin_src emacs-lisp
-(set-frame-font "JetBrainsMono Nerd Font 10" nil t)
 #+end_src
 
 Line numbers. There seems to be a catch with the relative number setting:
@@ -1225,6 +1234,19 @@ My colorscheme of choice.
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
 #+end_src
+*** Font
+To install a font, download the font and unpack it into the =.local/share/fonts= directory. Create one if it doesn't exist.
+
+As I use nerd fonts elsewhere, I use one in Emacs as well.
+
+References:
+- [[https://nerdfonts.com][nerd fonts homepage]]
+
+#+begin_src emacs-lisp
+(set-frame-font "JetBrainsMono Nerd Font 10" nil t)
+#+end_src
+
+To make the icons work (e.g. in the Doom Modeline), run =M-x all-the-icons-install-fonts=. The package definition is somewhere later in the config.
 ** Custom frame title
 #+begin_src emacs-lisp
 (setq-default frame-title-format
@@ -1577,9 +1599,11 @@ My terminal emulator of choice.
 References:
 - [[https://github.com/akermu/emacs-libvterm][emacs-libvterm repo]]
 *** Configuration
+I use the package from the Guix repository to avoid building libvterm.
+
 #+begin_src emacs-lisp
 (use-package vterm
-  :straight t
+  ;; :straight t
   :commands (vterm vterm-other-window)
   :config
   (setq vterm-kill-buffer-on-exit t)
@@ -1712,7 +1736,7 @@ Use the built-in org mode.
 
 #+begin_src emacs-lisp :noweb yes
 (use-package org
-  :straight org-plus-contrib
+  :straight t
   :defer t
   :config
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
@@ -2324,7 +2348,7 @@ A function to extract Guix dependencies from the org file. If column name matche
 
 That seems pretty nice as I'm planning to move to Guix unless I encounter some unmovable obstacles.
 #+begin_src emacs-lisp
-(defun my/extract-guix-dependencies ()
+(defun my/extract-guix-dependencies (&optional category)
   (let ((dependencies '()))
     (org-table-map-tables
      (lambda ()
@@ -2337,13 +2361,48 @@ That seems pretty nice as I'm planning to move to Guix unless I encounter some u
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p "[G|g]uix.*dep" elem)))))
+                        (string-match-p "[G|g]uix.*dep" elem))))
+              (category-name-index
+               (cl-position
+                nil
+                (mapcar #'substring-no-properties (nth 0 table))
+                :test (lambda (_ elem)
+                        (string-match-p ".*[C|c]ategory.*" elem)))))
          (when dep-name-index
            (dolist (elem (cdr table))
-             (add-to-list
-              dependencies
-              (substring-no-properties (nth dep-name-index elem))))))))
+             (when
+                 (or
+                  (not category)
+                  (not category-name-index)
+                  (string-match-p category (nth category-name-index elem)))
+               (add-to-list
+                'dependencies
+                (substring-no-properties (nth dep-name-index elem)))))))))
     dependencies))
+#+end_src
+
+Now, join dependencies list to make it compatible with Scheme:
+#+begin_src emacs-lisp
+(defun my/format-guix-dependencies (&optional category)
+  (mapconcat
+   (lambda (e) (concat "\"" e "\""))
+   (my/extract-guix-dependencies category)
+   "\n"))
+#+end_src
+*** Noweb evaluations
+Turn off eval confirmations for configuration files.
+
+#+begin_src emacs-lisp
+(setq my/org-config-files
+      '("/home/pavel/Emacs.org"
+        "/home/pavel/Desktop.org"
+        "/home/pavel/Console.org"
+        "/home/pavel/Guix.org"))
+
+(add-hook 'org-mode-hook
+          (lambda ()
+            (when (member (buffer-file-name) my/org-config-files)
+              (setq-local org-confirm-babel-evaluate nil))))
 #+end_src
 * OFF (OFF) EAF
 [[https://github.com/manateelazycat/emacs-application-framework][Emacs Application Framework]] provides a way to integrate PyQt applications with Emacs.
@@ -3148,8 +3207,12 @@ Python requirements:
   :config
   (setq geiser-default-implementation 'guile))
 
-(add-hook 'scheme-mode #'aggressive-indent-mode)
-(add-hook 'scheme-mode #'lispy-mode)
+(use-package geiser-guile
+  :straight t
+  :after geiser)
+
+(add-hook 'scheme-mode-hook #'aggressive-indent-mode)
+(add-hook 'scheme-mode-hook #'lispy-mode)
 #+end_src
 *** CLIPS
 An honorary Lisp
@@ -3500,13 +3563,15 @@ Idea:
 - [[https://www.reddit.com/r/emacs/comments/gjukb3/yadm_magit/]]
 
 #+begin_src emacs-lisp
-(add-to-list 'tramp-methods
-             '("yadm"
-               (tramp-login-program "yadm")
-               (tramp-login-args (("enter")))
-               (tramp-login-env (("SHELL") ("/bin/sh")))
-               (tramp-remote-shell "/bin/sh")
-               (tramp-remote-shell-args ("-c"))))
+(with-eval-after-load 'tramp
+  (add-to-list 'tramp-methods
+               '("yadm"
+                 (tramp-login-program "yadm")
+                 (tramp-login-args (("enter")))
+                 (tramp-login-env (("SHELL") ("/bin/sh")))
+                 (tramp-remote-shell "/bin/sh")
+                 (tramp-remote-shell-args ("-c")))))
+
 
 (defun my/yadm-magit ()
   (interactive)
@@ -3776,4 +3841,28 @@ Shows which file is being edited in Emacs.
   :if (and (string= (system-name) "pdsk") (not my/slow-ssh))
   :config
   (elcord-mode))
+** Guix
+#+begin_src emacs-lisp
+(use-package guix
+  :straight t
+  :commands (guix)
+  :init
+  (my-leader-def "ag" 'guix))
+#+end_src
+* Guix settings
+| Guix dependency     | Description                   |
+|---------------------+-------------------------------|
+| emacs-vterm         | A vterm package               |
+| ripgrep             | A recursive search tool       |
+| the-silver-searcher | Another recursive search tool |
+
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no
+(my/format-guix-dependencies)
+#+end_src
+
+#+begin_src scheme :tangle .config/guix/manifests/emacs.scm :noweb yes
+(specifications->manifest
+ '("emacs"
+   <<packages()>>))
 #+end_src

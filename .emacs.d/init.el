@@ -46,13 +46,13 @@
 
 (use-package conda
   :straight t
+  :if (executable-find "conda")
   :config
   (setq conda-anaconda-home (expand-file-name "~/Programs/miniconda3/"))
   (setq conda-env-home-directory (expand-file-name "~/Programs/miniconda3/"))
-  (setq conda-env-subdirectory "envs"))
-
-(unless (getenv "CONDA_DEFAULT_ENV")
-  (conda-env-activate "base"))
+  (setq conda-env-subdirectory "envs")
+  (unless (getenv "CONDA_DEFAULT_ENV")
+    (conda-env-activate "base")))
 
 (setenv "IS_EMACS" "true")
 
@@ -126,6 +126,7 @@
    '(eww
      dired
      debug
+     guix
      docker
      geiser
      pdf
@@ -558,6 +559,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package wakatime-mode
   :straight t
   :config
+  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime-cli")))
   (global-wakatime-mode))
 
 (use-package request
@@ -565,6 +567,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package activity-watch-mode
   :straight t
+  :disabled
   :config
   (global-activity-watch-mode))
 
@@ -584,8 +587,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (defalias 'yes-or-no-p 'y-or-n-p)
 
 (setq make-pointer-invisible t)
-
-(set-frame-font "JetBrainsMono Nerd Font 10" nil t)
 
 (global-display-line-numbers-mode 1)
 (line-number-mode nil)
@@ -616,6 +617,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (doom-themes-visual-bell-config)
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
+
+(set-frame-font "JetBrainsMono Nerd Font 10" nil t)
 
 (setq-default frame-title-format
               '(""
@@ -857,7 +860,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
        bookmarks)))))
 
 (use-package vterm
-  :straight t
+  ;; :straight t
   :commands (vterm vterm-other-window)
   :config
   (setq vterm-kill-buffer-on-exit t)
@@ -972,7 +975,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-nmap "~" 'eshell))
 
 (use-package org
-  :straight org-plus-contrib
+  :straight t
   :defer t
   :config
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
@@ -1432,7 +1435,7 @@ parent."
   (add-to-list 'orhc-candidate-formats
                '("online" . "  |${=key=}| ${title} ${url}")))
 
-(defun my/extract-guix-dependencies ()
+(defun my/extract-guix-dependencies (&optional category)
   (let ((dependencies '()))
     (org-table-map-tables
      (lambda ()
@@ -1445,13 +1448,41 @@ parent."
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p "[G|g]uix.*dep" elem)))))
+                        (string-match-p "[G|g]uix.*dep" elem))))
+              (category-name-index
+               (cl-position
+                nil
+                (mapcar #'substring-no-properties (nth 0 table))
+                :test (lambda (_ elem)
+                        (string-match-p ".*[C|c]ategory.*" elem)))))
          (when dep-name-index
            (dolist (elem (cdr table))
-             (add-to-list
-              dependencies
-              (substring-no-properties (nth dep-name-index elem))))))))
+             (when
+                 (or
+                  (not category)
+                  (not category-name-index)
+                  (string-match-p category (nth category-name-index elem)))
+               (add-to-list
+                'dependencies
+                (substring-no-properties (nth dep-name-index elem)))))))))
     dependencies))
+
+(defun my/format-guix-dependencies (&optional category)
+  (mapconcat
+   (lambda (e) (concat "\"" e "\""))
+   (my/extract-guix-dependencies category)
+   "\n"))
+
+(setq my/org-config-files
+      '("/home/pavel/Emacs.org"
+        "/home/pavel/Desktop.org"
+        "/home/pavel/Console.org"
+        "/home/pavel/Guix.org"))
+
+(add-hook 'org-mode-hook
+          (lambda ()
+            (when (member (buffer-file-name) my/org-config-files)
+              (setq-local org-confirm-babel-evaluate nil))))
 
 (use-package lsp-mode
   :straight t
@@ -2098,8 +2129,12 @@ parent."
   :config
   (setq geiser-default-implementation 'guile))
 
-(add-hook 'scheme-mode #'aggressive-indent-mode)
-(add-hook 'scheme-mode #'lispy-mode)
+(use-package geiser-guile
+  :straight t
+  :after geiser)
+
+(add-hook 'scheme-mode-hook #'aggressive-indent-mode)
+(add-hook 'scheme-mode-hook #'lispy-mode)
 
 (use-package clips-mode
   :straight t
@@ -2333,13 +2368,15 @@ parent."
 ;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
 (my-leader-def "cc" 'my/edit-configuration)
 
-(add-to-list 'tramp-methods
-             '("yadm"
-               (tramp-login-program "yadm")
-               (tramp-login-args (("enter")))
-               (tramp-login-env (("SHELL") ("/bin/sh")))
-               (tramp-remote-shell "/bin/sh")
-               (tramp-remote-shell-args ("-c"))))
+(with-eval-after-load 'tramp
+  (add-to-list 'tramp-methods
+               '("yadm"
+                 (tramp-login-program "yadm")
+                 (tramp-login-args (("enter")))
+                 (tramp-login-env (("SHELL") ("/bin/sh")))
+                 (tramp-remote-shell "/bin/sh")
+                 (tramp-remote-shell-args ("-c")))))
+
 
 (defun my/yadm-magit ()
   (interactive)
@@ -2522,9 +2559,3 @@ parent."
             :action (lambda (elem)
                       (setq zone-programs (vector (cdr elem)))
                       (zone))))
-
-(use-package elcord
-  :straight t
-  :if (and (string= (system-name) "pdsk") (not my/slow-ssh))
-  :config
-  (elcord-mode))
