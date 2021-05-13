@@ -1,0 +1,144 @@
+#+TITLE: Guix
+#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
+#+PROPERTY: header-args:scheme         :comments link
+
+* Profiles
+** Activate profiles
+A script to activate guix profiles.
+
+Source: [[https://github.com/daviwil/dotfiles/blob/master/Systems.org#activating-profiles][David Wilson's config]]
+
+#+begin_src bash :tangle ./bin/scripts/activate-profles
+GREEN='\033[1;32m'
+RED='\033[1;30m'
+NC='\033[0m'
+GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
+
+profiles=$*
+if [[ $# -eq 0 ]]; then
+    profiles="$HOME/.config/guix/manifests/*.scm";
+fi
+
+for profile in $profiles; do
+  # Remove the path and file extension, if any
+  profileName=$(basename $profile)
+  profileName="${profileName%.*}"
+  profilePath="$GUIX_EXTRA_PROFILES/$profileName"
+  manifestPath=$HOME/.config/guix/manifests/$profileName.scm
+
+  if [ -f $manifestPath ]; then
+    echo
+    echo -e "${GREEN}Activating profile:" $manifestPath "${NC}"
+    echo
+
+    mkdir -p $profilePath
+    guix package --manifest=$manifestPath --profile="$profilePath/$profileName"
+
+    # Source the new profile
+    GUIX_PROFILE="$profilePath/$profileName"
+    if [ -f $GUIX_PROFILE/etc/profile ]; then
+        . "$GUIX_PROFILE"/etc/profile
+    else
+        echo -e "${RED}Couldn't find profile:" $GUIX_PROFILE/etc/profile "${NC}"
+    fi
+  else
+    echo "No profile found at path" $profilePath
+  fi
+done
+#+end_src
+** Update profiles
+A script to update Guix profiles.
+
+Source: once again, [[https://github.com/daviwil/dotfiles/blob/master/Systems.org#updating-profiles][David Wilson's config]].
+
+#+begin_src bash :tangle ./bin/scripts/update-profiles
+GREEN='\033[1;32m'
+NC='\033[0m'
+GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
+
+profiles=$*
+if [[ $# -eq 0 ]]; then
+    profiles="$GUIX_EXTRA_PROFILES/*";
+fi
+
+for profile in $profiles; do
+  profileName=$(basename $profile)
+  profilePath=$GUIX_EXTRA_PROFILES/$profileName
+
+  echo
+  echo -e "${GREEN}Updating profile:" $profilePath "${NC}"
+  echo
+
+  guix package --profile="$profilePath/$profileName" --manifest="$HOME/.config/guix/manifests/$profileName.scm"
+done
+#+end_src
+* Channels
+Specifying additional channels.
+
+References:
+- [[https://gitlab.com/nonguix/nonguix][nonguix channel repo]]
+- [[https://guix.gnu.org/manual/en/html_node/Channels.html][Guix channels reference]]
+
+#+begin_src scheme :tangle .config/guix/channels.scm
+(cons* (channel
+        (name 'nonguix)
+        (url "https://gitlab.com/nonguix/nonguix"))
+       %default-channels)
+#+end_src
+* Notes on installing software
+| Category | Guix dependency | Description                                        |
+|----------+-----------------+----------------------------------------------------|
+| dev      | patchelf        | A program to modify existsing ELF executables      |
+| dev      | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
+
+** wakatime-cli
+| Note | Description           |
+|------+-----------------------|
+| TODO | Package this for Guix |
+
+Before I figure out how to package this for Guix:
+- Clone [[https://github.com/wakatime/wakatime-cli][the repo]]
+- Run ~go build~
+- Copy the binary to the =~/bin= folder
+
+** ActivityWatch
+| Note | Description           |
+|------+-----------------------|
+| TODO | Package this for Guix |
+
+The official binaries work just fine after some patching, except for the =aw-qt= binary.
+
+Properly building from source is more awkward (PyInstaller? Are you serious? xD), as there are multiple packages with lots of dependencies.
+
+The patching is as follows:
+
+- Get ELF interpeter patch from ~guix build glibc~, after which patch ELF interpeter path for the required binaries, e.g.:
+#+begin_src bash eval :no
+patchelf --set-interpreter /gnu/store/fa6wj5bxkj5ll1d7292a70knmyl7a0cr-glibc-2.31/lib/ld-linux-x86-64.so.2 aw-qt
+patchelf --set-interpreter /gnu/store/fa6wj5bxkj5ll1d7292a70knmyl7a0cr-glibc-2.31/lib/ld-linux-x86-64.so.2 aw-server/aw-server
+patchelf --set-interpreter /gnu/store/fa6wj5bxkj5ll1d7292a70knmyl7a0cr-glibc-2.31/lib/ld-linux-x86-64.so.2 aw-server-rust/aw-server-rust
+patchelf --set-interpreter /gnu/store/fa6wj5bxkj5ll1d7292a70knmyl7a0cr-glibc-2.31/lib/ld-linux-x86-64.so.2 aw-watcher-afk/aw-watcher-afk
+patchelf --set-interpreter /gnu/store/fa6wj5bxkj5ll1d7292a70knmyl7a0cr-glibc-2.31/lib/ld-linux-x86-64.so.2 aw-watcher-window/aw-watcher-window
+#+end_src
+
+Add libz to RPATH
+
+| Category | Guix dependency |
+|----------+-----------------|
+| misc     | zlib            |
+
+#+begin_src bash eval :no
+patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib/ aw-qt
+patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib/ aw-server/aw-server
+patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib/ aw-server-rust/aw-server-rust
+patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib/ aw-watcher-afk/aw-watcher-afk
+patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib/ aw-watcher-window/aw-watcher-window
+#+end_src
+
+As aw-qt doesn't work properly, and the only thing it does is makes a tray icon anyhow, here is a script to launch the required components:
+#+begin_src bash :tangle ./bin/aw-start
+~/Programs/activitywatch/aw-server/aw-server &
+~/Programs/activitywatch/aw-watcher-afk/aw-watcher-afk &
+~/Programs/activitywatch/aw-watcher-window/aw-watcher-window &
+#+end_src
