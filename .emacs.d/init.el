@@ -976,17 +976,21 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     :straight t
     :init
     (my-leader-def "ar" 'jupyter-run-repl))
+  (use-package ob-hy
+    :straight t)
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((emacs-lisp . t)
      (python . t)
      ;; (typescript .t)
+     (hy . t)
      (shell . t)
      (octave . t)
      (jupyter . t)))
   
   (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
   (org-babel-jupyter-override-src-block "python")
+  (org-babel-jupyter-override-src-block "hy")
   (add-hook 'org-src-mode-hook
             (lambda ()
               ;; (hs-minor-mode -1)
@@ -1072,6 +1076,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (interactive)
   (jupyter-available-kernelspecs t))
 
+(use-package ob-hy
+  :straight t)
+
 (setq my/org-view-html-tmp-dir "/tmp/org-html-preview/")
 
 (use-package f
@@ -1095,7 +1102,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :after (org)
   :config
-  (setq ob-async-no-async-languages-alist '("python" "jupyter-python" "jupyter-octave")))
+  (setq ob-async-no-async-languages-alist '("python" "hy" "jupyter-python" "jupyter-octave")))
 
 (setq my/jupyter-runtime-folder (expand-file-name "~/.local/share/jupyter/runtime"))
 

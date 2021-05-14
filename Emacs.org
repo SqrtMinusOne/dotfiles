@@ -9,10 +9,6 @@ My [[https://www.gnu.org/software/emacs/][Emacs]] configuration.
 
 As with other files in the repo, parts prefixed with (OFF) are not used but kept for historic purposes.
 
-| Note | Type                               |
-|------+------------------------------------|
-| TODO | Find a way to specify dependencies |
-
 * Contents
 :PROPERTIES:
 :TOC:      :include all :depth 4
@@ -1379,6 +1375,11 @@ Highlight colors
 #+end_src
 * Dired
 Dired is a built-in file manager. I use it as my primary file manager, hence the top level of config.
+
+| Type | Note                   |
+|------+------------------------|
+| TODO | Make subdirs mode work |
+
 ** Basic config & keybindings
 My config mostly follows ranger's and vifm's keybindings which I'm used to.
 
@@ -1732,6 +1733,11 @@ Kernelspecs by default are hashed, so even switching Anaconda environments doesn
   (interactive)
   (jupyter-available-kernelspecs t))
 #+end_src
+*** Hy
+#+begin_src emacs-lisp :noweb-ref org-lang-setup
+(use-package ob-hy
+  :straight t)
+#+end_src
 *** View HTML in browser
 Open HTML in the ~begin_export~ block with xdg-open.
 
@@ -1763,6 +1769,7 @@ Enable languages
  '((emacs-lisp . t)
    (python . t)
    ;; (typescript .t)
+   (hy . t)
    (shell . t)
    (octave . t)
    (jupyter . t)))
@@ -1773,6 +1780,7 @@ Enable languages
 Use Jupyter block instead of built-in Python.
 #+begin_src emacs-lisp :tangle no :noweb-ref org-lang-setup
 (org-babel-jupyter-override-src-block "python")
+(org-babel-jupyter-override-src-block "hy")
 #+end_src
 
 Turn of some minor modes in source blocks.
@@ -1791,7 +1799,7 @@ Async code blocks evaluations. Jupyter blocks have a built-in async, so they are
   :straight t
   :after (org)
   :config
-  (setq ob-async-no-async-languages-alist '("python" "jupyter-python" "jupyter-octave")))
+  (setq ob-async-no-async-languages-alist '("python" "hy" "jupyter-python" "jupyter-octave")))
 #+end_src
 *** Managing Jupyter kernels
 Functions for managing local Jupyter kernels.
