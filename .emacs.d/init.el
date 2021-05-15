@@ -1296,7 +1296,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          (json-mode . lsp)
          (haskell-mode . lsp)
          (haskell-literate-mode . lsp)
-         (java-mode . lsp))
+         (java-mode . lsp)
+         (csharp-mode . lsp))
   :commands lsp
   :config
   (setq lsp-idle-delay 1)
@@ -1357,6 +1358,20 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                  (side            . bottom)
                  (reusable-frames . visible)
                  (window-height   . 0.33))))
+
+(use-package tree-sitter
+  :straight t
+  :hook ((typescript-mode . tree-sitter-mode)
+         (typescript-mode . tree-sitter-hl-mode)
+         (js-mode . tree-sitter-mode)
+         (js-mode . tree-sitter-hl-mode)
+         (python-mode . tree-sitter-mode)
+         (python-mode . tree-sitter-hl-mode)
+         (csharp-mode . tree-sitter-mode)))
+
+(use-package tree-sitter-langs
+  :straight t
+  :after tree-sitter)
 
 (defun my/set-smartparens-indent (mode)
   (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
@@ -2057,6 +2072,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (add-hook 'java-mode-hook #'smartparens-mode)
 ;; (add-hook 'java-mode-hook #'hs-minor-mode)
 (my/set-smartparens-indent 'java-mode)
+
+(use-package csharp-mode
+  :straight t
+  :mode "\\.cs\\'"
+  :config
+  (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
+  (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'csharp-tree-sitter-mode))
 
 (use-package go-mode
   :straight t

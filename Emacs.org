@@ -101,6 +101,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#integration-with-evil][Integration with evil]]
   - [[#literate-programing][Literate programing]]
     - [[#python][Python]]
+    - [[#hy][Hy]]
     - [[#view-html-in-browser][View HTML in browser]]
     - [[#setup][Setup]]
     - [[#managing-jupyter-kernels][Managing Jupyter kernels]]
@@ -118,6 +119,8 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#copy-a-link][Copy a link]]
   - [[#presentations][Presentations]]
   - [[#toc][TOC]]
+  - [[#system-configuration][System configuration]]
+    - [[#tables-for-guix-dependencies][Tables for Guix Dependencies]]
 - [[#off-eaf][(OFF) EAF]]
   - [[#installation][Installation]]
   - [[#config][Config]]
@@ -128,6 +131,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
       - [[#integrations][Integrations]]
       - [[#keybindings][Keybindings]]
     - [[#flycheck][Flycheck]]
+    - [[#tree-sitter][Tree Sitter]]
     - [[#off-dap][(OFF) DAP]]
     - [[#off-tabnine][(OFF) TabNine]]
     - [[#off-code-compass][(OFF) Code Compass]]
@@ -164,6 +168,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#emacs-lisp][Emacs Lisp]]
     - [[#clojure][Clojure]]
     - [[#hy][Hy]]
+    - [[#scheme][Scheme]]
     - [[#clips][CLIPS]]
   - [[#python][Python]]
     - [[#pipenv][pipenv]]
@@ -175,6 +180,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#code-cells][code-cells]]
     - [[#tensorboard][tensorboard]]
   - [[#java][Java]]
+  - [[#c][C#]]
   - [[#go][Go]]
   - [[#fish][fish]]
   - [[#sh][sh]]
@@ -208,7 +214,7 @@ A small function to print out the loading time and number of GCs during the load
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
 
-;; (setq use-package-verbose t)
+(setq use-package-verbose t)
 #+end_src
 ** straight.el
 Straight.el is my Emacs package manager of choice. Its advantages & disadvantages over other options are listed pretty thoroughly in the README file in the repo.
@@ -2165,7 +2171,8 @@ References:
          (json-mode . lsp)
          (haskell-mode . lsp)
          (haskell-literate-mode . lsp)
-         (java-mode . lsp))
+         (java-mode . lsp)
+         (csharp-mode . lsp))
   :commands lsp
   :config
   (setq lsp-idle-delay 1)
@@ -2240,6 +2247,30 @@ References:
                  (side            . bottom)
                  (reusable-frames . visible)
                  (window-height   . 0.33))))
+#+end_src
+*** Tree Sitter
+An incremental code parsing system, constructing a syntax tree at runtime.
+
+Right now it doesn't do much expect providing a better syntax highlighting than regexes, but this integration is a rather recent development. There are already some major modes built on top of this thing.
+
+References:
+- [[https://tree-sitter.github.io/tree-sitter/][Tree-sitter library]]
+- [[https://ubolonton.github.io/emacs-tree-sitter/][Emacs Tree-sitter]]
+
+#+begin_src emacs-lisp
+(use-package tree-sitter
+  :straight t
+  :hook ((typescript-mode . tree-sitter-mode)
+         (typescript-mode . tree-sitter-hl-mode)
+         (js-mode . tree-sitter-mode)
+         (js-mode . tree-sitter-hl-mode)
+         (python-mode . tree-sitter-mode)
+         (python-mode . tree-sitter-hl-mode)
+         (csharp-mode . tree-sitter-mode)))
+
+(use-package tree-sitter-langs
+  :straight t
+  :after tree-sitter)
 #+end_src
 *** OFF (OFF) DAP
 An Emacs client for Debugger Adapter Protocol.
@@ -3112,6 +3143,16 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
 (add-hook 'java-mode-hook #'smartparens-mode)
 ;; (add-hook 'java-mode-hook #'hs-minor-mode)
 (my/set-smartparens-indent 'java-mode)
+#+end_src
+** C#
+#+begin_src emacs-lisp
+(use-package csharp-mode
+  :straight t
+  :mode "\\.cs\\'"
+  :config
+  (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
+  (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'csharp-tree-sitter-mode))
 #+end_src
 ** Go
 #+begin_src emacs-lisp
