@@ -950,7 +950,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-nmap "~" 'eshell))
 
 (use-package org
-  :straight (:type built-in)
+  :straight org-plus-contrib
   :defer t
   :config
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
@@ -1157,6 +1157,41 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (dolist (file to-delete)
         (delete-file (car file))))))
 
+(defun my/jupyter-org-scalar (value)
+  (cond
+   ((stringp value) value)
+   (t (jupyter-org-scalar value))))
+
+(define-minor-mode my/emacs-jupyter-raw-output
+  "Make emacs-jupyter do raw output")
+
+(defun my/jupyter-org-scalar-around (fun value)
+  (if my/emacs-jupyter-raw-output
+      (my/jupyter-org-scalar value)
+    (funcall fun value)))
+
+(advice-add 'jupyter-org-scalar :around #'my/jupyter-org-scalar-around)
+
+(defun my/org-strip-results (data)
+  (replace-regexp-in-string ":\\(RESULTS\\|END\\):\n" "" data))
+
+(defun my/org-caption-wrap (data &optional name caption attrs strip-drawer src-wrap)
+  (let* ((data-s (if (and strip-drawer (not (string-empty-p strip-drawer)))
+                     (my/org-strip-results data)
+                   data))
+         (drawer-start (if (string-match-p "^:RESULTS:.*" data-s) 10 0)))
+    (concat
+     (substring data-s 0 drawer-start)
+     (and name (not (string-empty-p name)) (concat "#+NAME:" name "\n"))
+     (and caption (not (string-empty-p caption)) (concat "#+CAPTION:" caption "\n"))
+     (and attrs (not (string-empty-p attrs)) (concat "#+ATTR_LATEX:" attrs "\n"))
+     (if (and src-wrap (not (string-empty-p src-wrap)))
+         (concat "#+begin_src " src-wrap "\n"
+                 (substring data-s drawer-start)
+                 (when (not (string-match-p ".*\n" data-s)) "\n")
+                 "#+end_src")
+       (substring data-s drawer-start)))))
+
 (use-package org-latex-impatient
   :straight (:repo "yangsheng6810/org-latex-impatient"
                    :branch "master"
@@ -1178,6 +1213,37 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :hook (org-mode . org-superstar-mode))
 
+(defun org-export-ignore-headlines (data backend info)
+  "Remove headlines tagged \"ignore\" retaining contents and promoting children.
+Each headline tagged \"ignore\" will be removed retaining its
+contents and promoting any children headlines to the level of the
+parent."
+  (org-element-map data 'headline
+    (lambda (object)
+      (when (member "ignore" (org-element-property :tags object))
+        (let ((level-top (org-element-property :level object))
+              level-diff)
+          (mapc (lambda (el)
+                  ;; recursively promote all nested headlines
+                  (org-element-map el 'headline
+                    (lambda (el)
+                      (when (equal 'headline (org-element-type el))
+                        (unless level-diff
+                          (setq level-diff (- (org-element-property :level el)
+                                              level-top)))
+                        (org-element-put-property el
+                                                  :level (- (org-element-property :level el)
+                                                            level-diff)))))
+                  ;; insert back into parse tree
+                  (org-element-insert-before el object))
+                (org-element-contents object)))
+        (org-element-extract-element object)))
+    info nil)
+  data)
+
+(with-eval-after-load 'ox
+  (add-hook 'org-export-filter-parse-tree-functions #'org-export-ignore-headlines))
+
 (use-package ox-hugo
   :straight t
   :after ox)
@@ -1191,6 +1257,35 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :after ox
   :config
   (setq org-html-htmlize-output-type 'css))
+
+(defun my/setup-org-latex ()
+  (setq org-latex-compiler "xelatex") ;; Probably not necessary
+  (setq org-latex-pdf-process '("latexmk -outdir=%o %f")) ;; Use latexmk
+  (setq org-latex-listings 'minted)   ;; Use minted to highlight source code
+  (setq org-latex-minted-options      ;; Some minted options I like
+        '(("breaklines" "true")
+          ("tabsize" "4")
+          ("autogobble")
+          ("linenos")
+          ("numbersep" "0.5cm")
+          ("xleftmargin" "1cm")
+          ("frame" "single")))
+  ;; Use extarticle without the default packages
+  (add-to-list 'org-latex-classes
+               '("org-plain-extarticle"
+                 "\\documentclass{extarticle}
+[NO-DEFAULT-PACKAGES]
+[PACKAGES]
+[EXTRA]"
+                 ("\\section{%s}" . "\\section*{%s}")
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+
+;; Make sure to eval the function when org-latex-classes list already exists
+(with-eval-after-load 'ox-latex
+  (my/setup-org-latex))
 
 (defun my/org-link-copy (&optional arg)
   "Extract URL from org-mode link and add it to kill ring."

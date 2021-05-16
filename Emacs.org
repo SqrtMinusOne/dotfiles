@@ -105,12 +105,15 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#view-html-in-browser][View HTML in browser]]
     - [[#setup][Setup]]
     - [[#managing-jupyter-kernels][Managing Jupyter kernels]]
+    - [[#do-not-wrap-output-in-emacs-jupyter][Do not wrap output in emacs-jupyter]]
+    - [[#wrap-source-code-output][Wrap source code output]]
   - [[#ui][UI]]
     - [[#instant-equations-preview][Instant equations preview]]
     - [[#latex-fragments][LaTeX fragments]]
     - [[#better-headers][Better headers]]
     - [[#org-agenda-icons][Org Agenda Icons]]
   - [[#export][Export]]
+    - [[#ignore-headlines][Ignore headlines]]
     - [[#hugo][Hugo]]
     - [[#jupyter-notebook][Jupyter Notebook]]
     - [[#html-export][Html export]]
@@ -214,7 +217,7 @@ A small function to print out the loading time and number of GCs during the load
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
 
-(setq use-package-verbose t)
+;; (setq use-package-verbose t)
 #+end_src
 ** straight.el
 Straight.el is my Emacs package manager of choice. Its advantages & disadvantages over other options are listed pretty thoroughly in the README file in the repo.
@@ -1670,7 +1673,7 @@ Use the built-in org mode.
 
 #+begin_src emacs-lisp :noweb yes
 (use-package org
-  :straight (:type built-in)
+  :straight org-plus-contrib
   :defer t
   :config
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
@@ -1877,6 +1880,72 @@ I've also noticed that there are JSON files left in the runtime folder whenever 
       (dolist (file to-delete)
         (delete-file (car file))))))
 #+end_src
+*** Do not wrap output in emacs-jupyter
+Emacs-jupyter has its own insertion mechanisms, which always prepents output statements with =:=. That is not desirable in cases where a kernel supports only plain output, e.g. calysto_hy kernel.
+
+So there we have a minor mode which overrides this behavior.
+
+#+begin_src emacs-lisp
+(defun my/jupyter-org-scalar (value)
+  (cond
+   ((stringp value) value)
+   (t (jupyter-org-scalar value))))
+
+(define-minor-mode my/emacs-jupyter-raw-output
+  "Make emacs-jupyter do raw output")
+
+(defun my/jupyter-org-scalar-around (fun value)
+  (if my/emacs-jupyter-raw-output
+      (my/jupyter-org-scalar value)
+    (funcall fun value)))
+
+(advice-add 'jupyter-org-scalar :around #'my/jupyter-org-scalar-around)
+#+end_src
+*** Wrap source code output
+A function to remove :RESULTS: drawer from the results. Once again, necessary because emacs-jupyter doesn't seem to respect :results raw.
+#+begin_src emacs-lisp
+(defun my/org-strip-results (data)
+  (replace-regexp-in-string ":\\(RESULTS\\|END\\):\n" "" data))
+#+end_src
+
+And an all-in-one function to:
+- prepend =#+NAME:= and =#+CAPTION:= to the source block output. Useful if the output is image.
+- strip :RESULTS: drawer from the output, if necessary
+- wrap results in the =src= block
+
+As for now, looks sufficient to format source code outputs to get a tolerable LaTeX.
+
+#+begin_src emacs-lisp
+(defun my/org-caption-wrap (data &optional name caption attrs strip-drawer src-wrap)
+  (let* ((data-s (if (and strip-drawer (not (string-empty-p strip-drawer)))
+                     (my/org-strip-results data)
+                   data))
+         (drawer-start (if (string-match-p "^:RESULTS:.*" data-s) 10 0)))
+    (concat
+     (substring data-s 0 drawer-start)
+     (and name (not (string-empty-p name)) (concat "#+NAME:" name "\n"))
+     (and caption (not (string-empty-p caption)) (concat "#+CAPTION:" caption "\n"))
+     (and attrs (not (string-empty-p attrs)) (concat "#+ATTR_LATEX:" attrs "\n"))
+     (if (and src-wrap (not (string-empty-p src-wrap)))
+         (concat "#+begin_src " src-wrap "\n"
+                 (substring data-s drawer-start)
+                 (when (not (string-match-p ".*\n" data-s)) "\n")
+                 "#+end_src")
+       (substring data-s drawer-start)))))
+#+end_src
+
+To use, add the following snippet to the org file:
+#+begin_example
+#+NAME: out_wrap
+#+begin_src emacs-lisp :var data="" caption="" name="" attrs="" strip-drawer="" src-wrap="" :tangle no :exports none
+(my/org-caption-wrap data name caption attrs strip-drawer src-wrap)
+#+end_src
+#+end_example
+
+Example usage:
+#+begin_example
+:post out_wrap(name="fig:chart", caption="График", data=*this*)
+#+end_example
 ** UI
 *** Instant equations preview
 Instant math previews for org mode.
@@ -1933,6 +2002,42 @@ Scale latex fragments preview.
             ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
 #+end_src
 ** Export
+*** Ignore headlines
+A function to exclude headlines with =:ignore:= tag from the export.
+
+The source is ox-extras.el from the org-plus-contrib package, but I can neither install it nor find the original source for some reason.
+#+begin_src emacs-lisp
+(defun org-export-ignore-headlines (data backend info)
+  "Remove headlines tagged \"ignore\" retaining contents and promoting children.
+Each headline tagged \"ignore\" will be removed retaining its
+contents and promoting any children headlines to the level of the
+parent."
+  (org-element-map data 'headline
+    (lambda (object)
+      (when (member "ignore" (org-element-property :tags object))
+        (let ((level-top (org-element-property :level object))
+              level-diff)
+          (mapc (lambda (el)
+                  ;; recursively promote all nested headlines
+                  (org-element-map el 'headline
+                    (lambda (el)
+                      (when (equal 'headline (org-element-type el))
+                        (unless level-diff
+                          (setq level-diff (- (org-element-property :level el)
+                                              level-top)))
+                        (org-element-put-property el
+                                                  :level (- (org-element-property :level el)
+                                                            level-diff)))))
+                  ;; insert back into parse tree
+                  (org-element-insert-before el object))
+                (org-element-contents object)))
+        (org-element-extract-element object)))
+    info nil)
+  data)
+
+(with-eval-after-load 'ox
+  (add-hook 'org-export-filter-parse-tree-functions #'org-export-ignore-headlines))
+#+end_src
 *** Hugo
 #+begin_src emacs-lisp
 (use-package ox-hugo
@@ -1955,7 +2060,7 @@ Scale latex fragments preview.
 #+end_src
 *** LaTeX
 Add a custom LaTeX template without default packages. Packages are indented to be imported with function from [[Import *.sty]].
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 (defun my/setup-org-latex ()
   (setq org-latex-compiler "xelatex") ;; Probably not necessary
   (setq org-latex-pdf-process '("latexmk -outdir=%o %f")) ;; Use latexmk
