@@ -2015,6 +2015,7 @@ parent."
 
 (use-package geiser
   :straight t
+  :if (not my/lowpower)
   :config
   (setq geiser-default-implementation 'guile))
 
