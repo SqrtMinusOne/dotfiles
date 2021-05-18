@@ -289,6 +289,12 @@ And the following is true if Emacs is meant to be used with TRAMP over slow ssh
 #+begin_src emacs-lisp
 (setq my/slow-ssh (string= (getenv "IS_TRAMP") "true"))
 #+end_src
+*** Native compilation
+Set number of jobs to 1 on low-power machines
+#+begin_src emacs-lisp
+(when my/lowpower
+  (setq comp-async-jobs-number 1))
+#+end_src
 ** Anaconda & environment
 [[https://www.anaconda.com/][Anaconda]] is a free package and environment manager. I currently use it to manage multiple versions of Python and Node.js
 
@@ -1158,7 +1164,7 @@ Line numbers
 #+begin_src emacs-lisp
 (global-display-line-numbers-mode 1)
 (line-number-mode nil)
-(setq display-line-numbers-type 'visual)
+(setq display-line-numbers-type 'relative)
 (column-number-mode)
 #+end_src
 

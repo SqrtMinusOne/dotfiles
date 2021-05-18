@@ -41,6 +41,9 @@
 
 (setq my/slow-ssh (string= (getenv "IS_TRAMP") "true"))
 
+(when my/lowpower
+  (setq comp-async-jobs-number 1))
+
 (use-package conda
   :straight t
   :config
@@ -582,7 +585,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (global-display-line-numbers-mode 1)
 (line-number-mode nil)
-(setq display-line-numbers-type 'visual)
+(setq display-line-numbers-type 'relative)
 (column-number-mode)
 
 (show-paren-mode 1)
