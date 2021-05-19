@@ -514,6 +514,7 @@ mode "apps" {
     bindsym b exec firefox; mode default
     bindsym v exec vk-messenger; mode default
     bindsym s exec slack; mode default;
+    bindsym d exec discord; mode default;
     bindsym m exec "alacritty -e ncmpcpp"; mode default
     bindsym c exec "copyq toggle"; mode default
     bindsym k exec "keepassxc"; mode default
