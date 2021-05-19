@@ -445,6 +445,7 @@ I don't enable the entire package, just the modes I need.
      debug
      docker
      geiser
+     pdf
      edebug
      bookmark
      company
@@ -1185,14 +1186,14 @@ Hightlight line
 #+end_src
 ** Custom frame title
 #+begin_src emacs-lisp
-(setq frame-title-format
-      '(""
-        "emacs"
-        (:eval
-         (let ((project-name (projectile-project-name)))
-           (if (not (string= "-" project-name))
-               (format ":%s@%s" project-name (system-name))
-             (format "@%s" (system-name)))))))
+(setq-default frame-title-format
+              '(""
+                "emacs"
+                (:eval
+                 (let ((project-name (projectile-project-name)))
+                   (if (not (string= "-" project-name))
+                       (format ":%s@%s" project-name (system-name))
+                     (format "@%s" (system-name)))))))
 #+end_src
 ** Tab bar
 I rely rather heavily on tab-bar in my workflow. I have a suspicion I'm not using it the intended way, but that works for me.
@@ -2364,17 +2365,23 @@ An incremental code parsing system, constructing a syntax tree at runtime.
 
 Right now it doesn't do much expect providing a better syntax highlighting than regexes, but this integration is a rather recent development. There are already some major modes built on top of this thing.
 
+Also, it seems to break if ran from mmm-mode, so there is a small workaround.
+
 References:
 - [[https://tree-sitter.github.io/tree-sitter/][Tree-sitter library]]
 - [[https://ubolonton.github.io/emacs-tree-sitter/][Emacs Tree-sitter]]
 
 #+begin_src emacs-lisp
+(defun my/tree-sitter-if-not-mmm ()
+  (when (not (and (boundp 'mmm-temp-buffer-name)
+                  (string-equal mmm-temp-buffer-name (buffer-name))))
+    (tree-sitter-mode)
+    (tree-sitter-hl-mode)))
+
 (use-package tree-sitter
   :straight t
-  :hook ((typescript-mode . tree-sitter-mode)
-         (typescript-mode . tree-sitter-hl-mode)
-         (js-mode . tree-sitter-mode)
-         (js-mode . tree-sitter-hl-mode)
+  :hook ((typescript-mode . my/tree-sitter-if-not-mmm)
+         (js-mode . my/tree-sitter-if-not-mmm)
          (python-mode . tree-sitter-mode)
          (python-mode . tree-sitter-hl-mode)
          (csharp-mode . tree-sitter-mode)))
@@ -3073,6 +3080,7 @@ For some reason it doesn't use pipenv python executable, so here is a small work
 (use-package lsp-python-ms
   :straight t
   :defer t
+  :if (not my/slow-ssh)
   :init (setq lsp-python-ms-auto-install-server t)
   :hook (python-mode . (lambda ()
                          (require 'lsp-python-ms)
@@ -3091,6 +3099,7 @@ Automatically creates & manages virtualenvs and stores data in =Pipfile= and =Pi
 (use-package pipenv
   :straight t
   :hook (python-mode . pipenv-mode)
+  :if (not my/slow-ssh)
   :init
   (setq
    pipenv-projectile-after-switch-function
@@ -3330,6 +3339,17 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
   :straight t
   :mode "\\.csv\\'")
 #+end_src
+** OFF (OFF) PDF
+A decent package to view PDFs in Emacs, but I prefer Zathura.
+
+References:
+- https://github.com/vedang/pdf-tools/
+
+#+begin_src emacs-lisp :tangle no
+(use-package pdf-tools
+  :straight t
+  :commands (pdf-tools-install))
+#+end_src
 ** Docker
 #+begin_src emacs-lisp
 (use-package dockerfile-mode
@@ -3500,4 +3520,15 @@ Emacs built-in web browser. I wonder if anyone actually uses it.
             :action (lambda (elem)
                       (setq zone-programs (vector (cdr elem)))
                       (zone))))
+#+end_src
+** Discord integration
+Integration with Discord.
+
+Shows which file is being edited in Emacs.
+#+begin_src emacs-lisp
+(use-package elcord
+  :straight t
+  :if (string= (system-name) "pdsk")
+  :config
+  (elcord-mode))
 #+end_src

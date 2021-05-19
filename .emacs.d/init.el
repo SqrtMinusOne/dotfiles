@@ -127,6 +127,7 @@
      debug
      docker
      geiser
+     pdf
      edebug
      bookmark
      company
@@ -595,14 +596,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (global-hl-line-mode 1)
 
-(setq frame-title-format
-      '(""
-        "emacs"
-        (:eval
-         (let ((project-name (projectile-project-name)))
-           (if (not (string= "-" project-name))
-               (format ":%s@%s" project-name (system-name))
-             (format "@%s" (system-name)))))))
+(setq-default frame-title-format
+              '(""
+                "emacs"
+                (:eval
+                 (let ((project-name (projectile-project-name)))
+                   (if (not (string= "-" project-name))
+                       (format ":%s@%s" project-name (system-name))
+                     (format "@%s" (system-name)))))))
 
 (general-define-key
  :keymaps 'override
@@ -1457,12 +1458,16 @@ parent."
                  (reusable-frames . visible)
                  (window-height   . 0.33))))
 
+(defun my/tree-sitter-if-not-mmm ()
+  (when (not (and (boundp 'mmm-temp-buffer-name)
+                  (string-equal mmm-temp-buffer-name (buffer-name))))
+    (tree-sitter-mode)
+    (tree-sitter-hl-mode)))
+
 (use-package tree-sitter
   :straight t
-  :hook ((typescript-mode . tree-sitter-mode)
-         (typescript-mode . tree-sitter-hl-mode)
-         (js-mode . tree-sitter-mode)
-         (js-mode . tree-sitter-hl-mode)
+  :hook ((typescript-mode . my/tree-sitter-if-not-mmm)
+         (js-mode . my/tree-sitter-if-not-mmm)
          (python-mode . tree-sitter-mode)
          (python-mode . tree-sitter-hl-mode)
          (csharp-mode . tree-sitter-mode)))
@@ -2051,6 +2056,7 @@ parent."
 (use-package lsp-python-ms
   :straight t
   :defer t
+  :if (not my/slow-ssh)
   :init (setq lsp-python-ms-auto-install-server t)
   :hook (python-mode . (lambda ()
                          (require 'lsp-python-ms)
@@ -2063,6 +2069,7 @@ parent."
 (use-package pipenv
   :straight t
   :hook (python-mode . pipenv-mode)
+  :if (not my/slow-ssh)
   :init
   (setq
    pipenv-projectile-after-switch-function
@@ -2348,3 +2355,9 @@ parent."
             :action (lambda (elem)
                       (setq zone-programs (vector (cdr elem)))
                       (zone))))
+
+(use-package elcord
+  :straight t
+  :if (string= (system-name) "pdsk")
+  :config
+  (elcord-mode))
