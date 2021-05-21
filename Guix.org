@@ -81,10 +81,14 @@ References:
 - [[https://guix.gnu.org/manual/en/html_node/Channels.html][Guix channels reference]]
 
 #+begin_src scheme :tangle .config/guix/channels.scm
-(cons* (channel
-        (name 'nonguix)
-        (url "https://gitlab.com/nonguix/nonguix"))
-       %default-channels)
+(cons*
+ (channel
+  (name 'channel-q)
+  (url "file:///home/pavel/Code/channel-q"))
+ (channel
+  (name 'nonguix)
+  (url "https://gitlab.com/nonguix/nonguix"))
+ %default-channels)
 #+end_src
 * Notes on installing software
 | Category | Guix dependency | Description                                        |
