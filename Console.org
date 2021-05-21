@@ -3,8 +3,8 @@
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:conf-space   :comments link
 #+PROPERTY: header-args:conf-toml    :comments link
-#+PROPERTY: header-args:sh           :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
-#+PROPERTY: header-args:bash         :tangle-mode (identity #o755) :comments link :shebang "#!/bin/bash"
+#+PROPERTY: header-args:sh           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env sh"
+#+PROPERTY: header-args:bash         :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 
 * Contents
 :PROPERTIES:
@@ -42,13 +42,13 @@
 :END:
 ** Environment
 #+begin_src sh
-export EDITOR=/usr/bin/vim
-export BROWSER=/usr/bin/firefox
+# export EDITOR=/usr/bin/vim
+# export BROWSER=/usr/bin/firefox
 export QT_QPA_PLATFORMTHEME="qt5ct"
 export QT_AUTO_SCREEN_SCALE_FACTOR=0
-export GTK2_RC_FILES="$HOME/.gtkrc-2.0"
+# export GTK2_RC_FILES="$HOME/.gtkrc-2.0"
 #+end_src
-** Various paths
+** My paths
 My script folders
 #+begin_src sh
 if [ -d "$HOME/bin" ] ; then
@@ -56,9 +56,38 @@ if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin/scripts:$PATH"
 fi
 #+end_src
+** Guix settings
+Enable extra profiles
+
+#+begin_src sh
+GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
+for i in $GUIX_EXTRA_PROFILES/*; do
+  profile=$i/$(basename "$i")
+  if [ -f "$profile"/etc/profile ]; then
+    GUIX_PROFILE="$profile"
+    . "$GUIX_PROFILE"/etc/profile
+  fi
+  unset profile
+done
+#+end_src
+
+Set a folder for my packages.
+#+begin_src sh
+export GUIX_PACKAGE_PATH=~/guix-packages
+#+end_src
+** XResources
+| Guix dependency |
+|-----------------|
+| xrdb            |
+
+#+begin_src sh
+xrdb ~/.Xresources
+#+end_src
+** OFF (OFF) Package manager paths
+Turned off for now, because probably it won't be necessary in Guix.
 
 LaTeX
-#+begin_src sh
+#+begin_src sh :tangle no
 if [ -d "/usr/local/texlive/2020" ]; then
     export MANPATH="/usr/local/texlive/2020/texmf-dist/doc/man:$MANPATH"
     export INFOPATH="/usr/local/texlive/2020/texmf-dist/doc/info:$INFOPATH"
@@ -67,14 +96,14 @@ fi
 #+end_src
 
 Cargo (Rust)
-#+begin_src sh
+#+begin_src sh :tangle no
 if [ -d "$HOME/.cargo" ] ; then
     export PATH="$HOME/.cargo/bin:$PATH"
 fi
 #+end_src
 
 RVM (Ruby)
-#+begin_src sh
+#+begin_src sh :tangle no
 if [ -d "$HOME/.rvm" ] ; then
     export PATH="$PATH:$HOME/.rvm/bin"
 fi
@@ -84,19 +113,19 @@ fi
 #+end_src
 
 Go
-#+begin_src sh
+#+begin_src sh :tangle no
 if [ -d "$HOME/go" ] ; then
     export PATH="$HOME/go/bin:$PATH"
 fi
 #+end_src
 
 ghcup (Haskell)
-#+begin_src sh
+#+begin_src sh :tangle no
 [ -f "/home/pavel/.ghcup/env" ] && source "/home/pavel/.ghcup/env" # ghcup-env
 #+end_src
 
 Perl
-#+begin_src sh
+#+begin_src sh :tangle no
 if [ -d "$HOME/perl5" ] ; then
     PATH="/home/pavel/perl5/bin${PATH:+:${PATH}}"
     PERL5LIB="/home/pavel/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
@@ -119,14 +148,33 @@ fi
 :PROPERTIES:
 :header-args+: :tangle ./.bashrc
 :END:
+
+My =.bashrc=, which has pieces from the default ones in Guix & Manjaro, as well some mine settings.
+
 *** Startup & environment
-Return if not run interactively & stuff
+Export 'SHELL' to child processes.  Programs such as 'screen' honor it and otherwise use /bin/sh.
 #+begin_src bash
-[[ $- != *i* ]] && return
+export SHELL
+#+end_src
 
+We are being invoked from a non-interactive shell.  If this is an SSH session (as in "ssh host command"), source /etc/profile so we get PATH and other essential variables.
+
+#+begin_src bash
+if [[ $- != *i* ]]
+then
+    [[ -n "$SSH_CLIENT" ]] && source /etc/profile
+    return
+fi
+#+end_src
+
+Source the system-wide file
+#+begin_src bash
+source /etc/bashrc
+#+end_src
+
+Allow other users to access X server. Necessary for stuff like aw-watcher-window.
+#+begin_src bash
 xhost +local:root > /dev/null 2>&1
-
-use_fish=true
 #+end_src
 
 Set manpager to bat
@@ -136,6 +184,8 @@ export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
 *** Launch fish
 Launch fish shell unless bash itself is launched from fish.
 #+begin_src bash
+use_fish=true
+
 if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} ]]
 then
     exec fish
@@ -214,7 +264,7 @@ HISTFILESIZE=
 #+end_src
 
 Autocompletions
-#+begin_src bash
+#+begin_src bash :tangle no
 [ -r /usr/share/bash-completion/bash_completion ] && . /usr/share/bash-completion/bash_completion
 if [ -d "/usr/share/fzf" ]; then
     source /usr/share/fzf/completion.bash
@@ -230,13 +280,13 @@ alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
 #+end_src
-*** Anaconda
+*** OFF (OFF) Anaconda
 #+begin_quote
 managed by 'conda init' !!!
 #+end_quote
 Yeah, tell this to yourself
 
-#+begin_src bash
+#+begin_src bash :tangle no
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 __conda_setup="$('/home/pavel/Programs/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
@@ -261,6 +311,10 @@ eval "$(starship init bash)"
 :header-args+: :tangle ./.config/fish/config.fish :comments link
 :END:
 
+| Guix dependency | Description                              |
+|-----------------+------------------------------------------|
+| fish            | An alternative non POSIX-compliant shell |
+
 [[https://fishshell.com/][Fish shell]] is a non-POSIX-compliant shell, which offers some fancy UI & UX features.
 
 Launch starship
@@ -276,12 +330,16 @@ fish_vi_key_bindings
 #+end_src
 
 Anaconda
-#+begin_src fish
+#+begin_src fish :tangle no
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
 eval /home/pavel/Programs/miniconda3/bin/conda "shell.fish" "hook" $argv | source
 # <<< conda initialize <<<
 #+end_src
+
+| Guix dependency |
+|-----------------|
+| dt-colorscripts |
 
 Launch a random [[https://gitlab.com/dwt1/shell-color-scripts][DT's colorscript]] unless ran inside tmux or Emacs.
 #+begin_src fish
@@ -290,6 +348,10 @@ if ! test -n "$TMUX"; and ! test -n "$IS_EMACS";
 end
 #+end_src
 * Starship prompt
+| Guix dependency | Description         |
+|-----------------+---------------------|
+| rust-starship   | my prompt of choice |
+
 [[https://starship.rs/][Starship]] is a nice cross-shell prompt, written in Rust.
 
 References:
@@ -376,6 +438,10 @@ symbol = " "
 :PROPERTIES:
 :header-args+: :tangle ./.tmux.conf
 :END:
+| Guix dependency |
+|-----------------|
+| tmux            |
+
 [[https://github.com/tmux/tmux][tmux]] is my terminal multiplexer of choice.
 
 It provides pretty sane defaults, so the config is not too large. I rebind the prefix to =C-a= though.
@@ -426,6 +492,10 @@ Reload the config.
 bind r source-file ~/.tmux.conf
 #+end_src
 ** Copy to clipboard
+| Guix dependency |
+|-----------------|
+| xclip           |
+
 Make tmux copying copy to clipboard as well
 #+begin_src conf-space
 bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard -i"
@@ -465,6 +535,10 @@ source ~/.tmux.line.conf
 :PROPERTIES:
 :header-args+: :tangle ./.config/alacritty/alacritty.yml :comments link
 :END:
+
+| Guix dependency |
+|-----------------|
+| alacritty       |
 
 [[https://github.com/alacritty/alacritty][Alacritty]] is a GPU-accelerated terminal emulator. I haven't found it to be an inch faster than st, but configuration the in yml format is way more convinient than patches.
 
@@ -551,4 +625,26 @@ key_bindings:
   - { key: NumpadAdd,      mods: Control,                         action: IncreaseFontSize }
   - { key: Minus,          mods: Control,                         action: DecreaseFontSize }
   - { key: NumpadSubtract, mods: Control,                         action: DecreaseFontSize }
+#+end_src
+* Various applications
+| Guix dependency | Description                          |
+|-----------------+--------------------------------------|
+| ncurses         | provides stuff like ~clear~          |
+| exa             | ~ls~ replacement, written in Rust    |
+| bat             | ~cat~ clone with syntax highlighting |
+
+| Note | Description     |
+|------+-----------------|
+| TODO | package fselect |
+
+* Guix settings
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no
+(my/format-guix-dependencies)
+#+end_src
+
+#+begin_src scheme :tangle .config/guix/manifests/console.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages()>>))
 #+end_src
