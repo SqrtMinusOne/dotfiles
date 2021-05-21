@@ -1161,11 +1161,15 @@ Font
 (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
 #+end_src
 
-Line numbers
+Line numbers. There seems to be a catch with the relative number setting:
+- =visual= doesn't take folding into account, but also doesn't take wrapped lines into account (makes multiple numbers for a single wrapped line)
+- =relative= makes a single number for a wrapped line, but counts folded lines.
+
+=visual= option seems to be less of a problem in most cases.
 #+begin_src emacs-lisp
 (global-display-line-numbers-mode 1)
 (line-number-mode nil)
-(setq display-line-numbers-type 'relative)
+(setq display-line-numbers-type 'visual)
 (column-number-mode)
 #+end_src
 
@@ -1750,6 +1754,8 @@ Kernelspecs by default are hashed, so even switching Anaconda environments doesn
   (jupyter-available-kernelspecs t))
 #+end_src
 *** Hy
+| Note | Description                    |
+| TODO | Make it work without global Hy |
 #+begin_src emacs-lisp :noweb-ref org-lang-setup
 (use-package ob-hy
   :straight t)
@@ -3466,6 +3472,7 @@ References:
   :custom
   (google-translate-backend-method 'curl)
   :config
+  (require 'facemenu)
   (defun google-translate--search-tkk ()
     "Search TKK."
     (list 430675 2721866130))
@@ -3528,7 +3535,7 @@ Shows which file is being edited in Emacs.
 #+begin_src emacs-lisp
 (use-package elcord
   :straight t
-  :if (string= (system-name) "pdsk")
+  :if (and (string= (system-name) "pdsk") (not my/slow-ssh))
   :config
   (elcord-mode))
 #+end_src

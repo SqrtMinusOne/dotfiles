@@ -586,7 +586,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (global-display-line-numbers-mode 1)
 (line-number-mode nil)
-(setq display-line-numbers-type 'relative)
+(setq display-line-numbers-type 'visual)
 (column-number-mode)
 
 (show-paren-mode 1)
@@ -2310,6 +2310,7 @@ parent."
   :custom
   (google-translate-backend-method 'curl)
   :config
+  (require 'facemenu)
   (defun google-translate--search-tkk ()
     "Search TKK."
     (list 430675 2721866130))
@@ -2358,6 +2359,6 @@ parent."
 
 (use-package elcord
   :straight t
-  :if (string= (system-name) "pdsk")
+  :if (and (string= (system-name) "pdsk") (not my/slow-ssh))
   :config
   (elcord-mode))
