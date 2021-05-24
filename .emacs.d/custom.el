@@ -42,12 +42,4 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(aweshell-alert-buffer-face ((t (:foreground "#f07178" :weight bold))))
- '(aweshell-alert-command-face ((t (:foreground "#ffcb6b" :weight bold))))
- '(epe-pipeline-delimiter-face ((t (:foreground "#c3e88d"))))
- '(epe-pipeline-host-face ((t (:foreground "#82aaff"))))
- '(epe-pipeline-time-face ((t (:foreground "#ffcb6b"))))
- '(epe-pipeline-user-face ((t (:foreground "#f07178"))))
- '(notmuch-wash-cited-text ((t (:foreground "#ffcb6b"))))
- '(tab-bar ((t (:background "#242837" :foreground "#242837"))))
- '(tab-bar-tab ((t (:background "#292D3E" :foreground "#ffcb6b" :underline "#ffcb6b")))))
+ '(italic ((t (:family "JetBrainsMono Nerd Font, Italic")))))

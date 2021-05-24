@@ -7,3 +7,4 @@ Mail/progin6304/.credentials.gmailieer.json
 .msmtprc
 secrets/*
 .emacs.d/dired-bookmarks.el
+.emacs.d/elfeed.org

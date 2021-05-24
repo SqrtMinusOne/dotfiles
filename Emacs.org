@@ -446,6 +446,7 @@ I don't enable the entire package, just the modes I need.
      docker
      geiser
      pdf
+     elfeed
      edebug
      bookmark
      company
@@ -1188,6 +1189,30 @@ Hightlight line
 #+begin_src emacs-lisp
 (global-hl-line-mode 1)
 #+end_src
+** Theme & global stuff
+Dim inactive buffers.
+#+begin_src emacs-lisp
+(use-package auto-dim-other-buffers
+  :straight t
+  :if (display-graphic-p)
+  :config
+  (set-face-attribute 'auto-dim-other-buffers-face nil
+                      :background "#212533")
+  (auto-dim-other-buffers-mode t))
+#+end_src
+
+My colorscheme of choice.
+#+begin_src emacs-lisp
+(use-package doom-themes
+  :straight t
+  :config
+  (setq doom-themes-enable-bold t
+        doom-themes-enable-italic t)
+  (load-theme 'doom-palenight t)
+  (doom-themes-visual-bell-config)
+  (setq doom-themes-treemacs-theme "doom-colors")
+  (doom-themes-treemacs-config))
+#+end_src
 ** Custom frame title
 #+begin_src emacs-lisp
 (setq-default frame-title-format
@@ -1217,6 +1242,14 @@ I rely rather heavily on tab-bar in my workflow. I have a suspicion I'm not usin
 ;; Tabs
 (general-nmap "gn" 'tab-new)
 (general-nmap "gN" 'tab-close)
+
+;; Colors
+(custom-set-faces
+ ;; `(tab-bar ((t (:background ,(doom-color 'bg) :foreground ,(doom-color 'bg)))))
+ `(tab-bar-tab ((t (
+                    :background ,(doom-color 'bg)
+                    :foreground ,(doom-color 'yellow)
+                    :underline ,(doom-color 'yellow))))))
 #+end_src
 *** My title
 Prepend tab name with the shortened projectile project title
@@ -1332,30 +1365,6 @@ Ligature setup for the JetBrainsMono font.
 (use-package hl-todo
   :hook (prog-mode . hl-todo-mode)
   :straight t)
-#+end_src
-** Theme & global stuff
-Dim inactive buffers.
-#+begin_src emacs-lisp
-(use-package auto-dim-other-buffers
-  :straight t
-  :if (display-graphic-p)
-  :config
-  (set-face-attribute 'auto-dim-other-buffers-face nil
-                      :background "#212533")
-  (auto-dim-other-buffers-mode t))
-#+end_src
-
-My colorscheme of choice.
-#+begin_src emacs-lisp
-(use-package doom-themes
-  :straight t
-  :config
-  (setq doom-themes-enable-bold t
-        doom-themes-enable-italic t)
-  (load-theme 'doom-palenight t)
-  (doom-themes-visual-bell-config)
-  (setq doom-themes-treemacs-theme "doom-colors")
-  (doom-themes-treemacs-config))
 #+end_src
 ** Text highlight improvements
 Hightlight indent guides.
@@ -1657,6 +1666,13 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
   :straight (:repo "manateelazycat/aweshell" :host github)
   :after eshell
   :config
+  (custom-set-faces
+   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
+   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
+   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
+   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
+   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
+   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red))))))
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
 
@@ -2217,6 +2233,23 @@ References:
    org-make-toc-set
    org-make-toc-at-point)
   :straight t)
+#+end_src
+** org-ref
+| Type | Description                     |
+|------+---------------------------------|
+| TODO | Figure out how not to load Helm |
+
+[[https://github.com/jkitchin/org-ref][org-ref]] is a package which provides support for various citations & reference in Org mode.
+
+Useful to use BibTeX citations in LaTeX export.
+
+As of now, this package loads Helm on start. To avoid this, I have to exclude Helm from the =Package-requires= in the [[file:.emacs.d/straight/repos/org-ref/org-ref.el][org-ref.el]] file. I haven't found a way to do this without modifying the package source yet.
+#+begin_src emacs-lisp
+(use-package org-ref
+  :straight (:files (:defaults (:exclude "*helm*")))
+  :init
+  (setq org-ref-completion-library 'org-ref-ivy-cite)
+  :after (org))
 #+end_src
 ** System configuration
 Functions used across my literate config files.
@@ -3441,11 +3474,54 @@ References:
   (setq sendmail-program "/usr/bin/msmtp")
   (setq send-mail-function #'sendmail-send-it)
   (add-hook 'notmuch-hello-mode-hook
-            (lambda () (display-line-numbers-mode 0))))
+            (lambda () (display-line-numbers-mode 0)))
+  (custom-set-faces
+   `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow)))))))
 
 (my-leader-def "am" 'notmuch)
 #+end_src
 
+** Elfeed
+[[https://github.com/skeeto/elfeed][elfeed]] is an Emacs RSS client.
+
+#+begin_src emacs-lisp
+(use-package elfeed
+  :straight t
+  :commands (elfeed)
+  :init
+  (my-leader-def "ae" 'elfeed)
+  :config
+  (custom-set-faces
+   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
+  (evil-collection-define-key 'normal 'elfeed-search-mode-map
+    "o" #'my/elfeed-search-filter-source
+    "c" #'elfeed-search-clear-filter))
+#+end_src
+
+[[https://github.com/remyhonig/elfeed-org][elfeed-org]] allows configuring Elfeed feeds with an Org file.
+#+begin_src emacs-lisp
+(use-package elfeed-org
+  :straight t
+  :after (elfeed)
+  :config
+  (elfeed-org))
+#+end_src
+
+*** Some additions
+Filter elfeed search buffer by the feed under cursor.
+
+#+begin_src emacs-lisp
+(defun my/elfeed-search-filter-source (entry)
+  "Filter elfeed search buffer by the feed under cursor."
+  (interactive (list (elfeed-search-selected :ignore-region)))
+  (when (elfeed-entry-p entry)
+    (elfeed-search-set-filter
+     (concat
+      "@6-months-ago "
+      "+unread "
+      "="
+      (elfeed-entry-feed-id entry)))))
+#+end_src
 ** Docker
 A package to manage docker containers from Emacs.
 

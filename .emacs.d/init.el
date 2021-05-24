@@ -128,6 +128,7 @@
      docker
      geiser
      pdf
+     elfeed
      edebug
      bookmark
      company
@@ -596,6 +597,24 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (global-hl-line-mode 1)
 
+(use-package auto-dim-other-buffers
+  :straight t
+  :if (display-graphic-p)
+  :config
+  (set-face-attribute 'auto-dim-other-buffers-face nil
+                      :background "#212533")
+  (auto-dim-other-buffers-mode t))
+
+(use-package doom-themes
+  :straight t
+  :config
+  (setq doom-themes-enable-bold t
+        doom-themes-enable-italic t)
+  (load-theme 'doom-palenight t)
+  (doom-themes-visual-bell-config)
+  (setq doom-themes-treemacs-theme "doom-colors")
+  (doom-themes-treemacs-config))
+
 (setq-default frame-title-format
               '(""
                 "emacs"
@@ -619,6 +638,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; Tabs
 (general-nmap "gn" 'tab-new)
 (general-nmap "gN" 'tab-close)
+
+;; Colors
+(custom-set-faces
+ ;; `(tab-bar ((t (:background ,(doom-color 'bg) :foreground ,(doom-color 'bg)))))
+ `(tab-bar-tab ((t (
+                    :background ,(doom-color 'bg)
+                    :foreground ,(doom-color 'yellow)
+                    :underline ,(doom-color 'yellow))))))
 
 (setq my/project-title-separators "[-_ ]")
 
@@ -708,24 +735,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package hl-todo
   :hook (prog-mode . hl-todo-mode)
   :straight t)
-
-(use-package auto-dim-other-buffers
-  :straight t
-  :if (display-graphic-p)
-  :config
-  (set-face-attribute 'auto-dim-other-buffers-face nil
-                      :background "#212533")
-  (auto-dim-other-buffers-mode t))
-
-(use-package doom-themes
-  :straight t
-  :config
-  (setq doom-themes-enable-bold t
-        doom-themes-enable-italic t)
-  (load-theme 'doom-palenight t)
-  (doom-themes-visual-bell-config)
-  (setq doom-themes-treemacs-theme "doom-colors")
-  (doom-themes-treemacs-config))
 
 (use-package highlight-indent-guides
   :straight t
@@ -938,6 +947,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight (:repo "manateelazycat/aweshell" :host github)
   :after eshell
   :config
+  (custom-set-faces
+   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
+   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
+   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
+   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
+   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
+   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red))))))
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
 
@@ -1361,6 +1377,12 @@ parent."
    org-make-toc-set
    org-make-toc-at-point)
   :straight t)
+
+(use-package org-ref
+  :straight (:files (:defaults (:exclude "*helm*")))
+  :init
+  (setq org-ref-completion-library 'org-ref-ivy-cite)
+  :after (org))
 
 (defun my/extract-guix-dependencies ()
   (let ((dependencies '()))
@@ -2294,9 +2316,40 @@ parent."
   (setq sendmail-program "/usr/bin/msmtp")
   (setq send-mail-function #'sendmail-send-it)
   (add-hook 'notmuch-hello-mode-hook
-            (lambda () (display-line-numbers-mode 0))))
+            (lambda () (display-line-numbers-mode 0)))
+  (custom-set-faces
+   `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow)))))))
 
 (my-leader-def "am" 'notmuch)
+
+(use-package elfeed
+  :straight t
+  :commands (elfeed)
+  :init
+  (my-leader-def "ae" 'elfeed)
+  :config
+  (custom-set-faces
+   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
+  (evil-collection-define-key 'normal 'elfeed-search-mode-map
+    "o" #'my/elfeed-search-filter-source
+    "c" #'elfeed-search-clear-filter))
+
+(use-package elfeed-org
+  :straight t
+  :after (elfeed)
+  :config
+  (elfeed-org))
+
+(defun my/elfeed-search-filter-source (entry)
+  "Filter elfeed search buffer by the feed under cursor."
+  (interactive (list (elfeed-search-selected :ignore-region)))
+  (when (elfeed-entry-p entry)
+    (elfeed-search-set-filter
+     (concat
+      "@6-months-ago "
+      "+unread "
+      "="
+      (elfeed-entry-feed-id entry)))))
 
 (use-package docker
   :straight t
