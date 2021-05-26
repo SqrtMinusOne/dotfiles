@@ -107,7 +107,8 @@
   :after evil
   :config
   :hook ((prog-mode . turn-on-evil-quickscope-mode)
-         (LaTeX-mode . turn-on-evil-quickscope-mode)))
+         (LaTeX-mode . turn-on-evil-quickscope-mode)
+         (org-mode . turn-on-evil-quickscope-mode)))
 
 (use-package evil-numbers
   :straight t
@@ -2201,14 +2202,6 @@ parent."
 ;; (add-hook 'java-mode-hook #'hs-minor-mode)
 (my/set-smartparens-indent 'java-mode)
 
-(use-package csharp-mode
-  :straight t
-  :mode "\\.cs\\'"
-  :config
-  (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
-  (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
-  (my/set-smartparens-indent 'csharp-tree-sitter-mode))
-
 (use-package go-mode
   :straight t
   :mode "\\.go\\'"
@@ -2216,6 +2209,21 @@ parent."
   (my/set-smartparens-indent 'go-mode)
   (add-hook 'go-mode-hook #'smartparens-mode)
   (add-hook 'go-mode-hook #'hs-minor-mode))
+
+(use-package csharp-mode
+  :straight t
+  :mode "\\.cs\\'"
+  :config
+  (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
+  (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
+  (add-hook 'csharp-mode-hook #'hs-minor-mode)
+  (my/set-smartparens-indent 'csharp-tree-sitter-mode))
+
+(use-package csproj-mode
+  :straight t
+  :mode "\\.csproj\\'"
+  :config
+  (add-hook 'csproj-mode #'smartparens-mode))
 
 (use-package fish-mode
   :straight t
@@ -2328,11 +2336,18 @@ parent."
   :init
   (my-leader-def "ae" 'elfeed)
   :config
+  (advice-add #'elfeed-insert-html
+              :around
+              (lambda (fun &rest r)
+                (let ((shr-use-fonts nil))
+                  (apply fun r))))
   (custom-set-faces
    `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
   (evil-collection-define-key 'normal 'elfeed-search-mode-map
     "o" #'my/elfeed-search-filter-source
-    "c" #'elfeed-search-clear-filter))
+    "c" #'elfeed-search-clear-filter)
+  (evil-collection-define-key 'normal 'elfeed-show-mode-map
+    "ge" #'my/elfeed-show-visit-eww))
 
 (use-package elfeed-org
   :straight t
@@ -2350,6 +2365,13 @@ parent."
       "+unread "
       "="
       (elfeed-entry-feed-id entry)))))
+
+(defun my/elfeed-show-visit-eww ()
+  "Visit the current entry in eww"
+  (interactive)
+  (let ((link (elfeed-entry-link elfeed-show-entry)))
+    (when link
+      (eww link))))
 
 (use-package docker
   :straight t
@@ -2383,6 +2405,11 @@ parent."
   "atq" 'google-translate-query-translate
   "atQ" 'google-translate-query-translate-reverse
   "att" 'google-translate-smooth-translate)
+
+(defun my/toggle-shr-use-fonts ()
+  "Toggle the shr-use-fonts variable in buffer"
+  (interactive)
+  (setq-local shr-use-fonts (not shr-use-fonts)))
 
 (my-leader-def "aw" 'eww)
 

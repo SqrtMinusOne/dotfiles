@@ -422,7 +422,8 @@ Basic evil configuration.
   :after evil
   :config
   :hook ((prog-mode . turn-on-evil-quickscope-mode)
-         (LaTeX-mode . turn-on-evil-quickscope-mode)))
+         (LaTeX-mode . turn-on-evil-quickscope-mode)
+         (org-mode . turn-on-evil-quickscope-mode)))
 #+end_src
 
 [[https://github.com/cofi/evil-numbers][evil-numbers]] allows incrementing and decrementing numbers at point.
@@ -3310,16 +3311,6 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
 ;; (add-hook 'java-mode-hook #'hs-minor-mode)
 (my/set-smartparens-indent 'java-mode)
 #+end_src
-** C#
-#+begin_src emacs-lisp
-(use-package csharp-mode
-  :straight t
-  :mode "\\.cs\\'"
-  :config
-  (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
-  (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
-  (my/set-smartparens-indent 'csharp-tree-sitter-mode))
-#+end_src
 ** Go
 #+begin_src emacs-lisp
 (use-package go-mode
@@ -3329,6 +3320,26 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
   (my/set-smartparens-indent 'go-mode)
   (add-hook 'go-mode-hook #'smartparens-mode)
   (add-hook 'go-mode-hook #'hs-minor-mode))
+#+end_src
+** .NET
+*** C#
+#+begin_src emacs-lisp
+(use-package csharp-mode
+  :straight t
+  :mode "\\.cs\\'"
+  :config
+  (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
+  (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
+  (add-hook 'csharp-mode-hook #'hs-minor-mode)
+  (my/set-smartparens-indent 'csharp-tree-sitter-mode))
+#+end_src
+*** MSBuild
+#+begin_src emacs-lisp
+(use-package csproj-mode
+  :straight t
+  :mode "\\.csproj\\'"
+  :config
+  (add-hook 'csproj-mode #'smartparens-mode))
 #+end_src
 ** fish
 #+begin_src emacs-lisp
@@ -3490,6 +3501,8 @@ References:
 ** Elfeed
 [[https://github.com/skeeto/elfeed][elfeed]] is an Emacs RSS client.
 
+The advice there sets =shr-use-fonts= to nil while rendering HTML, so the =elfeed-show= buffer will use monospace font.
+
 #+begin_src emacs-lisp
 (use-package elfeed
   :straight t
@@ -3497,11 +3510,18 @@ References:
   :init
   (my-leader-def "ae" 'elfeed)
   :config
+  (advice-add #'elfeed-insert-html
+              :around
+              (lambda (fun &rest r)
+                (let ((shr-use-fonts nil))
+                  (apply fun r))))
   (custom-set-faces
    `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
   (evil-collection-define-key 'normal 'elfeed-search-mode-map
     "o" #'my/elfeed-search-filter-source
-    "c" #'elfeed-search-clear-filter))
+    "c" #'elfeed-search-clear-filter)
+  (evil-collection-define-key 'normal 'elfeed-show-mode-map
+    "ge" #'my/elfeed-show-visit-eww))
 #+end_src
 
 [[https://github.com/remyhonig/elfeed-org][elfeed-org]] allows configuring Elfeed feeds with an Org file.
@@ -3514,8 +3534,7 @@ References:
 #+end_src
 
 *** Some additions
-Filter elfeed search buffer by the feed under cursor.
-
+Filter elfeed search buffer by the feed under the cursor.
 #+begin_src emacs-lisp
 (defun my/elfeed-search-filter-source (entry)
   "Filter elfeed search buffer by the feed under cursor."
@@ -3527,6 +3546,16 @@ Filter elfeed search buffer by the feed under cursor.
       "+unread "
       "="
       (elfeed-entry-feed-id entry)))))
+#+end_src
+
+Open a URL with eww.
+#+begin_src emacs-lisp
+(defun my/elfeed-show-visit-eww ()
+  "Visit the current entry in eww"
+  (interactive)
+  (let ((link (elfeed-entry-link elfeed-show-entry)))
+    (when link
+      (eww link))))
 #+end_src
 ** Docker
 A package to manage docker containers from Emacs.
@@ -3576,9 +3605,16 @@ References:
   "att" 'google-translate-smooth-translate)
 #+end_src
 ** EWW
-Emacs built-in web browser. I wonder if anyone actually uses it.
+Emacs built-in web browser. +I wonder if anyone actually uses it.+
+
+I use it occasionally to open links in elfeed.
 
 #+begin_src emacs-lisp
+(defun my/toggle-shr-use-fonts ()
+  "Toggle the shr-use-fonts variable in buffer"
+  (interactive)
+  (setq-local shr-use-fonts (not shr-use-fonts)))
+
 (my-leader-def "aw" 'eww)
 
 (general-define-key
