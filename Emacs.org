@@ -1752,7 +1752,7 @@ Use the built-in org mode.
   (evil-org-agenda-set-keys))
 #+end_src
 ** Literate programing
-*** Python
+*** Python & Jupyter
 Use jupyter kernels for Org Mode.
 
 References:
@@ -1776,9 +1776,18 @@ Kernelspecs by default are hashed, so even switching Anaconda environments doesn
   (interactive)
   (jupyter-available-kernelspecs t))
 #+end_src
+
+Also, if some kernel wasn't present an the moment of load of =emacs-jupyter=, it won't be added to the =org-src-lang-modes= list. E.g. I have Hy kernel installed in a separate Anaconda environment, so if Emacs hasn't been launched in this environment, I wouldn't be able to use =hy= in org-src blocks.
+
+Fortunately, =emacs-jupyter= provides a function for that problem as well.
+#+begin_src emacs-lisp
+(defun my/jupyter-refesh-langs ()
+  "Refresh Jupyter languages"
+  (interactive)
+  (org-babel-jupyter-aliases-from-kernelspecs t))
+#+end_src
 *** Hy
 | Note | Description                    |
-| TODO | Make it work without global Hy |
 #+begin_src emacs-lisp :noweb-ref org-lang-setup
 (use-package ob-hy
   :straight t)
@@ -2018,6 +2027,31 @@ Scale latex fragments preview.
 (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
 #+end_src
 
+Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HEADER= entries. To circuvment this, I add a custom header and modify the ~org-preview-latex-process-alist~ variable
+#+begin_src emacs-lisp :noweb-ref org-ui-setup :tangle no
+(setq my/latex-preview-header "\\documentclass{article}
+\\usepackage[usenames]{color}
+\\usepackage{graphicx}
+\\usepackage{grffile}
+\\usepackage{longtable}
+\\usepackage{wrapfig}
+\\usepackage{rotating}
+\\usepackage[normalem]{ulem}
+\\usepackage{amsmath}
+\\usepackage{textcomp}
+\\usepackage{amssymb}
+\\usepackage{capt-of}
+\\usepackage{hyperref}
+\\pagestyle{empty}")
+
+(setq org-preview-latex-process-alist
+      (mapcar
+       (lambda (item)
+         (cons
+          (car item)
+          (plist-put (cdr item) :latex-header my/latex-preview-header)))
+       org-preview-latex-process-alist))
+#+end_src
 *** Better headers
 #+begin_src emacs-lisp
 (use-package org-superstar

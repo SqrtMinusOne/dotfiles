@@ -1020,6 +1020,28 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (highlight-indent-guides-mode -1)))
   (setq my/org-latex-scale 1.75)
   (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
+  (setq my/latex-preview-header "\\documentclass{article}
+  \\usepackage[usenames]{color}
+  \\usepackage{graphicx}
+  \\usepackage{grffile}
+  \\usepackage{longtable}
+  \\usepackage{wrapfig}
+  \\usepackage{rotating}
+  \\usepackage[normalem]{ulem}
+  \\usepackage{amsmath}
+  \\usepackage{textcomp}
+  \\usepackage{amssymb}
+  \\usepackage{capt-of}
+  \\usepackage{hyperref}
+  \\pagestyle{empty}")
+  
+  (setq org-preview-latex-process-alist
+        (mapcar
+         (lambda (item)
+           (cons
+            (car item)
+            (plist-put (cdr item) :latex-header my/latex-preview-header)))
+         org-preview-latex-process-alist))
   (if (not my/lowpower)
       (setq org-agenda-category-icon-alist
             `(
@@ -1096,6 +1118,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "Refresh Jupyter kernelspecs"
   (interactive)
   (jupyter-available-kernelspecs t))
+
+(defun my/jupyter-refesh-langs ()
+  "Refresh Jupyter languages"
+  (interactive)
+  (org-babel-jupyter-aliases-from-kernelspecs t))
 
 (use-package ob-hy
   :straight t)
