@@ -2358,7 +2358,7 @@ parent."
 (my-leader-def "am" 'notmuch)
 
 (use-package elfeed
-  :straight t
+  :straight (:repo "SqrtMinusOne/elfeed" :host github)
   :commands (elfeed)
   :init
   (my-leader-def "ae" 'elfeed)
@@ -2391,7 +2391,7 @@ parent."
       "@6-months-ago "
       "+unread "
       "="
-      (elfeed-entry-feed-id entry)))))
+      (elfeed-feed-title (elfeed-entry-feed entry))))))
 
 (defun my/elfeed-show-visit-eww ()
   "Visit the current entry in eww"

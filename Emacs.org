@@ -3537,9 +3537,11 @@ References:
 
 The advice there sets =shr-use-fonts= to nil while rendering HTML, so the =elfeed-show= buffer will use monospace font.
 
+Using my own fork until the modifications are merged into master.
+
 #+begin_src emacs-lisp
 (use-package elfeed
-  :straight t
+  :straight (:repo "SqrtMinusOne/elfeed" :host github)
   :commands (elfeed)
   :init
   (my-leader-def "ae" 'elfeed)
@@ -3579,7 +3581,7 @@ Filter elfeed search buffer by the feed under the cursor.
       "@6-months-ago "
       "+unread "
       "="
-      (elfeed-entry-feed-id entry)))))
+      (elfeed-feed-title (elfeed-entry-feed entry))))))
 #+end_src
 
 Open a URL with eww.
@@ -3637,6 +3639,27 @@ References:
   "atq" 'google-translate-query-translate
   "atQ" 'google-translate-query-translate-reverse
   "att" 'google-translate-smooth-translate)
+#+end_src
+** Pomidor
+A simple pomodoro technique timer.
+
+#+begin_src emacs-lisp
+(use-package pomidor
+  :straight t
+  :commands (pomidor)
+  :init
+  (my-leader-def "ap" #'pomidor)
+  :config
+  (setq pomidor-sound-tick nil)
+  (setq pomidor-sound-tack nil)
+  (evil-collection-define-key 'normal 'pomidor-mode-map
+    (kbd "q") #'quit-window
+    (kbd "Q") #'pomidor-quit
+    (kbd "R") #'pomidor-reset
+    (kbd "h") #'pomidor-hold
+    (kbd "H") #'pomidor-unhold
+    (kbd "RET") #'pomidor-stop
+    (kbd "M-RET") #'pomidor-break))
 #+end_src
 ** EWW
 Emacs built-in web browser. +I wonder if anyone actually uses it.+
