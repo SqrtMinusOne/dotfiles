@@ -115,93 +115,91 @@ References:
 * Systems
 Configuring systems with Guix.
 
-Again, this part is inspired by [[https://github.com/daviwil/dotfiles/blob/master/Systems.org][David Wilson's]] config.
-
 ** Base configuration
 The base configuration is shared between all the machines.
 
-To use a configuration derived from ~base-operating-system~, invoke =guix system= as follows:
+While it's possible to make a single =.scm= file with base confguration and load it, I noticed that it produces more cryptic error messages wherever there is an error in the base file, so I opt in for noweb.
+
+=guix system= invocation is as follows:
 
 #+begin_example
-sudo -E guix system -L ~/.config/guix/systems reconfigure ~/.config/guix/systems/[system].scm
+sudo -E guix system reconfigure ~/.config/guix/systems/[system].scm
 #+end_example
 
-#+begin_src scheme :tangle ~/.config/guix/systems/base-system.scm
-(define-module (base-system)
-  #:use-module (gnu)
-  #:use-module (gnu system nss)
-  #:use-module (gnu packages version-control)
-  #:use-module (gnu packages vim)
-  #:use-module (gnu packages wm)
-  #:use-module (gnu packages openbox)
-  #:use-module (nongnu packages linux)
-  #:use-module (nongnu system linux-initrd))
+Common modules:
+#+begin_src scheme :tangle no :noweb-ref system-common
+(use-modules (gnu))
+(use-modules (gnu system nss))
+(use-modules (gnu packages certs))
+(use-modules (gnu packages version-control))
+(use-modules (gnu packages vim))
+(use-modules (gnu packages wm))
+(use-modules (gnu packages openbox))
+(use-modules (nongnu packages linux))
+(use-modules (nongnu system linux-initrd))
 
 (use-service-modules desktop networking ssh xorg)
 (use-package-modules ssh)
 #+end_src
 
-Define the ~base-operating-system~:
-#+begin_src scheme :tangle ~/.config/guix/systems/base-system.scm
-(define-public base-operating-system
-  (operating-system
-   ;; Use the full Linux kernel
-   (kernel linux)
-   (initrd microcode-initrd)
-   (firmware (list (linux-firmware)))
-   (locale "en_US.utf8")
-   (timezone "Europe/Moscow")
+In principle, we could define a variable called =base-operating-system= and extend it in ancestors. However, then we would have to define mandatory fields like =host-name=, =bootloader= with dummy values. Since I'm already using noweb, there is little point.
 
-   ;; US/RU keyboard layout
-   (keyboard-layout (keyboard-layout "us,ru" #:options '("grp:alt_shift_toggle")))
+The following code will be inserted in the top of the =operating-system= definition.
+#+begin_src scheme :tangle no :noweb-ref system-base
+;; Use the full Linux kernel
+(kernel linux)
+(initrd microcode-initrd)
+(firmware (list linux-firmware))
+(locale "en_US.utf8")
+(timezone "Europe/Moscow")
 
-   ;; User accounts
-   (users (cons* (user-account
-                  (name "pavel")
-                  (comment "Pavel")
-                  (group "users")
-                  (home-directory "/home/pavel")
-                  (supplementary-groups
-                   '("wheel"  ;; sudo
-                     "netdev" ;; network devices
-                     "audio"
-                     "video"
-                     "input"
-                     "tty"
-                     "docker"
-                     "lp")))
-                 %base-user-accounts))
+;; US/RU keyboard layout
+(keyboard-layout (keyboard-layout "us,ru" #:options '("grp:alt_shift_toggle")))
 
-   ;; Base packages
-   (packages
-    (append
-     (list nss-certs
-	       git
-           i3-gaps
-           openbox
-	       vim)
-     %base-packages))
+;; User accounts
+(users (cons* (user-account
+               (name "pavel")
+               (comment "Pavel")
+               (group "users")
+               (home-directory "/home/pavel")
+               (supplementary-groups
+                '("wheel"  ;; sudo
+                  "netdev" ;; network devices
+                  "audio"
+                  "video"
+                  "input"
+                  "tty"
+                  ;; "docker"
+                  "lp")))
+              %base-user-accounts))
 
-   ;; Services
-   (services
-    (append
-     (list (service openssh-service-type)
-           (set-xorg-configuration
-            (xorg-configuration
-             (keyboard-layout keyboard-layout))))
-     %desktop-services))))
+;; Base packages
+(packages
+ (append
+  (list nss-certs
+	    git
+        i3-gaps
+        openbox
+	    vim)
+  %base-packages))
+
+;; Services
+(services
+ (append
+  (list (service openssh-service-type)
+        (set-xorg-configuration
+         (xorg-configuration
+          (keyboard-layout keyboard-layout))))
+  %desktop-services))
 #+end_src
 ** blue
 A VM on which I test Guix. Will probably be deleted sooner or later.
 
-#+begin_src scheme :tangle ~/.config/guix/systems/blue.scm
-(define-module (blue)
-  #:use-module (base-system)
-  #:use-module (gnu))
+#+begin_src scheme :noweb yes :tangle ~/.config/guix/systems/blue.scm
+<<system-common>>
 
 (operating-system
- (inherit base-operating-system)
-
+  <<system-base>>
  (host-name "blue")
 
  (bootloader
