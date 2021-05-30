@@ -3,9 +3,27 @@
 #+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 #+PROPERTY: header-args:scheme         :comments link
 
+[[https://guix.gnu.org/][GNU Guix]] is (1) a transactional package manager and (2) a GNU/Linux distribution.
+
+My personal selling points are declarative package configuration and transactional upgrades.
+
+References:
+- [[https://guix.gnu.org/en/help/][Official help]]
+- [[https://gitlab.com/pjotrp/guix-notes][Pjotr Prins' Guix notes]]
+- [[https://www.youtube.com/watch?v=iBaqOK75cho&list=PLEoMzSkcN8oNxnj7jm5V2ZcGc52002pQU][Davil Wilson's YouTube series]]
+
 * Profiles
+A profile is way to group Guix packages. Amongst many advantages, profiles can be defined by manifests, which in turn can be stored in VCS.
+
+References:
+- [[https://guix.gnu.org/en/cookbook/en/html_node/Guix-Profiles-in-Practice.html][Guix Profiles in Practice]]
+
 ** Activate profiles
-A script to activate guix profiles.
+A script to activate guix profiles. Usage:
+
+#+begin_example
+activate-profiles [profile1] [profile2] ...
+#+end_example
 
 Source: [[https://github.com/daviwil/dotfiles/blob/master/Systems.org#activating-profiles][David Wilson's config]]
 
@@ -48,7 +66,11 @@ for profile in $profiles; do
 done
 #+end_src
 ** Update profiles
-A script to update Guix profiles.
+A script to update Guix profiles. Usage:
+
+#+begin_example
+update-profiles [profile1] [profile2] ...
+#+end_example
 
 Source: once again, [[https://github.com/daviwil/dotfiles/blob/master/Systems.org#updating-profiles][David Wilson's config]].
 
@@ -89,6 +111,116 @@ References:
   (name 'nonguix)
   (url "https://gitlab.com/nonguix/nonguix"))
  %default-channels)
+#+end_src
+* Systems
+Configuring systems with Guix.
+
+Again, this part is inspired by [[https://github.com/daviwil/dotfiles/blob/master/Systems.org][David Wilson's]] config.
+
+** Base configuration
+The base configuration is shared between all the machines.
+
+To use a configuration derived from ~base-operating-system~, invoke =guix system= as follows:
+
+#+begin_example
+sudo -E guix system -L ~/.config/guix/systems reconfigure ~/.config/guix/systems/[system].scm
+#+end_example
+
+#+begin_src scheme :tangle ~/.config/guix/systems/base-system.scm
+(define-module (base-system)
+  #:use-module (gnu)
+  #:use-module (gnu system nss)
+  #:use-module (gnu packages version-control)
+  #:use-module (gnu packages vim)
+  #:use-module (gnu packages wm)
+  #:use-module (gnu packages openbox)
+  #:use-module (nongnu packages linux)
+  #:use-module (nongnu system linux-initrd))
+
+(use-service-modules desktop networking ssh xorg)
+(use-package-modules ssh)
+#+end_src
+
+Define the ~base-operating-system~:
+#+begin_src scheme :tangle ~/.config/guix/systems/base-system.scm
+(define-public base-operating-system
+  (operating-system
+   ;; Use the full Linux kernel
+   (kernel linux)
+   (initrd microcode-initrd)
+   (firmware (list (linux-firmware)))
+   (locale "en_US.utf8")
+   (timezone "Europe/Moscow")
+
+   ;; US/RU keyboard layout
+   (keyboard-layout (keyboard-layout "us,ru" #:options '("grp:alt_shift_toggle")))
+
+   ;; User accounts
+   (users (cons* (user-account
+                  (name "pavel")
+                  (comment "Pavel")
+                  (group "users")
+                  (home-directory "/home/pavel")
+                  (supplementary-groups
+                   '("wheel"  ;; sudo
+                     "netdev" ;; network devices
+                     "audio"
+                     "video"
+                     "input"
+                     "tty"
+                     "docker"
+                     "lp")))
+                 %base-user-accounts))
+
+   ;; Base packages
+   (packages
+    (append
+     (list nss-certs
+	       git
+           i3-gaps
+           openbox
+	       vim)
+     %base-packages))
+
+   ;; Services
+   (services
+    (append
+     (list (service openssh-service-type)
+           (set-xorg-configuration
+            (xorg-configuration
+             (keyboard-layout keyboard-layout))))
+     %desktop-services))))
+#+end_src
+** blue
+A VM on which I test Guix. Will probably be deleted sooner or later.
+
+#+begin_src scheme :tangle ~/.config/guix/systems/blue.scm
+(define-module (blue)
+  #:use-module (base-system)
+  #:use-module (gnu))
+
+(operating-system
+ (inherit base-operating-system)
+
+ (host-name "blue")
+
+ (bootloader
+  (bootloader-configuration
+   (bootloader grub-bootloader)
+   (target "/dev/sda")
+   (keyboard-layout keyboard-layout)))
+
+ (swap-devices
+  (list (uuid "d9ca4f8b-4bb1-420e-9371-3558731bada1")))
+
+ (file-systems
+  (cons* (file-system
+          (mount-point "/")
+          (device
+           (uuid "179fbd75-3c7f-4de2-8c4f-4c30939b8a3f"
+                 'ext4))
+          (type "ext4"))
+         %base-file-systems)))
 #+end_src
 * Notes on installing software
 | Category | Guix dependency | Description                                        |
