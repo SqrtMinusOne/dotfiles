@@ -1,0 +1,16 @@
+(specifications->manifest
+ '(
+   "zathura-djvu"
+   "zathura-pdf-poppler"
+   "zathura-ps"
+   "zathura"
+   "picom"
+   "keynav"
+   "dunst"
+   "flameshot"
+   "rofi"
+   "sunwait"
+   "curl"
+   "bind"
+   "polybar"
+   "i3-gaps"))

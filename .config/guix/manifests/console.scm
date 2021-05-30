@@ -1,0 +1,12 @@
+(specifications->manifest
+ '(
+   "bat"
+   "exa"
+   "ncurses"
+   "alacritty"
+   "xclip"
+   "tmux"
+   "rust-starship"
+   "dt-colorscripts"
+   "fish"
+   "xrdb"))

@@ -155,6 +155,10 @@ However, I'd rather use the =Xresources= file wherever possible. Here is the cod
 :header-args+: :tangle ./.config/i3/config
 :END:
 
+| Guix dependency |
+|-----------------|
+| i3-gaps         |
+
 [[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], but i3 seems to fit my workflow best.
 
 [[https://github.com/Airblader/i3][i3-gaps]] is an i3 fork with a few features like window gaps. I like to enable inner gaps when there is at least one container in a workspace.
@@ -674,6 +678,10 @@ exec "bash ~/bin/autostart.sh"
 :header-args+: :tangle ./.config/polybar/config
 :END:
 
+| Guix dependency |
+|-----------------|
+| polybar         |
+
 [[https://github.com/polybar/polybar][Polybar]] is a nice-looking, WM-agnostic statusbar program.
 
 I switched to polybar because I wanted to try out some WMs other than i3, but decided to stick with i3 for now.
@@ -832,7 +840,13 @@ margin-bottom = 0
 Some of the custom modules below use Org mode noweb to evaluate colors, because it's faster than querying =xrdb= at runtime. I wish I could reference polybar values there, but [[https://github.com/polybar/polybar/issues/615][it looks like this is impossible]].
 
 If you want to copy something, you can go to the [[file:bin/polybar/][bin/polybar]] folder.
+
 *** ipstack-vpn
+| Guix dependency | Description  |
+|-----------------+--------------|
+| bind            | Provides dig |
+| curl            |              |
+
 A module to get a country of the current IP and openvpn status. Uses [[https://ipstack.com/][ipstack]] API.
 
 #+begin_src bash :tangle ./bin/polybar/ipstack-vpn.sh :noweb yes
@@ -914,6 +928,10 @@ exec = /home/pavel/bin/polybar/aw_afk.sh
 interval = 60
 #+end_src
 *** sun
+| Guix dependency |
+|-----------------|
+| sunwait         |
+
 Prints out the time of sunrise/sunset. Uses [[https://github.com/risacher/sunwait][sunwait]]
 
 #+begin_src bash :tangle ./bin/polybar/sun.sh :noweb yes
@@ -1199,6 +1217,10 @@ ramp-capacity-4 = 
 #+end_src
 
 * Rofi
+| Guix dependency |
+|-----------------|
+| rofi            |
+
 [[https://github.com/davatorium/rofi][rofi]] is another dynamic menu generator. It can act as dmenu replacement but offers a superset of dmenu's features.
 
 ** Theme
@@ -1404,6 +1426,10 @@ if [[ ! -z $SELECTED ]]; then
 fi
 #+end_src
 * Flameshot
+| Guix dependency |
+|-----------------|
+| flameshot       |
+
 [[https://github.com/flameshot-org/flameshot][flameshot]] is my program of choice to make screenshots.
 
 As it overwrites its own config all the time, I do not keep the file in VC.
@@ -1453,6 +1479,10 @@ TYPE_TOGGLE_PANEL=Space
 TYPE_UNDO=Ctrl+Z
 #+end_src
 * dunst
+| Guix dependency |
+|-----------------|
+| dunst           |
+
 | Type | Note                            |
 |------+---------------------------------|
 | TODO | Cleanup default config comments |
@@ -1752,6 +1782,10 @@ References:
     #icon = /path/to/icon
 #+end_src
 * keynav
+| Guix dependency |
+|-----------------|
+| keynav          |
+
 | Type    | Note                           |
 |---------+--------------------------------|
 | SYMLINK | ./config/keynavrc -> .keynavrc |
@@ -1830,6 +1864,11 @@ fade-exclude = [
 :PROPERTIES:
 :header-args+: :tangle ./.config/picom.conf
 :END:
+
+| Guix dependency |
+|-----------------|
+| picom           |
+
 [[https://github.com/yshui/picom][picom]] is a compositor for X11. It allows effects such as transparency, blurring, etc.
 
 Sample configuration is a good resource for getting an overview of the available settings. I have only a bunch of necessary settings in mine.
@@ -1917,6 +1956,13 @@ wintypes:
 };
 #+end_src
 * Zathura
+| Guix dependency     |
+|---------------------|
+| zathura             |
+| zathura-ps          |
+| zathura-pdf-poppler |
+| zathura-djvu        |
+
 [[https://pwmt.org/projects/zathura/][Zathura]] is a pdf viewer with vim-like keybindings. One of my favorite features is an ability to invert the document colors.
 
 #+begin_src conf-space :noweb yes :tangle .config/zathura/zathurarc
@@ -1929,4 +1975,15 @@ set recolor-lightcolor <<get-color(name="black", quote=1)>>
 set recolor true
 map <C-r> set recolor false
 map <C-R> set recolor true
+#+end_src
+* Guix settings
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no
+(my/format-guix-dependencies)
+#+end_src
+
+#+begin_src scheme :tangle .config/guix/manifests/desktop.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages()>>))
 #+end_src
