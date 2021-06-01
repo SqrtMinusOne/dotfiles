@@ -9,6 +9,7 @@ My personal selling points are declarative package configuration and transaction
 
 References:
 - [[https://guix.gnu.org/en/help/][Official help]]
+- [[https://wiki.systemcrafters.cc/guix][System Crafters wiki]]
 - [[https://gitlab.com/pjotrp/guix-notes][Pjotr Prins' Guix notes]]
 - [[https://www.youtube.com/watch?v=iBaqOK75cho&list=PLEoMzSkcN8oNxnj7jm5V2ZcGc52002pQU][Davil Wilson's YouTube series]]
 
@@ -118,7 +119,7 @@ Configuring systems with Guix.
 ** Base configuration
 The base configuration is shared between all the machines.
 
-While it's possible to make a single =.scm= file with base confguration and load it, I noticed that it produces more cryptic error messages wherever there is an error in the base file, so I opt in for noweb.
+While it's possible to make a single =.scm= file with base confguration and load it, I noticed that it produces more cryptic error messages whenever there is an error in the base file, so I opt in for noweb.
 
 =guix system= invocation is as follows:
 
@@ -220,6 +221,51 @@ A VM on which I test Guix. Will probably be deleted sooner or later.
           (type "ext4"))
          %base-file-systems)))
 #+end_src
+* System installation
+** Preparation
+In my cases the provided ISO doesn't work because of Libre kernel.
+
+Fortunately, David Wilson has made [[https://github.com/SystemCrafters/guix-installer][a repository]] with a toolchain to make an ISO with the full kernel. In case it won't be an option, the [[https://gitlab.com/nonguix/nonguix][nonguix repo]] also has instructions on how to do that.
+
+When an ISO is there, we have to write it on a USB stick. Run =sudo fdisk -l= to get a list of disks.
+
+The approach in the official instruction is to create a bootable USB with =dd=:
+#+begin_example
+sudo dd of=/dev/sdxX if=<path-to-iso> status=progress && sync
+#+end_example
+
+However, I couldn't make it work for some strange reason. Fortunately, =gnome-disk-utility= was able to produce a bootable USB.
+** Installation
+Going further, the official instructions for installation & SystemCrafters wiki entry are pretty good, so it's not necessary to repeat them here.
+** After installation
+After the installation, the strategy is as follows.
+
+Set a password for the main user (pavel). Login with openbox to get a tolerable interface, because i3 default config is horrible.
+
+[[https://guix.gnu.org/en/manual/en/html_node/Keyboard-Layout-and-Networking-and-Partitioning.html#Keyboard-Layout-and-Networking-and-Partitioning][Connect to the internet]].
+
+Clone the dotfiles repo:
+#+begin_example
+mkdir Code
+cd Code
+git clone https://github.com/SqrtMinusOne/dotfiles.git
+#+end_example
+
+Copy the channels file and run guix pull:
+#+begin_example
+cp ~/Code/dotfiles/.config/guix/channels.scm ~/.config/guix
+guix pull
+#+end_example
+
+The first pull usually takes a while. After that install yadm and pull dotfiles:
+#+begin_example
+guix install yadm
+guix clone https://github.com/SqrtMinusOne/dotfiles.git
+#+end_example
+
+And activate the required profiles. Again, downloading & building Emacs, Starship and stuff will take a while.
+
+Don't forget to install =JetBrainsMono Nerd Font=.
 * Notes on installing software
 | Category | Guix dependency | Description                                        |
 |----------+-----------------+----------------------------------------------------|
