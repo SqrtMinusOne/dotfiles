@@ -5,8 +5,8 @@
 #+PROPERTY: header-args:conf-unix      :comments link
 #+PROPERTY: header-args:conf-windows   :comments link
 #+PROPERTY: header-args:conf-xdefaults :comments link
-#+PROPERTY: header-args:sh             :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
-#+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/bin/bash"
+#+PROPERTY: header-args:sh             :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
+#+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 
 My general desktop environment configuration.
 
@@ -697,7 +697,7 @@ The script below allows me to:
 hostname=$(hostname)
 # Settings varying on the hostname
 if [ "$hostname" = "pntk" ]; then
-    TRAY_MONITOR="eDP1"
+    TRAY_MONITOR="eDP-1"
     export WLAN_INTERFACE="wlp3s0"
 else
     TRAY_MONITOR="HDMI-A-0"
@@ -706,24 +706,24 @@ fi
 
 # Setting varying on the monitor
 declare -A FONT_SIZES=(
-    ["eDP1"]="13"
+    ["eDP-1"]="13"
     ["DVI-D-0"]="11"
     ["HDMI-A-0"]="13"
 )
 declare -A EMOJI_SCALE=(
-    ["eDP1"]="9"
+    ["eDP-1"]="9"
     ["DVI-D-0"]="10"
     ["HDMI-A-0"]="10"
 )
 declare -A BAR_HEIGHT=(
-    ["eDP1"]="29"
+    ["eDP-1"]="29"
     ["DVI-D-0"]="23"
     ["HDMI-A-0"]="29"
 )
 declare -A BLOCKS=(
     ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
     ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
-    ["eDP1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
+    ["eDP-1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun date TSEP"
 )
 
 # Geolocation for some modules
@@ -842,15 +842,20 @@ Some of the custom modules below use Org mode noweb to evaluate colors, because 
 If you want to copy something, you can go to the [[file:bin/polybar/][bin/polybar]] folder.
 
 *** ipstack-vpn
-| Guix dependency | Description  |
-|-----------------+--------------|
-| bind            | Provides dig |
-| curl            |              |
+| Guix dependency | Description             |
+|-----------------+-------------------------|
+| bind            | Provides dig            |
+| curl            |                         |
+| jq              | util to work with JSONs |
 
 A module to get a country of the current IP and openvpn status. Uses [[https://ipstack.com/][ipstack]] API.
 
 #+begin_src bash :tangle ./bin/polybar/ipstack-vpn.sh :noweb yes
 ip=$(dig +short +timeout=1 myip.opendns.com @resolver1.opendns.com 2> /dev/null)
+if [[ ! -f ~/secrets/ipstack-api-key ]]; then
+    echo "%{u<<get-color(name="red")>>}%{+u} ?? %{u-}"
+    exit
+fi
 API_KEY="$(cat ~/secrets/ipstack-api-key)"
 if [[ -z $ip || $ip == *"timed out"* ]]; then
     echo "%{u<<get-color(name="red")>>}%{+u} ?? %{u-}"
@@ -903,9 +908,10 @@ interval = 1200
 *** aw-afk
 Prints out a current uptime and non-AFK time from [[https://github.com/ActivityWatch][ActivityWatch]] server
 
-| Type | Note                      |
-|------+---------------------------|
-| TODO | Fix crash on uptime > 99h |
+| Type | Note                                       |
+|------+--------------------------------------------|
+| TODO | Fix crash on uptime > 99h                  |
+| TODO | Fix non-compatible uptime in GNU coreutils |
 
 #+begin_src bash :tangle ./bin/polybar/aw_afk.sh :noweb yes
 afk_event=$(curl -s -X GET "http://localhost:5600/api/0/buckets/aw-watcher-afk_$(hostname)/events?limit=1" -H "accept: application/json")
@@ -1977,6 +1983,9 @@ map <C-r> set recolor false
 map <C-R> set recolor true
 #+end_src
 * Guix settings
+| Guix dependency | Description      |
+| xrandr          | X11 CLI to RandR |
+
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
 (my/format-guix-dependencies)

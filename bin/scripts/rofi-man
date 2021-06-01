@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # [[file:../../Desktop.org::*Man pages][Man pages:1]]
 SELECTED=$(man -k . | rofi -dmenu -l 20 | awk '{print $1}')
 if [[ ! -z $SELECTED ]]; then

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # [[file:../../Desktop.org::*sun][sun:1]]
 declare -A LAT_DATA=(
     ["TMN"]="57.15N"

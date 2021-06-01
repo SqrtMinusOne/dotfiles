@@ -25,7 +25,7 @@ export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
 # [[file:Console.org::*Launch fish][Launch fish:1]]
 use_fish=true
 
-if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} ]]
+if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} && $(command -v fish) ]]
 then
     exec fish
 fi

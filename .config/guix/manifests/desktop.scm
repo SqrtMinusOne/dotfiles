@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "xrandr"
    "zathura-djvu"
    "zathura-pdf-poppler"
    "zathura-ps"
@@ -10,6 +11,7 @@
    "flameshot"
    "rofi"
    "sunwait"
+   "jq"
    "curl"
    "bind"
    "polybar"

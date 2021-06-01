@@ -106,8 +106,11 @@ References:
 #+begin_src scheme :tangle .config/guix/channels.scm
 (cons*
  (channel
+  (name 'flat)
+  (url "https://github.com/flatwhatson/guix-channel.git"))
+ (channel
   (name 'channel-q)
-  (url "file:///home/pavel/Code/channel-q"))
+  (url "https://github.com/SqrtMinusOne/channel-q.git"))
  (channel
   (name 'nonguix)
   (url "https://gitlab.com/nonguix/nonguix"))
@@ -134,6 +137,7 @@ Common modules:
 (use-modules (gnu packages certs))
 (use-modules (gnu packages version-control))
 (use-modules (gnu packages vim))
+(use-modules (gnu packages xorg))
 (use-modules (gnu packages wm))
 (use-modules (gnu packages openbox))
 (use-modules (nongnu packages linux))
@@ -181,6 +185,7 @@ The following code will be inserted in the top of the =operating-system= definit
 	    git
         i3-gaps
         openbox
+        xterm
 	    vim)
   %base-packages))
 
@@ -193,6 +198,37 @@ The following code will be inserted in the top of the =operating-system= definit
           (keyboard-layout keyboard-layout))))
   %desktop-services))
 #+end_src
+** azure
+=azure= is a Lenovo Ideapad 330 laptop.
+#+begin_src scheme :noweb yes :tangle ~/.config/guix/systems/azure.scm
+<<system-common>>
+
+(operating-system
+ <<system-base>>
+
+ (host-name "azure")
+
+ (bootloader
+  (bootloader-configuration
+   (bootloader grub-efi-bootloader)
+   (target "/boot/efi")
+   (keyboard-layout keyboard-layout)))
+
+ (swap-devices
+  (list (uuid "4b2dedb3-b111-4e69-8c05-6daa2b072c76")))
+
+ (file-systems
+  (cons* (file-system
+          (mount-point "/")
+          (device (file-system-label "my-root"))
+          (type "ext4"))
+	     (file-system
+	      (mount-point "/boot/efi")
+	      (device "/dev/sda1")
+	      (type "vfat"))
+         %base-file-systems)))
+#+end_src
+
 ** blue
 A VM on which I test Guix. Will probably be deleted sooner or later.
 

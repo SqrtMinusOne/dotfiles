@@ -297,7 +297,7 @@ Run GC when Emacs loses focus. Time will tell if that's a good idea.
 *** Misc
 The following variable is true when my machine is not powerful enough for some resource-heavy packages.
 #+begin_src emacs-lisp
-(setq my/lowpower (string= (system-name) "pntk"))
+(setq my/lowpower (string= (system-name) "azure"))
 #+end_src
 
 And the following is true if Emacs is meant to be used with TRAMP over slow ssh
@@ -1128,6 +1128,7 @@ Before I figure out how to package this for Guix:
 #+begin_src emacs-lisp
 (use-package wakatime-mode
   :straight t
+  :disabled
   :config
   (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime-cli")))
   (global-wakatime-mode))
@@ -3558,6 +3559,10 @@ A bunch of functions for managing dotfiles with yadm.
 (my-leader-def "cc" 'my/edit-configuration)
 #+end_src
 *** Open Magit for yadm
+| Note | Type              |
+|------+-------------------|
+| TODO | Fix this for Guix |
+
 Idea:
 
 - [[https://www.reddit.com/r/emacs/comments/gjukb3/yadm_magit/]]
@@ -3568,8 +3573,8 @@ Idea:
                '("yadm"
                  (tramp-login-program "yadm")
                  (tramp-login-args (("enter")))
-                 (tramp-login-env (("SHELL") ("/bin/sh")))
-                 (tramp-remote-shell "/bin/sh")
+                 (tramp-login-env (("SHELL") (locate-file "file" exec-path)))
+                 (tramp-remote-shell (locate-file "file" exec-path))
                  (tramp-remote-shell-args ("-c")))))
 
 

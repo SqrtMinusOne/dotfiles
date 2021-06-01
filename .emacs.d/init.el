@@ -37,7 +37,7 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
-(setq my/lowpower (string= (system-name) "pntk"))
+(setq my/lowpower (string= (system-name) "azure"))
 
 (setq my/slow-ssh (string= (getenv "IS_TRAMP") "true"))
 
@@ -558,6 +558,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package wakatime-mode
   :straight t
+  :disabled
   :config
   (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime-cli")))
   (global-wakatime-mode))
@@ -2373,8 +2374,8 @@ parent."
                '("yadm"
                  (tramp-login-program "yadm")
                  (tramp-login-args (("enter")))
-                 (tramp-login-env (("SHELL") ("/bin/sh")))
-                 (tramp-remote-shell "/bin/sh")
+                 (tramp-login-env (("SHELL") ("/usr/bin/env bash")))
+                 (tramp-remote-shell "/usr/bin/env bash")
                  (tramp-remote-shell-args ("-c")))))
 
 

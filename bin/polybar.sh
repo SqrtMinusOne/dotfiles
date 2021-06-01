@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # [[file:../Desktop.org::*Launching][Launching:1]]
 hostname=$(hostname)
 # Settings varying on the hostname
 if [ "$hostname" = "pntk" ]; then
-    TRAY_MONITOR="eDP1"
+    TRAY_MONITOR="eDP-1"
     export WLAN_INTERFACE="wlp3s0"
 else
     TRAY_MONITOR="HDMI-A-0"
@@ -12,24 +12,24 @@ fi
 
 # Setting varying on the monitor
 declare -A FONT_SIZES=(
-    ["eDP1"]="13"
+    ["eDP-1"]="13"
     ["DVI-D-0"]="11"
     ["HDMI-A-0"]="13"
 )
 declare -A EMOJI_SCALE=(
-    ["eDP1"]="9"
+    ["eDP-1"]="9"
     ["DVI-D-0"]="10"
     ["HDMI-A-0"]="10"
 )
 declare -A BAR_HEIGHT=(
-    ["eDP1"]="29"
+    ["eDP-1"]="29"
     ["DVI-D-0"]="23"
     ["HDMI-A-0"]="29"
 )
 declare -A BLOCKS=(
     ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
     ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
-    ["eDP1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
+    ["eDP-1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun date TSEP"
 )
 
 # Geolocation for some modules

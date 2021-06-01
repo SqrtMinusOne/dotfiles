@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # [[file:../../Desktop.org::*weather][weather:1]]
 bar_format="${BAR_FORMAT:-"%t"}"
 location="${LOCATION:-"Saint-Petersburg"}"

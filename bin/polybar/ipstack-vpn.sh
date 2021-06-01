@@ -1,6 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # [[file:../../Desktop.org::*ipstack-vpn][ipstack-vpn:1]]
 ip=$(dig +short +timeout=1 myip.opendns.com @resolver1.opendns.com 2> /dev/null)
+if [[ ! -f ~/secrets/ipstack-api-key ]]; then
+    echo "%{u#f07178}%{+u} ?? %{u-}"
+    exit
+fi
 API_KEY="$(cat ~/secrets/ipstack-api-key)"
 if [[ -z $ip || $ip == *"timed out"* ]]; then
     echo "%{u#f07178}%{+u} ?? %{u-}"

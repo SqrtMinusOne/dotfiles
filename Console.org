@@ -186,7 +186,7 @@ Launch fish shell unless bash itself is launched from fish.
 #+begin_src bash
 use_fish=true
 
-if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} ]]
+if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} && $(command -v fish) ]]
 then
     exec fish
 fi
@@ -346,6 +346,11 @@ Launch a random [[https://gitlab.com/dwt1/shell-color-scripts][DT's colorscript]
 if ! test -n "$TMUX"; and ! test -n "$IS_EMACS";
     colorscript random
 end
+#+end_src
+
+Suppress fish greeting
+#+begin_src fish
+set fish_greeting
 #+end_src
 * Starship prompt
 | Guix dependency | Description         |

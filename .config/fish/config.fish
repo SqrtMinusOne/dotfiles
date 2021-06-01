@@ -18,3 +18,7 @@ if ! test -n "$TMUX"; and ! test -n "$IS_EMACS";
     colorscript random
 end
 # Fish:4 ends here
+
+# [[file:../../Console.org::*Fish][Fish:5]]
+set fish_greeting
+# Fish:5 ends here
