@@ -103,21 +103,36 @@ References:
 - [[https://gitlab.com/nonguix/nonguix][nonguix channel repo]]
 - [[https://guix.gnu.org/manual/en/html_node/Channels.html][Guix channels reference]]
 
+Nonguix channel is pinned to a particular commit to avoid recompiling Linux kernel.
+
 #+begin_src scheme :tangle .config/guix/channels.scm
 (cons*
- (channel
-  (name 'flat)
-  (url "https://github.com/flatwhatson/guix-channel.git"))
  (channel
   (name 'channel-q)
   (url "https://github.com/SqrtMinusOne/channel-q.git"))
  (channel
+  (name 'flat)
+  (url "https://github.com/flatwhatson/guix-channel.git")
+  (introduction
+   (make-channel-introduction
+    "33f86a4b48205c0dc19d7c036c85393f0766f806"
+    (openpgp-fingerprint
+     "736A C00E 1254 378B A982  7AF6 9DBE 8265 81B6 4490"))))
+ (channel
   (name 'nonguix)
-  (url "https://gitlab.com/nonguix/nonguix"))
+  (url "https://gitlab.com/nonguix/nonguix")
+  (commit "46c1d8bcca674d3a71cd077c52dde9552a89873d")
+  (introduction
+   (make-channel-introduction
+    "897c1a470da759236cc11798f4e0a5f7d4d59fbc"
+    (openpgp-fingerprint
+     "2A39 3FFF 68F4 EF7A 3D29  12AF 6F51 20A0 22FB B2D5"))))
  %default-channels)
 #+end_src
 * Systems
 Configuring systems with Guix.
+
+Yes, all my machines are named after colors I like.
 
 ** Base configuration
 The base configuration is shared between all the machines.
@@ -150,18 +165,23 @@ Common modules:
 In principle, we could define a variable called =base-operating-system= and extend it in ancestors. However, then we would have to define mandatory fields like =host-name=, =bootloader= with dummy values. Since I'm already using noweb, there is little point.
 
 The following code will be inserted in the top of the =operating-system= definition.
+
+Use the fulll Linux kernel. I hope I'll be able to use Libre kernel somewhere later.
 #+begin_src scheme :tangle no :noweb-ref system-base
-;; Use the full Linux kernel
 (kernel linux)
 (initrd microcode-initrd)
 (firmware (list linux-firmware))
 (locale "en_US.utf8")
 (timezone "Europe/Moscow")
+#+end_src
 
-;; US/RU keyboard layout
+US/RU keyboard layout, switch with Alt+Shift.
+#+begin_src scheme :tangle no :noweb-ref system-base
 (keyboard-layout (keyboard-layout "us,ru" #:options '("grp:alt_shift_toggle")))
+#+end_src
 
-;; User accounts
+User accounts.
+#+begin_src scheme :tangle no :noweb-ref system-base
 (users (cons* (user-account
                (name "pavel")
                (comment "Pavel")
@@ -178,7 +198,10 @@ The following code will be inserted in the top of the =operating-system= definit
                   "lp")))
               %base-user-accounts))
 
-;; Base packages
+#+end_src
+
+Base packages, necessary right after the installation.
+#+begin_src scheme :tangle no :noweb-ref system-base
 (packages
  (append
   (list nss-certs
@@ -188,8 +211,10 @@ The following code will be inserted in the top of the =operating-system= definit
         xterm
 	    vim)
   %base-packages))
+#+end_src
 
-;; Services
+Services. As for now, just extending =%desktop-services=. In future, this part will probably be made specific for each machine.
+#+begin_src scheme :tangle no :noweb-ref system-base
 (services
  (append
   (list (service openssh-service-type)
@@ -302,12 +327,38 @@ guix clone https://github.com/SqrtMinusOne/dotfiles.git
 And activate the required profiles. Again, downloading & building Emacs, Starship and stuff will take a while.
 
 Don't forget to install =JetBrainsMono Nerd Font=.
+* Various software
+** Browsers
+| Category | Guix dependency    |
+|----------+--------------------|
+| browsers | ungoogled-chromium |
+** Manifests
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no :var category=""
+(my/format-guix-dependencies category)
+#+end_src
+
+Browsers
+#+begin_src scheme :tangle .config/guix/manifests/browsers.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("browsers")>>))
+#+end_src
+
+Dev
+#+begin_src scheme :tangle .config/guix/manifests/dev.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("dev")>>))
+#+end_src
+
 * Notes on installing software
 | Category | Guix dependency | Description                                        |
 |----------+-----------------+----------------------------------------------------|
 | dev      | patchelf        | A program to modify existsing ELF executables      |
 | dev      | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
-
+** flatpak
+As for now, the easiest way to install most of proprietary software is via flatpak. See the relevant section in [[file:Desktop.org][Desktop.org]].
 ** wakatime-cli
 | Note | Description           |
 |------+-----------------------|
