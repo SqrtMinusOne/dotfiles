@@ -1,5 +1,7 @@
 (specifications->manifest
  '(
+   "nethogs"
+   "htop"
    "bat"
    "exa"
    "ncurses"

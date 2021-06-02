@@ -67,6 +67,7 @@ for i in $GUIX_EXTRA_PROFILES/*; do
     GUIX_PROFILE="$profile"
     . "$GUIX_PROFILE"/etc/profile
   fi
+  export XDG_DATA_DIRS="$XDG_DATA_DIRS:$profile/share"
   unset profile
 done
 #+end_src
@@ -74,6 +75,11 @@ done
 Set a folder for my packages.
 #+begin_src sh
 export GUIX_PACKAGE_PATH=~/guix-packages
+#+end_src
+
+Make flatpak apps visible to launchers
+#+begin_src sh
+export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
 #+end_src
 ** XResources
 | Guix dependency |
@@ -631,12 +637,14 @@ key_bindings:
   - { key: Minus,          mods: Control,                         action: DecreaseFontSize }
   - { key: NumpadSubtract, mods: Control,                         action: DecreaseFontSize }
 #+end_src
-* Various applications
-| Guix dependency | Description                          |
-|-----------------+--------------------------------------|
-| ncurses         | provides stuff like ~clear~          |
-| exa             | ~ls~ replacement, written in Rust    |
-| bat             | ~cat~ clone with syntax highlighting |
+* Various console applications
+| Guix dependency | Description                                 |
+|-----------------+---------------------------------------------|
+| ncurses         | Provides stuff like ~clear~                 |
+| exa             | ~ls~ replacement, written in Rust           |
+| bat             | ~cat~ clone with syntax highlighting        |
+| htop            | Interactive process viewer                  |
+| nethogs         | A tool to group processed by used bandwidth |
 
 | Note | Description     |
 |------+-----------------|
