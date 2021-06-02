@@ -9,8 +9,8 @@ floating_modifier $mod
 mouse_warping output
 
 # Apply XFCE Settings
-exec xfsettingsd
-exec xiccd
+# exec xfsettingsd
+# exec xiccd
 
 # Most needed keybindigs
 # reload the configuration file
@@ -301,7 +301,7 @@ mode "apps" {
     bindsym c exec "copyq toggle"; mode default
     bindsym k exec "keepassxc"; mode default
     # bindsym e exec mailspring; mode default
-    bindsym a exec "bash /home/pavel/bin/emacs.sh"; mode default
+    bindsym a exec emacs; mode default
     bindsym n exec "alacritty -e newsboat"; mode default
     bindsym w exec "alacritty /home/pavel/bin/scripts/run_wego"; mode default
     # bindsym a exec emacsclient -c; mode default
@@ -367,10 +367,10 @@ bindsym $mod+slash exec toggle_layout
 exec_always --no-startup-id "bash /home/pavel/bin/polybar.sh"
 
 # PulseEffects
-exec --no-startup-id pulseeffects --gapplication-service
+# exec --no-startup-id pulseeffects --gapplication-service
 
 # Sudo
-exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+# exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 
 # Wallpaper
 exec_always "feh --bg-fill ~/Pictures/wallpaper.jpg"
@@ -382,18 +382,19 @@ exec picom
 exec keynav
 
 # Applets
-exec --no-startup-id /usr/bin/nm-applet
-exec --no-startup-id /usr/bin/blueman-applet
+exec --no-startup-id nm-applet
+# exec --no-startup-id /usr/bin/blueman-applet
 
 # MPD
-exec --no-startup-id mpd
+# exec --no-startup-id mpd
 
 # Stuff
-exec aw-qt
-exec "vnstatd -d"
+# exec aw-qt
+# exec "vnstatd -d"
 exec dunst
-exec kde-connect-indicator
+# exec kde-connect-indicator
 exec copyq
 exec "xmodmap ~/.Xmodmap"
+# exec "xrdb -merge ~/.Xresources"
 exec "bash ~/bin/autostart.sh"
 # Autostart:1 ends here

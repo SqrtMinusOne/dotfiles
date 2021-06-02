@@ -81,7 +81,8 @@ Parts prefixed with (OFF) are not used, but kept for historic purposes. For some
   - [[#general-settings][General settings]]
 - [[#zathura][Zathura]]
 :END:
-* Colors
+* Global customization
+** Colors
 Most of the colors are from the Palenight theme. Colorcodes are taken from [[https://github.com/JonathanSpeek/palenight-iterm2][this repo]]:
 
 #+tblname: colors
@@ -129,6 +130,7 @@ Test:
 : #f07178
 
 ** Xresources
+*** Colors in Xresources
 However, I'd rather use the =Xresources= file wherever possible. Here is the code to generate an Xresources file from this table:
 
 #+NAME: get-xresources
@@ -149,7 +151,30 @@ However, I'd rather use the =Xresources= file wherever possible. Here is the cod
 *background: <<get-color(name="black")>>
 *foreground: <<get-color(name="white")>>
 #+end_src
+*** Fonts
+Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting has to be unique for each machine, which means I cannot commit =Xresources= to the repo.
 
+#+NAME: get-dpi
+#+begin_src emacs-lisp
+(let ((hostname (system-name)))
+  (cond ((string-equal hostname "azure") 120)
+        (t 96)))
+#+end_src
+
+#+begin_src conf-xdefaults :noweb yes :tangle ~/.Xresources
+Xft.dpi: <<get-dpi()>>
+#+end_src
+** Themes
+A few programs I use to customize the apperance are listed below.
+
+| Guix dependency    | Description                               |
+|--------------------+-------------------------------------------|
+| lxappearance       | A program to customize GTK+ themes        |
+| matcha-theme       | My preferred GTK theme                    |
+| papirus-icon-theme | My preferred Icon theme                   |
+| hicolor-icon-theme | For some reason required for lxappearance |
+
+IIRC the only thing =lxapparance= does is edit GTK config files.
 * i3wm
 :PROPERTIES:
 :header-args+: :tangle ./.config/i3/config
@@ -158,6 +183,7 @@ However, I'd rather use the =Xresources= file wherever possible. Here is the cod
 | Guix dependency |
 |-----------------|
 | i3-gaps         |
+| i3lock          |
 
 [[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], but i3 seems to fit my workflow best.
 
@@ -179,8 +205,8 @@ floating_modifier $mod
 mouse_warping output
 
 # Apply XFCE Settings
-exec xfsettingsd
-exec xiccd
+# exec xfsettingsd
+# exec xiccd
 
 # Most needed keybindigs
 # reload the configuration file
@@ -523,7 +549,7 @@ mode "apps" {
     bindsym c exec "copyq toggle"; mode default
     bindsym k exec "keepassxc"; mode default
     # bindsym e exec mailspring; mode default
-    bindsym a exec "bash /home/pavel/bin/emacs.sh"; mode default
+    bindsym a exec emacs; mode default
     bindsym n exec "alacritty -e newsboat"; mode default
     bindsym w exec "alacritty /home/pavel/bin/scripts/run_wego"; mode default
     # bindsym a exec emacsclient -c; mode default
@@ -643,10 +669,10 @@ bindsym $mod+slash exec toggle_layout
 exec_always --no-startup-id "bash /home/pavel/bin/polybar.sh"
 
 # PulseEffects
-exec --no-startup-id pulseeffects --gapplication-service
+# exec --no-startup-id pulseeffects --gapplication-service
 
 # Sudo
-exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+# exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 
 # Wallpaper
 exec_always "feh --bg-fill ~/Pictures/wallpaper.jpg"
@@ -658,19 +684,20 @@ exec picom
 exec keynav
 
 # Applets
-exec --no-startup-id /usr/bin/nm-applet
-exec --no-startup-id /usr/bin/blueman-applet
+exec --no-startup-id nm-applet
+# exec --no-startup-id /usr/bin/blueman-applet
 
 # MPD
-exec --no-startup-id mpd
+# exec --no-startup-id mpd
 
 # Stuff
-exec aw-qt
-exec "vnstatd -d"
+# exec aw-qt
+# exec "vnstatd -d"
 exec dunst
-exec kde-connect-indicator
+# exec kde-connect-indicator
 exec copyq
 exec "xmodmap ~/.Xmodmap"
+# exec "xrdb -merge ~/.Xresources"
 exec "bash ~/bin/autostart.sh"
 #+end_src
 * Polybar
@@ -678,13 +705,15 @@ exec "bash ~/bin/autostart.sh"
 :header-args+: :tangle ./.config/polybar/config
 :END:
 
-| Guix dependency |
-|-----------------|
-| polybar         |
+| Guix dependency  | Description              |
+|------------------+--------------------------|
+| polybar          | statusbar                |
 
 [[https://github.com/polybar/polybar][Polybar]] is a nice-looking, WM-agnostic statusbar program.
 
 I switched to polybar because I wanted to try out some WMs other than i3, but decided to stick with i3 for now.
+
+Don't forget to install the Google Noto Color Emoji font. Guix package with all Noto fonts is way too large.
 
 References:
 - [[https://github.com/polybar/polybar/wiki][polybar docs]]
@@ -696,7 +725,7 @@ The script below allows me to:
 #+begin_src bash :tangle ./bin/polybar.sh
 hostname=$(hostname)
 # Settings varying on the hostname
-if [ "$hostname" = "pntk" ]; then
+if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
     export WLAN_INTERFACE="wlp3s0"
 else
@@ -1488,6 +1517,7 @@ TYPE_UNDO=Ctrl+Z
 | Guix dependency |
 |-----------------|
 | dunst           |
+| libnotify       |
 
 | Type | Note                            |
 |------+---------------------------------|
@@ -1982,9 +2012,59 @@ set recolor true
 map <C-r> set recolor false
 map <C-R> set recolor true
 #+end_src
+* Flatpak
+A lot of proprietary desktop applications can be installed most easily with flatpak & flathub.
+
+| Guix dependency |
+|-----------------|
+| flatpak         |
+
+After installation, add the following repositories:
+#+begin_example
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak remote-add --user --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
+#+end_example
+
+Installation syntax is as follows:
+#+begin_example
+flatpak install --user <remote> <package>
+#+end_example
+
+Packages to install:
+#+NAME: flatpak-deps
+| Flatpak dependency     | Channel |
+|------------------------+---------|
+| org.mozilla.firefox    | flathub |
+| com.discordapp.Discord | flathub |
+| us.zoom.Zoom           | flathub |
+| com.slack.Slack        | flathub |
+
+#+begin_src emacs-lisp :var table=flatpak-deps :wrap example
+(mapconcat
+ (lambda (c) (concat "flatpak install --user " (nth 1 c) " " (nth 0 c)))
+ table
+ "\n")
+#+end_src
+
+#+RESULTS:
+#+begin_example
+flatpak install --user flathub org.mozilla.firefox
+flatpak install --user flathub com.discordapp.Discord
+flatpak install --user flathub us.zoom.Zoom
+flatpak install --user flathub com.slack.Slack
+#+end_example
+
 * Guix settings
-| Guix dependency | Description      |
-| xrandr          | X11 CLI to RandR |
+Other desktop programs I use are listed below.
+
+| Guix dependency        | Description                               |
+| xrandr                 | X11 CLI to RandR                          |
+| arandr                 | GUI to xrandr                             |
+| network-manager-applet | Applet to manage network connections      |
+| feh                    | Image viewer. Used to set background      |
+| copyq                  | Clipboard manager                         |
+| xmodmap                | Program to modify keybindings on X server |
+| thunar                 | My preferred GUI file manager             |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no

@@ -2,7 +2,7 @@
 # [[file:../Desktop.org::*Launching][Launching:1]]
 hostname=$(hostname)
 # Settings varying on the hostname
-if [ "$hostname" = "pntk" ]; then
+if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
     export WLAN_INTERFACE="wlp3s0"
 else

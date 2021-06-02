@@ -21,6 +21,7 @@ for i in $GUIX_EXTRA_PROFILES/*; do
     GUIX_PROFILE="$profile"
     . "$GUIX_PROFILE"/etc/profile
   fi
+  export XDG_DATA_DIRS="$XDG_DATA_DIRS:$profile/share"
   unset profile
 done
 # Guix settings:1 ends here
@@ -28,6 +29,10 @@ done
 # [[file:Console.org::*Guix settings][Guix settings:2]]
 export GUIX_PACKAGE_PATH=~/guix-packages
 # Guix settings:2 ends here
+
+# [[file:Console.org::*Guix settings][Guix settings:3]]
+export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
+# Guix settings:3 ends here
 
 # [[file:Console.org::*XResources][XResources:1]]
 xrdb ~/.Xresources

@@ -1,12 +1,20 @@
 (specifications->manifest
  '(
+   "thunar"
+   "xmodmap"
+   "copyq"
+   "feh"
+   "network-manager-applet"
+   "arandr"
    "xrandr"
+   "flatpak"
    "zathura-djvu"
    "zathura-pdf-poppler"
    "zathura-ps"
    "zathura"
    "picom"
    "keynav"
+   "libnotify"
    "dunst"
    "flameshot"
    "rofi"
@@ -15,4 +23,9 @@
    "curl"
    "bind"
    "polybar"
-   "i3-gaps"))
+   "i3lock"
+   "i3-gaps"
+   "hicolor-icon-theme"
+   "papirus-icon-theme"
+   "matcha-theme"
+   "lxappearance"))
