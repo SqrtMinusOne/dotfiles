@@ -152,6 +152,7 @@ Common modules:
 (use-modules (gnu packages certs))
 (use-modules (gnu packages version-control))
 (use-modules (gnu packages vim))
+(use-modules (gnu packages gnome))
 (use-modules (gnu packages xorg))
 (use-modules (gnu packages wm))
 (use-modules (gnu packages openbox))
@@ -213,25 +214,50 @@ Base packages, necessary right after the installation.
   %base-packages))
 #+end_src
 
-Services. As for now, just extending =%desktop-services=. In future, this part will probably be made specific for each machine.
-#+begin_src scheme :tangle no :noweb-ref system-base
-(services
- (append
-  (list (service openssh-service-type)
-        (set-xorg-configuration
-         (xorg-configuration
-          (keyboard-layout keyboard-layout))))
-  %desktop-services))
+Default services for each machine. Overrides the default =%desktop-services= to add OpenVPN support
+#+begin_src scheme :tangle no :noweb-ref system-common
+(define %my-desktop-services
+  (modify-services %desktop-services
+                   (network-manager-service-type config =>
+                                                 (network-manager-configuration (inherit config)
+                                                                                (vpn-plugins (list network-manager-openvpn))))))
+
 #+end_src
+
 ** azure
 =azure= is a Lenovo Ideapad 330 laptop.
+
+=%backlight-udev-rule= should enable member of =video= group change the display backlight. See the relevant page at [[https://wiki.archlinux.org/title/Backlight][Arch Wiki]].
+
 #+begin_src scheme :noweb yes :tangle ~/.config/guix/systems/azure.scm
 <<system-common>>
+
+(define %backlight-udev-rule
+  (udev-rule
+   "90-backlight.rules"
+   (string-append "ACTION==\"add\", SUBSYSTEM==\"backlight\", "
+                  "RUN+=\"/run/current-system/profile/bin/chgrp video /sys/class/backlight/%k/brightness\""
+                  "\n"
+                  "ACTION==\"add\", SUBSYSTEM==\"backlight\", "
+                  "RUN+=\"/run/current-system/profile/bin/chmod g+w /sys/class/backlight/%k/brightness\"")))
 
 (operating-system
  <<system-base>>
 
  (host-name "azure")
+ (services (append
+            (list (service openssh-service-type)
+                  (set-xorg-configuration
+                   (xorg-configuration
+                    (keyboard-layout keyboard-layout))))
+            (modify-services %my-desktop-services
+                             (elogind-service-type config =>
+                                                   (elogind-configuration (inherit config)
+                                                                          (handle-lid-switch-external-power 'suspend)))
+                             (udev-service-type config =>
+                                                (udev-configuration (inherit config)
+                                                                    (rules (cons %backlight-udev-rule
+                                                                                 (udev-configuration-rules config))))))))
 
  (bootloader
   (bootloader-configuration
@@ -332,6 +358,21 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 | Category | Guix dependency    |
 |----------+--------------------|
 | browsers | ungoogled-chromium |
+| browsers | firefox            |
+** Office
+| Category | Guix dependency |
+|----------+-----------------|
+| office   | libreoffice     |
+| office   | gimp            |
+** LaTeX
+| Category | Guix dependency |
+|----------+-----------------|
+| latex    | texlive         |
+** System
+| Category | Guix dependency         |
+|----------+-------------------------|
+| system   | openvpn                 |
+| system   | python                  |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
@@ -345,20 +386,26 @@ Browsers
    <<packages("browsers")>>))
 #+end_src
 
-Dev
-#+begin_src scheme :tangle .config/guix/manifests/dev.scm :noweb yes
+System
+#+begin_src scheme :tangle .config/guix/manifests/system.scm :noweb yes
 (specifications->manifest
  '(
-   <<packages("dev")>>))
+   <<packages("system")>>))
 #+end_src
 
+Office
+#+begin_src scheme :tangle .config/guix/manifests/office.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("office")>>))
+#+end_src
 * Notes on installing software
 | Category | Guix dependency | Description                                        |
 |----------+-----------------+----------------------------------------------------|
-| dev      | patchelf        | A program to modify existsing ELF executables      |
-| dev      | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
+| system   | patchelf        | A program to modify existsing ELF executables      |
+| system   | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
 ** flatpak
-As for now, the easiest way to install most of proprietary software is via flatpak. See the relevant section in [[file:Desktop.org][Desktop.org]].
+As for now, the easiest way to install most of proprietary software is via flatpak. See the relevant section in [[file:Desktop.org][Desktop.org]]   .
 ** wakatime-cli
 | Note | Description           |
 |------+-----------------------|

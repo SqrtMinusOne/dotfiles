@@ -1,10 +1,12 @@
 (specifications->manifest
  '(
+   "keepassxc"
    "thunar"
    "xmodmap"
    "copyq"
    "feh"
    "network-manager-applet"
+   "light"
    "arandr"
    "xrandr"
    "flatpak"

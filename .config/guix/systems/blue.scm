@@ -4,6 +4,8 @@
 (use-modules (gnu packages certs))
 (use-modules (gnu packages version-control))
 (use-modules (gnu packages vim))
+(use-modules (gnu packages gnome))
+(use-modules (gnu packages xorg))
 (use-modules (gnu packages wm))
 (use-modules (gnu packages openbox))
 (use-modules (nongnu packages linux))
@@ -11,19 +13,20 @@
 
 (use-service-modules desktop networking ssh xorg)
 (use-package-modules ssh)
+(define %my-desktop-services
+  (modify-services %desktop-services
+                   (network-manager-service-type config =>
+                                                 (network-manager-configuration (inherit config)
+                                                                                (vpn-plugins (list network-manager-openvpn))))))
+
 
 (operating-system
-  ;; Use the full Linux kernel
   (kernel linux)
   (initrd microcode-initrd)
   (firmware (list linux-firmware))
   (locale "en_US.utf8")
   (timezone "Europe/Moscow")
-  
-  ;; US/RU keyboard layout
   (keyboard-layout (keyboard-layout "us,ru" #:options '("grp:alt_shift_toggle")))
-  
-  ;; User accounts
   (users (cons* (user-account
                  (name "pavel")
                  (comment "Pavel")
@@ -40,24 +43,15 @@
                     "lp")))
                 %base-user-accounts))
   
-  ;; Base packages
   (packages
    (append
     (list nss-certs
   	    git
           i3-gaps
           openbox
+          xterm
   	    vim)
     %base-packages))
-  
-  ;; Services
-  (services
-   (append
-    (list (service openssh-service-type)
-          (set-xorg-configuration
-           (xorg-configuration
-            (keyboard-layout keyboard-layout))))
-    %desktop-services))
  (host-name "blue")
 
  (bootloader

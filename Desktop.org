@@ -541,10 +541,10 @@ bindsym $mod+semicolon mode "apps"
 
 mode "apps" {
     bindsym Escape mode "default"
-    bindsym b exec firefox; mode default
+    bindsym b exec "flatpak run org.mozilla.firefox"; mode default
     bindsym v exec vk-messenger; mode default
-    bindsym s exec slack; mode default;
-    bindsym d exec discord; mode default;
+    bindsym s exec "flatpak run com.slack.Slack"; mode default;
+    bindsym d exec "flatpak run com.discordapp.Discord"; mode default;
     bindsym m exec "alacritty -e ncmpcpp"; mode default
     bindsym c exec "copyq toggle"; mode default
     bindsym k exec "keepassxc"; mode default
@@ -574,8 +574,8 @@ bindsym XF86AudioNext exec mpc next
 bindsym XF86AudioPrev exec mpc prev
 
 # Screen brightness
-bindsym XF86MonBrightnessUp exec xbacklight -inc 5
-bindsym XF86MonBrightnessDown exec xbacklight -dec 5
+bindsym XF86MonBrightnessUp exec light -A 5
+bindsym XF86MonBrightnessDown exec light -U 5
 
 #+end_src
 *** Screenshots
@@ -2058,13 +2058,16 @@ flatpak install --user flathub com.slack.Slack
 Other desktop programs I use are listed below.
 
 | Guix dependency        | Description                               |
+|------------------------+-------------------------------------------|
 | xrandr                 | X11 CLI to RandR                          |
 | arandr                 | GUI to xrandr                             |
+| light                  | Control screen brightness                 |
 | network-manager-applet | Applet to manage network connections      |
 | feh                    | Image viewer. Used to set background      |
 | copyq                  | Clipboard manager                         |
 | xmodmap                | Program to modify keybindings on X server |
 | thunar                 | My preferred GUI file manager             |
+| keepassxc              | My preferred password manager             |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
