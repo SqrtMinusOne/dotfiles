@@ -103,7 +103,7 @@ References:
 - [[https://gitlab.com/nonguix/nonguix][nonguix channel repo]]
 - [[https://guix.gnu.org/manual/en/html_node/Channels.html][Guix channels reference]]
 
-Nonguix channel is pinned to a particular commit to avoid recompiling Linux kernel.
+Nonguix channel is pinned to a particular commit to avoid recompiling stuff more than necessary.
 
 #+begin_src scheme :tangle .config/guix/channels.scm
 (cons*
@@ -121,7 +121,7 @@ Nonguix channel is pinned to a particular commit to avoid recompiling Linux kern
  (channel
   (name 'nonguix)
   (url "https://gitlab.com/nonguix/nonguix")
-  (commit "46c1d8bcca674d3a71cd077c52dde9552a89873d")
+  (commit "d3c5eea0cbfe3e5bfbcf1fe15bc916fefacc624f")
   (introduction
    (make-channel-introduction
     "897c1a470da759236cc11798f4e0a5f7d4d59fbc"
@@ -149,6 +149,8 @@ Common modules:
 #+begin_src scheme :tangle no :noweb-ref system-common
 (use-modules (gnu))
 (use-modules (gnu system nss))
+(use-modules (gnu packages bash))
+(use-modules ((gnu packages base) #:select (coreutils glibc)))
 (use-modules (gnu packages certs))
 (use-modules (gnu packages version-control))
 (use-modules (gnu packages vim))
@@ -156,6 +158,9 @@ Common modules:
 (use-modules (gnu packages xorg))
 (use-modules (gnu packages wm))
 (use-modules (gnu packages openbox))
+(use-modules (srfi srfi-1))
+(use-modules (guix channels))
+(use-modules (guix inferior))
 (use-modules (nongnu packages linux))
 (use-modules (nongnu system linux-initrd))
 
@@ -168,8 +173,24 @@ In principle, we could define a variable called =base-operating-system= and exte
 The following code will be inserted in the top of the =operating-system= definition.
 
 Use the fulll Linux kernel. I hope I'll be able to use Libre kernel somewhere later.
+
+Inferior in kernel is used to avoid recompilation. It looks like I can pin these to diffent commits than in my =channels.scm=
 #+begin_src scheme :tangle no :noweb-ref system-base
-(kernel linux)
+(kernel
+ (let*
+     ((channels
+       (list (channel
+              (name 'nonguix)
+              (url "https://gitlab.com/nonguix/nonguix")
+              (commit "46c1d8bcca674d3a71cd077c52dde9552a89873d"))
+             (channel
+              (name 'guix)
+              (url "https://git.savannah.gnu.org/git/guix.git")
+              (commit "f463f376e91ccc1fe4ab68d5e822b5d71a1234f5"))))
+      (inferior
+       (inferior-for-channels channels)))
+   (first (lookup-inferior-packages inferior "linux" "5.12.8"))))
+;; (kernel linux)
 (initrd microcode-initrd)
 (firmware (list linux-firmware))
 (locale "en_US.utf8")
@@ -214,7 +235,8 @@ Base packages, necessary right after the installation.
   %base-packages))
 #+end_src
 
-Default services for each machine. Overrides the default =%desktop-services= to add OpenVPN support
+Default services for each machine:
+- overrides the default =%desktop-services= to add OpenVPN support
 #+begin_src scheme :tangle no :noweb-ref system-common
 (define %my-desktop-services
   (modify-services %desktop-services
@@ -227,7 +249,7 @@ Default services for each machine. Overrides the default =%desktop-services= to 
 ** azure
 =azure= is a Lenovo Ideapad 330 laptop.
 
-=%backlight-udev-rule= should enable member of =video= group change the display backlight. See the relevant page at [[https://wiki.archlinux.org/title/Backlight][Arch Wiki]].
+=%backlight-udev-rule= should enable members of =video= group change the display backlight. See the relevant page at [[https://wiki.archlinux.org/title/Backlight][Arch Wiki]].
 
 #+begin_src scheme :noweb yes :tangle ~/.config/guix/systems/azure.scm
 <<system-common>>
@@ -245,11 +267,12 @@ Default services for each machine. Overrides the default =%desktop-services= to 
  <<system-base>>
 
  (host-name "azure")
- (services (append
-            (list (service openssh-service-type)
-                  (set-xorg-configuration
-                   (xorg-configuration
-                    (keyboard-layout keyboard-layout))))
+ (services (cons*
+            (service openssh-service-type)
+            (set-xorg-configuration
+             (xorg-configuration
+              (keyboard-layout keyboard-layout)))
+            (extra-special-file "/lib64/ld-linux-x86-64.so.2" (file-append glibc "/lib/ld-linux-x86-64.so.2"))
             (modify-services %my-desktop-services
                              (elogind-service-type config =>
                                                    (elogind-configuration (inherit config)
@@ -399,13 +422,20 @@ Office
  '(
    <<packages("office")>>))
 #+end_src
+
+LaTeX
+#+begin_src scheme :tangle .config/guix/manifests/latex.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("latex")>>))
+#+end_src
 * Notes on installing software
 | Category | Guix dependency | Description                                        |
 |----------+-----------------+----------------------------------------------------|
 | system   | patchelf        | A program to modify existsing ELF executables      |
 | system   | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
 ** flatpak
-As for now, the easiest way to install most of proprietary software is via flatpak. See the relevant section in [[file:Desktop.org][Desktop.org]]   .
+As for now, the easiest way to install most of proprietary software is via flatpak. See the relevant section in [[file:Desktop.org][Desktop.org]].
 ** wakatime-cli
 | Note | Description           |
 |------+-----------------------|
