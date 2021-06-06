@@ -2345,9 +2345,12 @@ As of now, this package loads Helm on start. To avoid this, I have to exclude He
 Functions used across my literate config files.
 
 *** Tables for Guix Dependencies
-A function to extract Guix dependencies from the org file. If column name matches =[G|g]uix.*dep=, its contents will be added to the result.
+A function to extract Guix dependencies from the org file.
 
-That seems pretty nice as I'm planning to move to Guix unless I encounter some unmovable obstacles.
+- If column name matches =[G|g]uix.*dep=, its contents will be added to the result.
+- If =CATEGORY= is passed, a column with name =[C|c]ategory= will be used to filter results. That way one file can be used to produce multiple manifests.
+- If there is a =[D|d]isabled= column, entries which have non-empty value in this column will be filtered out.
+
 #+begin_src emacs-lisp
 (defun my/extract-guix-dependencies (&optional category)
   (let ((dependencies '()))
@@ -2368,14 +2371,24 @@ That seems pretty nice as I'm planning to move to Guix unless I encounter some u
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p ".*[C|c]ategory.*" elem)))))
+                        (string-match-p ".*[C|c]ategory.*" elem))))
+              (disabled-name-index
+               (cl-position
+                nil
+                (mapcar #'substring-no-properties (nth 0 table))
+                :test (lambda (_ elem)
+                        (string-match-p ".*[D|d]isabled.*" elem)))))
          (when dep-name-index
            (dolist (elem (cdr table))
              (when
-                 (or
-                  (not category)
-                  (not category-name-index)
-                  (string-match-p category (nth category-name-index elem)))
+                 (and
+                  (or
+                   (not category)
+                   (not category-name-index)
+                   (string-match-p category (nth category-name-index elem)))
+                  (or
+                   (not disabled-name-index)
+                   (string-empty-p (nth disabled-name-index elem))))
                (add-to-list
                 'dependencies
                 (substring-no-properties (nth dep-name-index elem)))))))))
