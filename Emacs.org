@@ -101,7 +101,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#encryption][Encryption]]
   - [[#integration-with-evil][Integration with evil]]
   - [[#literate-programing][Literate programing]]
-    - [[#python][Python]]
+    - [[#python--jupyter][Python & Jupyter]]
     - [[#hy][Hy]]
     - [[#view-html-in-browser][View HTML in browser]]
     - [[#setup][Setup]]
@@ -185,8 +185,10 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#code-cells][code-cells]]
     - [[#tensorboard][tensorboard]]
   - [[#java][Java]]
-  - [[#c][C#]]
   - [[#go][Go]]
+  - [[#net][.NET]]
+    - [[#c][C#]]
+    - [[#msbuild][MSBuild]]
   - [[#fish][fish]]
   - [[#sh][sh]]
   - [[#haskell][Haskell]]
@@ -204,8 +206,10 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#notmuch][Notmuch]]
   - [[#elfeed][Elfeed]]
     - [[#some-additions][Some additions]]
+  - [[#erc][ERC]]
   - [[#docker][Docker]]
   - [[#google-translate][Google Translate]]
+  - [[#pomidor][Pomidor]]
   - [[#eww][EWW]]
   - [[#snow][Snow]]
   - [[#zone][Zone]]
@@ -453,6 +457,7 @@ I don't enable the entire package, just the modes I need.
      docker
      geiser
      pdf
+     info
      elfeed
      edebug
      bookmark
@@ -2134,8 +2139,8 @@ Add a custom LaTeX template without default packages. Packages are indented to b
 (defun my/setup-org-latex ()
   (setq org-latex-compiler "xelatex") ;; Probably not necessary
   (setq org-latex-pdf-process '("latexmk -outdir=%o %f")) ;; Use latexmk
-  (setq org-latex-listings 'minted)   ;; Use minted to highlight source code
-  (setq org-latex-minted-options      ;; Some minted options I like
+  (setq org-latex-listings 'minted) ;; Use minted to highlight source code
+  (setq org-latex-minted-options    ;; Some minted options I like
         '(("breaklines" "true")
           ("tabsize" "4")
           ("autogobble")
@@ -2154,7 +2159,18 @@ Add a custom LaTeX template without default packages. Packages are indented to b
                  ("\\subsection{%s}" . "\\subsection*{%s}")
                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
                  ("\\paragraph{%s}" . "\\paragraph*{%s}")
-                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+  ;; Use beamer without the default packages
+  (add-to-list 'org-latex-classes
+               '("org-latex-beamer"
+                 "\\documentclass{beamer}
+[NO-DEFAULT-PACKAGES]
+[PACKAGES]
+[EXTRA]"
+                 ("beamer" "\\documentclass[presentation]{beamer}"
+                  ("\\section{%s}" . "\\section*{%s}")
+                  ("\\subsection{%s}" . "\\subsection*{%s}")
+                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")))))
 
 ;; Make sure to eval the function when org-latex-classes list already exists
 (with-eval-after-load 'ox-latex
@@ -2290,7 +2306,15 @@ As of now, this package loads Helm on start. To avoid this, I have to exclude He
   :straight (:files (:defaults (:exclude "*helm*")))
   :init
   (setq org-ref-completion-library 'org-ref-ivy-cite)
-  :after (org))
+  (setq bibtex-dialect 'biblatex)
+  :after (org)
+  :config
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c l l" 'org-ref-ivy-insert-cite-link
+   "C-c l r" 'org-ref-ivy-insert-ref-link)
+  (add-to-list 'orhc-candidate-formats
+               '("online" . "  |${=key=}| ${title} ${url}")))
 #+end_src
 ** System configuration
 Functions used across my literate config files.
@@ -2589,9 +2613,10 @@ Configs for various web development technologies I'm using.
 *** Emmet
 [[https://emmet.io/][Emmet]] is a toolkit which greatly speeds up typing HTML & CSS.
 
-| Type | Note                                |
-|------+-------------------------------------|
-| TODO | Do not enable for every Svelte mode |
+| Type | Note                                              |
+|------+---------------------------------------------------|
+| TODO | Do not enable for every Svelte mode               |
+| TODO | make expand div[disabled] as <div disabled></div> |
 
 My bit of config here:
 - makes Emmet activate only in certain mmm-mode submodes.
@@ -3054,7 +3079,8 @@ References:
   :commands (langtool-check)
   :config
   (setq langtool-language-tool-server-jar "/home/pavel/Programs/LanguageTool-5.1/languagetool-server.jar")
-  (setq langtool-mother-tongue "ru"))
+  (setq langtool-mother-tongue "ru")
+  (setq langtool-default-language "en-US"))
 
 (my-leader-def
   :infix "L"
@@ -3581,7 +3607,10 @@ Filter elfeed search buffer by the feed under the cursor.
       "@6-months-ago "
       "+unread "
       "="
-      (elfeed-feed-title (elfeed-entry-feed entry))))))
+      (replace-regexp-in-string
+       (rx "?" (* not-newline) eos)
+       ""
+       (elfeed-feed-url (elfeed-entry-feed entry)))))))
 #+end_src
 
 Open a URL with eww.
@@ -3592,6 +3621,40 @@ Open a URL with eww.
   (let ((link (elfeed-entry-link elfeed-show-entry)))
     (when link
       (eww link))))
+#+end_src
+** ERC
+ERC is a built-it Emacs IRC client.
+
+#+begin_src emacs-lisp
+(my-leader-def "ai" #'erc-tls)
+#+end_src
+
+A plugin to highlight IRC nicknames:
+#+begin_src emacs-lisp
+(use-package erc-hl-nicks
+  :hook (erc-mode . erc-hl-nicks-mode)
+  :straight t)
+#+end_src
+
+Config of my ZNC instance.
+#+begin_src emacs-lisp
+(setq erc-server "sqrtminusone.xyz")
+(setq erc-port 1984)
+(setq erc-nick "sqrtminusone")
+(setq erc-user-full-name "Pavel Korytov")
+(setq erc-track-shorten-start 8)
+#+end_src
+
+Kill buffer on part.
+#+begin_src emacs-lisp
+(setq erc-kill-buffer-on-part t)
+#+end_src
+
+ZNC support. Seems to provide a few nice features for ZNC.
+#+begin_src emacs-lisp
+(use-package znc
+  :straight t
+  :after (erc))
 #+end_src
 ** Docker
 A package to manage docker containers from Emacs.

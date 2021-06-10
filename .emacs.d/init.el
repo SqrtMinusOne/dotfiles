@@ -129,6 +129,7 @@
      docker
      geiser
      pdf
+     info
      elfeed
      edebug
      bookmark
@@ -1309,8 +1310,8 @@ parent."
 (defun my/setup-org-latex ()
   (setq org-latex-compiler "xelatex") ;; Probably not necessary
   (setq org-latex-pdf-process '("latexmk -outdir=%o %f")) ;; Use latexmk
-  (setq org-latex-listings 'minted)   ;; Use minted to highlight source code
-  (setq org-latex-minted-options      ;; Some minted options I like
+  (setq org-latex-listings 'minted) ;; Use minted to highlight source code
+  (setq org-latex-minted-options    ;; Some minted options I like
         '(("breaklines" "true")
           ("tabsize" "4")
           ("autogobble")
@@ -1329,7 +1330,18 @@ parent."
                  ("\\subsection{%s}" . "\\subsection*{%s}")
                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
                  ("\\paragraph{%s}" . "\\paragraph*{%s}")
-                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+                 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+  ;; Use beamer without the default packages
+  (add-to-list 'org-latex-classes
+               '("org-latex-beamer"
+                 "\\documentclass{beamer}
+[NO-DEFAULT-PACKAGES]
+[PACKAGES]
+[EXTRA]"
+                 ("beamer" "\\documentclass[presentation]{beamer}"
+                  ("\\section{%s}" . "\\section*{%s}")
+                  ("\\subsection{%s}" . "\\subsection*{%s}")
+                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")))))
 
 ;; Make sure to eval the function when org-latex-classes list already exists
 (with-eval-after-load 'ox-latex
@@ -1410,7 +1422,15 @@ parent."
   :straight (:files (:defaults (:exclude "*helm*")))
   :init
   (setq org-ref-completion-library 'org-ref-ivy-cite)
-  :after (org))
+  (setq bibtex-dialect 'biblatex)
+  :after (org)
+  :config
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c l l" 'org-ref-ivy-insert-cite-link
+   "C-c l r" 'org-ref-ivy-insert-ref-link)
+  (add-to-list 'orhc-candidate-formats
+               '("online" . "  |${=key=}| ${title} ${url}")))
 
 (defun my/extract-guix-dependencies ()
   (let ((dependencies '()))
@@ -2026,7 +2046,8 @@ parent."
   :commands (langtool-check)
   :config
   (setq langtool-language-tool-server-jar "/home/pavel/Programs/LanguageTool-5.1/languagetool-server.jar")
-  (setq langtool-mother-tongue "ru"))
+  (setq langtool-mother-tongue "ru")
+  (setq langtool-default-language "en-US"))
 
 (my-leader-def
   :infix "L"
@@ -2391,7 +2412,10 @@ parent."
       "@6-months-ago "
       "+unread "
       "="
-      (elfeed-feed-title (elfeed-entry-feed entry))))))
+      (replace-regexp-in-string
+       (rx "?" (* not-newline) eos)
+       ""
+       (elfeed-feed-url (elfeed-entry-feed entry)))))))
 
 (defun my/elfeed-show-visit-eww ()
   "Visit the current entry in eww"
@@ -2399,6 +2423,24 @@ parent."
   (let ((link (elfeed-entry-link elfeed-show-entry)))
     (when link
       (eww link))))
+
+(my-leader-def "ai" #'erc-tls)
+
+(use-package erc-hl-nicks
+  :hook (erc-mode . erc-hl-nicks-mode)
+  :straight t)
+
+(setq erc-server "sqrtminusone.xyz")
+(setq erc-port 1984)
+(setq erc-nick "sqrtminusone")
+(setq erc-user-full-name "Pavel Korytov")
+(setq erc-track-shorten-start 8)
+
+(setq erc-kill-buffer-on-part t)
+
+(use-package znc
+  :straight t
+  :after (erc))
 
 (use-package docker
   :straight t
@@ -2432,6 +2474,23 @@ parent."
   "atq" 'google-translate-query-translate
   "atQ" 'google-translate-query-translate-reverse
   "att" 'google-translate-smooth-translate)
+
+(use-package pomidor
+  :straight t
+  :commands (pomidor)
+  :init
+  (my-leader-def "ap" #'pomidor)
+  :config
+  (setq pomidor-sound-tick nil)
+  (setq pomidor-sound-tack nil)
+  (evil-collection-define-key 'normal 'pomidor-mode-map
+    (kbd "q") #'quit-window
+    (kbd "Q") #'pomidor-quit
+    (kbd "R") #'pomidor-reset
+    (kbd "h") #'pomidor-hold
+    (kbd "H") #'pomidor-unhold
+    (kbd "RET") #'pomidor-stop
+    (kbd "M-RET") #'pomidor-break))
 
 (defun my/toggle-shr-use-fonts ()
   "Toggle the shr-use-fonts variable in buffer"
