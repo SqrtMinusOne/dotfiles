@@ -293,7 +293,7 @@ bindsym $mod+semicolon mode "apps"
 
 mode "apps" {
     bindsym Escape mode "default"
-    bindsym b exec "flatpak run org.mozilla.firefox"; mode default
+    bindsym b exec firefox; mode default
     bindsym v exec vk-messenger; mode default
     bindsym s exec "flatpak run com.slack.Slack"; mode default;
     bindsym d exec "flatpak run com.discordapp.Discord"; mode default;
@@ -390,6 +390,7 @@ exec --no-startup-id nm-applet
 
 # Stuff
 # exec aw-qt
+exec "bash ~/bin/aw-start"
 # exec "vnstatd -d"
 exec dunst
 # exec kde-connect-indicator
