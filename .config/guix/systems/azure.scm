@@ -18,11 +18,14 @@
 
 (use-service-modules desktop networking ssh xorg)
 (use-package-modules ssh)
-(define %my-desktop-services
-  (modify-services %desktop-services
-                   (network-manager-service-type config =>
-                                                 (network-manager-configuration (inherit config)
-                                                                                (vpn-plugins (list network-manager-openvpn))))))
+(define %my-base-services
+  (cons*
+   (service openssh-service-type)
+   (extra-special-file "/lib64/ld-linux-x86-64.so.2" (file-append glibc "/lib/ld-linux-x86-64.so.2"))
+   (modify-services %desktop-services
+                    (network-manager-service-type config =>
+                                                  (network-manager-configuration (inherit config)
+                                                                                 (vpn-plugins (list network-manager-openvpn)))))))
 
 
 (define %backlight-udev-rule
@@ -76,6 +79,7 @@
    (list nss-certs
  	    git
          i3-gaps
+         i3lock
          openbox
          xterm
  	    vim)
@@ -83,12 +87,10 @@
 
  (host-name "azure")
  (services (cons*
-            (service openssh-service-type)
             (set-xorg-configuration
              (xorg-configuration
               (keyboard-layout keyboard-layout)))
-            (extra-special-file "/lib64/ld-linux-x86-64.so.2" (file-append glibc "/lib/ld-linux-x86-64.so.2"))
-            (modify-services %my-desktop-services
+            (modify-services %my-base-services
                              (elogind-service-type config =>
                                                    (elogind-configuration (inherit config)
                                                                           (handle-lid-switch-external-power 'suspend)))

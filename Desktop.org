@@ -180,10 +180,12 @@ IIRC the only thing =lxapparance= does is edit GTK config files.
 :header-args+: :tangle ./.config/i3/config
 :END:
 
-| Guix dependency |
-|-----------------|
-| i3-gaps         |
-| i3lock          |
+| Guix dependency | Disabled |
+|-----------------+----------|
+| i3-gaps         |          |
+| i3lock          | true     |
+
+=i3lock= is disabled because the global one has to be used.
 
 [[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], but i3 seems to fit my workflow best.
 
@@ -2013,7 +2015,71 @@ set recolor true
 map <C-r> set recolor false
 map <C-R> set recolor true
 #+end_src
-* Flatpak
+* Various software
+This section generates manifests for various desktop software that I'm using.
+
+** Browsers
+| Category | Guix dependency    |
+|----------+--------------------|
+| browsers | ungoogled-chromium |
+| browsers | firefox            |
+** Office
+| Category | Guix dependency |
+|----------+-----------------|
+| office   | libreoffice     |
+| office   | gimp            |
+** Music
+| Category | Guix dependency |
+|----------+-----------------|
+| music    | mpd             |
+| music    | ncmpcpp         |
+| music    | picard          |
+| music    | mpd-watcher     |
+** LaTeX
+| Category | Guix dependency |
+|----------+-----------------|
+| latex    | texlive         |
+** Manifests
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no :var category=""
+(my/format-guix-dependencies category)
+#+end_src
+
+Browsers
+#+begin_src scheme :tangle .config/guix/manifests/browsers.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("browsers")>>))
+#+end_src
+
+System
+#+begin_src scheme :tangle .config/guix/manifests/system.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("system")>>))
+#+end_src
+
+Music
+#+begin_src scheme :tangle .config/guix/manifests/music.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("music")>>))
+#+end_src
+
+Office
+#+begin_src scheme :tangle .config/guix/manifests/office.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("office")>>))
+#+end_src
+
+LaTeX
+#+begin_src scheme :tangle .config/guix/manifests/latex.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("latex")>>))
+#+end_src
+** Flatpak
 A lot of proprietary desktop applications can be installed most easily with flatpak & flathub.
 
 | Guix dependency |
@@ -2061,6 +2127,7 @@ Other desktop programs I use are listed below.
 | Guix dependency        | Description                               |
 |------------------------+-------------------------------------------|
 | xrandr                 | X11 CLI to RandR                          |
+| xprop                  | Tool to display properties of X windows   |
 | arandr                 | GUI to xrandr                             |
 | light                  | Control screen brightness                 |
 | network-manager-applet | Applet to manage network connections      |

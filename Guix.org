@@ -229,6 +229,7 @@ Base packages, necessary right after the installation.
   (list nss-certs
 	    git
         i3-gaps
+        i3lock
         openbox
         xterm
 	    vim)
@@ -236,13 +237,17 @@ Base packages, necessary right after the installation.
 #+end_src
 
 Default services for each machine:
-- overrides the default =%desktop-services= to add OpenVPN support
+- override the default =%desktop-services= to add OpenVPN support
+- add a symlink to ELF interpeter to where most Linux binaries expect it
 #+begin_src scheme :tangle no :noweb-ref system-common
-(define %my-desktop-services
-  (modify-services %desktop-services
-                   (network-manager-service-type config =>
-                                                 (network-manager-configuration (inherit config)
-                                                                                (vpn-plugins (list network-manager-openvpn))))))
+(define %my-base-services
+  (cons*
+   (service openssh-service-type)
+   (extra-special-file "/lib64/ld-linux-x86-64.so.2" (file-append glibc "/lib/ld-linux-x86-64.so.2"))
+   (modify-services %desktop-services
+                    (network-manager-service-type config =>
+                                                  (network-manager-configuration (inherit config)
+                                                                                 (vpn-plugins (list network-manager-openvpn)))))))
 
 #+end_src
 
@@ -268,12 +273,10 @@ Default services for each machine:
 
  (host-name "azure")
  (services (cons*
-            (service openssh-service-type)
             (set-xorg-configuration
              (xorg-configuration
               (keyboard-layout keyboard-layout)))
-            (extra-special-file "/lib64/ld-linux-x86-64.so.2" (file-append glibc "/lib/ld-linux-x86-64.so.2"))
-            (modify-services %my-desktop-services
+            (modify-services %my-base-services
                              (elogind-service-type config =>
                                                    (elogind-configuration (inherit config)
                                                                           (handle-lid-switch-external-power 'suspend)))
@@ -376,59 +379,11 @@ guix clone https://github.com/SqrtMinusOne/dotfiles.git
 And activate the required profiles. Again, downloading & building Emacs, Starship and stuff will take a while.
 
 Don't forget to install =JetBrainsMono Nerd Font=.
-* Various software
-** Browsers
-| Category | Guix dependency    |
-|----------+--------------------|
-| browsers | ungoogled-chromium |
-| browsers | firefox            |
-** Office
-| Category | Guix dependency |
-|----------+-----------------|
-| office   | libreoffice     |
-| office   | gimp            |
-** LaTeX
-| Category | Guix dependency |
-|----------+-----------------|
-| latex    | texlive         |
-** System
+* Misc software
 | Category | Guix dependency         |
 |----------+-------------------------|
 | system   | openvpn                 |
 | system   | python                  |
-** Manifests
-#+NAME: packages
-#+begin_src emacs-lisp :tangle no :var category=""
-(my/format-guix-dependencies category)
-#+end_src
-
-Browsers
-#+begin_src scheme :tangle .config/guix/manifests/browsers.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("browsers")>>))
-#+end_src
-
-System
-#+begin_src scheme :tangle .config/guix/manifests/system.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("system")>>))
-#+end_src
-
-Office
-#+begin_src scheme :tangle .config/guix/manifests/office.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("office")>>))
-#+end_src
-
-LaTeX
-#+begin_src scheme :tangle .config/guix/manifests/latex.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("latex")>>))
-#+end_src
 * Notes on installing software
 | Category | Guix dependency | Description                                        |
 |----------+-----------------+----------------------------------------------------|
