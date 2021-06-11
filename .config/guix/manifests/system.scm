@@ -1,6 +1,7 @@
 ;; [[file:../../../Guix.org::*Manifests][Manifests:3]]
 (specifications->manifest
  '(
+   "zlib"
    "glibc"
    "patchelf"
    "python"

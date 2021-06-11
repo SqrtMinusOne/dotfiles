@@ -453,7 +453,7 @@ Before I figure out how to package this for Guix:
 
 The official binaries work just fine after some patching, except for the =aw-qt= binary.
 
-Properly building from source is more awkward (PyInstaller? Are you serious? xD), as there are multiple packages with lots of dependencies.
+Properly building from source is more awkward, as there is poetry, which isn't oficially supported by Guix yet.
 
 The patching is as follows:
 
@@ -470,7 +470,7 @@ Add libz to RPATH
 
 | Category | Guix dependency |
 |----------+-----------------|
-| misc     | zlib            |
+| system   | zlib            |
 
 #+begin_src bash eval :no
 patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib/ aw-qt
@@ -482,7 +482,7 @@ patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib
 
 As aw-qt doesn't work properly, and the only thing it does is makes a tray icon anyhow, here is a script to launch the required components:
 #+begin_src bash :tangle ./bin/aw-start
-~/Programs/activitywatch/aw-server/aw-server &
-~/Programs/activitywatch/aw-watcher-afk/aw-watcher-afk &
-~/Programs/activitywatch/aw-watcher-window/aw-watcher-window &
+~/bin/activitywatch/aw-server/aw-server &
+~/bin/activitywatch/aw-watcher-afk/aw-watcher-afk &
+~/bin/activitywatch/aw-watcher-window/aw-watcher-window &
 #+end_src

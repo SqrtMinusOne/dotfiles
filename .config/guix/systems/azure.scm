@@ -49,6 +49,7 @@
        (inferior
         (inferior-for-channels channels)))
     (first (lookup-inferior-packages inferior "linux" "5.12.8"))))
+ ;; (kernel linux)
  (initrd microcode-initrd)
  (firmware (list linux-firmware))
  (locale "en_US.utf8")
