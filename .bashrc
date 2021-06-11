@@ -104,6 +104,15 @@ alias q="exit"
 alias c="clear"
 # Aliases:1 ends here
 
+# [[file:Console.org::*Aliases][Aliases:2]]
+if [[ ! -z "$SIMPLE" ]]; then
+    unalias ls
+    alias ll="ls -lah"
+fi
+# Aliases:2 ends here
+
 # [[file:Console.org::*Starship prompt][Starship prompt:1]]
-eval "$(starship init bash)"
+if [[ -z "$SIMPLE" ]]; then
+    eval "$(starship init bash)"
+fi
 # Starship prompt:1 ends here

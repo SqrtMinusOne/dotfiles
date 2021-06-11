@@ -178,6 +178,10 @@ Source the system-wide file
 source /etc/bashrc
 #+end_src
 
+| Guix dependency |
+|-----------------|
+| xhost           |
+
 Allow other users to access X server. Necessary for stuff like aw-watcher-window.
 #+begin_src bash
 xhost +local:root > /dev/null 2>&1
@@ -286,6 +290,13 @@ alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
 #+end_src
+
+#+begin_src bash
+if [[ ! -z "$SIMPLE" ]]; then
+    unalias ls
+    alias ll="ls -lah"
+fi
+#+end_src
 *** OFF (OFF) Anaconda
 #+begin_quote
 managed by 'conda init' !!!
@@ -310,7 +321,9 @@ unset __conda_setup
 #+end_src
 *** Starship prompt
 #+begin_src bash
-eval "$(starship init bash)"
+if [[ -z "$SIMPLE" ]]; then
+    eval "$(starship init bash)"
+fi
 #+end_src
 * Fish
 :PROPERTIES:

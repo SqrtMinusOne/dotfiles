@@ -11,4 +11,5 @@
    "rust-starship"
    "dt-colorscripts"
    "fish"
+   "xhost"
    "xrdb"))
