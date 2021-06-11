@@ -1128,9 +1128,8 @@ Before I figure out how to package this for Guix:
 #+begin_src emacs-lisp
 (use-package wakatime-mode
   :straight t
-  :disabled
   :config
-  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime-cli")))
+  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime")))
   (global-wakatime-mode))
 #+end_src
 *** ActivityWatch
@@ -1140,7 +1139,6 @@ Before I figure out how to package this for Guix:
 
 (use-package activity-watch-mode
   :straight t
-  :disabled
   :config
   (global-activity-watch-mode))
 #+end_src
@@ -3185,6 +3183,12 @@ Some packages for editing various Lisps.
 (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
 (add-hook 'emacs-lisp-mode-hook #'lispy-mode)
+#+end_src
+*** Common lisp
+#+begin_src emacs-lisp
+(add-hook 'lisp-mode-hook #'aggressive-indent-mode)
+;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+(add-hook 'lisp-mode-hook #'lispy-mode)
 #+end_src
 *** Clojure
 #+begin_src emacs-lisp
