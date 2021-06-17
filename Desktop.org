@@ -2028,13 +2028,6 @@ This section generates manifests for various desktop software that I'm using.
 |----------+-----------------|
 | office   | libreoffice     |
 | office   | gimp            |
-** Music
-| Category | Guix dependency |
-|----------+-----------------|
-| music    | mpd             |
-| music    | ncmpcpp         |
-| music    | picard          |
-| music    | mpd-watcher     |
 ** LaTeX
 | Category | Guix dependency |
 |----------+-----------------|
@@ -2120,7 +2113,56 @@ flatpak install --user flathub com.discordapp.Discord
 flatpak install --user flathub us.zoom.Zoom
 flatpak install --user flathub com.slack.Slack
 #+end_example
+* Services
+:PROPERTIES:
+:header-args+: :tangle ~/.config/shepherd/init.scm
+:END:
+[[https://www.gnu.org/software/shepherd/manual/html_node/index.html][GNU Shepherd]] is a service management system for GNU Guix.
 
+I previously used supervisor, but shepherd also seems pretty capable.
+** Music
+| Category | Guix dependency |
+|----------+-----------------|
+| music    | mpd             |
+| music    | ncmpcpp         |
+| music    | picard          |
+| music    | mpd-watcher     |
+
+Music player daemon
+#+begin_src scheme
+(define mpd
+  (make <service>
+    #:provides '(mpd)
+    #:respawn? #t
+    #:start (make-system-constructor "mpd")
+    #:stop (make-kill-destructor)))
+#+end_src
+
+MPD watcher
+#+begin_src scheme
+(define mpd-watcher
+  (make <service>
+    #:provides '(mpd-watcher)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("mpd_watcher"))
+    #:stop (make-kill-destructor)
+    #:requires '(mpd)))
+#+end_src
+** Shepherd config
+Register services
+#+begin_src scheme
+(register-services mpd mpd-watcher)
+#+end_src
+
+Daemonize shepherd
+#+begin_src scheme
+(action 'shepherd 'daemonize)
+#+end_src
+
+Run services
+#+begin_src scheme
+(for-each start '(mpd mpd-watcher))
+#+end_src
 * Guix settings
 Other desktop programs I use are listed below.
 
