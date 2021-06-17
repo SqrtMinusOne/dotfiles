@@ -1,5 +1,5 @@
 #+PROPERTY: header-args :mkdirp yes
-#+PROPERTY: header-args:emacs-lisp :tangle ./.emacs.d/init.el :mkdirp yes
+#+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el :mkdirp yes
 #+TODO: CHECK(s) | OFF(o)
 
 #+begin_quote
@@ -2347,6 +2347,7 @@ A function to extract Guix dependencies from the org file.
 
 - If column name matches =[G|g]uix.*dep=, its contents will be added to the result.
 - If =CATEGORY= is passed, a column with name =[C|c]ategory= will be used to filter results. That way one file can be used to produce multiple manifests.
+- If =CATEGORY= is not passed, entries with non-empty category will be filtered out
 - If there is a =[D|d]isabled= column, entries which have non-empty value in this column will be filtered out.
 
 #+begin_src emacs-lisp
@@ -2380,10 +2381,18 @@ A function to extract Guix dependencies from the org file.
            (dolist (elem (cdr table))
              (when
                  (and
+                  ;; Category
                   (or
-                   (not category)
-                   (not category-name-index)
-                   (string-match-p category (nth category-name-index elem)))
+                   ;; Category not set and not present in the table
+                   (and
+                    (or (not category) (string-empty-p category))
+                    (not category-name-index))
+                   ;; Category is set and present in the table
+                   (and
+                    category-name-index
+                    (not (string-empty-p category))
+                    (string-match-p category (nth category-name-index elem))))
+                  ;; Not disabled
                   (or
                    (not disabled-name-index)
                    (string-empty-p (nth disabled-name-index elem))))
@@ -3863,6 +3872,7 @@ Shows which file is being edited in Emacs.
   :if (and (string= (system-name) "pdsk") (not my/slow-ssh))
   :config
   (elcord-mode))
+#+end_src
 ** Guix
 #+begin_src emacs-lisp
 (use-package guix

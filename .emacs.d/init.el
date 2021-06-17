@@ -558,9 +558,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package wakatime-mode
   :straight t
-  :disabled
   :config
-  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime-cli")))
+  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime")))
   (global-wakatime-mode))
 
 (use-package request
@@ -568,7 +567,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package activity-watch-mode
   :straight t
-  :disabled
   :config
   (global-activity-watch-mode))
 
@@ -1455,14 +1453,27 @@ parent."
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p ".*[C|c]ategory.*" elem)))))
+                        (string-match-p ".*[C|c]ategory.*" elem))))
+              (disabled-name-index
+               (cl-position
+                nil
+                (mapcar #'substring-no-properties (nth 0 table))
+                :test (lambda (_ elem)
+                        (string-match-p ".*[D|d]isabled.*" elem)))))
          (when dep-name-index
            (dolist (elem (cdr table))
              (when
-                 (or
-                  (not category)
-                  (not category-name-index)
-                  (string-match-p category (nth category-name-index elem)))
+                 (and
+                  (or
+                   (and
+                    (not category)
+                    (not category-name-index))
+                   (and
+                    category-name-index
+                    (string-match-p category (nth category-name-index elem))))
+                  (or
+                   (not disabled-name-index)
+                   (string-empty-p (nth disabled-name-index elem))))
                (add-to-list
                 'dependencies
                 (substring-no-properties (nth dep-name-index elem)))))))))
@@ -2105,6 +2116,10 @@ parent."
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
 (add-hook 'emacs-lisp-mode-hook #'lispy-mode)
 
+(add-hook 'lisp-mode-hook #'aggressive-indent-mode)
+;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+(add-hook 'lisp-mode-hook #'lispy-mode)
+
 (use-package clojure-mode
   :straight t
   :mode "\\.clj[sc]?\\'"
@@ -2374,8 +2389,8 @@ parent."
                '("yadm"
                  (tramp-login-program "yadm")
                  (tramp-login-args (("enter")))
-                 (tramp-login-env (("SHELL") ("/usr/bin/env bash")))
-                 (tramp-remote-shell "/usr/bin/env bash")
+                 (tramp-login-env (("SHELL") (locate-file "file" exec-path)))
+                 (tramp-remote-shell (locate-file "file" exec-path))
                  (tramp-remote-shell-args ("-c")))))
 
 
@@ -2560,3 +2575,15 @@ parent."
             :action (lambda (elem)
                       (setq zone-programs (vector (cdr elem)))
                       (zone))))
+
+(use-package elcord
+  :straight t
+  :if (and (string= (system-name) "pdsk") (not my/slow-ssh))
+  :config
+  (elcord-mode))
+
+(use-package guix
+  :straight t
+  :commands (guix)
+  :init
+  (my-leader-def "ag" 'guix))
