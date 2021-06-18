@@ -658,6 +658,7 @@ key_bindings:
 | bat             | ~cat~ clone with syntax highlighting        |
 | htop            | Interactive process viewer                  |
 | nethogs         | A tool to group processed by used bandwidth |
+| osync           | rsync wrapper                               |
 
 | Note | Description     |
 |------+-----------------|

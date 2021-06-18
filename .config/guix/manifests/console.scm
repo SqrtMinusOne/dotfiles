@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "osync"
    "nethogs"
    "htop"
    "bat"
