@@ -844,6 +844,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               vc-ignore-dir-regexp
               tramp-file-name-regexp))
 
+(setq tramp-remote-path
+      (append tramp-remote-path
+              '(tramp-own-remote-path)))
+
 (defun my/dired-bookmark-open ()
   (interactive)
   (unless (boundp 'my/dired-bookmarks)
@@ -1464,13 +1468,18 @@ parent."
            (dolist (elem (cdr table))
              (when
                  (and
+                  ;; Category
                   (or
+                   ;; Category not set and not present in the table
                    (and
-                    (not category)
+                    (or (not category) (string-empty-p category))
                     (not category-name-index))
+                   ;; Category is set and present in the table
                    (and
                     category-name-index
+                    (not (string-empty-p category))
                     (string-match-p category (nth category-name-index elem))))
+                  ;; Not disabled
                   (or
                    (not disabled-name-index)
                    (string-empty-p (nth disabled-name-index elem))))
@@ -1489,7 +1498,8 @@ parent."
       '("/home/pavel/Emacs.org"
         "/home/pavel/Desktop.org"
         "/home/pavel/Console.org"
-        "/home/pavel/Guix.org"))
+        "/home/pavel/Guix.org"
+        "/home/pavel/Mail.org"))
 
 (add-hook 'org-mode-hook
           (lambda ()
@@ -2386,11 +2396,11 @@ parent."
 
 (with-eval-after-load 'tramp
   (add-to-list 'tramp-methods
-               '("yadm"
+               `("yadm"
                  (tramp-login-program "yadm")
                  (tramp-login-args (("enter")))
-                 (tramp-login-env (("SHELL") (locate-file "file" exec-path)))
-                 (tramp-remote-shell (locate-file "file" exec-path))
+                 (tramp-login-env (("SHELL") "/bin/sh"))
+                 (tramp-remote-shell "/bin/sh")
                  (tramp-remote-shell-args ("-c")))))
 
 
@@ -2414,22 +2424,7 @@ parent."
 (general-define-key "C-c f" 'my/open-yadm-file)
 (my-leader-def "cf" 'my/open-yadm-file)
 
-(use-package notmuch
-  :ensure nil
-  :commands (notmuch)
-  :config
-  (setq mail-specify-envelope-from t)
-  (setq message-sendmail-envelope-from 'header)
-  (setq mail-envelope-from 'header)
-  (setq notmuch-always-prompt-for-sender t)
-  (setq sendmail-program "/usr/bin/msmtp")
-  (setq send-mail-function #'sendmail-send-it)
-  (add-hook 'notmuch-hello-mode-hook
-            (lambda () (display-line-numbers-mode 0)))
-  (custom-set-faces
-   `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow)))))))
-
-(my-leader-def "am" 'notmuch)
+(load-file (expand-file-name "mail.el" user-emacs-directory))
 
 (use-package elfeed
   :straight (:repo "SqrtMinusOne/elfeed" :host github)
