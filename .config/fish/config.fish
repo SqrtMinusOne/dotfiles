@@ -11,7 +11,14 @@ alias ls="exa --icons"
 alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
+alias ic="init_conda"
 # Fish:2 ends here
+
+# [[file:../../Console.org::*Fish][Fish:3]]
+function init_conda
+    eval /home/pavel/.guix-extra-profiles/dev/dev/bin/conda "shell.fish" "hook" $argv | source
+end
+# Fish:3 ends here
 
 # [[file:../../Console.org::*Fish][Fish:4]]
 if ! test -n "$TMUX"; and ! test -n "$IS_EMACS";

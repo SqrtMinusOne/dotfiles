@@ -296,6 +296,7 @@ alias ls="exa --icons"
 alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
+alias ic="init_conda"
 #+end_src
 
 #+begin_src bash
@@ -304,27 +305,27 @@ if [[ ! -z "$SIMPLE" ]]; then
     alias ll="ls -lah"
 fi
 #+end_src
-*** OFF (OFF) Anaconda
+*** Anaconda
 #+begin_quote
 managed by 'conda init' !!!
 #+end_quote
 Yeah, tell this to yourself
 
-#+begin_src bash :tangle no
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/pavel/Programs/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/pavel/Programs/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/pavel/Programs/miniconda3/etc/profile.d/conda.sh"
+#+begin_src bash
+init_conda () {
+    __conda_setup="$('/home/pavel/.guix-extra-profiles/dev/dev/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+    if [ $? -eq 0 ]; then
+        eval "$__conda_setup"
     else
-        export PATH="/home/pavel/Programs/miniconda3/bin:$PATH"
+        if [ -f "/home/pavel/.guix-extra-profiles/dev/dev/etc/profile.d/conda.sh" ]; then
+            . "/home/pavel/.guix-extra-profiles/dev/dev/etc/profile.d/conda.sh"
+        else
+            # export PATH="/home/pavel/Programs/miniconda3/bin:$PATH"
+            echo "what"
+        fi
     fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
+    unset __conda_setup
+}
 #+end_src
 *** Starship prompt
 #+begin_src bash
@@ -356,11 +357,10 @@ fish_vi_key_bindings
 #+end_src
 
 Anaconda
-#+begin_src fish :tangle no
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-eval /home/pavel/Programs/miniconda3/bin/conda "shell.fish" "hook" $argv | source
-# <<< conda initialize <<<
+#+begin_src fish
+function init_conda
+    eval /home/pavel/.guix-extra-profiles/dev/dev/bin/conda "shell.fish" "hook" $argv | source
+end
 #+end_src
 
 | Guix dependency |

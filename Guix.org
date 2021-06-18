@@ -382,10 +382,10 @@ And activate the required profiles. Again, downloading & building Emacs, Starshi
 
 Don't forget to install =JetBrainsMono Nerd Font=.
 * Misc software
-| Category | Guix dependency         |
-|----------+-------------------------|
-| system   | openvpn                 |
-| system   | python                  |
+| Category | Guix dependency |
+|----------+-----------------|
+| system   | openvpn         |
+| system   | python          |
 * Notes on installing software
 | Category | Guix dependency | Description                                        |
 |----------+-----------------+----------------------------------------------------|
@@ -393,6 +393,20 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 | system   | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
 ** flatpak
 As for now, the easiest way to install most of proprietary software is via flatpak. See the relevant section in [[file:Desktop.org][Desktop.org]].
+** conda
+[[https://docs.conda.io/en/latest/][conda]] is a package manager, which I use for managing various versions of Python & Node.js.
+
+It is packaged for GNU Guix, although the definition has its fair share of workarounds. It is almost surprising to see it work with all the C libraries and stuff. But there are still some problems.
+
+First, it's impossible to perform =conda init= to patch files like =.bashrc=, because the command is hell-bent on modifying =/gnu/store/=. So I do this manually, look for the =init_conda= procedures in [[file:Console.org][Console.org]].
+
+Second, base environment root is =/gnu/store=, so don't install anything there.
+
+Third, by default it tries to create envronments in =/gnu/store=. I think it's enough to create one environment like this to fix it:
+#+begin_src sh
+mkdir -p ~/.conda/envs
+conda create -p ~/.conda/envs/test
+#+end_src
 ** wakatime-cli
 | Note | Description           |
 |------+-----------------------|
@@ -402,44 +416,3 @@ Before I figure out how to package this for Guix:
 - Clone [[https://github.com/wakatime/wakatime-cli][the repo]]
 - Run ~go build~
 - Copy the binary to the =~/bin= folder
-
-** ActivityWatch
-| Note | Description           |
-|------+-----------------------|
-| TODO | Package this for Guix |
-
-The official binaries work just fine after some patching, except for the =aw-qt= binary.
-
-Properly building from source is more awkward, as there is poetry, which isn't oficially supported by Guix yet.
-
-The patching is as follows:
-
-- Get ELF interpeter patch from ~guix build glibc~, after which patch ELF interpeter path for the required binaries, e.g.:
-#+begin_src bash eval :no
-patchelf --set-interpreter /gnu/store/fa6wj5bxkj5ll1d7292a70knmyl7a0cr-glibc-2.31/lib/ld-linux-x86-64.so.2 aw-qt
-patchelf --set-interpreter /gnu/store/fa6wj5bxkj5ll1d7292a70knmyl7a0cr-glibc-2.31/lib/ld-linux-x86-64.so.2 aw-server/aw-server
-patchelf --set-interpreter /gnu/store/fa6wj5bxkj5ll1d7292a70knmyl7a0cr-glibc-2.31/lib/ld-linux-x86-64.so.2 aw-server-rust/aw-server-rust
-patchelf --set-interpreter /gnu/store/fa6wj5bxkj5ll1d7292a70knmyl7a0cr-glibc-2.31/lib/ld-linux-x86-64.so.2 aw-watcher-afk/aw-watcher-afk
-patchelf --set-interpreter /gnu/store/fa6wj5bxkj5ll1d7292a70knmyl7a0cr-glibc-2.31/lib/ld-linux-x86-64.so.2 aw-watcher-window/aw-watcher-window
-#+end_src
-
-Add libz to RPATH
-
-| Category | Guix dependency |
-|----------+-----------------|
-| system   | zlib            |
-
-#+begin_src bash eval :no
-patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib/ aw-qt
-patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib/ aw-server/aw-server
-patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib/ aw-server-rust/aw-server-rust
-patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib/ aw-watcher-afk/aw-watcher-afk
-patchelf --set-rpath /gnu/store/rykm237xkmq7rl1p0nwass01p090p88x-zlib-1.2.11/lib/ aw-watcher-window/aw-watcher-window
-#+end_src
-
-As aw-qt doesn't work properly, and the only thing it does is makes a tray icon anyhow, here is a script to launch the required components:
-#+begin_src bash :tangle ./bin/aw-start
-~/bin/activitywatch/aw-server/aw-server &
-~/bin/activitywatch/aw-watcher-afk/aw-watcher-afk &
-~/bin/activitywatch/aw-watcher-window/aw-watcher-window &
-#+end_src

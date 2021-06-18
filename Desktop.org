@@ -2032,10 +2032,21 @@ This section generates manifests for various desktop software that I'm using.
 | Category | Guix dependency |
 |----------+-----------------|
 | latex    | texlive         |
+** Dev
+| Category | Guix dependency |
+|----------+-----------------|
+| dev      | conda           |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
 (my/format-guix-dependencies category)
+#+end_src
+
+Dev
+#+begin_src scheme :tangle .config/guix/manifests/dev.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("dev")>>))
 #+end_src
 
 Browsers

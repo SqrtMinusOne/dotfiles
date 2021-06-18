@@ -102,6 +102,7 @@ alias ls="exa --icons"
 alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
+alias ic="init_conda"
 # Aliases:1 ends here
 
 # [[file:Console.org::*Aliases][Aliases:2]]
@@ -110,6 +111,23 @@ if [[ ! -z "$SIMPLE" ]]; then
     alias ll="ls -lah"
 fi
 # Aliases:2 ends here
+
+# [[file:Console.org::*Anaconda][Anaconda:1]]
+init_conda () {
+    __conda_setup="$('/home/pavel/.guix-extra-profiles/dev/dev/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+    if [ $? -eq 0 ]; then
+        eval "$__conda_setup"
+    else
+        if [ -f "/home/pavel/.guix-extra-profiles/dev/dev/etc/profile.d/conda.sh" ]; then
+            . "/home/pavel/.guix-extra-profiles/dev/dev/etc/profile.d/conda.sh"
+        else
+            # export PATH="/home/pavel/Programs/miniconda3/bin:$PATH"
+            echo "what"
+        fi
+    fi
+    unset __conda_setup
+}
+# Anaconda:1 ends here
 
 # [[file:Console.org::*Starship prompt][Starship prompt:1]]
 if [[ -z "$SIMPLE" ]]; then
