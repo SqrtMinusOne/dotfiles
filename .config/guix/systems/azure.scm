@@ -16,12 +16,13 @@
 (use-modules (nongnu packages linux))
 (use-modules (nongnu system linux-initrd))
 
-(use-service-modules desktop networking ssh xorg)
+(use-service-modules desktop networking ssh xorg nix)
 (use-package-modules ssh)
 (define %my-base-services
   (cons*
    (service openssh-service-type)
    (extra-special-file "/lib64/ld-linux-x86-64.so.2" (file-append glibc "/lib/ld-linux-x86-64.so.2"))
+   (service nix-service-type)
    (modify-services %desktop-services
                     (network-manager-service-type config =>
                                                   (network-manager-configuration (inherit config)

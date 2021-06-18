@@ -72,6 +72,13 @@ for i in $GUIX_EXTRA_PROFILES/*; do
 done
 #+end_src
 
+Enable Nix
+#+begin_src sh
+if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
+  . /run/current-system/profile/etc/profile.d/nix.sh
+fi
+#+end_src
+
 Set a folder for my packages.
 #+begin_src sh
 export GUIX_PACKAGE_PATH=~/guix-packages

@@ -27,12 +27,18 @@ done
 # Guix settings:1 ends here
 
 # [[file:Console.org::*Guix settings][Guix settings:2]]
-export GUIX_PACKAGE_PATH=~/guix-packages
+if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
+  . /run/current-system/profile/etc/profile.d/nix.sh
+fi
 # Guix settings:2 ends here
 
 # [[file:Console.org::*Guix settings][Guix settings:3]]
-export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
+export GUIX_PACKAGE_PATH=~/guix-packages
 # Guix settings:3 ends here
+
+# [[file:Console.org::*Guix settings][Guix settings:4]]
+export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
+# Guix settings:4 ends here
 
 # [[file:Console.org::*XResources][XResources:1]]
 xrdb ~/.Xresources

@@ -544,7 +544,7 @@ bindsym $mod+semicolon mode "apps"
 mode "apps" {
     bindsym Escape mode "default"
     bindsym b exec firefox; mode default
-    bindsym v exec vk-messenger; mode default
+    bindsym v exec vk; mode default
     bindsym s exec "flatpak run com.slack.Slack"; mode default;
     bindsym d exec "flatpak run com.discordapp.Discord"; mode default;
     bindsym m exec "alacritty -e ncmpcpp"; mode default
@@ -2113,6 +2113,23 @@ flatpak install --user flathub com.discordapp.Discord
 flatpak install --user flathub us.zoom.Zoom
 flatpak install --user flathub com.slack.Slack
 #+end_example
+** Nix
+I probably should've used nix, as almost every program I packaged so far exists in the Nix repo.
+
+But it's easy enough to use Nix on Guix.
+#+begin_src conf :tangle ~/.nix-channels
+https://nixos.org/channels/nixpkgs-unstable nixpkgs
+#+end_src
+
+Don't forget to run the following after the first installation:
+#+begin_src sh
+nix-channel --update
+#+end_src
+
+Installing packages:
+#+begin_src
+nix-env -i vk-messenger
+#+end_src
 * Services
 :PROPERTIES:
 :header-args+: :tangle ~/.config/shepherd/init.scm

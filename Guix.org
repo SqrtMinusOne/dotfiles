@@ -164,7 +164,7 @@ Common modules:
 (use-modules (nongnu packages linux))
 (use-modules (nongnu system linux-initrd))
 
-(use-service-modules desktop networking ssh xorg)
+(use-service-modules desktop networking ssh xorg nix)
 (use-package-modules ssh)
 #+end_src
 
@@ -238,12 +238,14 @@ Base packages, necessary right after the installation.
 
 Default services for each machine:
 - override the default =%desktop-services= to add OpenVPN support
+- add nix service
 - add a symlink to ELF interpeter to where most Linux binaries expect it
 #+begin_src scheme :tangle no :noweb-ref system-common
 (define %my-base-services
   (cons*
    (service openssh-service-type)
    (extra-special-file "/lib64/ld-linux-x86-64.so.2" (file-append glibc "/lib/ld-linux-x86-64.so.2"))
+   (service nix-service-type)
    (modify-services %desktop-services
                     (network-manager-service-type config =>
                                                   (network-manager-configuration (inherit config)
