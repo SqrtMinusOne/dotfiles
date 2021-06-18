@@ -561,13 +561,13 @@ mode "apps" {
 *** Media controls & brightness
 #+begin_src conf-space
 # Pulse Audio controls
-bindsym XF86AudioRaiseVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ +5%"
-bindsym XF86AudioLowerVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ -5%"
-bindsym XF86AudioMute exec --no-startup-id "pactl set-sink-mute @DEFAULT_SINK@ toggle"
+bindsym XF86AudioRaiseVolume exec --no-startup-id "ponymix increase 5"
+bindsym XF86AudioLowerVolume exec --no-startup-id "ponymix decrease 5"
+bindsym XF86AudioMute exec --no-startup-id "ponymix toggle"
 
 exec --no-startup-id xmodmap -e 'keycode 135 = Super_R' && xset -r 135
-bindsym $mod+F2 exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ -5%"
-bindsym $mod+F3 exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ +5%"
+bindsym $mod+F2 exec --no-startup-id "ponymix increase 5"
+bindsym $mod+F3 exec --no-startup-id "ponymix decrease 5"
 
 # Media player controls
 bindsym XF86AudioPlay exec mpc toggle
@@ -578,7 +578,6 @@ bindsym XF86AudioPrev exec mpc prev
 # Screen brightness
 bindsym XF86MonBrightnessUp exec light -A 5
 bindsym XF86MonBrightnessDown exec light -U 5
-
 #+end_src
 *** Screenshots
 #+begin_src conf-space
@@ -694,14 +693,15 @@ exec --no-startup-id nm-applet
 
 # Stuff
 # exec aw-qt
-exec "bash ~/bin/aw-start"
+# exec "bash ~/bin/aw-start"
+exec shepherd
 # exec "vnstatd -d"
 exec dunst
 # exec kde-connect-indicator
 exec copyq
 exec "xmodmap ~/.Xmodmap"
 # exec "xrdb -merge ~/.Xresources"
-exec "bash ~/bin/autostart.sh"
+# exec "bash ~/bin/autostart.sh"
 #+end_src
 * Polybar
 :PROPERTIES:
@@ -2127,6 +2127,7 @@ I previously used supervisor, but shepherd also seems pretty capable.
 | music    | ncmpcpp         |
 | music    | picard          |
 | music    | mpd-watcher     |
+| music    | mpd-mpc         |
 
 Music player daemon
 #+begin_src scheme
@@ -2134,7 +2135,7 @@ Music player daemon
   (make <service>
     #:provides '(mpd)
     #:respawn? #t
-    #:start (make-system-constructor "mpd")
+    #:start (make-forkexec-constructor '("mpd" "--no-daemon"))
     #:stop (make-kill-destructor)))
 #+end_src
 
@@ -2148,10 +2149,65 @@ MPD watcher
     #:stop (make-kill-destructor)
     #:requires '(mpd)))
 #+end_src
+** GNU Mcron
+[[https://www.gnu.org/software/mcron/][GNU Mcron]] is a replacement for cron, written in Scheme.
+
+#+begin_src scheme
+(define mcron
+  (make <service>
+    #:provides '(mcron)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("mcron"))
+    #:stop (make-kill-destructor)))
+#+end_src
+** ActivityWatch
+[[https://activitywatch.net/][ActivityWatch]] is a FOSS time tracker. It tracks screen and application usage and has integrations with browsers, Emacs, etc.
+
+| Guix dependency   |
+|-------------------|
+| activitywatch-bin |
+
+aw-server
+#+begin_src scheme
+(define aw-server
+  (make <service>
+    #:provides '(aw-server)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("aw-server"))
+    #:stop (make-kill-destructor)))
+#+end_src
+
+aw-watcher-afk
+#+begin_src scheme
+(define aw-watcher-afk
+  (make <service>
+    #:provides '(aw-watcher-afk)
+    #:requires '(aw-server)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("aw-watcher-afk"))
+    #:stop (make-kill-destructor)))
+#+end_src
+
+aw-watcher-window
+#+begin_src scheme
+(define aw-watcher-window
+  (make <service>
+    #:provides '(aw-watcher-window)
+    #:requires '(aw-server)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("aw-watcher-window"))
+    #:stop (make-kill-destructor)))
+#+end_src
 ** Shepherd config
 Register services
 #+begin_src scheme
-(register-services mpd mpd-watcher)
+(register-services
+ mpd
+ mpd-watcher
+ mcron
+ aw-server
+ aw-watcher-afk
+ aw-watcher-window)
 #+end_src
 
 Daemonize shepherd
@@ -2161,7 +2217,7 @@ Daemonize shepherd
 
 Run services
 #+begin_src scheme
-(for-each start '(mpd mpd-watcher))
+(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window))
 #+end_src
 * Guix settings
 Other desktop programs I use are listed below.
@@ -2172,6 +2228,8 @@ Other desktop programs I use are listed below.
 | xprop                  | Tool to display properties of X windows   |
 | arandr                 | GUI to xrandr                             |
 | light                  | Control screen brightness                 |
+| ponymix                | Control PulseAudio CLI                    |
+| pavucontrol            | Control PulseAudio GUI                    |
 | network-manager-applet | Applet to manage network connections      |
 | feh                    | Image viewer. Used to set background      |
 | copyq                  | Clipboard manager                         |
