@@ -844,9 +844,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               vc-ignore-dir-regexp
               tramp-file-name-regexp))
 
-(setq tramp-remote-path
-      (append tramp-remote-path
-              '(tramp-own-remote-path)))
+(with-eval-after-load 'tramp
+  (setq tramp-remote-path
+        (append tramp-remote-path
+                '(tramp-own-remote-path))))
 
 (defun my/dired-bookmark-open ()
   (interactive)

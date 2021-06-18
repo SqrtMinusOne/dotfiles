@@ -1568,9 +1568,10 @@ Some other optimization settings:
 
 Also, here is a hack to make TRAMP find =ls= on Guix:
 #+begin_src emacs-lisp
-(setq tramp-remote-path
-      (append tramp-remote-path
-              '(tramp-own-remote-path)))
+(with-eval-after-load 'tramp
+  (setq tramp-remote-path
+        (append tramp-remote-path
+                '(tramp-own-remote-path))))
 #+end_src
 ** Bookmarks
 A simple bookmark list for Dired, mainly to use with TRAMP. I may look into a proper bookmarking system later.
