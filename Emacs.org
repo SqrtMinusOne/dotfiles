@@ -454,6 +454,7 @@ I don't enable the entire package, just the modes I need.
    '(eww
      dired
      debug
+     calc
      docker
      geiser
      pdf
@@ -1792,7 +1793,6 @@ Fortunately, =emacs-jupyter= provides a function for that problem as well.
   (org-babel-jupyter-aliases-from-kernelspecs t))
 #+end_src
 *** Hy
-| Note | Description                    |
 #+begin_src emacs-lisp :noweb-ref org-lang-setup
 (use-package ob-hy
   :straight t)
@@ -1827,6 +1827,7 @@ Enable languages
  'org-babel-load-languages
  '((emacs-lisp . t)
    (python . t)
+   (sql . t)
    ;; (typescript .t)
    (hy . t)
    (shell . t)
@@ -1997,7 +1998,7 @@ Example usage:
 :post out_wrap(name="fig:chart", caption="График", data=*this*)
 #+end_example
 ** UI
-*** Instant equations preview
+*** OFF (OFF) Instant equations preview
 Instant math previews for org mode.
 
 References:
@@ -2009,6 +2010,7 @@ References:
                    :branch "master"
                    :host github)
   :hook (org-mode . org-latex-impatient-mode)
+  :disabled
   :init
   (setq org-latex-impatient-tex2svg-bin
         "/home/pavel/Programs/miniconda3/lib/node_modules/mathjax-node-cli/bin/tex2svg")
@@ -2022,8 +2024,11 @@ A function to enable LaTeX native highlighting. Not setting as default, because 
 (defun my/enable-org-latex ()
   (interactive)
   (customize-set-variable 'org-highlight-latex-and-related '(native))
-  (add-hook 'org-mode-hook (lambda () (yas-activate-extra-mode 'LaTeX-mode))))
+  (add-hook 'org-mode-hook (lambda () (yas-activate-extra-mode 'LaTeX-mode)))
+  (sp-local-pair 'org-mode "$" "$")
+  (sp--remove-local-pair "'"))
 #+end_src
+
 Call the function before opening an org file or reopen a buffer after calling the function.
 
 Scale latex fragments preview.
@@ -2890,7 +2895,7 @@ Noweb points to the AUCTeX config block.
         ("e" . "\\epsilon")
         ("z" . "\\zeta")
         ("h" . "\\eta")
-        ("t" . "\\theta")
+        ("o" . "\\theta")
         ("i" . "\\iota")
         ("k" . "\\kappa")
         ("l" . "\\lambda")
@@ -2955,13 +2960,19 @@ Noweb points to the AUCTeX config block.
         ("v" . "\\forall")
         ("s" . "\\sum_{$1}^{$2}$0")
         ("p" . "\\prod_{$1}^{$2}$0")
+        ("d" . "\\partial")
         ("e" . "\\exists")
         ("i" . "\\int_{$1}^{$2}$0")
         ("c" . "\\cap")
         ("u" . "\\cup")
-        ("0" . "\\emptyset")))
+        ("0" . "\\emptyset")
+        ("^" . "\\widehat{$1}$0")
+        ("_" . "\\overline{$1}$0")
+        ("~" . "\\sim")
+        ("|" . "\\mid")
+        ("_|" . "\\perp")))
 
-(setq my/latex-math-prefix "''")
+(setq my/latex-math-prefix ";")
 
 (yas-define-snippets
  'latex-mode
