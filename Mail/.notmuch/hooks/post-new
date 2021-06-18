@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# [[file:../../../Mail.org::*=post_new=][=post_new=:1]]
 notmuch tag +main "path:thexcloud/** AND tag:new"
 notmuch tag +progin "path:progin6304/** AND tag:new"
 notmuch tag -new "tag:new"
+# =post_new=:1 ends here

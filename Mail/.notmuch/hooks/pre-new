@@ -1,3 +1,6 @@
-#!/bin/bash
-GMI="/home/pavel/Programs/miniconda3/envs/mail/bin/gmi"
+#!/usr/bin/env bash
+# [[file:../../../Mail.org::*=pre_new=][=pre_new=:1]]
+# GMI="/home/pavel/Programs/miniconda3/envs/mail/bin/gmi"
+GMI="gmi"
 parallel -j0 "(cd /home/pavel/Mail/{}/ && $GMI sync)" ::: thexcloud progin6304
+# =pre_new=:1 ends here
