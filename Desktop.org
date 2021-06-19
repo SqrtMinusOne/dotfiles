@@ -2036,6 +2036,7 @@ This section generates manifests for various desktop software that I'm using.
 | Category | Guix dependency |
 |----------+-----------------|
 | dev      | conda           |
+| dev      | docker-compose  |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""

@@ -1,5 +1,5 @@
 (specifications->manifest
- '("emacs"
+ '("emacs-native-comp"
    "the-silver-searcher"
    "ripgrep"
    "emacs-vterm"))

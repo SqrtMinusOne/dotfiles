@@ -10,6 +10,8 @@
 (use-modules (gnu packages xorg))
 (use-modules (gnu packages wm))
 (use-modules (gnu packages openbox))
+(use-modules (gnu services docker))
+(use-modules (gnu services cups))
 (use-modules (srfi srfi-1))
 (use-modules (guix channels))
 (use-modules (guix inferior))
@@ -23,6 +25,10 @@
    (service openssh-service-type)
    (extra-special-file "/lib64/ld-linux-x86-64.so.2" (file-append glibc "/lib/ld-linux-x86-64.so.2"))
    (service nix-service-type)
+   (service cups-service-type
+            (cups-configuration
+             (web-interface? #t)))
+   (service docker-service-type)
    (modify-services %desktop-services
                     (network-manager-service-type config =>
                                                   (network-manager-configuration (inherit config)
@@ -71,7 +77,7 @@
                    "video"
                    "input"
                    "tty"
-                   ;; "docker"
+                   "docker"
                    "lp")))
                %base-user-accounts))
  

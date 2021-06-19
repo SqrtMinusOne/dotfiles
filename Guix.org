@@ -158,6 +158,8 @@ Common modules:
 (use-modules (gnu packages xorg))
 (use-modules (gnu packages wm))
 (use-modules (gnu packages openbox))
+(use-modules (gnu services docker))
+(use-modules (gnu services cups))
 (use-modules (srfi srfi-1))
 (use-modules (guix channels))
 (use-modules (guix inferior))
@@ -216,7 +218,7 @@ User accounts.
                   "video"
                   "input"
                   "tty"
-                  ;; "docker"
+                  "docker"
                   "lp")))
               %base-user-accounts))
 
@@ -239,6 +241,8 @@ Base packages, necessary right after the installation.
 Default services for each machine:
 - override the default =%desktop-services= to add OpenVPN support
 - add nix service
+- add docker service
+- add CUPS service
 - add a symlink to ELF interpeter to where most Linux binaries expect it
 #+begin_src scheme :tangle no :noweb-ref system-common
 (define %my-base-services
@@ -246,6 +250,10 @@ Default services for each machine:
    (service openssh-service-type)
    (extra-special-file "/lib64/ld-linux-x86-64.so.2" (file-append glibc "/lib/ld-linux-x86-64.so.2"))
    (service nix-service-type)
+   (service cups-service-type
+            (cups-configuration
+             (web-interface? #t)))
+   (service docker-service-type)
    (modify-services %desktop-services
                     (network-manager-service-type config =>
                                                   (network-manager-configuration (inherit config)
@@ -386,6 +394,69 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 |----------+-----------------|
 | system   | openvpn         |
 | system   | python          |
+** VPN
+I'm not sure how to properly spin up VPN on Guix, so here is what I'm doing now.
+
+I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config, modified as follows:
+- paths to =ca=, =cert= and =key= are made relative
+- added =auth-user-pass= with a link to login info
+
+*** vpn-start
+To start VPN propely, we have to use DNS given by CyberGhost to prevent DNS leaks and disabled ipv6. The thing is that the manual method requires also manual setting of the IP address and gateway.
+
+So this script:
+- gets an active connection
+- gets a device from that connection
+- gets an IP from that device
+- gets a gateway
+- modifies the connection
+- runs openvpn
+
+This isn't tested and probably will fail if there are multiple active connections, for instance.
+
+Also I'm a bit concerned with running openvpn as sudo, but I shall see if that screws me up somehow.
+
+#+begin_src bash :tangle ~/bin/scripts/vpn-start
+CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME)" | sed 's/ *$//g')
+DEVICE=$(nmcli -f connection.interface-name con show "$CONN" | awk '{ print $2 }')
+IP=$(ip addr show "$DEVICE" | awk 'match($0, /.*inet (addr:)?(([0-9]*\.){3}[0-9]*\/[0-9]*).*/, ga) { print ga[2] } ')
+GATEWAY=$(ip route list | awk ' /^default/ {print $3}')
+
+DNS_1=10.101.0.243
+DNS_2=38.132.106.139
+
+echo "Connection: $CONN"
+echo "Device: $DEVICE"
+echo "IP: $IP"
+echo "Gateway: $GATEWAY"
+
+nmcli con modify "$CONN" ipv4.addresses "${IP}"
+nmcli con modify "$CONN" ipv4.gateway "${GATEWAY}"
+nmcli con modify "$CONN" ipv4.method manual
+nmcli con modify "$CONN" ipv4.ignore-auto-dns yes
+nmcli con modify "$CONN" +ipv4.dns $DNS_1
+nmcli con modify "$CONN" +ipv4.dns $DNS_2
+nmcli con modify "$CONN" ipv6.method ignore
+nmcli connection up "$CONN"
+sudo openvpn --config ~/.vpn/openvpn.ovpn
+#+end_src
+*** vpn-stop
+Also a script to reverse the changes.
+
+#+begin_src bash :tangle ~/bin/scripts/vpn-stop
+CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME)" | sed 's/ *$//g')
+DNS_1=10.101.0.243
+DNS_2=38.132.106.139
+
+echo "Connection: $CONN"
+
+nmcli con modify "$CONN" ipv4.ignore-auto-dns no
+nmcli con modify "$CONN" -ipv4.dns $DNS_1
+nmcli con modify "$CONN" -ipv4.dns $DNS_2
+nmcli con modify "$CONN" ipv4.method auto
+nmcli con modify "$CONN" ipv6.method auto
+nmcli connection up "$CONN"
+#+end_src
 * Notes on installing software
 | Category | Guix dependency | Description                                        |
 |----------+-----------------+----------------------------------------------------|
