@@ -3885,6 +3885,6 @@ Shows which file is being edited in Emacs.
 
 #+begin_src scheme :tangle .config/guix/manifests/emacs.scm :noweb yes
 (specifications->manifest
- '("emacs"
+ '("emacs-native-comp"
    <<packages()>>))
 #+end_src

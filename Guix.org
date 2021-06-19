@@ -398,7 +398,7 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 I'm not sure how to properly spin up VPN on Guix, so here is what I'm doing now.
 
 I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config, modified as follows:
-- paths to =ca=, =cert= and =key= are made relative
+- paths to =ca=, =cert= and =key= are made absolute
 - added =auth-user-pass= with a link to login info
 
 *** vpn-start
