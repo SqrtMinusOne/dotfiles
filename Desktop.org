@@ -2032,11 +2032,13 @@ This section generates manifests for various desktop software that I'm using.
 | Category | Guix dependency |
 |----------+-----------------|
 | latex    | texlive         |
+| latex    | texlab-bin      |
 ** Dev
 | Category | Guix dependency |
 |----------+-----------------|
 | dev      | conda           |
 | dev      | docker-compose  |
+| dev      | python          |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
@@ -2055,13 +2057,6 @@ Browsers
 (specifications->manifest
  '(
    <<packages("browsers")>>))
-#+end_src
-
-System
-#+begin_src scheme :tangle .config/guix/manifests/system.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("system")>>))
 #+end_src
 
 Music

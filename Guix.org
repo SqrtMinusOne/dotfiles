@@ -394,7 +394,6 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 | Category | Guix dependency |
 |----------+-----------------|
 | system   | openvpn         |
-| system   | python          |
 ** VPN
 I'm not sure how to properly spin up VPN on Guix, so here is what I'm doing now.
 
@@ -457,6 +456,18 @@ nmcli con modify "$CONN" -ipv4.dns $DNS_2
 nmcli con modify "$CONN" ipv4.method auto
 nmcli con modify "$CONN" ipv6.method auto
 nmcli connection up "$CONN"
+#+end_src
+** Manifest
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no :var category=""
+(my/format-guix-dependencies category)
+#+end_src
+
+System
+#+begin_src scheme :tangle .config/guix/manifests/system.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("system")>>))
 #+end_src
 * Notes on installing software
 | Category | Guix dependency | Description                                        |
