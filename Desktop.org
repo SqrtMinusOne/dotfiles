@@ -2230,7 +2230,7 @@ aw-watcher-window
 ** Sync
 | Guix dependency |
 |-----------------|
-| megacmd         |
+| megacmd-1.4     |
 ** Shepherd config
 Register services
 #+begin_src scheme
