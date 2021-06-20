@@ -127,6 +127,7 @@
      dired
      debug
      guix
+     calc
      docker
      geiser
      pdf
@@ -1011,6 +1012,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    'org-babel-load-languages
    '((emacs-lisp . t)
      (python . t)
+     (sql . t)
      ;; (typescript .t)
      (hy . t)
      (shell . t)
@@ -1253,6 +1255,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                    :branch "master"
                    :host github)
   :hook (org-mode . org-latex-impatient-mode)
+  :disabled
   :init
   (setq org-latex-impatient-tex2svg-bin
         "/home/pavel/Programs/miniconda3/lib/node_modules/mathjax-node-cli/bin/tex2svg")
@@ -1263,7 +1266,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (defun my/enable-org-latex ()
   (interactive)
   (customize-set-variable 'org-highlight-latex-and-related '(native))
-  (add-hook 'org-mode-hook (lambda () (yas-activate-extra-mode 'LaTeX-mode))))
+  (add-hook 'org-mode-hook (lambda () (yas-activate-extra-mode 'LaTeX-mode)))
+  (sp-local-pair 'org-mode "$" "$")
+  (sp--remove-local-pair "'"))
 
 (use-package org-superstar
   :straight t
@@ -1763,7 +1768,7 @@ parent."
           ("e" . "\\epsilon")
           ("z" . "\\zeta")
           ("h" . "\\eta")
-          ("t" . "\\theta")
+          ("o" . "\\theta")
           ("i" . "\\iota")
           ("k" . "\\kappa")
           ("l" . "\\lambda")
@@ -1822,13 +1827,19 @@ parent."
           ("v" . "\\forall")
           ("s" . "\\sum_{$1}^{$2}$0")
           ("p" . "\\prod_{$1}^{$2}$0")
+          ("d" . "\\partial")
           ("e" . "\\exists")
           ("i" . "\\int_{$1}^{$2}$0")
           ("c" . "\\cap")
           ("u" . "\\cup")
-          ("0" . "\\emptyset")))
+          ("0" . "\\emptyset")
+          ("^" . "\\widehat{$1}$0")
+          ("_" . "\\overline{$1}$0")
+          ("~" . "\\sim")
+          ("|" . "\\mid")
+          ("_|" . "\\perp")))
   
-  (setq my/latex-math-prefix "''")
+  (setq my/latex-math-prefix ";")
   
   (yas-define-snippets
    'latex-mode
@@ -1935,7 +1946,7 @@ parent."
         ("e" . "\\epsilon")
         ("z" . "\\zeta")
         ("h" . "\\eta")
-        ("t" . "\\theta")
+        ("o" . "\\theta")
         ("i" . "\\iota")
         ("k" . "\\kappa")
         ("l" . "\\lambda")
@@ -1996,13 +2007,19 @@ parent."
         ("v" . "\\forall")
         ("s" . "\\sum_{$1}^{$2}$0")
         ("p" . "\\prod_{$1}^{$2}$0")
+        ("d" . "\\partial")
         ("e" . "\\exists")
         ("i" . "\\int_{$1}^{$2}$0")
         ("c" . "\\cap")
         ("u" . "\\cup")
-        ("0" . "\\emptyset")))
+        ("0" . "\\emptyset")
+        ("^" . "\\widehat{$1}$0")
+        ("_" . "\\overline{$1}$0")
+        ("~" . "\\sim")
+        ("|" . "\\mid")
+        ("_|" . "\\perp")))
 
-(setq my/latex-math-prefix "''")
+(setq my/latex-math-prefix ";")
 
 (yas-define-snippets
  'latex-mode
