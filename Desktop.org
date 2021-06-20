@@ -5,8 +5,8 @@
 #+PROPERTY: header-args:conf-unix      :comments link
 #+PROPERTY: header-args:conf-windows   :comments link
 #+PROPERTY: header-args:conf-xdefaults :comments link
-#+PROPERTY: header-args:sh             :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
-#+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/bin/bash"
+#+PROPERTY: header-args:sh             :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
+#+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 
 My general desktop environment configuration.
 
@@ -81,7 +81,8 @@ Parts prefixed with (OFF) are not used, but kept for historic purposes. For some
   - [[#general-settings][General settings]]
 - [[#zathura][Zathura]]
 :END:
-* Colors
+* Global customization
+** Colors
 Most of the colors are from the Palenight theme. Colorcodes are taken from [[https://github.com/JonathanSpeek/palenight-iterm2][this repo]]:
 
 #+tblname: colors
@@ -129,6 +130,7 @@ Test:
 : #f07178
 
 ** Xresources
+*** Colors in Xresources
 However, I'd rather use the =Xresources= file wherever possible. Here is the code to generate an Xresources file from this table:
 
 #+NAME: get-xresources
@@ -149,11 +151,41 @@ However, I'd rather use the =Xresources= file wherever possible. Here is the cod
 *background: <<get-color(name="black")>>
 *foreground: <<get-color(name="white")>>
 #+end_src
+*** Fonts
+Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting has to be unique for each machine, which means I cannot commit =Xresources= to the repo.
 
+#+NAME: get-dpi
+#+begin_src emacs-lisp
+(let ((hostname (system-name)))
+  (cond ((string-equal hostname "azure") 120)
+        (t 96)))
+#+end_src
+
+#+begin_src conf-xdefaults :noweb yes :tangle ~/.Xresources
+Xft.dpi: <<get-dpi()>>
+#+end_src
+** Themes
+A few programs I use to customize the apperance are listed below.
+
+| Guix dependency    | Description                               |
+|--------------------+-------------------------------------------|
+| lxappearance       | A program to customize GTK+ themes        |
+| matcha-theme       | My preferred GTK theme                    |
+| papirus-icon-theme | My preferred Icon theme                   |
+| hicolor-icon-theme | For some reason required for lxappearance |
+
+IIRC the only thing =lxapparance= does is edit GTK config files.
 * i3wm
 :PROPERTIES:
 :header-args+: :tangle ./.config/i3/config
 :END:
+
+| Guix dependency | Disabled |
+|-----------------+----------|
+| i3-gaps         |          |
+| i3lock          | true     |
+
+=i3lock= is disabled because the global one has to be used.
 
 [[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], but i3 seems to fit my workflow best.
 
@@ -175,8 +207,8 @@ floating_modifier $mod
 mouse_warping output
 
 # Apply XFCE Settings
-exec xfsettingsd
-exec xiccd
+# exec xfsettingsd
+# exec xiccd
 
 # Most needed keybindigs
 # reload the configuration file
@@ -512,14 +544,14 @@ bindsym $mod+semicolon mode "apps"
 mode "apps" {
     bindsym Escape mode "default"
     bindsym b exec firefox; mode default
-    bindsym v exec vk-messenger; mode default
-    bindsym s exec slack; mode default;
-    bindsym d exec discord; mode default;
+    bindsym v exec vk; mode default
+    bindsym s exec "flatpak run com.slack.Slack"; mode default;
+    bindsym d exec "flatpak run com.discordapp.Discord"; mode default;
     bindsym m exec "alacritty -e ncmpcpp"; mode default
     bindsym c exec "copyq toggle"; mode default
     bindsym k exec "keepassxc"; mode default
     # bindsym e exec mailspring; mode default
-    bindsym a exec "bash /home/pavel/bin/emacs.sh"; mode default
+    bindsym a exec emacs; mode default
     bindsym n exec "alacritty -e newsboat"; mode default
     bindsym w exec "alacritty /home/pavel/bin/scripts/run_wego"; mode default
     # bindsym a exec emacsclient -c; mode default
@@ -529,13 +561,13 @@ mode "apps" {
 *** Media controls & brightness
 #+begin_src conf-space
 # Pulse Audio controls
-bindsym XF86AudioRaiseVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ +5%"
-bindsym XF86AudioLowerVolume exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ -5%"
-bindsym XF86AudioMute exec --no-startup-id "pactl set-sink-mute @DEFAULT_SINK@ toggle"
+bindsym XF86AudioRaiseVolume exec --no-startup-id "ponymix increase 5"
+bindsym XF86AudioLowerVolume exec --no-startup-id "ponymix decrease 5"
+bindsym XF86AudioMute exec --no-startup-id "ponymix toggle"
 
 exec --no-startup-id xmodmap -e 'keycode 135 = Super_R' && xset -r 135
-bindsym $mod+F2 exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ -5%"
-bindsym $mod+F3 exec --no-startup-id "pactl set-sink-volume @DEFAULT_SINK@ +5%"
+bindsym $mod+F2 exec --no-startup-id "ponymix increase 5"
+bindsym $mod+F3 exec --no-startup-id "ponymix decrease 5"
 
 # Media player controls
 bindsym XF86AudioPlay exec mpc toggle
@@ -544,9 +576,8 @@ bindsym XF86AudioNext exec mpc next
 bindsym XF86AudioPrev exec mpc prev
 
 # Screen brightness
-bindsym XF86MonBrightnessUp exec xbacklight -inc 5
-bindsym XF86MonBrightnessDown exec xbacklight -dec 5
-
+bindsym XF86MonBrightnessUp exec light -A 5
+bindsym XF86MonBrightnessDown exec light -U 5
 #+end_src
 *** Screenshots
 #+begin_src conf-space
@@ -639,10 +670,10 @@ bindsym $mod+slash exec toggle_layout
 exec_always --no-startup-id "bash /home/pavel/bin/polybar.sh"
 
 # PulseEffects
-exec --no-startup-id pulseeffects --gapplication-service
+# exec --no-startup-id pulseeffects --gapplication-service
 
 # Sudo
-exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+# exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 
 # Wallpaper
 exec_always "feh --bg-fill ~/Pictures/wallpaper.jpg"
@@ -654,29 +685,38 @@ exec picom
 exec keynav
 
 # Applets
-exec --no-startup-id /usr/bin/nm-applet
-exec --no-startup-id /usr/bin/blueman-applet
+exec --no-startup-id nm-applet
+# exec --no-startup-id /usr/bin/blueman-applet
 
 # MPD
-exec --no-startup-id mpd
+# exec --no-startup-id mpd
 
 # Stuff
-exec aw-qt
-exec "vnstatd -d"
+# exec aw-qt
+# exec "bash ~/bin/aw-start"
+exec shepherd
+# exec "vnstatd -d"
 exec dunst
-exec kde-connect-indicator
+# exec kde-connect-indicator
 exec copyq
 exec "xmodmap ~/.Xmodmap"
-exec "bash ~/bin/autostart.sh"
+# exec "xrdb -merge ~/.Xresources"
+# exec "bash ~/bin/autostart.sh"
 #+end_src
 * Polybar
 :PROPERTIES:
 :header-args+: :tangle ./.config/polybar/config
 :END:
 
+| Guix dependency  | Description              |
+|------------------+--------------------------|
+| polybar          | statusbar                |
+
 [[https://github.com/polybar/polybar][Polybar]] is a nice-looking, WM-agnostic statusbar program.
 
 I switched to polybar because I wanted to try out some WMs other than i3, but decided to stick with i3 for now.
+
+Don't forget to install the Google Noto Color Emoji font. Guix package with all Noto fonts is way too large.
 
 References:
 - [[https://github.com/polybar/polybar/wiki][polybar docs]]
@@ -688,8 +728,8 @@ The script below allows me to:
 #+begin_src bash :tangle ./bin/polybar.sh
 hostname=$(hostname)
 # Settings varying on the hostname
-if [ "$hostname" = "pntk" ]; then
-    TRAY_MONITOR="eDP1"
+if [ "$hostname" = "azure" ]; then
+    TRAY_MONITOR="eDP-1"
     export WLAN_INTERFACE="wlp3s0"
 else
     TRAY_MONITOR="HDMI-A-0"
@@ -698,24 +738,24 @@ fi
 
 # Setting varying on the monitor
 declare -A FONT_SIZES=(
-    ["eDP1"]="13"
+    ["eDP-1"]="13"
     ["DVI-D-0"]="11"
     ["HDMI-A-0"]="13"
 )
 declare -A EMOJI_SCALE=(
-    ["eDP1"]="9"
+    ["eDP-1"]="9"
     ["DVI-D-0"]="10"
     ["HDMI-A-0"]="10"
 )
 declare -A BAR_HEIGHT=(
-    ["eDP1"]="29"
+    ["eDP-1"]="29"
     ["DVI-D-0"]="23"
     ["HDMI-A-0"]="29"
 )
 declare -A BLOCKS=(
     ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
     ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
-    ["eDP1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
+    ["eDP-1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun date TSEP"
 )
 
 # Geolocation for some modules
@@ -832,11 +872,22 @@ margin-bottom = 0
 Some of the custom modules below use Org mode noweb to evaluate colors, because it's faster than querying =xrdb= at runtime. I wish I could reference polybar values there, but [[https://github.com/polybar/polybar/issues/615][it looks like this is impossible]].
 
 If you want to copy something, you can go to the [[file:bin/polybar/][bin/polybar]] folder.
+
 *** ipstack-vpn
+| Guix dependency | Description             |
+|-----------------+-------------------------|
+| bind            | Provides dig            |
+| curl            |                         |
+| jq              | util to work with JSONs |
+
 A module to get a country of the current IP and openvpn status. Uses [[https://ipstack.com/][ipstack]] API.
 
 #+begin_src bash :tangle ./bin/polybar/ipstack-vpn.sh :noweb yes
 ip=$(dig +short +timeout=1 myip.opendns.com @resolver1.opendns.com 2> /dev/null)
+if [[ ! -f ~/secrets/ipstack-api-key ]]; then
+    echo "%{u<<get-color(name="red")>>}%{+u} ?? %{u-}"
+    exit
+fi
 API_KEY="$(cat ~/secrets/ipstack-api-key)"
 if [[ -z $ip || $ip == *"timed out"* ]]; then
     echo "%{u<<get-color(name="red")>>}%{+u} ?? %{u-}"
@@ -889,9 +940,10 @@ interval = 1200
 *** aw-afk
 Prints out a current uptime and non-AFK time from [[https://github.com/ActivityWatch][ActivityWatch]] server
 
-| Type | Note                      |
-|------+---------------------------|
-| TODO | Fix crash on uptime > 99h |
+| Type | Note                                       |
+|------+--------------------------------------------|
+| TODO | Fix crash on uptime > 99h                  |
+| TODO | Fix non-compatible uptime in GNU coreutils |
 
 #+begin_src bash :tangle ./bin/polybar/aw_afk.sh :noweb yes
 afk_event=$(curl -s -X GET "http://localhost:5600/api/0/buckets/aw-watcher-afk_$(hostname)/events?limit=1" -H "accept: application/json")
@@ -914,6 +966,10 @@ exec = /home/pavel/bin/polybar/aw_afk.sh
 interval = 60
 #+end_src
 *** sun
+| Guix dependency |
+|-----------------|
+| sunwait         |
+
 Prints out the time of sunrise/sunset. Uses [[https://github.com/risacher/sunwait][sunwait]]
 
 #+begin_src bash :tangle ./bin/polybar/sun.sh :noweb yes
@@ -1199,6 +1255,10 @@ ramp-capacity-4 = 
 #+end_src
 
 * Rofi
+| Guix dependency |
+|-----------------|
+| rofi            |
+
 [[https://github.com/davatorium/rofi][rofi]] is another dynamic menu generator. It can act as dmenu replacement but offers a superset of dmenu's features.
 
 ** Theme
@@ -1404,6 +1464,10 @@ if [[ ! -z $SELECTED ]]; then
 fi
 #+end_src
 * Flameshot
+| Guix dependency |
+|-----------------|
+| flameshot       |
+
 [[https://github.com/flameshot-org/flameshot][flameshot]] is my program of choice to make screenshots.
 
 As it overwrites its own config all the time, I do not keep the file in VC.
@@ -1453,6 +1517,11 @@ TYPE_TOGGLE_PANEL=Space
 TYPE_UNDO=Ctrl+Z
 #+end_src
 * dunst
+| Guix dependency |
+|-----------------|
+| dunst           |
+| libnotify       |
+
 | Type | Note                            |
 |------+---------------------------------|
 | TODO | Cleanup default config comments |
@@ -1752,6 +1821,10 @@ References:
     #icon = /path/to/icon
 #+end_src
 * keynav
+| Guix dependency |
+|-----------------|
+| keynav          |
+
 | Type    | Note                           |
 |---------+--------------------------------|
 | SYMLINK | ./config/keynavrc -> .keynavrc |
@@ -1830,6 +1903,11 @@ fade-exclude = [
 :PROPERTIES:
 :header-args+: :tangle ./.config/picom.conf
 :END:
+
+| Guix dependency |
+|-----------------|
+| picom           |
+
 [[https://github.com/yshui/picom][picom]] is a compositor for X11. It allows effects such as transparency, blurring, etc.
 
 Sample configuration is a good resource for getting an overview of the available settings. I have only a bunch of necessary settings in mine.
@@ -1917,6 +1995,13 @@ wintypes:
 };
 #+end_src
 * Zathura
+| Guix dependency     |
+|---------------------|
+| zathura             |
+| zathura-ps          |
+| zathura-pdf-poppler |
+| zathura-djvu        |
+
 [[https://pwmt.org/projects/zathura/][Zathura]] is a pdf viewer with vim-like keybindings. One of my favorite features is an ability to invert the document colors.
 
 #+begin_src conf-space :noweb yes :tangle .config/zathura/zathurarc
@@ -1929,4 +2014,269 @@ set recolor-lightcolor <<get-color(name="black", quote=1)>>
 set recolor true
 map <C-r> set recolor false
 map <C-R> set recolor true
+#+end_src
+* Various software
+This section generates manifests for various desktop software that I'm using.
+
+** Browsers
+| Category | Guix dependency    |
+|----------+--------------------|
+| browsers | ungoogled-chromium |
+| browsers | firefox            |
+** Office
+| Category | Guix dependency |
+|----------+-----------------|
+| office   | libreoffice     |
+| office   | gimp            |
+** LaTeX
+| Category | Guix dependency |
+|----------+-----------------|
+| latex    | texlive         |
+** Dev
+| Category | Guix dependency |
+|----------+-----------------|
+| dev      | conda           |
+| dev      | docker-compose  |
+** Manifests
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no :var category=""
+(my/format-guix-dependencies category)
+#+end_src
+
+Dev
+#+begin_src scheme :tangle .config/guix/manifests/dev.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("dev")>>))
+#+end_src
+
+Browsers
+#+begin_src scheme :tangle .config/guix/manifests/browsers.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("browsers")>>))
+#+end_src
+
+System
+#+begin_src scheme :tangle .config/guix/manifests/system.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("system")>>))
+#+end_src
+
+Music
+#+begin_src scheme :tangle .config/guix/manifests/music.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("music")>>))
+#+end_src
+
+Office
+#+begin_src scheme :tangle .config/guix/manifests/office.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("office")>>))
+#+end_src
+
+LaTeX
+#+begin_src scheme :tangle .config/guix/manifests/latex.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("latex")>>))
+#+end_src
+** Flatpak
+A lot of proprietary desktop applications can be installed most easily with flatpak & flathub.
+
+| Guix dependency |
+|-----------------|
+| flatpak         |
+
+After installation, add the following repositories:
+#+begin_example
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak remote-add --user --if-not-exists flathub-beta https://flathub.org/beta-repo/flathub-beta.flatpakrepo
+#+end_example
+
+Installation syntax is as follows:
+#+begin_example
+flatpak install --user <remote> <package>
+#+end_example
+
+Packages to install:
+#+NAME: flatpak-deps
+| Flatpak dependency     | Channel |
+|------------------------+---------|
+| org.mozilla.firefox    | flathub |
+| com.discordapp.Discord | flathub |
+| us.zoom.Zoom           | flathub |
+| com.slack.Slack        | flathub |
+
+#+begin_src emacs-lisp :var table=flatpak-deps :wrap example
+(mapconcat
+ (lambda (c) (concat "flatpak install --user " (nth 1 c) " " (nth 0 c)))
+ table
+ "\n")
+#+end_src
+
+#+RESULTS:
+#+begin_example
+flatpak install --user flathub org.mozilla.firefox
+flatpak install --user flathub com.discordapp.Discord
+flatpak install --user flathub us.zoom.Zoom
+flatpak install --user flathub com.slack.Slack
+#+end_example
+** Nix
+I probably should've used nix, as almost every program I packaged so far exists in the Nix repo.
+
+But it's easy enough to use Nix on Guix.
+#+begin_src conf :tangle ~/.nix-channels
+https://nixos.org/channels/nixpkgs-unstable nixpkgs
+#+end_src
+
+Don't forget to run the following after the first installation:
+#+begin_src sh
+nix-channel --update
+#+end_src
+
+Installing packages:
+#+begin_src
+nix-env -i vk-messenger
+#+end_src
+* Services
+:PROPERTIES:
+:header-args+: :tangle ~/.config/shepherd/init.scm
+:END:
+[[https://www.gnu.org/software/shepherd/manual/html_node/index.html][GNU Shepherd]] is a service management system for GNU Guix.
+
+I previously used supervisor, but shepherd also seems pretty capable.
+** Music
+| Category | Guix dependency |
+|----------+-----------------|
+| music    | mpd             |
+| music    | ncmpcpp         |
+| music    | picard          |
+| music    | mpd-watcher     |
+| music    | mpd-mpc         |
+
+Music player daemon
+#+begin_src scheme
+(define mpd
+  (make <service>
+    #:provides '(mpd)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("mpd" "--no-daemon"))
+    #:stop (make-kill-destructor)))
+#+end_src
+
+MPD watcher
+#+begin_src scheme
+(define mpd-watcher
+  (make <service>
+    #:provides '(mpd-watcher)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("mpd_watcher"))
+    #:stop (make-kill-destructor)
+    #:requires '(mpd)))
+#+end_src
+** GNU Mcron
+[[https://www.gnu.org/software/mcron/][GNU Mcron]] is a replacement for cron, written in Scheme.
+
+#+begin_src scheme
+(define mcron
+  (make <service>
+    #:provides '(mcron)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("mcron"))
+    #:stop (make-kill-destructor)))
+#+end_src
+** ActivityWatch
+[[https://activitywatch.net/][ActivityWatch]] is a FOSS time tracker. It tracks screen and application usage and has integrations with browsers, Emacs, etc.
+
+| Guix dependency   |
+|-------------------|
+| activitywatch-bin |
+
+aw-server
+#+begin_src scheme
+(define aw-server
+  (make <service>
+    #:provides '(aw-server)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("aw-server"))
+    #:stop (make-kill-destructor)))
+#+end_src
+
+aw-watcher-afk
+#+begin_src scheme
+(define aw-watcher-afk
+  (make <service>
+    #:provides '(aw-watcher-afk)
+    #:requires '(aw-server)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("aw-watcher-afk"))
+    #:stop (make-kill-destructor)))
+#+end_src
+
+aw-watcher-window
+#+begin_src scheme
+(define aw-watcher-window
+  (make <service>
+    #:provides '(aw-watcher-window)
+    #:requires '(aw-server)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("aw-watcher-window"))
+    #:stop (make-kill-destructor)))
+#+end_src
+** Sync
+| Guix dependency |
+|-----------------|
+| megacmd         |
+** Shepherd config
+Register services
+#+begin_src scheme
+(register-services
+ mpd
+ mpd-watcher
+ mcron
+ aw-server
+ aw-watcher-afk
+ aw-watcher-window)
+#+end_src
+
+Daemonize shepherd
+#+begin_src scheme
+(action 'shepherd 'daemonize)
+#+end_src
+
+Run services
+#+begin_src scheme
+(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window))
+#+end_src
+* Guix settings
+Other desktop programs I use are listed below.
+
+| Guix dependency        | Description                               |
+|------------------------+-------------------------------------------|
+| xrandr                 | X11 CLI to RandR                          |
+| xprop                  | Tool to display properties of X windows   |
+| arandr                 | GUI to xrandr                             |
+| light                  | Control screen brightness                 |
+| ponymix                | Control PulseAudio CLI                    |
+| pavucontrol            | Control PulseAudio GUI                    |
+| network-manager-applet | Applet to manage network connections      |
+| feh                    | Image viewer. Used to set background      |
+| copyq                  | Clipboard manager                         |
+| xmodmap                | Program to modify keybindings on X server |
+| thunar                 | My preferred GUI file manager             |
+| keepassxc              | My preferred password manager             |
+
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no
+(my/format-guix-dependencies)
+#+end_src
+
+#+begin_src scheme :tangle .config/guix/manifests/desktop.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages()>>))
 #+end_src

@@ -1,0 +1,215 @@
+#+TITLE: Mail
+#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args:conf-unix   :comments link
+#+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
+
+My email configuration with [[https://notmuchmail.org/][notmuch]] + [[https://github.com/gauteh/lieer][lieer]] + [[https://marlam.de/msmtp/][msmtp]]. My problem with any particular mail setup was that I use Gmail labels quite extensively, and handling these over IMAP is rather awkward. Hence this choice of software.
+
+References:
+- [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][My post]] about email configuration. I wrote it some time ago, but the general idea remains.
+
+* Lieer
+| Guix dependency |
+|-----------------|
+| python-lieer    |
+Lieer is a program to link up Gmail and notmuch. Basically, it dowloads mail from Gmail via API, stores them in maildir and syncronizes labels with notmuch.
+
+I have a separate directory in my =~/Mail= for each address. To init lieer, run the following command in the directory:
+#+begin_example
+gmi init <address>
+#+end_example
+
+After which the settings will be stored in =gmailieer.json= and the credentials in =.credentials.gmailieer.json=. The latter file is stored encrypted.
+
+My preferred settings:
+#+begin_example
+gmi set --replace-slash-with-dot
+gmi set --ignore-tags-local new
+#+end_example
+
+Running =gmi sync= in the required directory performs the syncronization. The first sync takes a while, the subsequent syncs are pretty fast.
+* Notmuch
+| Guix dependency |
+|-----------------|
+| notmuch         |
+| parallel        |
+
+Notmuch is a CLI email indexer program, which handles labels in a way not unlike Gmail. It also provides a frontend for Emacs, but it's not the only one available.
+
+** Config
+:PROPERTIES:
+:header-args+: :tangle ~/.notmuch-config
+:END:
+
+Not much is going on here.
+
+First, the database path.
+#+begin_src conf-unix
+[database]
+path=/home/pavel/Mail
+#+end_src
+
+Name and list of emails. It's not like it's a secret anyhow.
+#+begin_src conf-unix
+[user]
+name=Pavel Korytov
+primary_email=thexcloud@gmail.com
+other_email=progin6304@gmail.com;
+#+end_src
+
+A list of tags which will be added by =notmuch new= and directory names which will be ignored by =notmuch new=.
+
+#+begin_src conf-unix
+[new]
+tags=new;
+ignore=.osync_workdir
+#+end_src
+
+Exclude these tags from search by default.
+#+begin_src conf-unix
+[search]
+exclude_tags=trash;spam;
+#+end_src
+
+Maildir compatibility.
+#+begin_src conf-unix
+[maildir]
+synchronize_flags=true
+#+end_src
+
+** Hooks
+Now, we have to link up lieer and notmuch. This is done via the notmuch hook system, which allows to run custom scripts before and after any command.
+
+*** =pre_new=
+This hook runs fetch from Gmail in parallel before the =notmuch new= command.
+
+The =parallel= command is provided by [[https://www.gnu.org/software/parallel/][GNU Parallel]].
+
+#+begin_src bash :tangle ~/Mail/.notmuch/hooks/pre-new
+# GMI="/home/pavel/Programs/miniconda3/envs/mail/bin/gmi"
+GMI="gmi"
+parallel -j0 "(cd /home/pavel/Mail/{}/ && $GMI sync)" ::: thexcloud progin6304
+#+end_src
+*** =post_new=
+And this hook tags different mailboxes with different tags.
+
+#+begin_src bash :tangle ~/Mail/.notmuch/hooks/post-new
+notmuch tag +main "path:thexcloud/** AND tag:new"
+notmuch tag +progin "path:progin6304/** AND tag:new"
+notmuch tag -new "tag:new"
+#+end_src
+* Sync script
+A script to run =notmuch new= and push a notification if there is new mail.
+
+#+begin_src bash :tangle ~/bin/scripts/check-email
+export DISPLAY=:0
+CHECK_FILE="/home/pavel/Mail/.last_check"
+QUERY="tag:unread"
+ALL_QUERY="tag:unread"
+if [ -f "$CHECK_FILE" ]; then
+    DATE=$(cat "$CHECK_FILE")
+    QUERY="$QUERY and date:@$DATE.."
+fi
+
+notmuch new
+NEW_UNREAD=$(notmuch count "$QUERY")
+ALL_UNREAD=$(notmuch count "$ALL_QUERY")
+
+if [ $NEW_UNREAD -gt 0 ]; then
+    MAIN_UNREAD=$(notmuch count "tag:unread AND tag:main")
+    PROGIN_UNREAD=$(notmuch count "tag:unread AND tag:progin")
+    read -r -d '' NOTIFICATION <<EOM
+$NEW_UNREAD new messages
+$MAIN_UNREAD thexcloud@gmail.com
+$PROGIN_UNREAD progin6304@gmail.com
+$ALL_UNREAD total
+EOM
+    notify-send "New Mail" "$NOTIFICATION"
+fi
+
+echo "$(date +%s)" > $CHECK_FILE
+#+end_src
+
+The script is ran via GNU Mcron every 5 minutes.
+#+begin_src scheme :tangle ~/.config/cron/mail.guile
+(job "*/5 * * * * " "~/bin/scripts/check-email")
+#+end_src
+* MSTP
+| Guix dependency |
+|-----------------|
+| msmtp           |
+
+Sending emails can be done with MSMTP. It automatially chooses the email address and server based on the contents of the message, which is handy if there are multiple mailboxes to be managed.
+
+As I haven't encrypted my passwords properly yet, I encrypt the entire configuration file.
+* Emacs
+:PROPERTIES:
+:header-args+: :tangle ~/.emacs.d/mail.el
+:END:
+Finally, Emacs configuration.
+
+The problem with my Guix setup is that Emacs by default doesn't see the elisp files of notmuch, so here is a small workaround:
+#+begin_src emacs-lisp
+(setq my/notmuch-loaded nil)
+
+(defun my/run-notmuch ()
+  (interactive)
+  (when (not my/notmuch-loaded)
+    (let* ((notmuch-dir (shell-command-to-string "readlink -f $(which notmuch)"))
+           (notmuch-version (substring (shell-command-to-string "notmuch --version") 8 -1))
+           (notmuch-lisp-dir (concat
+                              (substring notmuch-dir 0 -13)
+                              "/share/emacs/site-lisp/notmuch-"
+                              notmuch-version
+                              "/")))
+      (push notmuch-lisp-dir load-path))
+    (setq my/notmuch-loaded t))
+  (notmuch))
+
+(my-leader-def "am" 'my/run-notmuch)
+#+end_src
+
+And the proper notmuch settings:
+#+begin_src emacs-lisp
+(use-package notmuch
+  ;; :ensure nil
+  :commands (notmuch)
+  :config
+  (setq mail-specify-envelope-from t)
+  (setq message-sendmail-envelope-from 'header)
+  (setq mail-envelope-from 'header)
+  (setq notmuch-always-prompt-for-sender t)
+  (setq sendmail-program (executable-find "msmtp"))
+  (setq send-mail-function #'sendmail-send-it)
+  (add-hook 'notmuch-hello-mode-hook
+            (lambda () (display-line-numbers-mode 0)))
+  (custom-set-faces
+   `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow)))))))
+#+end_src
+
+The file to which this is tangled is read in the init.el.
+* mailcap
+mailcap file is a file which defines how to read to different MIME types. Notmuch also uses it, so why not keep it here.
+
+#+begin_src text :tangle ~/.mailcap
+audio/*; mpc add %s
+
+image/*; feh %s
+
+application/msword; /usr/bin/xdg-open %s
+application/pdf; zathura %s
+application/postscript ; zathura %s
+
+text/html; /usr/bin/xdg-open %s
+#+end_src
+* Guix settings
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no
+(my/format-guix-dependencies)
+#+end_src
+
+#+begin_src scheme :tangle .config/guix/manifests/mail.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages()>>))
+#+end_src

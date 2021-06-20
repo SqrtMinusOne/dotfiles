@@ -1,0 +1,4 @@
+(specifications->manifest
+ '(
+   "gimp"
+   "libreoffice"))

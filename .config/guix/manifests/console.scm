@@ -1,0 +1,17 @@
+(specifications->manifest
+ '(
+   "osync"
+   "nethogs"
+   "htop"
+   "bat"
+   "exa"
+   "ncurses"
+   "alacritty"
+   "xclip"
+   "tmuxp"
+   "tmux"
+   "rust-starship"
+   "dt-colorscripts"
+   "fish"
+   "xhost"
+   "xrdb"))

@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# [[file:../../Mail.org::*Sync script][Sync script:1]]
 export DISPLAY=:0
 CHECK_FILE="/home/pavel/Mail/.last_check"
 QUERY="tag:unread"
@@ -25,3 +26,4 @@ EOM
 fi
 
 echo "$(date +%s)" > $CHECK_FILE
+# Sync script:1 ends here

@@ -1,0 +1,490 @@
+#+TITLE: Guix
+#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
+#+PROPERTY: header-args:scheme         :comments link
+
+[[https://guix.gnu.org/][GNU Guix]] is (1) a transactional package manager and (2) a GNU/Linux distribution.
+
+My personal selling points are declarative package configuration and transactional upgrades.
+
+References:
+- [[https://guix.gnu.org/en/help/][Official help]]
+- [[https://wiki.systemcrafters.cc/guix][System Crafters wiki]]
+- [[https://gitlab.com/pjotrp/guix-notes][Pjotr Prins' Guix notes]]
+- [[https://www.youtube.com/watch?v=iBaqOK75cho&list=PLEoMzSkcN8oNxnj7jm5V2ZcGc52002pQU][Davil Wilson's YouTube series]]
+
+* Profiles
+A profile is way to group Guix packages. Amongst many advantages, profiles can be defined by manifests, which in turn can be stored in VCS.
+
+References:
+- [[https://guix.gnu.org/en/cookbook/en/html_node/Guix-Profiles-in-Practice.html][Guix Profiles in Practice]]
+
+** Activate profiles
+A script to activate guix profiles. Usage:
+
+#+begin_example
+activate-profiles [profile1] [profile2] ...
+#+end_example
+
+Source: [[https://github.com/daviwil/dotfiles/blob/master/Systems.org#activating-profiles][David Wilson's config]]
+
+#+begin_src bash :tangle ./bin/scripts/activate-profles
+GREEN='\033[1;32m'
+RED='\033[1;30m'
+NC='\033[0m'
+GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
+
+profiles=$*
+if [[ $# -eq 0 ]]; then
+    profiles="$HOME/.config/guix/manifests/*.scm";
+fi
+
+for profile in $profiles; do
+  # Remove the path and file extension, if any
+  profileName=$(basename $profile)
+  profileName="${profileName%.*}"
+  profilePath="$GUIX_EXTRA_PROFILES/$profileName"
+  manifestPath=$HOME/.config/guix/manifests/$profileName.scm
+
+  if [ -f $manifestPath ]; then
+    echo
+    echo -e "${GREEN}Activating profile:" $manifestPath "${NC}"
+    echo
+
+    mkdir -p $profilePath
+    guix package --manifest=$manifestPath --profile="$profilePath/$profileName"
+
+    # Source the new profile
+    GUIX_PROFILE="$profilePath/$profileName"
+    if [ -f $GUIX_PROFILE/etc/profile ]; then
+        . "$GUIX_PROFILE"/etc/profile
+    else
+        echo -e "${RED}Couldn't find profile:" $GUIX_PROFILE/etc/profile "${NC}"
+    fi
+  else
+    echo "No profile found at path" $profilePath
+  fi
+done
+#+end_src
+** Update profiles
+A script to update Guix profiles. Usage:
+
+#+begin_example
+update-profiles [profile1] [profile2] ...
+#+end_example
+
+Source: once again, [[https://github.com/daviwil/dotfiles/blob/master/Systems.org#updating-profiles][David Wilson's config]].
+
+#+begin_src bash :tangle ./bin/scripts/update-profiles
+GREEN='\033[1;32m'
+NC='\033[0m'
+GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
+
+profiles=$*
+if [[ $# -eq 0 ]]; then
+    profiles="$GUIX_EXTRA_PROFILES/*";
+fi
+
+for profile in $profiles; do
+  profileName=$(basename $profile)
+  profilePath=$GUIX_EXTRA_PROFILES/$profileName
+
+  echo
+  echo -e "${GREEN}Updating profile:" $profilePath "${NC}"
+  echo
+
+  guix package --profile="$profilePath/$profileName" --manifest="$HOME/.config/guix/manifests/$profileName.scm"
+done
+#+end_src
+* Channels
+Specifying additional channels.
+
+References:
+- [[https://gitlab.com/nonguix/nonguix][nonguix channel repo]]
+- [[https://guix.gnu.org/manual/en/html_node/Channels.html][Guix channels reference]]
+
+Nonguix channel is pinned to a particular commit to avoid recompiling stuff more than necessary.
+
+#+begin_src scheme :tangle .config/guix/channels.scm
+(cons*
+ (channel
+  (name 'channel-q)
+  (url "https://github.com/SqrtMinusOne/channel-q.git"))
+ (channel
+  (name 'flat)
+  (url "https://github.com/flatwhatson/guix-channel.git")
+  (introduction
+   (make-channel-introduction
+    "33f86a4b48205c0dc19d7c036c85393f0766f806"
+    (openpgp-fingerprint
+     "736A C00E 1254 378B A982  7AF6 9DBE 8265 81B6 4490"))))
+ (channel
+  (name 'nonguix)
+  (url "https://gitlab.com/nonguix/nonguix")
+  (commit "d3c5eea0cbfe3e5bfbcf1fe15bc916fefacc624f")
+  (introduction
+   (make-channel-introduction
+    "897c1a470da759236cc11798f4e0a5f7d4d59fbc"
+    (openpgp-fingerprint
+     "2A39 3FFF 68F4 EF7A 3D29  12AF 6F51 20A0 22FB B2D5"))))
+ %default-channels)
+#+end_src
+* Systems
+Configuring systems with Guix.
+
+Yes, all my machines are named after colors I like.
+
+** Base configuration
+The base configuration is shared between all the machines.
+
+While it's possible to make a single =.scm= file with base confguration and load it, I noticed that it produces more cryptic error messages whenever there is an error in the base file, so I opt in for noweb.
+
+=guix system= invocation is as follows:
+
+#+begin_example
+sudo -E guix system reconfigure ~/.config/guix/systems/[system].scm
+#+end_example
+
+Common modules:
+#+begin_src scheme :tangle no :noweb-ref system-common
+(use-modules (gnu))
+(use-modules (gnu system nss))
+(use-modules (gnu packages bash))
+(use-modules ((gnu packages base) #:select (coreutils glibc)))
+(use-modules (gnu packages certs))
+(use-modules (gnu packages version-control))
+(use-modules (gnu packages vim))
+(use-modules (gnu packages gnome))
+(use-modules (gnu packages xorg))
+(use-modules (gnu packages wm))
+(use-modules (gnu packages openbox))
+(use-modules (gnu services docker))
+(use-modules (gnu services cups))
+(use-modules (srfi srfi-1))
+(use-modules (guix channels))
+(use-modules (guix inferior))
+(use-modules (nongnu packages linux))
+(use-modules (nongnu system linux-initrd))
+
+(use-service-modules desktop networking ssh xorg nix)
+(use-package-modules ssh)
+#+end_src
+
+In principle, we could define a variable called =base-operating-system= and extend it in ancestors. However, then we would have to define mandatory fields like =host-name=, =bootloader= with dummy values. Since I'm already using noweb, there is little point.
+
+The following code will be inserted in the top of the =operating-system= definition.
+
+Use the fulll Linux kernel. I hope I'll be able to use Libre kernel somewhere later.
+
+Inferior in kernel is used to avoid recompilation. It looks like I can pin these to diffent commits than in my =channels.scm=
+#+begin_src scheme :tangle no :noweb-ref system-base
+(kernel
+ (let*
+     ((channels
+       (list (channel
+              (name 'nonguix)
+              (url "https://gitlab.com/nonguix/nonguix")
+              (commit "46c1d8bcca674d3a71cd077c52dde9552a89873d"))
+             (channel
+              (name 'guix)
+              (url "https://git.savannah.gnu.org/git/guix.git")
+              (commit "f463f376e91ccc1fe4ab68d5e822b5d71a1234f5"))))
+      (inferior
+       (inferior-for-channels channels)))
+   (first (lookup-inferior-packages inferior "linux" "5.12.8"))))
+;; (kernel linux)
+(initrd microcode-initrd)
+(firmware (list linux-firmware))
+(locale "en_US.utf8")
+(timezone "Europe/Moscow")
+#+end_src
+
+US/RU keyboard layout, switch with Alt+Shift.
+#+begin_src scheme :tangle no :noweb-ref system-base
+(keyboard-layout (keyboard-layout "us,ru" #:options '("grp:alt_shift_toggle")))
+#+end_src
+
+User accounts.
+#+begin_src scheme :tangle no :noweb-ref system-base
+(users (cons* (user-account
+               (name "pavel")
+               (comment "Pavel")
+               (group "users")
+               (home-directory "/home/pavel")
+               (supplementary-groups
+                '("wheel"  ;; sudo
+                  "netdev" ;; network devices
+                  "audio"
+                  "video"
+                  "input"
+                  "tty"
+                  "docker"
+                  "scanner"
+                  "lp")))
+              %base-user-accounts))
+
+#+end_src
+
+Base packages, necessary right after the installation.
+#+begin_src scheme :tangle no :noweb-ref system-base
+(packages
+ (append
+  (list nss-certs
+	    git
+        i3-gaps
+        i3lock
+        openbox
+        xterm
+	    vim)
+  %base-packages))
+#+end_src
+
+Default services for each machine:
+- override the default =%desktop-services= to add OpenVPN support
+- add nix service
+- add docker service
+- add CUPS service
+- add a symlink to ELF interpeter to where most Linux binaries expect it
+#+begin_src scheme :tangle no :noweb-ref system-common
+(define %my-base-services
+  (cons*
+   (service openssh-service-type)
+   (extra-special-file "/lib64/ld-linux-x86-64.so.2" (file-append glibc "/lib/ld-linux-x86-64.so.2"))
+   (service nix-service-type)
+   (service cups-service-type
+            (cups-configuration
+             (web-interface? #t)))
+   (service docker-service-type)
+   (modify-services %desktop-services
+                    (network-manager-service-type config =>
+                                                  (network-manager-configuration (inherit config)
+                                                                                 (vpn-plugins (list network-manager-openvpn)))))))
+
+#+end_src
+
+** azure
+=azure= is a Lenovo Ideapad 330 laptop.
+
+=%backlight-udev-rule= should enable members of =video= group change the display backlight. See the relevant page at [[https://wiki.archlinux.org/title/Backlight][Arch Wiki]].
+
+#+begin_src scheme :noweb yes :tangle ~/.config/guix/systems/azure.scm
+<<system-common>>
+
+(define %backlight-udev-rule
+  (udev-rule
+   "90-backlight.rules"
+   (string-append "ACTION==\"add\", SUBSYSTEM==\"backlight\", "
+                  "RUN+=\"/run/current-system/profile/bin/chgrp video /sys/class/backlight/%k/brightness\""
+                  "\n"
+                  "ACTION==\"add\", SUBSYSTEM==\"backlight\", "
+                  "RUN+=\"/run/current-system/profile/bin/chmod g+w /sys/class/backlight/%k/brightness\"")))
+
+(operating-system
+ <<system-base>>
+
+ (host-name "azure")
+ (services (cons*
+            (set-xorg-configuration
+             (xorg-configuration
+              (keyboard-layout keyboard-layout)))
+            (modify-services %my-base-services
+                             (elogind-service-type config =>
+                                                   (elogind-configuration (inherit config)
+                                                                          (handle-lid-switch-external-power 'suspend)))
+                             (udev-service-type config =>
+                                                (udev-configuration (inherit config)
+                                                                    (rules (cons %backlight-udev-rule
+                                                                                 (udev-configuration-rules config))))))))
+
+ (bootloader
+  (bootloader-configuration
+   (bootloader grub-efi-bootloader)
+   (target "/boot/efi")
+   (keyboard-layout keyboard-layout)))
+
+ (swap-devices
+  (list (uuid "4b2dedb3-b111-4e69-8c05-6daa2b072c76")))
+
+ (file-systems
+  (cons* (file-system
+          (mount-point "/")
+          (device (file-system-label "my-root"))
+          (type "ext4"))
+	     (file-system
+	      (mount-point "/boot/efi")
+	      (device "/dev/sda1")
+	      (type "vfat"))
+         %base-file-systems)))
+#+end_src
+
+** blue
+A VM on which I test Guix. Will probably be deleted sooner or later.
+
+#+begin_src scheme :noweb yes :tangle ~/.config/guix/systems/blue.scm
+<<system-common>>
+
+(operating-system
+  <<system-base>>
+ (host-name "blue")
+
+ (bootloader
+  (bootloader-configuration
+   (bootloader grub-bootloader)
+   (target "/dev/sda")
+   (keyboard-layout keyboard-layout)))
+
+ (swap-devices
+  (list (uuid "d9ca4f8b-4bb1-420e-9371-3558731bada1")))
+
+ (file-systems
+  (cons* (file-system
+          (mount-point "/")
+          (device
+           (uuid "179fbd75-3c7f-4de2-8c4f-4c30939b8a3f"
+                 'ext4))
+          (type "ext4"))
+         %base-file-systems)))
+#+end_src
+* System installation
+** Preparation
+In my cases the provided ISO doesn't work because of Libre kernel.
+
+Fortunately, David Wilson has made [[https://github.com/SystemCrafters/guix-installer][a repository]] with a toolchain to make an ISO with the full kernel. In case it won't be an option, the [[https://gitlab.com/nonguix/nonguix][nonguix repo]] also has instructions on how to do that.
+
+When an ISO is there, we have to write it on a USB stick. Run =sudo fdisk -l= to get a list of disks.
+
+The approach in the official instruction is to create a bootable USB with =dd=:
+#+begin_example
+sudo dd of=/dev/sdxX if=<path-to-iso> status=progress && sync
+#+end_example
+
+However, I couldn't make it work for some strange reason. Fortunately, =gnome-disk-utility= was able to produce a bootable USB.
+** Installation
+Going further, the official instructions for installation & SystemCrafters wiki entry are pretty good, so it's not necessary to repeat them here.
+** After installation
+After the installation, the strategy is as follows.
+
+Set a password for the main user (pavel). Login with openbox to get a tolerable interface, because i3 default config is horrible.
+
+[[https://guix.gnu.org/en/manual/en/html_node/Keyboard-Layout-and-Networking-and-Partitioning.html#Keyboard-Layout-and-Networking-and-Partitioning][Connect to the internet]].
+
+Clone the dotfiles repo:
+#+begin_example
+mkdir Code
+cd Code
+git clone https://github.com/SqrtMinusOne/dotfiles.git
+#+end_example
+
+Copy the channels file and run guix pull:
+#+begin_example
+cp ~/Code/dotfiles/.config/guix/channels.scm ~/.config/guix
+guix pull
+#+end_example
+
+The first pull usually takes a while. After that install yadm and pull dotfiles:
+#+begin_example
+guix install yadm
+guix clone https://github.com/SqrtMinusOne/dotfiles.git
+#+end_example
+
+And activate the required profiles. Again, downloading & building Emacs, Starship and stuff will take a while.
+
+Don't forget to install =JetBrainsMono Nerd Font=.
+* Misc software
+| Category | Guix dependency |
+|----------+-----------------|
+| system   | openvpn         |
+| system   | python          |
+** VPN
+I'm not sure how to properly spin up VPN on Guix, so here is what I'm doing now.
+
+I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config, modified as follows:
+- paths to =ca=, =cert= and =key= are made absolute
+- added =auth-user-pass= with a link to login info
+
+*** vpn-start
+To start VPN propely, we have to use DNS given by CyberGhost to prevent DNS leaks and disabled ipv6. The thing is that the manual method requires also manual setting of the IP address and gateway.
+
+So this script:
+- gets an active connection
+- gets a device from that connection
+- gets an IP from that device
+- gets a gateway
+- modifies the connection
+- runs openvpn
+
+This isn't tested and probably will fail if there are multiple active connections, for instance.
+
+Also I'm a bit concerned with running openvpn as sudo, but I shall see if that screws me up somehow.
+
+#+begin_src bash :tangle ~/bin/scripts/vpn-start
+CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME)" | sed 's/ *$//g')
+DEVICE=$(nmcli -f connection.interface-name con show "$CONN" | awk '{ print $2 }')
+IP=$(ip addr show "$DEVICE" | awk 'match($0, /.*inet (addr:)?(([0-9]*\.){3}[0-9]*\/[0-9]*).*/, ga) { print ga[2] } ')
+GATEWAY=$(ip route list | awk ' /^default/ {print $3}')
+
+DNS_1=10.101.0.243
+DNS_2=38.132.106.139
+
+echo "Connection: $CONN"
+echo "Device: $DEVICE"
+echo "IP: $IP"
+echo "Gateway: $GATEWAY"
+
+nmcli con modify "$CONN" ipv4.addresses "${IP}"
+nmcli con modify "$CONN" ipv4.gateway "${GATEWAY}"
+nmcli con modify "$CONN" ipv4.method manual
+nmcli con modify "$CONN" ipv4.ignore-auto-dns yes
+nmcli con modify "$CONN" +ipv4.dns $DNS_1
+nmcli con modify "$CONN" +ipv4.dns $DNS_2
+nmcli con modify "$CONN" ipv6.method ignore
+nmcli connection up "$CONN"
+sudo openvpn --config ~/.vpn/openvpn.ovpn
+#+end_src
+*** vpn-stop
+Also a script to reverse the changes.
+
+#+begin_src bash :tangle ~/bin/scripts/vpn-stop
+CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME)" | sed 's/ *$//g')
+DNS_1=10.101.0.243
+DNS_2=38.132.106.139
+
+echo "Connection: $CONN"
+
+nmcli con modify "$CONN" ipv4.ignore-auto-dns no
+nmcli con modify "$CONN" -ipv4.dns $DNS_1
+nmcli con modify "$CONN" -ipv4.dns $DNS_2
+nmcli con modify "$CONN" ipv4.method auto
+nmcli con modify "$CONN" ipv6.method auto
+nmcli connection up "$CONN"
+#+end_src
+* Notes on installing software
+| Category | Guix dependency | Description                                        |
+|----------+-----------------+----------------------------------------------------|
+| system   | patchelf        | A program to modify existsing ELF executables      |
+| system   | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
+** flatpak
+As for now, the easiest way to install most of proprietary software is via flatpak. See the relevant section in [[file:Desktop.org][Desktop.org]].
+** conda
+[[https://docs.conda.io/en/latest/][conda]] is a package manager, which I use for managing various versions of Python & Node.js.
+
+It is packaged for GNU Guix, although the definition has its fair share of workarounds. It is almost surprising to see it work with all the C libraries and stuff. But there are still some problems.
+
+First, it's impossible to perform =conda init= to patch files like =.bashrc=, because the command is hell-bent on modifying =/gnu/store/=. So I do this manually, look for the =init_conda= procedures in [[file:Console.org][Console.org]].
+
+Second, base environment root is =/gnu/store=, so don't install anything there.
+
+Third, by default it tries to create envronments in =/gnu/store=. I think it's enough to create one environment like this to fix it:
+#+begin_src sh
+mkdir -p ~/.conda/envs
+conda create -p ~/.conda/envs/test
+#+end_src
+** wakatime-cli
+| Note | Description           |
+|------+-----------------------|
+| TODO | Package this for Guix |
+
+Before I figure out how to package this for Guix:
+- Clone [[https://github.com/wakatime/wakatime-cli][the repo]]
+- Run ~go build~
+- Copy the binary to the =~/bin= folder

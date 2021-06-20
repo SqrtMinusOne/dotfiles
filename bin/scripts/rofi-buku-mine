@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # [[file:../../Desktop.org::*Buku bookmarks][Buku bookmarks:1]]
 if [ $(hostname) = 'pdsk' ]; then
     BUKU="/home/pavel/.local/bin/buku"

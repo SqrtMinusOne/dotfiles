@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # [[file:../../Desktop.org::*Keyboard Layout][Keyboard Layout:2]]
 if setxkbmap -query | grep -q us,ru; then
     setxkbmap -layout us

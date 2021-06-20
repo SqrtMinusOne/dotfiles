@@ -1,23 +1,37 @@
-# [[file:Shell.org::*Startup & environment][Startup & environment:1]]
-[[ $- != *i* ]] && return
-
-xhost +local:root > /dev/null 2>&1
-
-use_fish=true
+# [[file:Console.org::*Startup & environment][Startup & environment:1]]
+export SHELL
 # Startup & environment:1 ends here
 
-# [[file:Shell.org::*Startup & environment][Startup & environment:2]]
-export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
+# [[file:Console.org::*Startup & environment][Startup & environment:2]]
+if [[ $- != *i* ]]
+then
+    [[ -n "$SSH_CLIENT" ]] && source /etc/profile
+    return
+fi
 # Startup & environment:2 ends here
 
-# [[file:Shell.org::*Launch fish][Launch fish:1]]
-if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} ]]
+# [[file:Console.org::*Startup & environment][Startup & environment:3]]
+source /etc/bashrc
+# Startup & environment:3 ends here
+
+# [[file:Console.org::*Startup & environment][Startup & environment:4]]
+xhost +local:root > /dev/null 2>&1
+# Startup & environment:4 ends here
+
+# [[file:Console.org::*Startup & environment][Startup & environment:5]]
+export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
+# Startup & environment:5 ends here
+
+# [[file:Console.org::*Launch fish][Launch fish:1]]
+use_fish=true
+
+if [[ $(ps --no-header --pid=$PPID --format=cmd) != "fish" && ${use_fish} && $(command -v fish) ]]
 then
     exec fish
 fi
 # Launch fish:1 ends here
 
-# [[file:Shell.org::*Colors][Colors:1]]
+# [[file:Console.org::*Colors][Colors:1]]
 use_color=true
 
 # Set colorful PS1 only on colorful terminals.
@@ -66,7 +80,7 @@ fi
 unset use_color safe_term match_lhs sh
 # Colors:1 ends here
 
-# [[file:Shell.org::*Settings][Settings:1]]
+# [[file:Console.org::*Settings][Settings:1]]
 complete -cf sudo           # Sudo autocompletion
 
 shopt -s checkwinsize       # Check windows size after each command
@@ -74,47 +88,49 @@ shopt -s expand_aliases     # Aliases
 shopt -s autocd             # Cd to directory just by typing its name (without cd)
 # Settings:1 ends here
 
-# [[file:Shell.org::*Settings][Settings:2]]
+# [[file:Console.org::*Settings][Settings:2]]
 shopt -s histappend
 export HISTCONTROL=ignoredups:erasedups
 HISTSIZE=
 HISTFILESIZE=
 # Settings:2 ends here
 
-# [[file:Shell.org::*Settings][Settings:3]]
-[ -r /usr/share/bash-completion/bash_completion ] && . /usr/share/bash-completion/bash_completion
-if [ -d "/usr/share/fzf" ]; then
-    source /usr/share/fzf/completion.bash
-    source /usr/share/fzf/key-bindings.bash
-fi
-# Settings:3 ends here
-
-# [[file:Shell.org::*Aliases][Aliases:1]]
+# [[file:Console.org::*Aliases][Aliases:1]]
 alias v="vim"
 alias gg="lazygit"
 alias ls="exa --icons"
 alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
+alias ic="init_conda"
 # Aliases:1 ends here
 
-# [[file:Shell.org::*Anaconda][Anaconda:1]]
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/pavel/Programs/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/pavel/Programs/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/pavel/Programs/miniconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/pavel/Programs/miniconda3/bin:$PATH"
-    fi
+# [[file:Console.org::*Aliases][Aliases:2]]
+if [[ ! -z "$SIMPLE" ]]; then
+    unalias ls
+    alias ll="ls -lah"
 fi
-unset __conda_setup
-# <<< conda initialize <<<
+# Aliases:2 ends here
+
+# [[file:Console.org::*Anaconda][Anaconda:1]]
+init_conda () {
+    __conda_setup="$('/home/pavel/.guix-extra-profiles/dev/dev/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+    if [ $? -eq 0 ]; then
+        eval "$__conda_setup"
+    else
+        if [ -f "/home/pavel/.guix-extra-profiles/dev/dev/etc/profile.d/conda.sh" ]; then
+            . "/home/pavel/.guix-extra-profiles/dev/dev/etc/profile.d/conda.sh"
+        else
+            # export PATH="/home/pavel/Programs/miniconda3/bin:$PATH"
+            echo "what"
+        fi
+    fi
+    unset __conda_setup
+}
 # Anaconda:1 ends here
 
-# [[file:Shell.org::*Starship prompt][Starship prompt:1]]
-eval "$(starship init bash)"
+# [[file:Console.org::*Starship prompt][Starship prompt:1]]
+if [[ -z "$SIMPLE" ]]; then
+    eval "$(starship init bash)"
+fi
 # Starship prompt:1 ends here

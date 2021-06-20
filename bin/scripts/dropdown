@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # [[file:../../Desktop.org::*Launch script][Launch script:1]]
 CLASSNAME="dropdown_tmux"
 COMMAND="alacritty --class $CLASSNAME -e tmux new-session -s $CLASSNAME"

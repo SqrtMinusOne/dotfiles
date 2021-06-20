@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 LINKS=(
     "$HOME/.config/tridactyl/themes $HOME/themes"
     "$HOME/.config/tridactyl/.tridactylrc $HOME/.tridactylrc"
