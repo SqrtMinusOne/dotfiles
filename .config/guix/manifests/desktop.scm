@@ -12,6 +12,7 @@
    "arandr"
    "xprop"
    "xrandr"
+   "megacmd"
    "activitywatch-bin"
    "flatpak"
    "zathura-djvu"

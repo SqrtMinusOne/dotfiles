@@ -2227,6 +2227,10 @@ aw-watcher-window
     #:start (make-forkexec-constructor '("aw-watcher-window"))
     #:stop (make-kill-destructor)))
 #+end_src
+** Sync
+| Guix dependency |
+|-----------------|
+| megacmd         |
 ** Shepherd config
 Register services
 #+begin_src scheme

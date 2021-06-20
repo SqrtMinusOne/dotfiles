@@ -78,6 +78,7 @@
                    "input"
                    "tty"
                    "docker"
+                   "scanner"
                    "lp")))
                %base-user-accounts))
  
