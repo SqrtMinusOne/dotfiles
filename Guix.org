@@ -479,6 +479,23 @@ Third, by default it tries to create envronments in =/gnu/store=. I think it's e
 mkdir -p ~/.conda/envs
 conda create -p ~/.conda/envs/test
 #+end_src
+** Slack
+What a nonsense of a program.
+
+I was able to launch the nix version with the following wrapper script:
+#+begin_src bash :tangle ~/bin/slack-wrapper
+mkdir -p ~/.cache/slack
+slack -r ~/.cache/slack
+#+end_src
+
+Also, it requires a =lsb_release= in the PATH, so here is one:
+#+begin_src bash :tangle ~/bin/lsb_release
+echo "LSB Version:    Hey. I spent an hour figuring out why Slack doesn't launch."
+echo "Distributor ID: It seems like it requires an lsb_release."
+echo "Description:    But GNU Guix doesn't have one."
+echo "Release:        42.2"
+echo "Codename:       n/a"
+#+end_src
 ** wakatime-cli
 | Note | Description           |
 |------+-----------------------|

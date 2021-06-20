@@ -545,7 +545,7 @@ mode "apps" {
     bindsym Escape mode "default"
     bindsym b exec firefox; mode default
     bindsym v exec vk; mode default
-    bindsym s exec "flatpak run com.slack.Slack"; mode default;
+    bindsym s exec slack-wrapper; mode default;
     bindsym d exec "flatpak run com.discordapp.Discord"; mode default;
     bindsym m exec "alacritty -e ncmpcpp"; mode default
     bindsym c exec "copyq toggle"; mode default
@@ -2140,7 +2140,7 @@ nix-channel --update
 
 Installing packages:
 #+begin_src
-nix-env -i vk-messenger
+nix-env -i vk-messenger slack
 #+end_src
 * Services
 :PROPERTIES:
