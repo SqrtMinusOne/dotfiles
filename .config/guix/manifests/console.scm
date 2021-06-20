@@ -8,6 +8,7 @@
    "ncurses"
    "alacritty"
    "xclip"
+   "tmuxp"
    "tmux"
    "rust-starship"
    "dt-colorscripts"

@@ -472,6 +472,7 @@ symbol = " "
 | Guix dependency |
 |-----------------|
 | tmux            |
+| tmuxp           |
 
 [[https://github.com/tmux/tmux][tmux]] is my terminal multiplexer of choice.
 
