@@ -167,14 +167,26 @@ Xft.dpi: <<get-dpi()>>
 ** Themes
 A few programs I use to customize the apperance are listed below.
 
-| Guix dependency    | Description                               |
-|--------------------+-------------------------------------------|
-| lxappearance       | A program to customize GTK+ themes        |
-| matcha-theme       | My preferred GTK theme                    |
-| papirus-icon-theme | My preferred Icon theme                   |
-| hicolor-icon-theme | For some reason required for lxappearance |
+| Guix dependency    | Description             |
+|--------------------+-------------------------|
+| matcha-theme       | My preferred GTK theme  |
+| papirus-icon-theme | My preferred Icon theme |
+| xsettingsd         | X11 settings daemon     |
 
-IIRC the only thing =lxapparance= does is edit GTK config files.
+[[https://github.com/derat/xsettingsd][xsettingsd]] is a lightweight daemon which configures X11 applications. It is launched with shepherd in the sevices config below.
+
+#+begin_src conf-space :tangle ~/.config/xsettingsd/xsettingsd.conf
+Net/ThemeName "Matcha-dark-azul"
+Net/IconThemeName "Papirus-Dark"
+Gtk/DecorationLayout "menu:minimize,maximize,close"
+Gtk/FontName "Sans 12"
+Gtk/MonospaceFontName "JetbrainsMono Nerd Mono 12"
+Gtk/CursorThemeName "Adwaita"
+Xft/Antialias 1
+Xft/Hinting 0
+Xft/HintStyle "hintnone"
+#+end_src
+
 * i3wm
 :PROPERTIES:
 :header-args+: :tangle ./.config/i3/config
@@ -753,8 +765,8 @@ declare -A BAR_HEIGHT=(
     ["HDMI-A-0"]="29"
 )
 declare -A BLOCKS=(
-    ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
-    ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
+    ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun date TSEP"
+    ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun date TSEP"
     ["eDP-1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun date TSEP"
 )
 
@@ -2099,12 +2111,12 @@ flatpak install --user <remote> <package>
 
 Packages to install:
 #+NAME: flatpak-deps
-| Flatpak dependency     | Channel |
-|------------------------+---------|
-| org.mozilla.firefox    | flathub |
-| com.discordapp.Discord | flathub |
-| us.zoom.Zoom           | flathub |
-| com.slack.Slack        | flathub |
+| Flatpak dependency           | Channel |
+|------------------------------+---------|
+| com.github.wwmm.pulseeffects | flathub |
+| com.discordapp.Discord       | flathub |
+| us.zoom.Zoom                 | flathub |
+| com.slack.Slack              | flathub |
 
 #+begin_src emacs-lisp :var table=flatpak-deps :wrap example
 (mapconcat
@@ -2115,7 +2127,7 @@ Packages to install:
 
 #+RESULTS:
 #+begin_example
-flatpak install --user flathub org.mozilla.firefox
+flatpak install --user flathub com.github.wwmm.pulseeffects
 flatpak install --user flathub com.discordapp.Discord
 flatpak install --user flathub us.zoom.Zoom
 flatpak install --user flathub com.slack.Slack
@@ -2222,10 +2234,36 @@ aw-watcher-window
     #:start (make-forkexec-constructor '("aw-watcher-window"))
     #:stop (make-kill-destructor)))
 #+end_src
-** Sync
-| Guix dependency |
-|-----------------|
-| megacmd-1.4     |
+** PulseEffects
+#+begin_src scheme
+(define pulseeffects
+  (make <service>
+    #:provides '(pulseeffects)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("flatpak" "run" "com.github.wwmm.pulseeffects" "--gapplication-service"))
+    #:stop (make-kill-destructor)))
+#+end_src
+** xsettingsd
+#+begin_src scheme
+(define xsettingsd
+  (make <service>
+    #:provides '(xsettingsd)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("xsettingsd"))
+    #:stop (make-kill-destructor)))
+#+end_src
+** Discord rich presence
+
+References:
+- [[https://github.com/flathub/com.discordapp.Discord/wiki/Rich-Precense-(discord-rpc)][Rich Precense (discord rpc)]]
+
+#+begin_src scheme
+(define discord-rich-presence
+  (make <service>
+    #:provides '(discord-rich-presence)
+    #:one-shot? #t
+    #:start (make-system-constructor "ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0")))
+#+end_src
 ** Shepherd config
 Register services
 #+begin_src scheme
@@ -2235,7 +2273,10 @@ Register services
  mcron
  aw-server
  aw-watcher-afk
- aw-watcher-window)
+ aw-watcher-window
+ pulseeffects
+ xsettingsd
+ discord-rich-presence)
 #+end_src
 
 Daemonize shepherd
@@ -2245,8 +2286,12 @@ Daemonize shepherd
 
 Run services
 #+begin_src scheme
-(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window))
+(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence))
 #+end_src
+** Sync
+| Guix dependency |
+|-----------------|
+| megacmd-1.4     |
 * Guix settings
 Other desktop programs I use are listed below.
 
@@ -2264,6 +2309,7 @@ Other desktop programs I use are listed below.
 | xmodmap                | Program to modify keybindings on X server |
 | thunar                 | My preferred GUI file manager             |
 | keepassxc              | My preferred password manager             |
+| telegram-desktop       | telegram client                           |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no

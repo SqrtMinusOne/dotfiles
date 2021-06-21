@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# [[file:../Guix.org::*Slack][Slack:1]]
+export PATH="$HOME/bin/dummies:$PATH"
+mkdir -p ~/.cache/slack
+slack -r ~/.cache/slack
+# Slack:1 ends here

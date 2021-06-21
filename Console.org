@@ -472,7 +472,7 @@ symbol = " "
 | Guix dependency |
 |-----------------|
 | tmux            |
-| tmuxp           |
+| python-tmuxp    |
 
 [[https://github.com/tmux/tmux][tmux]] is my terminal multiplexer of choice.
 
@@ -667,6 +667,7 @@ key_bindings:
 | htop            | Interactive process viewer                  |
 | nethogs         | A tool to group processed by used bandwidth |
 | osync           | rsync wrapper                               |
+| neofetch        | Fetch system info                           |
 
 | Note | Description     |
 |------+-----------------|

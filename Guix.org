@@ -317,6 +317,42 @@ Default services for each machine:
          %base-file-systems)))
 #+end_src
 
+** indigo
+=indigo= is my desktop PC.
+
+#+begin_src scheme :noweb yes :tangle ~/.config/guix/systems/indigo.scm
+<<system-common>>
+
+(operating-system
+ <<system-base>>
+
+ (host-name "indigo")
+ (services (cons*
+            (set-xorg-configuration
+             (xorg-configuration
+              (keyboard-layout keyboard-layout)))
+            %my-base-services))
+
+ (bootloader
+  (bootloader-configuration
+   (bootloader grub-efi-bootloader)
+   (target "/boot/efi")
+   (keyboard-layout keyboard-layout)))
+
+ (swap-devices
+  (list (uuid "059a2c26-8f70-4986-adf0-1a2e7b511404")))
+
+ (file-systems
+  (cons* (file-system
+          (mount-point "/")
+          (device (file-system-label "my-root"))
+          (type "ext4"))
+	     (file-system
+	      (mount-point "/boot/efi")
+	      (device "/dev/sda1")
+	      (type "vfat"))
+         %base-file-systems)))
+#+end_src
 ** blue
 A VM on which I test Guix. Will probably be deleted sooner or later.
 
@@ -495,12 +531,13 @@ What a nonsense of a program.
 
 I was able to launch the nix version with the following wrapper script:
 #+begin_src bash :tangle ~/bin/slack-wrapper
+export PATH="$HOME/bin/dummies:$PATH"
 mkdir -p ~/.cache/slack
 slack -r ~/.cache/slack
 #+end_src
 
 Also, it requires a =lsb_release= in the PATH, so here is one:
-#+begin_src bash :tangle ~/bin/lsb_release
+#+begin_src bash :tangle ~/bin/dummies/lsb_release
 echo "LSB Version:    Hey. I spent an hour figuring out why Slack doesn't launch."
 echo "Distributor ID: It seems like it requires an lsb_release."
 echo "Description:    But GNU Guix doesn't have one."

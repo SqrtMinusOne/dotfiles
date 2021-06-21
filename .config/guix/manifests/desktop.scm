@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "telegram-desktop"
    "keepassxc"
    "thunar"
    "xmodmap"
@@ -13,6 +14,7 @@
    "xprop"
    "xrandr"
    "megacmd-1.4"
+   "xsettingsd"
    "activitywatch-bin"
    "flatpak"
    "zathura-djvu"

@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "neofetch"
    "osync"
    "nethogs"
    "htop"
@@ -8,7 +9,7 @@
    "ncurses"
    "alacritty"
    "xclip"
-   "tmuxp"
+   "python-tmuxp"
    "tmux"
    "rust-starship"
    "dt-colorscripts"

@@ -43,14 +43,37 @@
     #:start (make-forkexec-constructor '("aw-watcher-window"))
     #:stop (make-kill-destructor)))
 
+(define pulseeffects
+  (make <service>
+    #:provides '(pulseeffects)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("flatpak" "run" "com.github.wwmm.pulseeffects" "--gapplication-service"))
+    #:stop (make-kill-destructor)))
+
+(define xsettingsd
+  (make <service>
+    #:provides '(xsettingsd)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("xsettingsd"))
+    #:stop (make-kill-destructor)))
+
+(define discord-rich-presence
+  (make <service>
+    #:provides '(discord-rich-presence)
+    #:one-shot? #t
+    #:start (make-system-constructor "ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0")))
+
 (register-services
  mpd
  mpd-watcher
  mcron
  aw-server
  aw-watcher-afk
- aw-watcher-window)
+ aw-watcher-window
+ pulseeffects
+ xsettingsd
+ discord-rich-presence)
 
 (action 'shepherd 'daemonize)
 
-(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window))
+(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence))
