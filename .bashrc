@@ -102,7 +102,9 @@ alias ls="exa --icons"
 alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
-alias ic="init_conda"
+alias ci="init_conda"
+alias ca="conda activate"
+alias cii="export INIT_CONDA=true && init_conda"
 # Aliases:1 ends here
 
 # [[file:Console.org::*Aliases][Aliases:2]]
@@ -127,6 +129,10 @@ init_conda () {
     fi
     unset __conda_setup
 }
+
+if [[ ! -z "$INIT_CONDA" ]]; then
+    init_conda
+fi
 # Anaconda:1 ends here
 
 # [[file:Console.org::*Starship prompt][Starship prompt:1]]

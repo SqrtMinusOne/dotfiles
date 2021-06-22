@@ -324,12 +324,11 @@ References:
   :straight t
   :if (executable-find "conda")
   :config
-  (setq conda-anaconda-home (expand-file-name "~/Programs/miniconda3/"))
-  (setq conda-env-home-directory (expand-file-name "~/Programs/miniconda3/"))
+  (setq conda-anaconda-home (string-replace "/bin/conda" "" (executable-find "conda")))
+  (setq conda-env-home-directory (expand-file-name "~/.conda/"))
   (setq conda-env-subdirectory "envs")
   (unless (getenv "CONDA_DEFAULT_ENV")
-    (conda-env-activate "base")))
-
+    (conda-env-activate "general")))
 #+end_src
 
 Also, I sometimes need to know if a program is running inside Emacs (say, inside a terminal emulator). To do that, I set the following environment variable:

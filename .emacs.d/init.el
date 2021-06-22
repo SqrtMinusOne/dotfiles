@@ -48,11 +48,11 @@
   :straight t
   :if (executable-find "conda")
   :config
-  (setq conda-anaconda-home (expand-file-name "~/Programs/miniconda3/"))
-  (setq conda-env-home-directory (expand-file-name "~/Programs/miniconda3/"))
+  (setq conda-anaconda-home (string-replace "/bin/conda" "" (executable-find "conda")))
+  (setq conda-env-home-directory (expand-file-name "~/.conda/"))
   (setq conda-env-subdirectory "envs")
   (unless (getenv "CONDA_DEFAULT_ENV")
-    (conda-env-activate "base")))
+    (conda-env-activate "general")))
 
 (setenv "IS_EMACS" "true")
 
@@ -2591,7 +2591,7 @@ parent."
 
 (use-package elcord
   :straight t
-  :if (and (string= (system-name) "pdsk") (not my/slow-ssh))
+  :if (and (string= (system-name) "indigo") (not my/slow-ssh))
   :config
   (elcord-mode))
 

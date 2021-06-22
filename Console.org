@@ -296,7 +296,9 @@ alias ls="exa --icons"
 alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
-alias ic="init_conda"
+alias ci="init_conda"
+alias ca="conda activate"
+alias cii="export INIT_CONDA=true && init_conda"
 #+end_src
 
 #+begin_src bash
@@ -326,6 +328,10 @@ init_conda () {
     fi
     unset __conda_setup
 }
+
+if [[ ! -z "$INIT_CONDA" ]]; then
+    init_conda
+fi
 #+end_src
 *** Starship prompt
 #+begin_src bash
@@ -360,6 +366,10 @@ Anaconda
 #+begin_src fish
 function init_conda
     eval /home/pavel/.guix-extra-profiles/dev/dev/bin/conda "shell.fish" "hook" $argv | source
+end
+
+if test -n "$INIT_CONDA";
+    init_conda
 end
 #+end_src
 
