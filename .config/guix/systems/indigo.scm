@@ -23,6 +23,7 @@
 (define %my-base-services
   (cons*
    (service openssh-service-type)
+   (screen-locker-service i3lock "i3lock")
    (extra-special-file "/lib64/ld-linux-x86-64.so.2" (file-append glibc "/lib/ld-linux-x86-64.so.2"))
    (service nix-service-type)
    (service cups-service-type

@@ -12,7 +12,6 @@ My general desktop environment configuration.
 
 Parts prefixed with (OFF) are not used, but kept for historic purposes. For some reason GitHub's org renderer ignores TODO status, hence such a prefix. Round brackets instead of square ones to prevent GitHub's org renderer from screwing up.
 
-
 * Contents
 :PROPERTIES:
 :TOC:      :include all :depth 3
@@ -180,7 +179,7 @@ Net/ThemeName "Matcha-dark-azul"
 Net/IconThemeName "Papirus-Dark"
 Gtk/DecorationLayout "menu:minimize,maximize,close"
 Gtk/FontName "Sans 12"
-Gtk/MonospaceFontName "JetbrainsMono Nerd Mono 12"
+Gtk/MonospaceFontName "JetBrainsMono Nerd Mono 12"
 Gtk/CursorThemeName "Adwaita"
 Xft/Antialias 1
 Xft/Hinting 0
@@ -2051,6 +2050,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | conda           |
 | dev      | docker-compose  |
 | dev      | python          |
+| dev      | postgresql      |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
@@ -2310,6 +2310,9 @@ Other desktop programs I use are listed below.
 | thunar                 | My preferred GUI file manager             |
 | keepassxc              | My preferred password manager             |
 | telegram-desktop       | telegram client                           |
+| xdg-utils              | gives xdg-open and stuff                  |
+| gnome-font-viewer      | view fonts                                |
+| fontconfig             |                                           |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no

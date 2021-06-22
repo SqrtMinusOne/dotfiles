@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "fzf"
    "neofetch"
    "osync"
    "nethogs"

@@ -1,5 +1,8 @@
 (specifications->manifest
  '(
+   "fontconfig"
+   "gnome-font-viewer"
+   "xdg-utils"
    "telegram-desktop"
    "keepassxc"
    "thunar"
@@ -14,7 +17,6 @@
    "xprop"
    "xrandr"
    "megacmd-1.4"
-   "xsettingsd"
    "activitywatch-bin"
    "flatpak"
    "zathura-djvu"
@@ -33,7 +35,6 @@
    "bind"
    "polybar"
    "i3-gaps"
-   "hicolor-icon-theme"
+   "xsettingsd"
    "papirus-icon-theme"
-   "matcha-theme"
-   "lxappearance"))
+   "matcha-theme"))

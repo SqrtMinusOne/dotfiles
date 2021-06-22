@@ -56,6 +56,7 @@ if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin/scripts:$PATH"
 fi
 #+end_src
+
 ** Guix settings
 Enable extra profiles
 
@@ -79,6 +80,13 @@ if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
 fi
 #+end_src
 
+Use Guix fontconfig. Necessary for nix apps
+#+begin_src sh
+if [ -d "$HOME/.guix-extra-profiles/desktop" ]; then
+    export FONTCONFIG_PATH="$HOME/.guix-extra-profiles/desktop/desktop/etc/fonts"
+fi
+#+end_src
+
 Set a folder for my packages.
 #+begin_src sh
 export GUIX_PACKAGE_PATH=~/guix-packages
@@ -87,6 +95,11 @@ export GUIX_PACKAGE_PATH=~/guix-packages
 Make flatpak apps visible to launchers
 #+begin_src sh
 export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
+#+end_src
+
+Make nix apps visible to launchers
+#+begin_src sh
+export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
 #+end_src
 ** XResources
 | Guix dependency |
@@ -678,6 +691,8 @@ key_bindings:
 | nethogs         | A tool to group processed by used bandwidth |
 | osync           | rsync wrapper                               |
 | neofetch        | Fetch system info                           |
+| fzf             | fuzzy finder                                |
+| p7zip           | archiver                                    |
 
 | Note | Description     |
 |------+-----------------|
