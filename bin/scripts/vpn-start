@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # [[file:../../Guix.org::*vpn-start][vpn-start:1]]
-CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME)" | sed 's/ *$//g')
+CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
 DEVICE=$(nmcli -f connection.interface-name con show "$CONN" | awk '{ print $2 }')
 IP=$(ip addr show "$DEVICE" | awk 'match($0, /.*inet (addr:)?(([0-9]*\.){3}[0-9]*\/[0-9]*).*/, ga) { print ga[2] } ')
 GATEWAY=$(ip route list | awk ' /^default/ {print $3}')
@@ -21,5 +21,5 @@ nmcli con modify "$CONN" +ipv4.dns $DNS_1
 nmcli con modify "$CONN" +ipv4.dns $DNS_2
 nmcli con modify "$CONN" ipv6.method ignore
 nmcli connection up "$CONN"
-sudo openvpn --config ~/.vpn/openvpn.ovpn
+sudo openvpn --config ~/.vpn/openvpn.ovpn --route-up ~/bin/scripts/vpn-fix-routes
 # vpn-start:1 ends here

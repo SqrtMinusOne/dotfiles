@@ -1,6 +1,7 @@
 #+TITLE: Guix
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
+#+PROPERTY: header-args:sh             :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
 #+PROPERTY: header-args:scheme         :comments link
 
 [[https://guix.gnu.org/][GNU Guix]] is (1) a transactional package manager and (2) a GNU/Linux distribution.
@@ -454,7 +455,7 @@ This isn't tested and probably will fail if there are multiple active connection
 Also I'm a bit concerned with running openvpn as sudo, but I shall see if that screws me up somehow.
 
 #+begin_src bash :tangle ~/bin/scripts/vpn-start
-CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME)" | sed 's/ *$//g')
+CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
 DEVICE=$(nmcli -f connection.interface-name con show "$CONN" | awk '{ print $2 }')
 IP=$(ip addr show "$DEVICE" | awk 'match($0, /.*inet (addr:)?(([0-9]*\.){3}[0-9]*\/[0-9]*).*/, ga) { print ga[2] } ')
 GATEWAY=$(ip route list | awk ' /^default/ {print $3}')
@@ -475,13 +476,30 @@ nmcli con modify "$CONN" +ipv4.dns $DNS_1
 nmcli con modify "$CONN" +ipv4.dns $DNS_2
 nmcli con modify "$CONN" ipv6.method ignore
 nmcli connection up "$CONN"
-sudo openvpn --config ~/.vpn/openvpn.ovpn
+sudo openvpn --config ~/.vpn/openvpn.ovpn --route-up ~/bin/scripts/vpn-fix-routes
+#+end_src
+
+The following is necessary to make docker work.
+
+References:
+- [[https://github.com/moby/libnetwork/issues/779][Github issue]]
+
+#+begin_src sh :tangle ~/bin/scripts/vpn-fix-routes
+echo "Adding default route to $route_vpn_gateway with /0 mask..."
+
+IP=/run/current-system/profile/sbin/ip
+
+$IP route add default via $route_vpn_gateway
+
+echo "Removing /1 routes..."
+$IP route del 0.0.0.0/1 via $route_vpn_gateway
+$IP route del 128.0.0.0/1 via $route_vpn_gateway
 #+end_src
 *** vpn-stop
 Also a script to reverse the changes.
 
 #+begin_src bash :tangle ~/bin/scripts/vpn-stop
-CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME)" | sed 's/ *$//g')
+CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
 DNS_1=10.101.0.243
 DNS_2=38.132.106.139
 

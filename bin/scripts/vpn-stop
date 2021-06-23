@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # [[file:../../Guix.org::*vpn-stop][vpn-stop:1]]
-CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME)" | sed 's/ *$//g')
+CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
 DNS_1=10.101.0.243
 DNS_2=38.132.106.139
 
