@@ -18,8 +18,12 @@ Parts prefixed with (OFF) are not used, but kept for historic purposes. For some
 :END:
 :CONTENTS:
 - [[#contents][Contents]]
-- [[#colors][Colors]]
+- [[#global-customization][Global customization]]
+  - [[#colors][Colors]]
   - [[#xresources][Xresources]]
+    - [[#colors-in-xresources][Colors in Xresources]]
+    - [[#fonts][Fonts]]
+  - [[#themes][Themes]]
 - [[#i3wm][i3wm]]
   - [[#general-settings][General settings]]
   - [[#managing-windows][Managing windows]]
@@ -79,6 +83,24 @@ Parts prefixed with (OFF) are not used, but kept for historic purposes. For some
   - [[#opacity][Opacity]]
   - [[#general-settings][General settings]]
 - [[#zathura][Zathura]]
+- [[#various-software][Various software]]
+  - [[#browsers][Browsers]]
+  - [[#office][Office]]
+  - [[#latex][LaTeX]]
+  - [[#dev][Dev]]
+  - [[#manifests][Manifests]]
+  - [[#flatpak][Flatpak]]
+  - [[#nix][Nix]]
+- [[#services][Services]]
+  - [[#music][Music]]
+  - [[#gnu-mcron][GNU Mcron]]
+  - [[#activitywatch][ActivityWatch]]
+  - [[#pulseeffects][PulseEffects]]
+  - [[#xsettingsd][xsettingsd]]
+  - [[#discord-rich-presence][Discord rich presence]]
+  - [[#shepherd-config][Shepherd config]]
+  - [[#sync][Sync]]
+- [[#guix-settings][Guix settings]]
 :END:
 * Global customization
 ** Colors
@@ -172,7 +194,7 @@ A few programs I use to customize the apperance are listed below.
 | papirus-icon-theme | My preferred Icon theme |
 | xsettingsd         | X11 settings daemon     |
 
-[[https://github.com/derat/xsettingsd][xsettingsd]] is a lightweight daemon which configures X11 applications. It is launched with shepherd in the sevices config below.
+[[https://github.com/derat/xsettingsd][xsettingsd]] is a lightweight daemon which configures X11 applications. It is launched with shepherd in the [[*Services][Services]] section.
 
 #+begin_src conf-space :tangle ~/.config/xsettingsd/xsettingsd.conf
 Net/ThemeName "Matcha-dark-azul"
@@ -2054,8 +2076,6 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | docker-compose  |
 | dev      | python          |
 | dev      | postgresql      |
-| dev      | jupyter         |
-| dev      | python-pyqt     |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
@@ -2138,6 +2158,10 @@ flatpak install --user flathub us.zoom.Zoom
 flatpak install --user flathub com.slack.Slack
 #+end_example
 ** Nix
+| Type | Description        |
+|------+--------------------|
+| TODO | Make nix manifest? |
+
 I probably should've used nix, as almost every program I packaged so far exists in the Nix repo.
 
 But it's easy enough to use Nix on Guix.

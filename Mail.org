@@ -1,3 +1,6 @@
+:PROPERTIES:
+:TOC:      :include all :depth 3
+:END:
 #+TITLE: Mail
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:conf-unix   :comments link
@@ -8,11 +11,32 @@ My email configuration with [[https://notmuchmail.org/][notmuch]] + [[https://gi
 References:
 - [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][My post]] about email configuration. I wrote it some time ago, but the general idea remains.
 
+
+* Contents
+:PROPERTIES:
+:TOC:      :include all
+:END:
+:CONTENTS:
+- [[#contents][Contents]]
+- [[#lieer][Lieer]]
+- [[#notmuch][Notmuch]]
+  - [[#config][Config]]
+  - [[#hooks][Hooks]]
+    - [[#pre_new][pre_new]]
+    - [[#post_new][post_new]]
+- [[#sync-script][Sync script]]
+- [[#mstp][MSTP]]
+- [[#emacs][Emacs]]
+- [[#mailcap][mailcap]]
+- [[#guix-settings][Guix settings]]
+:END:
+
 * Lieer
 | Guix dependency |
 |-----------------|
 | python-lieer    |
-Lieer is a program to link up Gmail and notmuch. Basically, it dowloads mail from Gmail via API, stores them in maildir and syncronizes labels with notmuch.
+
+Lieer is a program to link up Gmail and notmuch. Basically, it downloads mail from Gmail via API, stores them in Maildir, and synchronizes labels with notmuch.
 
 I have a separate directory in my =~/Mail= for each address. To init lieer, run the following command in the directory:
 #+begin_example
@@ -27,14 +51,14 @@ gmi set --replace-slash-with-dot
 gmi set --ignore-tags-local new
 #+end_example
 
-Running =gmi sync= in the required directory performs the syncronization. The first sync takes a while, the subsequent syncs are pretty fast.
+Running =gmi sync= in the required directory performs the synchronization. The first sync takes a while, the subsequent syncs are pretty fast.
 * Notmuch
 | Guix dependency |
 |-----------------|
 | notmuch         |
 | parallel        |
 
-Notmuch is a CLI email indexer program, which handles labels in a way not unlike Gmail. It also provides a frontend for Emacs, but it's not the only one available.
+Notmuch is an email indexer program, which handles labels in a way somewhat like Gmail. It also provides a frontend for Emacs, but it's not the only one available.
 
 ** Config
 :PROPERTIES:
@@ -49,7 +73,7 @@ First, the database path.
 path=/home/pavel/Mail
 #+end_src
 
-Name and list of emails. It's not like it's a secret anyhow.
+My name and list of emails. It's not like it's a secret anyhow.
 #+begin_src conf-unix
 [user]
 name=Pavel Korytov

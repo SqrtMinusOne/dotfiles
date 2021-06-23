@@ -327,6 +327,7 @@ References:
   (setq conda-anaconda-home (string-replace "/bin/conda" "" (executable-find "conda")))
   (setq conda-env-home-directory (expand-file-name "~/.conda/"))
   (setq conda-env-subdirectory "envs")
+  (setenv "INIT_CONDA" "true")
   (unless (getenv "CONDA_DEFAULT_ENV")
     (conda-env-activate "general")))
 #+end_src

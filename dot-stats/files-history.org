@@ -4,6 +4,7 @@
 #+PROPERTY: header-args:python+ :exports both
 #+PROPERTY: header-args:python+ :tangle yes
 #+PROPERTY: header-args:python+ :async yes
+#+PROPERTY: header-args:python+ :kernel python3
 
 #+begin_src elisp :exports none
 (setq-local org-image-actual-width '(1024))
@@ -15,7 +16,7 @@
 * Get the data
 ** Commit history
 #+begin_src sh
-REPO='/home/pavel/.config/yadm/repo.git'
+REPO='/home/pavel/.local/share/yadm/repo.git'
 
 if [ ! -d "data" ]; then
     mkdir data
@@ -37,6 +38,8 @@ paths["init.el"]=".emacs.d/init.el;config/.emacs.d/init.el"
 paths["init.vim"]=".config/nvim/init.vim;config/nvim/init.vim;nvim/init.vim"
 paths["Desktop.org"]="Desktop.org"
 paths["Console.org"]="Console.org"
+paths["Guix.org"]="Guix.org"
+paths["Mail.org"]="Mail.org"
 #+end_src
 
 #+RESULTS:
@@ -70,7 +73,7 @@ echo $(git -C $REPO log --pretty="%H %cI" | tail -n 1 | get_lengths)
 
 #+RESULTS:
 :
-: e49d12622ee3e14751215df9aed907e3fa069e14,2021-04-21T18:01:56+03:00,2781,1801,1053,1857,544
+: > > > > > > > > > > > > > > > > > > > sh-5.0$ sh-5.0$ c2231d32b9f7cf9361a404926077f7d4cf70e05a,2021-06-23T20:01:12+03:00,3900,2602,1053,2331,711
 : 5044283019dc34c95d2836485ed492b34f49230e,2019-03-31T13:52:50+03:00,0,0,62,0,0
 
 #+begin_src sh :results output verbatim
@@ -159,13 +162,13 @@ with pd.option_context('display.max_rows', 10):
 | 2019-04-03 10:36:35+03:00 | NaN       | NaN     | 91       | NaN         | NaN         |
 | 2019-04-09 12:47:05+03:00 | NaN       | NaN     | 91       | NaN         | NaN         |
 | ...                       | ...       | ...     | ...      | ...         | ...         |
-| 2021-04-22 22:01:59+03:00 | 2862.0    | 1909.0  | 1053     | 1857.0      | 544.0       |
-| 2021-04-25 21:39:47+03:00 | 2888.0    | 1923.0  | 1053     | 1857.0      | 544.0       |
-| 2021-04-26 16:16:10+03:00 | 2934.0    | 1945.0  | 1053     | 1857.0      | 544.0       |
-| 2021-04-26 16:33:34+03:00 | 2935.0    | 1959.0  | 1053     | 1857.0      | 544.0       |
-| 2021-04-29 20:43:34+03:00 | 2996.0    | 1990.0  | 1053     | 1857.0      | 544.0       |
+| 2021-06-21 09:23:36+03:00 | 3901.0    | 2602.0  | 1053     | 2323.0      | 686.0       |
+| 2021-06-22 08:54:38+03:00 | 3900.0    | 2602.0  | 1053     | 2323.0      | 696.0       |
+| 2021-06-22 08:54:46+03:00 | 3900.0    | 2602.0  | 1053     | 2326.0      | 711.0       |
+| 2021-06-23 19:59:48+03:00 | 3900.0    | 2602.0  | 1053     | 2331.0      | 711.0       |
+| 2021-06-23 20:01:12+03:00 | 3900.0    | 2602.0  | 1053     | 2331.0      | 711.0       |
 
-251 rows × 5 columns
+323 rows × 5 columns
 :END:
 
 ** Plot

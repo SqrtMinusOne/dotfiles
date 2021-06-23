@@ -1,3 +1,6 @@
+:PROPERTIES:
+:TOC:      :include all :depth 3
+:END:
 #+TITLE: Guix
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
@@ -14,8 +17,38 @@ References:
 - [[https://gitlab.com/pjotrp/guix-notes][Pjotr Prins' Guix notes]]
 - [[https://www.youtube.com/watch?v=iBaqOK75cho&list=PLEoMzSkcN8oNxnj7jm5V2ZcGc52002pQU][Davil Wilson's YouTube series]]
 
+
+* Contents
+:PROPERTIES:
+:TOC:      :include all :depth 3
+:END:
+:CONTENTS:
+- [[#contents][Contents]]
+- [[#profiles][Profiles]]
+  - [[#activate-profiles][Activate profiles]]
+  - [[#update-profiles][Update profiles]]
+- [[#channels][Channels]]
+- [[#systems][Systems]]
+  - [[#base-configuration][Base configuration]]
+  - [[#azure][azure]]
+  - [[#indigo][indigo]]
+- [[#system-installation][System installation]]
+  - [[#preparation][Preparation]]
+  - [[#installation][Installation]]
+  - [[#after-installation][After installation]]
+- [[#misc-software--notes][Misc software & notes]]
+  - [[#vpn][VPN]]
+    - [[#vpn-start][vpn-start]]
+    - [[#vpn-stop][vpn-stop]]
+  - [[#flatpak][flatpak]]
+  - [[#conda][conda]]
+  - [[#slack][Slack]]
+  - [[#wakatime-cli][wakatime-cli]]
+  - [[#manifest][Manifest]]
+:END:
+
 * Profiles
-A profile is way to group Guix packages. Amongst many advantages, profiles can be defined by manifests, which in turn can be stored in VCS.
+A profile is a way to group Guix packages. Amongst its advantages, profiles can be defined by manifests, which in turn can be stored in VCS.
 
 References:
 - [[https://guix.gnu.org/en/cookbook/en/html_node/Guix-Profiles-in-Practice.html][Guix Profiles in Practice]]
@@ -29,7 +62,7 @@ activate-profiles [profile1] [profile2] ...
 
 Source: [[https://github.com/daviwil/dotfiles/blob/master/Systems.org#activating-profiles][David Wilson's config]]
 
-#+begin_src bash :tangle ./bin/scripts/activate-profles
+#+begin_src bash :tangle ./bin/scripts/activate-profiles
 GREEN='\033[1;32m'
 RED='\033[1;30m'
 NC='\033[0m'
@@ -100,11 +133,11 @@ done
 * Channels
 Specifying additional channels.
 
+[[https://github.com/SqrtMinusOne/channel-q][channel-q]] is my Guix channel. Don't use it at home.
+
 References:
 - [[https://gitlab.com/nonguix/nonguix][nonguix channel repo]]
 - [[https://guix.gnu.org/manual/en/html_node/Channels.html][Guix channels reference]]
-
-Nonguix channel is pinned to a particular commit to avoid recompiling stuff more than necessary.
 
 #+begin_src scheme :tangle .config/guix/channels.scm
 (cons*
@@ -138,7 +171,7 @@ Yes, all my machines are named after colors I like.
 ** Base configuration
 The base configuration is shared between all the machines.
 
-While it's possible to make a single =.scm= file with base confguration and load it, I noticed that it produces more cryptic error messages whenever there is an error in the base file, so I opt in for noweb.
+While it's possible to make a single =.scm= file with base configuration and load it, I noticed that it produces more cryptic error messages whenever there is an error in the base file, so I opt-in for noweb.
 
 =guix system= invocation is as follows:
 
@@ -173,11 +206,11 @@ Common modules:
 
 In principle, we could define a variable called =base-operating-system= and extend it in ancestors. However, then we would have to define mandatory fields like =host-name=, =bootloader= with dummy values. Since I'm already using noweb, there is little point.
 
-The following code will be inserted in the top of the =operating-system= definition.
+The following code will be inserted at the top of the =operating-system= definition.
 
-Use the fulll Linux kernel. I hope I'll be able to use Libre kernel somewhere later.
+Use the full Linux kernel. I hope I'll be able to use Libre kernel somewhere later.
 
-Inferior in kernel is used to avoid recompilation. It looks like I can pin these to diffent commits than in my =channels.scm=
+Inferior in the kernel is used to avoid recompilation. It looks like I can pin these to different commits than in my =channels.scm=
 #+begin_src scheme :tangle no :noweb-ref system-base
 (kernel
  (let*
@@ -245,7 +278,7 @@ Default services for each machine:
 - add nix service
 - add docker service
 - add CUPS service
-- add a symlink to ELF interpeter to where most Linux binaries expect it
+- add a symlink to ELF interpreter to where most Linux binaries expect it
 #+begin_src scheme :tangle no :noweb-ref system-common
 (define %my-base-services
   (cons*
@@ -355,37 +388,9 @@ Default services for each machine:
 	      (type "vfat"))
          %base-file-systems)))
 #+end_src
-** blue
-A VM on which I test Guix. Will probably be deleted sooner or later.
-
-#+begin_src scheme :noweb yes :tangle ~/.config/guix/systems/blue.scm
-<<system-common>>
-
-(operating-system
-  <<system-base>>
- (host-name "blue")
-
- (bootloader
-  (bootloader-configuration
-   (bootloader grub-bootloader)
-   (target "/dev/sda")
-   (keyboard-layout keyboard-layout)))
-
- (swap-devices
-  (list (uuid "d9ca4f8b-4bb1-420e-9371-3558731bada1")))
-
- (file-systems
-  (cons* (file-system
-          (mount-point "/")
-          (device
-           (uuid "179fbd75-3c7f-4de2-8c4f-4c30939b8a3f"
-                 'ext4))
-          (type "ext4"))
-         %base-file-systems)))
-#+end_src
 * System installation
 ** Preparation
-In my cases the provided ISO doesn't work because of Libre kernel.
+In my case, the provided ISO doesn't work because of the Libre kernel.
 
 Fortunately, David Wilson has made [[https://github.com/SystemCrafters/guix-installer][a repository]] with a toolchain to make an ISO with the full kernel. In case it won't be an option, the [[https://gitlab.com/nonguix/nonguix][nonguix repo]] also has instructions on how to do that.
 
@@ -402,7 +407,7 @@ Going further, the official instructions for installation & SystemCrafters wiki 
 ** After installation
 After the installation, the strategy is as follows.
 
-Set a password for the main user (pavel). Login with openbox to get a tolerable interface, because i3 default config is horrible.
+Set a password for the main user (pavel). Login with openbox to get a tolerable interface because the i3 default config is horrible.
 
 [[https://guix.gnu.org/en/manual/en/html_node/Keyboard-Layout-and-Networking-and-Partitioning.html#Keyboard-Layout-and-Networking-and-Partitioning][Connect to the internet]].
 
@@ -428,11 +433,17 @@ guix clone https://github.com/SqrtMinusOne/dotfiles.git
 And activate the required profiles. Again, downloading & building Emacs, Starship and stuff will take a while.
 
 Don't forget to install =JetBrainsMono Nerd Font=.
-* Misc software
+* Misc software & notes
+| Category | Guix dependency | Description                                        |
+|----------+-----------------+----------------------------------------------------|
+| system   | patchelf        | A program to modify existsing ELF executables      |
+| system   | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
+
+** VPN
 | Category | Guix dependency |
 |----------+-----------------|
 | system   | openvpn         |
-** VPN
+
 I'm not sure how to properly spin up VPN on Guix, so here is what I'm doing now.
 
 I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config, modified as follows:
@@ -440,7 +451,7 @@ I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config, m
 - added =auth-user-pass= with a link to login info
 
 *** vpn-start
-To start VPN propely, we have to use DNS given by CyberGhost to prevent DNS leaks and disabled ipv6. The thing is that the manual method requires also manual setting of the IP address and gateway.
+To start VPN properly, we have to use DNS given by CyberGhost to prevent DNS leaks and disabled ipv6. The thing is that the manual method requires also the manual setting of the IP address and gateway.
 
 So this script:
 - gets an active connection
@@ -448,11 +459,11 @@ So this script:
 - gets an IP from that device
 - gets a gateway
 - modifies the connection
-- runs openvpn
+- runs OpenVPN
 
 This isn't tested and probably will fail if there are multiple active connections, for instance.
 
-Also I'm a bit concerned with running openvpn as sudo, but I shall see if that screws me up somehow.
+Also, I'm a bit concerned with running OpenVPN as sudo, but I shall see if that screws me up somehow.
 
 #+begin_src bash :tangle ~/bin/scripts/vpn-start
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
@@ -512,23 +523,6 @@ nmcli con modify "$CONN" ipv4.method auto
 nmcli con modify "$CONN" ipv6.method auto
 nmcli connection up "$CONN"
 #+end_src
-** Manifest
-#+NAME: packages
-#+begin_src emacs-lisp :tangle no :var category=""
-(my/format-guix-dependencies category)
-#+end_src
-
-System
-#+begin_src scheme :tangle .config/guix/manifests/system.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("system")>>))
-#+end_src
-* Notes on installing software
-| Category | Guix dependency | Description                                        |
-|----------+-----------------+----------------------------------------------------|
-| system   | patchelf        | A program to modify existsing ELF executables      |
-| system   | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
 ** flatpak
 As for now, the easiest way to install most of proprietary software is via flatpak. See the relevant section in [[file:Desktop.org][Desktop.org]].
 ** conda
@@ -572,3 +566,15 @@ Before I figure out how to package this for Guix:
 - Clone [[https://github.com/wakatime/wakatime-cli][the repo]]
 - Run ~go build~
 - Copy the binary to the =~/bin= folder
+** Manifest
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no :var category=""
+(my/format-guix-dependencies category)
+#+end_src
+
+System
+#+begin_src scheme :tangle .config/guix/manifests/system.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("system")>>))
+#+end_src

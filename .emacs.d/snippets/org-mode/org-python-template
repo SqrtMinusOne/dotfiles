@@ -7,6 +7,7 @@
 #+PROPERTY: header-args:python+ :tangle yes
 #+PROPERTY: header-args:python+ :async yes
 #+PROPERTY: header-args:python+ :eval never-export
+#+PROPERTY: header-args:python+ :kernel python3
 
 #+begin_src elisp :exports none
 (setq-local org-image-actual-width '(1024))

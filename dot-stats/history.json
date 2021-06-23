@@ -3,10 +3,20 @@
     "title": "OS/Distro",
     "elements": [
       {
+        "name": "GNU Guix",
+        "states": [
+          {
+            "startDate": "2021-06-11"
+          }
+        ],
+        "color": "y"
+      },
+      {
         "name": "Manjaro",
         "states": [
           {
-            "startDate": "2020-08-24"
+            "startDate": "2020-08-24",
+            "endDate": "2021-06-11"
           }
         ],
         "color": "g"
@@ -350,7 +360,8 @@
         "color": "r",
         "states": [
           {
-            "startDate": "2021-01-22"
+            "startDate": "2021-01-22",
+            "endDate": "2021-05-24"
           }
         ]
       },
