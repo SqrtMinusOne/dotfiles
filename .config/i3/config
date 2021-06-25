@@ -12,6 +12,9 @@ mouse_warping output
 # exec xfsettingsd
 # exec xiccd
 
+# Set screen layout
+exec ~/bin/scripts/screen-layout
+
 # Most needed keybindigs
 # reload the configuration file
 bindsym $mod+Shift+c reload

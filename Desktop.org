@@ -207,7 +207,14 @@ Xft/Antialias 1
 Xft/Hinting 0
 Xft/HintStyle "hintnone"
 #+end_src
-
+** Screen layout
+Set screen layout depending on hostname
+#+begin_src sh :tangle ~/bin/scripts/screen-layout
+hostname=$(hostname)
+if [ "$hostname" = "indigo" ]; then
+    xrandr --output DisplayPort-0 --off --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal --output DVI-D-0 --mode 1366x768 --pos 1920x312 --rotate normal
+fi
+#+end_src
 * i3wm
 :PROPERTIES:
 :header-args+: :tangle ./.config/i3/config
@@ -242,6 +249,9 @@ mouse_warping output
 # Apply XFCE Settings
 # exec xfsettingsd
 # exec xiccd
+
+# Set screen layout
+exec ~/bin/scripts/screen-layout
 
 # Most needed keybindigs
 # reload the configuration file
@@ -986,7 +996,7 @@ afk_event=$(curl -s -X GET "http://localhost:5600/api/0/buckets/aw-watcher-afk_$
 status=$(echo ${afk_event} | jq -r '.[0].data.status')
 afk_time=$(echo "${afk_event}" | jq -r '.[0].duration' | xargs -I !  date -u -d @! +"%H:%M")
 
-uptime=$(datediff "$(uptime | awk '{ print substr($3, 0, length($3) - 1) }' | xargs -I ! date -d ! -Iseconds)" "$(date -Iseconds)" -f '%H:%M' | xargs -I ! date -d ! +"%H:%M")
+uptime=$(uptime | awk '{ print substr($3, 0, length($3) - 1) }' | xargs -I ! date -d ! +"%H:%M")
 res="${afk_time} / ${uptime}"
 if [[ $status == 'afk' ]]; then
     echo "%{u<<get-color(name="red")>>}%{+u} [AFK] $res %{u-}"

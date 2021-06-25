@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# [[file:../../Desktop.org::*Screen layout][Screen layout:1]]
+hostname=$(hostname)
+if [ "$hostname" = "indigo" ]; then
+    xrandr --output DisplayPort-0 --off --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal --output DVI-D-0 --mode 1366x768 --pos 1920x312 --rotate normal
+fi
+# Screen layout:1 ends here
