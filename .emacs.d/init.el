@@ -51,6 +51,7 @@
   (setq conda-anaconda-home (string-replace "/bin/conda" "" (executable-find "conda")))
   (setq conda-env-home-directory (expand-file-name "~/.conda/"))
   (setq conda-env-subdirectory "envs")
+  (setenv "INIT_CONDA" "true")
   (unless (getenv "CONDA_DEFAULT_ENV")
     (conda-env-activate "general")))
 
@@ -58,6 +59,9 @@
 
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
+
+(use-package no-littering
+  :straight t)
 
 (use-package general
   :straight t
@@ -1108,6 +1112,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq org-tags-exclude-from-inheritance (quote ("crypt")))
 (setq org-crypt-key nil)
 
+(use-package org-contrib
+  :straight (org-contrib
+             :type git
+             :host nil
+             :repo "https://git.sr.ht/~bzg/org-contrib"
+             :build t)
+  :after (org)
+  :config
+  (require 'ox-extra)
+  (ox-extras-activate '(latex-header-blocks ignore-headlines)))
+
 (use-package evil-org
   :straight t
   :hook (org-mode . evil-org-mode)
@@ -1273,37 +1288,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package org-superstar
   :straight t
   :hook (org-mode . org-superstar-mode))
-
-(defun org-export-ignore-headlines (data backend info)
-  "Remove headlines tagged \"ignore\" retaining contents and promoting children.
-Each headline tagged \"ignore\" will be removed retaining its
-contents and promoting any children headlines to the level of the
-parent."
-  (org-element-map data 'headline
-    (lambda (object)
-      (when (member "ignore" (org-element-property :tags object))
-        (let ((level-top (org-element-property :level object))
-              level-diff)
-          (mapc (lambda (el)
-                  ;; recursively promote all nested headlines
-                  (org-element-map el 'headline
-                    (lambda (el)
-                      (when (equal 'headline (org-element-type el))
-                        (unless level-diff
-                          (setq level-diff (- (org-element-property :level el)
-                                              level-top)))
-                        (org-element-put-property el
-                                                  :level (- (org-element-property :level el)
-                                                            level-diff)))))
-                  ;; insert back into parse tree
-                  (org-element-insert-before el object))
-                (org-element-contents object)))
-        (org-element-extract-element object)))
-    info nil)
-  data)
-
-(with-eval-after-load 'ox
-  (add-hook 'org-export-filter-parse-tree-functions #'org-export-ignore-headlines))
 
 (use-package ox-hugo
   :straight t
@@ -1610,7 +1594,7 @@ parent."
   (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
   (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
 
-(defun set-flycheck-eslint()
+(defun my/set-flycheck-eslint()
   "Override flycheck checker with eslint."
   (setq-local lsp-diagnostic-package :none)
   (setq-local flycheck-checker 'javascript-eslint))
@@ -1679,7 +1663,39 @@ parent."
   (add-hook 'vue-mode-hook #'hs-minor-mode)
   (add-hook 'vue-mode-hook #'smartparens-mode)
   (my/set-smartparens-indent 'vue-mode)
-  (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil))))
+  (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
+  (defun mmm-syntax-propertize-function (start stop)
+    (let ((saved-mode mmm-current-submode)
+          (saved-ovl  mmm-current-overlay))
+      (mmm-save-changed-local-variables
+       mmm-current-submode mmm-current-overlay)
+      (unwind-protect
+          (mapc (lambda (elt)
+                  (let* ((mode (car elt))
+                         (func (get mode 'mmm-syntax-propertize-function))
+                         (beg (cadr elt)) (end (nth 2 elt))
+                         (ovl (nth 3 elt))
+                         syntax-ppss-cache
+                         syntax-ppss-last)
+                    (goto-char beg)
+                    (mmm-set-current-pair mode ovl)
+                    (mmm-set-local-variables mode mmm-current-overlay)
+                    (save-restriction
+                      (if mmm-current-overlay
+                          (narrow-to-region (overlay-start mmm-current-overlay)
+                                            (overlay-end mmm-current-overlay))
+                        (narrow-to-region beg end))
+                      (cond
+                       (func
+                        (funcall func beg end))
+                       (font-lock-syntactic-keywords
+                        (let ((syntax-propertize-function nil))
+                          (font-lock-fontify-syntactic-keywords-region beg end))))
+                      (run-hook-with-args 'mmm-after-syntax-propertize-functions
+                                          mmm-current-overlay mode beg end))))
+                (mmm-regions-in start stop))
+        (mmm-set-current-pair saved-mode saved-ovl)
+        (mmm-set-local-variables (or saved-mode mmm-primary-mode) saved-ovl)))))
 
 (with-eval-after-load 'editorconfig
   (add-to-list 'editorconfig-indentation-alist
@@ -1695,7 +1711,7 @@ parent."
   :straight t
   :mode "\\.svelte\\'"
   :config
-  (add-hook 'svelte-mode-hook 'set-flycheck-eslint)
+  (add-hook 'svelte-mode-hook 'my/set-flycheck-eslint)
   (add-hook 'svelte-mode-hook #'smartparens-mode)
   (my/set-smartparens-indent 'svelte-mode)
   ;; I have my own Emmet

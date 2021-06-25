@@ -27,6 +27,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#native-compilation][Native compilation]]
   - [[#anaconda--environment][Anaconda & environment]]
   - [[#custom-file-location][Custom file location]]
+  - [[#no-littering][No littering]]
 - [[#global-editing-configuration][Global editing configuration]]
   - [[#general-keybindings-stuff][General keybindings stuff]]
     - [[#generalel][general.el]]
@@ -101,6 +102,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
 - [[#org-mode][Org Mode]]
   - [[#installation--basic-settings][Installation & basic settings]]
     - [[#encryption][Encryption]]
+    - [[#org-contrib][org-contrib]]
   - [[#integration-with-evil][Integration with evil]]
   - [[#literate-programing][Literate programing]]
     - [[#python--jupyter][Python & Jupyter]]
@@ -111,12 +113,11 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#do-not-wrap-output-in-emacs-jupyter][Do not wrap output in emacs-jupyter]]
     - [[#wrap-source-code-output][Wrap source code output]]
   - [[#ui][UI]]
-    - [[#instant-equations-preview][Instant equations preview]]
+    - [[#off-instant-equations-preview][(OFF) Instant equations preview]]
     - [[#latex-fragments][LaTeX fragments]]
     - [[#better-headers][Better headers]]
     - [[#org-agenda-icons][Org Agenda Icons]]
   - [[#export][Export]]
-    - [[#ignore-headlines][Ignore headlines]]
     - [[#hugo][Hugo]]
     - [[#jupyter-notebook][Jupyter Notebook]]
     - [[#html-export][Html export]]
@@ -174,6 +175,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#lisp][Lisp]]
     - [[#meta-lisp][Meta Lisp]]
     - [[#emacs-lisp][Emacs Lisp]]
+    - [[#common-lisp][Common lisp]]
     - [[#clojure][Clojure]]
     - [[#hy][Hy]]
     - [[#scheme][Scheme]]
@@ -341,6 +343,11 @@ By default, custom writes stuff to =init.el=, which is somewhat annoying. The fo
 #+begin_src emacs-lisp
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
+#+end_src
+** No littering
+#+begin_src emacs-lisp
+(use-package no-littering
+  :straight t)
 #+end_src
 * Global editing configuration
 ** General keybindings stuff
@@ -1775,6 +1782,21 @@ Use the built-in org mode.
 (setq org-tags-exclude-from-inheritance (quote ("crypt")))
 (setq org-crypt-key nil)
 #+end_src
+*** org-contrib
+=org-contrib= is a package with various additions to Org.
+
+#+begin_src emacs-lisp
+(use-package org-contrib
+  :straight (org-contrib
+             :type git
+             :host nil
+             :repo "https://git.sr.ht/~bzg/org-contrib"
+             :build t)
+  :after (org)
+  :config
+  (require 'ox-extra)
+  (ox-extras-activate '(latex-header-blocks ignore-headlines)))
+#+end_src
 ** Integration with evil
 #+begin_src emacs-lisp
 (use-package evil-org
@@ -2113,42 +2135,6 @@ Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HE
             ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
 #+end_src
 ** Export
-*** Ignore headlines
-A function to exclude headlines with =:ignore:= tag from the export.
-
-The source is ox-extras.el from the org-plus-contrib package, but I can neither install it nor find the original source for some reason.
-#+begin_src emacs-lisp
-(defun org-export-ignore-headlines (data backend info)
-  "Remove headlines tagged \"ignore\" retaining contents and promoting children.
-Each headline tagged \"ignore\" will be removed retaining its
-contents and promoting any children headlines to the level of the
-parent."
-  (org-element-map data 'headline
-    (lambda (object)
-      (when (member "ignore" (org-element-property :tags object))
-        (let ((level-top (org-element-property :level object))
-              level-diff)
-          (mapc (lambda (el)
-                  ;; recursively promote all nested headlines
-                  (org-element-map el 'headline
-                    (lambda (el)
-                      (when (equal 'headline (org-element-type el))
-                        (unless level-diff
-                          (setq level-diff (- (org-element-property :level el)
-                                              level-top)))
-                        (org-element-put-property el
-                                                  :level (- (org-element-property :level el)
-                                                            level-diff)))))
-                  ;; insert back into parse tree
-                  (org-element-insert-before el object))
-                (org-element-contents object)))
-        (org-element-extract-element object)))
-    info nil)
-  data)
-
-(with-eval-after-load 'ox
-  (add-hook 'org-export-filter-parse-tree-functions #'org-export-ignore-headlines))
-#+end_src
 *** Hugo
 #+begin_src emacs-lisp
 (use-package ox-hugo
@@ -2697,7 +2683,7 @@ Make smartparens behave the way I like for C-like languages.
 
 Override flycheck checker with eslint.
 #+begin_src emacs-lisp
-(defun set-flycheck-eslint()
+(defun my/set-flycheck-eslint()
   "Override flycheck checker with eslint."
   (setq-local lsp-diagnostic-package :none)
   (setq-local flycheck-checker 'javascript-eslint))
@@ -2783,7 +2769,7 @@ My bit of config here:
     "a" 'jest-test-run-all-tests))
 #+end_src
 *** Vue.js
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb yes
 (use-package vue-mode
   :straight t
   :mode "\\.vue\\'"
@@ -2791,7 +2777,8 @@ My bit of config here:
   (add-hook 'vue-mode-hook #'hs-minor-mode)
   (add-hook 'vue-mode-hook #'smartparens-mode)
   (my/set-smartparens-indent 'vue-mode)
-  (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil))))
+  (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
+  <<override-mmm-mode-func>>)
 
 (with-eval-after-load 'editorconfig
   (add-to-list 'editorconfig-indentation-alist
@@ -2807,22 +2794,39 @@ My bit of config here:
 References:
 - [[https://github.com/purcell/mmm-mode/issues/112][mmm-mode issue]]
 
-#+begin_src diff :tangle no
---- a/mmm-region.el
-+++ b/mmm-region.el
-@@ -868,9 +868,10 @@ calls each respective submode's `syntax-propertize-function'."
-                     (mmm-set-current-pair mode ovl)
-                     (mmm-set-local-variables mode mmm-current-overlay)
-                     (save-restriction
--                      (when mmm-current-overlay
-+                      (if mmm-current-overlay
-                         (narrow-to-region (overlay-start mmm-current-overlay)
--                                          (overlay-end mmm-current-overlay)))
-+                                          (overlay-end mmm-current-overlay))
-+                        (narrow-to-region beg end))
-                       (cond
-                        (func
-                         (funcall func beg end))
+#+begin_src emacs-lisp :noweb-ref override-mmm-mode-func :tangle no
+(defun mmm-syntax-propertize-function (start stop)
+  (let ((saved-mode mmm-current-submode)
+        (saved-ovl  mmm-current-overlay))
+    (mmm-save-changed-local-variables
+     mmm-current-submode mmm-current-overlay)
+    (unwind-protect
+        (mapc (lambda (elt)
+                (let* ((mode (car elt))
+                       (func (get mode 'mmm-syntax-propertize-function))
+                       (beg (cadr elt)) (end (nth 2 elt))
+                       (ovl (nth 3 elt))
+                       syntax-ppss-cache
+                       syntax-ppss-last)
+                  (goto-char beg)
+                  (mmm-set-current-pair mode ovl)
+                  (mmm-set-local-variables mode mmm-current-overlay)
+                  (save-restriction
+                    (if mmm-current-overlay
+                        (narrow-to-region (overlay-start mmm-current-overlay)
+                                          (overlay-end mmm-current-overlay))
+                      (narrow-to-region beg end))
+                    (cond
+                     (func
+                      (funcall func beg end))
+                     (font-lock-syntactic-keywords
+                      (let ((syntax-propertize-function nil))
+                        (font-lock-fontify-syntactic-keywords-region beg end))))
+                    (run-hook-with-args 'mmm-after-syntax-propertize-functions
+                                        mmm-current-overlay mode beg end))))
+              (mmm-regions-in start stop))
+      (mmm-set-current-pair saved-mode saved-ovl)
+      (mmm-set-local-variables (or saved-mode mmm-primary-mode) saved-ovl))))
 #+end_src
 *** Svelte
 #+begin_src emacs-lisp
@@ -2830,7 +2834,7 @@ References:
   :straight t
   :mode "\\.svelte\\'"
   :config
-  (add-hook 'svelte-mode-hook 'set-flycheck-eslint)
+  (add-hook 'svelte-mode-hook 'my/set-flycheck-eslint)
   (add-hook 'svelte-mode-hook #'smartparens-mode)
   (my/set-smartparens-indent 'svelte-mode)
   ;; I have my own Emmet
