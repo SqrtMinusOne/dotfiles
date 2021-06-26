@@ -1,15 +1,8 @@
 #!/usr/bin/env bash
 # [[file:../../Guix.org::*vpn-stop][vpn-stop:1]]
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
-DNS_1=10.101.0.243
-DNS_2=38.132.106.139
-
 echo "Connection: $CONN"
 
-nmcli con modify "$CONN" ipv4.ignore-auto-dns no
-nmcli con modify "$CONN" -ipv4.dns $DNS_1
-nmcli con modify "$CONN" -ipv4.dns $DNS_2
-nmcli con modify "$CONN" ipv4.method auto
 nmcli con modify "$CONN" ipv6.method auto
 nmcli connection up "$CONN"
 # vpn-stop:1 ends here

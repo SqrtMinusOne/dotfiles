@@ -1,6 +1,3 @@
-:PROPERTIES:
-:TOC:      :include all :depth 3
-:END:
 #+TITLE: Guix
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
@@ -439,87 +436,75 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 | system   | patchelf        | A program to modify existsing ELF executables      |
 | system   | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
 
-** VPN
-| Category | Guix dependency |
-|----------+-----------------|
-| system   | openvpn         |
+** TODO VPN
+| Category | Guix dependency             |
+|----------+-----------------------------|
+| system   | openvpn                     |
+| system   | openvpn-update-resolve-conf |
 
-I'm not sure how to properly spin up VPN on Guix, so here is what I'm doing now.
+I'm not sure how to properly spin up VPN on Guix, so here is what I'm doing now, after some trial and error.
 
 I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config, modified as follows:
 - paths to =ca=, =cert= and =key= are made absolute
+  #+begin_src conf-space :tangle no
+  ca /home/pavel/.vpn/ca.crt
+  cert /home/pavel/.vpn/client.crt
+  key /home/pavel/.vpn/client.key
+  #+end_src
 - added =auth-user-pass= with a link to login info
+  #+begin_src conf-space :tangle no
+  auth-user-pass /home/pavel/.vpn/auth.conf
+  #+end_src
+- run [[https://github.com/alfredopalhares/openvpn-update-resolv-conf][openvpn-update-resolv-conf]] script to fix DNS
+  #+begin_src conf-space :tangle no
+  setenv PATH /home/pavel/.guix-extra-profiles/system/system/bin:/home/pavel/.guix-extra-profiles/system/system/sbin:/home/pavel/.guix-extra-profiles/console/console/bin:/run/current-system/profile/bi:n/run/current-system/profile/sbin
+
+  up /home/pavel/.guix-extra-profiles/system/system/bin/update-resolv-conf.sh
+  down /home/pavel/.guix-extra-profiles/system/system/bin/update-resolv-conf.sh
+  #+end_src
+
+  =setenv PATH= is necessary because both =resolvconf= is a shell script which need GNU coreutils and stuff, and OpenVPN clear PATH by default.
+- run a script to fix Docker routes
+  #+begin_src conf-space :tangle no
+  route-up /home/pavel/bin/scripts/vpn-fix-routes
+  #+end_src
+
+  References:
+  - [[https://github.com/moby/libnetwork/issues/779][Github issue]]
+
+  The script itself:
+  #+begin_src sh :tangle ~/bin/scripts/vpn-fix-routes
+  echo "Adding default route to $route_vpn_gateway with /0 mask..."
+
+  IP=/run/current-system/profile/sbin/ip
+
+  $IP route add default via $route_vpn_gateway
+
+  echo "Removing /1 routes..."
+  $IP route del 0.0.0.0/1 via $route_vpn_gateway
+  $IP route del 128.0.0.0/1 via $route_vpn_gateway
+  #+end_src
 
 *** vpn-start
-To start VPN properly, we have to use DNS given by CyberGhost to prevent DNS leaks and disabled ipv6. The thing is that the manual method requires also the manual setting of the IP address and gateway.
-
-So this script:
-- gets an active connection
-- gets a device from that connection
-- gets an IP from that device
-- gets a gateway
-- modifies the connection
-- runs OpenVPN
-
-This isn't tested and probably will fail if there are multiple active connections, for instance.
-
-Also, I'm a bit concerned with running OpenVPN as sudo, but I shall see if that screws me up somehow.
+As of now, CyberGhost doesn't provide ipv6, so we have to disable it.
 
 #+begin_src bash :tangle ~/bin/scripts/vpn-start
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
-DEVICE=$(nmcli -f connection.interface-name con show "$CONN" | awk '{ print $2 }')
-IP=$(ip addr show "$DEVICE" | awk 'match($0, /.*inet (addr:)?(([0-9]*\.){3}[0-9]*\/[0-9]*).*/, ga) { print ga[2] } ')
-GATEWAY=$(ip route list | awk ' /^default/ {print $3}')
-
-DNS_1=10.101.0.243
-DNS_2=38.132.106.139
 
 echo "Connection: $CONN"
-echo "Device: $DEVICE"
-echo "IP: $IP"
-echo "Gateway: $GATEWAY"
 
-nmcli con modify "$CONN" ipv4.addresses "${IP}"
-nmcli con modify "$CONN" ipv4.gateway "${GATEWAY}"
-nmcli con modify "$CONN" ipv4.method manual
-nmcli con modify "$CONN" ipv4.ignore-auto-dns yes
-nmcli con modify "$CONN" +ipv4.dns $DNS_1
-nmcli con modify "$CONN" +ipv4.dns $DNS_2
 nmcli con modify "$CONN" ipv6.method ignore
 nmcli connection up "$CONN"
-sudo openvpn --config ~/.vpn/openvpn.ovpn --route-up ~/bin/scripts/vpn-fix-routes
+sudo openvpn --config ~/.vpn/openvpn.ovpn
 #+end_src
 
-The following is necessary to make docker work.
-
-References:
-- [[https://github.com/moby/libnetwork/issues/779][Github issue]]
-
-#+begin_src sh :tangle ~/bin/scripts/vpn-fix-routes
-echo "Adding default route to $route_vpn_gateway with /0 mask..."
-
-IP=/run/current-system/profile/sbin/ip
-
-$IP route add default via $route_vpn_gateway
-
-echo "Removing /1 routes..."
-$IP route del 0.0.0.0/1 via $route_vpn_gateway
-$IP route del 128.0.0.0/1 via $route_vpn_gateway
-#+end_src
 *** vpn-stop
 Also a script to reverse the changes.
 
 #+begin_src bash :tangle ~/bin/scripts/vpn-stop
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
-DNS_1=10.101.0.243
-DNS_2=38.132.106.139
-
 echo "Connection: $CONN"
 
-nmcli con modify "$CONN" ipv4.ignore-auto-dns no
-nmcli con modify "$CONN" -ipv4.dns $DNS_1
-nmcli con modify "$CONN" -ipv4.dns $DNS_2
-nmcli con modify "$CONN" ipv4.method auto
 nmcli con modify "$CONN" ipv6.method auto
 nmcli connection up "$CONN"
 #+end_src
