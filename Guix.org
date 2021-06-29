@@ -436,7 +436,7 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 | system   | patchelf        | A program to modify existsing ELF executables      |
 | system   | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
 
-** TODO VPN
+** VPN
 | Category | Guix dependency             |
 |----------+-----------------------------|
 | system   | openvpn                     |
@@ -444,7 +444,7 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 
 I'm not sure how to properly spin up VPN on Guix, so here is what I'm doing now, after some trial and error.
 
-I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config, modified as follows:
+I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config (=openvpn.ovpn=), modified as follows:
 - paths to =ca=, =cert= and =key= are made absolute
   #+begin_src conf-space :tangle no
   ca /home/pavel/.vpn/ca.crt
@@ -455,7 +455,12 @@ I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config, m
   #+begin_src conf-space :tangle no
   auth-user-pass /home/pavel/.vpn/auth.conf
   #+end_src
-- run [[https://github.com/alfredopalhares/openvpn-update-resolv-conf][openvpn-update-resolv-conf]] script to fix DNS
+  =auth.conf= looks like this:
+  #+begin_src text
+  login
+  password
+  #+end_src
+- run [[https://github.com/alfredopalhares/openvpn-update-resolv-conf][openvpn-update-resolv-conf]] script to fix DNS. =openvpn-update-resolve-conf= originates in my [[https://github.com/SqrtMinusOne/channel-q][channel-q]].
   #+begin_src conf-space :tangle no
   setenv PATH /home/pavel/.guix-extra-profiles/system/system/bin:/home/pavel/.guix-extra-profiles/system/system/sbin:/home/pavel/.guix-extra-profiles/console/console/bin:/run/current-system/profile/bi:n/run/current-system/profile/sbin
 
@@ -463,7 +468,7 @@ I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config, m
   down /home/pavel/.guix-extra-profiles/system/system/bin/update-resolv-conf.sh
   #+end_src
 
-  =setenv PATH= is necessary because both =resolvconf= is a shell script which need GNU coreutils and stuff, and OpenVPN clear PATH by default.
+  =setenv PATH= is necessary because both =resolvconf= (openresolve) and =update-resolv-conf.sh= are shell scripts which need GNU coreutils and stuff, and OpenVPN clears PATH by default.
 - run a script to fix Docker routes
   #+begin_src conf-space :tangle no
   route-up /home/pavel/bin/scripts/vpn-fix-routes

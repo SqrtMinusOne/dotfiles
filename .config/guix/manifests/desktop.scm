@@ -1,6 +1,7 @@
 (specifications->manifest
  '(
    "fontconfig"
+   "qbittorrent"
    "gnome-font-viewer"
    "xdg-utils"
    "telegram-desktop"
@@ -18,6 +19,7 @@
    "xrandr"
    "megacmd-1.4"
    "activitywatch-bin"
+   "xdg-desktop-portal"
    "flatpak"
    "zathura-djvu"
    "zathura-pdf-poppler"

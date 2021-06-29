@@ -32,7 +32,7 @@
     #:provides '(aw-watcher-afk)
     #:requires '(aw-server)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("aw-watcher-afk"))
+    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/aw-watcher-afk-wrapper"))
     #:stop (make-kill-destructor)))
 
 (define aw-watcher-window

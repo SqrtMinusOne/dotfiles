@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-# [[file:../Guix.org::*ActivityWatch][ActivityWatch:3]]
-~/bin/activitywatch/aw-server/aw-server &
-~/bin/activitywatch/aw-watcher-afk/aw-watcher-afk &
-~/bin/activitywatch/aw-watcher-window/aw-watcher-window &
-# ActivityWatch:3 ends here

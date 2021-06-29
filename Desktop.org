@@ -2129,9 +2129,10 @@ LaTeX
 ** Flatpak
 A lot of proprietary desktop applications can be installed most easily with flatpak & flathub.
 
-| Guix dependency |
-|-----------------|
-| flatpak         |
+| Guix dependency    |
+|--------------------|
+| flatpak            |
+| xdg-desktop-portal |
 
 After installation, add the following repositories:
 #+begin_example
@@ -2252,6 +2253,13 @@ aw-server
     #:stop (make-kill-destructor)))
 #+end_src
 
+=aw-watcher-afk= has some problems with statup, so there is a wrapper script
+
+#+begin_src sh :tangle ~/bin/scripts/aw-watcher-afk-wrapper
+sleep 5
+aw-watcher-afk
+#+end_src
+
 aw-watcher-afk
 #+begin_src scheme
 (define aw-watcher-afk
@@ -2259,7 +2267,7 @@ aw-watcher-afk
     #:provides '(aw-watcher-afk)
     #:requires '(aw-server)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("aw-watcher-afk"))
+    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/aw-watcher-afk-wrapper"))
     #:stop (make-kill-destructor)))
 #+end_src
 
@@ -2351,6 +2359,7 @@ Other desktop programs I use are listed below.
 | telegram-desktop       | telegram client                           |
 | xdg-utils              | gives xdg-open and stuff                  |
 | gnome-font-viewer      | view fonts                                |
+| qbittorrent            | torrent client                            |
 | fontconfig             |                                           |
 
 #+NAME: packages
