@@ -453,6 +453,16 @@ Basic evil configuration.
     "g+" 'evil-numbers/inc-at-pt
     "g-" 'evil-numbers/dec-at-pt))
 #+end_src
+
+[[https://github.com/edkolev/evil-lion][evil-lion]] provides alignment operators.
+#+begin_src emacs-lisp
+(use-package evil-lion
+  :straight t
+  :config
+  (setq evil-lion-left-align-key (kbd "g a"))
+  (setq evil-lion-right-align-key (kbd "g A"))
+  (evil-lion-mode))
+#+end_src
 *** evil-collection
 [[https://github.com/emacs-evil/evil-collection][evil-collection]] is a package that provides evil bindings for a lot of different packages. One can see the whole list in the [[https://github.com/emacs-evil/evil-collection/tree/master/modes][modes]] folder.
 
@@ -529,7 +539,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "<end>" 'end-of-line)
 #+end_src
 *** My leader
-Using the =SPC= key as a sort of a leader key.
+Using the =SPC= key as a sort of leader key.
 
 #+begin_src emacs-lisp
 (general-create-definer my-leader-def
@@ -562,7 +572,7 @@ The built-in profiler is a magnificent tool to troubleshoot performance issues.
 (my-leader-def "Pp" 'profiler-report)
 #+end_src
 *** Buffer switching
-Some keybindings I used in vim to switch buffer and can't let go of.
+Some keybindings I used in vim to switch buffers and can't let go of.
 #+begin_src emacs-lisp
 (general-define-key
   :keymaps 'override
@@ -578,7 +588,7 @@ Some keybindings I used in vim to switch buffer and can't let go of.
   "C-x l" 'next-buffer)
 #+end_src
 
-And winner-mode to keep a history of window states.
+And winner-mode to keep the history of window states.
 #+begin_src emacs-lisp
 (winner-mode 1)
 (define-key evil-window-map (kbd "u") 'winner-undo)
@@ -1495,12 +1505,13 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
 #+end_src
 ** Addons
 [[https://www.emacswiki.org/emacs/DiredPlus][Dired+]] provides a lot of extensions for dired functionality.
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb yes
 (use-package dired+
   :straight t
-  :after dired
   :init
-  (setq diredp-hide-details-initially-flag nil))
+  (setq diredp-hide-details-initially-flag nil)
+  :config
+  <<diredp-fixes>>)
 #+end_src
 
 Reuse the current dired buffer instead of spamming new ones.
@@ -1543,6 +1554,30 @@ vifm-like filter
    :keymaps 'dired-narrow-map
    [escape] 'keyboard-quit))
 #+end_src
+*** dired+ on Emacs 28
+It looks like dired+ is not quite compatible with Emacs 28. So I override certain functions for now.
+
+#+begin_src emacs-lisp :tangle no :noweb-ref diredp-fixes
+(defun dired-do-delete (&optional arg)
+  "Delete all marked (or next ARG) files.
+`dired-recursive-deletes' controls whether deletion of
+non-empty directories is allowed."
+  ;; This is more consistent with the file marking feature than
+  ;; dired-do-flagged-delete.
+  (interactive "P")
+  (let (markers)
+    (dired-internal-do-deletions
+     (nreverse
+      ;; this may move point if ARG is an integer
+      (dired-map-over-marks (cons (dired-get-filename)
+                                  (let ((m (point-marker)))
+                                    (push m markers)
+                                    m))
+                            arg))
+     arg t)
+    (dolist (m markers) (set-marker m nil))))
+#+end_src
+
 ** TRAMP
 TRAMP is a package which provides remote editing capacities. It is particularly useful for remote server management.
 
@@ -1754,9 +1789,6 @@ Use the built-in org mode.
   :straight t
   :defer t
   :config
-  (setq org-directory (expand-file-name "~/Documents/org-mode"))
-  (setq org-default-notes-file (concat org-directory "/notes.org"))
-
   (setq org-startup-indented t)
   (setq org-return-follows-link t)
   (setq org-src-tab-acts-natively nil)
@@ -1772,7 +1804,8 @@ Use the built-in org mode.
   <<org-crypt-setup>>
   <<org-lang-setup>>
   <<org-ui-setup>>
-  <<org-keys-setup>>)
+  <<org-keys-setup>>
+  <<org-productivity-setup>>)
 #+end_src
 
 *** Encryption
@@ -1783,7 +1816,9 @@ Use the built-in org mode.
 (setq org-crypt-key nil)
 #+end_src
 *** org-contrib
-=org-contrib= is a package with various additions to Org.
+=org-contrib= is a package with various additions to Org. I use the following:
+- =ox-extra= - extensions for org export
+- =ol-notmuch= - integration with notmuch
 
 #+begin_src emacs-lisp
 (use-package org-contrib
@@ -1795,6 +1830,7 @@ Use the built-in org mode.
   :after (org)
   :config
   (require 'ox-extra)
+  (require 'ol-notmuch)
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
 #+end_src
 ** Integration with evil
@@ -2050,6 +2086,47 @@ Example usage:
 #+begin_example
 :post out_wrap(name="fig:chart", caption="График", data=*this*)
 #+end_example
+** Productivity
+My on-going effort to get a productivity setup in Org.
+
+Some inspiration:
+- [[https://www.labri.fr/perso/nrougier/GTD/index.html][Nicolas P. Rougier. Get Things Done with Emacs]]
+- [[https://blog.jethro.dev/posts/org_mode_workflow_preview/][Jetro Kuan. Org-mode Workflow]]
+
+Used files
+#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+(setq org-directory (expand-file-name "~/Documents/org-mode"))
+(setq org-agenda-files '("inbox.org" "projects.org"))
+;; (setq org-default-notes-file (concat org-directory "/notes.org"))
+#+end_src
+
+Hotkeys
+#+begin_src emacs-lisp
+(my-leader-def "oc" 'org-capture)
+(my-leader-def "oa" 'org-agenda)
+#+end_src
+
+Refile targets
+#+begin_src emacs-lisp
+(setq org-refile-targets
+      '(("projects.org" :maxlevel . 2)))
+#+end_src
+
+*** Capture templates
+Settings for Org capture mode. The goal here is to have a non-disruptive process to capture various ideas.
+
+#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+(setq org-capture-templates
+      `(("i" "Inbox" entry  (file "inbox.org")
+         ,(concat "* TODO %?\n"
+                  "/Entered on/ %U"))
+        ("e" "email" entry
+         (file "inbox.org")
+         ,(concat "* TODO %:from %:subject \n"
+                  "/Entered on/ %U\n"
+                  "/Received on/ %:date-timestamp-inactive"))))
+#+end_src
+
 ** UI
 *** OFF (OFF) Instant equations preview
 Instant math previews for org mode.
@@ -2126,6 +2203,7 @@ Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HE
 (if (not my/lowpower)
     (setq org-agenda-category-icon-alist
           `(
+            ("inbox" ,(list (all-the-icons-faicon "inbox")) nil nil :ascent center)
             ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
             ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
             ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
@@ -2530,11 +2608,11 @@ References:
   :config
   (global-flycheck-mode)
   (setq flycheck-check-syntax-automatically '(save idle-buffer-switch mode-enabled))
-  (add-hook 'evil-insert-state-exit-hook
-            (lambda ()
-              (if flycheck-checker
-                  (flycheck-buffer))
-              ))
+  ;; (add-hook 'evil-insert-state-exit-hook
+  ;;           (lambda ()
+  ;;             (if flycheck-checker
+  ;;                 (flycheck-buffer))
+  ;;             ))
   (advice-add 'flycheck-eslint-config-exists-p :override (lambda() t))
   (add-to-list 'display-buffer-alist
                `(,(rx bos "*Flycheck errors*" eos)
@@ -3673,6 +3751,8 @@ Using my own fork until the modifications are merged into master.
   :init
   (my-leader-def "ae" 'elfeed)
   :config
+  (setq elfeed-db-directory "~/.elfeed")
+  (setq elfeed-enclosure-default-dir (expand-file-name "~"))
   (advice-add #'elfeed-insert-html
               :around
               (lambda (fun &rest r)
@@ -3693,6 +3773,7 @@ Using my own fork until the modifications are merged into master.
   :straight t
   :after (elfeed)
   :config
+  (setq rmh-elfeed-org-files '("~/.emacs.d/elfeed.org"))
   (elfeed-org))
 #+end_src
 

@@ -122,6 +122,13 @@
     "g+" 'evil-numbers/inc-at-pt
     "g-" 'evil-numbers/dec-at-pt))
 
+(use-package evil-lion
+  :straight t
+  :config
+  (setq evil-lion-left-align-key (kbd "g a"))
+  (setq evil-lion-right-align-key (kbd "g A"))
+  (evil-lion-mode))
+
 (use-package evil-collection
   :straight t
   :after evil
@@ -813,9 +820,27 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package dired+
   :straight t
-  :after dired
   :init
-  (setq diredp-hide-details-initially-flag nil))
+  (setq diredp-hide-details-initially-flag nil)
+  :config
+  (defun dired-do-delete (&optional arg)
+    "Delete all marked (or next ARG) files.
+  `dired-recursive-deletes' controls whether deletion of
+  non-empty directories is allowed."
+    ;; This is more consistent with the file marking feature than
+    ;; dired-do-flagged-delete.
+    (interactive "P")
+    (let (markers)
+      (dired-internal-do-deletions
+       (nreverse
+        ;; this may move point if ARG is an integer
+        (dired-map-over-marks (cons (dired-get-filename)
+                                    (let ((m (point-marker)))
+                                      (push m markers)
+                                      m))
+                              arg))
+       arg t)
+      (dolist (m markers) (set-marker m nil)))))
 
 (use-package dired-single
   :after dired
@@ -987,9 +1012,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :defer t
   :config
-  (setq org-directory (expand-file-name "~/Documents/org-mode"))
-  (setq org-default-notes-file (concat org-directory "/notes.org"))
-
   (setq org-startup-indented t)
   (setq org-return-follows-link t)
   (setq org-src-tab-acts-natively nil)
@@ -1059,6 +1081,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (if (not my/lowpower)
       (setq org-agenda-category-icon-alist
             `(
+              ("inbox" ,(list (all-the-icons-faicon "inbox")) nil nil :ascent center)
               ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
               ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
               ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
@@ -1105,7 +1128,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (message (concat "Copied URL: " url))))
   
   (general-nmap :keymaps 'org-mode-map
-      "C-x C-l" 'my/org-link-copy))
+      "C-x C-l" 'my/org-link-copy)
+  (setq org-directory (expand-file-name "~/Documents/org-mode"))
+  (setq org-agenda-files '("inbox.org" "projects.org"))
+  ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
+  (setq org-capture-templates
+        `(("i" "Inbox" entry  (file "inbox.org")
+           ,(concat "* TODO %?\n"
+                    "/Entered on/ %U"))
+          ("e" "email" entry
+           (file "inbox.org")
+           ,(concat "* TODO %:from %:subject \n"
+                    "/Entered on/ %U\n"
+                    "/Received on/ %:date-timestamp-inactive")))))
 
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
@@ -1121,6 +1156,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :after (org)
   :config
   (require 'ox-extra)
+  (require 'ol-notmuch)
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
 
 (use-package evil-org
@@ -1264,6 +1300,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                  (when (not (string-match-p ".*\n" data-s)) "\n")
                  "#+end_src")
        (substring data-s drawer-start)))))
+
+(my-leader-def "oc" 'org-capture)
+(my-leader-def "oa" 'org-agenda)
+
+(setq org-refile-targets
+      '(("projects.org" :maxlevel . 2)))
 
 (use-package org-latex-impatient
   :straight (:repo "yangsheng6810/org-latex-impatient"
@@ -1557,11 +1599,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (global-flycheck-mode)
   (setq flycheck-check-syntax-automatically '(save idle-buffer-switch mode-enabled))
-  (add-hook 'evil-insert-state-exit-hook
-            (lambda ()
-              (if flycheck-checker
-                  (flycheck-buffer))
-              ))
+  ;; (add-hook 'evil-insert-state-exit-hook
+  ;;           (lambda ()
+  ;;             (if flycheck-checker
+  ;;                 (flycheck-buffer))
+  ;;             ))
   (advice-add 'flycheck-eslint-config-exists-p :override (lambda() t))
   (add-to-list 'display-buffer-alist
                `(,(rx bos "*Flycheck errors*" eos)
@@ -2466,6 +2508,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :init
   (my-leader-def "ae" 'elfeed)
   :config
+  (setq elfeed-db-directory "~/.elfeed")
+  (setq elfeed-enclosure-default-dir (expand-file-name "~"))
   (advice-add #'elfeed-insert-html
               :around
               (lambda (fun &rest r)
@@ -2483,6 +2527,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :after (elfeed)
   :config
+  (setq rmh-elfeed-org-files '("~/.emacs.d/elfeed.org"))
   (elfeed-org))
 
 (defun my/elfeed-search-filter-source (entry)
