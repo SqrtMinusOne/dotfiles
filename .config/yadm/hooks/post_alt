@@ -10,4 +10,6 @@ do
     ln -svf $item
 done
 
+emacs -Q --batch -l $HOME/.config/yadm/hooks/run-tangle.el
+
 # ln -s ~/.config/tridactyl/themes ~/themes

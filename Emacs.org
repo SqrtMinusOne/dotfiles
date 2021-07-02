@@ -2427,7 +2427,7 @@ A function to extract Guix dependencies from the org file.
 - If =CATEGORY= is not passed, entries with non-empty category will be filtered out
 - If there is a =[D|d]isabled= column, entries which have non-empty value in this column will be filtered out.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref guix-tables
 (defun my/extract-guix-dependencies (&optional category)
   (let ((dependencies '()))
     (org-table-map-tables
@@ -2480,7 +2480,7 @@ A function to extract Guix dependencies from the org file.
 #+end_src
 
 Now, join dependencies list to make it compatible with Scheme:
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref guix-tables
 (defun my/format-guix-dependencies (&optional category)
   (mapconcat
    (lambda (e) (concat "\"" e "\""))
@@ -2503,6 +2503,45 @@ Turn off eval confirmations for configuration files.
             (when (member (buffer-file-name) my/org-config-files)
               (setq-local org-confirm-babel-evaluate nil))))
 #+end_src
+*** yadm hook
+A script to run tangle from CLI.
+
+#+begin_src emacs-lisp :tangle ~/.config/yadm/hooks/run-tangle.el :noweb yes
+(require 'org)
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (shell . t)))
+
+;; Do not ask to confirm evaluations
+(setq org-confirm-babel-evaluate nil)
+
+<<guix-tables>>
+
+;; A few dummy modes to avoid being prompted for comment systax
+(define-derived-mode fish-mode prog-mode "Fish"
+  (setq-local comment-start "# ")
+  (setq-local comment-start-skip "#+[\t ]*"))
+
+(define-derived-mode yaml-mode text-mode "YAML"
+  (setq-local comment-start "# ")
+  (setq-local comment-start-skip "#+ *"))
+
+(mapcar #'org-babel-tangle-file
+        '("/home/pavel/Emacs.org"
+          "/home/pavel/Desktop.org"
+          "/home/pavel/Console.org"
+          "/home/pavel/Guix.org"
+          "/home/pavel/Mail.org"))
+#+end_src
+
+To launch from CLI, run:
+#+begin_src bash :tangle no
+emacs -Q --batch -l run-tangle.el
+#+end_src
+
+I have added this line to yadm's =post_alt= hook, so tangle is ran after =yadm alt=
 * OFF (OFF) EAF
 [[https://github.com/manateelazycat/emacs-application-framework][Emacs Application Framework]] provides a way to integrate PyQt applications with Emacs.
 
