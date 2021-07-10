@@ -3994,7 +3994,10 @@ Shows which file is being edited in Emacs.
 #+begin_src emacs-lisp
 (use-package elcord
   :straight t
-  :if (and (string= (system-name) "indigo") (not my/slow-ssh))
+  :if (and (or
+            (string= (system-name) "indigo")
+            (string= (system-name) "eminence"))
+           (not my/slow-ssh))
   :config
   (elcord-mode))
 #+end_src

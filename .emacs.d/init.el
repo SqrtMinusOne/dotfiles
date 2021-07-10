@@ -2652,7 +2652,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package elcord
   :straight t
-  :if (and (string= (system-name) "indigo") (not my/slow-ssh))
+  :if (and (or
+            (string= (system-name) "indigo")
+            (string= (system-name) "eminence"))
+           (not my/slow-ssh))
   :config
   (elcord-mode))
 
