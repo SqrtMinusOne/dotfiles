@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "p7zip"
    "fzf"
    "neofetch"
    "osync"

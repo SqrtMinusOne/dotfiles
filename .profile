@@ -39,16 +39,20 @@ fi
 # Guix settings:3 ends here
 
 # [[file:Console.org::*Guix settings][Guix settings:4]]
-export GUIX_PACKAGE_PATH=~/guix-packages
+export JUPYTER_CONFIG_DIR=$HOME/.config/jupyter
 # Guix settings:4 ends here
 
 # [[file:Console.org::*Guix settings][Guix settings:5]]
-export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
+export GUIX_PACKAGE_PATH=~/guix-packages
 # Guix settings:5 ends here
 
 # [[file:Console.org::*Guix settings][Guix settings:6]]
-export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
+export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
 # Guix settings:6 ends here
+
+# [[file:Console.org::*Guix settings][Guix settings:7]]
+export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
+# Guix settings:7 ends here
 
 # [[file:Console.org::*XResources][XResources:1]]
 xrdb ~/.Xresources

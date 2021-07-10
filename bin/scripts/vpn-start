@@ -4,7 +4,7 @@ CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*
 
 echo "Connection: $CONN"
 
-nmcli con modify "$CONN" ipv6.method ignore
+sudo nmcli con modify "$CONN" ipv6.method ignore
 nmcli connection up "$CONN"
 sudo openvpn --config ~/.vpn/openvpn.ovpn
 # vpn-start:1 ends here

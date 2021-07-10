@@ -27,8 +27,9 @@ References:
 - [[#channels][Channels]]
 - [[#systems][Systems]]
   - [[#base-configuration][Base configuration]]
-  - [[#azure][azure]]
   - [[#indigo][indigo]]
+  - [[#eminence][eminence]]
+  - [[#azure][azure]]
 - [[#system-installation][System installation]]
   - [[#preparation][Preparation]]
   - [[#installation][Installation]]
@@ -215,14 +216,14 @@ Inferior in the kernel is used to avoid recompilation. It looks like I can pin t
        (list (channel
               (name 'nonguix)
               (url "https://gitlab.com/nonguix/nonguix")
-              (commit "46c1d8bcca674d3a71cd077c52dde9552a89873d"))
+              (commit "d3c5eea0cbfe3e5bfbcf1fe15bc916fefacc624f"))
              (channel
               (name 'guix)
               (url "https://git.savannah.gnu.org/git/guix.git")
-              (commit "f463f376e91ccc1fe4ab68d5e822b5d71a1234f5"))))
+              (commit "cf88c967afbf15c58efb0ba37d6638f1be9a0481"))))
       (inferior
        (inferior-for-channels channels)))
-   (first (lookup-inferior-packages inferior "linux" "5.12.8"))))
+   (first (lookup-inferior-packages inferior "linux" "5.12.9"))))
 ;; (kernel linux)
 (initrd microcode-initrd)
 (firmware (list linux-firmware))
@@ -294,6 +295,103 @@ Default services for each machine:
 
 #+end_src
 
+** indigo
+=indigo= is my desktop PC.
+
+#+begin_src scheme :noweb yes :tangle ~/.config/guix/systems/indigo.scm
+<<system-common>>
+
+(operating-system
+ <<system-base>>
+
+ (host-name "indigo")
+ (services (cons*
+            (set-xorg-configuration
+             (xorg-configuration
+              (keyboard-layout keyboard-layout)))
+            %my-base-services))
+
+ (bootloader
+  (bootloader-configuration
+   (bootloader grub-efi-bootloader)
+   (target "/boot/efi")
+   (keyboard-layout keyboard-layout)))
+
+ (swap-devices
+  (list (uuid "059a2c26-8f70-4986-adf0-1a2e7b511404")))
+
+ (file-systems
+  (cons* (file-system
+          (mount-point "/")
+          (device (file-system-label "my-root"))
+          (type "ext4"))
+	     (file-system
+	      (mount-point "/boot/efi")
+	      (device "/dev/sda1")
+	      (type "vfat"))
+         %base-file-systems)))
+#+end_src
+** eminence
+=eminence= is a HP 15s laptop.
+
+=%backlight-udev-rule= should enable members of =video= group change the display backlight. See the relevant page at [[https://wiki.archlinux.org/title/Backlight][Arch Wiki]].
+
+#+begin_src scheme :noweb yes :tangle ~/.config/guix/systems/eminence.scm
+<<system-common>>
+
+(define %backlight-udev-rule
+  (udev-rule
+   "90-backlight.rules"
+   (string-append "ACTION==\"add\", SUBSYSTEM==\"backlight\", "
+                  "RUN+=\"/run/current-system/profile/bin/chgrp video /sys/class/backlight/%k/brightness\""
+                  "\n"
+                  "ACTION==\"add\", SUBSYSTEM==\"backlight\", "
+                  "RUN+=\"/run/current-system/profile/bin/chmod g+w /sys/class/backlight/%k/brightness\"")))
+
+(operating-system
+ <<system-base>>
+
+ (host-name "eminence")
+ (services (cons*
+            (set-xorg-configuration
+             (xorg-configuration
+              (keyboard-layout keyboard-layout)))
+            (modify-services %my-base-services
+                             (elogind-service-type
+                              config =>
+                              (elogind-configuration
+                               (inherit config)
+                               (handle-lid-switch-external-power 'suspend)))
+                             (udev-service-type
+                              config =>
+                              (udev-configuration
+                               (inherit config)
+                               (rules (cons %backlight-udev-rule
+                                            (udev-configuration-rules config))))))))
+
+ (bootloader
+  (bootloader-configuration
+   (bootloader grub-efi-bootloader)
+   (target "/boot/efi")
+   (keyboard-layout keyboard-layout)))
+
+ (swap-devices
+  (list (uuid "f93cf3f6-7ee7-42ec-8ee2-f3d896fdf9b5")))
+
+ (file-systems
+  (cons* (file-system
+          (mount-point "/")
+          (device
+           (uuid "1d937704-bbeb-43b5-bc63-453886c426af"
+                 'ext4))
+          (type "ext4"))
+         (file-system
+          (mount-point "/boot/efi")
+          (device (uuid "0031-3784" 'fat32))
+          (type "vfat"))
+         %base-file-systems))
+#+end_src
+
 ** azure
 =azure= is a Lenovo Ideapad 330 laptop.
 
@@ -349,42 +447,6 @@ Default services for each machine:
          %base-file-systems)))
 #+end_src
 
-** indigo
-=indigo= is my desktop PC.
-
-#+begin_src scheme :noweb yes :tangle ~/.config/guix/systems/indigo.scm
-<<system-common>>
-
-(operating-system
- <<system-base>>
-
- (host-name "indigo")
- (services (cons*
-            (set-xorg-configuration
-             (xorg-configuration
-              (keyboard-layout keyboard-layout)))
-            %my-base-services))
-
- (bootloader
-  (bootloader-configuration
-   (bootloader grub-efi-bootloader)
-   (target "/boot/efi")
-   (keyboard-layout keyboard-layout)))
-
- (swap-devices
-  (list (uuid "059a2c26-8f70-4986-adf0-1a2e7b511404")))
-
- (file-systems
-  (cons* (file-system
-          (mount-point "/")
-          (device (file-system-label "my-root"))
-          (type "ext4"))
-	     (file-system
-	      (mount-point "/boot/efi")
-	      (device "/dev/sda1")
-	      (type "vfat"))
-         %base-file-systems)))
-#+end_src
 * System installation
 ** Preparation
 In my case, the provided ISO doesn't work because of the Libre kernel.
@@ -462,7 +524,7 @@ I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config (=
   #+end_src
 - run [[https://github.com/alfredopalhares/openvpn-update-resolv-conf][openvpn-update-resolv-conf]] script to fix DNS. =openvpn-update-resolve-conf= originates in my [[https://github.com/SqrtMinusOne/channel-q][channel-q]].
   #+begin_src conf-space :tangle no
-  setenv PATH /home/pavel/.guix-extra-profiles/system/system/bin:/home/pavel/.guix-extra-profiles/system/system/sbin:/home/pavel/.guix-extra-profiles/console/console/bin:/run/current-system/profile/bi:n/run/current-system/profile/sbin
+  setenv PATH /home/pavel/.guix-extra-profiles/system/system/bin:/home/pavel/.guix-extra-profiles/system/system/sbin:/home/pavel/.guix-extra-profiles/console/console/bin:/run/current-system/profile/bin:/run/current-system/profile/sbin
 
   up /home/pavel/.guix-extra-profiles/system/system/bin/update-resolv-conf.sh
   down /home/pavel/.guix-extra-profiles/system/system/bin/update-resolv-conf.sh

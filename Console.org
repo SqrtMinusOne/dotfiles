@@ -87,6 +87,11 @@ if [ -d "$HOME/.guix-extra-profiles/desktop" ]; then
 fi
 #+end_src
 
+Set Jupyter config PATH. It defaults to readonly directory somewhere in Guix profile.
+#+begin_src sh
+export JUPYTER_CONFIG_DIR=$HOME/.config/jupyter
+#+end_src
+
 Set a folder for my packages.
 #+begin_src sh
 export GUIX_PACKAGE_PATH=~/guix-packages

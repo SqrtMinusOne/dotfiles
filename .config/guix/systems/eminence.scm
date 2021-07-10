@@ -1,4 +1,4 @@
-;; [[file:../../../Guix.org::*azure][azure:1]]
+;; [[file:../../../Guix.org::*eminence][eminence:1]]
 (use-modules (gnu))
 (use-modules (gnu system nss))
 (use-modules (gnu packages bash))
@@ -52,14 +52,14 @@
         (list (channel
                (name 'nonguix)
                (url "https://gitlab.com/nonguix/nonguix")
-               (commit "46c1d8bcca674d3a71cd077c52dde9552a89873d"))
+               (commit "d3c5eea0cbfe3e5bfbcf1fe15bc916fefacc624f"))
               (channel
                (name 'guix)
                (url "https://git.savannah.gnu.org/git/guix.git")
-               (commit "f463f376e91ccc1fe4ab68d5e822b5d71a1234f5"))))
+               (commit "cf88c967afbf15c58efb0ba37d6638f1be9a0481"))))
        (inferior
         (inferior-for-channels channels)))
-    (first (lookup-inferior-packages inferior "linux" "5.12.8"))))
+    (first (lookup-inferior-packages inferior "linux" "5.12.9"))))
  ;; (kernel linux)
  (initrd microcode-initrd)
  (firmware (list linux-firmware))
@@ -94,19 +94,23 @@
  	    vim)
    %base-packages))
 
- (host-name "azure")
+ (host-name "eminence")
  (services (cons*
             (set-xorg-configuration
              (xorg-configuration
               (keyboard-layout keyboard-layout)))
             (modify-services %my-base-services
-                             (elogind-service-type config =>
-                                                   (elogind-configuration (inherit config)
-                                                                          (handle-lid-switch-external-power 'suspend)))
-                             (udev-service-type config =>
-                                                (udev-configuration (inherit config)
-                                                                    (rules (cons %backlight-udev-rule
-                                                                                 (udev-configuration-rules config))))))))
+                             (elogind-service-type
+                              config =>
+                              (elogind-configuration
+                               (inherit config)
+                               (handle-lid-switch-external-power 'suspend)))
+                             (udev-service-type
+                              config =>
+                              (udev-configuration
+                               (inherit config)
+                               (rules (cons %backlight-udev-rule
+                                            (udev-configuration-rules config))))))))
 
  (bootloader
   (bootloader-configuration
@@ -115,16 +119,18 @@
    (keyboard-layout keyboard-layout)))
 
  (swap-devices
-  (list (uuid "4b2dedb3-b111-4e69-8c05-6daa2b072c76")))
+  (list (uuid "f93cf3f6-7ee7-42ec-8ee2-f3d896fdf9b5")))
 
  (file-systems
   (cons* (file-system
           (mount-point "/")
-          (device (file-system-label "my-root"))
+          (device
+           (uuid "1d937704-bbeb-43b5-bc63-453886c426af"
+                 'ext4))
           (type "ext4"))
-	     (file-system
-	      (mount-point "/boot/efi")
-	      (device "/dev/sda1")
-	      (type "vfat"))
-         %base-file-systems)))
-;; azure:1 ends here
+         (file-system
+          (mount-point "/boot/efi")
+          (device (uuid "0031-3784" 'fat32))
+          (type "vfat"))
+         %base-file-systems))
+;; eminence:1 ends here
