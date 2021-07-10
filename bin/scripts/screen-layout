@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# [[file:../../Desktop.org::*Screen layout][Screen layout:1]]
+# [[file:../../Desktop.org::*Screen settings][Screen settings:1]]
 hostname=$(hostname)
 if [ "$hostname" = "indigo" ]; then
     xrandr --output DisplayPort-0 --off --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal --output DVI-D-0 --mode 1366x768 --pos 1920x312 --rotate normal
+elif [ "$hostname" = "eminence" ]; then
+    xgamma -gamma 1.25
 fi
-# Screen layout:1 ends here
+# Screen settings:1 ends here

@@ -16,7 +16,6 @@
    "light"
    "arandr"
    "xprop"
-   "xrandr"
    "megacmd-1.4"
    "activitywatch-bin"
    "xdg-desktop-portal"
@@ -38,6 +37,8 @@
    "bind:utils"
    "polybar"
    "i3-gaps"
+   "xgamma"
+   "xrandr"
    "xsettingsd"
    "papirus-icon-theme"
    "matcha-theme"))

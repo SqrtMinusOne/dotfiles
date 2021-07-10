@@ -118,7 +118,7 @@ content = "|"
 content-foreground = ${colors.magenta}
 content-padding = 0
 content-margin = 0
-interval = 0
+interval = 100000
 ; SEP:1 ends here
 
 ; [[file:../../Desktop.org::*TSEP][TSEP:2]]
@@ -126,7 +126,7 @@ interval = 0
 type = custom/script
 exec = /home/pavel/bin/polybar/tray-sep.sh
 format-foreground = ${colors.magenta}
-interval = 0
+interval = 100000
 ; TSEP:2 ends here
 
 ; [[file:../../Desktop.org::*i3][i3:1]]

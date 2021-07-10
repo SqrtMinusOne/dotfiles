@@ -5,6 +5,9 @@ hostname=$(hostname)
 if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
     export WLAN_INTERFACE="wlp3s0"
+elif [ "$hostname" = "eminence" ]; then
+    TRAY_MONITOR="eDP"
+    export WLAN_INTERFACE="wlo1"
 else
     TRAY_MONITOR="HDMI-A-0"
     export WLAN_INTERFACE="wlp35s0f3u2"
@@ -12,24 +15,28 @@ fi
 
 # Setting varying on the monitor
 declare -A FONT_SIZES=(
+    ["eDP"]="13"
     ["eDP-1"]="13"
     ["DVI-D-0"]="11"
     ["HDMI-A-0"]="13"
 )
 declare -A EMOJI_SCALE=(
+    ["eDP"]="9"
     ["eDP-1"]="9"
     ["DVI-D-0"]="10"
     ["HDMI-A-0"]="10"
 )
 declare -A BAR_HEIGHT=(
+    ["eDP"]="29"
     ["eDP-1"]="29"
     ["DVI-D-0"]="23"
     ["HDMI-A-0"]="29"
 )
 declare -A BLOCKS=(
+    ["eDP"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
+    ["eDP-1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
     ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
     ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
-    ["eDP-1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
 )
 
 # Geolocation for some modules

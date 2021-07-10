@@ -179,6 +179,7 @@ Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting 
 #+begin_src emacs-lisp
 (let ((hostname (system-name)))
   (cond ((string-equal hostname "azure") 120)
+        ((string-equal hostname "eminence") 120)
         (t 96)))
 #+end_src
 
@@ -200,19 +201,26 @@ A few programs I use to customize the apperance are listed below.
 Net/ThemeName "Matcha-dark-azul"
 Net/IconThemeName "Papirus-Dark"
 Gtk/DecorationLayout "menu:minimize,maximize,close"
-Gtk/FontName "Sans 12"
+Gtk/FontName "Sans 10"
 Gtk/MonospaceFontName "JetBrainsMono Nerd Mono 12"
 Gtk/CursorThemeName "Adwaita"
 Xft/Antialias 1
 Xft/Hinting 0
 Xft/HintStyle "hintnone"
 #+end_src
-** Screen layout
-Set screen layout depending on hostname
+** Screen settings
+| Guix dependency | Description                                |
+|-----------------+--------------------------------------------|
+| xrandr          | X11 CLI to RandR                           |
+| xgamma          | A tool to alter monitor's gamma correction |
+
+Set screen layout & other params depending on hostname
 #+begin_src sh :tangle ~/bin/scripts/screen-layout
 hostname=$(hostname)
 if [ "$hostname" = "indigo" ]; then
     xrandr --output DisplayPort-0 --off --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal --output DVI-D-0 --mode 1366x768 --pos 1920x312 --rotate normal
+elif [ "$hostname" = "eminence" ]; then
+    xgamma -gamma 1.25
 fi
 #+end_src
 * i3wm
@@ -774,6 +782,9 @@ hostname=$(hostname)
 if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
     export WLAN_INTERFACE="wlp3s0"
+elif [ "$hostname" = "eminence" ]; then
+    TRAY_MONITOR="eDP"
+    export WLAN_INTERFACE="wlo1"
 else
     TRAY_MONITOR="HDMI-A-0"
     export WLAN_INTERFACE="wlp35s0f3u2"
@@ -781,24 +792,28 @@ fi
 
 # Setting varying on the monitor
 declare -A FONT_SIZES=(
+    ["eDP"]="13"
     ["eDP-1"]="13"
     ["DVI-D-0"]="11"
     ["HDMI-A-0"]="13"
 )
 declare -A EMOJI_SCALE=(
+    ["eDP"]="9"
     ["eDP-1"]="9"
     ["DVI-D-0"]="10"
     ["HDMI-A-0"]="10"
 )
 declare -A BAR_HEIGHT=(
+    ["eDP"]="29"
     ["eDP-1"]="29"
     ["DVI-D-0"]="23"
     ["HDMI-A-0"]="29"
 )
 declare -A BLOCKS=(
+    ["eDP"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
+    ["eDP-1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
     ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
     ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
-    ["eDP-1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
 )
 
 # Geolocation for some modules
@@ -1060,7 +1075,7 @@ content = "|"
 content-foreground = ${colors.magenta}
 content-padding = 0
 content-margin = 0
-interval = 0
+interval = 100000
 #+end_src
 *** TSEP
 A separator, which appears only if monitor is set to have a tray in the launch script
@@ -1075,7 +1090,7 @@ fi
 type = custom/script
 exec = /home/pavel/bin/polybar/tray-sep.sh
 format-foreground = ${colors.magenta}
-interval = 0
+interval = 100000
 #+end_src
 
 *** i3
@@ -2084,7 +2099,6 @@ This section generates manifests for various desktop software that I'm using.
 |----------+-----------------|
 | dev      | conda           |
 | dev      | docker-compose  |
-| dev      | python          |
 | dev      | postgresql      |
 ** Manifests
 #+NAME: packages
@@ -2156,17 +2170,17 @@ Packages to install:
 
 #+begin_src emacs-lisp :var table=flatpak-deps :wrap example
 (mapconcat
- (lambda (c) (concat "flatpak install --user " (nth 1 c) " " (nth 0 c)))
+ (lambda (c) (concat "flatpak install -y --user " (nth 1 c) " " (nth 0 c)))
  table
  "\n")
 #+end_src
 
 #+RESULTS:
 #+begin_example
-flatpak install --user flathub com.github.wwmm.pulseeffects
-flatpak install --user flathub com.discordapp.Discord
-flatpak install --user flathub us.zoom.Zoom
-flatpak install --user flathub com.slack.Slack
+flatpak install -y --user flathub com.github.wwmm.pulseeffects
+flatpak install -y --user flathub com.discordapp.Discord
+flatpak install -y --user flathub us.zoom.Zoom
+flatpak install -y --user flathub com.slack.Slack
 #+end_example
 ** Nix
 | Type | Description        |
@@ -2344,7 +2358,6 @@ Other desktop programs I use are listed below.
 
 | Guix dependency        | Description                               |
 |------------------------+-------------------------------------------|
-| xrandr                 | X11 CLI to RandR                          |
 | xprop                  | Tool to display properties of X windows   |
 | arandr                 | GUI to xrandr                             |
 | light                  | Control screen brightness                 |
