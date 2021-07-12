@@ -192,6 +192,7 @@ Common modules:
 (use-modules (gnu packages openbox))
 (use-modules (gnu services docker))
 (use-modules (gnu services cups))
+(use-modules (gnu services virtualization))
 (use-modules (srfi srfi-1))
 (use-modules (guix channels))
 (use-modules (guix inferior))
@@ -252,6 +253,7 @@ User accounts.
                   "tty"
                   "docker"
                   "scanner"
+                  "libvirt"
                   "lp")))
               %base-user-accounts))
 
@@ -276,6 +278,7 @@ Default services for each machine:
 - add nix service
 - add docker service
 - add CUPS service
+- add libvirt service
 - add a symlink to ELF interpreter to where most Linux binaries expect it
 #+begin_src scheme :tangle no :noweb-ref system-common
 (define %my-base-services
@@ -288,10 +291,17 @@ Default services for each machine:
             (cups-configuration
              (web-interface? #t)))
    (service docker-service-type)
+   (service libvirt-service-type
+            (libvirt-configuration
+             (unix-sock-group "libvirt")
+             (tls-port "16555")))
+   (service virtlog-service-type)
    (modify-services %desktop-services
-                    (network-manager-service-type config =>
-                                                  (network-manager-configuration (inherit config)
-                                                                                 (vpn-plugins (list network-manager-openvpn)))))))
+                    (network-manager-service-type
+                     config =>
+                     (network-manager-configuration
+                      (inherit config)
+                      (vpn-plugins (list network-manager-openvpn)))))))
 
 #+end_src
 
@@ -389,7 +399,7 @@ Default services for each machine:
           (mount-point "/boot/efi")
           (device (uuid "0031-3784" 'fat32))
           (type "vfat"))
-         %base-file-systems))
+         %base-file-systems)))
 #+end_src
 
 ** azure
@@ -608,6 +618,13 @@ echo "Distributor ID: It seems like it requires an lsb_release."
 echo "Description:    But GNU Guix doesn't have one."
 echo "Release:        42.2"
 echo "Codename:       n/a"
+#+end_src
+** virt-manager
+Run the following to fix the network:
+#+begin_src sh :tangle no
+sudo virsh net-define /run/current-system/profile/etc/libvirt/qemu/networks/default.xml
+sudo virsh net-start default
+sudo herd restart libvirtd
 #+end_src
 ** wakatime-cli
 | Note | Description           |

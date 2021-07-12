@@ -12,6 +12,7 @@
 (use-modules (gnu packages openbox))
 (use-modules (gnu services docker))
 (use-modules (gnu services cups))
+(use-modules (gnu services virtualization))
 (use-modules (srfi srfi-1))
 (use-modules (guix channels))
 (use-modules (guix inferior))
@@ -30,10 +31,17 @@
             (cups-configuration
              (web-interface? #t)))
    (service docker-service-type)
+   (service libvirt-service-type
+            (libvirt-configuration
+             (unix-sock-group "libvirt")
+             (tls-port "16555")))
+   (service virtlog-service-type)
    (modify-services %desktop-services
-                    (network-manager-service-type config =>
-                                                  (network-manager-configuration (inherit config)
-                                                                                 (vpn-plugins (list network-manager-openvpn)))))))
+                    (network-manager-service-type
+                     config =>
+                     (network-manager-configuration
+                      (inherit config)
+                      (vpn-plugins (list network-manager-openvpn)))))))
 
 
 (define %backlight-udev-rule
@@ -80,6 +88,7 @@
                    "tty"
                    "docker"
                    "scanner"
+                   "libvirt"
                    "lp")))
                %base-user-accounts))
  
@@ -132,5 +141,5 @@
           (mount-point "/boot/efi")
           (device (uuid "0031-3784" 'fat32))
           (type "vfat"))
-         %base-file-systems))
+         %base-file-systems)))
 ;; eminence:1 ends here

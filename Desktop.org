@@ -1002,10 +1002,6 @@ Prints out a current uptime and non-AFK time from [[https://github.com/ActivityW
 |-----------------|
 | dateutils       |
 
-| Type | Note                                       |
-|------+--------------------------------------------|
-| TODO | Fix crash on uptime > 99h                  |
-
 #+begin_src bash :tangle ./bin/polybar/aw_afk.sh :noweb yes
 afk_event=$(curl -s -X GET "http://localhost:5600/api/0/buckets/aw-watcher-afk_$(hostname)/events?limit=1" -H "accept: application/json")
 status=$(echo ${afk_event} | jq -r '.[0].data.status')
@@ -2100,6 +2096,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | conda           |
 | dev      | docker-compose  |
 | dev      | postgresql      |
+| dev      | virt-manager    |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
