@@ -1,20 +1,7 @@
-(setq my/notmuch-loaded nil)
+(let ((default-directory  "/home/pavel/.guix-extra-profiles/mail/mail/share/emacs/site-lisp"))
+  (normal-top-level-add-subdirs-to-load-path))
 
-(defun my/run-notmuch ()
-  (interactive)
-  (when (not my/notmuch-loaded)
-    (let* ((notmuch-dir (shell-command-to-string "readlink -f $(which notmuch)"))
-           (notmuch-version (substring (shell-command-to-string "notmuch --version") 8 -1))
-           (notmuch-lisp-dir (concat
-                              (substring notmuch-dir 0 -13)
-                              "/share/emacs/site-lisp/notmuch-"
-                              notmuch-version
-                              "/")))
-      (push notmuch-lisp-dir load-path))
-    (setq my/notmuch-loaded t))
-  (notmuch))
-
-(my-leader-def "am" 'my/run-notmuch)
+(my-leader-def "am" 'notmuch)
 
 (use-package notmuch
   ;; :ensure nil
