@@ -2261,13 +2261,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                 python-executable))))
       "python")))
 
-(use-package lsp-python-ms
+(use-package lsp-pyright
   :straight t
   :defer t
   :if (not my/slow-ssh)
-  :init (setq lsp-python-ms-auto-install-server t)
   :hook (python-mode . (lambda ()
-                         (require 'lsp-python-ms)
+                         (require 'lsp-pyright)
                          (setq-local lsp-python-ms-python-executable (my/get-pipenv-python))
                          (lsp))))
 

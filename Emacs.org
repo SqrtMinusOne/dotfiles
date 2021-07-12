@@ -92,6 +92,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
 - [[#dired][Dired]]
   - [[#basic-config--keybindings][Basic config & keybindings]]
   - [[#addons][Addons]]
+    - [[#dired-on-emacs-28][dired+ on Emacs 28]]
   - [[#tramp][TRAMP]]
   - [[#bookmarks][Bookmarks]]
 - [[#shells][Shells]]
@@ -112,6 +113,8 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#managing-jupyter-kernels][Managing Jupyter kernels]]
     - [[#do-not-wrap-output-in-emacs-jupyter][Do not wrap output in emacs-jupyter]]
     - [[#wrap-source-code-output][Wrap source code output]]
+  - [[#productivity][Productivity]]
+    - [[#capture-templates][Capture templates]]
   - [[#ui][UI]]
     - [[#off-instant-equations-preview][(OFF) Instant equations preview]]
     - [[#latex-fragments][LaTeX fragments]]
@@ -130,6 +133,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#system-configuration][System configuration]]
     - [[#tables-for-guix-dependencies][Tables for Guix Dependencies]]
     - [[#noweb-evaluations][Noweb evaluations]]
+    - [[#yadm-hook][yadm hook]]
 - [[#off-eaf][(OFF) EAF]]
   - [[#installation][Installation]]
   - [[#config][Config]]
@@ -3414,14 +3418,13 @@ For some reason it doesn't use pipenv python executable, so here is a small work
                 python-executable))))
       "python")))
 
-(use-package lsp-python-ms
+(use-package lsp-pyright
   :straight t
   :defer t
   :if (not my/slow-ssh)
-  :init (setq lsp-python-ms-auto-install-server t)
   :hook (python-mode . (lambda ()
-                         (require 'lsp-python-ms)
-                         (setq-local lsp-python-ms-python-executable (my/get-pipenv-python))
+                         (require 'lsp-pyright)
+                         (setq-local lsp-pyright-python-executable (my/get-pipenv-python))
                          (lsp))))
 
 (add-hook 'python-mode-hook #'smartparens-mode)
@@ -3726,10 +3729,6 @@ A bunch of functions for managing dotfiles with yadm.
 (my-leader-def "cc" 'my/edit-configuration)
 #+end_src
 *** Open Magit for yadm
-| Note | Type              |
-|------+-------------------|
-| TODO | Fix this for Guix |
-
 Idea:
 
 - [[https://www.reddit.com/r/emacs/comments/gjukb3/yadm_magit/]]
