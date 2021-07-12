@@ -14,7 +14,12 @@
 - [[#contents][Contents]]
 - [[#profile][.profile]]
   - [[#environment][Environment]]
-  - [[#various-paths][Various paths]]
+  - [[#my-paths][My paths]]
+  - [[#guix-settings][Guix settings]]
+  - [[#other-package-managers][Other package managers]]
+    - [[#npm][npm]]
+  - [[#xresources][XResources]]
+  - [[#off-package-manager-paths][(OFF) Package manager paths]]
 - [[#bash][Bash]]
   - [[#bash_profile][.bash_profile]]
   - [[#bashrc][.bashrc]]
@@ -33,6 +38,8 @@
   - [[#copy-to-clipboard][Copy to clipboard]]
   - [[#ui][UI]]
 - [[#alacritty][Alacritty]]
+- [[#various-console-applications][Various console applications]]
+- [[#guix-settings][Guix settings]]
 :END:
 
 * =.profile=
@@ -73,6 +80,23 @@ for i in $GUIX_EXTRA_PROFILES/*; do
 done
 #+end_src
 
+Set Jupyter config PATH. It defaults to readonly directory somewhere in Guix profile.
+#+begin_src sh
+export JUPYTER_CONFIG_DIR=$HOME/.config/jupyter
+#+end_src
+
+Set a folder for my packages.
+#+begin_src sh
+export GUIX_PACKAGE_PATH=~/guix-packages
+#+end_src
+** Other package managers
+Using other package managers with Guix requires some extra work.
+
+Make flatpak apps visible to launchers:
+#+begin_src sh
+export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
+#+end_src
+
 Enable Nix
 #+begin_src sh
 if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
@@ -87,24 +111,33 @@ if [ -d "$HOME/.guix-extra-profiles/desktop" ]; then
 fi
 #+end_src
 
-Set Jupyter config PATH. It defaults to readonly directory somewhere in Guix profile.
-#+begin_src sh
-export JUPYTER_CONFIG_DIR=$HOME/.config/jupyter
-#+end_src
-
-Set a folder for my packages.
-#+begin_src sh
-export GUIX_PACKAGE_PATH=~/guix-packages
-#+end_src
-
-Make flatpak apps visible to launchers
-#+begin_src sh
-export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
-#+end_src
-
-Make nix apps visible to launchers
+Make nix apps visible to launchers:
 #+begin_src sh
 export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
+#+end_src
+
+*** npm
+npm is especially cumbersome, for instance because by default it tries to install packages to =/gnu/store/=.
+
+In principle, one can set a prefix like this:
+#+begin_src conf :tangle ~/._npmrc
+prefix=/home/pavel/.npm-packages
+#+end_src
+
+But I also want to use node from conda occasionally, where prefix is already set correctly. So instead of tangling the above to the =~/.npmrc= directly, I set an environment variable in the profile:
+
+#+begin_src sh
+export NPM_CONFIG_USERCONFIG=$HOME/._npmrc
+#+end_src
+
+The variable is unset in a script in [[file:Guix.org::*conda][Guix.org]].
+
+Set PATH & MANPATH
+#+begin_src sh
+NPM_PACKAGES="${HOME}/.npm-packages"
+
+export PATH="$PATH:$NPM_PACKAGES/bin"
+export MANPATH="${MANPATH-$(manpath)}:$NPM_PACKAGES/share/man"
 #+end_src
 ** XResources
 | Guix dependency |
@@ -307,7 +340,7 @@ if [ -d "/usr/share/fzf" ]; then
 fi
 #+end_src
 *** Aliases
-#+begin_src bash :noweb-ref shell-aliases
+#+begin_src bash :noweb yes :noweb-ref shell-aliases
 alias v="vim"
 alias gg="lazygit"
 alias ls="exa --icons"

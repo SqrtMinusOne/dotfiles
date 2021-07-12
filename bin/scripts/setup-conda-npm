@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# [[file:../../Guix.org::*Manifest][Manifest:3]]
+# Get writable conda envs with npm & without
+readarray -t CONDA_ENVS_ALL <<< $(conda env list --json | jq '.envs[]')
+CONDA_ENVS_NPM=()
+CONDA_ENVS_NO_NPM=()
+for env in "${CONDA_ENVS_ALL[@]}"; do
+    env="${env:1:${#env}-2}"
+    if [ -w "$env" ]; then
+        if [ -f "$env/bin/npm" ]; then
+            CONDA_ENVS_NPM+=($env)
+        else
+            CONDA_ENVS_NO_NPM+=($env)
+        fi
+    fi
+done
+
+for env in "${CONDA_ENVS_NPM[@]}"; do
+    echo "Found npm in $env"
+    mkdir -p "$env/etc/conda/activate.d"
+    mkdir -p "$env/etc/conda/deactivate.d"
+
+    echo "unset NPM_CONFIG_USERCONFIG" > "$env/etc/conda/activate.d/conda.sh"
+    echo "set -e NPM_CONFIG_USERCONFIG" > "$env/etc/conda/activate.d/conda.fish"
+    echo "export NPM_CONFIG_USERCONFIG=$HOME/._npmrc" > "$env/etc/conda/deactivate.d/conda.sh"
+    echo "export NPM_CONFIG_USERCONFIG=$HOME/._npmrc" > "$env/etc/conda/deactivate.d/conda.fish"
+done
+
+for env in "${CONDA_ENVS_NO_NPM}"; do
+    echo "Did not found npm in $env"
+    rm -rf "$env/etc/conda/activate.d/conda.sh" || true
+    rm -rf "$env/etc/conda/activate.d/conda.fish" || true
+    rm -rf "$env/etc/conda/deactivate.d/conda.sh" || true
+    rm -rf "$env/etc/conda/deactivate.d/conda.fish" || true
+done
+# Manifest:3 ends here

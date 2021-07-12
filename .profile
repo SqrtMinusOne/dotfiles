@@ -27,32 +27,43 @@ done
 # Guix settings:1 ends here
 
 # [[file:Console.org::*Guix settings][Guix settings:2]]
-if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
-  . /run/current-system/profile/etc/profile.d/nix.sh
-fi
+export JUPYTER_CONFIG_DIR=$HOME/.config/jupyter
 # Guix settings:2 ends here
 
 # [[file:Console.org::*Guix settings][Guix settings:3]]
+export GUIX_PACKAGE_PATH=~/guix-packages
+# Guix settings:3 ends here
+
+# [[file:Console.org::*Other package managers][Other package managers:1]]
+export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
+# Other package managers:1 ends here
+
+# [[file:Console.org::*Other package managers][Other package managers:2]]
+if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
+  . /run/current-system/profile/etc/profile.d/nix.sh
+fi
+# Other package managers:2 ends here
+
+# [[file:Console.org::*Other package managers][Other package managers:3]]
 if [ -d "$HOME/.guix-extra-profiles/desktop" ]; then
     export FONTCONFIG_PATH="$HOME/.guix-extra-profiles/desktop/desktop/etc/fonts"
 fi
-# Guix settings:3 ends here
+# Other package managers:3 ends here
 
-# [[file:Console.org::*Guix settings][Guix settings:4]]
-export JUPYTER_CONFIG_DIR=$HOME/.config/jupyter
-# Guix settings:4 ends here
-
-# [[file:Console.org::*Guix settings][Guix settings:5]]
-export GUIX_PACKAGE_PATH=~/guix-packages
-# Guix settings:5 ends here
-
-# [[file:Console.org::*Guix settings][Guix settings:6]]
-export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
-# Guix settings:6 ends here
-
-# [[file:Console.org::*Guix settings][Guix settings:7]]
+# [[file:Console.org::*Other package managers][Other package managers:4]]
 export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
-# Guix settings:7 ends here
+# Other package managers:4 ends here
+
+# [[file:Console.org::*npm][npm:2]]
+export NPM_CONFIG_USERCONFIG=$HOME/._npmrc
+# npm:2 ends here
+
+# [[file:Console.org::*npm][npm:3]]
+NPM_PACKAGES="${HOME}/.npm-packages"
+
+export PATH="$PATH:$NPM_PACKAGES/bin"
+export MANPATH="${MANPATH-$(manpath)}:$NPM_PACKAGES/share/man"
+# npm:3 ends here
 
 # [[file:Console.org::*XResources][XResources:1]]
 xrdb ~/.Xresources
