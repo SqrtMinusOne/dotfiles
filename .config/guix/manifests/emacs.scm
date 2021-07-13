@@ -2,4 +2,6 @@
  '("emacs-native-comp"
    "the-silver-searcher"
    "ripgrep"
-   "emacs-vterm"))
+   "emacs-vterm"
+   "python-isort"
+   "python-yapf"))

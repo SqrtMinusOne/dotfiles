@@ -3448,6 +3448,10 @@ Automatically creates & manages virtualenvs and stores data in =Pipfile= and =Pi
 *** yapf
 [[https://github.com/google/yapf][yapf]] is a formatter for Python files.
 
+| Guix dependency |
+|-----------------|
+| python-yapf     |
+
 References:
 - [[https://github.com/google/yapf][yapf repo]]
 - [[https://github.com/JorisE/yapfify][yapfify.el repo]]
@@ -3468,6 +3472,10 @@ column_limit = 80
 #+end_src
 *** isort
 [[https://github.com/PyCQA/isort][isort]] is a Python package to sort Python imports.
+
+| Guix dependency |
+|-----------------|
+| python-isort    |
 
 References:
 - [[https://pycqa.github.io/isort/][isort docs]]
