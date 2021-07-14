@@ -14,6 +14,7 @@
    "python-tmuxp"
    "tmux"
    "rust-starship"
+   "nushell-bin"
    "dt-colorscripts"
    "fish"
    "xhost"

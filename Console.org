@@ -31,6 +31,7 @@
     - [[#anaconda][Anaconda]]
     - [[#starship-prompt][Starship prompt]]
 - [[#fish][Fish]]
+- [[#nushell][Nushell]]
 - [[#starship-prompt][Starship prompt]]
 - [[#tmux][Tmux]]
   - [[#term-settings][Term settings]]
@@ -438,6 +439,55 @@ end
 Suppress fish greeting
 #+begin_src fish
 set fish_greeting
+#+end_src
+* Nushell
+:PROPERTIES:
+:header-args+: :tangle ./.config/nu/config.toml :comments link
+:END:
+ | Guix dependency |
+ |-----------------|
+ | nushell-bin     |
+
+A structured shell. I don't use it as of now, but perhaps one day.
+
+Set starship prompt
+#+begin_src conf-toml :noweb yes
+startup = [
+    <<nu-aliases>>,
+    "mkdir ~/.cache/starship",
+    "starship init nu | save ~/.cache/starship/init.nu",
+    "source ~/.cache/starship/init.nu",
+]
+prompt = "starship_prompt"
+#+end_src
+
+Skip welcome message
+#+begin_src conf-toml
+skip_welcome_message = true
+#+end_src
+
+Set table mode
+#+begin_src conf-toml
+table_mode = "rounded"
+#+end_src
+
+Aliases
+#+begin_src conf-toml :tangle no :noweb-ref nu-aliases
+"alias ll = ls -l",
+"alias c = clear",
+"alias q = exit"
+#+end_src
+
+Colors
+#+begin_src conf-toml
+[color_config]
+primitive_filesize="ub"
+primitive_boolean="yu"
+primitive_duration="g"
+primitive_path="y"
+primitive_date="r"
+primitive_int="c"
+primitive_decimal="c"
 #+end_src
 * Starship prompt
 | Guix dependency | Description         |
