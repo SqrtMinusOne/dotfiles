@@ -3850,6 +3850,31 @@ Open a URL with eww.
     (when link
       (eww link))))
 #+end_src
+** man & tldr
+[[https://tldr.sh/][tldr]] is a collaborative project providing cheatsheets for various console commands
+
+For some reason, the built-in download is broken, so I use my own function
+
+#+begin_src emacs-lisp
+(use-package tldr
+  :straight t
+  :commands (tldr)
+  :config
+  (setq tldr-source-zip-url "https://github.com/tldr-pages/tldr/archive/refs/heads/main.zip")
+
+  (defun tldr-update-docs ()
+    (interactive)
+    (shell-command-to-string (format "curl -L %s --output %s" tldr-source-zip-url tldr-saved-zip-path))
+    (when (file-exists-p "/tmp/tldr")
+      (delete-directory "/tmp/tldr" t))
+    (shell-command-to-string (format "unzip -d /tmp/tldr/ %s" tldr-saved-zip-path) nil nil)
+    (when (file-exists-p tldr-directory-path)
+      (delete-directory tldr-directory-path 'recursive 'no-trash))
+    (shell-command-to-string (format "mv %s %s" "/tmp/tldr/tldr-main" tldr-directory-path))))
+
+(my-leader-def "hT" 'tldr)
+(my-leader-def "hM" 'man)
+#+end_src
 ** ERC
 ERC is a built-it Emacs IRC client.
 
