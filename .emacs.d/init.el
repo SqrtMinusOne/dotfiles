@@ -1027,7 +1027,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
   (setq org-tags-exclude-from-inheritance (quote ("crypt")))
-  (setq org-crypt-key nil)
+  (setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205")
   (use-package jupyter
     :straight t
     :init
@@ -1145,7 +1145,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
 (setq org-tags-exclude-from-inheritance (quote ("crypt")))
-(setq org-crypt-key nil)
+(setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205")
 
 (use-package org-contrib
   :straight (org-contrib
@@ -1306,6 +1306,20 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq org-refile-targets
       '(("projects.org" :maxlevel . 2)))
+
+(use-package org-journal
+  :straight t
+  :config
+  (setq org-journal-dir "~/Documents/org-mode/journal/")
+  (setq org-journal-file-type 'weekly)
+  (setq org-journal-file-format "%Y-%m-%d.org")
+  (setq org-journal-enable-encryption t))
+
+(my-leader-def
+  :infix "aj"
+  "j" 'org-journal-new-entry
+  "o" 'org-journal-open-current-journal-file
+  "s" 'org-journal-search)
 
 (use-package org-latex-impatient
   :straight (:repo "yangsheng6810/org-latex-impatient"
@@ -2267,7 +2281,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :if (not my/slow-ssh)
   :hook (python-mode . (lambda ()
                          (require 'lsp-pyright)
-                         (setq-local lsp-python-ms-python-executable (my/get-pipenv-python))
+                         (setq-local lsp-pyright-python-executable (my/get-pipenv-python))
                          (lsp))))
 
 (add-hook 'python-mode-hook #'smartparens-mode)
@@ -2549,6 +2563,25 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (let ((link (elfeed-entry-link elfeed-show-entry)))
     (when link
       (eww link))))
+
+(use-package tldr
+  :straight t
+  :commands (tldr)
+  :config
+  (setq tldr-source-zip-url "https://github.com/tldr-pages/tldr/archive/refs/heads/main.zip")
+
+  (defun tldr-update-docs ()
+    (interactive)
+    (shell-command-to-string (format "curl -L %s --output %s" tldr-source-zip-url tldr-saved-zip-path))
+    (when (file-exists-p "/tmp/tldr")
+      (delete-directory "/tmp/tldr" t))
+    (shell-command-to-string (format "unzip -d /tmp/tldr/ %s" tldr-saved-zip-path) nil nil)
+    (when (file-exists-p tldr-directory-path)
+      (delete-directory tldr-directory-path 'recursive 'no-trash))
+    (shell-command-to-string (format "mv %s %s" "/tmp/tldr/tldr-main" tldr-directory-path))))
+
+(my-leader-def "hT" 'tldr)
+(my-leader-def "hM" 'man)
 
 (my-leader-def "ai" #'erc-tls)
 

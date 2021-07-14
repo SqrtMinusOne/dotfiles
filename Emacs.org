@@ -1817,7 +1817,7 @@ Use the built-in org mode.
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
 (setq org-tags-exclude-from-inheritance (quote ("crypt")))
-(setq org-crypt-key nil)
+(setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205")
 #+end_src
 *** org-contrib
 =org-contrib= is a package with various additions to Org. I use the following:
@@ -2131,6 +2131,24 @@ Settings for Org capture mode. The goal here is to have a non-disruptive process
                   "/Received on/ %:date-timestamp-inactive"))))
 #+end_src
 
+*** Org Journal
+A plugin for maintaining journal in org mode. I want to have its entries separate from my potential knowledge database.
+
+#+begin_src emacs-lisp
+(use-package org-journal
+  :straight t
+  :config
+  (setq org-journal-dir "~/Documents/org-mode/journal/")
+  (setq org-journal-file-type 'weekly)
+  (setq org-journal-file-format "%Y-%m-%d.org")
+  (setq org-journal-enable-encryption t))
+
+(my-leader-def
+  :infix "aj"
+  "j" 'org-journal-new-entry
+  "o" 'org-journal-open-current-journal-file
+  "s" 'org-journal-search)
+#+end_src
 ** UI
 *** OFF (OFF) Instant equations preview
 Instant math previews for org mode.
