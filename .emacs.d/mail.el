@@ -13,6 +13,7 @@
   (setq notmuch-always-prompt-for-sender t)
   (setq sendmail-program (executable-find "msmtp"))
   (setq send-mail-function #'sendmail-send-it)
+  (setq mml-secure-openpgp-sign-with-sender t)
   (add-hook 'notmuch-hello-mode-hook
             (lambda () (display-line-numbers-mode 0)))
   (setq notmuch-saved-searches
@@ -27,3 +28,15 @@
           (:name "drafts" :query "tag:draft")))
   (custom-set-faces
    `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow)))))))
+
+(with-eval-after-load 'notmuch
+  (add-hook 'message-setup-hook 'mml-secure-sign-pgpmime))
+
+(setq mml-secure-key-preferences
+      '((OpenPGP
+         (sign
+          ("thexcloud@gmail.com" "914472A1FD6775C166F96EBEED739ADF81C78160"))
+         (encrypt))
+        (CMS
+         (sign)
+         (encrypt))))
