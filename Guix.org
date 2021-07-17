@@ -569,9 +569,14 @@ As of now, CyberGhost doesn't provide ipv6, so we have to disable it.
 #+begin_src bash :tangle ~/bin/scripts/vpn-start
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
 
+if [ -z "$CONN" ]; then
+    echo "No connection!"
+    exit
+fi
+
 echo "Connection: $CONN"
 
-nmcli con modify "$CONN" ipv6.method ignore
+sudo nmcli con modify "$CONN" ipv6.method ignore
 nmcli connection up "$CONN"
 sudo openvpn --config ~/.vpn/openvpn.ovpn
 #+end_src
@@ -583,7 +588,7 @@ Also a script to reverse the changes.
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
 echo "Connection: $CONN"
 
-nmcli con modify "$CONN" ipv6.method auto
+sudo nmcli con modify "$CONN" ipv6.method auto
 nmcli connection up "$CONN"
 #+end_src
 ** flatpak

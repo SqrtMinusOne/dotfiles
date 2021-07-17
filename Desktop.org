@@ -208,11 +208,12 @@ Xft/Antialias 1
 Xft/Hinting 0
 Xft/HintStyle "hintnone"
 #+end_src
-** Screen settings
+** Device-specific settings
 | Guix dependency | Description                                |
 |-----------------+--------------------------------------------|
 | xrandr          | X11 CLI to RandR                           |
 | xgamma          | A tool to alter monitor's gamma correction |
+| xinput          | Configure input devices                    |
 
 Set screen layout & other params depending on hostname
 #+begin_src sh :tangle ~/bin/scripts/screen-layout
@@ -2097,6 +2098,8 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | docker-compose  |
 | dev      | postgresql      |
 | dev      | virt-manager    |
+| dev      | git-filter-repo |
+| dev      | node            |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""

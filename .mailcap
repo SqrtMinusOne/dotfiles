@@ -6,4 +6,4 @@ application/msword; /usr/bin/xdg-open %s
 application/pdf; zathura %s
 application/postscript ; zathura %s
 
-text/html; /usr/bin/xdg-open %s
+text/html; firefox %s

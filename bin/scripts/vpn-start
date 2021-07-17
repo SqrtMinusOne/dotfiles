@@ -2,6 +2,11 @@
 # [[file:../../Guix.org::*vpn-start][vpn-start:1]]
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
 
+if [ -z "$CONN" ]; then
+    echo "No connection!"
+    exit
+fi
+
 echo "Connection: $CONN"
 
 sudo nmcli con modify "$CONN" ipv6.method ignore

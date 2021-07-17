@@ -88,4 +88,6 @@ Mail/progin6304/.credentials.gmailieer.json
 secrets/*
 .emacs.d/dired-bookmarks.el
 .emacs.d/elfeed.org
+.emacs.d/prodigy.org
+.emacs.d/prodigy-config.el
 #+end_src

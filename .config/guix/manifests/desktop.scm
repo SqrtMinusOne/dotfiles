@@ -37,6 +37,7 @@
    "bind:utils"
    "polybar"
    "i3-gaps"
+   "xinput"
    "xgamma"
    "xrandr"
    "xsettingsd"
