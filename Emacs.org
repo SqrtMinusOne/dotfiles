@@ -2104,6 +2104,8 @@ My on-going effort to get a productivity setup in Org.
 Some inspiration:
 - [[https://www.labri.fr/perso/nrougier/GTD/index.html][Nicolas P. Rougier. Get Things Done with Emacs]]
 - [[https://blog.jethro.dev/posts/org_mode_workflow_preview/][Jetro Kuan. Org-mode Workflow]]
+- [[https://www.alexeyshmalko.com/how-i-note/][Alexey Shmalko: How I note]]
+- [[https://rgoswami.me/posts/org-note-workflow/][Rohit Goswami: An Orgmode Note Workflow]]
 
 Used files
 #+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
@@ -2122,6 +2124,8 @@ Refile targets
 #+begin_src emacs-lisp
 (setq org-refile-targets
       '(("projects.org" :maxlevel . 2)))
+(setq org-refile-use-outline-path 'file)
+(setq org-outline-path-complete-in-steps nil)
 #+end_src
 
 *** Capture templates
@@ -2169,7 +2173,6 @@ Settings for Org capture mode. The goal here is to have a non-disruptive process
 
 References:
 - [[https://github.com/org-roam/org-roam/wiki/Hitchhiker%27s-Rough-Guide-to-Org-roam-V2][Hitchhiker's Rough Guide to Org roam V2]]
-- [[https://www.alexeyshmalko.com/how-i-note/][Alexey Shmalko: How I note]]
 
 #+begin_src emacs-lisp
 (use-package emacsql-sqlite
@@ -2177,7 +2180,7 @@ References:
   :straight (:type built-in))
 
 (use-package org-roam
-  :straight (:host github :repo "org-roam/org-roam" :branch "v2")
+  :straight t
   :after org
   :init
   (setq org-roam-directory (concat org-directory "/roam"))
@@ -2187,19 +2190,46 @@ References:
   :config
   (org-roam-setup)
   (setq org-roam-capture-templates
-        '("d" "default" plain (function org-roam--capture-get-point)
-          "%?"
-          :file-name "%<%Y%m%d%H%M%S>-${slug}"
-          :head "#+title: ${title}\n"
-          :unnarrowed t)))
+        `(("d" "default" plain "%?"
+           :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+           :unnarrowed t)))
+  (require 'org-roam-protocol))
 
 (my-leader-def
   :infix "or"
-  "r" 'org-roam-node-insert
-  "s" 'org-roam-node-find
+  "i" 'org-roam-node-insert
+  "r" 'org-roam-node-find
   "g" 'org-roam-graph
   "c" 'org-roam-capture
   "b" 'org-roam-buffer-toggle)
+
+(with-eval-after-load 'org
+  (my-leader-def
+    :keymap 'org-mode-map
+    :infix "or"
+    "t" 'org-roam-tag-add
+    "T" 'org-toam-tag-remove)
+  (general-define-key
+   :keymap 'org-mode-map
+   "C-c i" 'org-id-get-create
+   "C-c l o" 'org-roam-node-insert))
+#+end_src
+**** org-roam-protocol
+Open links such as =org-protocol://= from browser. Run =M-x server-start= for org-protocol to work.
+
+#+begin_src conf :tangle ~/.local/share/applications/org-protocol.desktop
+[Desktop Entry]
+Name=Org-Protocol
+Exec=emacsclient %u
+Icon=emacs-icon
+Type=Application
+Terminal=false
+MimeType=x-scheme-handler/org-protocol
+#+end_src
+
+Don't forget to run the following after setup:
+#+begin_src bash :tangle no
+xdg-mime default org-protocol.desktop x-scheme-handler/org-protocol
 #+end_src
 *** org-ref
 | Type | Description                     |
@@ -3990,6 +4020,32 @@ Open a URL with eww.
     (when link
       (eww link))))
 #+end_src
+
+| Guix dependency |
+|-----------------|
+| mpv             |
+| youtube-dl      |
+
+Open YouTube video with mpv
+#+begin_src emacs-lisp
+(setq my/elfeed-youtube-quality "bestvideo[height<=720]+bestaudio/best[height<=720]")
+
+(defun my/elfeed-open-mpv ()
+  (interactive)
+  "Open MPV for the current entry"
+  (let* ((link (elfeed-entry-link elfeed-show-entry))
+         (link-start-watch (string-match (rx "watch?v=" (* alnum) eos) link)))
+    (if (not link-start-watch)
+        (message "Can't find youtube link")
+      (let ((yt-link (concat "https://www.youtube.com/" (substring link link-start-watch)))
+            (watch-name (concat "mpv-" (substring link (+ link-start-watch 8)))))
+        (start-process watch-name watch-name "mpv" yt-link
+                       (format "--ytdl-format=%s" my/elfeed-youtube-quality))))))
+
+(with-eval-after-load 'elfeed
+  (evil-collection-define-key 'normal 'elfeed-show-mode-map
+    "gm" #'my/elfeed-open-mpv))
+#+end_src
 ** man & tldr
 [[https://tldr.sh/][tldr]] is a collaborative project providing cheatsheets for various console commands
 
@@ -4013,6 +4069,8 @@ For some reason, the built-in download is broken, so I use my own function
     (shell-command-to-string (format "mv %s %s" "/tmp/tldr/tldr-main" tldr-directory-path))))
 
 (my-leader-def "hT" 'tldr)
+
+(setq Man-width-max 180)
 (my-leader-def "hM" 'man)
 #+end_src
 ** ERC
@@ -4228,7 +4286,11 @@ Shows which file is being edited in Emacs.
             (string= (system-name) "eminence"))
            (not my/slow-ssh))
   :config
-  (elcord-mode))
+  (elcord-mode)
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
 #+end_src
 ** Guix
 #+begin_src emacs-lisp

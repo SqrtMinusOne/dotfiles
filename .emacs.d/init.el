@@ -1307,6 +1307,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq org-refile-targets
       '(("projects.org" :maxlevel . 2)))
+(setq org-refile-use-outline-path 'file)
+(setq org-outline-path-complete-in-steps nil)
 
 (use-package org-journal
   :straight t
@@ -1329,7 +1331,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight (:type built-in))
 
 (use-package org-roam
-  :straight (:host github :repo "org-roam/org-roam" :branch "v2")
+  :straight t
   :after org
   :init
   (setq org-roam-directory (concat org-directory "/roam"))
@@ -1339,19 +1341,29 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (org-roam-setup)
   (setq org-roam-capture-templates
-        '("d" "default" plain (function org-roam--capture-get-point)
-          "%?"
-          :file-name "%<%Y%m%d%H%M%S>-${slug}"
-          :head "#+title: ${title}\n"
-          :unnarrowed t)))
+        `(("d" "default" plain "%?"
+           :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+           :unnarrowed t)))
+  (require 'org-roam-protocol))
 
 (my-leader-def
   :infix "or"
-  "r" 'org-roam-node-insert
-  "s" 'org-roam-node-find
+  "i" 'org-roam-node-insert
+  "r" 'org-roam-node-find
   "g" 'org-roam-graph
   "c" 'org-roam-capture
   "b" 'org-roam-buffer-toggle)
+
+(with-eval-after-load 'org
+  (my-leader-def
+    :keymap 'org-mode-map
+    :infix "or"
+    "t" 'org-roam-tag-add
+    "T" 'org-toam-tag-remove)
+  (general-define-key
+   :keymap 'org-mode-map
+   "C-c i" 'org-id-get-create
+   "C-c l o" 'org-roam-node-insert))
 
 (use-package org-ref
   :straight (:files (:defaults (:exclude "*helm*")))
@@ -2774,7 +2786,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (string= (system-name) "eminence"))
            (not my/slow-ssh))
   :config
-  (elcord-mode))
+  (elcord-mode)
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
 
 (use-package guix
   :straight t

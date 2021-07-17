@@ -3,6 +3,8 @@
    "the-silver-searcher"
    "ripgrep"
    "emacs-vterm"
+   "youtube-dl"
+   "mpv"
    "python-isort"
    "python-yapf"
    "graphviz"
