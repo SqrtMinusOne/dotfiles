@@ -159,7 +159,8 @@
      helpful
      compile
      comint
-     magit)))
+     magit
+     prodigy)))
 
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
@@ -1309,17 +1310,76 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package org-journal
   :straight t
+  :after org
   :config
-  (setq org-journal-dir "~/Documents/org-mode/journal/")
+  (setq org-journal-dir (concat org-directory "/journal"))
   (setq org-journal-file-type 'weekly)
   (setq org-journal-file-format "%Y-%m-%d.org")
+  (setq org-journal-date-format "%A, %Y-%m-%d")
   (setq org-journal-enable-encryption t))
 
 (my-leader-def
-  :infix "aj"
+  :infix "oj"
   "j" 'org-journal-new-entry
   "o" 'org-journal-open-current-journal-file
   "s" 'org-journal-search)
+
+(use-package emacsql-sqlite
+  :defer t
+  :straight (:type built-in))
+
+(use-package org-roam
+  :straight (:host github :repo "org-roam/org-roam" :branch "v2")
+  :after org
+  :init
+  (setq org-roam-directory (concat org-directory "/roam"))
+  (setq org-roam-file-extensions '("org"))
+  (setq org-roam-v2-ack t)
+  (setq orb-insert-interface 'ivy-bibtex)
+  :config
+  (org-roam-setup)
+  (setq org-roam-capture-templates
+        '("d" "default" plain (function org-roam--capture-get-point)
+          "%?"
+          :file-name "%<%Y%m%d%H%M%S>-${slug}"
+          :head "#+title: ${title}\n"
+          :unnarrowed t)))
+
+(my-leader-def
+  :infix "or"
+  "r" 'org-roam-node-insert
+  "s" 'org-roam-node-find
+  "g" 'org-roam-graph
+  "c" 'org-roam-capture
+  "b" 'org-roam-buffer-toggle)
+
+(use-package org-ref
+  :straight (:files (:defaults (:exclude "*helm*")))
+  :init
+  (setq org-ref-completion-library 'org-ref-ivy-cite)
+  (setq bibtex-dialect 'biblatex)
+  (setq org-ref-default-bibliography '("~/Documents/org-mode/bibliography.bib"))
+  (setq reftex-default-bibliography org-ref-default-bibliography)
+  (setq bibtex-completion-bibliography org-ref-default-bibliography)
+  :after (org)
+  :config
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c l l" 'org-ref-ivy-insert-cite-link
+   "C-c l r" 'org-ref-ivy-insert-ref-link
+   "C-c l h" 'org-ref-cite-hydra/body)
+  (general-define-key
+   :keymaps 'bibtex-mode-map
+   "M-RET" 'org-ref-bibtex-hydra/body)
+  (add-to-list 'orhc-candidate-formats
+               '("online" . "  |${=key=}| ${title} ${url}")))
+
+(use-package org-roam-bibtex
+  :straight (:host github :repo "org-roam/org-roam-bibtex" :branch "org-roam-v2")
+  :after (org-roam org-ref)
+  :disabled
+  :config
+  (org-roam-bibtex-mode))
 
 (use-package org-latex-impatient
   :straight (:repo "yangsheng6810/org-latex-impatient"
@@ -1469,20 +1529,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    org-make-toc-set
    org-make-toc-at-point)
   :straight t)
-
-(use-package org-ref
-  :straight (:files (:defaults (:exclude "*helm*")))
-  :init
-  (setq org-ref-completion-library 'org-ref-ivy-cite)
-  (setq bibtex-dialect 'biblatex)
-  :after (org)
-  :config
-  (general-define-key
-   :keymaps 'org-mode-map
-   "C-c l l" 'org-ref-ivy-insert-cite-link
-   "C-c l r" 'org-ref-ivy-insert-ref-link)
-  (add-to-list 'orhc-candidate-formats
-               '("online" . "  |${=key=}| ${title} ${url}")))
 
 (defun my/extract-guix-dependencies (&optional category)
   (let ((dependencies '()))
@@ -1801,8 +1847,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
   ;; Scale preview for my DPI
   (setq-default preview-scale-function 1.4)
-  (assoc-delete-all "--" tex--prettify-symbols-alist)
-  (assoc-delete-all "---" tex--prettify-symbols-alist)
+  (when (boundp 'tex--prettify-symbols-alist)
+    (assoc-delete-all "--" tex--prettify-symbols-alist)
+    (assoc-delete-all "---" tex--prettify-symbols-alist))
 
   (add-hook 'LaTeX-mode-hook
             (lambda ()
@@ -1815,10 +1862,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   ;; Do not run lsp within templated TeX files
   (add-hook 'LaTeX-mode-hook
             (lambda ()
-               (unless (string-match "\.hogan\.tex$" (buffer-name))
-                 (lsp))
-               (setq-local lsp-diagnostic-package :none)
-               (setq-local flycheck-checker 'tex-chktex)))
+              (unless (string-match "\.hogan\.tex$" (buffer-name))
+                (lsp))
+              (setq-local lsp-diagnostic-package :none)
+              (setq-local flycheck-checker 'tex-chktex)))
 
   (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'LaTeX-mode-hook #'smartparens-mode)
@@ -2607,6 +2654,44 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :init
   (my-leader-def "ao" 'docker))
 
+(setq my/selected-docker-directory nil)
+
+(defun my/docker-override-dir (fun &rest args)
+  (let ((default-directory (or my/selected-docker-directory default-directory)))
+    (setq my/selected-docker-directory nil)
+    (apply fun args)))
+
+(with-eval-after-load 'docker
+  (advice-add #'docker-compose-run-docker-compose-async :around #'my/docker-override-dir)
+  (advice-add #'docker-compose-run-docker-compose :around #'my/docker-override-dir)
+  (advice-add #'docker-run-docker-async :around #'my/docker-override-dir)
+  (advice-add #'docker-run-docker :around #'my/docker-override-dir))
+
+(defun my/docker-from-dir ()
+  (interactive)
+  (when (not (boundp 'my/docker-directories))
+    (load (concat user-emacs-directory "prodigy-config")))
+  (let* ((directories
+          (mapcar
+           (lambda (el) (cons (format "%-30s %s" (car el) (cdr el)) (cdr el)))
+           my/docker-directories))
+         (selected-directory
+          (cdr (assoc (completing-read "Docker: " directories nil nil "^")
+                      directories))))
+    (setq my/selected-docker-directory selected-directory)
+    (docker)))
+
+(my-leader-def "aO" 'my/docker-from-dir)
+
+(use-package prodigy
+  :straight t
+  :commands (prodigy)
+  :init
+  (my-leader-def "ap" 'prodigy)
+  :config
+  (when (not (boundp 'my/docker-directories))
+    (load (concat user-emacs-directory "prodigy-config"))))
+
 (use-package google-translate
   :straight t
   :functions (my-google-translate-at-point google-translate--search-tkk)
@@ -2638,7 +2723,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :commands (pomidor)
   :init
-  (my-leader-def "ap" #'pomidor)
+  (my-leader-def "aP" #'pomidor)
   :config
   (setq pomidor-sound-tick nil)
   (setq pomidor-sound-tack nil)

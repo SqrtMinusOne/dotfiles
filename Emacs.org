@@ -1,4 +1,5 @@
 #+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el :mkdirp yes
 #+TODO: CHECK(s) | OFF(o)
 
@@ -113,8 +114,13 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#managing-jupyter-kernels][Managing Jupyter kernels]]
     - [[#do-not-wrap-output-in-emacs-jupyter][Do not wrap output in emacs-jupyter]]
     - [[#wrap-source-code-output][Wrap source code output]]
-  - [[#productivity][Productivity]]
+  - [[#productivity--knowledge-management][Productivity & Knowledge management]]
     - [[#capture-templates][Capture templates]]
+    - [[#org-journal][Org Journal]]
+    - [[#org-roam][Org Roam]]
+    - [[#org-ref][org-ref]]
+    - [[#org-roam-bibtex][org-roam-bibtex]]
+    - [[#autocommit][autocommit]]
   - [[#ui][UI]]
     - [[#off-instant-equations-preview][(OFF) Instant equations preview]]
     - [[#latex-fragments][LaTeX fragments]]
@@ -129,7 +135,6 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#copy-a-link][Copy a link]]
   - [[#presentations][Presentations]]
   - [[#toc][TOC]]
-  - [[#org-ref][org-ref]]
   - [[#system-configuration][System configuration]]
     - [[#tables-for-guix-dependencies][Tables for Guix Dependencies]]
     - [[#noweb-evaluations][Noweb evaluations]]
@@ -215,8 +220,10 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#notmuch][Notmuch]]
   - [[#elfeed][Elfeed]]
     - [[#some-additions][Some additions]]
+  - [[#man--tldr][man & tldr]]
   - [[#erc][ERC]]
   - [[#docker][Docker]]
+  - [[#progidy][Progidy]]
   - [[#google-translate][Google Translate]]
   - [[#pomidor][Pomidor]]
   - [[#eww][EWW]]
@@ -503,7 +510,8 @@ I don't enable the entire package, just the modes I need.
      helpful
      compile
      comint
-     magit)))
+     magit
+     prodigy)))
 #+end_src
 ** More keybindigs
 The main keybindigs setup is positioned after evil mode to take the latter into account.
@@ -2090,7 +2098,7 @@ Example usage:
 #+begin_example
 :post out_wrap(name="fig:chart", caption="График", data=*this*)
 #+end_example
-** Productivity
+** Productivity & Knowledge management
 My on-going effort to get a productivity setup in Org.
 
 Some inspiration:
@@ -2132,22 +2140,160 @@ Settings for Org capture mode. The goal here is to have a non-disruptive process
 #+end_src
 
 *** Org Journal
-A plugin for maintaining journal in org mode. I want to have its entries separate from my potential knowledge database.
+[[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining journal in org mode. I want to have its entries separate from my potential base.
 
 #+begin_src emacs-lisp
 (use-package org-journal
   :straight t
+  :after org
   :config
-  (setq org-journal-dir "~/Documents/org-mode/journal/")
+  (setq org-journal-dir (concat org-directory "/journal"))
   (setq org-journal-file-type 'weekly)
   (setq org-journal-file-format "%Y-%m-%d.org")
+  (setq org-journal-date-format "%A, %Y-%m-%d")
   (setq org-journal-enable-encryption t))
 
 (my-leader-def
-  :infix "aj"
+  :infix "oj"
   "j" 'org-journal-new-entry
   "o" 'org-journal-open-current-journal-file
   "s" 'org-journal-search)
+#+end_src
+*** Org Roam
+[[https://github.com/org-roam/org-roam][org-roam]] is a plain-text knowledge database.
+
+| Guix dependency       |
+|-----------------------|
+| emacs-emacsql-sqlite3 |
+| graphviz              |
+
+References:
+- [[https://github.com/org-roam/org-roam/wiki/Hitchhiker%27s-Rough-Guide-to-Org-roam-V2][Hitchhiker's Rough Guide to Org roam V2]]
+- [[https://www.alexeyshmalko.com/how-i-note/][Alexey Shmalko: How I note]]
+
+#+begin_src emacs-lisp
+(use-package emacsql-sqlite
+  :defer t
+  :straight (:type built-in))
+
+(use-package org-roam
+  :straight (:host github :repo "org-roam/org-roam" :branch "v2")
+  :after org
+  :init
+  (setq org-roam-directory (concat org-directory "/roam"))
+  (setq org-roam-file-extensions '("org"))
+  (setq org-roam-v2-ack t)
+  (setq orb-insert-interface 'ivy-bibtex)
+  :config
+  (org-roam-setup)
+  (setq org-roam-capture-templates
+        '("d" "default" plain (function org-roam--capture-get-point)
+          "%?"
+          :file-name "%<%Y%m%d%H%M%S>-${slug}"
+          :head "#+title: ${title}\n"
+          :unnarrowed t)))
+
+(my-leader-def
+  :infix "or"
+  "r" 'org-roam-node-insert
+  "s" 'org-roam-node-find
+  "g" 'org-roam-graph
+  "c" 'org-roam-capture
+  "b" 'org-roam-buffer-toggle)
+#+end_src
+*** org-ref
+| Type | Description                     |
+|------+---------------------------------|
+| TODO | Figure out how not to load Helm |
+
+[[https://github.com/jkitchin/org-ref][org-ref]] is a package which provides support for various citations & reference in Org mode.
+
+Useful to use BibTeX citations in LaTeX export.
+
+As of now, this package loads Helm on start. To avoid this, I have to exclude Helm from the =Package-requires= in the [[file:.emacs.d/straight/repos/org-ref/org-ref.el][org-ref.el]] file. I haven't found a way to do this without modifying the package source yet.
+#+begin_src emacs-lisp
+(use-package org-ref
+  :straight (:files (:defaults (:exclude "*helm*")))
+  :init
+  (setq org-ref-completion-library 'org-ref-ivy-cite)
+  (setq bibtex-dialect 'biblatex)
+  (setq org-ref-default-bibliography '("~/Documents/org-mode/bibliography.bib"))
+  (setq reftex-default-bibliography org-ref-default-bibliography)
+  (setq bibtex-completion-bibliography org-ref-default-bibliography)
+  :after (org)
+  :config
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c l l" 'org-ref-ivy-insert-cite-link
+   "C-c l r" 'org-ref-ivy-insert-ref-link
+   "C-c l h" 'org-ref-cite-hydra/body)
+  (general-define-key
+   :keymaps 'bibtex-mode-map
+   "M-RET" 'org-ref-bibtex-hydra/body)
+  (add-to-list 'orhc-candidate-formats
+               '("online" . "  |${=key=}| ${title} ${url}")))
+#+end_src
+
+*** org-roam-bibtex
+Integration with bibtex and org-ref.
+
+There are some problems with org roam v2, so I disabled it as of now. I will probably use another way of managing bibliography notes anyway.
+
+#+begin_src emacs-lisp
+(use-package org-roam-bibtex
+  :straight (:host github :repo "org-roam/org-roam-bibtex" :branch "org-roam-v2")
+  :after (org-roam org-ref)
+  :disabled
+  :config
+  (org-roam-bibtex-mode))
+#+end_src
+*** autocommit
+A script to autocommit files in my org directory.
+
+- If there are changed files and no files were changed over the last 60 minutes, commit.
+- If there is an unpushed commit, push
+- If either of these happened, make a notification
+
+#+begin_src bash :tangle ~/Documents/org-mode/commit.sh
+TIMEOUT_MIN=60
+
+export DISPLAY=:0
+cd $HOME/Documents/org-mode
+
+TIMESTAMP=$(date +%s)
+LAST_COMMIT_TIMESTAMP=$(git log -1 --format="%at" | xargs -I{} date -d @{} +%s)
+RECENTLY_CHANGED_NUM=$(find . -not -path '*/\.*' -mmin -$TIMEOUT_MIN | wc -l)
+CHANGED_NUM=$(git diff-index --name-only HEAD -- | wc -l)
+COMMITED="No"
+PUSHED="No"
+
+if [[ ($RECENTLY_CHANGED_NUM -eq 0 || $1 = "-F") && $CHANGED_NUM -gt 0 ]]; then
+    read -r -d '' MESSAGE << EOM
+Autocommit $(date -Iminutes)
+
+Hostname: $(hostname)
+EOM
+    git add *
+    git commit -m "$MESSAGE"
+    COMMITED="Yes"
+fi
+
+if [ $(git log origin/master..HEAD | wc -l) -gt 0 ]; then
+    git push && PUSHED="Yes" || PUSHED="No"
+fi
+
+if [[ $PUSHED = "Yes" || $COMMITED = "Yes" ]]; then
+    read -r -d '' NOTIFICATION << EOM
+Commited: $COMMITED
+Pushed: $PUSHED
+EOM
+    notify-send "Org mode sync" "$NOTIFICATION"
+fi
+#+end_src
+
+Cron job:
+#+begin_src scheme :tangle ~/.config/cron/org-mode.guile
+(job "0 * * * *" "~/Documents/org-mode/commit.sh")
 #+end_src
 ** UI
 *** OFF (OFF) Instant equations preview
@@ -2412,31 +2558,6 @@ References:
    org-make-toc-set
    org-make-toc-at-point)
   :straight t)
-#+end_src
-** org-ref
-| Type | Description                     |
-|------+---------------------------------|
-| TODO | Figure out how not to load Helm |
-
-[[https://github.com/jkitchin/org-ref][org-ref]] is a package which provides support for various citations & reference in Org mode.
-
-Useful to use BibTeX citations in LaTeX export.
-
-As of now, this package loads Helm on start. To avoid this, I have to exclude Helm from the =Package-requires= in the [[file:.emacs.d/straight/repos/org-ref/org-ref.el][org-ref.el]] file. I haven't found a way to do this without modifying the package source yet.
-#+begin_src emacs-lisp
-(use-package org-ref
-  :straight (:files (:defaults (:exclude "*helm*")))
-  :init
-  (setq org-ref-completion-library 'org-ref-ivy-cite)
-  (setq bibtex-dialect 'biblatex)
-  :after (org)
-  :config
-  (general-define-key
-   :keymaps 'org-mode-map
-   "C-c l l" 'org-ref-ivy-insert-cite-link
-   "C-c l r" 'org-ref-ivy-insert-ref-link)
-  (add-to-list 'orhc-candidate-formats
-               '("online" . "  |${=key=}| ${title} ${url}")))
 #+end_src
 ** System configuration
 Functions used across my literate config files.
@@ -3019,8 +3140,9 @@ References:
 
   ;; Scale preview for my DPI
   (setq-default preview-scale-function 1.4)
-  (assoc-delete-all "--" tex--prettify-symbols-alist)
-  (assoc-delete-all "---" tex--prettify-symbols-alist)
+  (when (boundp 'tex--prettify-symbols-alist)
+    (assoc-delete-all "--" tex--prettify-symbols-alist)
+    (assoc-delete-all "---" tex--prettify-symbols-alist))
 
   (add-hook 'LaTeX-mode-hook
             (lambda ()
@@ -3033,10 +3155,10 @@ References:
   ;; Do not run lsp within templated TeX files
   (add-hook 'LaTeX-mode-hook
             (lambda ()
-               (unless (string-match "\.hogan\.tex$" (buffer-name))
-                 (lsp))
-               (setq-local lsp-diagnostic-package :none)
-               (setq-local flycheck-checker 'tex-chktex)))
+              (unless (string-match "\.hogan\.tex$" (buffer-name))
+                (lsp))
+              (setq-local lsp-diagnostic-package :none)
+              (setq-local flycheck-checker 'tex-chktex)))
 
   (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'LaTeX-mode-hook #'smartparens-mode)
@@ -3930,12 +4052,69 @@ ZNC support. Seems to provide a few nice features for ZNC.
 ** Docker
 A package to manage docker containers from Emacs.
 
+The file =progidy-config.el= sets variable =my/docker-directories=, which allows to
+
 #+begin_src emacs-lisp
 (use-package docker
   :straight t
   :commands (docker)
   :init
   (my-leader-def "ao" 'docker))
+#+end_src
+
+By default, docker commands are ran in =default-directory=. Even worse, transient doesn't allow to set =default-directory= temporarily, via =let=. But often I don't want to change =default-directory= of a buffer (e.g. via Dired) to run a command from there.
+
+So I decided to implement a following advice:
+#+begin_src emacs-lisp
+(setq my/selected-docker-directory nil)
+
+(defun my/docker-override-dir (fun &rest args)
+  (let ((default-directory (or my/selected-docker-directory default-directory)))
+    (setq my/selected-docker-directory nil)
+    (apply fun args)))
+#+end_src
+
+It overrides =default-directory= for the first launch of a function. Now, add the advice to the required functions from =docker.el=:
+#+begin_src emacs-lisp
+(with-eval-after-load 'docker
+  (advice-add #'docker-compose-run-docker-compose-async :around #'my/docker-override-dir)
+  (advice-add #'docker-compose-run-docker-compose :around #'my/docker-override-dir)
+  (advice-add #'docker-run-docker-async :around #'my/docker-override-dir)
+  (advice-add #'docker-run-docker :around #'my/docker-override-dir))
+#+end_src
+
+And here is a function which prompts user for the directory. File =progidy-config.el= sets an alist of possible directories, look the section about [[*Progidy][progidy]].
+#+begin_src emacs-lisp
+(defun my/docker-from-dir ()
+  (interactive)
+  (when (not (boundp 'my/docker-directories))
+    (load (concat user-emacs-directory "prodigy-config")))
+  (let* ((directories
+          (mapcar
+           (lambda (el) (cons (format "%-30s %s" (car el) (cdr el)) (cdr el)))
+           my/docker-directories))
+         (selected-directory
+          (cdr (assoc (completing-read "Docker: " directories nil nil "^")
+                      directories))))
+    (setq my/selected-docker-directory selected-directory)
+    (docker)))
+
+(my-leader-def "aO" 'my/docker-from-dir)
+#+end_src
+** Progidy
+[[https://github.com/rejeep/prodigy.el][prodigy.el]] is a package to run various services. I've previously used tmuxp + tmux, but want to try this as well.
+
+The actual service definitions are in the =~/.emacs.d/prodigy.org=, which tangles to =prodigy-config.el=. Both files are encrypted in yadm, as they contain personal data.
+
+#+begin_src emacs-lisp
+(use-package prodigy
+  :straight t
+  :commands (prodigy)
+  :init
+  (my-leader-def "ap" 'prodigy)
+  :config
+  (when (not (boundp 'my/docker-directories))
+    (load (concat user-emacs-directory "prodigy-config"))))
 #+end_src
 ** Google Translate
 Emacs interface to Google Translate.
@@ -3982,7 +4161,7 @@ A simple pomodoro technique timer.
   :straight t
   :commands (pomidor)
   :init
-  (my-leader-def "ap" #'pomidor)
+  (my-leader-def "aP" #'pomidor)
   :config
   (setq pomidor-sound-tick nil)
   (setq pomidor-sound-tack nil)

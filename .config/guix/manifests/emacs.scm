@@ -4,4 +4,6 @@
    "ripgrep"
    "emacs-vterm"
    "python-isort"
-   "python-yapf"))
+   "python-yapf"
+   "graphviz"
+   "emacs-emacsql-sqlite3"))
