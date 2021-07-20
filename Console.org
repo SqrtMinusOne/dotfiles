@@ -414,16 +414,6 @@ fish_vi_key_bindings
 <<shell-aliases>>
 #+end_src
 
-Anaconda
-#+begin_src fish
-function init_conda
-    eval /home/pavel/.guix-extra-profiles/dev/dev/bin/conda "shell.fish" "hook" $argv | source
-end
-
-if test -n "$INIT_CONDA";
-    init_conda
-end
-#+end_src
 
 | Guix dependency |
 |-----------------|
@@ -439,6 +429,24 @@ end
 Suppress fish greeting
 #+begin_src fish
 set fish_greeting
+#+end_src
+** Anaconda
+First, a function to initialize anaconda.
+#+begin_src fish
+function init_conda
+    eval /home/pavel/.guix-extra-profiles/dev/dev/bin/conda "shell.fish" "hook" $argv | source
+end
+
+if test -n "$INIT_CONDA";
+    init_conda
+end
+#+end_src
+
+Then, check if launched from Emacs with environment activated.
+#+begin_src fish
+if test -n "$EMACS_CONDA_ENV";
+    conda activate $EMACS_CONDA_ENV
+end
 #+end_src
 * Nushell
 :PROPERTIES:

@@ -52,6 +52,8 @@
   (setq conda-env-home-directory (expand-file-name "~/.conda/"))
   (setq conda-env-subdirectory "envs")
   (setenv "INIT_CONDA" "true")
+  (advice-add 'conda-env-activate :after
+              (lambda (&rest _) (setenv "EMACS_CONDA_ENV" conda-env-current-name)))
   (unless (getenv "CONDA_DEFAULT_ENV")
     (conda-env-activate "general")))
 
