@@ -12,6 +12,7 @@
 (use-modules (gnu packages openbox))
 (use-modules (gnu services docker))
 (use-modules (gnu services cups))
+(use-modules (gnu services virtualization))
 (use-modules (srfi srfi-1))
 (use-modules (guix channels))
 (use-modules (guix inferior))
@@ -30,10 +31,17 @@
             (cups-configuration
              (web-interface? #t)))
    (service docker-service-type)
+   (service libvirt-service-type
+            (libvirt-configuration
+             (unix-sock-group "libvirt")
+             (tls-port "16555")))
+   (service virtlog-service-type)
    (modify-services %desktop-services
-                    (network-manager-service-type config =>
-                                                  (network-manager-configuration (inherit config)
-                                                                                 (vpn-plugins (list network-manager-openvpn)))))))
+                    (network-manager-service-type
+                     config =>
+                     (network-manager-configuration
+                      (inherit config)
+                      (vpn-plugins (list network-manager-openvpn)))))))
 
 
 (define %backlight-udev-rule
@@ -52,14 +60,14 @@
         (list (channel
                (name 'nonguix)
                (url "https://gitlab.com/nonguix/nonguix")
-               (commit "46c1d8bcca674d3a71cd077c52dde9552a89873d"))
+               (commit "d3c5eea0cbfe3e5bfbcf1fe15bc916fefacc624f"))
               (channel
                (name 'guix)
                (url "https://git.savannah.gnu.org/git/guix.git")
-               (commit "f463f376e91ccc1fe4ab68d5e822b5d71a1234f5"))))
+               (commit "cf88c967afbf15c58efb0ba37d6638f1be9a0481"))))
        (inferior
         (inferior-for-channels channels)))
-    (first (lookup-inferior-packages inferior "linux" "5.12.8"))))
+    (first (lookup-inferior-packages inferior "linux" "5.12.9"))))
  ;; (kernel linux)
  (initrd microcode-initrd)
  (firmware (list linux-firmware))
@@ -80,6 +88,7 @@
                    "tty"
                    "docker"
                    "scanner"
+                   "libvirt"
                    "lp")))
                %base-user-accounts))
  
