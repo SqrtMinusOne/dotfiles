@@ -137,6 +137,7 @@
   :config
   (evil-collection-init
    '(eww
+     proced
      dired
      debug
      guix
@@ -429,7 +430,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                counsel-imenu
                counsel-yank-pop
                counsel-recentf
-               counsel-buffer-or-recentf))
+               counsel-buffer-or-recentf
+               proced-filter-interactive
+               proced-sort-interactive))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 
@@ -803,6 +806,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     "l" 'dired-single-buffer
     "=" 'dired-narrow
     "-" 'dired-create-empty-file
+    "~" 'vterm
     (kbd "<left>") 'dired-single-up-directory
     (kbd "<right>") 'dired-single-buffer)
   (general-define-key
@@ -983,6 +987,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :commands (eshell)
   :config
   (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
+  (when my/slow-ssh
+    (add-hook 'eshell-mode-hook
+              (lambda ()
+                (setq-local company-idle-delay 1000))))
   (setq eshell-banner-message ""))
 
 (use-package aweshell
@@ -1083,15 +1091,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          org-preview-latex-process-alist))
   (if (not my/lowpower)
       (setq org-agenda-category-icon-alist
-            `(
-              ("inbox" ,(list (all-the-icons-faicon "inbox")) nil nil :ascent center)
+            `(("inbox" ,(list (all-the-icons-faicon "inbox")) nil nil :ascent center)
               ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
-              ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
               ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
-              ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
-              ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
+              ("personal" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
               ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
-              ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
+              ;; ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
+              ;; ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
+              ;; ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center)
+              ("." ,(list (all-the-icons-faicon "circle-o")) nil nil :ascent center))))
   (general-define-key
    :keymaps 'org-mode-map
    "C-c d" 'org-decrypt-entry
@@ -1133,17 +1141,24 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-nmap :keymaps 'org-mode-map
       "C-x C-l" 'my/org-link-copy)
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
-  (setq org-agenda-files '("inbox.org" "projects.org"))
+  (setq org-agenda-files '("inbox.org" "projects.org" "work.org"))
   ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
   (setq org-capture-templates
         `(("i" "Inbox" entry  (file "inbox.org")
            ,(concat "* TODO %?\n"
                     "/Entered on/ %U"))
-          ("e" "email" entry
-           (file "inbox.org")
+          ("e" "email" entry (file "inbox.org")
            ,(concat "* TODO %:from %:subject \n"
                     "/Entered on/ %U\n"
-                    "/Received on/ %:date-timestamp-inactive")))))
+                    "/Received on/ %:date-timestamp-inactive\n"
+                    "%a\n"))
+          ("f" "elfeed" entry (file "inbox.org")
+           ,(concat "* TODO %:elfeed-entry-title\n"
+                    "/Entered on/ %U\n"
+                    "%a\n"))))
+  (add-to-list 'org-global-properties
+               '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00"))
+  (setq org-log-done 'time))
 
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
@@ -1311,6 +1326,27 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       '(("projects.org" :maxlevel . 2)))
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
+
+(defun my/org-scheduled-get-time ()
+  (let ((scheduled (org-get-scheduled-time (point))))
+    (if scheduled
+        (format-time-string "%Y-%m-%d" scheduled)
+      "")))
+
+(setq org-agenda-custom-commands
+      `(("p" "My outline"
+         ((agenda "")
+          (todo "NEXT"
+                ((org-agenda-prefix-format "  %i %-12:c [%e] ")
+                 (org-agenda-overriding-header "Next tasks")))
+          (tags-todo "inbox"
+                     ((org-agenda-overriding-header "Inbox")
+                      (org-agenda-prefix-format " %i %-12:c")
+                      (org-agenda-hide-tags-regexp ".")))
+          (tags-todo "+waitlist+SCHEDULED<=\"<+14>\""
+                     ((org-agenda-overriding-header "Waitlist")
+                      (org-agenda-hide-tags-regexp "waitlist")
+                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
 
 (use-package org-journal
   :straight t
@@ -2342,7 +2378,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :if (not my/slow-ssh)
   :hook (python-mode . (lambda ()
                          (require 'lsp-pyright)
-                         (setq-local lsp-pyright-python-executable (my/get-pipenv-python))
+                         (setq-local lsp-pyright-python-executable-cmd (my/get-pipenv-python))
                          (lsp))))
 
 (add-hook 'python-mode-hook #'smartparens-mode)
@@ -2593,7 +2629,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
   (evil-collection-define-key 'normal 'elfeed-search-mode-map
     "o" #'my/elfeed-search-filter-source
-    "c" #'elfeed-search-clear-filter)
+    "c" #'elfeed-search-clear-filter
+    "gl" (lambda () (interactive) (elfeed-search-set-filter "+later")))
   (evil-collection-define-key 'normal 'elfeed-show-mode-map
     "ge" #'my/elfeed-show-visit-eww))
 
@@ -2625,6 +2662,40 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (when link
       (eww link))))
 
+(setq my/youtube-dl-quality-list
+      '("bestvideo[height<=720]+bestaudio/best[height<=720]"
+        "bestvideo[height<=480]+bestaudio/best[height<=480]"
+        "bestvideo[height<=1080]+bestaudio/best[height<=1080]"))
+
+(setq my/youtube-dl-quality-default "bestvideo[height<=720]+bestaudio/best[height<=720]")
+
+(defun my/open-youtube-video (link)
+  "Open Youtube URL with mpv"
+  (interactive "MURL: ")
+  (let ((quality (completing-read "Quality: " my/youtube-dl-quality-list nil t))
+        (watch-id (cadr
+                   (assoc "watch?v"
+                          (url-parse-query-string
+                           (substring
+                            (url-filename
+                             (url-generic-parse-url link))
+                            1))))))
+    (if (not watch-id)
+        (message "Can't find youtube link")
+      (let ((yt-link (concat "https://www.youtube.com/watch?v=" watch-id))
+            (watch-name (concat "mpv-" watch-id)))
+        (start-process watch-name watch-name "mpv" yt-link
+                       (format "--ytdl-format=%s" quality))))))
+
+(defun my/elfeed-open-mpv ()
+  (interactive)
+  "Open MPV for the current entry"
+  (my/open-youtube-video (elfeed-entry-link elfeed-show-entry)))
+
+(with-eval-after-load 'elfeed
+  (evil-collection-define-key 'normal 'elfeed-show-mode-map
+    "gm" #'my/elfeed-open-mpv))
+
 (use-package tldr
   :straight t
   :commands (tldr)
@@ -2642,6 +2713,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (shell-command-to-string (format "mv %s %s" "/tmp/tldr/tldr-main" tldr-directory-path))))
 
 (my-leader-def "hT" 'tldr)
+
+(setq Man-width-max 180)
 (my-leader-def "hM" 'man)
 
 (my-leader-def "ai" #'erc-tls)
@@ -2704,7 +2777,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (my-leader-def "ap" 'prodigy)
   :config
   (when (not (boundp 'my/docker-directories))
-    (load (concat user-emacs-directory "prodigy-config"))))
+    (load (concat user-emacs-directory "prodigy-config")))
+  (evil-collection-define-key 'normal 'prodigy-view-mode-map
+   (kbd "C-h") 'evil-window-left
+   (kbd "C-l") 'evil-window-right
+   (kbd "C-k") 'evil-window-up
+   (kbd "C-j") 'evil-window-down))
 
 (use-package google-translate
   :straight t
@@ -2761,6 +2839,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  :keymaps 'eww-mode-map
  "+" 'text-scale-increase
  "-" 'text-scale-decrease)
+
+(my-leader-def "ah" 'proced)
+(add-hook 'proced-mode-hook (lambda ()
+                              (visual-line-mode -1)
+                              (setq-local truncate-lines t)))
+
+(use-package screenshot
+  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
+  :commands (screenshot)
+  :init
+  (my-leader-def "S" 'screenshot))
 
 (use-package snow
   :straight (:repo "alphapapa/snow.el" :host github)

@@ -116,8 +116,10 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#wrap-source-code-output][Wrap source code output]]
   - [[#productivity--knowledge-management][Productivity & Knowledge management]]
     - [[#capture-templates][Capture templates]]
+    - [[#custom-agendas][Custom agendas]]
     - [[#org-journal][Org Journal]]
     - [[#org-roam][Org Roam]]
+      - [[#org-roam-protocol][org-roam-protocol]]
     - [[#org-ref][org-ref]]
     - [[#org-roam-bibtex][org-roam-bibtex]]
     - [[#autocommit][autocommit]]
@@ -220,6 +222,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#notmuch][Notmuch]]
   - [[#elfeed][Elfeed]]
     - [[#some-additions][Some additions]]
+    - [[#youtube][YouTube]]
   - [[#man--tldr][man & tldr]]
   - [[#erc][ERC]]
   - [[#docker][Docker]]
@@ -227,6 +230,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#google-translate][Google Translate]]
   - [[#pomidor][Pomidor]]
   - [[#eww][EWW]]
+  - [[#proced][proced]]
   - [[#snow][Snow]]
   - [[#zone][Zone]]
   - [[#discord-integration][Discord integration]]
@@ -327,6 +331,8 @@ Set number of jobs to 1 on low-power machines
 [[https://www.anaconda.com/][Anaconda]] is a free package and environment manager. I currently use it to manage multiple versions of Python and Node.js
 
 The following code uses the conda package to activate the base environment on startup if Emacs is launched outside the environment.
+
+Also, there are some strange things happening if vterm is launched with conda activated from Emacs, so I advice =conda-env-activate= to set an auxillary environment variable.
 
 References:
 - [[https://docs.anaconda.com/][Anaconda docs]]
@@ -488,6 +494,7 @@ I don't enable the entire package, just the modes I need.
   :config
   (evil-collection-init
    '(eww
+     proced
      dired
      debug
      guix
@@ -884,7 +891,9 @@ References:
                counsel-imenu
                counsel-yank-pop
                counsel-recentf
-               counsel-buffer-or-recentf))
+               counsel-buffer-or-recentf
+               proced-filter-interactive
+               proced-sort-interactive))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 #+end_src
@@ -1499,6 +1508,7 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
     "l" 'dired-single-buffer
     "=" 'dired-narrow
     "-" 'dired-create-empty-file
+    "~" 'vterm
     (kbd "<left>") 'dired-single-up-directory
     (kbd "<right>") 'dired-single-buffer)
   (general-define-key
@@ -1760,6 +1770,10 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
   :commands (eshell)
   :config
   (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
+  (when my/slow-ssh
+    (add-hook 'eshell-mode-hook
+              (lambda ()
+                (setq-local company-idle-delay 1000))))
   (setq eshell-banner-message ""))
 
 (use-package aweshell
@@ -2112,7 +2126,7 @@ Some inspiration:
 Used files
 #+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
 (setq org-directory (expand-file-name "~/Documents/org-mode"))
-(setq org-agenda-files '("inbox.org" "projects.org"))
+(setq org-agenda-files '("inbox.org" "projects.org" "work.org"))
 ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
 #+end_src
 
@@ -2130,7 +2144,7 @@ Refile targets
 (setq org-outline-path-complete-in-steps nil)
 #+end_src
 
-*** Capture templates
+*** Capture templates & various settings
 Settings for Org capture mode. The goal here is to have a non-disruptive process to capture various ideas.
 
 #+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
@@ -2138,13 +2152,50 @@ Settings for Org capture mode. The goal here is to have a non-disruptive process
       `(("i" "Inbox" entry  (file "inbox.org")
          ,(concat "* TODO %?\n"
                   "/Entered on/ %U"))
-        ("e" "email" entry
-         (file "inbox.org")
+        ("e" "email" entry (file "inbox.org")
          ,(concat "* TODO %:from %:subject \n"
                   "/Entered on/ %U\n"
-                  "/Received on/ %:date-timestamp-inactive"))))
+                  "/Received on/ %:date-timestamp-inactive\n"
+                  "%a\n"))
+        ("f" "elfeed" entry (file "inbox.org")
+         ,(concat "* TODO %:elfeed-entry-title\n"
+                  "/Entered on/ %U\n"
+                  "%a\n"))))
 #+end_src
 
+Effort estimation
+#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+(add-to-list 'org-global-properties
+             '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00"))
+#+end_src
+
+Log DONE time
+#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+(setq org-log-done 'time)
+#+end_src
+*** Custom agendas
+#+begin_src emacs-lisp
+(defun my/org-scheduled-get-time ()
+  (let ((scheduled (org-get-scheduled-time (point))))
+    (if scheduled
+        (format-time-string "%Y-%m-%d" scheduled)
+      "")))
+
+(setq org-agenda-custom-commands
+      `(("p" "My outline"
+         ((agenda "")
+          (todo "NEXT"
+                ((org-agenda-prefix-format "  %i %-12:c [%e] ")
+                 (org-agenda-overriding-header "Next tasks")))
+          (tags-todo "inbox"
+                     ((org-agenda-overriding-header "Inbox")
+                      (org-agenda-prefix-format " %i %-12:c")
+                      (org-agenda-hide-tags-regexp ".")))
+          (tags-todo "+waitlist+SCHEDULED<=\"<+14>\""
+                     ((org-agenda-overriding-header "Waitlist")
+                      (org-agenda-hide-tags-regexp "waitlist")
+                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
+#+end_src
 *** Org Journal
 [[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining journal in org mode. I want to have its entries separate from my potential base.
 
@@ -2273,7 +2324,7 @@ There are some problems with org roam v2, so I disabled it as of now. I will pro
 
 #+begin_src emacs-lisp
 (use-package org-roam-bibtex
-  :straight (:host github :repo "org-roam/org-roam-bibtex" :branch "org-roam-v2")
+  :straight (:host github :repo "org-roam/org-roam-bibtex")
   :after (org-roam org-ref)
   :disabled
   :config
@@ -2399,18 +2450,20 @@ Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HE
   :hook (org-mode . org-superstar-mode))
 #+end_src
 *** Org Agenda Icons
+Categories are broad labels to group agenda items.
+
 #+begin_src emacs-lisp :noweb-ref org-ui-setup :tangle no
 (if (not my/lowpower)
     (setq org-agenda-category-icon-alist
-          `(
-            ("inbox" ,(list (all-the-icons-faicon "inbox")) nil nil :ascent center)
+          `(("inbox" ,(list (all-the-icons-faicon "inbox")) nil nil :ascent center)
             ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
-            ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
             ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
-            ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
-            ("music" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
+            ("personal" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
             ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
-            ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center))))
+            ;; ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
+            ;; ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
+            ;; ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center)
+            ("." ,(list (all-the-icons-faicon "circle-o")) nil nil :ascent center))))
 #+end_src
 ** Export
 *** Hugo
@@ -2662,6 +2715,7 @@ Now, join dependencies list to make it compatible with Scheme:
    (my/extract-guix-dependencies category)
    "\n"))
 #+end_src
+
 *** Noweb evaluations
 Turn off eval confirmations for configuration files.
 
@@ -3596,7 +3650,7 @@ For some reason it doesn't use pipenv python executable, so here is a small work
   :if (not my/slow-ssh)
   :hook (python-mode . (lambda ()
                          (require 'lsp-pyright)
-                         (setq-local lsp-pyright-python-executable (my/get-pipenv-python))
+                         (setq-local lsp-pyright-python-executable-cmd (my/get-pipenv-python))
                          (lsp))))
 
 (add-hook 'python-mode-hook #'smartparens-mode)
@@ -3980,7 +4034,8 @@ Using my own fork until the modifications are merged into master.
    `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
   (evil-collection-define-key 'normal 'elfeed-search-mode-map
     "o" #'my/elfeed-search-filter-source
-    "c" #'elfeed-search-clear-filter)
+    "c" #'elfeed-search-clear-filter
+    "gl" (lambda () (interactive) (elfeed-search-set-filter "+later")))
   (evil-collection-define-key 'normal 'elfeed-show-mode-map
     "ge" #'my/elfeed-show-visit-eww))
 #+end_src
@@ -4022,27 +4077,47 @@ Open a URL with eww.
     (when link
       (eww link))))
 #+end_src
-
+*** YouTube
 | Guix dependency |
 |-----------------|
 | mpv             |
 | youtube-dl      |
 
-Open YouTube video with mpv
-#+begin_src emacs-lisp
-(setq my/elfeed-youtube-quality "bestvideo[height<=720]+bestaudio/best[height<=720]")
+A function to open YouTube link with mpv
 
+#+begin_src emacs-lisp
+(setq my/youtube-dl-quality-list
+      '("bestvideo[height<=720]+bestaudio/best[height<=720]"
+        "bestvideo[height<=480]+bestaudio/best[height<=480]"
+        "bestvideo[height<=1080]+bestaudio/best[height<=1080]"))
+
+(setq my/youtube-dl-quality-default "bestvideo[height<=720]+bestaudio/best[height<=720]")
+
+(defun my/open-youtube-video (link)
+  "Open Youtube URL with mpv"
+  (interactive "MURL: ")
+  (let ((quality (completing-read "Quality: " my/youtube-dl-quality-list nil t))
+        (watch-id (cadr
+                   (assoc "watch?v"
+                          (url-parse-query-string
+                           (substring
+                            (url-filename
+                             (url-generic-parse-url link))
+                            1))))))
+    (if (not watch-id)
+        (message "Can't find youtube link")
+      (let ((yt-link (concat "https://www.youtube.com/watch?v=" watch-id))
+            (watch-name (concat "mpv-" watch-id)))
+        (start-process watch-name watch-name "mpv" yt-link
+                       (format "--ytdl-format=%s" quality))))))
+#+end_src
+
+And a function to open YouTube link from elfeed
+#+begin_src emacs-lisp
 (defun my/elfeed-open-mpv ()
   (interactive)
   "Open MPV for the current entry"
-  (let* ((link (elfeed-entry-link elfeed-show-entry))
-         (link-start-watch (string-match (rx "watch?v=" (* alnum) eos) link)))
-    (if (not link-start-watch)
-        (message "Can't find youtube link")
-      (let ((yt-link (concat "https://www.youtube.com/" (substring link link-start-watch)))
-            (watch-name (concat "mpv-" (substring link (+ link-start-watch 8)))))
-        (start-process watch-name watch-name "mpv" yt-link
-                       (format "--ytdl-format=%s" my/elfeed-youtube-quality))))))
+  (my/open-youtube-video (elfeed-entry-link elfeed-show-entry)))
 
 (with-eval-after-load 'elfeed
   (evil-collection-define-key 'normal 'elfeed-show-mode-map
@@ -4174,7 +4249,12 @@ The actual service definitions are in the =~/.emacs.d/prodigy.org=, which tangle
   (my-leader-def "ap" 'prodigy)
   :config
   (when (not (boundp 'my/docker-directories))
-    (load (concat user-emacs-directory "prodigy-config"))))
+    (load (concat user-emacs-directory "prodigy-config")))
+  (evil-collection-define-key 'normal 'prodigy-view-mode-map
+   (kbd "C-h") 'evil-window-left
+   (kbd "C-l") 'evil-window-right
+   (kbd "C-k") 'evil-window-up
+   (kbd "C-j") 'evil-window-down))
 #+end_src
 ** Google Translate
 Emacs interface to Google Translate.
@@ -4252,7 +4332,29 @@ I use it occasionally to open links in elfeed.
  "+" 'text-scale-increase
  "-" 'text-scale-decrease)
 #+end_src
+** proced
+proced is a Emacs built-it process viewer, like top.
 
+#+begin_src emacs-lisp
+(my-leader-def "ah" 'proced)
+(add-hook 'proced-mode-hook (lambda ()
+                              (visual-line-mode -1)
+                              (setq-local truncate-lines t)))
+#+end_src
+** screenshot.el
+Tecosaur's plugin to make beautiful code screenshots.
+
+| Guix dependency |
+|-----------------|
+| imagemagick     |
+
+#+begin_src emacs-lisp
+(use-package screenshot
+  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
+  :commands (screenshot)
+  :init
+  (my-leader-def "S" 'screenshot))
+#+end_src
 ** Snow
 #+begin_src emacs-lisp
 (use-package snow
