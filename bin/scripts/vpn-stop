@@ -3,6 +3,6 @@
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
 echo "Connection: $CONN"
 
-nmcli con modify "$CONN" ipv6.method auto
+pkexec nmcli con modify "$CONN" ipv6.method auto
 nmcli connection up "$CONN"
 # vpn-stop:1 ends here

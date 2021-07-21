@@ -567,18 +567,21 @@ I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config (=
 As of now, CyberGhost doesn't provide ipv6, so we have to disable it.
 
 #+begin_src bash :tangle ~/bin/scripts/vpn-start
+export DISPLAY=:0
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
 
 if [ -z "$CONN" ]; then
     echo "No connection!"
+    notify-send "VPN" "No connection for VPN to run"
     exit
 fi
 
 echo "Connection: $CONN"
+notify-send "VPN" "Initializing for connection: $CONN"
 
-sudo nmcli con modify "$CONN" ipv6.method ignore
+pkexec nmcli con modify "$CONN" ipv6.method ignore
 nmcli connection up "$CONN"
-sudo openvpn --config ~/.vpn/openvpn.ovpn
+pkexec openvpn --config ~/.vpn/openvpn.ovpn
 #+end_src
 
 *** vpn-stop
@@ -588,7 +591,7 @@ Also a script to reverse the changes.
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
 echo "Connection: $CONN"
 
-sudo nmcli con modify "$CONN" ipv6.method auto
+pkexec nmcli con modify "$CONN" ipv6.method auto
 nmcli connection up "$CONN"
 #+end_src
 ** flatpak

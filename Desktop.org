@@ -2325,6 +2325,28 @@ References:
     #:one-shot? #t
     #:start (make-system-constructor "ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0")))
 #+end_src
+** Polkit Authentication agent
+Launch an authentication agent. Necessary for stuff like =pkexec=. I suspect I'm not doing that the intended way, but it seems to work.
+
+#+begin_src scheme
+(define polkit-gnome
+  (make <service>
+    #:provides '(polkit-gnome)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("/home/pavel/.guix-extra-profiles/desktop/desktop/libexec/polkit-gnome-authentication-agent-1"))
+    #:stop (make-kill-destructor)))
+#+end_src
+** VPN
+Run my [[file:Guix.org::*VPN][OpenVPN setup]]. Not lauching this automatially, as it requires an active connection.
+
+#+begin_src scheme
+(define vpn
+  (make <service>
+    #:provides '(vpn)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/vpn-start"))
+    #:stop (make-kill-destructor)))
+#+end_src
 ** Shepherd config
 Register services
 #+begin_src scheme
@@ -2337,7 +2359,9 @@ Register services
  aw-watcher-window
  pulseeffects
  xsettingsd
- discord-rich-presence)
+ discord-rich-presence
+ polkit-gnome
+ vpn)
 #+end_src
 
 Daemonize shepherd
@@ -2347,7 +2371,7 @@ Daemonize shepherd
 
 Run services
 #+begin_src scheme
-(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence))
+(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome))
 #+end_src
 ** Sync
 | Guix dependency |
@@ -2374,6 +2398,7 @@ Other desktop programs I use are listed below.
 | gnome-font-viewer      | view fonts                                |
 | qbittorrent            | torrent client                            |
 | fontconfig             |                                           |
+| polkit-gnome           | Polkit authentication agent               |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no

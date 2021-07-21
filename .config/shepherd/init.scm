@@ -63,6 +63,20 @@
     #:one-shot? #t
     #:start (make-system-constructor "ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0")))
 
+(define polkit-gnome
+  (make <service>
+    #:provides '(polkit-gnome)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("/home/pavel/.guix-extra-profiles/desktop/desktop/libexec/polkit-gnome-authentication-agent-1"))
+    #:stop (make-kill-destructor)))
+
+(define vpn
+  (make <service>
+    #:provides '(vpn)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/vpn-start"))
+    #:stop (make-kill-destructor)))
+
 (register-services
  mpd
  mpd-watcher
@@ -72,8 +86,10 @@
  aw-watcher-window
  pulseeffects
  xsettingsd
- discord-rich-presence)
+ discord-rich-presence
+ polkit-gnome
+ vpn)
 
 (action 'shepherd 'daemonize)
 
-(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence))
+(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome))

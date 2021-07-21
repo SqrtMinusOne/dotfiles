@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "polkit-gnome"
    "fontconfig"
    "qbittorrent"
    "gnome-font-viewer"
