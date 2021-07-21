@@ -2194,7 +2194,10 @@ Log DONE time
           (tags-todo "+waitlist+SCHEDULED<=\"<+14>\""
                      ((org-agenda-overriding-header "Waitlist")
                       (org-agenda-hide-tags-regexp "waitlist")
-                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
+                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))
+        ("tp" "Personal tasks"
+         ((tags-todo "personal"
+                     ((org-agenda-prefix-format "  %i %-12:c [%e] ")))))))
 #+end_src
 *** Org Journal
 [[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining journal in org mode. I want to have its entries separate from my potential base.
