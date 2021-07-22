@@ -138,6 +138,8 @@
   (evil-collection-init
    '(eww
      proced
+     emms
+     calendar
      dired
      debug
      guix
@@ -2733,6 +2735,152 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (evil-collection-define-key 'normal 'elfeed-show-mode-map
     "gm" #'my/elfeed-open-mpv))
 
+(use-package emms
+  :straight t
+  :commands (emms-smart-browse emms-browser)
+  :init
+  (my-leader-def
+    :infix "as"
+    "s" 'emms-smart-browse
+    "b" 'emms-browser
+    "p" 'emms-pause
+    "q" 'emms-stop
+    "h" 'emms-previous
+    "l" 'emms-next
+    "u" 'emms-player-mpd-connect)
+  :config
+  (require 'emms-setup)
+  (require 'emms-player-mpd)
+  (emms-all)
+  ;; MPD setup
+  (setq emms-source-file-default-directory (expand-file-name "~/Music/"))
+  (add-to-list 'emms-info-functions 'emms-info-mpd)
+  (add-to-list 'emms-player-list 'emms-player-mpd)
+  (setq emms-player-mpd-server-name "localhost")
+  (setq emms-player-mpd-server-port "6600")
+  (setq emms-player-mpd-music-directory "~/Music")
+  (emms-player-mpd-connect)
+  ;; Clear MPD playlist on clearing EMMS playlist
+  ;; IDK if this is fine for MPD playlists, I don't use them anyhow
+  (add-hook 'emms-playlist-cleared-hook 'emms-player-mpd-clear)
+  (defun emms-info-mpd-process (track info)
+    (dolist (data info)
+      (let ((name (car data))
+            (value (cdr data)))
+        (setq name (cond ((string= name "artist") 'info-artist)
+                         ((string= name "albumartist") 'info-albumartist)
+                         ((string= name "composer") 'info-composer)
+                         ((string= name "performer") 'info-performer)
+                         ((string= name "title") 'info-title)
+                         ((string= name "album") 'info-album)
+                         ((string= name "track") 'info-tracknumber)
+                         ((string= name "disc") 'info-discnumber)
+                         ((string= name "date") 'info-year)
+                         ((string= name "genre") 'info-genre)
+                         ((string= name "time")
+                          (setq value (string-to-number value))
+                          'info-playing-time)
+                         (t nil)))
+        (when name
+          (emms-track-set track name value)))))
+  (defun emms-player-mpd-get-alists (info)
+    "Turn the given parsed INFO from MusicPD into an list of alists.
+  
+  The list will be in reverse order."
+    (when (and info
+               (null (car info))          ; no error has occurred
+               (cdr info))                ; data exists
+      (let ((alists nil)
+            (alist nil)
+            cell)
+        (dolist (line (cdr info))
+          (when (setq cell (emms-player-mpd-parse-line line))
+            (if (member (car cell) '("file" "directory" "playlist"))
+                (setq alists (cons alist alists)
+                      alist (list cell))
+              (setq alist (cons cell alist)))))
+        (when alist
+          (setq alists (cons alist alists)))
+        alists))))
+
+(with-eval-after-load 'emms-browser
+  (evil-collection-define-key 'normal 'emms-browser-mode-map
+    "q" 'quit-window))
+
+(with-eval-after-load 'emms
+  (evil-collection-define-key 'normal 'emms-playlist-mode-map
+    "q" 'quit-window))
+
+(defun my/toggle-shr-use-fonts ()
+  "Toggle the shr-use-fonts variable in buffer"
+  (interactive)
+  (setq-local shr-use-fonts (not shr-use-fonts)))
+
+(my-leader-def "aw" 'eww)
+
+(general-define-key
+ :keymaps 'eww-mode-map
+ "+" 'text-scale-increase
+ "-" 'text-scale-decrease)
+
+(my-leader-def "ai" #'erc-tls)
+
+(use-package erc-hl-nicks
+  :hook (erc-mode . erc-hl-nicks-mode)
+  :straight t)
+
+(setq erc-server "sqrtminusone.xyz")
+(setq erc-port 1984)
+(setq erc-nick "sqrtminusone")
+(setq erc-user-full-name "Pavel Korytov")
+(setq erc-track-shorten-start 8)
+
+(setq erc-kill-buffer-on-part t)
+
+(use-package znc
+  :straight t
+  :after (erc))
+
+(use-package google-translate
+  :straight t
+  :functions (my-google-translate-at-point google-translate--search-tkk)
+  :custom
+  (google-translate-backend-method 'curl)
+  :config
+  (require 'facemenu)
+  (defun google-translate--search-tkk ()
+    "Search TKK."
+    (list 430675 2721866130))
+  (defun my-google-translate-at-point()
+    "reverse translate if prefix"
+    (interactive)
+    (if current-prefix-arg
+        (google-translate-at-point)
+      (google-translate-at-point-reverse)))
+  (setq google-translate-translation-directions-alist
+        '(("en" . "ru")
+          ("ru" . "en"))))
+
+(my-leader-def
+  "atp" 'google-translate-at-point
+  "atP" 'google-translate-at-point-reverse
+  "atq" 'google-translate-query-translate
+  "atQ" 'google-translate-query-translate-reverse
+  "att" 'google-translate-smooth-translate)
+
+(use-package elcord
+  :straight t
+  :if (and (or
+            (string= (system-name) "indigo")
+            (string= (system-name) "eminence"))
+           (not my/slow-ssh))
+  :config
+  (elcord-mode)
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
+
 (use-package tldr
   :straight t
   :commands (tldr)
@@ -2754,23 +2902,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq Man-width-max 180)
 (my-leader-def "hM" 'man)
 
-(my-leader-def "ai" #'erc-tls)
-
-(use-package erc-hl-nicks
-  :hook (erc-mode . erc-hl-nicks-mode)
-  :straight t)
-
-(setq erc-server "sqrtminusone.xyz")
-(setq erc-port 1984)
-(setq erc-nick "sqrtminusone")
-(setq erc-user-full-name "Pavel Korytov")
-(setq erc-track-shorten-start 8)
-
-(setq erc-kill-buffer-on-part t)
-
-(use-package znc
-  :straight t
-  :after (erc))
+(evil-collection-define-key 'normal 'Info-mode-map
+  (kbd "RET") 'Info-follow-nearest-node)
 
 (use-package docker
   :straight t
@@ -2821,32 +2954,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    (kbd "C-k") 'evil-window-up
    (kbd "C-j") 'evil-window-down))
 
-(use-package google-translate
-  :straight t
-  :functions (my-google-translate-at-point google-translate--search-tkk)
-  :custom
-  (google-translate-backend-method 'curl)
-  :config
-  (require 'facemenu)
-  (defun google-translate--search-tkk ()
-    "Search TKK."
-    (list 430675 2721866130))
-  (defun my-google-translate-at-point()
-    "reverse translate if prefix"
-    (interactive)
-    (if current-prefix-arg
-        (google-translate-at-point)
-      (google-translate-at-point-reverse)))
-  (setq google-translate-translation-directions-alist
-        '(("en" . "ru")
-          ("ru" . "en"))))
+(my-leader-def "ah" 'proced)
+(add-hook 'proced-mode-hook (lambda ()
+                              (visual-line-mode -1)
+                              (setq-local truncate-lines t)))
 
-(my-leader-def
-  "atp" 'google-translate-at-point
-  "atP" 'google-translate-at-point-reverse
-  "atq" 'google-translate-query-translate
-  "atQ" 'google-translate-query-translate-reverse
-  "att" 'google-translate-smooth-translate)
+(use-package guix
+  :straight t
+  :commands (guix)
+  :init
+  (my-leader-def "ag" 'guix))
 
 (use-package pomidor
   :straight t
@@ -2865,22 +2982,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (kbd "RET") #'pomidor-stop
     (kbd "M-RET") #'pomidor-break))
 
-(defun my/toggle-shr-use-fonts ()
-  "Toggle the shr-use-fonts variable in buffer"
-  (interactive)
-  (setq-local shr-use-fonts (not shr-use-fonts)))
+(setq calendar-date-style 'iso) ;; YYYY/mm/dd
+(setq calendar-week-start-day 1)
+(setq calendar-time-display-form '(24-hours ":" minutes))
 
-(my-leader-def "aw" 'eww)
-
-(general-define-key
- :keymaps 'eww-mode-map
- "+" 'text-scale-increase
- "-" 'text-scale-decrease)
-
-(my-leader-def "ah" 'proced)
-(add-hook 'proced-mode-hook (lambda ()
-                              (visual-line-mode -1)
-                              (setq-local truncate-lines t)))
+(setq calendar-latitude 59.9375)
+(setq calendar-longitude 30.308611)
 
 (use-package screenshot
   :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
@@ -2906,22 +3013,3 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             :action (lambda (elem)
                       (setq zone-programs (vector (cdr elem)))
                       (zone))))
-
-(use-package elcord
-  :straight t
-  :if (and (or
-            (string= (system-name) "indigo")
-            (string= (system-name) "eminence"))
-           (not my/slow-ssh))
-  :config
-  (elcord-mode)
-  (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
-  (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
-
-(use-package guix
-  :straight t
-  :commands (guix)
-  :init
-  (my-leader-def "ag" 'guix))

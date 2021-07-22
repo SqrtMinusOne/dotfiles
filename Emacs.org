@@ -221,11 +221,14 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#open-emacs-config][Open Emacs config]]
     - [[#open-magit-for-yadm][Open Magit for yadm]]
     - [[#open-a-dotfile][Open a dotfile]]
-  - [[#internet][Internet]]
+  - [[#internet--multimedia][Internet & Multimedia]]
     - [[#notmuch][Notmuch]]
     - [[#elfeed][Elfeed]]
       - [[#some-additions][Some additions]]
       - [[#youtube][YouTube]]
+    - [[#emms][EMMS]]
+      - [[#some-keybindings][Some keybindings]]
+      - [[#fixes][Fixes]]
     - [[#eww][EWW]]
     - [[#erc][ERC]]
     - [[#google-translate][Google Translate]]
@@ -503,6 +506,7 @@ I don't enable the entire package, just the modes I need.
   (evil-collection-init
    '(eww
      proced
+     emms
      calendar
      dired
      debug
@@ -4059,7 +4063,7 @@ Open a file managed by yadm.
 (general-define-key "C-c f" 'my/open-yadm-file)
 (my-leader-def "cf" 'my/open-yadm-file)
 #+end_src
-** Internet
+** Internet & Multimedia
 *** Notmuch
 My notmuch config now resides in [[file:Mail.org][Mail.org]].
 
@@ -4177,6 +4181,124 @@ And a function to open YouTube link from elfeed
 (with-eval-after-load 'elfeed
   (evil-collection-define-key 'normal 'elfeed-show-mode-map
     "gm" #'my/elfeed-open-mpv))
+#+end_src
+*** EMMS
+EMMS is the Emacs Multi-Media System. I am currently trying to control MPD from Emacs with its help.
+
+References:
+- [[https://www.gnu.org/software/emms/manual/][EMMS Manual]]
+- [[https://www.youtube.com/watch?v=xTVN8UDScqk][Uncle Dave's video]]
+
+#+begin_src emacs-lisp :noweb yes
+(use-package emms
+  :straight t
+  :commands (emms-smart-browse emms-browser)
+  :init
+  (my-leader-def
+    :infix "as"
+    "s" 'emms-smart-browse
+    "b" 'emms-browser
+    "p" 'emms-pause
+    "q" 'emms-stop
+    "h" 'emms-previous
+    "l" 'emms-next
+    "u" 'emms-player-mpd-connect)
+  :config
+  (require 'emms-setup)
+  (require 'emms-player-mpd)
+  (emms-all)
+  ;; MPD setup
+  (setq emms-source-file-default-directory (expand-file-name "~/Music/"))
+  (add-to-list 'emms-info-functions 'emms-info-mpd)
+  (add-to-list 'emms-player-list 'emms-player-mpd)
+  (setq emms-player-mpd-server-name "localhost")
+  (setq emms-player-mpd-server-port "6600")
+  (setq emms-player-mpd-music-directory "~/Music")
+  (emms-player-mpd-connect)
+  ;; Clear MPD playlist on clearing EMMS playlist
+  ;; IDK if this is fine for MPD playlists, I don't use them anyhow
+  (add-hook 'emms-playlist-cleared-hook 'emms-player-mpd-clear)
+  <<emms-fixes>>)
+#+end_src
+**** Some keybindings
+#+begin_src emacs-lisp
+(with-eval-after-load 'emms-browser
+  (evil-collection-define-key 'normal 'emms-browser-mode-map
+    "q" 'quit-window))
+
+(with-eval-after-load 'emms
+  (evil-collection-define-key 'normal 'emms-playlist-mode-map
+    "q" 'quit-window))
+#+end_src
+**** Fixes
+Some fixes until I submit a patch.
+
+For some reason EMMS doesn't fetch =albumartist= from MPD. Overriding this function fixes that.
+
+#+begin_src emacs-lisp :tangle no :noweb-ref emms-fixes
+(defun emms-info-mpd-process (track info)
+  (dolist (data info)
+    (let ((name (car data))
+          (value (cdr data)))
+      (setq name (cond ((string= name "artist") 'info-artist)
+                       ((string= name "albumartist") 'info-albumartist)
+                       ((string= name "composer") 'info-composer)
+                       ((string= name "performer") 'info-performer)
+                       ((string= name "title") 'info-title)
+                       ((string= name "album") 'info-album)
+                       ((string= name "track") 'info-tracknumber)
+                       ((string= name "disc") 'info-discnumber)
+                       ((string= name "date") 'info-year)
+                       ((string= name "genre") 'info-genre)
+                       ((string= name "time")
+                        (setq value (string-to-number value))
+                        'info-playing-time)
+                       (t nil)))
+      (when name
+        (emms-track-set track name value)))))
+#+end_src
+
+Also, =emms-player-mpd-get-alists= has an interesting bug. This function parses the response to =listallinfo=, which looks something like this:
+#+begin_example
+tag1: value1
+tag2: value2
+...
+tag1: value1'
+tag2: value2'
+#+end_example
+
+This structure has to be converted to list of alists, which looks like:
+#+begin_example
+(("tag1" . "value1"
+  "tag2" . "value2")
+  ("tag1" . "value1'"
+  ("tag2" . "value2'")))
+#+end_example
+
+The original implementation creates a new alist whenever it encounters a tag it has already put in the current alist. Which doesn't work too well if some tags don't repeat, if the order is messed up, etc.
+
+Fortunately, according to the [[https://mpd.readthedocs.io/en/latest/protocol.html#command-lsinfo][protocol specification]], each new record has to start with =file=, =directory= or =playlist=. I've overridden the function with that in mind and it fixed the import, at least in my case.
+
+#+begin_src emacs-lisp :tangle no :noweb-ref emms-fixes
+(defun emms-player-mpd-get-alists (info)
+  "Turn the given parsed INFO from MusicPD into an list of alists.
+
+The list will be in reverse order."
+  (when (and info
+             (null (car info))          ; no error has occurred
+             (cdr info))                ; data exists
+    (let ((alists nil)
+          (alist nil)
+          cell)
+      (dolist (line (cdr info))
+        (when (setq cell (emms-player-mpd-parse-line line))
+          (if (member (car cell) '("file" "directory" "playlist"))
+              (setq alists (cons alist alists)
+                    alist (list cell))
+            (setq alist (cons cell alist)))))
+      (when alist
+        (setq alists (cons alist alists)))
+      alists)))
 #+end_src
 *** EWW
 Emacs built-in web browser. +I wonder if anyone actually uses it.+
