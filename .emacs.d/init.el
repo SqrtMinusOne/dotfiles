@@ -490,6 +490,26 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "tw" 'treemacs-switch-workspace
   "te" 'treemacs-edit-workspaces)
 
+(defun my/treemacs-open-dired ()
+  "Open dired at given treemacs node"
+  (interactive)
+  (let (path (treemacs--prop-at-point :path))
+    (dired path)))
+
+(defun my/treemacs-open-vterm ()
+  "Open vterm at given treemacs node"
+  (interactive)
+  (let ((default-directory (file-name-directory (treemacs--prop-at-point :path))))
+    (vterm)))
+
+(with-eval-after-load 'treemacs
+  (general-define-key
+   :keymaps 'treemacs-mode-map
+   :states '(treemacs)
+   "gd" 'my/treemacs-open-dired
+   "gt" 'my/treemacs-open-vterm
+   "`" 'my/treemacs-open-vterm))
+
 (use-package projectile
   :straight t
   :config
@@ -635,6 +655,37 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
 
+(deftheme my-theme)
+
+(defun my/update-my-theme (&rest _)
+  (custom-theme-set-faces
+   'my-theme
+   `(tab-bar-tab ((t (
+                      :background ,(doom-color 'bg)
+                      :foreground ,(doom-color 'yellow)
+                      :underline ,(doom-color 'yellow)))))
+   `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+   `(org-block-begin-line ((t (
+                               :background ,(color-darken-name (doom-color 'bg) 3)
+                               :foreground ,(doom-color 'grey)))))
+   `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
+   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
+   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
+   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
+   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
+   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
+   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
+  (custom-theme-set-variables
+   'my-theme
+   `(aweshell-invalid-command-color ,(doom-color 'red))
+   `(aweshell-valid-command-color ,(doom-color 'green)))
+  (enable-theme 'my-theme))
+
+(advice-add 'load-theme :after #'my/update-my-theme)
+(when (fboundp 'doom-color)
+  (my/update-my-theme))
+
 (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
 
 (setq-default frame-title-format
@@ -660,14 +711,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; Tabs
 (general-nmap "gn" 'tab-new)
 (general-nmap "gN" 'tab-close)
-
-;; Colors
-(custom-set-faces
- ;; `(tab-bar ((t (:background ,(doom-color 'bg) :foreground ,(doom-color 'bg)))))
- `(tab-bar-tab ((t (
-                    :background ,(doom-color 'bg)
-                    :foreground ,(doom-color 'yellow)
-                    :underline ,(doom-color 'yellow))))))
 
 (setq my/project-title-separators "[-_ ]")
 
@@ -997,13 +1040,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight (:repo "manateelazycat/aweshell" :host github)
   :after eshell
   :config
-  (custom-set-faces
-   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
-   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
-   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
-   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
-   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
-   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red))))))
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
 
@@ -1346,7 +1382,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (tags-todo "+waitlist+SCHEDULED<=\"<+14>\""
                      ((org-agenda-overriding-header "Waitlist")
                       (org-agenda-hide-tags-regexp "waitlist")
-                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
+                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))
+        ("tp" "Personal tasks"
+         ((tags-todo "personal"
+                     ((org-agenda-prefix-format "  %i %-12:c [%e] ")))))))
 
 (use-package org-journal
   :straight t
@@ -1425,7 +1464,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                '("online" . "  |${=key=}| ${title} ${url}")))
 
 (use-package org-roam-bibtex
-  :straight (:host github :repo "org-roam/org-roam-bibtex" :branch "org-roam-v2")
+  :straight (:host github :repo "org-roam/org-roam-bibtex")
   :after (org-roam org-ref)
   :disabled
   :config
@@ -2625,8 +2664,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (lambda (fun &rest r)
                 (let ((shr-use-fonts nil))
                   (apply fun r))))
-  (custom-set-faces
-   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
   (evil-collection-define-key 'normal 'elfeed-search-mode-map
     "o" #'my/elfeed-search-filter-source
     "c" #'elfeed-search-clear-filter

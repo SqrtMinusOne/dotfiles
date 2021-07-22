@@ -66,6 +66,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#keybindings][Keybindings]]
   - [[#off-helm][(OFF) Helm]]
   - [[#treemacs][Treemacs]]
+    - [[#helper-functions][Helper functions]]
   - [[#projectile][Projectile]]
   - [[#company][Company]]
   - [[#git--magit][Git & Magit]]
@@ -78,6 +79,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
 - [[#ui][UI]]
   - [[#general-ui--gui-settings][General UI & GUI Settings]]
   - [[#theme--global-stuff][Theme & global stuff]]
+    - [[#custom-theme][Custom theme]]
     - [[#font][Font]]
   - [[#custom-frame-title][Custom frame title]]
   - [[#tab-bar][Tab bar]]
@@ -115,7 +117,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#do-not-wrap-output-in-emacs-jupyter][Do not wrap output in emacs-jupyter]]
     - [[#wrap-source-code-output][Wrap source code output]]
   - [[#productivity--knowledge-management][Productivity & Knowledge management]]
-    - [[#capture-templates][Capture templates]]
+    - [[#capture-templates--various-settings][Capture templates & various settings]]
     - [[#custom-agendas][Custom agendas]]
     - [[#org-journal][Org Journal]]
     - [[#org-roam][Org Roam]]
@@ -231,6 +233,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#pomidor][Pomidor]]
   - [[#eww][EWW]]
   - [[#proced][proced]]
+  - [[#screenshotel][screenshot.el]]
   - [[#snow][Snow]]
   - [[#zone][Zone]]
   - [[#discord-integration][Discord integration]]
@@ -1016,7 +1019,28 @@ Integrates with evil, magit and projectile.
   "tw" 'treemacs-switch-workspace
   "te" 'treemacs-edit-workspaces)
 #+end_src
+*** Helper functions
+#+begin_src emacs-lisp
+(defun my/treemacs-open-dired ()
+  "Open dired at given treemacs node"
+  (interactive)
+  (let (path (treemacs--prop-at-point :path))
+    (dired path)))
 
+(defun my/treemacs-open-vterm ()
+  "Open vterm at given treemacs node"
+  (interactive)
+  (let ((default-directory (file-name-directory (treemacs--prop-at-point :path))))
+    (vterm)))
+
+(with-eval-after-load 'treemacs
+  (general-define-key
+   :keymaps 'treemacs-mode-map
+   :states '(treemacs)
+   "gd" 'my/treemacs-open-dired
+   "gt" 'my/treemacs-open-vterm
+   "`" 'my/treemacs-open-vterm))
+#+end_src
 ** Projectile
 [[https://github.com/bbatsov/projectile][Projectile]] gives a bunch of useful functions for managing projects, like finding files within a project, fuzzy-find, replace, etc.
 
@@ -1274,6 +1298,45 @@ My colorscheme of choice.
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
 #+end_src
+*** Custom theme
+A custom theme, dependent on Doom. I set all my custom variables there.
+
+A custom theme is necessary because if one calls =custom-set-faces= and =custom-set-variables= in code, whenever a variable is changed and saved in a customize buffer, data from all calls of these functions is saved as as well.
+
+Also, a hook allows me to change doom-theme more or less at will, although I do that only to switch to a light theme once in a blue moon.
+#+begin_src emacs-lisp
+(deftheme my-theme)
+
+(defun my/update-my-theme (&rest _)
+  (custom-theme-set-faces
+   'my-theme
+   `(tab-bar-tab ((t (
+                      :background ,(doom-color 'bg)
+                      :foreground ,(doom-color 'yellow)
+                      :underline ,(doom-color 'yellow)))))
+   `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+   `(org-block-begin-line ((t (
+                               :background ,(color-darken-name (doom-color 'bg) 3)
+                               :foreground ,(doom-color 'grey)))))
+   `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
+   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
+   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
+   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
+   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
+   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
+   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
+  (custom-theme-set-variables
+   'my-theme
+   `(aweshell-invalid-command-color ,(doom-color 'red))
+   `(aweshell-valid-command-color ,(doom-color 'green)))
+  (enable-theme 'my-theme))
+
+(advice-add 'load-theme :after #'my/update-my-theme)
+(when (fboundp 'doom-color)
+  (my/update-my-theme))
+#+end_src
+
 *** Font
 To install a font, download the font and unpack it into the =.local/share/fonts= directory. Create one if it doesn't exist.
 
@@ -1316,14 +1379,6 @@ I rely rather heavily on tab-bar in my workflow. I have a suspicion I'm not usin
 ;; Tabs
 (general-nmap "gn" 'tab-new)
 (general-nmap "gN" 'tab-close)
-
-;; Colors
-(custom-set-faces
- ;; `(tab-bar ((t (:background ,(doom-color 'bg) :foreground ,(doom-color 'bg)))))
- `(tab-bar-tab ((t (
-                    :background ,(doom-color 'bg)
-                    :foreground ,(doom-color 'yellow)
-                    :underline ,(doom-color 'yellow))))))
 #+end_src
 *** My title
 Prepend tab name with the shortened projectile project title
@@ -1780,13 +1835,6 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
   :straight (:repo "manateelazycat/aweshell" :host github)
   :after eshell
   :config
-  (custom-set-faces
-   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
-   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
-   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
-   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
-   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
-   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red))))))
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
 
@@ -4033,8 +4081,6 @@ Using my own fork until the modifications are merged into master.
               (lambda (fun &rest r)
                 (let ((shr-use-fonts nil))
                   (apply fun r))))
-  (custom-set-faces
-   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
   (evil-collection-define-key 'normal 'elfeed-search-mode-map
     "o" #'my/elfeed-search-filter-source
     "c" #'elfeed-search-clear-filter
