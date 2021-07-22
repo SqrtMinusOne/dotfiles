@@ -221,23 +221,28 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#open-emacs-config][Open Emacs config]]
     - [[#open-magit-for-yadm][Open Magit for yadm]]
     - [[#open-a-dotfile][Open a dotfile]]
-  - [[#notmuch][Notmuch]]
-  - [[#elfeed][Elfeed]]
-    - [[#some-additions][Some additions]]
-    - [[#youtube][YouTube]]
-  - [[#man--tldr][man & tldr]]
-  - [[#erc][ERC]]
-  - [[#docker][Docker]]
-  - [[#progidy][Progidy]]
-  - [[#google-translate][Google Translate]]
-  - [[#pomidor][Pomidor]]
-  - [[#eww][EWW]]
-  - [[#proced][proced]]
-  - [[#screenshotel][screenshot.el]]
-  - [[#snow][Snow]]
-  - [[#zone][Zone]]
-  - [[#discord-integration][Discord integration]]
-  - [[#guix][Guix]]
+  - [[#internet][Internet]]
+    - [[#notmuch][Notmuch]]
+    - [[#elfeed][Elfeed]]
+      - [[#some-additions][Some additions]]
+      - [[#youtube][YouTube]]
+    - [[#eww][EWW]]
+    - [[#erc][ERC]]
+    - [[#google-translate][Google Translate]]
+    - [[#discord-integration][Discord integration]]
+  - [[#utilities][Utilities]]
+    - [[#tldr-man-info][tldr, man, info]]
+    - [[#docker][Docker]]
+    - [[#progidy][Progidy]]
+    - [[#proced][proced]]
+    - [[#guix][Guix]]
+  - [[#productivity][Productivity]]
+    - [[#pomidor][Pomidor]]
+    - [[#calendar][Calendar]]
+  - [[#fun][Fun]]
+    - [[#screenshotel][screenshot.el]]
+    - [[#snow][Snow]]
+    - [[#zone][Zone]]
 - [[#guix-settings][Guix settings]]
 :END:
 * Primary setup
@@ -498,6 +503,7 @@ I don't enable the entire package, just the modes I need.
   (evil-collection-init
    '(eww
      proced
+     calendar
      dired
      debug
      guix
@@ -4053,14 +4059,14 @@ Open a file managed by yadm.
 (general-define-key "C-c f" 'my/open-yadm-file)
 (my-leader-def "cf" 'my/open-yadm-file)
 #+end_src
-
-** Notmuch
+** Internet
+*** Notmuch
 My notmuch config now resides in [[file:Mail.org][Mail.org]].
 
 #+begin_src emacs-lisp
 (load-file (expand-file-name "mail.el" user-emacs-directory))
 #+end_src
-** Elfeed
+*** Elfeed
 [[https://github.com/skeeto/elfeed][elfeed]] is an Emacs RSS client.
 
 The advice there sets =shr-use-fonts= to nil while rendering HTML, so the =elfeed-show= buffer will use monospace font.
@@ -4099,7 +4105,7 @@ Using my own fork until the modifications are merged into master.
   (elfeed-org))
 #+end_src
 
-*** Some additions
+**** Some additions
 Filter elfeed search buffer by the feed under the cursor.
 #+begin_src emacs-lisp
 (defun my/elfeed-search-filter-source (entry)
@@ -4126,7 +4132,7 @@ Open a URL with eww.
     (when link
       (eww link))))
 #+end_src
-*** YouTube
+**** YouTube
 | Guix dependency |
 |-----------------|
 | mpv             |
@@ -4172,34 +4178,25 @@ And a function to open YouTube link from elfeed
   (evil-collection-define-key 'normal 'elfeed-show-mode-map
     "gm" #'my/elfeed-open-mpv))
 #+end_src
-** man & tldr
-[[https://tldr.sh/][tldr]] is a collaborative project providing cheatsheets for various console commands
+*** EWW
+Emacs built-in web browser. +I wonder if anyone actually uses it.+
 
-For some reason, the built-in download is broken, so I use my own function
+I use it occasionally to open links in elfeed.
 
 #+begin_src emacs-lisp
-(use-package tldr
-  :straight t
-  :commands (tldr)
-  :config
-  (setq tldr-source-zip-url "https://github.com/tldr-pages/tldr/archive/refs/heads/main.zip")
+(defun my/toggle-shr-use-fonts ()
+  "Toggle the shr-use-fonts variable in buffer"
+  (interactive)
+  (setq-local shr-use-fonts (not shr-use-fonts)))
 
-  (defun tldr-update-docs ()
-    (interactive)
-    (shell-command-to-string (format "curl -L %s --output %s" tldr-source-zip-url tldr-saved-zip-path))
-    (when (file-exists-p "/tmp/tldr")
-      (delete-directory "/tmp/tldr" t))
-    (shell-command-to-string (format "unzip -d /tmp/tldr/ %s" tldr-saved-zip-path) nil nil)
-    (when (file-exists-p tldr-directory-path)
-      (delete-directory tldr-directory-path 'recursive 'no-trash))
-    (shell-command-to-string (format "mv %s %s" "/tmp/tldr/tldr-main" tldr-directory-path))))
+(my-leader-def "aw" 'eww)
 
-(my-leader-def "hT" 'tldr)
-
-(setq Man-width-max 180)
-(my-leader-def "hM" 'man)
+(general-define-key
+ :keymaps 'eww-mode-map
+ "+" 'text-scale-increase
+ "-" 'text-scale-decrease)
 #+end_src
-** ERC
+*** ERC
 ERC is a built-it Emacs IRC client.
 
 #+begin_src emacs-lisp
@@ -4233,7 +4230,94 @@ ZNC support. Seems to provide a few nice features for ZNC.
   :straight t
   :after (erc))
 #+end_src
-** Docker
+*** Google Translate
+Emacs interface to Google Translate.
+
+Can't make it load lazily for some strange reason.
+
+References:
+- [[https://github.com/atykhonov/google-translate][google-translate repo]]
+- [[https://github.com/atykhonov/google-translate/issues/137#issuecomment-728278849][issue with ttk error fix]]
+
+#+begin_src emacs-lisp
+(use-package google-translate
+  :straight t
+  :functions (my-google-translate-at-point google-translate--search-tkk)
+  :custom
+  (google-translate-backend-method 'curl)
+  :config
+  (require 'facemenu)
+  (defun google-translate--search-tkk ()
+    "Search TKK."
+    (list 430675 2721866130))
+  (defun my-google-translate-at-point()
+    "reverse translate if prefix"
+    (interactive)
+    (if current-prefix-arg
+        (google-translate-at-point)
+      (google-translate-at-point-reverse)))
+  (setq google-translate-translation-directions-alist
+        '(("en" . "ru")
+          ("ru" . "en"))))
+
+(my-leader-def
+  "atp" 'google-translate-at-point
+  "atP" 'google-translate-at-point-reverse
+  "atq" 'google-translate-query-translate
+  "atQ" 'google-translate-query-translate-reverse
+  "att" 'google-translate-smooth-translate)
+#+end_src
+*** Discord integration
+Integration with Discord. Shows which file is being edited in Emacs.
+
+In order for this to work in Guix, a service is necessary - [[file:Desktop.org::*Discord rich presence][Discord rich presence]].
+#+begin_src emacs-lisp
+(use-package elcord
+  :straight t
+  :if (and (or
+            (string= (system-name) "indigo")
+            (string= (system-name) "eminence"))
+           (not my/slow-ssh))
+  :config
+  (elcord-mode)
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
+#+end_src
+** Utilities
+*** tldr, man, info
+[[https://tldr.sh/][tldr]] is a collaborative project providing cheatsheets for various console commands. For some reason, the built-in download is broken, so I use my own function.
+
+#+begin_src emacs-lisp
+(use-package tldr
+  :straight t
+  :commands (tldr)
+  :config
+  (setq tldr-source-zip-url "https://github.com/tldr-pages/tldr/archive/refs/heads/main.zip")
+
+  (defun tldr-update-docs ()
+    (interactive)
+    (shell-command-to-string (format "curl -L %s --output %s" tldr-source-zip-url tldr-saved-zip-path))
+    (when (file-exists-p "/tmp/tldr")
+      (delete-directory "/tmp/tldr" t))
+    (shell-command-to-string (format "unzip -d /tmp/tldr/ %s" tldr-saved-zip-path) nil nil)
+    (when (file-exists-p tldr-directory-path)
+      (delete-directory tldr-directory-path 'recursive 'no-trash))
+    (shell-command-to-string (format "mv %s %s" "/tmp/tldr/tldr-main" tldr-directory-path))))
+
+(my-leader-def "hT" 'tldr)
+#+end_src
+
+Of course, Emacs can also display man and info pages.
+#+begin_src emacs-lisp
+(setq Man-width-max 180)
+(my-leader-def "hM" 'man)
+
+(evil-collection-define-key 'normal 'Info-mode-map
+  (kbd "RET") 'Info-follow-nearest-node)
+#+end_src
+*** Docker
 A package to manage docker containers from Emacs.
 
 The file =progidy-config.el= sets variable =my/docker-directories=, which allows to
@@ -4285,7 +4369,7 @@ And here is a function which prompts user for the directory. File =progidy-confi
 
 (my-leader-def "aO" 'my/docker-from-dir)
 #+end_src
-** Progidy
+*** Progidy
 [[https://github.com/rejeep/prodigy.el][prodigy.el]] is a package to run various services. I've previously used tmuxp + tmux, but want to try this as well.
 
 The actual service definitions are in the =~/.emacs.d/prodigy.org=, which tangles to =prodigy-config.el=. Both files are encrypted in yadm, as they contain personal data.
@@ -4305,44 +4389,27 @@ The actual service definitions are in the =~/.emacs.d/prodigy.org=, which tangle
    (kbd "C-k") 'evil-window-up
    (kbd "C-j") 'evil-window-down))
 #+end_src
-** Google Translate
-Emacs interface to Google Translate.
-
-Can't make it load lazily for some strange reason.
-
-References:
-- [[https://github.com/atykhonov/google-translate][google-translate repo]]
-- [[https://github.com/atykhonov/google-translate/issues/137#issuecomment-728278849][issue with ttk error fix]]
+*** proced
+proced is a Emacs built-it process viewer, like top.
 
 #+begin_src emacs-lisp
-(use-package google-translate
-  :straight t
-  :functions (my-google-translate-at-point google-translate--search-tkk)
-  :custom
-  (google-translate-backend-method 'curl)
-  :config
-  (require 'facemenu)
-  (defun google-translate--search-tkk ()
-    "Search TKK."
-    (list 430675 2721866130))
-  (defun my-google-translate-at-point()
-    "reverse translate if prefix"
-    (interactive)
-    (if current-prefix-arg
-        (google-translate-at-point)
-      (google-translate-at-point-reverse)))
-  (setq google-translate-translation-directions-alist
-        '(("en" . "ru")
-          ("ru" . "en"))))
-
-(my-leader-def
-  "atp" 'google-translate-at-point
-  "atP" 'google-translate-at-point-reverse
-  "atq" 'google-translate-query-translate
-  "atQ" 'google-translate-query-translate-reverse
-  "att" 'google-translate-smooth-translate)
+(my-leader-def "ah" 'proced)
+(add-hook 'proced-mode-hook (lambda ()
+                              (visual-line-mode -1)
+                              (setq-local truncate-lines t)))
 #+end_src
-** Pomidor
+*** Guix
+An Emacs package to help managing GNU Guix.
+
+#+begin_src emacs-lisp
+(use-package guix
+  :straight t
+  :commands (guix)
+  :init
+  (my-leader-def "ag" 'guix))
+#+end_src
+** Productivity
+*** Pomidor
 A simple pomodoro technique timer.
 
 #+begin_src emacs-lisp
@@ -4363,34 +4430,19 @@ A simple pomodoro technique timer.
     (kbd "RET") #'pomidor-stop
     (kbd "M-RET") #'pomidor-break))
 #+end_src
-** EWW
-Emacs built-in web browser. +I wonder if anyone actually uses it.+
-
-I use it occasionally to open links in elfeed.
+*** Calendar
+Emacs' built-in calendar. Can even calculate sunrise and sunset times.
 
 #+begin_src emacs-lisp
-(defun my/toggle-shr-use-fonts ()
-  "Toggle the shr-use-fonts variable in buffer"
-  (interactive)
-  (setq-local shr-use-fonts (not shr-use-fonts)))
+(setq calendar-date-style 'iso) ;; YYYY/mm/dd
+(setq calendar-week-start-day 1)
+(setq calendar-time-display-form '(24-hours ":" minutes))
 
-(my-leader-def "aw" 'eww)
-
-(general-define-key
- :keymaps 'eww-mode-map
- "+" 'text-scale-increase
- "-" 'text-scale-decrease)
+(setq calendar-latitude 59.9375)
+(setq calendar-longitude 30.308611)
 #+end_src
-** proced
-proced is a Emacs built-it process viewer, like top.
-
-#+begin_src emacs-lisp
-(my-leader-def "ah" 'proced)
-(add-hook 'proced-mode-hook (lambda ()
-                              (visual-line-mode -1)
-                              (setq-local truncate-lines t)))
-#+end_src
-** screenshot.el
+** Fun
+*** screenshot.el
 Tecosaur's plugin to make beautiful code screenshots.
 
 | Guix dependency |
@@ -4404,13 +4456,13 @@ Tecosaur's plugin to make beautiful code screenshots.
   :init
   (my-leader-def "S" 'screenshot))
 #+end_src
-** Snow
+*** Snow
 #+begin_src emacs-lisp
 (use-package snow
   :straight (:repo "alphapapa/snow.el" :host github)
   :commands (snow))
 #+end_src
-** Zone
+*** Zone
 #+begin_src emacs-lisp
 (use-package zone
   :ensure nil
@@ -4426,32 +4478,6 @@ Tecosaur's plugin to make beautiful code screenshots.
             :action (lambda (elem)
                       (setq zone-programs (vector (cdr elem)))
                       (zone))))
-#+end_src
-** Discord integration
-Integration with Discord.
-
-Shows which file is being edited in Emacs.
-#+begin_src emacs-lisp
-(use-package elcord
-  :straight t
-  :if (and (or
-            (string= (system-name) "indigo")
-            (string= (system-name) "eminence"))
-           (not my/slow-ssh))
-  :config
-  (elcord-mode)
-  (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
-  (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
-#+end_src
-** Guix
-#+begin_src emacs-lisp
-(use-package guix
-  :straight t
-  :commands (guix)
-  :init
-  (my-leader-def "ag" 'guix))
 #+end_src
 * Guix settings
 | Guix dependency     | Description                   |
