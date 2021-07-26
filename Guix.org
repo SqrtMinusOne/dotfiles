@@ -154,7 +154,7 @@ References:
  (channel
   (name 'nonguix)
   (url "https://gitlab.com/nonguix/nonguix")
-  (commit "d3c5eea0cbfe3e5bfbcf1fe15bc916fefacc624f")
+  (commit "d54973e47b89fe5772a5b6e2d0c0b86acb089e27")
   (introduction
    (make-channel-introduction
     "897c1a470da759236cc11798f4e0a5f7d4d59fbc"
