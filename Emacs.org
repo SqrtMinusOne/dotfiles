@@ -96,12 +96,14 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#basic-config--keybindings][Basic config & keybindings]]
   - [[#addons][Addons]]
     - [[#dired-on-emacs-28][dired+ on Emacs 28]]
+  - [[#subdirectories][Subdirectories]]
   - [[#tramp][TRAMP]]
   - [[#bookmarks][Bookmarks]]
 - [[#shells][Shells]]
   - [[#vterm][vterm]]
     - [[#configuration][Configuration]]
     - [[#subterminal][Subterminal]]
+    - [[#dired-integration][Dired integration]]
   - [[#eshell][Eshell]]
 - [[#org-mode][Org Mode]]
   - [[#installation--basic-settings][Installation & basic settings]]
@@ -1030,6 +1032,8 @@ Integrates with evil, magit and projectile.
   "te" 'treemacs-edit-workspaces)
 #+end_src
 *** Helper functions
+Function to open dired and vterm at given nodes.
+
 #+begin_src emacs-lisp
 (defun my/treemacs-open-dired ()
   "Open dired at given treemacs node"
@@ -1104,7 +1108,6 @@ A company frontend with nice icons.
   :if (not my/lowpower)
   :after (company)
   :hook (company-mode . company-box-mode))
-
 #+end_src
 
 ** Git & Magit
@@ -1129,8 +1132,7 @@ Also, [[https://github.com/emacsorphanage/git-gutter][git-gutter]] is plugin whi
            (highlight-face   . magit-blame-highlight))
           (lines
            (show-lines       . t)
-           (show-message     . t)))
-        ))
+           (show-message     . t)))))
 
 (use-package git-gutter
   :straight t
@@ -1544,10 +1546,6 @@ Highlight colors
 * Dired
 Dired is a built-in file manager. I use it as my primary file manager, hence the top level of config.
 
-| Type | Note                   |
-|------+------------------------|
-| TODO | Make subdirs mode work |
-
 ** Basic config & keybindings
 My config mostly follows ranger's and vifm's keybindings which I'm used to.
 
@@ -1593,6 +1591,7 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
   "aD" #'my/dired-home)
 #+end_src
 ** Addons
+
 [[https://www.emacswiki.org/emacs/DiredPlus][Dired+]] provides a lot of extensions for dired functionality.
 #+begin_src emacs-lisp :noweb yes
 (use-package dired+
@@ -1623,7 +1622,8 @@ Display icons for files.
   :hook (dired-mode . all-the-icons-dired-mode)
   :config
   (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
-  (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice))
+  (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice)
+  (advice-add 'dired-kill-subdir :around #'all-the-icons-dired--refresh-advice))
 #+end_src
 
 Provides stuff like =dired-open-xdg=
@@ -1666,7 +1666,34 @@ non-empty directories is allowed."
      arg t)
     (dolist (m markers) (set-marker m nil))))
 #+end_src
+** Subdirectories
+Subdirectories are one of the interesting features of Dired. It allows displaying multiple folders on the same window.
 
+I add my own keybindings and some extra functionality.
+
+#+begin_src emacs-lisp
+(defun my/dired-open-this-subdir ()
+  (interactive)
+  (dired (dired-current-directory)))
+
+(defun my/dired-kill-all-subdirs ()
+  (interactive)
+  (let ((dir dired-directory))
+    (kill-buffer (current-buffer))
+    (dired dir)))
+
+(with-eval-after-load 'dired
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "s" nil
+    "ss" 'dired-maybe-insert-subdir
+    "sl" 'dired-maybe-insert-subdir
+    "sq" 'dired-kill-subdir
+    "sk" 'dired-prev-subdir
+    "sj" 'dired-next-subdir
+    "sS" 'my/dired-open-this-subdir
+    "sQ" 'my/dired-kill-all-subdirs
+    (kbd "TAB") 'dired-hide-subdir))
+#+end_src
 ** TRAMP
 TRAMP is a package which provides remote editing capacities. It is particularly useful for remote server management.
 
@@ -1780,7 +1807,7 @@ I use the package from the Guix repository to avoid building libvterm.
     "M-h" 'vterm-send-left))
 #+end_src
 *** Subterminal
-Open a terminal in the lower third of the frame with the =`= key. That's mostly how I use vterm.
+Open a terminal in the lower third of the frame with the =`= key.
 
 #+begin_src emacs-lisp
 (add-to-list 'display-buffer-alist
@@ -1810,6 +1837,42 @@ Open a terminal in the lower third of the frame with the =`= key. That's mostly 
 (unless my/slow-ssh
   (general-nmap "`" 'my/toggle-vterm-subteminal)
   (general-nmap "~" 'vterm))
+#+end_src
+*** Dired integration
+A function to get pwd for vterm. Couldn't find a built-in function for some reason, but this seems to be working fine:
+
+#+begin_src emacs-lisp
+(defun my/vterm-get-pwd ()
+  (if vterm--process
+      (file-truename (format "/proc/%d/cwd" (process-id vterm--process)))
+    default-directory))
+#+end_src
+
+Now we can open dired for vterm pwd:
+#+begin_src emacs-lisp
+(defun my/vterm-dired-other-window ()
+  "Open dired in vterm pwd in other window"
+  (interactive)
+  (dired-other-window (my/vterm-get-pwd)))
+
+(defun my/vterm-dired-replace ()
+  "Replace vterm with dired"
+  (interactive)
+  (let ((pwd (my/vterm-get-pwd)))
+    (kill-process vterm--process)
+    (dired pwd)))
+#+end_src
+
+The second function is particularly handy because that way I can alternate between vterm and dired.
+
+Keybindings:
+#+begin_src emacs-lisp
+(with-eval-after-load 'vterm
+  (general-define-key
+   :keymap 'vterm-mode-map
+   :states '(normal)
+   "gd" #'my/vterm-dired-other-window
+   "gD" #'my/vterm-dired-replace))
 #+end_src
 ** Eshell
 A shell written in Emacs lisp. I don't use it as of now, but keep the config just in case.
@@ -2197,7 +2260,8 @@ Hotkeys
 Refile targets
 #+begin_src emacs-lisp
 (setq org-refile-targets
-      '(("projects.org" :maxlevel . 2)))
+      '(("projects.org" :maxlevel . 2)
+        ("work.org" :maxlevel . 2)))
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 #+end_src
@@ -2249,7 +2313,7 @@ Log DONE time
                      ((org-agenda-overriding-header "Inbox")
                       (org-agenda-prefix-format " %i %-12:c")
                       (org-agenda-hide-tags-regexp ".")))
-          (tags-todo "+waitlist+SCHEDULED<=\"<+14>\""
+          (tags-todo "+waitlist+SCHEDULED<=\"<+14d>\""
                      ((org-agenda-overriding-header "Waitlist")
                       (org-agenda-hide-tags-regexp "waitlist")
                       (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))
@@ -2875,7 +2939,8 @@ References:
          (haskell-mode . lsp)
          (haskell-literate-mode . lsp)
          (java-mode . lsp)
-         (csharp-mode . lsp))
+         ;; (csharp-mode . lsp)
+         )
   :commands lsp
   :config
   (setq lsp-idle-delay 1)
@@ -3912,11 +3977,17 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
 #+end_src
 ** .NET
 *** C#
+| Guix dependencies | Disabled |
+|-------------------+----------|
+| omnisharp         | t        |
+| dotnet            | t        |
+
 #+begin_src emacs-lisp
 (use-package csharp-mode
   :straight t
   :mode "\\.cs\\'"
   :config
+  (setq lsp-csharp-server-path (executable-find "omnisharp-wrapper"))
   (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
   (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
   (add-hook 'csharp-mode-hook #'hs-minor-mode)
@@ -4203,6 +4274,7 @@ References:
     "h" 'emms-previous
     "l" 'emms-next
     "u" 'emms-player-mpd-connect)
+  (setq emms-mode-line-icon-enabled-p nil)
   :config
   (require 'emms-setup)
   (require 'emms-player-mpd)
@@ -4218,6 +4290,9 @@ References:
   ;; Clear MPD playlist on clearing EMMS playlist
   ;; IDK if this is fine for MPD playlists, I don't use them anyhow
   (add-hook 'emms-playlist-cleared-hook 'emms-player-mpd-clear)
+  ;; evil-lion shadows ga bindings
+  (add-hook 'emms-browser-mode-hook
+            (lambda () (evil-lion-mode -1)))
   <<emms-fixes>>)
 #+end_src
 **** Some keybindings

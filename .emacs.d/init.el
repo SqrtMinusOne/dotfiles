@@ -565,8 +565,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
            (highlight-face   . magit-blame-highlight))
           (lines
            (show-lines       . t)
-           (show-message     . t)))
-        ))
+           (show-message     . t)))))
 
 (use-package git-gutter
   :straight t
@@ -904,7 +903,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :hook (dired-mode . all-the-icons-dired-mode)
   :config
   (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
-  (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice))
+  (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice)
+  (advice-add 'dired-kill-subdir :around #'all-the-icons-dired--refresh-advice))
 
 (use-package dired-open
   :straight t
@@ -917,6 +917,28 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-define-key
    :keymaps 'dired-narrow-map
    [escape] 'keyboard-quit))
+
+(defun my/dired-open-this-subdir ()
+  (interactive)
+  (dired (dired-current-directory)))
+
+(defun my/dired-kill-all-subdirs ()
+  (interactive)
+  (let ((dir dired-directory))
+    (kill-buffer (current-buffer))
+    (dired dir)))
+
+(with-eval-after-load 'dired
+  (evil-collection-define-key 'normal 'dired-mode-map
+    "s" nil
+    "ss" 'dired-maybe-insert-subdir
+    "sl" 'dired-maybe-insert-subdir
+    "sq" 'dired-kill-subdir
+    "sk" 'dired-prev-subdir
+    "sj" 'dired-next-subdir
+    "sS" 'my/dired-open-this-subdir
+    "sQ" 'my/dired-kill-all-subdirs
+    (kbd "TAB") 'dired-hide-subdir))
 
 (setq tramp-verbose 1)
 
@@ -944,6 +966,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (assoc
        (completing-read "Dired: " bookmarks nil nil "^")
        bookmarks)))))
+
+(use-package vlf
+  :straight t
+  :config
+  (require 'vlf-setup))
 
 (use-package vterm
   ;; :straight t
@@ -1010,6 +1037,30 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (unless my/slow-ssh
   (general-nmap "`" 'my/toggle-vterm-subteminal)
   (general-nmap "~" 'vterm))
+
+(defun my/vterm-get-pwd ()
+  (if vterm--process
+      (file-truename (format "/proc/%d/cwd" (process-id vterm--process)))
+    default-directory))
+
+(defun my/vterm-dired-other-window ()
+  "Open dired in vterm pwd in other window"
+  (interactive)
+  (dired-other-window (my/vterm-get-pwd)))
+
+(defun my/vterm-dired-replace ()
+  "Replace vterm with dired"
+  (interactive)
+  (let ((pwd (my/vterm-get-pwd)))
+    (kill-process vterm--process)
+    (dired pwd)))
+
+(with-eval-after-load 'vterm
+  (general-define-key
+   :keymap 'vterm-mode-map
+   :states '(normal)
+   "gd" #'my/vterm-dired-other-window
+   "gD" #'my/vterm-dired-replace))
 
 (defun my/configure-eshell ()
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
@@ -1361,7 +1412,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (my-leader-def "oa" 'org-agenda)
 
 (setq org-refile-targets
-      '(("projects.org" :maxlevel . 2)))
+      '(("projects.org" :maxlevel . 2)
+        ("work.org" :maxlevel . 2)))
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 
@@ -1381,7 +1433,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                      ((org-agenda-overriding-header "Inbox")
                       (org-agenda-prefix-format " %i %-12:c")
                       (org-agenda-hide-tags-regexp ".")))
-          (tags-todo "+waitlist+SCHEDULED<=\"<+14>\""
+          (tags-todo "+waitlist+SCHEDULED<=\"<+14d>\""
                      ((org-agenda-overriding-header "Waitlist")
                       (org-agenda-hide-tags-regexp "waitlist")
                       (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))
@@ -1702,7 +1754,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          (haskell-mode . lsp)
          (haskell-literate-mode . lsp)
          (java-mode . lsp)
-         (csharp-mode . lsp))
+         ;; (csharp-mode . lsp)
+         )
   :commands lsp
   :config
   (setq lsp-idle-delay 1)
@@ -2550,6 +2603,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :mode "\\.cs\\'"
   :config
+  (setq lsp-csharp-server-path (executable-find "omnisharp-wrapper"))
   (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
   (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
   (add-hook 'csharp-mode-hook #'hs-minor-mode)
@@ -2748,6 +2802,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     "h" 'emms-previous
     "l" 'emms-next
     "u" 'emms-player-mpd-connect)
+  (setq emms-mode-line-icon-enabled-p nil)
   :config
   (require 'emms-setup)
   (require 'emms-player-mpd)
@@ -2763,6 +2818,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   ;; Clear MPD playlist on clearing EMMS playlist
   ;; IDK if this is fine for MPD playlists, I don't use them anyhow
   (add-hook 'emms-playlist-cleared-hook 'emms-player-mpd-clear)
+  ;; evil-lion shadows ga bindings
+  (add-hook 'emms-browser-mode-hook
+            (lambda () (evil-lion-mode -1)))
   (defun emms-info-mpd-process (track info)
     (dolist (data info)
       (let ((name (car data))
