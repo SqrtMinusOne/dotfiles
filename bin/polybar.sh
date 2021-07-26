@@ -2,22 +2,23 @@
 # [[file:../Desktop.org::*Launching][Launching:1]]
 hostname=$(hostname)
 # Settings varying on the hostname
+export WLAN_INTERFACE=$(nmcli -f DEVICE con show | grep -Ev "(.*docker.*|DEVICE|br.*|tun.*|--)" | xargs)
 if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
-    export WLAN_INTERFACE="wlp3s0"
+    # export WLAN_INTERFACE="wlp3s0"
 elif [ "$hostname" = "eminence" ]; then
     TRAY_MONITOR="eDP"
-    export WLAN_INTERFACE="wlo1"
+    # export WLAN_INTERFACE="wlo1"
 else
     TRAY_MONITOR="HDMI-A-0"
-    export WLAN_INTERFACE="wlp35s0f3u2"
+    # export WLAN_INTERFACE="wlp35s0f3u2"
 fi
 
 # Setting varying on the monitor
 declare -A FONT_SIZES=(
     ["eDP"]="13"
     ["eDP-1"]="13"
-    ["DVI-D-0"]="11"
+    ["DVI-D-0"]="13"
     ["HDMI-A-0"]="13"
 )
 declare -A EMOJI_SCALE=(
@@ -29,13 +30,13 @@ declare -A EMOJI_SCALE=(
 declare -A BAR_HEIGHT=(
     ["eDP"]="29"
     ["eDP-1"]="29"
-    ["DVI-D-0"]="23"
+    ["DVI-D-0"]="29"
     ["HDMI-A-0"]="29"
 )
 declare -A BLOCKS=(
     ["eDP"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
     ["eDP-1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
-    ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
+    ["DVI-D-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
     ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
 )
 

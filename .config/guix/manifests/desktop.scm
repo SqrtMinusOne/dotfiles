@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "anydesk"
    "polkit-gnome"
    "fontconfig"
    "qbittorrent"

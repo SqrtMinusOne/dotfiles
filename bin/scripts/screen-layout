@@ -2,7 +2,7 @@
 # [[file:../../Desktop.org::*Device-specific settings][Device-specific settings:1]]
 hostname=$(hostname)
 if [ "$hostname" = "indigo" ]; then
-    xrandr --output DisplayPort-0 --off --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal --output DVI-D-0 --mode 1366x768 --pos 1920x312 --rotate normal
+    xrandr --output DisplayPort-0 --off --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal --output DVI-D-0 --mode 1920x1080 --pos 1920x0 --rotate normal
 elif [ "$hostname" = "eminence" ]; then
     xgamma -gamma 1.25
 fi

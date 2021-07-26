@@ -180,6 +180,7 @@ Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting 
 (let ((hostname (system-name)))
   (cond ((string-equal hostname "azure") 120)
         ((string-equal hostname "eminence") 120)
+        ((string-equal hostname "indigo") 120)
         (t 96)))
 #+end_src
 
@@ -219,7 +220,7 @@ Set screen layout & other params depending on hostname
 #+begin_src sh :tangle ~/bin/scripts/screen-layout
 hostname=$(hostname)
 if [ "$hostname" = "indigo" ]; then
-    xrandr --output DisplayPort-0 --off --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal --output DVI-D-0 --mode 1366x768 --pos 1920x312 --rotate normal
+    xrandr --output DisplayPort-0 --off --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal --output DVI-D-0 --mode 1920x1080 --pos 1920x0 --rotate normal
 elif [ "$hostname" = "eminence" ]; then
     xgamma -gamma 1.25
 fi
@@ -780,22 +781,23 @@ The script below allows me to:
 #+begin_src bash :tangle ./bin/polybar.sh
 hostname=$(hostname)
 # Settings varying on the hostname
+export WLAN_INTERFACE=$(nmcli -f DEVICE con show | grep -Ev "(.*docker.*|DEVICE|br.*|tun.*|--)" | xargs)
 if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
-    export WLAN_INTERFACE="wlp3s0"
+    # export WLAN_INTERFACE="wlp3s0"
 elif [ "$hostname" = "eminence" ]; then
     TRAY_MONITOR="eDP"
-    export WLAN_INTERFACE="wlo1"
+    # export WLAN_INTERFACE="wlo1"
 else
     TRAY_MONITOR="HDMI-A-0"
-    export WLAN_INTERFACE="wlp35s0f3u2"
+    # export WLAN_INTERFACE="wlp35s0f3u2"
 fi
 
 # Setting varying on the monitor
 declare -A FONT_SIZES=(
     ["eDP"]="13"
     ["eDP-1"]="13"
-    ["DVI-D-0"]="11"
+    ["DVI-D-0"]="13"
     ["HDMI-A-0"]="13"
 )
 declare -A EMOJI_SCALE=(
@@ -807,13 +809,13 @@ declare -A EMOJI_SCALE=(
 declare -A BAR_HEIGHT=(
     ["eDP"]="29"
     ["eDP-1"]="29"
-    ["DVI-D-0"]="23"
+    ["DVI-D-0"]="29"
     ["HDMI-A-0"]="29"
 )
 declare -A BLOCKS=(
     ["eDP"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
     ["eDP-1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
-    ["DVI-D-0"]="pulseaudio SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
+    ["DVI-D-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
     ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
 )
 
@@ -2086,6 +2088,7 @@ This section generates manifests for various desktop software that I'm using.
 |----------+-----------------|
 | office   | libreoffice     |
 | office   | gimp            |
+| office   | krita           |
 ** LaTeX
 | Category | Guix dependency |
 |----------+-----------------|
@@ -2399,6 +2402,7 @@ Other desktop programs I use are listed below.
 | qbittorrent            | torrent client                            |
 | fontconfig             |                                           |
 | polkit-gnome           | Polkit authentication agent               |
+| anydesk                | Remote desktop software                   |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
