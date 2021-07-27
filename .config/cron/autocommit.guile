@@ -1,0 +1,2 @@
+(job "0 * * * *" "autocommit ~/Documents/org-mode")
+(job "0,15,30,45 * * * *" "autocommit ~/.password-store")

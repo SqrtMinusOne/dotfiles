@@ -1,5 +1,0 @@
-#!/bin/bash
-SELECTED=$(man -k . | dmenu -l 20 | awk '{print $1}')
-if [[ ! -z $SELECTED ]]; then
-    man -Tpdf $SELECTED | zathura -
-fi

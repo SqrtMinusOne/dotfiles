@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# [[file:../../Console.org::*=autocommmit=][=autocommmit=:1]]
+TIMEOUT_MIN=${TIMEOUT_MIN:-60}
+
+export DISPLAY=:0
+cd "$1"
+
+TIMESTAMP=$(date +%s)
+LAST_COMMIT_TIMESTAMP=$(git log -1 --format="%at" | xargs -I{} date -d @{} +%s)
+RECENTLY_CHANGED_NUM=$(find . -not -path '*/\.*' -mmin -$TIMEOUT_MIN | wc -l)
+CHANGED_NUM=$(git status --porcelain | wc -l)
+COMMITED="No"
+PUSHED="No"
+FETCHED="No"
+MERGED="No"
+
+if [[ $(git ls-files -u | wc -l) -gt 0 ]]; then
+    notify-send -u critical "Autocommit $(pwd)" "Merge conflict!"
+    exit
+fi
+
+if [[ ($RECENTLY_CHANGED_NUM -eq 0 || $2 = "-F") && $CHANGED_NUM -gt 0 ]]; then
+    read -r -d '' MESSAGE << EOM
+Autocommit $(date -Iminutes)
+
+Hostname: $(hostname)
+EOM
+    git add -A
+    git commit -m "$MESSAGE"
+    COMMITED="Yes"
+fi
+
+NEED_TO_PUSH=$(git log origin/master..HEAD | wc -l)
+
+git fetch && FETCHED="Yes" || FETCHED="No"
+if [[ $RECENTLY_CHANGED_NUM -gt 0 && $2 != '-F' ]]; then
+    MERGED="Waiting"
+fi
+
+if [[ ($RECENTLY_CHANGED_NUM -eq 0 || $2 = "-F") && $FETCHED = "Yes" ]]; then
+    MERGE_OUT=$(git merge origin/master) && MERGED="Yes" || MERGED="No"
+fi
+
+if [[ $NEED_TO_PUSH -gt 0 && ($MERGED = "Yes" || $MERGED = "Waiting") ]]; then
+    git push origin && PUSHED="Yes" || PUSHED="No"
+fi
+
+if [[ $PUSHED = "Yes" || $COMMITED = "Yes" || ($MERGED = "Yes" &&  $MERGE_OUT != "Already up to date.")]]; then
+    read -r -d '' NOTIFICATION << EOM
+Commited: $COMMITED
+Fetched: $FETCHED
+Merged: $MERGED
+Pushed: $PUSHED
+EOM
+    notify-send "Autocommit $(pwd)" "$NOTIFICATION"
+fi
+
+if [[ $(git ls-files -u | wc -l) -gt 0 ]]; then
+    notify-send -u critical "Autocommit $(pwd)" "Merge conflict!"
+fi
+# =autocommmit=:1 ends here

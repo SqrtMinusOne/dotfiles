@@ -1,0 +1,3 @@
+#!/bin/sh
+GUIX_PROFILE=.guix-extra-profiles/system/system ; . "$GUIX_PROFILE"/etc/profile
+update-resolv-conf.sh "$@"

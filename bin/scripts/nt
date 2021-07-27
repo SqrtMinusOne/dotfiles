@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env sh
+# [[file:../../Console.org::*=nt= - exec command with a finished notification][=nt= - exec command with a finished notification:1]]
 command="$@"
 if [ ! -z "$command" ]; then
     start_time="$(date -u +%s)"
@@ -9,3 +10,4 @@ if [ ! -z "$command" ]; then
 else
     notify-send "Terminal" "Command execution complete"
 fi
+# =nt= - exec command with a finished notification:1 ends here

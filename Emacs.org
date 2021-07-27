@@ -2455,54 +2455,6 @@ There are some problems with org roam v2, so I disabled it as of now. I will pro
   :config
   (org-roam-bibtex-mode))
 #+end_src
-*** autocommit
-A script to autocommit files in my org directory.
-
-- If there are changed files and no files were changed over the last 60 minutes, commit.
-- If there is an unpushed commit, push
-- If either of these happened, make a notification
-
-#+begin_src bash :tangle ~/Documents/org-mode/commit.sh
-TIMEOUT_MIN=60
-
-export DISPLAY=:0
-cd $HOME/Documents/org-mode
-
-TIMESTAMP=$(date +%s)
-LAST_COMMIT_TIMESTAMP=$(git log -1 --format="%at" | xargs -I{} date -d @{} +%s)
-RECENTLY_CHANGED_NUM=$(find . -not -path '*/\.*' -mmin -$TIMEOUT_MIN | wc -l)
-CHANGED_NUM=$(git diff-index --name-only HEAD -- | wc -l)
-COMMITED="No"
-PUSHED="No"
-
-if [[ ($RECENTLY_CHANGED_NUM -eq 0 || $1 = "-F") && $CHANGED_NUM -gt 0 ]]; then
-    read -r -d '' MESSAGE << EOM
-Autocommit $(date -Iminutes)
-
-Hostname: $(hostname)
-EOM
-    git add *
-    git commit -m "$MESSAGE"
-    COMMITED="Yes"
-fi
-
-if [ $(git log origin/master..HEAD | wc -l) -gt 0 ]; then
-    git push && PUSHED="Yes" || PUSHED="No"
-fi
-
-if [[ $PUSHED = "Yes" || $COMMITED = "Yes" ]]; then
-    read -r -d '' NOTIFICATION << EOM
-Commited: $COMMITED
-Pushed: $PUSHED
-EOM
-    notify-send "Org mode sync" "$NOTIFICATION"
-fi
-#+end_src
-
-Cron job:
-#+begin_src scheme :tangle ~/.config/cron/org-mode.guile
-(job "0 * * * *" "~/Documents/org-mode/commit.sh")
-#+end_src
 ** UI
 *** OFF (OFF) Instant equations preview
 Instant math previews for org mode.
