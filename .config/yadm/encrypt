@@ -3,9 +3,6 @@
 .config/filezilla/filezilla.xml
 Mail/thexcloud/.credentials.gmailieer.json
 Mail/progin6304/.credentials.gmailieer.json
-.wegorc
-.msmtprc
-secrets/*
 .emacs.d/dired-bookmarks.el
 .emacs.d/elfeed.org
 .emacs.d/prodigy.org

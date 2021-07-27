@@ -4,7 +4,8 @@
 #+TITLE: Mail
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:conf-unix   :comments link
-#+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
+#+PROPERTY: header-args:conf-space  :comments link
+#+PROPERTY: header-args:bash        :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 
 My email configuration with [[https://notmuchmail.org/][notmuch]] + [[https://github.com/gauteh/lieer][lieer]] + [[https://marlam.de/msmtp/][msmtp]]. My problem with any particular mail setup was that I use Gmail labels quite extensively, and handling these over IMAP is rather awkward. Hence this choice of software.
 
@@ -165,7 +166,27 @@ The script is ran via GNU Mcron every 5 minutes.
 
 Sending emails can be done with MSMTP. It automatially chooses the email address and server based on the contents of the message, which is handy if there are multiple mailboxes to be managed.
 
-As I haven't encrypted my passwords properly yet, I encrypt the entire configuration file.
+#+begin_src conf-space :tangle ~/.msmtprc
+defaults
+auth on
+tls on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile ~/.msmtp.log
+
+account main
+host smtp.gmail.com
+port 587
+from thexcloud@gmail.com
+user thexcloud@gmail.com
+passwordeval "pass show My_Online/APIs/google-main-app-password | head -n 1"
+
+account progin
+host smtp.gmail.com
+port 587
+from progin6304@gmail.com
+user progin6304@gmail.com
+passwordeval "pass show My_Online/ETU/progin6304@gmail.com | head -n 1"
+#+end_src
 * Emacs
 :PROPERTIES:
 :header-args+: :tangle ~/.emacs.d/mail.el

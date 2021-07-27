@@ -43,6 +43,8 @@ declare -A BLOCKS=(
 # Geolocation for some modules
 export LOC="SPB"
 
+export IPSTACK_API_KEY=$(pass show My_Online/APIs/ipstack | head -n 1)
+
 pkill polybar
 for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     export MONITOR=$m

@@ -822,6 +822,8 @@ declare -A BLOCKS=(
 # Geolocation for some modules
 export LOC="SPB"
 
+export IPSTACK_API_KEY=$(pass show My_Online/APIs/ipstack | head -n 1)
+
 pkill polybar
 for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     export MONITOR=$m
@@ -945,11 +947,8 @@ A module to get a country of the current IP and openvpn status. Uses [[https://i
 
 #+begin_src bash :tangle ./bin/polybar/ipstack-vpn.sh :noweb yes
 ip=$(dig +short +timeout=1 myip.opendns.com @resolver1.opendns.com 2> /dev/null)
-if [[ ! -f ~/secrets/ipstack-api-key ]]; then
-    echo "%{u<<get-color(name="red")>>}%{+u} ?? %{u-}"
-    exit
-fi
-API_KEY="$(cat ~/secrets/ipstack-api-key)"
+# API_KEY="$(pass show My_Online/APIs/ipstack | head -n 1)"
+API_KEY=$IPSTACK_API_KEY
 if [[ -z $ip || $ip == *"timed out"* ]]; then
     echo "%{u<<get-color(name="red")>>}%{+u} ?? %{u-}"
     exit
@@ -2090,10 +2089,13 @@ This section generates manifests for various desktop software that I'm using.
 | office   | gimp            |
 | office   | krita           |
 ** LaTeX
-| Category | Guix dependency |
-|----------+-----------------|
-| latex    | texlive         |
-| latex    | texlab-bin      |
+| Category | Guix dependency               |
+|----------+-------------------------------|
+| latex    | texlive                       |
+| latex    | texlab-bin                    |
+| latex    | biber                         |
+| latex    | python-pygments               |
+| latex    | font-microsoft-web-core-fonts |
 ** Dev
 | Category | Guix dependency |
 |----------+-----------------|
