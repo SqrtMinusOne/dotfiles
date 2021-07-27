@@ -509,6 +509,7 @@ I don't enable the entire package, just the modes I need.
    '(eww
      proced
      emms
+     pass
      calendar
      dired
      debug
@@ -1398,6 +1399,9 @@ Prepend tab name with the shortened projectile project title
 #+begin_src emacs-lisp
 (setq my/project-title-separators "[-_ ]")
 
+(setq my/project-names-override-alist
+      '((".password-store" . "pass")))
+
 (defun my/shorten-project-name-elem (elem crop)
   (if (string-match "^\\[.*\\]$" elem)
       (concat "["
@@ -1413,12 +1417,14 @@ Prepend tab name with the shortened projectile project title
       (concat prefix rest))))
 
 (defun my/shorten-project-name (project-name)
-  (let ((elems (s-slice-at my/project-title-separators project-name)))
-    (concat
-     (apply
-      #'concat
-      (cl-mapcar (lambda (elem) (my/shorten-project-name-elem elem t)) (butlast elems)))
-     (my/shorten-project-name-elem (car (last elems)) nil))))
+  (or
+   (cdr (assoc project-name my/project-names-override-alist))
+   (let ((elems (s-slice-at my/project-title-separators project-name)))
+     (concat
+      (apply
+       #'concat
+       (cl-mapcar (lambda (elem) (my/shorten-project-name-elem elem t)) (butlast elems)))
+      (my/shorten-project-name-elem (car (last elems)) nil)))))
 
 (defun my/tab-bar-name-function ()
   (let ((project-name (projectile-project-name)))
@@ -4465,6 +4471,23 @@ Of course, Emacs can also display man and info pages.
 
 (evil-collection-define-key 'normal 'Info-mode-map
   (kbd "RET") 'Info-follow-nearest-node)
+
+(defun my/man-fix-width (&rest _)
+  (setq-local Man-width (- (window-width) 4)))
+
+(advice-add #'Man-update-manpage :before #'my/man-fix-width)
+#+end_src
+*** pass
+I use [[https://www.passwordstore.org/][pass]] as my password manager. Expectedly, there is Emacs frontend for it.
+
+#+begin_src emacs-lisp
+(use-package pass
+  :straight t
+  :commands (pass)
+  :init
+  (my-leader-def "ak" #'pass)
+  :config
+  (setq pass-show-keybindings nil))
 #+end_src
 *** Docker
 A package to manage docker containers from Emacs.

@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "password-store"
    "p7zip"
    "fzf"
    "neofetch"

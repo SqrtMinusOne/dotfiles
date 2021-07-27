@@ -139,6 +139,7 @@
    '(eww
      proced
      emms
+     pass
      calendar
      dired
      debug
@@ -715,6 +716,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq my/project-title-separators "[-_ ]")
 
+(setq my/project-names-override-alist
+      '((".password-store" . "pass")))
+
 (defun my/shorten-project-name-elem (elem crop)
   (if (string-match "^\\[.*\\]$" elem)
       (concat "["
@@ -730,12 +734,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (concat prefix rest))))
 
 (defun my/shorten-project-name (project-name)
-  (let ((elems (s-slice-at my/project-title-separators project-name)))
-    (concat
-     (apply
-      #'concat
-      (cl-mapcar (lambda (elem) (my/shorten-project-name-elem elem t)) (butlast elems)))
-     (my/shorten-project-name-elem (car (last elems)) nil))))
+  (or
+   (cdr (assoc project-name my/project-names-override-alist))
+   (let ((elems (s-slice-at my/project-title-separators project-name)))
+     (concat
+      (apply
+       #'concat
+       (cl-mapcar (lambda (elem) (my/shorten-project-name-elem elem t)) (butlast elems)))
+      (my/shorten-project-name-elem (car (last elems)) nil)))))
 
 (defun my/tab-bar-name-function ()
   (let ((project-name (projectile-project-name)))
@@ -966,11 +972,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (assoc
        (completing-read "Dired: " bookmarks nil nil "^")
        bookmarks)))))
-
-(use-package vlf
-  :straight t
-  :config
-  (require 'vlf-setup))
 
 (use-package vterm
   ;; :straight t
@@ -2962,6 +2963,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (evil-collection-define-key 'normal 'Info-mode-map
   (kbd "RET") 'Info-follow-nearest-node)
+
+(defun my/man-fix-width (&rest _)
+  (setq-local Man-width (- (window-width) 4)))
+
+(advice-add #'Man-update-manpage :before #'my/man-fix-width)
+
+(use-package pass
+  :straight t
+  :commands (pass)
+  :init
+  (my-leader-def "ak" #'pass)
+  :config
+  (setq pass-show-keybindings nil))
 
 (use-package docker
   :straight t

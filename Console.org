@@ -789,6 +789,7 @@ key_bindings:
 | neofetch        | Fetch system info                           |
 | fzf             | fuzzy finder                                |
 | p7zip           | archiver                                    |
+| password-store  | CLI password manager                        |
 
 | Note | Description     |
 |------+-----------------|
