@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "unzip"
    "password-store"
    "p7zip"
    "fzf"

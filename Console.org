@@ -790,6 +790,7 @@ key_bindings:
 | fzf             | fuzzy finder                                |
 | p7zip           | archiver                                    |
 | password-store  | CLI password manager                        |
+| unzip           |                                             |
 
 | Note | Description     |
 |------+-----------------|

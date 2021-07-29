@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [[file:../../Guix.org::*Manifest][Manifest:3]]
+# [[file:../../Guix.org::*conda][conda:2]]
 # Get writable conda envs with npm & without
 readarray -t CONDA_ENVS_ALL <<< $(conda env list --json | jq '.envs[]')
 CONDA_ENVS_NPM=()
@@ -33,4 +33,4 @@ for env in "${CONDA_ENVS_NO_NPM}"; do
     rm -rf "$env/etc/conda/deactivate.d/conda.sh" || true
     rm -rf "$env/etc/conda/deactivate.d/conda.fish" || true
 done
-# Manifest:3 ends here
+# conda:2 ends here
