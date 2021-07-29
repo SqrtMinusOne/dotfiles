@@ -146,6 +146,7 @@
      guix
      calc
      docker
+     ibuffer
      geiser
      pdf
      info
@@ -441,7 +442,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def
   :infix "f"
-  "b" 'counsel-switch-buffer
+  ;; "b" 'counsel-switch-buffer
+  "b" 'persp-ivy-switch-buffer
   "e" 'conda-env-activate
   "f" 'project-find-file
   "c" 'counsel-yank-pop
@@ -699,20 +701,46 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                        (format ":%s@%s" project-name (system-name))
                      (format "@%s" (system-name)))))))
 
-(general-define-key
- :keymaps 'override
- :states '(normal emacs)
- "gt" 'tab-bar-switch-to-next-tab
- "gT" 'tab-bar-switch-to-prev-tab
- "gn" 'tab-bar-new-tab)
+(use-package perspective
+  :straight t
+  :init
+  ;; (setq persp-show-modestring 'header)
+  (setq persp-sort 'created)
+  :config
+  (persp-mode)
+  (my-leader-def "x" 'perspective-map)
+  (general-define-key
+   :keymaps 'override
+   :states '(normal emacs)
+   "gt" 'persp-next
+   "gT" 'persp-prev
+   "gn" 'persp-switch
+   "gN" 'persp-kill)
+  (general-define-key
+   :keymaps 'perspective-map
+   "b" 'persp-ivy-switch-buffer
+   "x" 'persp-ivy-switch-buffer
+   "u" 'persp-ibuffer))
 
-(setq tab-bar-show 1)
-(setq tab-bar-tab-hints t)
-(setq tab-bar-tab-name-function 'tab-bar-tab-name-current-with-count)
+(defun my/persp-move-window-and-switch ()
+  (interactive)
+  (let* ((buffer (current-buffer)))
+    (call-interactively #'persp-switch)
+    (persp-set-buffer (buffer-name buffer))
+    (switch-to-buffer buffer)))
 
-;; Tabs
-(general-nmap "gn" 'tab-new)
-(general-nmap "gN" 'tab-close)
+(defun my/persp-copy-window-and-switch ()
+  (interactive)
+  (let* ((buffer (current-buffer)))
+    (call-interactively #'persp-switch)
+    (persp-add-buffer (buffer-name buffer))
+    (switch-to-buffer buffer)))
+
+(with-eval-after-load 'perspective
+  (general-define-key
+   :keymaps 'perspective-map
+   "m" #'my/persp-move-window-and-switch
+   "f" #'my/persp-copy-window-and-switch))
 
 (setq my/project-title-separators "[-_ ]")
 
@@ -2822,6 +2850,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   ;; evil-lion shadows ga bindings
   (add-hook 'emms-browser-mode-hook
             (lambda () (evil-lion-mode -1)))
+  ;; I have everything I need in polybar
+  (emms-mode-line-mode -1)
+  (emms-playing-time-display-mode -1)
   (defun emms-info-mpd-process (track info)
     (dolist (data info)
       (let ((name (car data))

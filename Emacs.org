@@ -82,7 +82,9 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#custom-theme][Custom theme]]
     - [[#font][Font]]
   - [[#custom-frame-title][Custom frame title]]
-  - [[#tab-bar][Tab bar]]
+  - [[#perspectiveel][perspective.el]]
+    - [[#some-functions][Some functions]]
+  - [[#off-tab-bar][(OFF) Tab bar]]
     - [[#setup][Setup]]
     - [[#my-title][My title]]
   - [[#modeline][Modeline]]
@@ -126,7 +128,6 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
       - [[#org-roam-protocol][org-roam-protocol]]
     - [[#org-ref][org-ref]]
     - [[#org-roam-bibtex][org-roam-bibtex]]
-    - [[#autocommit][autocommit]]
   - [[#ui][UI]]
     - [[#off-instant-equations-preview][(OFF) Instant equations preview]]
     - [[#latex-fragments][LaTeX fragments]]
@@ -237,6 +238,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#discord-integration][Discord integration]]
   - [[#utilities][Utilities]]
     - [[#tldr-man-info][tldr, man, info]]
+    - [[#pass][pass]]
     - [[#docker][Docker]]
     - [[#progidy][Progidy]]
     - [[#proced][proced]]
@@ -516,6 +518,7 @@ I don't enable the entire package, just the modes I need.
      guix
      calc
      docker
+     ibuffer
      geiser
      pdf
      info
@@ -917,7 +920,8 @@ References:
 #+begin_src emacs-lisp
 (my-leader-def
   :infix "f"
-  "b" 'counsel-switch-buffer
+  ;; "b" 'counsel-switch-buffer
+  "b" 'persp-ivy-switch-buffer
   "e" 'conda-env-activate
   "f" 'project-find-file
   "c" 'counsel-yank-pop
@@ -1374,10 +1378,70 @@ To make the icons work (e.g. in the Doom Modeline), run =M-x all-the-icons-insta
                        (format ":%s@%s" project-name (system-name))
                      (format "@%s" (system-name)))))))
 #+end_src
-** Tab bar
-I rely rather heavily on tab-bar in my workflow. I have a suspicion I'm not using it the intended way, but that works for me.
-*** Setup
+** perspective.el
+[[https://github.com/nex3/perspective-el][perspective.el]] is a package which provides gives Emacs capacities to group buffers into "perspectives", which are like workspaces in tiling WMs.
+
+An advantage over =tab-bar.el= is that =perspective.el= has better capacities for managing buffers, e.g. gives an ibuffer-like interface inside a perspective.
+
+However, I don't like that list of workspaces is displayed inside the modeline rather than in an actual bar on the top of the frame. I may look into that later.
+
 #+begin_src emacs-lisp
+(use-package perspective
+  :straight t
+  :init
+  ;; (setq persp-show-modestring 'header)
+  (setq persp-sort 'created)
+  :config
+  (persp-mode)
+  (my-leader-def "x" 'perspective-map)
+  (general-define-key
+   :keymaps 'override
+   :states '(normal emacs)
+   "gt" 'persp-next
+   "gT" 'persp-prev
+   "gn" 'persp-switch
+   "gN" 'persp-kill)
+  (general-define-key
+   :keymaps 'perspective-map
+   "b" 'persp-ivy-switch-buffer
+   "x" 'persp-ivy-switch-buffer
+   "u" 'persp-ibuffer))
+#+end_src
+*** Some functions
+Move the current buffer to a perspective and switch to it.
+#+begin_src emacs-lisp
+(defun my/persp-move-window-and-switch ()
+  (interactive)
+  (let* ((buffer (current-buffer)))
+    (call-interactively #'persp-switch)
+    (persp-set-buffer (buffer-name buffer))
+    (switch-to-buffer buffer)))
+#+end_src
+
+Copy the current buffer to a perspective and switch to it.
+#+begin_src emacs-lisp
+(defun my/persp-copy-window-and-switch ()
+  (interactive)
+  (let* ((buffer (current-buffer)))
+    (call-interactively #'persp-switch)
+    (persp-add-buffer (buffer-name buffer))
+    (switch-to-buffer buffer)))
+#+end_src
+
+Add keybindings to the default map.
+#+begin_src emacs-lisp
+(with-eval-after-load 'perspective
+  (general-define-key
+   :keymaps 'perspective-map
+   "m" #'my/persp-move-window-and-switch
+   "f" #'my/persp-copy-window-and-switch))
+#+end_src
+** OFF (OFF) Tab bar
++I rely rather heavily on tab-bar in my workflow. I have a suspicion I'm not using it the intended way, but that works for me.+
+
+For now switched to perspective.el, so the following block is not tangled.
+*** Setup
+#+begin_src emacs-lisp :tangle no
 (general-define-key
  :keymaps 'override
  :states '(normal emacs)
@@ -1435,7 +1499,6 @@ Prepend tab name with the shortened projectile project title
 
 (setq tab-bar-tab-name-function #'my/tab-bar-name-function)
 #+end_src
-
 ** Modeline
 A modeline from Doom Emacs.
 
@@ -4212,7 +4275,7 @@ And a function to open YouTube link from elfeed
     "gm" #'my/elfeed-open-mpv))
 #+end_src
 *** EMMS
-EMMS is the Emacs Multi-Media System. I am currently trying to control MPD from Emacs with its help.
+EMMS is the Emacs Multi-Media System. I am controlling MPD from Emacs with its help.
 
 References:
 - [[https://www.gnu.org/software/emms/manual/][EMMS Manual]]
@@ -4251,6 +4314,9 @@ References:
   ;; evil-lion shadows ga bindings
   (add-hook 'emms-browser-mode-hook
             (lambda () (evil-lion-mode -1)))
+  ;; I have everything I need in polybar
+  (emms-mode-line-mode -1)
+  (emms-playing-time-display-mode -1)
   <<emms-fixes>>)
 #+end_src
 **** Some keybindings
