@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "jmtpfs"
    "unzip"
    "password-store"
    "p7zip"
