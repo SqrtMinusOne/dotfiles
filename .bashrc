@@ -5,7 +5,7 @@ export SHELL
 # [[file:Console.org::*Startup & environment][Startup & environment:2]]
 if [[ $- != *i* ]]
 then
-    [[ -n "$SSH_CLIENT" ]] && source /etc/profile
+    [[ -n "$SSH_CLIENT" && -f "/etc/bashrc" ]] && source /etc/profile
     return
 fi
 # Startup & environment:2 ends here

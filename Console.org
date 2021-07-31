@@ -243,7 +243,7 @@ We are being invoked from a non-interactive shell.  If this is an SSH session (a
 #+begin_src bash
 if [[ $- != *i* ]]
 then
-    [[ -n "$SSH_CLIENT" ]] && source /etc/profile
+    [[ -n "$SSH_CLIENT" && -f "/etc/bashrc" ]] && source /etc/profile
     return
 fi
 #+end_src
@@ -532,10 +532,10 @@ vicmd_symbol = "[ᐊ ](bold green)"
 [aws]
 symbol = " "
 
-[battery]
-full_symbol = ""
-charging_symbol = ""
-discharging_symbol = ""
+# [battery]
+# full_symbol = ""
+# charging_symbol = ""
+# discharging_symbol = ""
 
 [conda]
 symbol = " "
@@ -927,4 +927,42 @@ fi
 (specifications->manifest
  '(
    <<packages()>>))
+#+end_src
+* Android notes
+SSH instructions: https://wiki.termux.com/wiki/Remote_Access
+
+Don't forget to install the following termux packages:
+| Termux package |
+|----------------|
+| vim            |
+| tmux           |
+| starship       |
+| fish           |
+| exa            |
+
+** Installation of [[https://gitlab.com/dwt1/shell-color-scripts][DT's colorscripts]]:
+#+begin_src bash :tangle no :eval no
+git clone https://gitlab.com/dwt1/shell-color-scripts.git
+cd shell-color-scripts
+#+end_src
+
+Apply a patch:
+#+begin_src diff
+--- a/colorscript.sh
++++ b/colorscript.sh
+@@ -2,7 +2,7 @@
+
+ # Simple CLI for shell-color-scripts
+
+-DIR_COLORSCRIPTS="/opt/shell-color-scripts/colorscripts"
++DIR_COLORSCRIPTS="$PREFIX/opt/shell-color-scripts/colorscripts"
+ LS_CMD="$(command -v ls)"
+ fmt_help="  %-20s\t%-54s\n"
+ list_colorscripts="$($LS_CMD "${DIR_COLORSCRIPTS}" | cut -d ' ' -f 1 | nl)"
+#+end_src
+
+#+begin_src bash :tangle no :eval no
+sudo mkdir -p $PREFIX/opt/shell-color-scripts/colorscripts || return 1
+sudo cp -rf colorscripts/* $PREFIX/opt/shell-color-scripts/colorscripts
+sudo cp colorscript.sh $PREFIX/bin/colorscript
 #+end_src
