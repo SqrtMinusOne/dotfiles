@@ -484,6 +484,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :after (treemacs magit)
   :straight t)
 
+(use-package treemacs-perspective
+  :after (treemacs perspective)
+  :straight t
+  :config
+  (treemacs-set-scope-type 'Perspectives))
+
 (general-define-key
  :keymaps '(normal override global)
  "C-n" 'treemacs)

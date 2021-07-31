@@ -1003,7 +1003,7 @@ Config for the Helm incremental completion framework. I switched to Ivy some tim
 ** Treemacs
 [[https://github.com/Alexander-Miller/treemacs][Treemacs]] calls itself a tree layout file explorer, but looks more like a project and workspace management system.
 
-Integrates with evil, magit and projectile.
+Integrates with evil, magit, projectile and perspective. The latter is particularly great - each perspective can have its own treemacs workspace!
 
 #+begin_src emacs-lisp
 (use-package treemacs
@@ -1024,6 +1024,12 @@ Integrates with evil, magit and projectile.
 (use-package treemacs-magit
   :after (treemacs magit)
   :straight t)
+
+(use-package treemacs-perspective
+  :after (treemacs perspective)
+  :straight t
+  :config
+  (treemacs-set-scope-type 'Perspectives))
 
 (general-define-key
  :keymaps '(normal override global)
@@ -1059,6 +1065,31 @@ Function to open dired and vterm at given nodes.
    "gd" 'my/treemacs-open-dired
    "gt" 'my/treemacs-open-vterm
    "`" 'my/treemacs-open-vterm))
+#+end_src
+
+Also a function to open a file from all treemacs projects.
+#+begin_src emacs-lisp
+(defun my/get-treemacs-workspace-file-alist ()
+  (apply
+   #'append
+   (mapcar
+    (lambda (project)
+      (let* ((path (treemacs-project->path project))
+             (name (projectile-project-name path)))
+        (mapcar (lambda (file) (cons
+                                (format "[%s] %s" name file)
+                                (concat path "/" file)))
+                (projectile-project-files path))))
+    (treemacs-workspace->projects
+     (treemacs-current-workspace)))))
+
+(defun my/treemacs-open-file-in-all-workspaces ()
+  (interactive)
+  (find-file
+   (let* ((files (my/get-treemacs-workspace-file-alist)))
+     (cdr (assoc
+           (completing-read "Files: " files nil t)
+           files)))))
 #+end_src
 ** Projectile
 [[https://github.com/bbatsov/projectile][Projectile]] gives a bunch of useful functions for managing projects, like finding files within a project, fuzzy-find, replace, etc.
