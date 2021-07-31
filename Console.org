@@ -250,7 +250,9 @@ fi
 
 Source the system-wide file
 #+begin_src bash
-source /etc/bashrc
+if [[ -f "/etc/bashrc" ]]; then
+    source /etc/bashrc
+fi
 #+end_src
 
 | Guix dependency |

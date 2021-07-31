@@ -11,7 +11,9 @@ fi
 # Startup & environment:2 ends here
 
 # [[file:Console.org::*Startup & environment][Startup & environment:3]]
-source /etc/bashrc
+if [[ -f "/etc/bashrc" ]]; then
+    source /etc/bashrc
+fi
 # Startup & environment:3 ends here
 
 # [[file:Console.org::*Startup & environment][Startup & environment:4]]
