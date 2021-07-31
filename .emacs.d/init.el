@@ -41,6 +41,8 @@
 
 (setq my/slow-ssh (string= (getenv "IS_TRAMP") "true"))
 
+(setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
+
 (when my/lowpower
   (setq comp-async-jobs-number 1))
 
@@ -606,6 +608,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package wakatime-mode
   :straight t
+  :if (not my/is-termux)
   :config
   (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime")))
   (global-wakatime-mode))
@@ -615,12 +618,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package activity-watch-mode
   :straight t
+  :if (not my/is-termux)
   :config
   (global-activity-watch-mode))
 
-(tool-bar-mode -1)
-(menu-bar-mode -1)
-(scroll-bar-mode -1)
+(unless my/is-termux
+  (tool-bar-mode -1)
+  (menu-bar-mode -1)
+  (scroll-bar-mode -1))
 
 ;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
 ;; (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
@@ -657,6 +662,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package doom-themes
   :straight t
+  :if (not my/is-termux)
   :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
@@ -665,36 +671,37 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
 
-(deftheme my-theme)
+(unless my/is-termux
+  (deftheme my-theme)
 
-(defun my/update-my-theme (&rest _)
-  (custom-theme-set-faces
-   'my-theme
-   `(tab-bar-tab ((t (
-                      :background ,(doom-color 'bg)
-                      :foreground ,(doom-color 'yellow)
-                      :underline ,(doom-color 'yellow)))))
-   `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-   `(org-block-begin-line ((t (
-                               :background ,(color-darken-name (doom-color 'bg) 3)
-                               :foreground ,(doom-color 'grey)))))
-   `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
-   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
-   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
-   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
-   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
-   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
-   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
-  (custom-theme-set-variables
-   'my-theme
-   `(aweshell-invalid-command-color ,(doom-color 'red))
-   `(aweshell-valid-command-color ,(doom-color 'green)))
-  (enable-theme 'my-theme))
+  (defun my/update-my-theme (&rest _)
+    (custom-theme-set-faces
+     'my-theme
+     `(tab-bar-tab ((t (
+                        :background ,(doom-color 'bg)
+                        :foreground ,(doom-color 'yellow)
+                        :underline ,(doom-color 'yellow)))))
+     `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+     `(org-block-begin-line ((t (
+                                 :background ,(color-darken-name (doom-color 'bg) 3)
+                                 :foreground ,(doom-color 'grey)))))
+     `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+     `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
+     `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
+     `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
+     `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
+     `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
+     `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
+     `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
+    (custom-theme-set-variables
+     'my-theme
+     `(aweshell-invalid-command-color ,(doom-color 'red))
+     `(aweshell-valid-command-color ,(doom-color 'green)))
+    (enable-theme 'my-theme))
 
-(advice-add 'load-theme :after #'my/update-my-theme)
-(when (fboundp 'doom-color)
-  (my/update-my-theme))
+  (advice-add 'load-theme :after #'my/update-my-theme)
+  (when (fboundp 'doom-color)
+    (my/update-my-theme)))
 
 (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
 
@@ -798,11 +805,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package emojify
   :straight t
-  :if (not my/lowpower)
+  :if (not (or my/lowpower my/is-termux))
   :hook (after-init . global-emojify-mode))
 
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
+  :if (not my/is-termux)
   :config
   (ligature-set-ligatures
    '(
@@ -940,7 +948,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package all-the-icons-dired
   :straight t
   :if (not (or my/lowpower my/slow-ssh))
-  :hook (dired-mode . all-the-icons-dired-mode)
+  :hook (dired-mode . (lambda ()
+                        (unless (string-match-p "/gnu/store" default-directory)
+                          (all-the-icons-dired-mode))))
   :config
   (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
   (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice)
@@ -1163,32 +1173,34 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (org-crypt-use-before-save-magic)
   (setq org-tags-exclude-from-inheritance (quote ("crypt")))
   (setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205")
-  (use-package jupyter
-    :straight t
-    :init
-    (my-leader-def "ar" 'jupyter-run-repl))
-  (use-package ob-hy
-    :straight t)
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((emacs-lisp . t)
-     (python . t)
-     (sql . t)
-     ;; (typescript .t)
-     (hy . t)
-     (shell . t)
-     (octave . t)
-     (jupyter . t)))
-  
-  (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
-  (org-babel-jupyter-override-src-block "python")
-  (org-babel-jupyter-override-src-block "hy")
-  (add-hook 'org-src-mode-hook
-            (lambda ()
-              ;; (hs-minor-mode -1)
-              ;; (electric-indent-local-mode -1)
-              ;; (rainbow-delimiters-mode -1)
-              (highlight-indent-guides-mode -1)))
+  (unless my/is-termux
+    (use-package jupyter
+      :straight t
+      :if (not my/is-termux)
+      :init
+      (my-leader-def "ar" 'jupyter-run-repl))
+    (use-package ob-hy
+      :straight t)
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((emacs-lisp . t)
+       (python . t)
+       (sql . t)
+       ;; (typescript .t)
+       (hy . t)
+       (shell . t)
+       (octave . t)
+       (jupyter . t)))
+    
+    (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+    (org-babel-jupyter-override-src-block "python")
+    (org-babel-jupyter-override-src-block "hy")
+    (add-hook 'org-src-mode-hook
+              (lambda ()
+                ;; (hs-minor-mode -1)
+                ;; (electric-indent-local-mode -1)
+                ;; (rainbow-delimiters-mode -1)
+                (highlight-indent-guides-mode -1))))
   (setq my/org-latex-scale 1.75)
   (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
   (setq my/latex-preview-header "\\documentclass{article}
@@ -1314,6 +1326,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package jupyter
   :straight t
+  :if (not my/is-termux)
   :init
   (my-leader-def "ar" 'jupyter-run-repl))
 
@@ -1778,7 +1791,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package lsp-mode
   :straight t
-  :if (not my/slow-ssh)
+  :if (not (or my/slow-ssh my/is-termux))
   :hook (
          (typescript-mode . lsp)
          (vue-mode . lsp)
@@ -2740,7 +2753,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-define-key "C-c f" 'my/open-yadm-file)
 (my-leader-def "cf" 'my/open-yadm-file)
 
-(load-file (expand-file-name "mail.el" user-emacs-directory))
+(unless my/is-termux
+  (load-file (expand-file-name "mail.el" user-emacs-directory)))
 
 (use-package elfeed
   :straight (:repo "SqrtMinusOne/elfeed" :host github)
@@ -2827,6 +2841,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package emms
   :straight t
   :commands (emms-smart-browse emms-browser)
+  :if (not my/is-termux)
   :init
   (my-leader-def
     :infix "as"

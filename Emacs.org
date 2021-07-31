@@ -332,9 +332,14 @@ The following variable is true when my machine is not powerful enough for some r
 (setq my/lowpower (string= (system-name) "azure"))
 #+end_src
 
-And the following is true if Emacs is meant to be used with TRAMP over slow ssh
+The following is true if Emacs is meant to be used with TRAMP over slow ssh
 #+begin_src emacs-lisp
 (setq my/slow-ssh (string= (getenv "IS_TRAMP") "true"))
+#+end_src
+
+And the following is true if Emacs is ran from termux on Android.
+#+begin_src emacs-lisp
+(setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
 #+end_src
 *** Native compilation
 Set number of jobs to 1 on low-power machines
@@ -1066,31 +1071,6 @@ Function to open dired and vterm at given nodes.
    "gt" 'my/treemacs-open-vterm
    "`" 'my/treemacs-open-vterm))
 #+end_src
-
-Also a function to open a file from all treemacs projects.
-#+begin_src emacs-lisp
-(defun my/get-treemacs-workspace-file-alist ()
-  (apply
-   #'append
-   (mapcar
-    (lambda (project)
-      (let* ((path (treemacs-project->path project))
-             (name (projectile-project-name path)))
-        (mapcar (lambda (file) (cons
-                                (format "[%s] %s" name file)
-                                (concat path "/" file)))
-                (projectile-project-files path))))
-    (treemacs-workspace->projects
-     (treemacs-current-workspace)))))
-
-(defun my/treemacs-open-file-in-all-workspaces ()
-  (interactive)
-  (find-file
-   (let* ((files (my/get-treemacs-workspace-file-alist)))
-     (cdr (assoc
-           (completing-read "Files: " files nil t)
-           files)))))
-#+end_src
 ** Projectile
 [[https://github.com/bbatsov/projectile][Projectile]] gives a bunch of useful functions for managing projects, like finding files within a project, fuzzy-find, replace, etc.
 
@@ -1241,6 +1221,7 @@ Before I figure out how to package this for Guix:
 #+begin_src emacs-lisp
 (use-package wakatime-mode
   :straight t
+  :if (not my/is-termux)
   :config
   (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime")))
   (global-wakatime-mode))
@@ -1252,6 +1233,7 @@ Before I figure out how to package this for Guix:
 
 (use-package activity-watch-mode
   :straight t
+  :if (not my/is-termux)
   :config
   (global-activity-watch-mode))
 #+end_src
@@ -1259,9 +1241,10 @@ Before I figure out how to package this for Guix:
 ** General UI & GUI Settings
 Disable GUI elements
 #+begin_src emacs-lisp
-(tool-bar-mode -1)
-(menu-bar-mode -1)
-(scroll-bar-mode -1)
+(unless my/is-termux
+  (tool-bar-mode -1)
+  (menu-bar-mode -1)
+  (scroll-bar-mode -1))
 #+end_src
 
 Transparency
@@ -1338,6 +1321,7 @@ My colorscheme of choice.
 #+begin_src emacs-lisp
 (use-package doom-themes
   :straight t
+  :if (not my/is-termux)
   :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
@@ -1353,36 +1337,37 @@ A custom theme is necessary because if one calls =custom-set-faces= and =custom-
 
 Also, a hook allows me to change doom-theme more or less at will, although I do that only to switch to a light theme once in a blue moon.
 #+begin_src emacs-lisp
-(deftheme my-theme)
+(unless my/is-termux
+  (deftheme my-theme)
 
-(defun my/update-my-theme (&rest _)
-  (custom-theme-set-faces
-   'my-theme
-   `(tab-bar-tab ((t (
-                      :background ,(doom-color 'bg)
-                      :foreground ,(doom-color 'yellow)
-                      :underline ,(doom-color 'yellow)))))
-   `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-   `(org-block-begin-line ((t (
-                               :background ,(color-darken-name (doom-color 'bg) 3)
-                               :foreground ,(doom-color 'grey)))))
-   `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
-   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
-   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
-   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
-   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
-   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
-   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
-  (custom-theme-set-variables
-   'my-theme
-   `(aweshell-invalid-command-color ,(doom-color 'red))
-   `(aweshell-valid-command-color ,(doom-color 'green)))
-  (enable-theme 'my-theme))
+  (defun my/update-my-theme (&rest _)
+    (custom-theme-set-faces
+     'my-theme
+     `(tab-bar-tab ((t (
+                        :background ,(doom-color 'bg)
+                        :foreground ,(doom-color 'yellow)
+                        :underline ,(doom-color 'yellow)))))
+     `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+     `(org-block-begin-line ((t (
+                                 :background ,(color-darken-name (doom-color 'bg) 3)
+                                 :foreground ,(doom-color 'grey)))))
+     `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+     `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
+     `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
+     `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
+     `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
+     `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
+     `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
+     `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
+    (custom-theme-set-variables
+     'my-theme
+     `(aweshell-invalid-command-color ,(doom-color 'red))
+     `(aweshell-valid-command-color ,(doom-color 'green)))
+    (enable-theme 'my-theme))
 
-(advice-add 'load-theme :after #'my/update-my-theme)
-(when (fboundp 'doom-color)
-  (my/update-my-theme))
+  (advice-add 'load-theme :after #'my/update-my-theme)
+  (when (fboundp 'doom-color)
+    (my/update-my-theme)))
 #+end_src
 
 *** Font
@@ -1556,7 +1541,7 @@ References:
 #+begin_src emacs-lisp
 (use-package emojify
   :straight t
-  :if (not my/lowpower)
+  :if (not (or my/lowpower my/is-termux))
   :hook (after-init . global-emojify-mode))
 #+end_src
 *** Ligatures
@@ -1564,6 +1549,7 @@ Ligature setup for the JetBrainsMono font.
 #+begin_src emacs-lisp
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
+  :if (not my/is-termux)
   :config
   (ligature-set-ligatures
    '(
@@ -1711,15 +1697,17 @@ Reuse the current dired buffer instead of spamming new ones.
 
 Display icons for files.
 
-| Note      | Type                                    |
-|-----------+-----------------------------------------|
-| *ACHTUNG* | This plugin is slow as hell with TRAMP  |
+| Note      | Type                                                     |
+|-----------+----------------------------------------------------------|
+| *ACHTUNG* | This plugin is slow as hell with TRAMP or in =gnu/store= |
 
 #+begin_src emacs-lisp
 (use-package all-the-icons-dired
   :straight t
   :if (not (or my/lowpower my/slow-ssh))
-  :hook (dired-mode . all-the-icons-dired-mode)
+  :hook (dired-mode . (lambda ()
+                        (unless (string-match-p "/gnu/store" default-directory)
+                          (all-the-icons-dired-mode))))
   :config
   (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
   (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice)
@@ -2051,7 +2039,8 @@ Use the built-in org mode.
             (lambda ()
               (rainbow-delimiters-mode -1)))
   <<org-crypt-setup>>
-  <<org-lang-setup>>
+  (unless my/is-termux
+    <<org-lang-setup>>)
   <<org-ui-setup>>
   <<org-keys-setup>>
   <<org-productivity-setup>>)
@@ -2106,6 +2095,7 @@ References:
 #+begin_src emacs-lisp :noweb-ref org-lang-setup
 (use-package jupyter
   :straight t
+  :if (not my/is-termux)
   :init
   (my-leader-def "ar" 'jupyter-run-repl))
 #+end_src
@@ -2980,7 +2970,7 @@ References:
 #+begin_src emacs-lisp
 (use-package lsp-mode
   :straight t
-  :if (not my/slow-ssh)
+  :if (not (or my/slow-ssh my/is-termux))
   :hook (
          (typescript-mode . lsp)
          (vue-mode . lsp)
@@ -4191,7 +4181,8 @@ Open a file managed by yadm.
 My notmuch config now resides in [[file:Mail.org][Mail.org]].
 
 #+begin_src emacs-lisp
-(load-file (expand-file-name "mail.el" user-emacs-directory))
+(unless my/is-termux
+  (load-file (expand-file-name "mail.el" user-emacs-directory)))
 #+end_src
 *** Elfeed
 [[https://github.com/skeeto/elfeed][elfeed]] is an Emacs RSS client.
@@ -4316,6 +4307,7 @@ References:
 (use-package emms
   :straight t
   :commands (emms-smart-browse emms-browser)
+  :if (not my/is-termux)
   :init
   (my-leader-def
     :infix "as"
