@@ -493,8 +493,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq treemacs-follow-after-init nil)
   (setq treemacs-space-between-root-nodes nil)
   (treemacs-git-mode 'extended)
-  (with-eval-after-load 'treemacs
-    (add-to-list 'treemacs-pre-file-insert-predicates #'treemacs-is-file-git-ignored?)))
+  (add-to-list 'treemacs-pre-file-insert-predicates #'treemacs-is-file-git-ignored?)
+  (general-define-key
+   :keymaps 'treemacs-mode-map
+   [mouse-1] #'treemacs-single-click-expand-action
+   "M-l" #'treemacs-root-down
+   "M-h" #'treemacs-root-up))
 
 (use-package treemacs-evil
   :after (treemacs evil)
@@ -710,7 +714,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
      `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
      `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
      `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
-     `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
+     `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow)))))
+     `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow))))))
     (custom-theme-set-variables
      'my-theme
      `(aweshell-invalid-command-color ,(doom-color 'red))

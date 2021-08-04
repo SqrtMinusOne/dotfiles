@@ -37,7 +37,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#evil][evil]]
     - [[#addons][Addons]]
     - [[#evil-collection][evil-collection]]
-  - [[#more-keybindigs][More keybindigs]]
+  - [[#more-keybindings][More keybindings]]
     - [[#escape-key][Escape key]]
     - [[#home--end][Home & end]]
     - [[#my-leader][My leader]]
@@ -117,7 +117,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#view-html-in-browser][View HTML in browser]]
     - [[#setup][Setup]]
     - [[#managing-jupyter-kernels][Managing Jupyter kernels]]
-    - [[#do-not-wrap-output-in-emacs-jupyter][Do not wrap output in emacs-jupyter]]
+    - [[#do-not-wrap-the-output-in-emacs-jupyter][Do not wrap the output in emacs-jupyter]]
     - [[#wrap-source-code-output][Wrap source code output]]
   - [[#productivity--knowledge-management][Productivity & Knowledge management]]
     - [[#capture-templates--various-settings][Capture templates & various settings]]
@@ -338,7 +338,7 @@ The following is true if Emacs is meant to be used with TRAMP over slow ssh.
 (setq my/slow-ssh (string= (getenv "IS_TRAMP") "true"))
 #+end_src
 
-And the following is true if Emacs is ran from termux on Android.
+And the following is true if Emacs is run from termux on Android.
 #+begin_src emacs-lisp
 (setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
 #+end_src
@@ -353,7 +353,7 @@ Set number of jobs to 1 on low-power machines
 
 The following code uses the conda package to activate the base environment on startup if Emacs is launched outside the environment.
 
-Also, there are some strange things happening if vterm is launched with conda activated from Emacs, so I advice =conda-env-activate= to set an auxillary environment variable.
+Also, some strange things are happening if vterm is launched with conda activated from Emacs, so I advise =conda-env-activate= to set an auxililary environment variable.
 
 References:
 - [[https://docs.anaconda.com/][Anaconda docs]]
@@ -485,7 +485,7 @@ Basic evil configuration.
          (org-mode . turn-on-evil-quickscope-mode)))
 #+end_src
 
-[[https://github.com/cofi/evil-numbers][evil-numbers]] allows incrementing and decrementing numbers at point.
+[[https://github.com/cofi/evil-numbers][evil-numbers]] allows incrementing and decrementing numbers at the point.
 #+begin_src emacs-lisp
 (use-package evil-numbers
   :straight t
@@ -549,13 +549,13 @@ I don't enable the entire package, just the modes I need.
      magit
      prodigy)))
 #+end_src
-** More keybindigs
-The main keybindigs setup is positioned after evil mode to take the latter into account.
+** More keybindings
+The main keybindings setup is positioned after evil mode to take the latter into account.
 
 *** Escape key
-Use escape key instead of =C-g= whenever possible.
+Use the escape key instead of =C-g= whenever possible.
 
-I must have copied it from somewhere, but as I googled to find out the original source, I discovered quite a number of variations of the following code over time. I wonder if Richard Dawkins was inspired by something like this a few decades ago.
+I must have copied it from somewhere, but as I googled to find out the source, I discovered quite a number of variations of the following code over time. I wonder if Richard Dawkins was inspired by something like this a few decades ago.
 
 #+begin_src emacs-lisp
 (defun minibuffer-keyboard-quit ()
@@ -601,7 +601,7 @@ Using the =SPC= key as a leader key, like in Doom Emacs or Spacemacs.
 (my-leader-def "E" 'eval-expression)
 #+end_src
 
-=general.el= has a nice intergration with which-key, so I use this fact to show more desriptive annotations for certain groups of keybindings (the default one is =prefix=).
+=general.el= has a nice integration with which-key, so I use this fact to show more descriptive annotations for certain groups of keybindings (the default one is =prefix=).
 #+begin_src emacs-lisp
 (my-leader-def
   "a" '(:which-key "apps"))
@@ -681,7 +681,7 @@ Some keybindings for xref, Emacs' built-in systems for managing identifiers.
 *** Folding
 There are multiple ways to fold text in Emacs.
 
-The most versatile is the built-in =hs-minor-mode=, which seems to work out of box for Lisps, C-like languages and Python. =outline-minor-mode= works for org mode, LaTeX and the like. There is 3rd-party solution [[https://github.com/elp-revive/origami.el][origami.el]], but I don't use it at the moment.
+The most versatile is the built-in =hs-minor-mode=, which seems to work out of the box for Lisps, C-like languages and Python. =outline-minor-mode= works for org-mode, LaTeX and the like. There is a 3rd-party solution [[https://github.com/elp-revive/origami.el][origami.el]], but I don't use it at the moment.
 
 Evil does a pretty good job of uniting these two in the set of vim-like keybindings. I was using =SPC= in vim, but as now this isn't an option, I set =TAB= to toggle folding.
 
@@ -732,7 +732,7 @@ References:
 *** Aggressive Indent
 A package to keep the code intended.
 
-Doesn't work too well with js ecosystem, because the lsp-based indentation is rather slow, but nice for Lisps.
+Doesn't work too well with js ecosystem, because the LSP-based indentation is rather slow but nice for Lisps.
 
 References:
 - [[https://github.com/Malabarba/aggressive-indent-mode][aggressive-indent-mode repo]]
@@ -908,7 +908,7 @@ References:
 #+end_src
 
 *** ivy-rich
-[[https://github.com/Yevgnen/ivy-rich][ivy-rich]] provides more informative interface for ivy.
+[[https://github.com/Yevgnen/ivy-rich][ivy-rich]] provides a more informative interface for ivy.
 #+begin_src emacs-lisp
 (use-package ivy-rich
   :straight t
@@ -919,7 +919,7 @@ References:
 #+end_src
 
 *** prescient
-A package which enhances sorting & filtering of candidates. =ivy-prescient= adds integration with Ivy.
+A package that enhances sorting & filtering of candidates. =ivy-prescient= adds integration with Ivy.
 
 References:
 - [[https://github.com/raxod502/prescient.el][prescient.el repo]]
@@ -1237,7 +1237,7 @@ References:
 (general-imap "M-TAB" 'company-yasnippet)
 #+end_src
 ** Time trackers
-A bunch of timetrackers I use.
+A bunch of time trackers I use.
 
 References:
 - [[https://wakatime.com][WakaTime]]
@@ -1310,7 +1310,7 @@ Hide mouse cursor while typing
 #+end_src
 
 Line numbers. There seems to be a catch with the relative number setting:
-- =visual= doesn't take folding into account, but also doesn't take wrapped lines into account (makes multiple numbers for a single wrapped line)
+- =visual= doesn't take folding into account but also doesn't take wrapped lines into account (makes multiple numbers for a single wrapped line)
 - =relative= makes a single number for a wrapped line, but counts folded lines.
 
 =visual= option seems to be less of a problem in most cases.
@@ -1327,16 +1327,16 @@ Show pairs
 #+end_src
 
 Word wrapping. These settings aren't too obvious compared to =:set wrap= from vim:
-- =word-wrap= means just "don't split one word between two lines". So, if there isn't enough place to put a word at the end of line, it will be put on a new one. Run =M-x toggle-word-wrap= to toggle that.
-- =visual-line-mode= seems to be a superset of =word-wrap=. It also enables some editing commands to work on visual lines instead of logical once, hence the naming.
-- =auto-fill-mode= does the same as =word-wrap=, except it actually *edits the buffer* to make lines break in appropriate places.
+- =word-wrap= means just "don't split one word between two lines". So, if there isn't enough place to put a word at the end of the line, it will be put on a new one. Run =M-x toggle-word-wrap= to toggle that.
+- =visual-line-mode= seems to be a superset of =word-wrap=. It also enables some editing commands to work on visual lines instead of logical ones, hence the naming.
+- =auto-fill-mode= does the same as =word-wrap=, except it actually *edits the buffer* to make lines break in the appropriate places.
 - =truncate-lines= truncate long lines instted of continuing them. Run =M-x toggle-truncate-lines= to toggle that. I find that =truncate-lines= behaves strangely when =visual-line-mode= is on, so I use one or another.
 #+begin_src emacs-lisp
 (setq word-wrap 1)
 (global-visual-line-mode 1)
 #+end_src
 
-Hightlight current line
+Highlight current line
 #+begin_src emacs-lisp
 (global-hl-line-mode 1)
 #+end_src
@@ -1366,7 +1366,7 @@ My colorscheme of choice.
 *** Custom theme
 A custom theme, dependent on Doom. I set all my custom variables there.
 
-A custom theme is necessary because if one calls =custom-set-faces= and =custom-set-variables= in code, whenever a variable is changed and saved in a customize buffer, data from all calls of these functions is saved as as well.
+A custom theme is necessary because if one calls =custom-set-faces= and =custom-set-variables= in code, whenever a variable is changed and saved in a customize buffer, data from all calls of these functions is saved as well.
 
 Also, a hook allows me to change doom-theme more or less at will, although I do that only to switch to a light theme once in a blue moon.
 #+begin_src emacs-lisp
@@ -1630,7 +1630,7 @@ Ligature setup for the JetBrainsMono font.
   :straight t)
 #+end_src
 ** Text highlight improvements
-Hightlight indent guides.
+Highlight indent guides.
 #+begin_src emacs-lisp
 (use-package highlight-indent-guides
   :straight t
@@ -1766,7 +1766,7 @@ vifm-like filter
    [escape] 'keyboard-quit))
 #+end_src
 
-Display git info, such last commit for file and stuff. It's pretty useful, but also slows down Dired a bit, hence I don't turn in out by default.
+Display git info, such as the last commit for file and stuff. It's pretty useful but also slows down Dired a bit, hence I don't turn it out by default.
 #+begin_src emacs-lisp
 (use-package dired-git-info
   :straight t
@@ -1807,16 +1807,16 @@ I add my own keybindings and some extra functionality.
     (kbd "TAB") 'dired-hide-subdir))
 #+end_src
 ** TRAMP
-TRAMP is a package which provides remote editing capacities. It is particularly useful for remote server management.
+TRAMP is a package that provides remote editing capacities. It is particularly useful for remote server management.
 
-One of the reasons why TRAMP may be slow is that some plugins do too much requests to the filesystem. To debug these issues, set the following variable to 6:
+One of the reasons why TRAMP may be slow is that some plugins do too many requests to the filesystem. To debug these issues, set the following variable to 6:
 #+begin_src emacs-lisp
 (setq tramp-verbose 1)
 #+end_src
 
-To check if a file is remote, you can use ~file-remote-p~. E.g. ~(file-remote-p default-directory)~ for a current buffer. The problem with this approach is that it's rather awkward to add these checks in every hook, especially for global modes, so for now I just set environment variable for Emacs which disables these modes.
+To check if a file is remote, you can use ~file-remote-p~. E.g. ~(file-remote-p default-directory)~ for a current buffer. The problem with this approach is that it's rather awkward to add these checks in every hook, especially for global modes, so for now, I just set an environment variable for Emacs which disables these modes.
 
-So far I found the following problematic plugins:
+So far I have found the following problematic plugins:
 | Plugin              | Note                                     | Solution                      |
 |---------------------+------------------------------------------+-------------------------------|
 | editorconfig        | looks for .editorconfig in the file tree | do not enable globally        |
@@ -2126,7 +2126,7 @@ References:
 
 Refresh kernelspecs.
 
-Kernelspecs by default are hashed, so even switching Anaconda environments doesn't change kernel (i.e. kernel from the first environment is ran after the switch to the second one).
+Kernelspecs by default are hashed, so even switching Anaconda environments doesn't change kernel (i.e. kernel from the first environment is run after the switch to the second one).
 
 #+begin_src emacs-lisp
 (defun my/jupyter-refresh-kernelspecs ()
@@ -2135,7 +2135,7 @@ Kernelspecs by default are hashed, so even switching Anaconda environments doesn
   (jupyter-available-kernelspecs t))
 #+end_src
 
-Also, if some kernel wasn't present an the moment of load of =emacs-jupyter=, it won't be added to the =org-src-lang-modes= list. E.g. I have Hy kernel installed in a separate Anaconda environment, so if Emacs hasn't been launched in this environment, I wouldn't be able to use =hy= in org-src blocks.
+Also, if some kernel wasn't present at the moment of the load of =emacs-jupyter=, it won't be added to the =org-src-lang-modes= list. E.g. I have Hy kernel installed in a separate Anaconda environment, so if Emacs hasn't been launched in this environment, I wouldn't be able to use =hy= in org-src blocks.
 
 Fortunately, =emacs-jupyter= provides a function for that problem as well.
 #+begin_src emacs-lisp
@@ -2267,7 +2267,7 @@ Requirements: =ss=
                  (file-name-nondirectory (my/select-jupyter-kernel))))
 #+end_src
 
-I've also noticed that there are JSON files left in the runtime folder whenever kernel isn't stopped correctly. So here is a cleanup function.
+I've also noticed that there are JSON files left in the runtime folder whenever the kernel isn't stopped correctly. So here is a cleanup function.
 
 #+begin_src emacs-lisp
 (defun my/jupyter-cleanup-kernels ()
@@ -2283,10 +2283,10 @@ I've also noticed that there are JSON files left in the runtime folder whenever 
       (dolist (file to-delete)
         (delete-file (car file))))))
 #+end_src
-*** Do not wrap output in emacs-jupyter
-Emacs-jupyter has its own insertion mechanisms, which always prepents output statements with =:=. That is not desirable in cases where a kernel supports only plain output, e.g. calysto_hy kernel.
+*** Do not wrap the output in emacs-jupyter
+Emacs-jupyter has its own insertion mechanisms, which always prepends output statements with =:=. That is not desirable in cases where a kernel supports only plain output, e.g. calysto_hy kernel.
 
-So there we have a minor mode which overrides this behavior.
+So there we have a minor mode that overrides this behavior.
 
 #+begin_src emacs-lisp
 (defun my/jupyter-org-scalar (value)
@@ -2312,7 +2312,7 @@ A function to remove :RESULTS: drawer from the results. Once again, necessary be
 #+end_src
 
 And an all-in-one function to:
-- prepend =#+NAME:= and =#+CAPTION:= to the source block output. Useful if the output is image.
+- prepend =#+NAME:= and =#+CAPTION:= to the source block output. Useful if the output is an image.
 - strip :RESULTS: drawer from the output, if necessary
 - wrap results in the =src= block
 
@@ -2350,7 +2350,7 @@ Example usage:
 :post out_wrap(name="fig:chart", caption="График", data=*this*)
 #+end_example
 ** Productivity & Knowledge management
-My on-going effort to get a productivity setup in Org.
+My ongoing effort to get a productivity setup in Org.
 
 Some inspiration:
 - [[https://www.labri.fr/perso/nrougier/GTD/index.html][Nicolas P. Rougier. Get Things Done with Emacs]]
@@ -2439,7 +2439,7 @@ Log DONE time
                      ((org-agenda-prefix-format "  %i %-12:c [%e] ")))))))
 #+end_src
 *** Org Journal
-[[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining journal in org mode. I want to have its entries separate from my potential base.
+[[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining a journal in org mode. I want to have its entries separate from my potential base.
 
 #+begin_src emacs-lisp
 (use-package org-journal
@@ -2512,7 +2512,7 @@ References:
    "C-c l o" 'org-roam-node-insert))
 #+end_src
 **** org-roam-ui
-A browser frontend to visualize a Roam directory in a form of graph.
+A browser frontend to visualize a Roam directory in a form of a graph.
 
 #+begin_src emacs-lisp
 (use-package org-roam-ui
@@ -2544,7 +2544,7 @@ xdg-mime default org-protocol.desktop x-scheme-handler/org-protocol
 |------+---------------------------------|
 | TODO | Figure out how not to load Helm |
 
-[[https://github.com/jkitchin/org-ref][org-ref]] is a package which provides support for various citations & reference in Org mode.
+[[https://github.com/jkitchin/org-ref][org-ref]] is a package that provides support for various citations & references in Org mode.
 
 Useful to use BibTeX citations in LaTeX export.
 
@@ -2609,7 +2609,7 @@ References:
   (setq org-latex-impatient-border-color "#ffffff"))
 #+end_src
 *** LaTeX fragments
-A function to enable LaTeX native highlighting. Not setting as default, because it loads LaTeX stuff.
+A function to enable LaTeX native highlighting. Not setting this as default, because it loads LaTeX stuff.
 #+begin_src emacs-lisp
 (defun my/enable-org-latex ()
   (interactive)
@@ -2627,7 +2627,7 @@ Scale latex fragments preview.
 (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
 #+end_src
 
-Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HEADER= entries. To circuvment this, I add a custom header and modify the ~org-preview-latex-process-alist~ variable
+Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HEADER= entries. To circumvent this, I add a custom header and modify the ~org-preview-latex-process-alist~ variable
 #+begin_src emacs-lisp :noweb-ref org-ui-setup :tangle no
 (setq my/latex-preview-header "\\documentclass{article}
 \\usepackage[usenames]{color}
@@ -2862,7 +2862,7 @@ A function to extract Guix dependencies from the org file.
 - If column name matches =[G|g]uix.*dep=, its contents will be added to the result.
 - If =CATEGORY= is passed, a column with name =[C|c]ategory= will be used to filter results. That way one file can be used to produce multiple manifests.
 - If =CATEGORY= is not passed, entries with non-empty category will be filtered out
-- If there is a =[D|d]isabled= column, entries which have non-empty value in this column will be filtered out.
+- If there is a =[D|d]isabled= column, entries that have a non-empty value in this column will be filtered out.
 
 #+begin_src emacs-lisp :noweb-ref guix-tables
 (defun my/extract-guix-dependencies (&optional category)
@@ -2916,7 +2916,7 @@ A function to extract Guix dependencies from the org file.
     dependencies))
 #+end_src
 
-Now, join dependencies list to make it compatible with Scheme:
+Now, join the dependencies list to make it compatible with Scheme:
 #+begin_src emacs-lisp :noweb-ref guix-tables
 (defun my/format-guix-dependencies (&optional category)
   (mapconcat
@@ -2980,7 +2980,7 @@ To launch from CLI, run:
 emacs -Q --batch -l run-tangle.el
 #+end_src
 
-I have added this line to yadm's =post_alt= hook, so tangle is ran after =yadm alt=
+I have added this line to yadm's =post_alt= hook, so tangle is run after =yadm alt=
 * OFF (OFF) EAF
 [[https://github.com/manateelazycat/emacs-application-framework][Emacs Application Framework]] provides a way to integrate PyQt applications with Emacs.
 
@@ -3106,7 +3106,7 @@ References:
 *** Tree Sitter
 An incremental code parsing system, constructing a syntax tree at runtime.
 
-Right now it doesn't do much expect providing a better syntax highlighting than regexes, but this integration is a rather recent development. There are already some major modes built on top of this thing.
+Right now it doesn't do much except provide a better syntax highlighting than regexes, but this integration is a rather recent development. There are already some major modes built on top of this thing.
 
 Also, it seems to break if ran from mmm-mode, so there is a small workaround.
 
@@ -3186,7 +3186,7 @@ References:
 *** OFF (OFF) TabNine
 A ML-based autocompletion system.
 
-More often than not gives really good results, but slow as hell & consumes a lot of RAM. Also, LSP-provided completions were more useful in my experience.
+More often than not gives really good results, but is slow as hell & consumes a lot of RAM. Also, LSP-provided completions were more useful in my experience.
 
 References:
 - [[https://www.tabnine.com/][TabNine Homepage]]
@@ -3199,7 +3199,7 @@ References:
   (add-to-list 'company-backends #'company-tabnine))
 #+end_src
 *** OFF (OFF) Code Compass
-A set of code analysing tools.
+A set of code analyzing tools.
 
 References:
 - [[https://github.com/ag91/code-compass][code-compass repo]]
@@ -3730,7 +3730,7 @@ Section snippets. The code turned out to be more complicated than just writing t
 
 #+end_src
 *** LanguageTool
-LanguageTool is a great offline spell checker. For some reason the download link is nowhere to be found on the home page, so it is listed in the references as well.
+LanguageTool is a great offline spell checker. For some reason, the download link is nowhere to be found on the home page, so it is listed in the references as well.
 
 References:
 - [[https://languagetool.org/][LanguageTool homepage]]
@@ -4300,7 +4300,7 @@ Open a URL with eww.
       (eww link))))
 #+end_src
 **** YouTube
-Previously this block was opening MPV with =start-process=, but now I've managed to hook up MPV with EMMS. So there is integration of elfeed with EMMS.
+Previously this block was opening MPV with =start-process=, but now I've managed to hook up MPV with EMMS. So there is the integration of elfeed with EMMS.
 
 The following function converts URLs from Invidious to YouTube.
 #+begin_src emacs-lisp
@@ -4382,7 +4382,7 @@ References:
 :PROPERTIES:
 :header-args:emacs-lisp: :tangle no :noweb-ref emms-mpd-setup
 :END:
-[[https://www.musicpd.org/][mpd]] is server for playing music. It has a couple of first-class clients, including curses-based [[https://github.com/ncmpcpp/ncmpcpp][ncmpcpp]], but of course I want to use Emacs.
+[[https://www.musicpd.org/][mpd]] is a server for playing music. It has a couple of first-class clients, including curses-based [[https://github.com/ncmpcpp/ncmpcpp][ncmpcpp]], but of course, I want to use Emacs.
 
 #+begin_src emacs-lisp
 (setq emms-source-file-default-directory (expand-file-name "~/Music/"))
@@ -4393,7 +4393,7 @@ References:
 (setq emms-player-mpd-music-directory "~/Music")
 #+end_src
 
-Connect on setup. For some reason it stops mpd playback whenever it connects, but it is not a big issue.
+Connect on setup. For some reason, it stops mpd playback whenever it connects, but it is not a big issue.
 #+begin_src emacs-lisp
 (emms-player-mpd-connect)
 #+end_src
@@ -4403,7 +4403,7 @@ Clear MPD playlist on clearing EMMS playlist. IDK if this is fine for MPD playli
 (add-hook 'emms-playlist-cleared-hook 'emms-player-mpd-clear)
 #+end_src
 
-Set a custom regex for MPD. EMMS sets up the default regex from mpd diagnostic output, so that regex opens basically everything, including videos, https links, etc. That is fine is MPD is the only player in EMMS, but as I want to use MPV as well, I override the regex.
+Set a custom regex for MPD. EMMS sets up the default regex from mpd diagnostic output so that regex opens basically everything, including videos, https links, etc. That is fine if MPD is the only player in EMMS, but as I want to use MPV as well, I override the regex.
 #+begin_src emacs-lisp
 (emms-player-set emms-player-mpd
                  'regex
@@ -4421,13 +4421,13 @@ Now, after all this is done, run =M-x emms-cache-set-from-mpd-all= to set cache 
 | mpv             |
 | youtube-dl      |
 
-[[https://mpv.io/][mpv]] is a decent media player, which has found a place in this configuration becase it integrates with youtube-dl.
+[[https://mpv.io/][mpv]] is a decent media player, which has found a place in this configuration because it integrates with youtube-dl.
 
 #+begin_src emacs-lisp
 (add-to-list 'emms-player-list 'emms-player-mpv t)
 #+end_src
 
-Also a custom regex. My demands for MPV include running =youtube-dl=, so there is a regex which matches youtube.com or some of the video formats.
+Also a custom regex. My demands for MPV include running =youtube-dl=, so there is a regex that matches youtube.com or some of the video formats.
 #+begin_src emacs-lisp
 (emms-player-set emms-player-mpv
                  'regex
@@ -4438,7 +4438,7 @@ Also a custom regex. My demands for MPV include running =youtube-dl=, so there i
                                            "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
 #+end_src
 
-By default MPV plays the video in the best possible quality, which may be pretty high, even too high with limited bandwidth. So here is the logic to choose youtube quality.
+By default MPV, plays the video in the best possible quality, which may be pretty high, even too high with limited bandwidth. So here is the logic to choose youtube quality.
 #+begin_src emacs-lisp
 (setq my/youtube-dl-quality-list
       '("bestvideo[height<=720]+bestaudio/best[height<=720]"
@@ -4597,7 +4597,7 @@ Config of my ZNC instance.
 (setq erc-track-shorten-start 8)
 #+end_src
 
-Kill buffer on part.
+Kill buffer on =part=.
 #+begin_src emacs-lisp
 (setq erc-kill-buffer-on-part t)
 #+end_src
@@ -4727,9 +4727,9 @@ The file =progidy-config.el= sets variable =my/docker-directories=, which allows
   (my-leader-def "ao" 'docker))
 #+end_src
 
-By default, docker commands are ran in =default-directory=. Even worse, transient doesn't allow to set =default-directory= temporarily, via =let=. But often I don't want to change =default-directory= of a buffer (e.g. via Dired) to run a command from there.
+By default, docker commands are run in =default-directory=. Even worse, transient doesn't allow to set =default-directory= temporarily, via =let=. But often I don't want to change =default-directory= of a buffer (e.g. via Dired) to run a command from there.
 
-So I decided to implement a following advice:
+So I decided to implement the following advice:
 #+begin_src emacs-lisp
 (setq my/selected-docker-directory nil)
 
@@ -4748,7 +4748,7 @@ It overrides =default-directory= for the first launch of a function. Now, add th
   (advice-add #'docker-run-docker :around #'my/docker-override-dir))
 #+end_src
 
-And here is a function which prompts user for the directory. File =progidy-config.el= sets an alist of possible directories, look the section about [[*Progidy][progidy]].
+And here is a function which prompts the user for the directory. File =progidy-config.el= sets an alist of possible directories, look the section about [[*Progidy][progidy]].
 #+begin_src emacs-lisp
 (defun my/docker-from-dir ()
   (interactive)
@@ -4787,7 +4787,7 @@ The actual service definitions are in the =~/.emacs.d/prodigy.org=, which tangle
    (kbd "C-j") 'evil-window-down))
 #+end_src
 *** proced
-proced is a Emacs built-it process viewer, like top.
+proced is an Emacs built-it process viewer, like top.
 
 #+begin_src emacs-lisp
 (my-leader-def "ah" 'proced)

@@ -9,9 +9,9 @@
 
 My email configration. Currently uses [[https://github.com/gauteh/lieer][lieer]] to fetch emails from Gmail, [[http://davmail.sourceforge.net/][davmail]] & [[http://www.offlineimap.org/][offlineimap]] to fetch emails from MS Exchange, [[https://notmuchmail.org/][notmuch]] to index, [[https://marlam.de/msmtp/][msmtp]] to send emails. Also using notmuch frontend from Emacs.
 
-My problem with any particular mail setup was that I use Gmail labels quite extensively, and handling these over IMAP is rather awkward. Notmuch seems to be the only software which provides the same first-class support for labels.
+My problem with any particular mail setup was that I use Gmail labels quite extensively, and handling these over IMAP is rather awkward. Notmuch seems to be the only software that provides the same first-class support for labels.
 
-But I also have an Exchange account, with which I communicate via IMAP/SMTP adapter, and in this case I syncronize notmuch tags and IMAP folders.
+But I also have an Exchange account, with which I communicate via IMAP/SMTP adapter, and in this case, I synchronize notmuch tags and IMAP folders.
 
 References:
 - [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][My post]] about email configuration. I wrote it some time ago, but the general idea remains.
@@ -61,7 +61,7 @@ gmi set --ignore-tags-local new
 
 Running =gmi sync= in the required directory performs the synchronization. The first sync takes a while, the subsequent syncs are pretty fast.
 * DavMail
-[[davmail.sourceforge.net][DavMail]] is a gateway bettwen MS Exchange and the rest of the world, which uses IMAP/SMTP/LDAP/etc. As I have one corporate MS Exchange address, this is just the program I need. As of yet, it isn't packaged for Guix, but it's easy enough to download.
+[[davmail.sourceforge.net][DavMail]] is a gateway between MS Exchange and the rest of the world, which uses IMAP/SMTP/LDAP/etc. As I have one corporate MS Exchange address, this is just the program I need. As of yet, it isn't packaged for Guix, but it's easy enough to download.
 
 It has a GUI mode, but I prefer headless config.
 #+begin_src conf-unix :tangle ~/bin/davmail-6.0.0-3375/davmail.properties
@@ -91,11 +91,11 @@ Shepherd service is defined in [[file:Desktop.org::*Davmail][Desktop.org]].
 |-----------------|
 | offlineimap     |
 
-[[https://github.com/OfflineIMAP/offlineimap][OfflineIMAP]] is a program which can syncronize IMAP mailbox and maildir. Lieer does everything by itself, but my pirate Exchange IMAP needs this program. There is also [[https://isync.sourceforge.io/][isync]], but I had some weird issues with duplicate UIDs, which don't occur for OfflineIMAP.
+[[https://github.com/OfflineIMAP/offlineimap][OfflineIMAP]] is a program that can synchronize IMAP mailbox and Maildir. Lieer does everything by itself, but my pirate Exchange IMAP needs this program. There is also [[https://isync.sourceforge.io/][isync]], but I had some weird issues with duplicate UIDs, which don't occur for OfflineIMAP.
 
-I have a few options of setting username and password. First, I can run =pass= in =remotepasswordeval=, and this is fine, but it will keep by keyring unlocked, because I want to run =offlineimap= every couple of minutes.
+I have a few options for setting a username and password. First, I can run =pass= in =remotepasswordeval=, and this is fine, but it will keep by keyring unlocked because I want to run =offlineimap= every couple of minutes.
 
-Another option is to use noweb and not push the file below to the version control. Then I have a plaintext password of email on my computer, but I think it's lesser evil than the entire keyring.
+Another option is to use noweb and not push the file below to the version control. Then I have a plaintext password of email on my computer, but I think it's a lesser evil than the entire keyring.
 
 #+NAME: mail-username
 #+begin_src emacs-lisp
@@ -178,11 +178,11 @@ synchronize_flags=true
 #+end_src
 
 ** Hooks
-Now we have to link up lieer & maildir and with notmuch. This is done via the notmuch hook system, which allows to run custom scripts before and after any command.
+Now we have to link up lieer & Maildir and with notmuch. This is done via the notmuch hook system, which allows running custom scripts before and after any command.
 
-With lieer and Gmail, it is enough to simply run the program, because Gmail has first-class support for tags. Maildir does not, so I decide to syncronize notmuch tags and IMAP folders. In essence, the idea is to:
-- move mails to their folders by tags /before/ the syncronization
-- tag mails by their folders /after/ the syncronization
+With lieer and Gmail, it is enough to simply run the program, because Gmail has first-class support for tags. Maildir does not, so I decide to synchronize notmuch tags and IMAP folders. In essence, the idea is to:
+- move emails to their folders by tags /before/ the synchronization
+- tag mails by their folders /after/ the synchronization
 
 The problem is that with that approach one email can have only one tag, but it's better than nothing.
 
