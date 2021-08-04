@@ -910,25 +910,24 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq wdired-create-parent-directories t)
   (setq dired-recursive-copies 'always)
   (setq dired-recursive-deletes 'always)
+  (setq dired-kill-when-opening-new-dired-buffer t)
   (add-hook 'dired-mode-hook
             (lambda ()
               (setq truncate-lines t)
               (visual-line-mode nil)))
   (evil-collection-define-key 'normal 'dired-mode-map
-    "h" 'dired-single-up-directory
-    "l" 'dired-single-buffer
-    "h" 'dired-single-up-directory
-    "l" 'dired-single-buffer
+    "h" 'dired-up-directory
+    "l" 'dired-find-file
     "=" 'dired-narrow
     "-" 'dired-create-empty-file
     "~" 'vterm
-    (kbd "<left>") 'dired-single-up-directory
-    (kbd "<right>") 'dired-single-buffer)
+    (kbd "<left>") 'dired-up-directory
+    (kbd "<right>") 'dired-find-file)
   (general-define-key
    :keymaps 'dired-mode-map
-   [remap dired-find-file] 'dired-single-buffer
-   [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
-   [remap dired-up-directory] 'dired-single-up-directory
+   ;; [remap dired-find-file] 'dired-single-buffer
+   ;; [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
+   ;; [remap dired-up-directory] 'dired-single-up-directory
    "M-<return>" 'dired-open-xdg))
 
 (defun my/dired-home ()
@@ -948,6 +947,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package dired-single
   :after dired
+  :disabled
   :straight t)
 
 (use-package all-the-icons-dired

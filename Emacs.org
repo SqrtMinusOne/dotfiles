@@ -1682,25 +1682,24 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
   (setq wdired-create-parent-directories t)
   (setq dired-recursive-copies 'always)
   (setq dired-recursive-deletes 'always)
+  (setq dired-kill-when-opening-new-dired-buffer t)
   (add-hook 'dired-mode-hook
             (lambda ()
               (setq truncate-lines t)
               (visual-line-mode nil)))
   (evil-collection-define-key 'normal 'dired-mode-map
-    "h" 'dired-single-up-directory
-    "l" 'dired-single-buffer
-    "h" 'dired-single-up-directory
-    "l" 'dired-single-buffer
+    "h" 'dired-up-directory
+    "l" 'dired-find-file
     "=" 'dired-narrow
     "-" 'dired-create-empty-file
     "~" 'vterm
-    (kbd "<left>") 'dired-single-up-directory
-    (kbd "<right>") 'dired-single-buffer)
+    (kbd "<left>") 'dired-up-directory
+    (kbd "<right>") 'dired-find-file)
   (general-define-key
    :keymaps 'dired-mode-map
-   [remap dired-find-file] 'dired-single-buffer
-   [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
-   [remap dired-up-directory] 'dired-single-up-directory
+   ;; [remap dired-find-file] 'dired-single-buffer
+   ;; [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
+   ;; [remap dired-up-directory] 'dired-single-up-directory
    "M-<return>" 'dired-open-xdg))
 
 (defun my/dired-home ()
@@ -1722,10 +1721,11 @@ I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provi
   (diredfl-global-mode 1))
 #+end_src
 
-Reuse the current dired buffer instead of spamming new ones.
++Reuse the current dired buffer instead of spamming new ones.+ Looks like not neccesary with Emacs 28.1
 #+begin_src emacs-lisp
 (use-package dired-single
   :after dired
+  :disabled
   :straight t)
   #+end_src
 
@@ -2946,7 +2946,6 @@ A script to run tangle from CLI.
 
 #+begin_src emacs-lisp :tangle ~/.config/yadm/hooks/run-tangle.el :noweb yes
 (require 'org)
-(require 'password-store)
 
 (org-babel-do-load-languages
  'org-babel-load-languages
