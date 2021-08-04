@@ -47,7 +47,6 @@ Some of the notable programs are listed in the table below.
 | internet  | [[https://newsboat.org/][newsboat]]    | terminal RSS reader         | archive           | -              | urls are encrypted                                        |
 | internet  | [[https://qutebrowser.org/][qutebrowser]] | browser with vim bindings   | archive           | -              |                                                           |
 | internet  | [[https://github.com/jarun/buku][buku]]        | bookmarks manager           | archive           | -              |                                                           |
-| internet  | [[https://tabliss.io/][tabliss]]     | new tab page                | *active*          | -              | runned as server to work with tridactyl                   |
 | audio     | [[https://www.musicpd.org/][mpd]]         | music player daemon         | *active*          | -              |                                                           |
 | audio     | [[https://github.com/ncmpcpp/ncmpcpp][ncmpcpp]]     | MPD frontend                | *active*          | -              |                                                           |
 | misc      | [[https://yadm.io][yadm]]        | dotfiles manager            | *active*          | -              |                                                           |

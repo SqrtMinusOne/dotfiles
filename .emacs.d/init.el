@@ -202,11 +202,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :prefix "SPC"
   :states '(normal motion emacs))
 
-
 (general-def :states '(normal motion emacs) "SPC" nil)
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
+
+(my-leader-def
+  "a" '(:which-key "apps"))
 
 (general-def
   :keymaps 'universal-argument-map
@@ -216,9 +218,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :states '(normal motion emacs insert visual)
   "M-u" 'universal-argument)
 
-(my-leader-def "Ps" 'profiler-start)
-(my-leader-def "Pe" 'profiler-stop)
-(my-leader-def "Pp" 'profiler-report)
+(my-leader-def
+  :infix "P"
+  "" '(:which-key "profiler")
+  "s" 'profiler-start
+  "e" 'profiler-stop
+  "p" 'profiler-report)
 
 (general-define-key
   :keymaps 'override
@@ -237,6 +242,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (define-key evil-window-map (kbd "u") 'winner-undo)
 (define-key evil-window-map (kbd "U") 'winner-redo)
 
+(my-leader-def
+  :infix "b"
+  "" '(:which-key "buffers")
+  "s" '((lambda () (interactive) (switch-to-buffer (persp-scratch-buffer)))
+        :which-key "*scratch*")
+  "m" '((lambda () (interactive) (persp-switch-to-buffer "*Messages*"))
+        :which-key "*Messages*")
+  "l" 'next-buffer
+  "h" 'previous-buffer
+  "k" 'kill-buffer
+  "b" 'persp-ivy-switch-buffer
+  "u" 'ibuffer)
+
 (general-nmap
   "gD" 'xref-find-definitions-other-window
   "gr" 'xref-find-references)
@@ -253,16 +271,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (interactive)
   (set-face-attribute 'default nil
                       :height
-                      (+ (face-attribute 'default :height)
-                         10)))
+                      (+ (face-attribute 'default :height) 10)))
 
 (defun my/zoom-out ()
   "Decrease font size by 10 points"
   (interactive)
   (set-face-attribute 'default nil
                       :height
-                      (- (face-attribute 'default :height)
-                         10)))
+                      (- (face-attribute 'default :height) 10)))
 
 ;; change font size, interactively
 (global-set-key (kbd "C-+") 'my/zoom-in)
@@ -342,6 +358,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def
   :infix "h"
+  "" '(:which-key "help")
   "RET" 'view-order-manuals
   "." 'display-local-help
   "?" 'help-for-help
@@ -444,6 +461,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def
   :infix "f"
+  "" '(:which-key "various completions")'
   ;; "b" 'counsel-switch-buffer
   "b" 'persp-ivy-switch-buffer
   "e" 'conda-env-activate
@@ -500,8 +518,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  :keymaps '(treemacs-mode-map) [mouse-1] #'treemacs-single-click-expand-action)
 
 (my-leader-def
-  "tw" 'treemacs-switch-workspace
-  "te" 'treemacs-edit-workspaces)
+  :infix "t"
+  "" '(:which-key "treemacs")
+  "w" 'treemacs-switch-workspace
+  "e" 'treemacs-edit-workspaces)
 
 (defun my/treemacs-open-dired ()
   "Open dired at given treemacs node"
@@ -540,7 +560,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t)
 
 (my-leader-def
-  "p" 'projectile-command-map)
+  "p" '(:keymap projectile-command-map :which-key "projectile"))
 
 (general-nmap "C-p" 'counsel-projectile-find-file)
 
@@ -648,7 +668,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (show-paren-mode 1)
 
 (setq word-wrap 1)
-(global-visual-line-mode t)
+(global-visual-line-mode 1)
 
 (global-hl-line-mode 1)
 
@@ -656,8 +676,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :if (display-graphic-p)
   :config
-  (set-face-attribute 'auto-dim-other-buffers-face nil
-                      :background "#212533")
   (auto-dim-other-buffers-mode t))
 
 (use-package doom-themes
@@ -721,7 +739,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq persp-sort 'created)
   :config
   (persp-mode)
-  (my-leader-def "x" 'perspective-map)
+  (my-leader-def "x" '(:keymap perspective-map :which-key "perspective"))
   (general-define-key
    :keymaps 'override
    :states '(normal emacs)
@@ -917,29 +935,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "ad" #'dired
   "aD" #'my/dired-home)
 
-(use-package dired+
+(use-package diredfl
   :straight t
-  :init
-  (setq diredp-hide-details-initially-flag nil)
+  :after dired
   :config
-  (defun dired-do-delete (&optional arg)
-    "Delete all marked (or next ARG) files.
-  `dired-recursive-deletes' controls whether deletion of
-  non-empty directories is allowed."
-    ;; This is more consistent with the file marking feature than
-    ;; dired-do-flagged-delete.
-    (interactive "P")
-    (let (markers)
-      (dired-internal-do-deletions
-       (nreverse
-        ;; this may move point if ARG is an integer
-        (dired-map-over-marks (cons (dired-get-filename)
-                                    (let ((m (point-marker)))
-                                      (push m markers)
-                                      m))
-                              arg))
-       arg t)
-      (dolist (m markers) (set-marker m nil)))))
+  (diredfl-global-mode 1))
 
 (use-package dired-single
   :after dired
@@ -967,6 +967,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-define-key
    :keymaps 'dired-narrow-map
    [escape] 'keyboard-quit))
+
+(use-package dired-git-info
+  :straight t
+  :after dired
+  :if (not my/slow-ssh)
+  :config
+  (general-define-key
+   :keymap 'dired-mode-map
+   :states '(normal emacs)
+   ")" 'dired-git-info-mode))
 
 (defun my/dired-open-this-subdir ()
   (interactive)
@@ -1263,7 +1273,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   ;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
   (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
   
-  (my-leader-def "aa" 'org-agenda)
+  ;; (my-leader-def "aa" 'org-agenda)
   (defun my/org-link-copy (&optional arg)
     "Extract URL from org-mode link and add it to kill ring."
     (interactive "P")
@@ -1456,8 +1466,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                  "#+end_src")
        (substring data-s drawer-start)))))
 
-(my-leader-def "oc" 'org-capture)
-(my-leader-def "oa" 'org-agenda)
+(my-leader-def
+  :infix "o"
+  "" '(:which-key "org-mode")
+  "c" 'org-capture
+  "a" 'org-agenda)
 
 (setq org-refile-targets
       '(("projects.org" :maxlevel . 2)
@@ -1501,6 +1514,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def
   :infix "oj"
+  "" '(:which-key "org-journal")
   "j" 'org-journal-new-entry
   "o" 'org-journal-open-current-journal-file
   "s" 'org-journal-search)
@@ -1527,6 +1541,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def
   :infix "or"
+  "r" '(:which-key "org-roam")
   "i" 'org-roam-node-insert
   "r" 'org-roam-node-find
   "g" 'org-roam-graph
@@ -1544,6 +1559,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    "C-c i" 'org-id-get-create
    "C-c l o" 'org-roam-node-insert))
 
+(use-package org-roam-ui
+  :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
+  :after org-roam
+  ;; :hook (org-roam . org-roam-ui-mode)
+  :init
+  (my-leader-def "oru" #'org-roam-ui-mode))
+
 (use-package org-ref
   :straight (:files (:defaults (:exclude "*helm*")))
   :init
@@ -1556,9 +1578,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (general-define-key
    :keymaps 'org-mode-map
-   "C-c l l" 'org-ref-ivy-insert-cite-link
-   "C-c l r" 'org-ref-ivy-insert-ref-link
-   "C-c l h" 'org-ref-cite-hydra/body)
+   :infix "C-c l"
+   "" '(:which-key "org-ref")
+   "l" 'org-ref-ivy-insert-cite-link
+   "r" 'org-ref-ivy-insert-ref-link
+   "h" 'org-ref-cite-hydra/body)
   (general-define-key
    :keymaps 'bibtex-mode-map
    "M-RET" 'org-ref-bibtex-hydra/body)
@@ -1839,12 +1863,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :commands lsp-treemacs-errors-list)
 
 (my-leader-def
-  "ld" 'lsp-ui-peek-find-definitions
-  "lr" 'lsp-rename
-  "lu" 'lsp-ui-peek-find-references
-  "ls" 'lsp-ui-find-workspace-symbol
-  ;; "la" 'helm-lsp-code-actions
-  "le" 'list-flycheck-errors)
+  :infix "l"
+  "" '(:which-key "lsp")
+  "d" 'lsp-ui-peek-find-definitions
+  "r" 'lsp-rename
+  "u" 'lsp-ui-peek-find-references
+  "s" 'lsp-ui-find-workspace-symbol
+  ;; "a" 'helm-lsp-code-actions
+  "e" 'list-flycheck-errors)
 
 (use-package flycheck
   :straight t
@@ -2433,6 +2459,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def
   :infix "L"
+  "" '(:which-key "languagetool")
   "c" 'langtool-check
   "s" 'langtool-server-stop
   "d" 'langtool-check-done
@@ -2721,7 +2748,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (general-define-key "C-c c" 'my/edit-configuration)
 ;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
-(my-leader-def "cc" 'my/edit-configuration)
+(my-leader-def
+  :infix "c"
+  "" '(:which-key "configuration")
+  "c" 'my/edit-configuration)
 
 (with-eval-after-load 'tramp
   (add-to-list 'tramp-methods
@@ -2804,47 +2834,44 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (when link
       (eww link))))
 
-(setq my/youtube-dl-quality-list
-      '("bestvideo[height<=720]+bestaudio/best[height<=720]"
-        "bestvideo[height<=480]+bestaudio/best[height<=480]"
-        "bestvideo[height<=1080]+bestaudio/best[height<=1080]"))
-
-(setq my/youtube-dl-quality-default "bestvideo[height<=720]+bestaudio/best[height<=720]")
-
-(defun my/open-youtube-video (link)
-  "Open Youtube URL with mpv"
-  (interactive "MURL: ")
-  (let ((quality (completing-read "Quality: " my/youtube-dl-quality-list nil t))
-        (watch-id (cadr
+(defun my/get-youtube-url (link)
+  (let ((watch-id (cadr
                    (assoc "watch?v"
                           (url-parse-query-string
                            (substring
                             (url-filename
                              (url-generic-parse-url link))
                             1))))))
-    (if (not watch-id)
-        (message "Can't find youtube link")
-      (let ((yt-link (concat "https://www.youtube.com/watch?v=" watch-id))
-            (watch-name (concat "mpv-" watch-id)))
-        (start-process watch-name watch-name "mpv" yt-link
-                       (format "--ytdl-format=%s" quality))))))
+    (concat "https://www.youtube.com/watch?v=" watch-id)))
 
-(defun my/elfeed-open-mpv ()
+(with-eval-after-load 'emms
+  (define-emms-source elfeed (entry)
+    (let ((track (emms-track
+                  'url (my/get-youtube-url (elfeed-entry-link entry)))))
+      (emms-track-set track 'info-title (elfeed-entry-title entry))
+      (setq my/test track)
+      (emms-playlist-insert-track track))))
+
+(defun my/elfeed-add-emms-youtube ()
   (interactive)
-  "Open MPV for the current entry"
-  (my/open-youtube-video (elfeed-entry-link elfeed-show-entry)))
+  (emms-add-elfeed elfeed-show-entry))
 
 (with-eval-after-load 'elfeed
   (evil-collection-define-key 'normal 'elfeed-show-mode-map
-    "gm" #'my/elfeed-open-mpv))
+    "gm" #'my/elfeed-add-emms-youtube))
 
 (use-package emms
   :straight t
-  :commands (emms-smart-browse emms-browser)
+  :commands (emms-smart-browse
+             emms-browser
+             emms-add-url
+             emms-add-file
+             emms-add-find)
   :if (not my/is-termux)
   :init
   (my-leader-def
     :infix "as"
+    "" '(:which-key "emms")
     "s" 'emms-smart-browse
     "b" 'emms-browser
     "p" 'emms-pause
@@ -2856,6 +2883,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (require 'emms-setup)
   (require 'emms-player-mpd)
+  (require 'emms-player-mpv)
   (emms-all)
   ;; MPD setup
   (setq emms-source-file-default-directory (expand-file-name "~/Music/"))
@@ -2865,9 +2893,36 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq emms-player-mpd-server-port "6600")
   (setq emms-player-mpd-music-directory "~/Music")
   (emms-player-mpd-connect)
-  ;; Clear MPD playlist on clearing EMMS playlist
-  ;; IDK if this is fine for MPD playlists, I don't use them anyhow
   (add-hook 'emms-playlist-cleared-hook 'emms-player-mpd-clear)
+  (emms-player-set emms-player-mpd
+                   'regex
+                   (emms-player-simple-regexp
+                    "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff"))
+  ;; MPV setup
+  (add-to-list 'emms-player-list 'emms-player-mpv t)
+  (emms-player-set emms-player-mpv
+                   'regex
+                   (rx (or (: "https://" (* nonl) "youtube.com" (* nonl))
+                           (+ (? (or "https://" "http://"))
+                              (* nonl)
+                              (regexp (eval (emms-player-simple-regexp
+                                             "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
+  (setq my/youtube-dl-quality-list
+        '("bestvideo[height<=720]+bestaudio/best[height<=720]"
+          "bestvideo[height<=480]+bestaudio/best[height<=480]"
+          "bestvideo[height<=1080]+bestaudio/best[height<=1080]"))
+  
+  (setq my/default-emms-player-mpv-parameters
+        '("--quiet" "--really-quiet" "--no-audio-display"))
+  
+  (defun my/set-emms-mpd-youtube-quality (quality)
+    (interactive "P")
+    (unless quality
+      (setq quality (completing-read "Quality: " my/youtube-dl-quality-list nil t)))
+    (setq emms-player-mpv-parameters
+          `(,@my/default-emms-player-mpv-parameters ,(format "--ytdl-format=%s" quality))))
+  
+  (my/set-emms-mpd-youtube-quality (car my/youtube-dl-quality-list))
   ;; evil-lion shadows ga bindings
   (add-hook 'emms-browser-mode-hook
             (lambda () (evil-lion-mode -1)))
@@ -2913,6 +2968,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         (when alist
           (setq alists (cons alist alists)))
         alists))))
+
+(defun my/emms-cleanup-urls ()
+  (interactive)
+  (let ((keys-to-delete '()))
+    (maphash (lambda (key value)
+               (when (eq (cdr (assoc 'type value)) 'url)
+                 (add-to-list 'keys-to-delete key)))
+             emms-cache-db)
+    (dolist (key keys-to-delete)
+      (remhash key emms-cache-db)))
+  (setq emms-cache-dirty t))
+
+(my-leader-def "asc" #'my/emms-cleanup-urls)
 
 (with-eval-after-load 'emms-browser
   (evil-collection-define-key 'normal 'emms-browser-mode-map
@@ -2973,11 +3041,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           ("ru" . "en"))))
 
 (my-leader-def
-  "atp" 'google-translate-at-point
-  "atP" 'google-translate-at-point-reverse
-  "atq" 'google-translate-query-translate
-  "atQ" 'google-translate-query-translate-reverse
-  "att" 'google-translate-smooth-translate)
+  :infix "at"
+  "" '(:which-key "google translate")
+  "p" 'google-translate-at-point
+  "P" 'google-translate-at-point-reverse
+  "q" 'google-translate-query-translate
+  "Q" 'google-translate-query-translate-reverse
+  "t" 'google-translate-smooth-translate)
 
 (use-package elcord
   :straight t

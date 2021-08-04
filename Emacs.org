@@ -44,6 +44,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#universal-argument][Universal argument]]
     - [[#profiler][Profiler]]
     - [[#buffer-switching][Buffer switching]]
+    - [[#buffer-management][Buffer management]]
     - [[#xref][xref]]
     - [[#folding][Folding]]
     - [[#zoom][Zoom]]
@@ -71,7 +72,6 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#company][Company]]
   - [[#git--magit][Git & Magit]]
   - [[#editorconfig][Editorconfig]]
-  - [[#off-avy][(OFF) Avy]]
   - [[#snippets][Snippets]]
   - [[#time-trackers][Time trackers]]
     - [[#wakatime][WakaTime]]
@@ -97,7 +97,6 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
 - [[#dired][Dired]]
   - [[#basic-config--keybindings][Basic config & keybindings]]
   - [[#addons][Addons]]
-    - [[#dired-on-emacs-28][dired+ on Emacs 28]]
   - [[#subdirectories][Subdirectories]]
   - [[#tramp][TRAMP]]
   - [[#bookmarks][Bookmarks]]
@@ -125,6 +124,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#custom-agendas][Custom agendas]]
     - [[#org-journal][Org Journal]]
     - [[#org-roam][Org Roam]]
+      - [[#org-roam-ui][org-roam-ui]]
       - [[#org-roam-protocol][org-roam-protocol]]
     - [[#org-ref][org-ref]]
     - [[#org-roam-bibtex][org-roam-bibtex]]
@@ -230,8 +230,11 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
       - [[#some-additions][Some additions]]
       - [[#youtube][YouTube]]
     - [[#emms][EMMS]]
+      - [[#mpd][MPD]]
+      - [[#mpv][MPV]]
+      - [[#cache-cleanup][Cache cleanup]]
       - [[#some-keybindings][Some keybindings]]
-      - [[#fixes][Fixes]]
+      - [[#emms--mpd-fixes][EMMS & mpd Fixes]]
     - [[#eww][EWW]]
     - [[#erc][ERC]]
     - [[#google-translate][Google Translate]]
@@ -305,16 +308,14 @@ References:
 *** Garbage collection
 Just setting ~gc-cons-treshold~ to a larger value.
 
-| Note  | Type                                              |
-|-------+---------------------------------------------------|
-| CHECK | The value may be too large for an interactive use |
-
 #+begin_src emacs-lisp
 (setq gc-cons-threshold 80000000)
 (setq read-process-output-max (* 1024 1024))
 #+end_src
 *** Run garbage collection when Emacs is unfocused
-Run GC when Emacs loses focus. Time will tell if that's a good idea.
+Run GC when Emacs loses focus. +Time will tell if that's a good idea.+
+
+Some time has passed, and I still don't know if there is any quantifiable advantage to this, but it doesn't hurt.
 
 #+begin_src emacs-lisp
 (add-hook 'emacs-startup-hook
@@ -332,7 +333,7 @@ The following variable is true when my machine is not powerful enough for some r
 (setq my/lowpower (string= (system-name) "azure"))
 #+end_src
 
-The following is true if Emacs is meant to be used with TRAMP over slow ssh
+The following is true if Emacs is meant to be used with TRAMP over slow ssh.
 #+begin_src emacs-lisp
 (setq my/slow-ssh (string= (getenv "IS_TRAMP") "true"))
 #+end_src
@@ -384,6 +385,8 @@ By default, custom writes stuff to =init.el=, which is somewhat annoying. The fo
 (load custom-file 'noerror)
 #+end_src
 ** No littering
+By default emacs and its packages create a lot files in =.emacs.d= and in other places. [[https://github.com/emacscollective/no-littering][no-littering]] is a collective effort to redirect all of this to two folders in =user-emacs-directory=.
+
 #+begin_src emacs-lisp
 (use-package no-littering
   :straight t)
@@ -493,7 +496,7 @@ Basic evil configuration.
     "g-" 'evil-numbers/dec-at-pt))
 #+end_src
 
-[[https://github.com/edkolev/evil-lion][evil-lion]] provides alignment operators.
+[[https://github.com/edkolev/evil-lion][evil-lion]] provides alignment operators, somewhat similar to vim-easyalign.
 #+begin_src emacs-lisp
 (use-package evil-lion
   :straight t
@@ -548,12 +551,12 @@ I don't enable the entire package, just the modes I need.
 #+end_src
 ** More keybindigs
 The main keybindigs setup is positioned after evil mode to take the latter into account.
+
 *** Escape key
 Use escape key instead of =C-g= whenever possible.
 
-I must have copied it from somewhere, but as I googled to find out the original source, I discovered quite a number of variations of the following code over time.
+I must have copied it from somewhere, but as I googled to find out the original source, I discovered quite a number of variations of the following code over time. I wonder if Richard Dawkins was inspired by something like this a few decades ago.
 
-I wonder if Richard Dawkins was inspired by something like this a few decades ago.
 #+begin_src emacs-lisp
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
@@ -584,7 +587,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "<end>" 'end-of-line)
 #+end_src
 *** My leader
-Using the =SPC= key as a sort of leader key.
+Using the =SPC= key as a leader key, like in Doom Emacs or Spacemacs.
 
 #+begin_src emacs-lisp
 (general-create-definer my-leader-def
@@ -592,14 +595,20 @@ Using the =SPC= key as a sort of leader key.
   :prefix "SPC"
   :states '(normal motion emacs))
 
-
 (general-def :states '(normal motion emacs) "SPC" nil)
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
 #+end_src
+
+=general.el= has a nice intergration with which-key, so I use this fact to show more desriptive annotations for certain groups of keybindings (the default one is =prefix=).
+#+begin_src emacs-lisp
+(my-leader-def
+  "a" '(:which-key "apps"))
+#+end_src
 *** Universal argument
-Change the universal argument to =M-u=
+Change the universal argument to =M-u=. I use =C-u= to scroll up, as I'm used to from vim.
+
 #+begin_src emacs-lisp
 (general-def
   :keymaps 'universal-argument-map
@@ -611,13 +620,18 @@ Change the universal argument to =M-u=
 #+end_src
 *** Profiler
 The built-in profiler is a magnificent tool to troubleshoot performance issues.
+
 #+begin_src emacs-lisp
-(my-leader-def "Ps" 'profiler-start)
-(my-leader-def "Pe" 'profiler-stop)
-(my-leader-def "Pp" 'profiler-report)
+(my-leader-def
+  :infix "P"
+  "" '(:which-key "profiler")
+  "s" 'profiler-start
+  "e" 'profiler-stop
+  "p" 'profiler-report)
 #+end_src
 *** Buffer switching
 Some keybindings I used in vim to switch buffers and can't let go of.
+
 #+begin_src emacs-lisp
 (general-define-key
   :keymaps 'override
@@ -639,6 +653,21 @@ And winner-mode to keep the history of window states.
 (define-key evil-window-map (kbd "u") 'winner-undo)
 (define-key evil-window-map (kbd "U") 'winner-redo)
 #+end_src
+*** Buffer management
+#+begin_src emacs-lisp
+(my-leader-def
+  :infix "b"
+  "" '(:which-key "buffers")
+  "s" '((lambda () (interactive) (switch-to-buffer (persp-scratch-buffer)))
+        :which-key "*scratch*")
+  "m" '((lambda () (interactive) (persp-switch-to-buffer "*Messages*"))
+        :which-key "*Messages*")
+  "l" 'next-buffer
+  "h" 'previous-buffer
+  "k" 'kill-buffer
+  "b" 'persp-ivy-switch-buffer
+  "u" 'ibuffer)
+#+end_src
 *** xref
 Some keybindings for xref, Emacs' built-in systems for managing identifiers.
 #+begin_src emacs-lisp
@@ -650,6 +679,12 @@ Some keybindings for xref, Emacs' built-in systems for managing identifiers.
   "fx" 'xref-find-apropos)
 #+end_src
 *** Folding
+There are multiple ways to fold text in Emacs.
+
+The most versatile is the built-in =hs-minor-mode=, which seems to work out of box for Lisps, C-like languages and Python. =outline-minor-mode= works for org mode, LaTeX and the like. There is 3rd-party solution [[https://github.com/elp-revive/origami.el][origami.el]], but I don't use it at the moment.
+
+Evil does a pretty good job of uniting these two in the set of vim-like keybindings. I was using =SPC= in vim, but as now this isn't an option, I set =TAB= to toggle folding.
+
 #+begin_src emacs-lisp
 (general-nmap :keymaps '(hs-minor-mode-map outline-minor-mode-map)
   "ze" 'hs-hide-level
@@ -662,16 +697,14 @@ Some keybindings for xref, Emacs' built-in systems for managing identifiers.
   (interactive)
   (set-face-attribute 'default nil
                       :height
-                      (+ (face-attribute 'default :height)
-                         10)))
+                      (+ (face-attribute 'default :height) 10)))
 
 (defun my/zoom-out ()
   "Decrease font size by 10 points"
   (interactive)
   (set-face-attribute 'default nil
                       :height
-                      (- (face-attribute 'default :height)
-                         10)))
+                      (- (face-attribute 'default :height) 10)))
 
 ;; change font size, interactively
 (global-set-key (kbd "C-+") 'my/zoom-in)
@@ -801,6 +834,7 @@ As I use =C-h= to switch buffers, I moved the help to =SPC-h= with the code belo
 #+begin_src emacs-lisp
 (my-leader-def
   :infix "h"
+  "" '(:which-key "help")
   "RET" 'view-order-manuals
   "." 'display-local-help
   "?" 'help-for-help
@@ -925,6 +959,7 @@ References:
 #+begin_src emacs-lisp
 (my-leader-def
   :infix "f"
+  "" '(:which-key "various completions")'
   ;; "b" 'counsel-switch-buffer
   "b" 'persp-ivy-switch-buffer
   "e" 'conda-env-activate
@@ -1019,8 +1054,12 @@ Integrates with evil, magit, projectile and perspective. The latter is particula
   (setq treemacs-follow-after-init nil)
   (setq treemacs-space-between-root-nodes nil)
   (treemacs-git-mode 'extended)
-  (with-eval-after-load 'treemacs
-    (add-to-list 'treemacs-pre-file-insert-predicates #'treemacs-is-file-git-ignored?)))
+  (add-to-list 'treemacs-pre-file-insert-predicates #'treemacs-is-file-git-ignored?)
+  (general-define-key
+   :keymaps 'treemacs-mode-map
+   [mouse-1] #'treemacs-single-click-expand-action
+   "M-l" #'treemacs-root-down
+   "M-h" #'treemacs-root-up))
 
 (use-package treemacs-evil
   :after (treemacs evil)
@@ -1044,8 +1083,10 @@ Integrates with evil, magit, projectile and perspective. The latter is particula
  :keymaps '(treemacs-mode-map) [mouse-1] #'treemacs-single-click-expand-action)
 
 (my-leader-def
-  "tw" 'treemacs-switch-workspace
-  "te" 'treemacs-edit-workspaces)
+  :infix "t"
+  "" '(:which-key "treemacs")
+  "w" 'treemacs-switch-workspace
+  "e" 'treemacs-edit-workspaces)
 #+end_src
 *** Helper functions
 Function to open dired and vterm at given nodes.
@@ -1093,11 +1134,10 @@ Function to open dired and vterm at given nodes.
   :straight t)
 
 (my-leader-def
-  "p" 'projectile-command-map)
+  "p" '(:keymap projectile-command-map :which-key "projectile"))
 
 (general-nmap "C-p" 'counsel-projectile-find-file)
 #+end_src
-
 ** Company
 A completion framework for Emacs.
 
@@ -1176,15 +1216,6 @@ References:
                '(emmet-mode emmet-indentation)))
 #+end_src
 
-** OFF (OFF) Avy
-#+begin_src emacs-lisp :tangle no
-(use-package avy
-  :straight t)
-
-(general-nmap "\\w" 'avy-goto-word-0-below)
-(general-nmap "\\b" 'avy-goto-word-0-above)
-#+end_src
-
 ** Snippets
 A snippet system for Emacs and a collection of pre-built snippets.
 
@@ -1247,13 +1278,13 @@ Disable GUI elements
   (scroll-bar-mode -1))
 #+end_src
 
-Transparency
+Transparency. Not setting it now, as I'm using [[file:Desktop.org::*Picom][picom]].
 #+begin_src emacs-lisp
 ;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
 ;; (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
 #+end_src
 
-Prettify symbols
+Prettify symbols. Also not setting it, ligatures seem to be enough for me.
 #+begin_src emacs-lisp
 ;; (global-prettify-symbols-mode)
 #+end_src
@@ -1295,13 +1326,17 @@ Show pairs
 (show-paren-mode 1)
 #+end_src
 
-Word wrap
+Word wrapping. These settings aren't too obvious compared to =:set wrap= from vim:
+- =word-wrap= means just "don't split one word between two lines". So, if there isn't enough place to put a word at the end of line, it will be put on a new one. Run =M-x toggle-word-wrap= to toggle that.
+- =visual-line-mode= seems to be a superset of =word-wrap=. It also enables some editing commands to work on visual lines instead of logical once, hence the naming.
+- =auto-fill-mode= does the same as =word-wrap=, except it actually *edits the buffer* to make lines break in appropriate places.
+- =truncate-lines= truncate long lines instted of continuing them. Run =M-x toggle-truncate-lines= to toggle that. I find that =truncate-lines= behaves strangely when =visual-line-mode= is on, so I use one or another.
 #+begin_src emacs-lisp
 (setq word-wrap 1)
-(global-visual-line-mode t)
+(global-visual-line-mode 1)
 #+end_src
 
-Hightlight line
+Hightlight current line
 #+begin_src emacs-lisp
 (global-hl-line-mode 1)
 #+end_src
@@ -1312,8 +1347,6 @@ Dim inactive buffers.
   :straight t
   :if (display-graphic-p)
   :config
-  (set-face-attribute 'auto-dim-other-buffers-face nil
-                      :background "#212533")
   (auto-dim-other-buffers-mode t))
 #+end_src
 
@@ -1358,7 +1391,8 @@ Also, a hook allows me to change doom-theme more or less at will, although I do 
      `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
      `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
      `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
-     `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow))))))
+     `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow)))))
+     `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow))))))
     (custom-theme-set-variables
      'my-theme
      `(aweshell-invalid-command-color ,(doom-color 'red))
@@ -1384,6 +1418,8 @@ References:
 
 To make the icons work (e.g. in the Doom Modeline), run =M-x all-the-icons-install-fonts=. The package definition is somewhere later in the config.
 ** Custom frame title
+Title format, which looks something like =emacs:project@hostname=.
+
 #+begin_src emacs-lisp
 (setq-default frame-title-format
               '(""
@@ -1409,7 +1445,7 @@ However, I don't like that list of workspaces is displayed inside the modeline r
   (setq persp-sort 'created)
   :config
   (persp-mode)
-  (my-leader-def "x" 'perspective-map)
+  (my-leader-def "x" '(:keymap perspective-map :which-key "perspective"))
   (general-define-key
    :keymaps 'override
    :states '(normal emacs)
@@ -1677,15 +1713,13 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
   "aD" #'my/dired-home)
 #+end_src
 ** Addons
-
-[[https://www.emacswiki.org/emacs/DiredPlus][Dired+]] provides a lot of extensions for dired functionality.
-#+begin_src emacs-lisp :noweb yes
-(use-package dired+
+I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provides a lot of extensions for dired functionality, but it also creates some new problems, so I opt out of it. Fortunately, the one feature I want from this package - adding more colors to dired buffers - is available as a separate package
+#+begin_src emacs-lisp
+(use-package diredfl
   :straight t
-  :init
-  (setq diredp-hide-details-initially-flag nil)
+  :after dired
   :config
-  <<diredp-fixes>>)
+  (diredfl-global-mode 1))
 #+end_src
 
 Reuse the current dired buffer instead of spamming new ones.
@@ -1731,28 +1765,18 @@ vifm-like filter
    :keymaps 'dired-narrow-map
    [escape] 'keyboard-quit))
 #+end_src
-*** dired+ on Emacs 28
-It looks like dired+ is not quite compatible with Emacs 28. So I override certain functions for now.
 
-#+begin_src emacs-lisp :tangle no :noweb-ref diredp-fixes
-(defun dired-do-delete (&optional arg)
-  "Delete all marked (or next ARG) files.
-`dired-recursive-deletes' controls whether deletion of
-non-empty directories is allowed."
-  ;; This is more consistent with the file marking feature than
-  ;; dired-do-flagged-delete.
-  (interactive "P")
-  (let (markers)
-    (dired-internal-do-deletions
-     (nreverse
-      ;; this may move point if ARG is an integer
-      (dired-map-over-marks (cons (dired-get-filename)
-                                  (let ((m (point-marker)))
-                                    (push m markers)
-                                    m))
-                            arg))
-     arg t)
-    (dolist (m markers) (set-marker m nil))))
+Display git info, such last commit for file and stuff. It's pretty useful, but also slows down Dired a bit, hence I don't turn in out by default.
+#+begin_src emacs-lisp
+(use-package dired-git-info
+  :straight t
+  :after dired
+  :if (not my/slow-ssh)
+  :config
+  (general-define-key
+   :keymap 'dired-mode-map
+   :states '(normal emacs)
+   ")" 'dired-git-info-mode))
 #+end_src
 ** Subdirectories
 Subdirectories are one of the interesting features of Dired. It allows displaying multiple folders on the same window.
@@ -2343,8 +2367,11 @@ Used files
 
 Hotkeys
 #+begin_src emacs-lisp
-(my-leader-def "oc" 'org-capture)
-(my-leader-def "oa" 'org-agenda)
+(my-leader-def
+  :infix "o"
+  "" '(:which-key "org-mode")
+  "c" 'org-capture
+  "a" 'org-agenda)
 #+end_src
 
 Refile targets
@@ -2427,6 +2454,7 @@ Log DONE time
 
 (my-leader-def
   :infix "oj"
+  "" '(:which-key "org-journal")
   "j" 'org-journal-new-entry
   "o" 'org-journal-open-current-journal-file
   "s" 'org-journal-search)
@@ -2465,6 +2493,7 @@ References:
 
 (my-leader-def
   :infix "or"
+  "r" '(:which-key "org-roam")
   "i" 'org-roam-node-insert
   "r" 'org-roam-node-find
   "g" 'org-roam-graph
@@ -2481,6 +2510,17 @@ References:
    :keymap 'org-mode-map
    "C-c i" 'org-id-get-create
    "C-c l o" 'org-roam-node-insert))
+#+end_src
+**** org-roam-ui
+A browser frontend to visualize a Roam directory in a form of graph.
+
+#+begin_src emacs-lisp
+(use-package org-roam-ui
+  :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
+  :after org-roam
+  ;; :hook (org-roam . org-roam-ui-mode)
+  :init
+  (my-leader-def "oru" #'org-roam-ui-mode))
 #+end_src
 **** org-roam-protocol
 Open links such as =org-protocol://= from browser. Run =M-x server-start= for org-protocol to work.
@@ -2522,9 +2562,11 @@ As of now, this package loads Helm on start. To avoid this, I have to exclude He
   :config
   (general-define-key
    :keymaps 'org-mode-map
-   "C-c l l" 'org-ref-ivy-insert-cite-link
-   "C-c l r" 'org-ref-ivy-insert-ref-link
-   "C-c l h" 'org-ref-cite-hydra/body)
+   :infix "C-c l"
+   "" '(:which-key "org-ref")
+   "l" 'org-ref-ivy-insert-cite-link
+   "r" 'org-ref-ivy-insert-ref-link
+   "h" 'org-ref-cite-hydra/body)
   (general-define-key
    :keymaps 'bibtex-mode-map
    "M-RET" 'org-ref-bibtex-hydra/body)
@@ -2725,7 +2767,7 @@ Add a custom LaTeX template without default packages. Packages are indented to b
 ;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
 (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
 
-(my-leader-def "aa" 'org-agenda)
+;; (my-leader-def "aa" 'org-agenda)
 #+end_src
 *** Copy a link
 #+begin_src emacs-lisp :noweb-ref org-keys-setup
@@ -2904,6 +2946,7 @@ A script to run tangle from CLI.
 
 #+begin_src emacs-lisp :tangle ~/.config/yadm/hooks/run-tangle.el :noweb yes
 (require 'org)
+(require 'password-store)
 
 (org-babel-do-load-languages
  'org-babel-load-languages
@@ -3025,12 +3068,14 @@ Origami should've leveraged LSP folding, but it was too unstable at the moment I
 **** Keybindings
 #+begin_src emacs-lisp
 (my-leader-def
-  "ld" 'lsp-ui-peek-find-definitions
-  "lr" 'lsp-rename
-  "lu" 'lsp-ui-peek-find-references
-  "ls" 'lsp-ui-find-workspace-symbol
-  ;; "la" 'helm-lsp-code-actions
-  "le" 'list-flycheck-errors)
+  :infix "l"
+  "" '(:which-key "lsp")
+  "d" 'lsp-ui-peek-find-definitions
+  "r" 'lsp-rename
+  "u" 'lsp-ui-peek-find-references
+  "s" 'lsp-ui-find-workspace-symbol
+  ;; "a" 'helm-lsp-code-actions
+  "e" 'list-flycheck-errors)
 #+end_src
 *** Flycheck
 A syntax checking extension for Emacs. Integrates with LSP-mode, but can also use various standalone checkers.
@@ -3703,6 +3748,7 @@ References:
 
 (my-leader-def
   :infix "L"
+  "" '(:which-key "languagetool")
   "c" 'langtool-check
   "s" 'langtool-server-stop
   "d" 'langtool-check-done
@@ -4134,7 +4180,10 @@ A bunch of functions for managing dotfiles with yadm.
 
 (general-define-key "C-c c" 'my/edit-configuration)
 ;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
-(my-leader-def "cc" 'my/edit-configuration)
+(my-leader-def
+  :infix "c"
+  "" '(:which-key "configuration")
+  "c" 'my/edit-configuration)
 #+end_src
 *** Open Magit for yadm
 Idea:
@@ -4251,53 +4300,41 @@ Open a URL with eww.
       (eww link))))
 #+end_src
 **** YouTube
-| Guix dependency |
-|-----------------|
-| mpv             |
-| youtube-dl      |
+Previously this block was opening MPV with =start-process=, but now I've managed to hook up MPV with EMMS. So there is integration of elfeed with EMMS.
 
-A function to open YouTube link with mpv
-
+The following function converts URLs from Invidious to YouTube.
 #+begin_src emacs-lisp
-(setq my/youtube-dl-quality-list
-      '("bestvideo[height<=720]+bestaudio/best[height<=720]"
-        "bestvideo[height<=480]+bestaudio/best[height<=480]"
-        "bestvideo[height<=1080]+bestaudio/best[height<=1080]"))
-
-(setq my/youtube-dl-quality-default "bestvideo[height<=720]+bestaudio/best[height<=720]")
-
-(defun my/open-youtube-video (link)
-  "Open Youtube URL with mpv"
-  (interactive "MURL: ")
-  (let ((quality (completing-read "Quality: " my/youtube-dl-quality-list nil t))
-        (watch-id (cadr
+(defun my/get-youtube-url (link)
+  (let ((watch-id (cadr
                    (assoc "watch?v"
                           (url-parse-query-string
                            (substring
                             (url-filename
                              (url-generic-parse-url link))
                             1))))))
-    (if (not watch-id)
-        (message "Can't find youtube link")
-      (let ((yt-link (concat "https://www.youtube.com/watch?v=" watch-id))
-            (watch-name (concat "mpv-" watch-id)))
-        (start-process watch-name watch-name "mpv" yt-link
-                       (format "--ytdl-format=%s" quality))))))
+    (concat "https://www.youtube.com/watch?v=" watch-id)))
 #+end_src
 
-And a function to open YouTube link from elfeed
+Now, a function to add YouTube link with metadata from elfeed to EMMS.
 #+begin_src emacs-lisp
-(defun my/elfeed-open-mpv ()
+(with-eval-after-load 'emms
+  (define-emms-source elfeed (entry)
+    (let ((track (emms-track
+                  'url (my/get-youtube-url (elfeed-entry-link entry)))))
+      (emms-track-set track 'info-title (elfeed-entry-title entry))
+      (setq my/test track)
+      (emms-playlist-insert-track track))))
+
+(defun my/elfeed-add-emms-youtube ()
   (interactive)
-  "Open MPV for the current entry"
-  (my/open-youtube-video (elfeed-entry-link elfeed-show-entry)))
+  (emms-add-elfeed elfeed-show-entry))
 
 (with-eval-after-load 'elfeed
   (evil-collection-define-key 'normal 'elfeed-show-mode-map
-    "gm" #'my/elfeed-open-mpv))
+    "gm" #'my/elfeed-add-emms-youtube))
 #+end_src
 *** EMMS
-EMMS is the Emacs Multi-Media System. I am controlling MPD from Emacs with its help.
+EMMS is the Emacs Multi-Media System. I control MPD from Emacs with its help.
 
 References:
 - [[https://www.gnu.org/software/emms/manual/][EMMS Manual]]
@@ -4306,11 +4343,16 @@ References:
 #+begin_src emacs-lisp :noweb yes
 (use-package emms
   :straight t
-  :commands (emms-smart-browse emms-browser)
+  :commands (emms-smart-browse
+             emms-browser
+             emms-add-url
+             emms-add-file
+             emms-add-find)
   :if (not my/is-termux)
   :init
   (my-leader-def
     :infix "as"
+    "" '(:which-key "emms")
     "s" 'emms-smart-browse
     "b" 'emms-browser
     "p" 'emms-pause
@@ -4322,18 +4364,12 @@ References:
   :config
   (require 'emms-setup)
   (require 'emms-player-mpd)
+  (require 'emms-player-mpv)
   (emms-all)
   ;; MPD setup
-  (setq emms-source-file-default-directory (expand-file-name "~/Music/"))
-  (add-to-list 'emms-info-functions 'emms-info-mpd)
-  (add-to-list 'emms-player-list 'emms-player-mpd)
-  (setq emms-player-mpd-server-name "localhost")
-  (setq emms-player-mpd-server-port "6600")
-  (setq emms-player-mpd-music-directory "~/Music")
-  (emms-player-mpd-connect)
-  ;; Clear MPD playlist on clearing EMMS playlist
-  ;; IDK if this is fine for MPD playlists, I don't use them anyhow
-  (add-hook 'emms-playlist-cleared-hook 'emms-player-mpd-clear)
+  <<emms-mpd-setup>>
+  ;; MPV setup
+  <<emms-mpv-setup>>
   ;; evil-lion shadows ga bindings
   (add-hook 'emms-browser-mode-hook
             (lambda () (evil-lion-mode -1)))
@@ -4341,6 +4377,104 @@ References:
   (emms-mode-line-mode -1)
   (emms-playing-time-display-mode -1)
   <<emms-fixes>>)
+#+end_src
+**** MPD
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle no :noweb-ref emms-mpd-setup
+:END:
+[[https://www.musicpd.org/][mpd]] is server for playing music. It has a couple of first-class clients, including curses-based [[https://github.com/ncmpcpp/ncmpcpp][ncmpcpp]], but of course I want to use Emacs.
+
+#+begin_src emacs-lisp
+(setq emms-source-file-default-directory (expand-file-name "~/Music/"))
+(add-to-list 'emms-info-functions 'emms-info-mpd)
+(add-to-list 'emms-player-list 'emms-player-mpd)
+(setq emms-player-mpd-server-name "localhost")
+(setq emms-player-mpd-server-port "6600")
+(setq emms-player-mpd-music-directory "~/Music")
+#+end_src
+
+Connect on setup. For some reason it stops mpd playback whenever it connects, but it is not a big issue.
+#+begin_src emacs-lisp
+(emms-player-mpd-connect)
+#+end_src
+
+Clear MPD playlist on clearing EMMS playlist. IDK if this is fine for MPD playlists, I don't use them anyhow.
+#+begin_src emacs-lisp
+(add-hook 'emms-playlist-cleared-hook 'emms-player-mpd-clear)
+#+end_src
+
+Set a custom regex for MPD. EMMS sets up the default regex from mpd diagnostic output, so that regex opens basically everything, including videos, https links, etc. That is fine is MPD is the only player in EMMS, but as I want to use MPV as well, I override the regex.
+#+begin_src emacs-lisp
+(emms-player-set emms-player-mpd
+                 'regex
+                 (emms-player-simple-regexp
+                  "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff"))
+#+end_src
+
+Now, after all this is done, run =M-x emms-cache-set-from-mpd-all= to set cache from MPD. If everything is correct, EMMS browser will be populated with MPD database.
+**** MPV
+:PROPERTIES:
+:header-args:emacs-lisp: :tangle no :noweb-ref emms-mpv-setup
+:END:
+| Guix dependency |
+|-----------------|
+| mpv             |
+| youtube-dl      |
+
+[[https://mpv.io/][mpv]] is a decent media player, which has found a place in this configuration becase it integrates with youtube-dl.
+
+#+begin_src emacs-lisp
+(add-to-list 'emms-player-list 'emms-player-mpv t)
+#+end_src
+
+Also a custom regex. My demands for MPV include running =youtube-dl=, so there is a regex which matches youtube.com or some of the video formats.
+#+begin_src emacs-lisp
+(emms-player-set emms-player-mpv
+                 'regex
+                 (rx (or (: "https://" (* nonl) "youtube.com" (* nonl))
+                         (+ (? (or "https://" "http://"))
+                            (* nonl)
+                            (regexp (eval (emms-player-simple-regexp
+                                           "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
+#+end_src
+
+By default MPV plays the video in the best possible quality, which may be pretty high, even too high with limited bandwidth. So here is the logic to choose youtube quality.
+#+begin_src emacs-lisp
+(setq my/youtube-dl-quality-list
+      '("bestvideo[height<=720]+bestaudio/best[height<=720]"
+        "bestvideo[height<=480]+bestaudio/best[height<=480]"
+        "bestvideo[height<=1080]+bestaudio/best[height<=1080]"))
+
+(setq my/default-emms-player-mpv-parameters
+      '("--quiet" "--really-quiet" "--no-audio-display"))
+
+(defun my/set-emms-mpd-youtube-quality (quality)
+  (interactive "P")
+  (unless quality
+    (setq quality (completing-read "Quality: " my/youtube-dl-quality-list nil t)))
+  (setq emms-player-mpv-parameters
+        `(,@my/default-emms-player-mpv-parameters ,(format "--ytdl-format=%s" quality))))
+
+(my/set-emms-mpd-youtube-quality (car my/youtube-dl-quality-list))
+#+end_src
+
+Now =emms-add-url= should work on YouTube URLs just fine. Just keep in mind that it will only add the URL to the playlist, not play it right away.
+**** Cache cleanup
+Now, all these URLs reside in EMMS cache after being played. I don't want them to stay there for a long time, so here is a handy function to clean it.
+
+#+begin_src emacs-lisp
+(defun my/emms-cleanup-urls ()
+  (interactive)
+  (let ((keys-to-delete '()))
+    (maphash (lambda (key value)
+               (when (eq (cdr (assoc 'type value)) 'url)
+                 (add-to-list 'keys-to-delete key)))
+             emms-cache-db)
+    (dolist (key keys-to-delete)
+      (remhash key emms-cache-db)))
+  (setq emms-cache-dirty t))
+
+(my-leader-def "asc" #'my/emms-cleanup-urls)
 #+end_src
 **** Some keybindings
 #+begin_src emacs-lisp
@@ -4352,7 +4486,7 @@ References:
   (evil-collection-define-key 'normal 'emms-playlist-mode-map
     "q" 'quit-window))
 #+end_src
-**** Fixes
+**** EMMS & mpd Fixes
 Some fixes until I submit a patch.
 
 For some reason EMMS doesn't fetch =albumartist= from MPD. Overriding this function fixes that.
@@ -4505,11 +4639,13 @@ References:
           ("ru" . "en"))))
 
 (my-leader-def
-  "atp" 'google-translate-at-point
-  "atP" 'google-translate-at-point-reverse
-  "atq" 'google-translate-query-translate
-  "atQ" 'google-translate-query-translate-reverse
-  "att" 'google-translate-smooth-translate)
+  :infix "at"
+  "" '(:which-key "google translate")
+  "p" 'google-translate-at-point
+  "P" 'google-translate-at-point-reverse
+  "q" 'google-translate-query-translate
+  "Q" 'google-translate-query-translate-reverse
+  "t" 'google-translate-smooth-translate)
 #+end_src
 *** Discord integration
 Integration with Discord. Shows which file is being edited in Emacs.
