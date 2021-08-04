@@ -97,14 +97,16 @@ I have a few options for setting a username and password. First, I can run =pass
 
 Another option is to use noweb and not push the file below to the version control. Then I have a plaintext password of email on my computer, but I think it's a lesser evil than the entire keyring.
 
+I would use =password-store-get= from password-store.el, but I want this to be able to run without any 3rd party packages, so it's just bash.
+
 #+NAME: mail-username
-#+begin_src emacs-lisp
-(password-store-get-field "Job/Infrastructure/pvkorytov@etu.ru" "username")
+#+begin_src bash
+pass show Job/Infrastructure/pvkorytov@etu.ru | sed -n 's/username: //;2p'
 #+end_src
 
 #+NAME: mail-password
-#+begin_src emacs-lisp
-(password-store-get "Job/Infrastructure/pvkorytov@etu.ru")
+#+begin_src bash
+pass show Job/Infrastructure/pvkorytov@etu.ru | head -n 1
 #+end_src
 
 #+begin_src conf-unix :tangle ~/.offlineimaprc :noweb yes
