@@ -77,6 +77,13 @@
     #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/vpn-start"))
     #:stop (make-kill-destructor)))
 
+(define davmail
+  (make <service>
+    #:provides '(davmail)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("/home/pavel/bin/davmail"))
+    #:stop (make-kill-destructor)))
+
 (register-services
  mpd
  mpd-watcher
@@ -88,8 +95,9 @@
  xsettingsd
  discord-rich-presence
  polkit-gnome
- vpn)
+ vpn
+ davmail)
 
 (action 'shepherd 'daemonize)
 
-(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome))
+(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome davmail))

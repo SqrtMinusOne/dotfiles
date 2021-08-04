@@ -3,4 +3,5 @@
    "msmtp"
    "parallel"
    "notmuch"
+   "offlineimap"
    "python-lieer"))

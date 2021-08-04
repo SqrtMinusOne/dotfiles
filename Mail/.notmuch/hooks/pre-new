@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
-# [[file:../../../Mail.org::*=pre_new=][=pre_new=:1]]
+# [[file:../../../Mail.org::*=pre_new=][=pre_new=:2]]
 # GMI="/home/pavel/Programs/miniconda3/envs/mail/bin/gmi"
 GMI="gmi"
-parallel -j0 "(cd /home/pavel/Mail/{}/ && $GMI sync)" ::: thexcloud progin6304
-# =pre_new=:1 ends here
+
+echo "Running pre-new filters"
+notmuch search --output=files "NOT path:pvkorytov_etu/INBOX/cur/** AND tag:inbox AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/INBOX/cur/
+notmuch search --output=files "NOT path:pvkorytov_etu/Sent/cur/** AND tag:sent AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Sent/cur/
+notmuch search --output=files "NOT path:pvkorytov_etu/Junk/cur/** AND tag:spam AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Junk/cur/
+notmuch search --output=files "NOT path:pvkorytov_etu/Trash/cur/** AND tag:trash AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Trash/cur/
+notmuch search --output=files "NOT path:pvkorytov_etu/Job_Digital/cur/** AND tag:job.digital AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Job_Digital/cur/
+notmuch search --output=files "NOT path:pvkorytov_etu/Job_Digital.Docs/cur/** AND tag:job.digital.docs AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Job_Digital.Docs/cur/
+notmuch search --output=files "NOT path:pvkorytov_etu/Job_Digital.Support/cur/** AND tag:job.digital.support AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Job_Digital.Support/cur/
+notmuch search --output=files "NOT path:pvkorytov_etu/Job_Digital.Superservice/cur/** AND tag:job.digital.superservice AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Job_Digital.Superservice/cur/
+notmuch search --output=files "NOT path:pvkorytov_etu/Archive/cur/** AND NOT tag:inbox AND NOT tag:sent AND NOT tag:spam AND NOT tag:trash AND NOT tag:job.digital AND NOT tag:job.digital.docs AND NOT tag:job.digital.support AND NOT tag:job.digital.superservice AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Archive/cur/
+echo "Pre-new filters done"
+
+parallel --link -j0 "(cd /home/pavel/Mail/{1}/ && {2} {3})" ::: thexcloud progin6304 pvkorytov_etu ::: "$GMI" "$GMI" "offlineimap" ::: sync sync ""
+# =pre_new=:2 ends here

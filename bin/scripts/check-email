@@ -16,10 +16,12 @@ ALL_UNREAD=$(notmuch count "$ALL_QUERY")
 if [ $NEW_UNREAD -gt 0 ]; then
     MAIN_UNREAD=$(notmuch count "tag:unread AND tag:main")
     PROGIN_UNREAD=$(notmuch count "tag:unread AND tag:progin")
+    ETU_UNREAD=$(notmuch count "tag:unread AND tag:pvkorytov")
     read -r -d '' NOTIFICATION <<EOM
 $NEW_UNREAD new messages
 $MAIN_UNREAD thexcloud@gmail.com
 $PROGIN_UNREAD progin6304@gmail.com
+$ETU_UNREAD pvkorytov@etu.ru
 $ALL_UNREAD total
 EOM
     notify-send "New Mail" "$NOTIFICATION"

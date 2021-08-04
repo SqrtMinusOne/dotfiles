@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "openjdk"
    "node"
    "git-filter-repo"
    "virt-manager"

@@ -1,6 +1,26 @@
 #!/usr/bin/env bash
-# [[file:../../../Mail.org::*=post_new=][=post_new=:1]]
+# [[file:../../../Mail.org::*=post_new=][=post_new=:2]]
 notmuch tag +main "path:thexcloud/** AND tag:new"
 notmuch tag +progin "path:progin6304/** AND tag:new"
+notmuch tag +pvkorytov "path:pvkorytov_etu/** AND tag:new"
+
+echo "Running post-new filters"
+notmuch tag +inbox "path:pvkorytov_etu/INBOX/cur/** AND NOT tag:inbox"
+notmuch tag -inbox "NOT path:pvkorytov_etu/INBOX/cur/** AND tag:inbox AND tag:pvkorytov"
+notmuch tag +sent "path:pvkorytov_etu/Sent/cur/** AND NOT tag:sent"
+notmuch tag -sent "NOT path:pvkorytov_etu/Sent/cur/** AND tag:sent AND tag:pvkorytov"
+notmuch tag +spam "path:pvkorytov_etu/Junk/cur/** AND NOT tag:spam"
+notmuch tag -spam "NOT path:pvkorytov_etu/Junk/cur/** AND tag:spam AND tag:pvkorytov"
+notmuch tag +trash "path:pvkorytov_etu/Trash/cur/** AND NOT tag:trash"
+notmuch tag -trash "NOT path:pvkorytov_etu/Trash/cur/** AND tag:trash AND tag:pvkorytov"
+notmuch tag +job.digital "path:pvkorytov_etu/Job_Digital/cur/** AND NOT tag:job.digital"
+notmuch tag -job.digital "NOT path:pvkorytov_etu/Job_Digital/cur/** AND tag:job.digital AND tag:pvkorytov"
+notmuch tag +job.digital.docs "path:pvkorytov_etu/Job_Digital.Docs/cur/** AND NOT tag:job.digital.docs"
+notmuch tag -job.digital.docs "NOT path:pvkorytov_etu/Job_Digital.Docs/cur/** AND tag:job.digital.docs AND tag:pvkorytov"
+notmuch tag +job.digital.support "path:pvkorytov_etu/Job_Digital.Support/cur/** AND NOT tag:job.digital.support"
+notmuch tag -job.digital.support "NOT path:pvkorytov_etu/Job_Digital.Support/cur/** AND tag:job.digital.support AND tag:pvkorytov"
+notmuch tag +job.digital.superservice "path:pvkorytov_etu/Job_Digital.Superservice/cur/** AND NOT tag:job.digital.superservice"
+notmuch tag -job.digital.superservice "NOT path:pvkorytov_etu/Job_Digital.Superservice/cur/** AND tag:job.digital.superservice AND tag:pvkorytov"
+echo "Post-new filters done"
 notmuch tag -new "tag:new"
-# =post_new=:1 ends here
+# =post_new=:2 ends here

@@ -24,6 +24,7 @@ Parts prefixed with (OFF) are not used, but kept for historic purposes. For some
     - [[#colors-in-xresources][Colors in Xresources]]
     - [[#fonts][Fonts]]
   - [[#themes][Themes]]
+  - [[#device-specific-settings][Device-specific settings]]
 - [[#i3wm][i3wm]]
   - [[#general-settings][General settings]]
   - [[#managing-windows][Managing windows]]
@@ -98,6 +99,8 @@ Parts prefixed with (OFF) are not used, but kept for historic purposes. For some
   - [[#pulseeffects][PulseEffects]]
   - [[#xsettingsd][xsettingsd]]
   - [[#discord-rich-presence][Discord rich presence]]
+  - [[#polkit-authentication-agent][Polkit Authentication agent]]
+  - [[#vpn][VPN]]
   - [[#shepherd-config][Shepherd config]]
   - [[#sync][Sync]]
 - [[#guix-settings][Guix settings]]
@@ -2105,6 +2108,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | virt-manager    |
 | dev      | git-filter-repo |
 | dev      | node            |
+| dev      | openjdk         |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
@@ -2352,6 +2356,15 @@ Run my [[file:Guix.org::*VPN][OpenVPN setup]]. Not lauching this automatially, a
     #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/vpn-start"))
     #:stop (make-kill-destructor)))
 #+end_src
+** Davmail
+#+begin_src scheme
+(define davmail
+  (make <service>
+    #:provides '(davmail)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("/home/pavel/bin/davmail"))
+    #:stop (make-kill-destructor)))
+#+end_src
 ** Shepherd config
 Register services
 #+begin_src scheme
@@ -2366,7 +2379,8 @@ Register services
  xsettingsd
  discord-rich-presence
  polkit-gnome
- vpn)
+ vpn
+ davmail)
 #+end_src
 
 Daemonize shepherd
@@ -2376,7 +2390,7 @@ Daemonize shepherd
 
 Run services
 #+begin_src scheme
-(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome))
+(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome davmail))
 #+end_src
 ** Sync
 | Guix dependency |

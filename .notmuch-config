@@ -13,7 +13,7 @@ other_email=progin6304@gmail.com;
 # [[file:Mail.org::*Config][Config:3]]
 [new]
 tags=new;
-ignore=.osync_workdir
+ignore=.osync_workdir;.mbsyncstate;.uidvalidity;.lock;/.*gmailieer\.json.*/
 # Config:3 ends here
 
 # [[file:Mail.org::*Config][Config:4]]
