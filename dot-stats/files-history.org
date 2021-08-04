@@ -31,7 +31,7 @@ fi
 #+begin_src sh
 declare -A paths
 
-keys=("Emacs.org" "init.el" "init.vim" "Desktop.org" "Console.org")
+keys=("Emacs.org" "init.el" "init.vim" "Desktop.org" "Console.org" "Mail.org" "Guix.org")
 
 paths["Emacs.org"]="Emacs.org;.emacs.d/emacs.org;config/.emacs.d/emacs.org"
 paths["init.el"]=".emacs.d/init.el;config/.emacs.d/init.el"
@@ -73,8 +73,8 @@ echo $(git -C $REPO log --pretty="%H %cI" | tail -n 1 | get_lengths)
 
 #+RESULTS:
 :
-: > > > > > > > > > > > > > > > > > > > sh-5.0$ sh-5.0$ c2231d32b9f7cf9361a404926077f7d4cf70e05a,2021-06-23T20:01:12+03:00,3900,2602,1053,2331,711
-: 5044283019dc34c95d2836485ed492b34f49230e,2019-03-31T13:52:50+03:00,0,0,62,0,0
+: > > > > > > > > > > > > > > > > > > > sh-5.0$ sh-5.0$ 7049a698224c1ea6078cf8a078ca9f58bf465db5,2021-08-04T16:29:03+03:00,4894,3214,1053,2432,968,529,698
+: 5044283019dc34c95d2836485ed492b34f49230e,2019-03-31T13:52:50+03:00,0,0,62,0,0,0,0
 
 #+begin_src sh :results output verbatim
 header="commit,date"
@@ -153,25 +153,25 @@ with pd.option_context('display.max_rows', 10):
 
 #+RESULTS:
 :RESULTS:
-|                           | Emacs.org | init.el | init.vim | Desktop.org | Console.org |
-|---------------------------+-----------+---------+----------+-------------+-------------|
-| date                      |           |         |          |             |             |
-| 2019-03-31 13:52:50+03:00 | NaN       | NaN     | 62       | NaN         | NaN         |
-| 2019-03-31 20:06:29+03:00 | NaN       | NaN     | 62       | NaN         | NaN         |
-| 2019-04-02 17:52:05+03:00 | NaN       | NaN     | 91       | NaN         | NaN         |
-| 2019-04-03 10:36:35+03:00 | NaN       | NaN     | 91       | NaN         | NaN         |
-| 2019-04-09 12:47:05+03:00 | NaN       | NaN     | 91       | NaN         | NaN         |
-| ...                       | ...       | ...     | ...      | ...         | ...         |
-| 2021-06-21 09:23:36+03:00 | 3901.0    | 2602.0  | 1053     | 2323.0      | 686.0       |
-| 2021-06-22 08:54:38+03:00 | 3900.0    | 2602.0  | 1053     | 2323.0      | 696.0       |
-| 2021-06-22 08:54:46+03:00 | 3900.0    | 2602.0  | 1053     | 2326.0      | 711.0       |
-| 2021-06-23 19:59:48+03:00 | 3900.0    | 2602.0  | 1053     | 2331.0      | 711.0       |
-| 2021-06-23 20:01:12+03:00 | 3900.0    | 2602.0  | 1053     | 2331.0      | 711.0       |
+|                           | Emacs.org | init.el | init.vim | Desktop.org | Console.org | Mail.org | Guix.org |
+|---------------------------+-----------+---------+----------+-------------+-------------+----------+----------|
+| date                      |           |         |          |             |             |          |          |
+| 2019-03-31 13:52:50+03:00 | NaN       | NaN     | 62       | NaN         | NaN         | NaN      | NaN      |
+| 2019-03-31 20:06:29+03:00 | NaN       | NaN     | 62       | NaN         | NaN         | NaN      | NaN      |
+| 2019-04-02 17:52:05+03:00 | NaN       | NaN     | 91       | NaN         | NaN         | NaN      | NaN      |
+| 2019-04-03 10:36:35+03:00 | NaN       | NaN     | 91       | NaN         | NaN         | NaN      | NaN      |
+| 2019-04-09 12:47:05+03:00 | NaN       | NaN     | 91       | NaN         | NaN         | NaN      | NaN      |
+| ...                       | ...       | ...     | ...      | ...         | ...         | ...      | ...      |
+| 2021-08-04 11:29:27+03:00 | 4895.0    | 3209.0  | 1053     | 2432.0      | 968.0       | 527.0    | 698.0    |
+| 2021-08-04 11:29:35+03:00 | 4895.0    | 3209.0  | 1053     | 2432.0      | 968.0       | 527.0    | 698.0    |
+| 2021-08-04 12:02:45+03:00 | 4895.0    | 3214.0  | 1053     | 2432.0      | 968.0       | 527.0    | 698.0    |
+| 2021-08-04 16:28:32+03:00 | 4894.0    | 3214.0  | 1053     | 2432.0      | 968.0       | 527.0    | 698.0    |
+| 2021-08-04 16:29:03+03:00 | 4894.0    | 3214.0  | 1053     | 2432.0      | 968.0       | 529.0    | 698.0    |
 
-323 rows × 5 columns
+375 rows × 7 columns
 :END:
 
-** Plot
+** Plot Emacs vs vim
 #+begin_src python :file img/emacs-vim.png
 fig, ax = plt.subplots(figsize=(12, 6))
 df[['Emacs.org', 'init.vim', 'init.el']].plot(ax=ax)
@@ -185,3 +185,18 @@ pass
 
 #+RESULTS:
 [[file:img/emacs-vim.png]]
+
+** Plot literate configuration
+#+begin_src python :file img/literate-config.png
+fig, ax = plt.subplots(figsize=(12, 6))
+df[['Emacs.org', 'Desktop.org', 'Mail.org', 'Guix.org', 'Console.org']].plot(ax=ax)
+ax.grid(True, alpha=0.25)
+ax.set_axisbelow(True)
+ax.set_title('Literate configuration size growth')
+ax.set_ylabel('LoC')
+ax.text(0.075, 0.08, f'upd. {datetime.now().strftime("%Y-%m-%d")}', transform=fig.transFigure, va='top', ha='left')
+pass
+#+end_src
+
+#+RESULTS:
+[[file:img/literate-config.png]]

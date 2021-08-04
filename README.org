@@ -68,6 +68,8 @@ Run the following to show the pictures with reasonable width:
 
 [[./dot-stats/img/emacs-vim.png]]
 
+[[./dot-stats/img/literate-config.png]]
+
 * Misc
 ** Notes
 - =M-u C-c C-v t= to tangle a particular block

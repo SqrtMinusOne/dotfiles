@@ -62,8 +62,9 @@ COLORS = {
 
 #+RESULTS:
 
-* Load data
-** Read file
+* General history
+** Load data
+*** Read file
 #+begin_src python
 DATA = './history.json'
 
@@ -74,7 +75,7 @@ with open(DATA, 'r') as f:
 #+end_src
 
 #+RESULTS:
-** Some preprocessing
+*** Some preprocessing
 #+begin_src python
 def preprocess_data(data):
     data = copy.deepcopy(data)
@@ -114,7 +115,7 @@ data = preprocess_data(data_o)
 : TODO in Windows (endDate)
 : TODO in bash (startDate)
 : TODO in Mailspring (startDate)
-** Crop data
+*** Crop data
 #+begin_src python
 def crop_data(data, start_date):
     data = copy.deepcopy(data)
@@ -144,7 +145,7 @@ data = crop_data(data, datetime(2017, 1, 1))
 
 #+RESULTS:
 
-* Plot one category
+** Plot one category
 #+begin_src python
 CAT_W = 0.3
 
@@ -205,10 +206,10 @@ notes
 #+RESULTS:
 :RESULTS:
 | Dual boot, rarely used |
-[[file:./.ob-jupyter/e4f672eaf133c3b6321d2a80f9cca8c777fc3240.png]]
+[[file:./.ob-jupyter/f39f5cf8e0a994482ac8a24875d1f0d46a28f1af.png]]
 :END:
 
-* Plot all separately
+** Plot all separately
 #+begin_src python :display plain
 def plot_category(category):
     fig, ax = plt.subplots(figsize=(12, len(category['elements']) * 0.7 + 1))
@@ -228,7 +229,7 @@ def plot_separate(data):
 
 #+RESULTS:
 
-* Plot all in one chart
+** Plot all in one chart
 #+begin_src python :file img/all.png
 def plot_all(data):
     fig, axes = plt.subplots(
@@ -255,3 +256,17 @@ plot_all(data)
 
 #+RESULTS:
 [[file:img/all.png]]
+
+* Emacs history
+#+begin_src python :file img/emacs.png
+EMACS_DATA = './emacs-history.json'
+
+with open(EMACS_DATA, 'r') as f:
+    data_e = json.load(f)
+
+data_e = preprocess_data(data_e)
+plot_all(data_e)
+#+end_src
+
+#+RESULTS:
+[[file:img/emacs.png]]
