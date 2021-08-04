@@ -568,7 +568,7 @@ As of now, CyberGhost doesn't provide ipv6, so we have to disable it.
 
 #+begin_src bash :tangle ~/bin/scripts/vpn-start
 export DISPLAY=:0
-CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
+CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*|vnet.*|virbr.*)" | sed 's/ *$//g')
 
 if [ -z "$CONN" ]; then
     echo "No connection!"
