@@ -27,62 +27,71 @@ bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcu
 # General settings:1 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:1]]
-# kill focused window
 bindsym $mod+Shift+q kill
+# Managing windows:1 ends here
 
-# change focus
+# [[file:../../Desktop.org::*Managing windows][Managing windows:2]]
 bindsym $mod+h focus left
 bindsym $mod+j focus down
 bindsym $mod+k focus up
 bindsym $mod+l focus right
 
-# alternatively, you can use the cursor keys:
 bindsym $mod+Left focus left
 bindsym $mod+Down focus down
 bindsym $mod+Up focus up
 bindsym $mod+Right focus right
+# Managing windows:2 ends here
 
-# move focused window
+# [[file:../../Desktop.org::*Managing windows][Managing windows:3]]
 bindsym $mod+Shift+h move left
 bindsym $mod+Shift+j move down
 bindsym $mod+Shift+k move up
 bindsym $mod+Shift+l move right
 
-# alternatively, you can use the cursor keys:
 bindsym $mod+Shift+Left move left
 bindsym $mod+Shift+Down move down
 bindsym $mod+Shift+Up move up
 bindsym $mod+Shift+Right move right
+# Managing windows:3 ends here
 
-# split in horizontal orientation
+# [[file:../../Desktop.org::*Managing windows][Managing windows:4]]
 bindsym $mod+s split h
-
-# split in vertical orientation
 bindsym $mod+v split v
+# Managing windows:4 ends here
 
+# [[file:../../Desktop.org::*Managing windows][Managing windows:5]]
 # enter fullscreen mode for the focused container
 bindsym $mod+f fullscreen toggle
+# Managing windows:5 ends here
 
-# change container layout (stacked, tabbed, toggle split)
+# [[file:../../Desktop.org::*Managing windows][Managing windows:6]]
 bindsym $mod+w layout stacking
 bindsym $mod+t layout tabbed
 bindsym $mod+e layout toggle split
+# Managing windows:6 ends here
 
-# toggle tiling / floating
+# [[file:../../Desktop.org::*Managing windows][Managing windows:7]]
 bindsym $mod+Shift+f floating toggle
+bindsym $mod+z focus mode_toggle
+# Managing windows:7 ends here
 
+# [[file:../../Desktop.org::*Managing windows][Managing windows:8]]
 bindsym $mod+Tab move workspace to output right
 bindsym $mod+q focus output right
+# Managing windows:8 ends here
 
-# change focus between tiling / floating windows
-# bindsym $mod+space focus mode_toggle
-
-# focus the parent container
+# [[file:../../Desktop.org::*Managing windows][Managing windows:9]]
 bindsym $mod+a focus parent
-
-# focus the child container
 bindsym $mod+Shift+A focus child
-# Managing windows:1 ends here
+# Managing windows:9 ends here
+
+# [[file:../../Desktop.org::*Managing windows][Managing windows:10]]
+bindsym $mod+i sticky toggle
+# Managing windows:10 ends here
+
+# [[file:../../Desktop.org::*Managing windows][Managing windows:11]]
+bindsym $mod+x floating enable; sticky enable; move position 1220 0; resize set width 700 px
+# Managing windows:11 ends here
 
 # [[file:../../Desktop.org::*Workspaces][Workspaces:1]]
 set $w1 "1 🚀"
@@ -369,12 +378,6 @@ bindsym $mod+slash exec toggle_layout
 # Polybar
 exec_always --no-startup-id "bash /home/pavel/bin/polybar.sh"
 
-# PulseEffects
-# exec --no-startup-id pulseeffects --gapplication-service
-
-# Sudo
-# exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
-
 # Wallpaper
 exec_always "feh --bg-fill ~/Pictures/wallpaper.jpg"
 
@@ -388,16 +391,8 @@ exec keynav
 exec --no-startup-id nm-applet
 # exec --no-startup-id /usr/bin/blueman-applet
 
-# MPD
-# exec --no-startup-id mpd
-
-# Stuff
-# exec aw-qt
-# exec "bash ~/bin/aw-start"
 exec shepherd
-# exec "vnstatd -d"
 exec dunst
-# exec kde-connect-indicator
 exec copyq
 exec "xmodmap ~/.Xmodmap"
 # exec "xrdb -merge ~/.Xresources"

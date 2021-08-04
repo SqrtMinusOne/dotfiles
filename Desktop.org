@@ -277,64 +277,85 @@ bindsym $mod+Shift+r restart
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
 #+end_src
 ** Managing windows
-#+begin_src conf-space
-# kill focused window
-bindsym $mod+Shift+q kill
+Some keybindings for managing windows.
 
-# change focus
+Kill focused windows
+#+begin_src conf-space
+bindsym $mod+Shift+q kill
+#+end_src
+
+Change focus
+#+begin_src conf-space
 bindsym $mod+h focus left
 bindsym $mod+j focus down
 bindsym $mod+k focus up
 bindsym $mod+l focus right
 
-# alternatively, you can use the cursor keys:
 bindsym $mod+Left focus left
 bindsym $mod+Down focus down
 bindsym $mod+Up focus up
 bindsym $mod+Right focus right
+#+end_src
 
-# move focused window
+Move windows around
+#+begin_src conf-space
 bindsym $mod+Shift+h move left
 bindsym $mod+Shift+j move down
 bindsym $mod+Shift+k move up
 bindsym $mod+Shift+l move right
 
-# alternatively, you can use the cursor keys:
 bindsym $mod+Shift+Left move left
 bindsym $mod+Shift+Down move down
 bindsym $mod+Shift+Up move up
 bindsym $mod+Shift+Right move right
+#+end_src
 
-# split in horizontal orientation
+Split windows
+#+begin_src conf-space
 bindsym $mod+s split h
-
-# split in vertical orientation
 bindsym $mod+v split v
+#+end_src
 
+Enter fullscreen mode
+#+begin_src conf-space
 # enter fullscreen mode for the focused container
 bindsym $mod+f fullscreen toggle
+#+end_src
 
-# change container layout (stacked, tabbed, toggle split)
+Changing layout
+#+begin_src conf-space
 bindsym $mod+w layout stacking
 bindsym $mod+t layout tabbed
 bindsym $mod+e layout toggle split
+#+end_src
 
-# toggle tiling / floating
+Toggle tiling/floating, switch between tiled and floating windows
+#+begin_src conf-space
 bindsym $mod+Shift+f floating toggle
+bindsym $mod+z focus mode_toggle
+#+end_src
 
+Switching outputs
+#+begin_src conf-space
 bindsym $mod+Tab move workspace to output right
 bindsym $mod+q focus output right
+#+end_src
 
-# change focus between tiling / floating windows
-# bindsym $mod+space focus mode_toggle
-
-# focus the parent container
+Focus parent and child container
+#+begin_src conf-space
 bindsym $mod+a focus parent
-
-# focus the child container
 bindsym $mod+Shift+A focus child
 #+end_src
 
+Toggle sticky
+#+begin_src conf-space
+bindsym $mod+i sticky toggle
+#+end_src
+
+Set windows as floating and sticky, move to the top right.
+#+begin_src conf-space
+bindsym $mod+x floating enable; sticky enable; move position 1220 0; resize set width 700 px
+#+end_src
 ** Workspaces
 #+begin_src conf-space
 set $w1 "1 🚀"
@@ -725,12 +746,6 @@ bindsym $mod+slash exec toggle_layout
 # Polybar
 exec_always --no-startup-id "bash /home/pavel/bin/polybar.sh"
 
-# PulseEffects
-# exec --no-startup-id pulseeffects --gapplication-service
-
-# Sudo
-# exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
-
 # Wallpaper
 exec_always "feh --bg-fill ~/Pictures/wallpaper.jpg"
 
@@ -744,16 +759,8 @@ exec keynav
 exec --no-startup-id nm-applet
 # exec --no-startup-id /usr/bin/blueman-applet
 
-# MPD
-# exec --no-startup-id mpd
-
-# Stuff
-# exec aw-qt
-# exec "bash ~/bin/aw-start"
 exec shepherd
-# exec "vnstatd -d"
 exec dunst
-# exec kde-connect-indicator
 exec copyq
 exec "xmodmap ~/.Xmodmap"
 # exec "xrdb -merge ~/.Xresources"
