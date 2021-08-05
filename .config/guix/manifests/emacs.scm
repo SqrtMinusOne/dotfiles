@@ -8,5 +8,6 @@
    "mpv"
    "python-isort"
    "python-yapf"
+   "plantuml"
    "graphviz"
    "emacs-emacsql-sqlite3"))

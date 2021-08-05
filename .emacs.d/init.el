@@ -238,9 +238,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "C-x h" 'previous-buffer
   "C-x l" 'next-buffer)
 
+(general-define-key
+ :keymaps 'evil-window-map
+ "x" 'kill-buffer-and-window)
+
 (winner-mode 1)
-(define-key evil-window-map (kbd "u") 'winner-undo)
-(define-key evil-window-map (kbd "U") 'winner-redo)
+
+(general-define-key
+ :keymaps 'evil-window-map
+ "u" 'winner-undo
+ "U" 'winner-redo)
 
 (my-leader-def
   :infix "b"
@@ -470,8 +477,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "a" 'counsel-rg
   "A" 'counsel-ag)
 
-(general-imap
-  "C-y" 'counsel-yank-pop)
+(general-define-key
+ :states '(insert normal)
+ "C-y" 'counsel-yank-pop)
 
 (my-leader-def "SPC" 'ivy-resume)
 (my-leader-def "s" 'swiper-isearch
@@ -915,19 +923,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (lambda ()
               (setq truncate-lines t)
               (visual-line-mode nil)))
-  (evil-collection-define-key 'normal 'dired-mode-map
-    "h" 'dired-up-directory
-    "l" 'dired-find-file
-    "=" 'dired-narrow
-    "-" 'dired-create-empty-file
-    "~" 'vterm
-    (kbd "<left>") 'dired-up-directory
-    (kbd "<right>") 'dired-find-file)
   (general-define-key
+   :states '(normal)
    :keymaps 'dired-mode-map
-   ;; [remap dired-find-file] 'dired-single-buffer
-   ;; [remap dired-mouse-find-file-other-window] 'dired-single-buffer-mouse
-   ;; [remap dired-up-directory] 'dired-single-up-directory
+   "h" 'dired-up-directory
+   "l" 'dired-find-file
+   "=" 'dired-narrow
+   "-" 'dired-create-empty-file
+   "~" 'vterm
+   "<left>" 'dired-up-directory
+   "<right>" 'dired-find-file
    "M-<return>" 'dired-open-xdg))
 
 (defun my/dired-home ()
@@ -994,16 +999,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (dired dir)))
 
 (with-eval-after-load 'dired
-  (evil-collection-define-key 'normal 'dired-mode-map
-    "s" nil
-    "ss" 'dired-maybe-insert-subdir
-    "sl" 'dired-maybe-insert-subdir
-    "sq" 'dired-kill-subdir
-    "sk" 'dired-prev-subdir
-    "sj" 'dired-next-subdir
-    "sS" 'my/dired-open-this-subdir
-    "sQ" 'my/dired-kill-all-subdirs
-    (kbd "TAB") 'dired-hide-subdir))
+  (general-define-key
+   :states '(normal)
+   :keymaps 'dired-mode-map
+   "s" nil
+   "ss" 'dired-maybe-insert-subdir
+   "sl" 'dired-maybe-insert-subdir
+   "sq" 'dired-kill-subdir
+   "sk" 'dired-prev-subdir
+   "sj" 'dired-next-subdir
+   "sS" 'my/dired-open-this-subdir
+   "sQ" 'my/dired-kill-all-subdirs
+   (kbd "TAB") 'dired-hide-subdir))
 
 (setq tramp-verbose 1)
 
@@ -1043,6 +1050,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (setq-local global-display-line-numbers-mode nil)
               (display-line-numbers-mode 0)))
 
+  (advice-add 'evil-collection-vterm-insert
+              :before #'vterm-reset-cursor-point)
+
   (general-define-key
    :keymaps 'vterm-mode-map
    "M-q" 'vterm-send-escape
@@ -1062,13 +1072,22 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    "M-<up>" 'vterm-send-up
    "M-<down>" 'vterm-send-down)
 
-  (general-imap
-    :keymaps 'vterm-mode-map
-    "C-r" 'vterm-send-C-r
-    "C-k" 'vterm-send-C-k
-    "C-j" 'vterm-send-C-j
-    "M-l" 'vterm-send-right
-    "M-h" 'vterm-send-left))
+  (general-define-key
+   :keymaps 'vterm-mode-map
+   :states '(normal insert)
+   "<home>" 'vterm-beginning-of-line
+   "<end>" 'vterm-end-of-line)
+
+  (general-define-key
+   :keymaps 'vterm-mode-map
+   :states '(insert)
+   "C-r" 'vterm-send-C-r
+   "C-k" 'vterm-send-C-k
+   "C-j" 'vterm-send-C-j
+   "M-l" 'vterm-send-right
+   "M-h" 'vterm-send-left
+   "M-k" 'vterm-send-up
+   "M-j" 'vterm-send-down))
 
 (add-to-list 'display-buffer-alist
              `(,"vterm-subterminal.*"
@@ -1131,11 +1150,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
   (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
   (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
-  (evil-collection-define-key 'normal 'eshell-mode-map
-    (kbd "C-h") 'evil-window-left
-    (kbd "C-l") 'evil-window-right
-    (kbd "C-k") 'evil-window-up
-    (kbd "C-j") 'evil-window-down))
+  (general-define-key
+   :states '(normal)
+   :keymaps 'eshell-mode-map
+   (kbd "C-h") 'evil-window-left
+   (kbd "C-l") 'evil-window-right
+   (kbd "C-k") 'evil-window-up
+   (kbd "C-j") 'evil-window-down))
 
 (use-package eshell
   :ensure nil
@@ -1196,6 +1217,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (my-leader-def "ar" 'jupyter-run-repl))
     (use-package ob-hy
       :straight t)
+    (setq org-plantuml-executable-path "/home/pavel/.guix-extra-profiles/emacs/emacs/bin/plantuml")
+    (setq org-plantuml-exec-mode 'plantuml)
+    (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
     (org-babel-do-load-languages
      'org-babel-load-languages
      '((emacs-lisp . t)
@@ -1204,6 +1228,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
        ;; (typescript .t)
        (hy . t)
        (shell . t)
+       (plantuml . t)
        (octave . t)
        (jupyter . t)))
     
@@ -2444,7 +2469,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :mode "(\\.\\(plantuml?\\|uml\\|puml\\)\\'"
   :config
-  (setq plantuml-executable-path "/usr/bin/plantuml")
+  (setq plantuml-executable-path "/home/pavel/.guix-extra-profiles/emacs/emacs/bin/plantuml")
   (setq plantuml-default-exec-mode 'executable)
   (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
   (add-to-list 'auto-mode-alist '("\\.uml\\'" . plantuml-mode))
@@ -2804,12 +2829,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (lambda (fun &rest r)
                 (let ((shr-use-fonts nil))
                   (apply fun r))))
-  (evil-collection-define-key 'normal 'elfeed-search-mode-map
-    "o" #'my/elfeed-search-filter-source
-    "c" #'elfeed-search-clear-filter
-    "gl" (lambda () (interactive) (elfeed-search-set-filter "+later")))
-  (evil-collection-define-key 'normal 'elfeed-show-mode-map
-    "ge" #'my/elfeed-show-visit-eww))
+  (general-define-key
+   :states '(normal)
+   :keymaps 'elfeed-search-mode-map
+   "o" #'my/elfeed-search-filter-source
+   "c" #'elfeed-search-clear-filter
+   "gl" (lambda () (interactive) (elfeed-search-set-filter "+later")))
+  (general-define-key
+   :states '(normal)
+   :keymaps 'elfeed-show-mode-map
+   "ge" #'my/elfeed-show-visit-eww))
 
 (use-package elfeed-org
   :straight t
@@ -2862,8 +2891,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (emms-add-elfeed elfeed-show-entry))
 
 (with-eval-after-load 'elfeed
-  (evil-collection-define-key 'normal 'elfeed-show-mode-map
-    "gm" #'my/elfeed-add-emms-youtube))
+  (general-define-key
+   :states '(normal)
+   :keymaps 'elfeed-show-mode-map
+   "gm" #'my/elfeed-add-emms-youtube))
 
 (use-package emms
   :straight t
@@ -2988,12 +3019,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (my-leader-def "asc" #'my/emms-cleanup-urls)
 
 (with-eval-after-load 'emms-browser
-  (evil-collection-define-key 'normal 'emms-browser-mode-map
-    "q" 'quit-window))
+  (general-define-key
+   :states '(normal)
+   :keymaps 'emms-browser-mode-map
+   "q" 'quit-window))
 
 (with-eval-after-load 'emms
-  (evil-collection-define-key 'normal 'emms-playlist-mode-map
-    "q" 'quit-window))
+  (general-define-key
+   :states '(normal)
+   :keymaps 'emms-playlist-mode-map
+   "q" 'quit-window))
 
 (defun my/toggle-shr-use-fonts ()
   "Toggle the shr-use-fonts variable in buffer"
@@ -3088,8 +3123,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq Man-width-max 180)
 (my-leader-def "hM" 'man)
 
-(evil-collection-define-key 'normal 'Info-mode-map
-  (kbd "RET") 'Info-follow-nearest-node)
+(general-define-key
+ :states '(normal)
+ :keymaps 'Info-mode-map
+ (kbd "RET") 'Info-follow-nearest-node)
 
 (defun my/man-fix-width (&rest _)
   (setq-local Man-width (- (window-width) 4)))
@@ -3147,7 +3184,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (when (not (boundp 'my/docker-directories))
     (load (concat user-emacs-directory "prodigy-config")))
-  (evil-collection-define-key 'normal 'prodigy-view-mode-map
+  (general-define-key
+   :states '(normal)
+   :keymaps 'prodigy-view-mode-map
    (kbd "C-h") 'evil-window-left
    (kbd "C-l") 'evil-window-right
    (kbd "C-k") 'evil-window-up
@@ -3172,14 +3211,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq pomidor-sound-tick nil)
   (setq pomidor-sound-tack nil)
-  (evil-collection-define-key 'normal 'pomidor-mode-map
-    (kbd "q") #'quit-window
-    (kbd "Q") #'pomidor-quit
-    (kbd "R") #'pomidor-reset
-    (kbd "h") #'pomidor-hold
-    (kbd "H") #'pomidor-unhold
-    (kbd "RET") #'pomidor-stop
-    (kbd "M-RET") #'pomidor-break))
+  (general-define-key
+   :states '(normal)
+   :keymaps 'pomidor-mode-map
+   (kbd "q") #'quit-window
+   (kbd "Q") #'pomidor-quit
+   (kbd "R") #'pomidor-reset
+   (kbd "h") #'pomidor-hold
+   (kbd "H") #'pomidor-unhold
+   (kbd "RET") #'pomidor-stop
+   (kbd "M-RET") #'pomidor-break))
 
 (setq calendar-date-style 'iso) ;; YYYY/mm/dd
 (setq calendar-week-start-day 1)
