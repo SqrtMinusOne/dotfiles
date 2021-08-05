@@ -41,3 +41,15 @@ if test -n "$EMACS_CONDA_ENV";
     conda activate $EMACS_CONDA_ENV
 end
 # Anaconda:2 ends here
+
+# [[file:../../Console.org::*Colors][Colors:1]]
+set fish_color_command cyan
+set fish_color_comment green
+set fish_color_end white
+set fish_color_error red
+set fish_color_escape yellow
+set fish_color_operator yellow
+set fish_color_param magenta
+set fish_color_quote brwhite
+set fish_color_redirection yellow
+# Colors:1 ends here

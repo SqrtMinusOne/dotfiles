@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "tokei"
    "jmtpfs"
    "unzip"
    "password-store"
