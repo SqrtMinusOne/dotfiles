@@ -160,6 +160,8 @@ for_window [title="newsboat.*"] move to workspace $w9
 for_window [title=".*run_wego"] move to workspace $w9
 for_window [class="cinnamon-settings*"] floating enable
 for_window [title="Picture-in-Picture"] sticky enable
+for_window [window_role="GtkFileChooserDialog"] resize set width 1000 px height 800 px
+for_window [window_role="GtkFileChooserDialog"] move position center
 # Rules:1 ends here
 
 # [[file:../../Desktop.org::*i3 config][i3 config:1]]
