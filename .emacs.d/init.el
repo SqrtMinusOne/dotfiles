@@ -1050,8 +1050,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (setq-local global-display-line-numbers-mode nil)
               (display-line-numbers-mode 0)))
 
+
   (advice-add 'evil-collection-vterm-insert
-              :before #'vterm-reset-cursor-point)
+              :before (lambda (&rest args)
+                        (ignore-errors
+                          (apply #'vterm-reset-cursor-point args))))
 
   (general-define-key
    :keymaps 'vterm-mode-map
@@ -1665,6 +1668,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq org-html-htmlize-output-type 'css))
 
 (defun my/setup-org-latex ()
+  (setq org-latex-prefer-user-labels t)
   (setq org-latex-compiler "xelatex") ;; Probably not necessary
   (setq org-latex-pdf-process '("latexmk -outdir=%o %f")) ;; Use latexmk
   (setq org-latex-listings 'minted) ;; Use minted to highlight source code
@@ -2471,6 +2475,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq plantuml-executable-path "/home/pavel/.guix-extra-profiles/emacs/emacs/bin/plantuml")
   (setq plantuml-default-exec-mode 'executable)
+  (setq plantuml-indent-level 2)
+  (setq my/plantuml-indent-regexp-return "^\s*return\s+.+$")
+  (add-to-list
+   'plantuml-indent-regexp-end
+   my/plantuml-indent-regexp-return)
   (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
   (add-to-list 'auto-mode-alist '("\\.uml\\'" . plantuml-mode))
   (add-hook 'plantuml-mode-hook #'smartparens-mode))
@@ -2959,9 +2968,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           `(,@my/default-emms-player-mpv-parameters ,(format "--ytdl-format=%s" quality))))
   
   (my/set-emms-mpd-youtube-quality (car my/youtube-dl-quality-list))
-  ;; evil-lion shadows ga bindings
+  ;; evil-lion and evil-commentary shadow some gX bindings
   (add-hook 'emms-browser-mode-hook
-            (lambda () (evil-lion-mode -1)))
+            (lambda ()
+              (evil-lion-mode -1)
+              (evil-commentary-mode -1)))
   ;; I have everything I need in polybar
   (emms-mode-line-mode -1)
   (emms-playing-time-display-mode -1)
@@ -3017,6 +3028,23 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq emms-cache-dirty t))
 
 (my-leader-def "asc" #'my/emms-cleanup-urls)
+
+(use-package lyrics-fetcher
+  :straight (:host github :repo "SqrtMinusOne/lyrics-fetcher.el")
+  :after (emms)
+  :init
+  (my-leader-def
+    "ast" #'lyrics-fetcher-show-lyrics
+    "asT" #'lyrics-fetcher-show-lyrics-query)
+  :config
+  (setq lyrics-fetcher-genius-access-token
+        (password-store-get "My_Online/APIs/genius.com"))
+  (general-define-key
+   :states '(emacs normal)
+   :keymaps 'emms-browser-mode-map
+   "gl" 'lyrics-fetcher-emms-browser-show-at-point
+   "gC" 'lyrics-fetcher-emms-browser-fetch-covers-at-point
+   "go" 'lyrics-fetcher-emms-browser-open-large-cover-at-point))
 
 (with-eval-after-load 'emms-browser
   (general-define-key

@@ -1898,8 +1898,11 @@ I use the package from the Guix repository to avoid building libvterm.
               (setq-local global-display-line-numbers-mode nil)
               (display-line-numbers-mode 0)))
 
+
   (advice-add 'evil-collection-vterm-insert
-              :before #'vterm-reset-cursor-point)
+              :before (lambda (&rest args)
+                        (ignore-errors
+                          (apply #'vterm-reset-cursor-point args))))
 
   (general-define-key
    :keymaps 'vterm-mode-map
@@ -4412,9 +4415,11 @@ References:
   <<emms-mpd-setup>>
   ;; MPV setup
   <<emms-mpv-setup>>
-  ;; evil-lion shadows ga bindings
+  ;; evil-lion and evil-commentary shadow some gX bindings
   (add-hook 'emms-browser-mode-hook
-            (lambda () (evil-lion-mode -1)))
+            (lambda ()
+              (evil-lion-mode -1)
+              (evil-commentary-mode -1)))
   ;; I have everything I need in polybar
   (emms-mode-line-mode -1)
   (emms-playing-time-display-mode -1)
@@ -4517,6 +4522,27 @@ Now, all these URLs reside in EMMS cache after being played. I don't want them t
   (setq emms-cache-dirty t))
 
 (my-leader-def "asc" #'my/emms-cleanup-urls)
+#+end_src
+**** Fetching lyrics
+My package for fetching EMMS lyrics and album covers.
+
+#+begin_src emacs-lisp
+(use-package lyrics-fetcher
+  :straight (:host github :repo "SqrtMinusOne/lyrics-fetcher.el")
+  :after (emms)
+  :init
+  (my-leader-def
+    "ast" #'lyrics-fetcher-show-lyrics
+    "asT" #'lyrics-fetcher-show-lyrics-query)
+  :config
+  (setq lyrics-fetcher-genius-access-token
+        (password-store-get "My_Online/APIs/genius.com"))
+  (general-define-key
+   :states '(emacs normal)
+   :keymaps 'emms-browser-mode-map
+   "gl" 'lyrics-fetcher-emms-browser-show-at-point
+   "gC" 'lyrics-fetcher-emms-browser-fetch-covers-at-point
+   "go" 'lyrics-fetcher-emms-browser-open-large-cover-at-point))
 #+end_src
 **** Some keybindings
 #+begin_src emacs-lisp
