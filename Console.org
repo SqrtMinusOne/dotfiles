@@ -95,6 +95,13 @@ export GUIX_PACKAGE_PATH=~/guix-packages
 ** Other package managers
 Using other package managers with Guix requires some extra work.
 
+Cask
+#+begin_src sh
+if [ -d "$HOME/.cask" ]; then
+    export PATH="/home/pavel/.cask/bin:$PATH"
+fi
+#+end_src
+
 Make flatpak apps visible to launchers:
 #+begin_src sh
 if [ -d "$HOME/.local/share/flatpak" ]; then

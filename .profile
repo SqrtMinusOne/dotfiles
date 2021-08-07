@@ -37,28 +37,34 @@ export GUIX_PACKAGE_PATH=~/guix-packages
 # Guix settings:3 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:1]]
-if [ -d "$HOME/.local/share/flatpak" ]; then
-    export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
+if [ -d "$HOME/.cask" ]; then
+    export PATH="/home/pavel/.cask/bin:$PATH"
 fi
 # Other package managers:1 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:2]]
-if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
-  . /run/current-system/profile/etc/profile.d/nix.sh
+if [ -d "$HOME/.local/share/flatpak" ]; then
+    export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
 fi
 # Other package managers:2 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:3]]
-if [ -d "$HOME/.guix-extra-profiles/desktop" ]; then
-    export FONTCONFIG_PATH="$HOME/.guix-extra-profiles/desktop/desktop/etc/fonts"
+if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
+  . /run/current-system/profile/etc/profile.d/nix.sh
 fi
 # Other package managers:3 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:4]]
+if [ -d "$HOME/.guix-extra-profiles/desktop" ]; then
+    export FONTCONFIG_PATH="$HOME/.guix-extra-profiles/desktop/desktop/etc/fonts"
+fi
+# Other package managers:4 ends here
+
+# [[file:Console.org::*Other package managers][Other package managers:5]]
 if [ -d "$HOME/.nix-profile" ]; then
     export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
 fi
-# Other package managers:4 ends here
+# Other package managers:5 ends here
 
 # [[file:Console.org::*npm][npm:2]]
 export NPM_CONFIG_USERCONFIG=$HOME/._npmrc
