@@ -24,9 +24,7 @@ guiset_quiet tabs always
 
 set searchurls.g https://google.com/search?q=
 
-{% if yadm.hostname == "pdsk" %}
-set newtab http://127.0.0.1:8101/
-{% endif %}
+set newtab about:blank
 
 command fixamo_quiet jsb tri.excmds.setpref("privacy.resistFingerprinting.block_mozAddonManager", "true").then(tri.excmds.setpref("extensions.webextensions.restrictedDomains", '""'))
 command fixamo js tri.excmds.setpref("privacy.resistFingerprinting.block_mozAddonManager", "true").then(tri.excmds.setpref("extensions.webextensions.restrictedDomains", '""').then(tri.excmds.fillcmdline_tmp(3000, "Permissions added to user.js. Please restart Firefox to make them take affect.")))
