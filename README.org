@@ -86,6 +86,7 @@ Mail/thexcloud/.credentials.gmailieer.json
 Mail/progin6304/.credentials.gmailieer.json
 .emacs.d/dired-bookmarks.el
 .emacs.d/elfeed.org
-.emacs.d/prodigy.org
+.emacs.d/private.org
 .emacs.d/prodigy-config.el
+.emacs.d/private.el
 #+end_src

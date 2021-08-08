@@ -64,6 +64,10 @@
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
 
+(let ((private-file (expand-file-name "private.el" user-emacs-directory)))
+  (when (file-exists-p private-file)
+    (load-file private-file)))
+
 (use-package no-littering
   :straight t)
 
@@ -139,6 +143,7 @@
   :config
   (evil-collection-init
    '(eww
+     devdocs
      proced
      emms
      pass
@@ -1552,12 +1557,38 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "o" 'org-journal-open-current-journal-file
   "s" 'org-journal-search)
 
+(defun my/set-journal-header ()
+  (org-set-property "Emacs" emacs-version)
+  (org-set-property "Hostname" system-name)
+  (when (boundp 'my/location)
+    (org-set-property "Location" my/location))
+  (when (fboundp 'emms-playlist-current-selected-track)
+    (let ((track (emms-playlist-current-selected-track)))
+      (when track
+        (let ((album (cdr (assoc 'info-album track)))
+              (artist (or (cdr (assoc 'info-albumartist track))
+                          (cdr (assoc 'info-album track))))
+              (title (cdr (assoc 'info-title track)))
+              (string ""))
+          (when artist
+            (setq string (concat string "[" artist "] ")))
+          (when album
+            (setq string (concat string album " - ")))
+          (when title
+            (setq string (concat string title)))
+          (when (> (length string) 0)
+            (org-set-property "EMMS_Track" string)))))))
+
+(add-hook 'org-journal-after-entry-create-hook
+          #'my/set-journal-header)
+
 (use-package emacsql-sqlite
   :defer t
   :straight (:type built-in))
 
 (use-package org-roam
-  :straight t
+  :straight (:host github :repo "org-roam/org-roam"
+             :files (:defaults "extensions/*.el"))
   :after org
   :init
   (setq org-roam-directory (concat org-directory "/roam"))
@@ -3160,6 +3191,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq-local Man-width (- (window-width) 4)))
 
 (advice-add #'Man-update-manpage :before #'my/man-fix-width)
+
+(use-package devdocs
+  :straight t
+  :commands (devdocs-install devdocs-lookup)
+  :init
+  (my-leader-def
+    "he" #'devdocs-lookup
+    "hE" #'devdocs-install))
 
 (use-package pass
   :straight t

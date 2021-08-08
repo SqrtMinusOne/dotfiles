@@ -384,6 +384,13 @@ By default, custom writes stuff to =init.el=, which is somewhat annoying. The fo
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
 #+end_src
+** Private config
+I have some variables which I don't commit to the repo, e.g. my current location. They are stored in =private.el=
+#+begin_src emacs-lisp
+(let ((private-file (expand-file-name "private.el" user-emacs-directory)))
+  (when (file-exists-p private-file)
+    (load-file private-file)))
+#+end_src
 ** No littering
 By default emacs and its packages create a lot files in =.emacs.d= and in other places. [[https://github.com/emacscollective/no-littering][no-littering]] is a collective effort to redirect all of this to two folders in =user-emacs-directory=.
 
@@ -517,6 +524,7 @@ I don't enable the entire package, just the modes I need.
   :config
   (evil-collection-init
    '(eww
+     devdocs
      proced
      emms
      pass
@@ -2470,7 +2478,7 @@ Log DONE time
                      ((org-agenda-prefix-format "  %i %-12:c [%e] ")))))))
 #+end_src
 *** Org Journal
-[[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining a journal in org mode. I want to have its entries separate from my potential base.
+[[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining a journal in org mode. I want to have its entries separate from my knowledge base.
 
 #+begin_src emacs-lisp
 (use-package org-journal
@@ -2490,6 +2498,36 @@ Log DONE time
   "o" 'org-journal-open-current-journal-file
   "s" 'org-journal-search)
 #+end_src
+
+Also, I want to store some information in the journal as properties of the record. So below is a function which does just that.
+
+As of now, it stores Emacs version, hostname, location and current EMMS track if there is one.
+#+begin_src emacs-lisp
+(defun my/set-journal-header ()
+  (org-set-property "Emacs" emacs-version)
+  (org-set-property "Hostname" system-name)
+  (when (boundp 'my/location)
+    (org-set-property "Location" my/location))
+  (when (fboundp 'emms-playlist-current-selected-track)
+    (let ((track (emms-playlist-current-selected-track)))
+      (when track
+        (let ((album (cdr (assoc 'info-album track)))
+              (artist (or (cdr (assoc 'info-albumartist track))
+                          (cdr (assoc 'info-album track))))
+              (title (cdr (assoc 'info-title track)))
+              (string ""))
+          (when artist
+            (setq string (concat string "[" artist "] ")))
+          (when album
+            (setq string (concat string album " - ")))
+          (when title
+            (setq string (concat string title)))
+          (when (> (length string) 0)
+            (org-set-property "EMMS_Track" string)))))))
+
+(add-hook 'org-journal-after-entry-create-hook
+          #'my/set-journal-header)
+#+end_src
 *** Org Roam
 [[https://github.com/org-roam/org-roam][org-roam]] is a plain-text knowledge database.
 
@@ -2507,7 +2545,8 @@ References:
   :straight (:type built-in))
 
 (use-package org-roam
-  :straight t
+  :straight (:host github :repo "org-roam/org-roam"
+             :files (:defaults "extensions/*.el"))
   :after org
   :init
   (setq org-roam-directory (concat org-directory "/roam"))
@@ -4719,27 +4758,9 @@ References:
   "Q" 'google-translate-query-translate-reverse
   "t" 'google-translate-smooth-translate)
 #+end_src
-*** Discord integration
-Integration with Discord. Shows which file is being edited in Emacs.
-
-In order for this to work in Guix, a service is necessary - [[file:Desktop.org::*Discord rich presence][Discord rich presence]].
-#+begin_src emacs-lisp
-(use-package elcord
-  :straight t
-  :if (and (or
-            (string= (system-name) "indigo")
-            (string= (system-name) "eminence"))
-           (not my/slow-ssh))
-  :config
-  (elcord-mode)
-  (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
-  (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
-#+end_src
-** Utilities
-*** tldr, man, info
-[[https://tldr.sh/][tldr]] is a collaborative project providing cheatsheets for various console commands. For some reason, the built-in download is broken, so I use my own function.
+** Reading documentation
+*** tldr
+[[https://tldr.sh/][tldr]] is a collaborative project providing cheatsheets for various console commands. For some reason, the built-in in the Emacs package download is broken, so I use my own function.
 
 #+begin_src emacs-lisp
 (use-package tldr
@@ -4760,8 +4781,9 @@ In order for this to work in Guix, a service is necessary - [[file:Desktop.org::
 
 (my-leader-def "hT" 'tldr)
 #+end_src
-
+*** man & info
 Of course, Emacs can also display man and info pages.
+
 #+begin_src emacs-lisp
 (setq Man-width-max 180)
 (my-leader-def "hM" 'man)
@@ -4776,6 +4798,19 @@ Of course, Emacs can also display man and info pages.
 
 (advice-add #'Man-update-manpage :before #'my/man-fix-width)
 #+end_src
+*** devdocs.io
+Finally, there is also an Emacs plugin for [[https://devdocs.io][devdocs.io]].
+
+#+begin_src emacs-lisp
+(use-package devdocs
+  :straight t
+  :commands (devdocs-install devdocs-lookup)
+  :init
+  (my-leader-def
+    "he" #'devdocs-lookup
+    "hE" #'devdocs-install))
+#+end_src
+** Utilities
 *** pass
 I use [[https://www.passwordstore.org/][pass]] as my password manager. Expectedly, there is Emacs frontend for it.
 
@@ -4862,6 +4897,20 @@ The actual service definitions are in the =~/.emacs.d/prodigy.org=, which tangle
    (kbd "C-k") 'evil-window-up
    (kbd "C-j") 'evil-window-down))
 #+end_src
+*** screenshot.el
+Tecosaur's plugin to make beautiful code screenshots.
+
+| Guix dependency |
+|-----------------|
+| imagemagick     |
+
+#+begin_src emacs-lisp
+(use-package screenshot
+  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
+  :commands (screenshot)
+  :init
+  (my-leader-def "S" 'screenshot))
+#+end_src
 *** proced
 proced is an Emacs built-it process viewer, like top.
 
@@ -4917,19 +4966,24 @@ Emacs' built-in calendar. Can even calculate sunrise and sunset times.
 (setq calendar-longitude 30.308611)
 #+end_src
 ** Fun
-*** screenshot.el
-Tecosaur's plugin to make beautiful code screenshots.
+*** Discord integration
+Integration with Discord. Shows which file is being edited in Emacs.
 
-| Guix dependency |
-|-----------------|
-| imagemagick     |
-
+In order for this to work in Guix, a service is necessary - [[file:Desktop.org::*Discord rich presence][Discord rich presence]].
 #+begin_src emacs-lisp
-(use-package screenshot
-  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
-  :commands (screenshot)
-  :init
-  (my-leader-def "S" 'screenshot))
+(use-package elcord
+  :straight t
+  :if (and (or
+            (string= (system-name) "indigo")
+            (string= (system-name) "eminence"))
+           (not my/slow-ssh))
+  :config
+  (elcord-mode)
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (= 14 num) "-" (* not-newline) ".org" eos))
+  )
 #+end_src
 *** Snow
 #+begin_src emacs-lisp
