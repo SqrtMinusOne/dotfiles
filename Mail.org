@@ -156,7 +156,7 @@ My name and list of emails. It's not like it's a secret anyhow.
 [user]
 name=Pavel Korytov
 primary_email=thexcloud@gmail.com
-other_email=progin6304@gmail.com;
+other_email=progin6304@gmail.com;pvkorytov@etu.ru
 #+end_src
 
 A list of tags which will be added by =notmuch new= and directory names which will be ignored by =notmuch new=.
