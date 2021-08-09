@@ -1988,6 +1988,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :hook ((vue-html-mode . emmet-mode)
          (svelte-mode . emmet-mode)
+         (web-mode . emmet-mode)
          (html-mode . emmet-mode)
          (css-mode . emmet-mode)
          (scss-mode . emmet-mode))
@@ -2041,8 +2042,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     "r" 'jest-test-run
     "a" 'jest-test-run-all-tests))
 
+(use-package web-mode
+  :straight t
+  :init
+  (add-to-list 'auto-mode-alist '("\\.svelte\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.vue\\'" . web-mode))
+  :config
+  (add-hook 'web-mode-hook 'smartparens-mode)
+  (add-hook 'web-mode-hook 'hs-minor-mode)
+  (my/set-smartparens-indent 'web-mode))
+
 (use-package vue-mode
   :straight t
+  :disabled
   :mode "\\.vue\\'"
   :config
   (add-hook 'vue-mode-hook #'hs-minor-mode)
@@ -2095,6 +2107,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package svelte-mode
   :straight t
   :mode "\\.svelte\\'"
+  :disabled
   :config
   (add-hook 'svelte-mode-hook 'my/set-flycheck-eslint)
   (add-hook 'svelte-mode-hook #'smartparens-mode)
@@ -3148,19 +3161,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "Q" 'google-translate-query-translate-reverse
   "t" 'google-translate-smooth-translate)
 
-(use-package elcord
-  :straight t
-  :if (and (or
-            (string= (system-name) "indigo")
-            (string= (system-name) "eminence"))
-           (not my/slow-ssh))
-  :config
-  (elcord-mode)
-  (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
-  (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
-
 (use-package tldr
   :straight t
   :commands (tldr)
@@ -3259,6 +3259,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    (kbd "C-k") 'evil-window-up
    (kbd "C-j") 'evil-window-down))
 
+(use-package screenshot
+  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
+  :commands (screenshot)
+  :init
+  (my-leader-def "S" 'screenshot))
+
 (my-leader-def "ah" 'proced)
 (add-hook 'proced-mode-hook (lambda ()
                               (visual-line-mode -1)
@@ -3296,11 +3302,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq calendar-latitude 59.9375)
 (setq calendar-longitude 30.308611)
 
-(use-package screenshot
-  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
-  :commands (screenshot)
-  :init
-  (my-leader-def "S" 'screenshot))
+(use-package elcord
+  :straight t
+  :if (and (or
+            (string= (system-name) "indigo")
+            (string= (system-name) "eminence"))
+           (not my/slow-ssh))
+  :config
+  (elcord-mode)
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
+  (add-to-list 'elcord-boring-buffers-regexp-list
+               (rx bos (= 14 num) "-" (* not-newline) ".org" eos))
+  )
 
 (use-package snow
   :straight (:repo "alphapapa/snow.el" :host github)

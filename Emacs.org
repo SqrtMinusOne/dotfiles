@@ -684,11 +684,12 @@ And winner-mode to keep the history of window states.
   "u" 'ibuffer)
 #+end_src
 *** xref
-Some keybindings for xref, Emacs' built-in systems for managing identifiers.
+Some keybindings for xref and go to definition.
 #+begin_src emacs-lisp
 (general-nmap
   "gD" 'xref-find-definitions-other-window
-  "gr" 'xref-find-references)
+  "gr" 'xref-find-references
+  "gd" 'evil-goto-definition)
 
 (my-leader-def
   "fx" 'xref-find-apropos)
@@ -3336,6 +3337,7 @@ My bit of config here:
   :straight t
   :hook ((vue-html-mode . emmet-mode)
          (svelte-mode . emmet-mode)
+         (web-mode . emmet-mode)
          (html-mode . emmet-mode)
          (css-mode . emmet-mode)
          (scss-mode . emmet-mode))
@@ -3397,10 +3399,42 @@ My bit of config here:
     "r" 'jest-test-run
     "a" 'jest-test-run-all-tests))
 #+end_src
-*** Vue.js
+*** web-mode
+[[https://web-mode.org/][web-mode.el]] is a major mode to edit various web templates.
+
+Trying this one out instead of vue-mode and svelte-mode, because this one seems to have better support for tree-sitter and generally less problems.
+
+#+begin_src emacs-lisp
+(use-package web-mode
+  :straight t
+  :init
+  (add-to-list 'auto-mode-alist '("\\.svelte\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.vue\\'" . web-mode))
+  :config
+  (add-hook 'web-mode-hook 'smartparens-mode)
+  (add-hook 'web-mode-hook 'hs-minor-mode)
+  (my/set-smartparens-indent 'web-mode))
+#+end_src
+
+Hooking this up with lsp.
+#+begin_src emacs-lisp
+(setq my/web-mode-lsp-extensions
+      `(,(rx ".svelte" eos)
+        ,(rx ".vue" eos)))
+
+(defun my/web-mode-lsp ()
+  (when (seq-some
+         (lambda (regex) (string-match-p regex (buffer-name)))
+         my/web-mode-lsp-extensions)
+    (lsp-deferred)))
+
+(add-hook 'web-mode-hook #'my/web-mode-lsp)
+#+end_src
+*** OFF (OFF) Vue.js
 #+begin_src emacs-lisp :noweb yes
 (use-package vue-mode
   :straight t
+  :disabled
   :mode "\\.vue\\'"
   :config
   (add-hook 'vue-mode-hook #'hs-minor-mode)
@@ -3457,11 +3491,14 @@ References:
       (mmm-set-current-pair saved-mode saved-ovl)
       (mmm-set-local-variables (or saved-mode mmm-primary-mode) saved-ovl))))
 #+end_src
-*** Svelte
+*** OFF (OFF) Svelte
+Had some problems with this and tree-sitter. Web-mode seems to be doing better.
+
 #+begin_src emacs-lisp
 (use-package svelte-mode
   :straight t
   :mode "\\.svelte\\'"
+  :disabled
   :config
   (add-hook 'svelte-mode-hook 'my/set-flycheck-eslint)
   (add-hook 'svelte-mode-hook #'smartparens-mode)
@@ -4458,7 +4495,8 @@ References:
   (add-hook 'emms-browser-mode-hook
             (lambda ()
               (evil-lion-mode -1)
-              (evil-commentary-mode -1)))
+              ;; (evil-commentary-mode -1)
+              ))
   ;; I have everything I need in polybar
   (emms-mode-line-mode -1)
   (emms-playing-time-display-mode -1)
@@ -4892,10 +4930,10 @@ The actual service definitions are in the =~/.emacs.d/prodigy.org=, which tangle
   (general-define-key
    :states '(normal)
    :keymaps 'prodigy-view-mode-map
-   (kbd "C-h") 'evil-window-left
-   (kbd "C-l") 'evil-window-right
-   (kbd "C-k") 'evil-window-up
-   (kbd "C-j") 'evil-window-down))
+   "C-h" 'evil-window-left
+   "C-l" 'evil-window-right
+   "C-k" 'evil-window-up
+   "C-j" 'evil-window-down))
 #+end_src
 *** screenshot.el
 Tecosaur's plugin to make beautiful code screenshots.
