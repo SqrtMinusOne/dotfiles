@@ -28,11 +28,13 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#native-compilation][Native compilation]]
   - [[#anaconda--environment][Anaconda & environment]]
   - [[#custom-file-location][Custom file location]]
+  - [[#private-config][Private config]]
   - [[#no-littering][No littering]]
 - [[#global-editing-configuration][Global editing configuration]]
   - [[#general-keybindings-stuff][General keybindings stuff]]
     - [[#generalel][general.el]]
     - [[#which-key][which-key]]
+      - [[#dump-keybindings][dump keybindings]]
   - [[#evil-mode][Evil mode]]
     - [[#evil][evil]]
     - [[#addons][Addons]]
@@ -115,6 +117,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#python--jupyter][Python & Jupyter]]
     - [[#hy][Hy]]
     - [[#view-html-in-browser][View HTML in browser]]
+    - [[#plantuml][PlantUML]]
     - [[#setup][Setup]]
     - [[#managing-jupyter-kernels][Managing Jupyter kernels]]
     - [[#do-not-wrap-the-output-in-emacs-jupyter][Do not wrap the output in emacs-jupyter]]
@@ -170,9 +173,10 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#typescript][TypeScript]]
     - [[#javascript][JavaScript]]
     - [[#jest][Jest]]
-    - [[#vuejs][Vue.js]]
+    - [[#web-mode][web-mode]]
+    - [[#off-vuejs][(OFF) Vue.js]]
       - [[#mmm-mode-fix][mmm-mode fix]]
-    - [[#svelte][Svelte]]
+    - [[#off-svelte][(OFF) Svelte]]
     - [[#scss][SCSS]]
     - [[#php][PHP]]
   - [[#latex][LaTeX]]
@@ -233,24 +237,28 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
       - [[#mpd][MPD]]
       - [[#mpv][MPV]]
       - [[#cache-cleanup][Cache cleanup]]
+      - [[#fetching-lyrics][Fetching lyrics]]
       - [[#some-keybindings][Some keybindings]]
       - [[#emms--mpd-fixes][EMMS & mpd Fixes]]
     - [[#eww][EWW]]
     - [[#erc][ERC]]
     - [[#google-translate][Google Translate]]
-    - [[#discord-integration][Discord integration]]
+  - [[#reading-documentation][Reading documentation]]
+    - [[#tldr][tldr]]
+    - [[#man--info][man & info]]
+    - [[#devdocsio][devdocs.io]]
   - [[#utilities][Utilities]]
-    - [[#tldr-man-info][tldr, man, info]]
     - [[#pass][pass]]
     - [[#docker][Docker]]
     - [[#progidy][Progidy]]
+    - [[#screenshotel][screenshot.el]]
     - [[#proced][proced]]
     - [[#guix][Guix]]
   - [[#productivity][Productivity]]
     - [[#pomidor][Pomidor]]
     - [[#calendar][Calendar]]
   - [[#fun][Fun]]
-    - [[#screenshotel][screenshot.el]]
+    - [[#discord-integration][Discord integration]]
     - [[#snow][Snow]]
     - [[#zone][Zone]]
 - [[#guix-settings][Guix settings]]
@@ -430,6 +438,33 @@ References:
   (set-face-attribute 'which-key-local-map-description-face nil
                       :weight 'bold)
   :straight t)
+#+end_src
+
+**** dump keybindings
+A function to dump keybindings starting with a prefix to a buffer in tree-like form.
+
+#+begin_src emacs-lisp
+(defun my/dump-bindings-recursive (prefix &optional level)
+  (dolist (key (which-key--get-bindings (kbd prefix)))
+    (when level
+      (insert (make-string level ? )))
+    (insert (apply #'format "%s%s%s\n" key))
+    (when (string-match-p
+           (rx bos "+" (* nonl))
+           (substring-no-properties (elt key 2)))
+      (my/dump-bindings-recursive
+       (concat prefix " " (substring-no-properties (car key)))
+       (+ 2 (or level 0))))))
+
+(defun my/dump-bindings (prefix)
+  "Dump keybindings starting with PREFIX in tree-like form."
+  (interactive "sPrefix: ")
+  (with-current-buffer (get-buffer-create "bindings")
+    (point-max)
+    (erase-buffer)
+    (save-excursion
+      (my/dump-bindings-recursive prefix)))
+  (switch-to-buffer-other-window "bindings"))
 #+end_src
 ** Evil mode
 A whole ecosystem of packages that emulates the main features of Vim. Probably the best vim emulator out there.
@@ -882,20 +917,7 @@ As I use =C-h= to switch buffers, I moved the help to =SPC-h= with the code belo
   "t" 'help-with-tutorial
   "v" 'helpful-variable
   "w" 'where-is
-  "<f1>" 'help-for-help
-  "C-\\" 'describe-input-method
-  "C-a" 'about-emacs
-  "C-c" 'describe-copying
-  "C-d" 'view-emacs-debugging
-  "C-e" 'view-external-packages
-  "C-f" 'view-emacs-FAQ
-  "C-h" 'help-for-help
-  "C-n" 'view-emacs-news
-  "C-o" 'describe-distribution
-  "C-p" 'view-emacs-problems
-  "C-s" 'search-forward-help-for-help
-  "C-t" 'view-emacs-todo
-  "C-w" 'describe-no-warranty)
+  "<f1>" 'help-for-help)
 #+end_src
 
 ** Ivy, counsel, swiper
@@ -1248,6 +1270,7 @@ References:
 (use-package yasnippet
   :straight t
   :config
+  (setq yas-snippet-dirs `(,(concat (expand-file-name user-emacs-directory) "snippets")))
   (setq yas-triggers-in-field t)
   (yas-global-mode 1))
 
@@ -3145,6 +3168,7 @@ Origami should've leveraged LSP folding, but it was too unstable at the moment I
   "r" 'lsp-rename
   "u" 'lsp-ui-peek-find-references
   "s" 'lsp-ui-find-workspace-symbol
+  "l" 'lsp-execute-code-action
   ;; "a" 'helm-lsp-code-actions
   "e" 'list-flycheck-errors)
 #+end_src

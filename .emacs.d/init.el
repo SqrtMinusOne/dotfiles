@@ -86,6 +86,28 @@
                       :weight 'bold)
   :straight t)
 
+(defun my/dump-bindings-recursive (prefix &optional level)
+  (dolist (key (which-key--get-bindings (kbd prefix)))
+    (when level
+      (insert (make-string level ? )))
+    (insert (apply #'format "%s%s%s\n" key))
+    (when (string-match-p
+           (rx bos "+" (* nonl))
+           (substring-no-properties (elt key 2)))
+      (my/dump-bindings-recursive
+       (concat prefix " " (substring-no-properties (car key)))
+       (+ 2 (or level 0))))))
+
+(defun my/dump-bindings (prefix)
+  "Dump keybindings starting with PREFIX in tree-like form."
+  (interactive "sPrefix: ")
+  (with-current-buffer (get-buffer-create "bindings")
+    (point-max)
+    (erase-buffer)
+    (save-excursion
+      (my/dump-bindings-recursive prefix)))
+  (switch-to-buffer-other-window "bindings"))
+
 (use-package evil
   :straight t
   :init
@@ -403,20 +425,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "t" 'help-with-tutorial
   "v" 'helpful-variable
   "w" 'where-is
-  "<f1>" 'help-for-help
-  "C-\\" 'describe-input-method
-  "C-a" 'about-emacs
-  "C-c" 'describe-copying
-  "C-d" 'view-emacs-debugging
-  "C-e" 'view-external-packages
-  "C-f" 'view-emacs-FAQ
-  "C-h" 'help-for-help
-  "C-n" 'view-emacs-news
-  "C-o" 'describe-distribution
-  "C-p" 'view-emacs-problems
-  "C-s" 'search-forward-help-for-help
-  "C-t" 'view-emacs-todo
-  "C-w" 'describe-no-warranty)
+  "<f1>" 'help-for-help)
 
 (use-package ivy
   :straight t
@@ -639,6 +648,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package yasnippet
   :straight t
   :config
+  (setq yas-snippet-dirs `(,(concat (expand-file-name user-emacs-directory) "snippets")))
   (setq yas-triggers-in-field t)
   (yas-global-mode 1))
 
@@ -1145,7 +1155,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (with-eval-after-load 'vterm
   (general-define-key
-   :keymap 'vterm-mode-map
+   :keymaps 'vterm-mode-map
    :states '(normal)
    "gd" #'my/vterm-dired-other-window
    "gD" #'my/vterm-dired-replace))
@@ -1935,6 +1945,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "r" 'lsp-rename
   "u" 'lsp-ui-peek-find-references
   "s" 'lsp-ui-find-workspace-symbol
+  "l" 'lsp-execute-code-action
   ;; "a" 'helm-lsp-code-actions
   "e" 'list-flycheck-errors)
 
