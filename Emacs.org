@@ -2012,7 +2012,7 @@ Keybindings:
 #+begin_src emacs-lisp
 (with-eval-after-load 'vterm
   (general-define-key
-   :keymap 'vterm-mode-map
+   :keymaps 'vterm-mode-map
    :states '(normal)
    "gd" #'my/vterm-dired-other-window
    "gD" #'my/vterm-dired-replace))
@@ -4954,9 +4954,11 @@ proced is an Emacs built-it process viewer, like top.
 
 #+begin_src emacs-lisp
 (my-leader-def "ah" 'proced)
+(setq proced-auto-update-interval 1)
 (add-hook 'proced-mode-hook (lambda ()
                               (visual-line-mode -1)
-                              (setq-local truncate-lines t)))
+                              (setq-local truncate-lines t)
+                              (proced-toggle-auto-update 1)))
 #+end_src
 *** Guix
 An Emacs package to help managing GNU Guix.

@@ -269,7 +269,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (general-nmap
   "gD" 'xref-find-definitions-other-window
-  "gr" 'xref-find-references)
+  "gr" 'xref-find-references
+  "gd" 'evil-goto-definition)
 
 (my-leader-def
   "fx" 'xref-find-apropos)
@@ -2052,6 +2053,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'web-mode-hook 'hs-minor-mode)
   (my/set-smartparens-indent 'web-mode))
 
+(setq my/web-mode-lsp-extensions
+      `(,(rx ".svelte" eos)
+        ,(rx ".vue" eos)))
+
+(defun my/web-mode-lsp ()
+  (when (seq-some
+         (lambda (regex) (string-match-p regex (buffer-name)))
+         my/web-mode-lsp-extensions)
+    (lsp-deferred)))
+
+(add-hook 'web-mode-hook #'my/web-mode-lsp)
+
 (use-package vue-mode
   :straight t
   :disabled
@@ -3016,7 +3029,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'emms-browser-mode-hook
             (lambda ()
               (evil-lion-mode -1)
-              (evil-commentary-mode -1)))
+              ;; (evil-commentary-mode -1)
+              ))
   ;; I have everything I need in polybar
   (emms-mode-line-mode -1)
   (emms-playing-time-display-mode -1)
@@ -3254,10 +3268,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-define-key
    :states '(normal)
    :keymaps 'prodigy-view-mode-map
-   (kbd "C-h") 'evil-window-left
-   (kbd "C-l") 'evil-window-right
-   (kbd "C-k") 'evil-window-up
-   (kbd "C-j") 'evil-window-down))
+   "C-h" 'evil-window-left
+   "C-l" 'evil-window-right
+   "C-k" 'evil-window-up
+   "C-j" 'evil-window-down))
 
 (use-package screenshot
   :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
@@ -3266,9 +3280,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (my-leader-def "S" 'screenshot))
 
 (my-leader-def "ah" 'proced)
+(setq proced-auto-update-interval 1)
 (add-hook 'proced-mode-hook (lambda ()
                               (visual-line-mode -1)
-                              (setq-local truncate-lines t)))
+                              (setq-local truncate-lines t)
+                              (proced-toggle-auto-update 1)))
 
 (use-package guix
   :straight t
