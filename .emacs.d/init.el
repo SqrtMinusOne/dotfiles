@@ -1946,7 +1946,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "u" 'lsp-ui-peek-find-references
   "s" 'lsp-ui-find-workspace-symbol
   "l" 'lsp-execute-code-action
-  ;; "a" 'helm-lsp-code-actions
   "e" 'list-flycheck-errors)
 
 (use-package flycheck
@@ -3283,6 +3282,36 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    "C-l" 'evil-window-right
    "C-k" 'evil-window-up
    "C-j" 'evil-window-down))
+
+(defun my/get-apps-on-ports ()
+  (mapcar
+   (lambda (line)
+     (let* ((split (split-string line (rx (| (+ " ") (+ "\t")))))
+            (process (elt split 6)))
+       `((netid . ,(elt split 0))
+         (state . ,(elt split 1))
+         (recv-q . ,(elt split 2))
+         (send-q . ,(elt split 3))
+         ,@(let ((data (elt split 4)))
+             (save-match-data
+               (string-match (rx (group-n 1 (* nonl)) ":" (group-n 2 (or (+ num) "*"))) data)
+               `((local-address . ,(match-string 1 data))
+                 (local-port . ,(match-string 2 data)))))
+         ,@(unless (string-empty-p process)
+             `((pid . ,(save-match-data
+                         (string-match (rx "pid=" (+ num)) process)
+                         (string-to-number (substring (match-string 0 process) 4)))))))))
+   (seq-filter
+    (lambda (s) (not (string-empty-p s)))
+    (split-string
+     (shell-command-to-string "ss -tulpnH | grep LISTEN") "\n"))))
+
+(defun my/kill-app-on-port (port &optional signal)
+  (let ((apps (my/get-apps-on-ports)))
+    (dolist (app apps)
+      (when (string-equal (cdr (assoc 'local-port app)) port)
+        (signal-process (cdr (assoc 'pid app)) (or signal 15))
+        (message "Sent %d to %d" (or signal 15) (cdr (assoc 'pid app)))))))
 
 (use-package screenshot
   :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
