@@ -2236,6 +2236,9 @@ I previously used supervisor, but shepherd also seems pretty capable.
 | music    | picard          |
 | music    | mpd-watcher     |
 | music    | mpd-mpc         |
+| music    | shntool         |
+| music    | cuetools        |
+| music    | flac            |
 
 Music player daemon
 #+begin_src scheme

@@ -1,5 +1,8 @@
 (specifications->manifest
  '(
+   "flac"
+   "cuetools"
+   "shntool"
    "mpd-mpc"
    "mpd-watcher"
    "picard"
