@@ -195,6 +195,8 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#lisp][Lisp]]
     - [[#meta-lisp][Meta Lisp]]
     - [[#emacs-lisp][Emacs Lisp]]
+      - [[#package-lint][Package Lint]]
+      - [[#general][General]]
     - [[#common-lisp][Common lisp]]
     - [[#clojure][Clojure]]
     - [[#hy][Hy]]
@@ -3422,6 +3424,20 @@ My bit of config here:
     "r" 'jest-test-run
     "a" 'jest-test-run-all-tests))
 #+end_src
+
+#+begin_src emacs-lisp
+(defun my/jest-test-run-at-point-copy ()
+  "Run the top level describe block of the current buffer's point."
+  (interactive)
+  (let ((filename (jest-test-find-file))
+        (example  (jest-test-example-at-point)))
+    (if (and filename example)
+        (jest-test-from-project-directory filename
+          (let ((jest-test-options (seq-concatenate 'list jest-test-options (list "-t" example))))
+            (kill-new (jest-test-command filename))))
+      (message jest-test-not-found-message))))
+#+end_src
+
 *** web-mode
 [[https://web-mode.org/][web-mode.el]] is a major mode to edit various web templates.
 
@@ -3911,6 +3927,17 @@ Some packages for editing various Lisps.
   (sp-local-pair "'" nil :actions nil))
 #+end_src
 *** Emacs Lisp
+**** Package Lint
+A package that checks for the metadata in Emacs Lisp packages.
+
+#+begin_src emacs-lisp
+(use-package flycheck-package
+  :straight t
+  :after flycheck
+  :config
+  (flycheck-package-setup))
+#+end_src
+**** General
 #+begin_src emacs-lisp
 (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
@@ -4750,28 +4777,28 @@ I use it occasionally to open links in elfeed.
 ERC is a built-it Emacs IRC client.
 
 #+begin_src emacs-lisp
-(my-leader-def "ai" #'erc-tls)
+(use-package erc
+  :commands (erc erc-tls)
+  :straight (:type built-in)
+  :init
+  (my-leader-def "ai" #'erc-tls)
+  :config
+  ;; Config of my ZNC instance.
+  (setq erc-server "sqrtminusone.xyz")
+  (setq erc-port 1984)
+  (setq erc-nick "sqrtminusone")
+  (setq erc-user-full-name "Pavel Korytov")
+  (setq erc-password (password-store-get "Selfhosted/ZNC"))
+  (setq erc-kill-buffer-on-part t)
+  (setq erc-track-shorten-start 8))
 #+end_src
 
 A plugin to highlight IRC nicknames:
 #+begin_src emacs-lisp
 (use-package erc-hl-nicks
   :hook (erc-mode . erc-hl-nicks-mode)
+  :after (erc)
   :straight t)
-#+end_src
-
-Config of my ZNC instance.
-#+begin_src emacs-lisp
-(setq erc-server "sqrtminusone.xyz")
-(setq erc-port 1984)
-(setq erc-nick "sqrtminusone")
-(setq erc-user-full-name "Pavel Korytov")
-(setq erc-track-shorten-start 8)
-#+end_src
-
-Kill buffer on =part=.
-#+begin_src emacs-lisp
-(setq erc-kill-buffer-on-part t)
 #+end_src
 
 ZNC support. Seems to provide a few nice features for ZNC.

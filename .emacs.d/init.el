@@ -2053,6 +2053,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     "r" 'jest-test-run
     "a" 'jest-test-run-all-tests))
 
+(defun my/jest-test-run-at-point-copy ()
+  "Run the top level describe block of the current buffer's point."
+  (interactive)
+  (let ((filename (jest-test-find-file))
+        (example  (jest-test-example-at-point)))
+    (if (and filename example)
+        (jest-test-from-project-directory filename
+          (let ((jest-test-options (seq-concatenate 'list jest-test-options (list "-t" example))))
+            (kill-new (jest-test-command filename))))
+      (message jest-test-not-found-message))))
+
 (use-package web-mode
   :straight t
   :init
@@ -2583,6 +2594,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (sp-with-modes sp-lisp-modes
   (sp-local-pair "'" nil :actions nil))
+
+(use-package flycheck-package
+  :straight t
+  :after flycheck
+  :config
+  (flycheck-package-setup))
 
 (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
@@ -3138,19 +3155,25 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  "+" 'text-scale-increase
  "-" 'text-scale-decrease)
 
-(my-leader-def "ai" #'erc-tls)
+(use-package erc
+  :commands (erc erc-tls)
+  :straight (:type built-in)
+  :init
+  (my-leader-def "ai" #'erc-tls)
+  :config
+  ;; Config of my ZNC instance.
+  (setq erc-server "sqrtminusone.xyz")
+  (setq erc-port 1984)
+  (setq erc-nick "sqrtminusone")
+  (setq erc-user-full-name "Pavel Korytov")
+  (setq erc-password (password-store-get "Selfhosted/ZNC"))
+  (setq erc-kill-buffer-on-part t)
+  (setq erc-track-shorten-start 8))
 
 (use-package erc-hl-nicks
   :hook (erc-mode . erc-hl-nicks-mode)
+  :after (erc)
   :straight t)
-
-(setq erc-server "sqrtminusone.xyz")
-(setq erc-port 1984)
-(setq erc-nick "sqrtminusone")
-(setq erc-user-full-name "Pavel Korytov")
-(setq erc-track-shorten-start 8)
-
-(setq erc-kill-buffer-on-part t)
 
 (use-package znc
   :straight t
