@@ -53,3 +53,10 @@ set fish_color_param magenta
 set fish_color_quote brwhite
 set fish_color_redirection yellow
 # Colors:1 ends here
+
+# [[file:../../Console.org::*Keybindings][Keybindings:1]]
+bind -M insert \el forward-char
+bind -M insert \eh backward-char
+bind -M insert \ew forward-word
+bind -M insert \eb backward-word
+# Keybindings:1 ends here
