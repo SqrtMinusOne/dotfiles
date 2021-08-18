@@ -267,7 +267,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (general-define-key
  :keymaps 'evil-window-map
- "x" 'kill-buffer-and-window)
+ "x" 'kill-buffer-and-window
+ "d" 'kill-current-buffer)
 
 (winner-mode 1)
 
@@ -570,6 +571,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    "gt" 'my/treemacs-open-vterm
    "`" 'my/treemacs-open-vterm))
 
+;; (treemacs-define-custom-icon (concat " " (all-the-icons-fileicon "typescript")) "spec.ts")
+;; (setq treemacs-file-extension-regex (rx "." (or "spec.ts" (+ (not "."))) eos))
+
 (use-package projectile
   :straight t
   :config
@@ -658,7 +662,49 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :if (not my/is-termux)
   :config
-  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime")))
+  (defun wakatime-client-command (savep)
+    "Return client command executable and arguments.
+     Set SAVEP to non-nil for write action."
+    (format "%s%s--entity \"%s\" --plugin \"%s/%s\" --time %.2f%s%s"
+      (if (s-blank wakatime-python-bin) "" (format "\"%s\" " wakatime-python-bin))
+      (if (s-blank wakatime-cli-path) "wakatime " (format "\"%s\" " wakatime-cli-path))
+      (buffer-file-name (current-buffer))
+      wakatime-user-agent
+      wakatime-version
+      (float-time)
+      (if savep " --write" "")
+      (if (s-blank wakatime-api-key) "" (format " --key %s" wakatime-api-key))))
+  (defun wakatime-call (savep)
+    "Call WakaTime command."
+    (let*
+        ((command (wakatime-client-command savep))
+         (process-environment (if wakatime-python-path (cons (format "PYTHONPATH=%s" wakatime-python-path) process-environment) process-environment))
+         (process
+          (start-process
+           "Shell"
+           (generate-new-buffer " *WakaTime messages*")
+           shell-file-name
+           shell-command-switch
+           command)))
+  
+      (set-process-sentinel process
+                            `(lambda (process signal)
+                               (when (memq (process-status process) '(exit signal))
+                                 (kill-buffer (process-buffer process))
+                                 (let ((exit-status (process-exit-status process)))
+                                   (when (and (not (= 0 exit-status)) (not (= 102 exit-status)) (not (= 1 exit-status)))
+                                     (when wakatime-disable-on-error
+                                       (wakatime-mode -1)
+                                       (global-wakatime-mode -1))
+                                     (cond
+                                      ((= exit-status 103) (error "WakaTime Error (%s) Config file parse error. Check your ~/.wakatime.cfg file." exit-status))
+                                      ((= exit-status 104) (error "WakaTime Error (%s) Invalid API Key. Set your api key with: (custom-set-variables '(wakatime-api-key \"XXXX\"))" exit-status))
+                                      ((= exit-status 105) (error "WakaTime Error (%s) Unknown wakatime-cli error. Please check your ~/.wakatime.log file and open a new issue at https://github.com/wakatime/wakatime-mode" exit-status))
+                                      ((= exit-status 106) (error "WakaTime Error (%s) Malformed heartbeat error. Please check your ~/.wakatime.log file and open a new issue at https://github.com/wakatime/wakatime-mode" exit-status))
+                                      (t (message "WakaTime Error (%s) Make sure this command runs in a Terminal: %s" exit-status (wakatime-client-command nil)))))))))
+      (set-process-query-on-exit-flag process nil)))
+  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime-cli")))
+  ;; (setq wakatime-cli-path (executable-find "wakatime"))
   (global-wakatime-mode))
 
 (use-package request
@@ -3161,6 +3207,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :init
   (my-leader-def "ai" #'erc-tls)
   :config
+  ;; Logging
+  (setq erc-log-channels-directory "~/.erc/logs")
+  (setq erc-save-buffer-on-part t)
   ;; Config of my ZNC instance.
   (setq erc-server "sqrtminusone.xyz")
   (setq erc-port 1984)
@@ -3169,6 +3218,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq erc-password (password-store-get "Selfhosted/ZNC"))
   (setq erc-kill-buffer-on-part t)
   (setq erc-track-shorten-start 8))
+
+(setq erc-track-exclude-types '("NICK" "JOIN" "LEAVE" "QUIT" "PART"
+                                "301"   ; away notice
+                                "305"   ; return from awayness
+                                "306"   ; set awayness
+                                "324"   ; modes
+                                "329"   ; channel creation date
+                                "332"   ; topic notice
+                                "333"   ; who set the topic
+                                "353"   ; Names notice
+                                ))
 
 (use-package erc-hl-nicks
   :hook (erc-mode . erc-hl-nicks-mode)
