@@ -325,8 +325,8 @@ mode "apps" {
 
 # [[file:../../Desktop.org::*Media controls & brightness][Media controls & brightness:1]]
 # Pulse Audio controls
-bindsym XF86AudioRaiseVolume exec --no-startup-id "ponymix increase 5"
-bindsym XF86AudioLowerVolume exec --no-startup-id "ponymix decrease 5"
+bindsym XF86AudioRaiseVolume exec --no-startup-id "ponymix increase 5 --max-volume 150"
+bindsym XF86AudioLowerVolume exec --no-startup-id "ponymix decrease 5 --max-volume 150"
 bindsym XF86AudioMute exec --no-startup-id "ponymix toggle"
 
 exec --no-startup-id xmodmap -e 'keycode 135 = Super_R' && xset -r 135
