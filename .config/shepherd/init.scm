@@ -70,6 +70,12 @@
     #:start (make-forkexec-constructor '("/home/pavel/.guix-extra-profiles/desktop/desktop/libexec/polkit-gnome-authentication-agent-1"))
     #:stop (make-kill-destructor)))
 
+(define xmodmap
+  (make <service>
+    #:provides '(xmodmap)
+    #:one-shot? #t
+    #:start (make-system-constructor "xmodmap /home/pavel/.Xmodmap")))
+
 (define vpn
   (make <service>
     #:provides '(vpn)
@@ -96,8 +102,9 @@
  discord-rich-presence
  polkit-gnome
  vpn
- davmail)
+ davmail
+ xmodmap)
 
 (action 'shepherd 'daemonize)
 
-(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome davmail))
+(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome davmail xmodmap))

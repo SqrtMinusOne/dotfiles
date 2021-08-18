@@ -2357,6 +2357,14 @@ Launch an authentication agent. Necessary for stuff like =pkexec=. I suspect I'm
     #:start (make-forkexec-constructor '("/home/pavel/.guix-extra-profiles/desktop/desktop/libexec/polkit-gnome-authentication-agent-1"))
     #:stop (make-kill-destructor)))
 #+end_src
+** Xmodmap
+#+begin_src scheme
+(define xmodmap
+  (make <service>
+    #:provides '(xmodmap)
+    #:one-shot? #t
+    #:start (make-system-constructor "xmodmap /home/pavel/.Xmodmap")))
+#+end_src
 ** VPN
 Run my [[file:Guix.org::*VPN][OpenVPN setup]]. Not lauching this automatially, as it requires an active connection.
 
@@ -2392,7 +2400,8 @@ Register services
  discord-rich-presence
  polkit-gnome
  vpn
- davmail)
+ davmail
+ xmodmap)
 #+end_src
 
 Daemonize shepherd
@@ -2402,7 +2411,7 @@ Daemonize shepherd
 
 Run services
 #+begin_src scheme
-(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome davmail))
+(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome davmail xmodmap))
 #+end_src
 ** Sync
 | Guix dependency |
