@@ -5,8 +5,11 @@
 #+PROPERTY: header-args:conf-toml    :comments link
 #+PROPERTY: header-args:sh           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env sh"
 #+PROPERTY: header-args:bash         :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
+#+OPTIONS: broken-links:auto h:6 toc:nil
 
-* Contents
+#+TOC headlines 6
+
+* Contents                                                         :noexport:
 :PROPERTIES:
 :TOC:      :include all :depth 3
 :END:
@@ -942,7 +945,7 @@ fi
 #+end_src
 * Guix settings
 #+NAME: packages
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp :tangle no :eval never-export
 (my/format-guix-dependencies)
 #+end_src
 

@@ -1,18 +1,22 @@
 #+TITLE: Desktop
 #+TODO: TODO(t) CHECK(s) | OFF(o)
-#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args                :mkdirp yes
+#+PROPERTY: header-args:emacs-lisp     :eval never-export
 #+PROPERTY: header-args:conf-space     :comments link
 #+PROPERTY: header-args:conf-unix      :comments link
 #+PROPERTY: header-args:conf-windows   :comments link
 #+PROPERTY: header-args:conf-xdefaults :comments link
 #+PROPERTY: header-args:sh             :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 #+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
+#+OPTIONS: broken-links:auto h:6 toc:nil
 
 My general desktop environment configuration.
 
 Parts prefixed with (OFF) are not used, but kept for historic purposes. For some reason GitHub's org renderer ignores TODO status, hence such a prefix. Round brackets instead of square ones to prevent GitHub's org renderer from screwing up.
 
-* Contents
+#+TOC: headlines 6
+
+* Contents                                                         :noexport:
 :PROPERTIES:
 :TOC:      :include all :depth 3
 :END:
@@ -1345,7 +1349,7 @@ A theme, based on [[https://github.com/dracula/rofi][dracula theme]] for rofi, b
   table))
 #+end_src
 
-#+begin_src conf-colon :tangle ./.config/rofi/config.rasi :noweb yes
+#+begin_src css :tangle ./.config/rofi/config.rasi :noweb yes
 /* Generated from [[file:../../Desktop.org::*Theme][Theme:1]] */
  ,* {
     <<get-rofi-colors()>>
@@ -2118,6 +2122,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | git-filter-repo |
 | dev      | node            |
 | dev      | openjdk         |
+| dev      | go              |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""

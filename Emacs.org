@@ -1,7 +1,9 @@
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:bash       :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
-#+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el :mkdirp yes
+#+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el :mkdirp yes :eval never-export
 #+TODO: CHECK(s) | OFF(o)
+#+TITLE: Emacs config
+#+OPTIONS: broken-links:auto h:6 toc:nil
 
 #+begin_quote
 One day we won't hate one another, no young boy will march to war and I will clean up my Emacs config. But that day isn't today.
@@ -11,7 +13,9 @@ My [[https://www.gnu.org/software/emacs/][Emacs]] configuration.
 
 As with other files in the repo, parts prefixed with (OFF) are not used but kept for historic purposes.
 
-* Contents
+#+TOC: headlines 6
+
+* Contents                                                         :noexport:
 :PROPERTIES:
 :TOC:      :include all :depth 4
 :END:
@@ -548,6 +552,14 @@ Basic evil configuration.
   (setq evil-lion-left-align-key (kbd "g a"))
   (setq evil-lion-right-align-key (kbd "g A"))
   (evil-lion-mode))
+#+end_src
+
+[[https://github.com/redguardtoo/evil-matchit][evil-matchit]] makes "%" to match things like tags.
+#+begin_src emacs-lisp
+(use-package evil-matchit
+  :straight t
+  :config
+  (global-evil-matchit-mode 1))
 #+end_src
 *** evil-collection
 [[https://github.com/emacs-evil/evil-collection][evil-collection]] is a package that provides evil bindings for a lot of different packages. One can see the whole list in the [[https://github.com/emacs-evil/evil-collection/tree/master/modes][modes]] folder.
@@ -2830,6 +2842,10 @@ Categories are broad labels to group agenda items.
             ("." ,(list (all-the-icons-faicon "circle-o")) nil nil :ascent center))))
 #+end_src
 ** Export
+*** General settings
+#+begin_src emacs-lisp
+(setq org-export-backends '(md html latex beamer org))
+#+end_src
 *** Hugo
 #+begin_src emacs-lisp
 (use-package ox-hugo

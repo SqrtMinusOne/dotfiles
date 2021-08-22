@@ -159,6 +159,11 @@
   (setq evil-lion-right-align-key (kbd "g A"))
   (evil-lion-mode))
 
+(use-package evil-matchit
+  :straight t
+  :config
+  (global-evil-matchit-mode 1))
+
 (use-package evil-collection
   :straight t
   :after evil
@@ -1740,6 +1745,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package org-superstar
   :straight t
   :hook (org-mode . org-superstar-mode))
+
+(setq org-export-backends '(md html latex beamer org))
 
 (use-package ox-hugo
   :straight t

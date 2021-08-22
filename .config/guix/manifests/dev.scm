@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "go"
    "openjdk"
    "node"
    "git-filter-repo"

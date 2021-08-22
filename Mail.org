@@ -3,9 +3,11 @@
 :END:
 #+TITLE: Mail
 #+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args:emacs-lisp  :eval never-export
 #+PROPERTY: header-args:conf-unix   :comments link
 #+PROPERTY: header-args:conf-space  :comments link
 #+PROPERTY: header-args:bash        :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
+#+OPTIONS: broken-links:auto h:6 toc:nil
 
 My email configration. Currently uses [[https://github.com/gauteh/lieer][lieer]] to fetch emails from Gmail, [[http://davmail.sourceforge.net/][davmail]] & [[http://www.offlineimap.org/][offlineimap]] to fetch emails from MS Exchange, [[https://notmuchmail.org/][notmuch]] to index, [[https://marlam.de/msmtp/][msmtp]] to send emails. Also using notmuch frontend from Emacs.
 
@@ -16,7 +18,9 @@ But I also have an Exchange account, with which I communicate via IMAP/SMTP adap
 References:
 - [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][My post]] about email configuration. I wrote it some time ago, but the general idea remains.
 
-* Contents
+#+TOC: headlines 6
+
+* Contents                                                         :noexport:
 :PROPERTIES:
 :TOC:      :include all
 :END:

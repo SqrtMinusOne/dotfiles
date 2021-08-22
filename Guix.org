@@ -1,8 +1,10 @@
 #+TITLE: Guix
-#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: header-args                :mkdirp yes
+#+PROPERTY: header-args:emacs-lisp     :eval never-export
 #+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 #+PROPERTY: header-args:sh             :tangle-mode (identity #o755) :comments link :shebang "#!/bin/sh"
 #+PROPERTY: header-args:scheme         :comments link
+#+OPTIONS: broken-links:auto h:6 toc:nil
 
 [[https://guix.gnu.org/][GNU Guix]] is (1) a transactional package manager and (2) a GNU/Linux distribution.
 
@@ -14,6 +16,7 @@ References:
 - [[https://gitlab.com/pjotrp/guix-notes][Pjotr Prins' Guix notes]]
 - [[https://www.youtube.com/watch?v=iBaqOK75cho&list=PLEoMzSkcN8oNxnj7jm5V2ZcGc52002pQU][Davil Wilson's YouTube series]]
 
+#+TOC: headlines 6
 
 * Contents
 :PROPERTIES:
