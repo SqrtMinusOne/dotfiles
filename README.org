@@ -1,8 +1,9 @@
 #+TITLE: My dotfiles
+#+HUGO_ALIASES: /config
 
 [[https://forthebadge.com/images/badges/works-on-my-machine.svg]]
 
-A set of my GNU/Linux configuration files.
+A set of my GNU/Linux configuration files. [[https://github.com/SqrtMinusOne/dotfiles][View at GitHub]].
 
 The majority of the software is configured with [[https://leanpub.com/lit-config/read][literate configuration]] strategy via Emacs' Org Mode. This way has its advantages and disadvantages, but overall it's pretty nice to keep the configs interweaved with comments in a handful of files.
 

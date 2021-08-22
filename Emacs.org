@@ -2255,7 +2255,7 @@ References:
 
 Refresh kernelspecs.
 
-Kernelspecs by default are hashed, so even switching Anaconda environments doesn't change kernel (i.e. kernel from the first environment is run after the switch to the second one).
+Kernelspecs by default are hashed, so even switching Anaconda environments doesn't change the kernel (i.e. kernel from the first environment is run after the switch to the second one).
 
 #+begin_src emacs-lisp
 (defun my/jupyter-refresh-kernelspecs ()
@@ -4544,9 +4544,9 @@ Open a URL with eww.
       (eww link))))
 #+end_src
 **** YouTube
-Previously this block was opening MPV with =start-process=, but now I've managed to hook up MPV with EMMS. So there is the integration of elfeed with EMMS.
+Previously this block was opening MPV with =start-process=, but now I've managed to hook up MPV with EMMS. So there is the EMMS+elfeed "integration".
 
-The following function converts URLs from Invidious to YouTube.
+The following function converts URLs from Invidious and the like to YouTube.
 #+begin_src emacs-lisp
 (defun my/get-youtube-url (link)
   (let ((watch-id (cadr
@@ -4580,7 +4580,7 @@ Now, a function to add YouTube link with metadata from elfeed to EMMS.
    "gm" #'my/elfeed-add-emms-youtube))
 #+end_src
 *** EMMS
-EMMS is the Emacs Multi-Media System. I control MPD from Emacs with its help.
+EMMS is the Emacs Multi-Media System. I use it to control MPD & MPV.
 
 References:
 - [[https://www.gnu.org/software/emms/manual/][EMMS Manual]]
@@ -4642,17 +4642,17 @@ References:
 (setq emms-player-mpd-music-directory "~/Music")
 #+end_src
 
-Connect on setup. For some reason, it stops mpd playback whenever it connects, but it is not a big issue.
+Connect on setup. For some reason, it stops the mpd playback whenever it connects, but it is not a big issue.
 #+begin_src emacs-lisp
 (emms-player-mpd-connect)
 #+end_src
 
-Clear MPD playlist on clearing EMMS playlist. IDK if this is fine for MPD playlists, I don't use them anyhow.
+Clear MPD playlist on clearing EMMS playlist. IDK if this is fine for MPD library playlist, I don't use them anyhow.
 #+begin_src emacs-lisp
 (add-hook 'emms-playlist-cleared-hook 'emms-player-mpd-clear)
 #+end_src
 
-Set a custom regex for MPD. EMMS sets up the default regex from mpd diagnostic output so that regex opens basically everything, including videos, https links, etc. That is fine if MPD is the only player in EMMS, but as I want to use MPV as well, I override the regex.
+Set a custom regex for MPD. EMMS sets up the default one from MPD's diagnostic output so that regex opens basically everything, including videos, https links, etc. That is fine if MPD is the only player in EMMS, but as I want to use MPV as well, I override the regex.
 #+begin_src emacs-lisp
 (emms-player-set emms-player-mpd
                  'regex
@@ -4660,7 +4660,7 @@ Set a custom regex for MPD. EMMS sets up the default regex from mpd diagnostic o
                   "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff"))
 #+end_src
 
-Now, after all this is done, run =M-x emms-cache-set-from-mpd-all= to set cache from MPD. If everything is correct, EMMS browser will be populated with MPD database.
+After all this is done, run =M-x emms-cache-set-from-mpd-all= to set cache from MPD. If everything is correct, EMMS browser will be populated with MPD database.
 **** MPV
 :PROPERTIES:
 :header-args:emacs-lisp: :tangle no :noweb-ref emms-mpv-setup
@@ -4687,7 +4687,7 @@ Also a custom regex. My demands for MPV include running =youtube-dl=, so there i
                                            "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
 #+end_src
 
-By default MPV, plays the video in the best possible quality, which may be pretty high, even too high with limited bandwidth. So here is the logic to choose youtube quality.
+By default MPV plays the video in the best possible quality, which may be pretty high, even too high with limited bandwidth. So here is the logic to choose the quality.
 #+begin_src emacs-lisp
 (setq my/youtube-dl-quality-list
       '("bestvideo[height<=720]+bestaudio/best[height<=720]"
@@ -4709,7 +4709,7 @@ By default MPV, plays the video in the best possible quality, which may be prett
 
 Now =emms-add-url= should work on YouTube URLs just fine. Just keep in mind that it will only add the URL to the playlist, not play it right away.
 **** Cache cleanup
-Now, all these URLs reside in EMMS cache after being played. I don't want them to stay there for a long time, so here is a handy function to clean it.
+All added URLs reside in the EMMS cache after being played. I don't want them to stay there for a long time, so here is a handy function to clean it.
 
 #+begin_src emacs-lisp
 (defun my/emms-cleanup-urls ()
@@ -4761,7 +4761,7 @@ My package for fetching EMMS lyrics and album covers.
    "q" 'quit-window))
 #+end_src
 **** EMMS & mpd Fixes
-Some fixes until I submit a patch.
++Some fixes until I submit a patch.+ I've submitted a patch for with these fixes, so I'll remove this section eventually.
 
 For some reason EMMS doesn't fetch =albumartist= from MPD. Overriding this function fixes that.
 
@@ -4940,7 +4940,7 @@ References:
 #+end_src
 ** Reading documentation
 *** tldr
-[[https://tldr.sh/][tldr]] is a collaborative project providing cheatsheets for various console commands. For some reason, the built-in in the Emacs package download is broken, so I use my own function.
+[[https://tldr.sh/][tldr]] is a collaborative project providing cheatsheets for various console commands. For some reason, the built-in download in the package is broken, so I use my own function.
 
 #+begin_src emacs-lisp
 (use-package tldr
