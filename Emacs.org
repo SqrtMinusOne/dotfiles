@@ -603,6 +603,7 @@ I don't enable the entire package, just the modes I need.
      helpful
      compile
      comint
+     git-timemachine
      magit
      prodigy)))
 #+end_src
@@ -1228,7 +1229,9 @@ A company frontend with nice icons.
 ** Git & Magit
 [[https://magit.vc/][Magic]] is a git interface for Emacs. The closest non-Emacs alternative (sans actual clones) I know is [[https://github.com/jesseduffield/lazygit][lazygit]], which I used before Emacs.
 
-Also, [[https://github.com/emacsorphanage/git-gutter][git-gutter]] is plugin which shows git changes for each line (added/changed/deleted lines).
+[[https://github.com/emacsorphanage/git-gutter][git-gutter]] is a package which shows git changes for each line (added/changed/deleted lines).
+
+[[https://github.com/emacsmirror/git-timemachine][git-timemachine]] allows to visit previous versions of a file.
 
 #+begin_src emacs-lisp
 (use-package magit
@@ -1254,6 +1257,10 @@ Also, [[https://github.com/emacsorphanage/git-gutter][git-gutter]] is plugin whi
   :if (not my/slow-ssh)
   :config
   (global-git-gutter-mode +1))
+
+(use-package git-timemachine
+  :straight t
+  :commands (git-timemachine))
 
 (my-leader-def
   "m" 'magit

@@ -200,6 +200,7 @@
      helpful
      compile
      comint
+     git-timemachine
      magit
      prodigy)))
 
@@ -639,6 +640,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :if (not my/slow-ssh)
   :config
   (global-git-gutter-mode +1))
+
+(use-package git-timemachine
+  :straight t
+  :commands (git-timemachine))
 
 (my-leader-def
   "m" 'magit
