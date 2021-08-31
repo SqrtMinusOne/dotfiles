@@ -2,7 +2,7 @@
 # [[file:../Desktop.org::*Launching][Launching:1]]
 hostname=$(hostname)
 # Settings varying on the hostname
-export WLAN_INTERFACE=$(nmcli -f DEVICE con show | grep -Ev "(.*docker.*|DEVICE|br.*|tun.*|--)" | xargs)
+export WLAN_INTERFACE=$(nmcli -f DEVICE con show | grep -Ev "(.*docker.*|DEVICE|br.*|tun.*|veth.*|--)" | xargs)
 if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
     # export WLAN_INTERFACE="wlp3s0"

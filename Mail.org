@@ -9,7 +9,7 @@
 #+PROPERTY: header-args:bash        :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 #+OPTIONS: broken-links:auto h:6 toc:nil
 
-My email configration. Currently uses [[https://github.com/gauteh/lieer][lieer]] to fetch emails from Gmail, [[http://davmail.sourceforge.net/][davmail]] & [[http://www.offlineimap.org/][offlineimap]] to fetch emails from MS Exchange, [[https://notmuchmail.org/][notmuch]] to index, [[https://marlam.de/msmtp/][msmtp]] to send emails. Also using notmuch frontend from Emacs.
+My email configration. Currently I use [[https://github.com/gauteh/lieer][lieer]] to fetch emails from Gmail, [[http://davmail.sourceforge.net/][davmail]] & [[http://www.offlineimap.org/][offlineimap]] to fetch emails from MS Exchange, [[https://notmuchmail.org/][notmuch]] to index, [[https://marlam.de/msmtp/][msmtp]] to send emails. Also using notmuch frontend from Emacs.
 
 My problem with any particular mail setup was that I use Gmail labels quite extensively, and handling these over IMAP is rather awkward. Notmuch seems to be the only software that provides the same first-class support for labels.
 
@@ -83,7 +83,7 @@ davmail.imapAutoExpunge=false
 davmail.enableKeepalive=false
 #+end_src
 
-Also it's a bit of problem to get it launched as it looks for some jars in pwd, so here is a script.
+Also it's a bit of problem to get it launched as it looks for its jars in the pwd, so here is a script.
 #+begin_src bash :tangle ~/bin/davmail
 cd $HOME/bin/davmail-6.0.0-3375
 ./davmail davmail.properties
@@ -95,9 +95,9 @@ Shepherd service is defined in [[file:Desktop.org::*Davmail][Desktop.org]].
 |-----------------|
 | offlineimap     |
 
-[[https://github.com/OfflineIMAP/offlineimap][OfflineIMAP]] is a program that can synchronize IMAP mailbox and Maildir. Lieer does everything by itself, but my pirate Exchange IMAP needs this program. There is also [[https://isync.sourceforge.io/][isync]], but I had some weird issues with duplicate UIDs, which don't occur for OfflineIMAP.
+[[https://github.com/OfflineIMAP/offlineimap][OfflineIMAP]] is a program that can synchronize IMAP mailbox and Maildir. Lieer does everything by itself, but my pirate Exchange IMAP needs this program. There is also [[https://isync.sourceforge.io/][isync]], but there I had some weird issues with duplicate UIDs, which don't occur for OfflineIMAP.
 
-I have a few options for setting a username and password. First, I can run =pass= in =remotepasswordeval=, and this is fine, but it will keep by keyring unlocked because I want to run =offlineimap= every couple of minutes.
+I have a few options for setting a username and password. First, I can run =pass= in =remotepasswordeval=, and while this will work, it will keep my keyring unlocked because I want to run =offlineimap= every couple of minutes.
 
 Another option is to use noweb and not push the file below to the version control. Then I have a plaintext password of email on my computer, but I think it's a lesser evil than the entire keyring.
 
@@ -140,7 +140,7 @@ ssl = no
 | notmuch         |
 | parallel        |
 
-Notmuch is an email indexer program, which handles labels in a way somewhat like Gmail. It also provides a frontend for Emacs, but it's not the only one available.
+Notmuch is an email indexer program, which handles labels in a way somewhat similar to Gmail. It also provides a frontend for Emacs, but it's not the only one available.
 
 ** Config
 :PROPERTIES:
@@ -184,7 +184,7 @@ synchronize_flags=true
 #+end_src
 
 ** Hooks
-Now we have to link up lieer & Maildir and with notmuch. This is done via the notmuch hook system, which allows running custom scripts before and after any command.
+Now we have to link up lieer & davmail's maildir and with notmuch. This is done via the notmuch hook system, which allows running custom scripts before and after any command.
 
 With lieer and Gmail, it is enough to simply run the program, because Gmail has first-class support for tags. Maildir does not, so I decide to synchronize notmuch tags and IMAP folders. In essence, the idea is to:
 - move emails to their folders by tags /before/ the synchronization

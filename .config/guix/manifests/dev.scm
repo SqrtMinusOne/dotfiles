@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "gcc-toolchain"
    "go"
    "openjdk"
    "node"

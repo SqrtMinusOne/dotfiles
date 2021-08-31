@@ -404,7 +404,7 @@ Rules to automatically assign applications to workspaces and do other stuff, lik
 
 Most apps can be distinguished by a WM class (you can get one with [[https://www.x.org/releases/X11R7.5/doc/man/man1/xprop.1.html][xprop]]), but in some cases it doesn't work, e.g. for terminal applications. In that case rules can be based on a window title, for instance.
 
-However, watch out for the following: rule such as ~for_window [title="ncmpcpp.*"] move to workspace $w9~ will move *any* windows with a title, starting with =ncmpcpp= to workspace =$w9=, which, for instance, may move your browser there if you google "ncmpcpp".
+However, watch out for the following: rule such as ~for_window [title="ncmpcpp.*"] move to workspace $w9~ will move *any* window with a title starting with =ncmpcpp= to workspace =$w9=. For instance, it moves your browser when you google "ncmpcpp".
 
 #+begin_src conf-space
 assign [class="Emacs"] $w1
@@ -797,7 +797,7 @@ The script below allows me to:
 #+begin_src bash :tangle ./bin/polybar.sh
 hostname=$(hostname)
 # Settings varying on the hostname
-export WLAN_INTERFACE=$(nmcli -f DEVICE con show | grep -Ev "(.*docker.*|DEVICE|br.*|tun.*|--)" | xargs)
+export WLAN_INTERFACE=$(nmcli -f DEVICE con show | grep -Ev "(.*docker.*|DEVICE|br.*|tun.*|veth.*|--)" | xargs)
 if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
     # export WLAN_INTERFACE="wlp3s0"
@@ -2123,6 +2123,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | node            |
 | dev      | openjdk         |
 | dev      | go              |
+| dev      | gcc-toolchain   |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
