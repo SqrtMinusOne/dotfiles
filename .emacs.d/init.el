@@ -669,50 +669,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-imap "M-TAB" 'company-yasnippet)
 
 (use-package wakatime-mode
-  :straight t
+  :straight (:host github :repo "SqrtMinusOne/wakatime-mode")
   :if (not my/is-termux)
   :config
-  (defun wakatime-client-command (savep)
-    "Return client command executable and arguments.
-     Set SAVEP to non-nil for write action."
-    (format "%s%s--entity \"%s\" --plugin \"%s/%s\" --time %.2f%s%s"
-      (if (s-blank wakatime-python-bin) "" (format "\"%s\" " wakatime-python-bin))
-      (if (s-blank wakatime-cli-path) "wakatime " (format "\"%s\" " wakatime-cli-path))
-      (buffer-file-name (current-buffer))
-      wakatime-user-agent
-      wakatime-version
-      (float-time)
-      (if savep " --write" "")
-      (if (s-blank wakatime-api-key) "" (format " --key %s" wakatime-api-key))))
-  (defun wakatime-call (savep)
-    "Call WakaTime command."
-    (let*
-        ((command (wakatime-client-command savep))
-         (process-environment (if wakatime-python-path (cons (format "PYTHONPATH=%s" wakatime-python-path) process-environment) process-environment))
-         (process
-          (start-process
-           "Shell"
-           (generate-new-buffer " *WakaTime messages*")
-           shell-file-name
-           shell-command-switch
-           command)))
-  
-      (set-process-sentinel process
-                            `(lambda (process signal)
-                               (when (memq (process-status process) '(exit signal))
-                                 (kill-buffer (process-buffer process))
-                                 (let ((exit-status (process-exit-status process)))
-                                   (when (and (not (= 0 exit-status)) (not (= 102 exit-status)) (not (= 1 exit-status)))
-                                     (when wakatime-disable-on-error
-                                       (wakatime-mode -1)
-                                       (global-wakatime-mode -1))
-                                     (cond
-                                      ((= exit-status 103) (error "WakaTime Error (%s) Config file parse error. Check your ~/.wakatime.cfg file." exit-status))
-                                      ((= exit-status 104) (error "WakaTime Error (%s) Invalid API Key. Set your api key with: (custom-set-variables '(wakatime-api-key \"XXXX\"))" exit-status))
-                                      ((= exit-status 105) (error "WakaTime Error (%s) Unknown wakatime-cli error. Please check your ~/.wakatime.log file and open a new issue at https://github.com/wakatime/wakatime-mode" exit-status))
-                                      ((= exit-status 106) (error "WakaTime Error (%s) Malformed heartbeat error. Please check your ~/.wakatime.log file and open a new issue at https://github.com/wakatime/wakatime-mode" exit-status))
-                                      (t (message "WakaTime Error (%s) Make sure this command runs in a Terminal: %s" exit-status (wakatime-client-command nil)))))))))
-      (set-process-query-on-exit-flag process nil)))
+  (setq wakatime-ignore-exit-codes '(0 1 102))
   (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime-cli")))
   ;; (setq wakatime-cli-path (executable-find "wakatime"))
   (global-wakatime-mode))
@@ -2083,7 +2043,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :init
   (my-leader-def
-    :keymaps '(js-mode-map typescript-mode-map vue-mode-map svelte-mode-map)
+    :keymaps '(js-mode-map web-mode-map typescript-mode-map vue-mode-map svelte-mode-map)
     "rr" #'prettier-prettify))
 
 (use-package typescript-mode
@@ -2130,7 +2090,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (add-hook 'web-mode-hook 'smartparens-mode)
   (add-hook 'web-mode-hook 'hs-minor-mode)
-  (my/set-smartparens-indent 'web-mode))
+  (my/set-smartparens-indent 'web-mode)
+  (add-hook 'web-mode-hook ))
 
 (setq my/web-mode-lsp-extensions
       `(,(rx ".svelte" eos)
@@ -2143,6 +2104,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (lsp-deferred)))
 
 (add-hook 'web-mode-hook #'my/web-mode-lsp)
+
+(defun my/web-mode-vue-setup ()
+  (when (string-match-p (rx ".vue" eos) (buffer-name))
+    (setq-local web-mode-script-padding 0)))
+
+(add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 
 (use-package vue-mode
   :straight t
@@ -2714,7 +2681,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (if asc
               (cdr asc)
             (let ((python-executable
-                   (string-trim (shell-command-to-string "PIPENV_IGNORE_VIRTUALENVS=1 pipenv run which python"))))
+                   (string-trim (shell-command-to-string "PIPENV_IGNORE_VIRTUALENVS=1 pipenv run which python 2>/dev/null"))))
               (if (string-match-p ".*not found.*" python-executable)
                   (message "Pipfile found, but not pipenv executable!")
                 (message (format "Found pipenv python: %s" python-executable))
@@ -3086,7 +3053,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                    (emms-player-simple-regexp
                     "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff"))
   ;; MPV setup
-  (add-to-list 'emms-player-list 'emms-player-mpv t)
+  (add-to-list 'emms-player-list 'emms-player-mpv)
   (emms-player-set emms-player-mpv
                    'regex
                    (rx (or (: "https://" (* nonl) "youtube.com" (* nonl))
@@ -3173,7 +3140,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (my-leader-def "asc" #'my/emms-cleanup-urls)
 
 (use-package lyrics-fetcher
-  :straight (:host github :repo "SqrtMinusOne/lyrics-fetcher.el")
+  :straight t
   :after (emms)
   :init
   (my-leader-def
