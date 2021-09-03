@@ -1567,6 +1567,188 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          ((tags-todo "personal"
                      ((org-agenda-prefix-format "  %i %-12:c [%e] ")))))))
 
+(use-package org-ql
+  :straight (:fetcher github
+                      :repo "alphapapa/org-ql"
+                      :files (:defaults (:exclude "helm-org-ql.el"))))
+
+(setq my/git-diff-status
+      '(("A" . added)
+        ("C" . copied)
+        ("D" . deleted)
+        ("M" . modified)
+        ("R" . renamed)
+        ("T" . type-changed)
+        ("U" . unmerged)))
+
+(defun my/get-files-status (rev)
+  (let ((files (shell-command-to-string (concat "git diff --name-status " rev))))
+    (mapcar
+     (lambda (file)
+       (let ((elems (split-string file "\t")))
+         (cons
+          (cdr (assoc (car elems) my/git-diff-status))
+          (nth 1 elems))))
+     (split-string files "\n" t))))
+
+(defun my/org-changed-files-since-date (date)
+  (let ((default-directory org-directory))
+    (my/get-files-status (format "@{%s}" date))))
+
+(defun my/org-review-format-roam (rev)
+  (let* ((changes (my/org-changed-files-since-date rev))
+         (new-roam
+          (seq-filter
+           (lambda (elem)
+             (and (eq (car elem) 'added)
+                  (string-match-p (rx bos "roam") (cdr elem))))
+           changes))
+         (changed-roam
+          (seq-filter
+           (lambda (elem)
+             (and (eq (car elem) 'modified)
+                  (string-match-p (rx bos "roam") (cdr elem))))
+           changes)))
+    (concat
+     (unless (seq-empty-p new-roam)
+       (concat "** New Roam entries \n"
+               (mapconcat
+                (lambda (entry)
+                  (format "- [[file:%s][%s]]" (cdr entry) (cdr entry)))
+                new-roam
+                "\n")
+               "\n"))
+     (unless (seq-empty-p changed-roam)
+       (concat "** Changed Roam entries \n"
+               (mapconcat
+                (lambda (entry)
+                  (format "- [[file:%s][%s]]" (cdr entry) (cdr entry)))
+                changed-roam
+                "\n"))))))
+
+(defun my/org-journal-entries-since-date (rev-date)
+  (mapcar
+   (lambda (date)
+     (let ((time (encode-time (parse-time-string date))))
+       `((file . ,(org-journal--get-entry-path time))
+         (header . ,(format-time-string org-journal-date-format time)))))
+   (seq-filter
+    (lambda (date) (string-lessp rev-date date))
+    (mapcar
+     (lambda (date)
+       (format "%04d-%02d-%02dT00:00:00+0300" (nth 2 date) (nth 0 date) (nth 1 date)))
+     (org-journal--list-dates)))))
+
+(defun my/org-review-format-journal (rev-date)
+  (mapconcat
+   (lambda (item)
+     (format "- [[file:%s::*%s][%s]]"
+             (cdr (assoc 'file item))
+             (cdr (assoc 'header item))
+             (cdr (assoc 'header item))))
+   (my/org-journal-entries-since-date rev-date)
+   "\n"))
+
+(setq my/org-ql-review-queries
+      `(("Waitlist" scheduled scheduled
+         (and
+          (done)
+          (tags-inherited "waitlist")))
+        ("Personal tasks done" closed ,nil
+         (and
+          (tags-inherited "personal")
+          (todo "DONE")))
+        ("Attended meetings" closed scheduled
+         (and
+          (tags "meeting")
+          (todo "PASSED")))
+        ("Done project tasks" closed deadline
+         (and
+          (todo "DONE")
+          (ancestors
+           (heading "Tasks"))))))
+
+(defun my/org-review-exec-ql (saved rev-date)
+  (let ((query `(and
+                 (,(nth 1 saved) :from ,rev-date)
+                 ,(nth 3 saved))))
+    (org-ql-query
+      :select #'element
+      :from (org-agenda-files)
+      :where query
+      :order-by (nth 2 saved))))
+
+(defun my/org-review-format-element (elem)
+  (concat
+   (string-pad
+    (plist-get (cadr elem) :raw-value)
+    40)
+   (when-let (scheduled (plist-get (cadr elem) :scheduled))
+     (concat " [SCHEDULED: " (plist-get (cadr scheduled) :raw-value) "]"))
+   (when-let (deadline (plist-get (cadr elem) :deadline))
+     (concat " [DEADLINE: " (plist-get (cadr deadline) :raw-value) "]"))))
+
+(defun my/org-review-format-queries (rev-date)
+  (mapconcat
+   (lambda (results)
+     (concat "** " (car results) "\n"
+             (string-join
+              (mapcar (lambda (r) (concat "- " r)) (cdr results))
+              "\n")
+             "\n"))
+   (seq-filter
+    (lambda (result)
+      (not (seq-empty-p (cdr result))))
+    (mapcar
+     (lambda (saved)
+       (cons
+        (car saved)
+        (mapcar
+         #'my/org-review-format-element
+         (my/org-review-exec-ql saved rev-date))))
+     my/org-ql-review-queries))
+   "\n"))
+
+(setq my/org-review-directory "review")
+
+(defun my/org-review-get-filename ()
+  (concat my/org-review-directory "/" (format-time-string "%Y-%m-%d.org" (current-time))))
+
+(defun my/get-last-review-date ()
+  (substring
+   (or
+    (-max-by
+     'string-greaterp
+     (-filter
+      (lambda (f) (not (or (string-equal f ".") (string-equal f ".."))))
+      (directory-files (f-join org-directory my/org-review-directory))))
+    (format-time-string
+     "%Y-%m-%d"
+     (time-subtract
+      (current-time)
+      (seconds-to-time (* 60 60 24 7)))))
+   0 10))
+
+(setq my/org-review-capture-template
+      `("r" "Review" plain (file ,(my/org-review-get-filename))
+        ,(string-join
+          '("#+TITLE: Review %t"
+            ""
+            "Last review date: %(org-timestamp-translate (org-timestamp-from-string (format \"<%s>\" (my/get-last-review-date))))"
+            ""
+            "* Roam"
+            "%(my/org-review-format-roam (my/get-last-review-date))"
+            "* Journal"
+            "New journal entries:"
+            "%(my/org-review-format-journal (my/get-last-review-date))"
+            "* Agenda"
+            "%(my/org-review-format-queries (my/get-last-review-date))"
+            "* Thoughts                                                            :crypt:"
+            "%?")
+          "\n")))
+
+(add-to-list 'org-capture-templates my/org-review-capture-template t)
+
 (use-package org-journal
   :straight t
   :after org
@@ -2090,8 +2272,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (add-hook 'web-mode-hook 'smartparens-mode)
   (add-hook 'web-mode-hook 'hs-minor-mode)
-  (my/set-smartparens-indent 'web-mode)
-  (add-hook 'web-mode-hook ))
+  (my/set-smartparens-indent 'web-mode))
 
 (setq my/web-mode-lsp-extensions
       `(,(rx ".svelte" eos)
@@ -3001,12 +3182,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (let ((track (emms-track
                   'url (my/get-youtube-url (elfeed-entry-link entry)))))
       (emms-track-set track 'info-title (elfeed-entry-title entry))
-      (setq my/test track)
       (emms-playlist-insert-track track))))
 
 (defun my/elfeed-add-emms-youtube ()
   (interactive)
-  (emms-add-elfeed elfeed-show-entry))
+  (emms-add-elfeed elfeed-show-entry)
+  (elfeed-tag elfeed-show-entry 'watched)
+  (elfeed-show-refresh))
 
 (with-eval-after-load 'elfeed
   (general-define-key
