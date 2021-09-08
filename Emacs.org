@@ -2454,7 +2454,7 @@ Some inspiration:
 Used files
 #+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
 (setq org-directory (expand-file-name "~/Documents/org-mode"))
-(setq org-agenda-files '("inbox.org" "projects.org" "work.org"))
+(setq org-agenda-files '("inbox.org" "projects.org" "work.org" "sem-11.org"))
 ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
 #+end_src
 
@@ -4685,7 +4685,7 @@ Using my own fork until the modifications are merged into master.
   (my-leader-def "ae" 'elfeed)
   :config
   (setq elfeed-db-directory "~/.elfeed")
-  (setq elfeed-enclosure-default-dir (expand-file-name "~"))
+  (setq elfeed-enclosure-default-dir (expand-file-name "~/Downloads"))
   (advice-add #'elfeed-insert-html
               :around
               (lambda (fun &rest r)
@@ -4907,7 +4907,7 @@ By default MPV plays the video in the best possible quality, which may be pretty
 
 Now =emms-add-url= should work on YouTube URLs just fine. Just keep in mind that it will only add the URL to the playlist, not play it right away.
 **** Cache cleanup
-All added URLs reside in the EMMS cache after being played. I don't want them to stay there for a long time, so here is a handy function to clean it.
+All the added URLs reside in the EMMS cache after being played. I don't want them to stay there for a long time, so here is a handy function to clean it.
 
 #+begin_src emacs-lisp
 (defun my/emms-cleanup-urls ()
