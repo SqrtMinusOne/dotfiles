@@ -9,7 +9,7 @@ The majority of the software is configured with [[https://leanpub.com/lit-config
 
 The files themselves are managed and deployed via [[https://yadm.io/][yadm]], but I mostly use Org Mode rich noweb whenever I can instead of what yadm offers.
 
-My current GNU/Linux distribution is [[https://guix.gnu.org/][GNU Guix]]. In the context of this repo, Guix allows me to list all the used programs in manifests, which means I have the same set of programs across multiple machines. Look for the tables with "Guix dependency" in the header.
+My current GNU/Linux distribution is [[https://guix.gnu.org/][GNU Guix]]. In the context of this repo, Guix allows me to list all the used programs in manifests, which means I have the same set of programs across multiple machines. Look for tables with "Guix dependency" in the header.
 
 Literate configuration files:
 - [[file:Emacs.org][Emacs.org]]
