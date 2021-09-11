@@ -2124,6 +2124,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | openjdk         |
 | dev      | go              |
 | dev      | gcc-toolchain   |
+| dev      | lua             |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
@@ -2446,6 +2447,8 @@ Other desktop programs I use are listed below.
 | fontconfig             |                                           |
 | polkit-gnome           | Polkit authentication agent               |
 | anydesk                | Remote desktop software                   |
+| gnome-disk-utility     | Manage disks                              |
+| gparted                | Manage partitions                         |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no

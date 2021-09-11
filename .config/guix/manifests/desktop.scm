@@ -1,5 +1,7 @@
 (specifications->manifest
  '(
+   "gparted"
+   "gnome-disk-utility"
    "anydesk"
    "polkit-gnome"
    "fontconfig"

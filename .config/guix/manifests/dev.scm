@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "lua"
    "gcc-toolchain"
    "go"
    "openjdk"
