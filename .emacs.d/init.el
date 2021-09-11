@@ -71,6 +71,8 @@
 (use-package no-littering
   :straight t)
 
+(setq confirm-kill-emacs 'y-or-n-p)
+
 (use-package general
   :straight t
   :config
@@ -1352,7 +1354,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-nmap :keymaps 'org-mode-map
       "C-x C-l" 'my/org-link-copy)
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
-  (setq org-agenda-files '("inbox.org" "projects.org" "work.org"))
+  (setq org-agenda-files '("inbox.org" "projects.org" "work.org" "sem-11.org"))
   ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
   (setq org-capture-templates
         `(("i" "Inbox" entry  (file "inbox.org")
@@ -1997,8 +1999,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (setq-local org-format-latex-options
                           (plist-put org-format-latex-options
                                      :scale (* org-present-text-scale my/org-latex-scale 0.5)))
-              (org-latex-preview '(16))
-              (tab-bar-mode 0)))
+              (org-latex-preview '(16))))
   (add-hook 'org-present-mode-quit-hook
             (lambda ()
               (blink-cursor-mode 1)
@@ -2009,8 +2010,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               (display-line-numbers-mode 1)
               (hide-mode-line-mode 0)
               (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
-              (org-latex-preview '(64))
-              (tab-bar-mode 1))))
+              (org-latex-preview '(64)))))
 
 (use-package org-make-toc
   :after (org)
@@ -3122,7 +3122,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (my-leader-def "ae" 'elfeed)
   :config
   (setq elfeed-db-directory "~/.elfeed")
-  (setq elfeed-enclosure-default-dir (expand-file-name "~"))
+  (setq elfeed-enclosure-default-dir (expand-file-name "~/Downloads"))
   (advice-add #'elfeed-insert-html
               :around
               (lambda (fun &rest r)
@@ -3235,7 +3235,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                    (emms-player-simple-regexp
                     "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff"))
   ;; MPV setup
-  (add-to-list 'emms-player-list 'emms-player-mpv)
+  (add-to-list 'emms-player-list 'emms-player-mpv t)
   (emms-player-set emms-player-mpv
                    'regex
                    (rx (or (: "https://" (* nonl) "youtube.com" (* nonl))
@@ -3260,11 +3260,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
   (my/set-emms-mpd-youtube-quality (car my/youtube-dl-quality-list))
   ;; evil-lion and evil-commentary shadow some gX bindings
-  (add-hook 'emms-browser-mode-hook
-            (lambda ()
-              (evil-lion-mode -1)
+  ;; (add-hook 'emms-browser-mode-hook
+            ;; (lambda ()
+              ;; (evil-lion-mode -1)
               ;; (evil-commentary-mode -1)
-              ))
+              ;; ))
   ;; I have everything I need in polybar
   (emms-mode-line-mode -1)
   (emms-playing-time-display-mode -1)
@@ -3440,7 +3440,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (shell-command-to-string (format "curl -L %s --output %s" tldr-source-zip-url tldr-saved-zip-path))
     (when (file-exists-p "/tmp/tldr")
       (delete-directory "/tmp/tldr" t))
-    (shell-command-to-string (format "unzip -d /tmp/tldr/ %s" tldr-saved-zip-path) nil nil)
+    (shell-command-to-string (format "unzip -d /tmp/tldr/ %s" tldr-saved-zip-path))
     (when (file-exists-p tldr-directory-path)
       (delete-directory tldr-directory-path 'recursive 'no-trash))
     (shell-command-to-string (format "mv %s %s" "/tmp/tldr/tldr-main" tldr-directory-path))))
@@ -3613,8 +3613,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-to-list 'elcord-boring-buffers-regexp-list
                (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
   (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (= 14 num) "-" (* not-newline) ".org" eos))
-  )
+               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
 
 (use-package snow
   :straight (:repo "alphapapa/snow.el" :host github)

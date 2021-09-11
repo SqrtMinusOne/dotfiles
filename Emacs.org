@@ -412,6 +412,12 @@ By default emacs and its packages create a lot files in =.emacs.d= and in other 
 (use-package no-littering
   :straight t)
 #+end_src
+** Prevent Emacs from closing
+This adds a confirmation to avoid accidental Emacs closing.
+
+#+begin_src emacs-lisp
+(setq confirm-kill-emacs 'y-or-n-p)
+#+end_src
 * Global editing configuration
 ** General keybindings stuff
 *** general.el
@@ -3182,8 +3188,7 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
               (setq-local org-format-latex-options
                           (plist-put org-format-latex-options
                                      :scale (* org-present-text-scale my/org-latex-scale 0.5)))
-              (org-latex-preview '(16))
-              (tab-bar-mode 0)))
+              (org-latex-preview '(16))))
   (add-hook 'org-present-mode-quit-hook
             (lambda ()
               (blink-cursor-mode 1)
@@ -3194,8 +3199,7 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
               (display-line-numbers-mode 1)
               (hide-mode-line-mode 0)
               (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
-              (org-latex-preview '(64))
-              (tab-bar-mode 1))))
+              (org-latex-preview '(64)))))
 #+end_src
 ** TOC
 Make a TOC inside the org file.
@@ -4548,6 +4552,15 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
   :straight t
   :after (lsp haskell-mode))
 #+end_src
+** Lua
+#+begin_src emacs-lisp
+(use-package lua-mode
+  :straight t
+  :mode "\\.lua\\'"
+  :hook (lua-mode . smartparens-mode))
+
+(my/set-smartparens-indent 'lua-mode)
+#+end_src
 ** JSON
 #+begin_src emacs-lisp
 (use-package json-mode
@@ -4815,11 +4828,11 @@ References:
   ;; MPV setup
   <<emms-mpv-setup>>
   ;; evil-lion and evil-commentary shadow some gX bindings
-  (add-hook 'emms-browser-mode-hook
-            (lambda ()
-              (evil-lion-mode -1)
+  ;; (add-hook 'emms-browser-mode-hook
+            ;; (lambda ()
+              ;; (evil-lion-mode -1)
               ;; (evil-commentary-mode -1)
-              ))
+              ;; ))
   ;; I have everything I need in polybar
   (emms-mode-line-mode -1)
   (emms-playing-time-display-mode -1)
@@ -4871,7 +4884,7 @@ After all this is done, run =M-x emms-cache-set-from-mpd-all= to set cache from 
 [[https://mpv.io/][mpv]] is a decent media player, which has found a place in this configuration because it integrates with youtube-dl.
 
 #+begin_src emacs-lisp
-(add-to-list 'emms-player-list 'emms-player-mpv)
+(add-to-list 'emms-player-list 'emms-player-mpv t)
 #+end_src
 
 Also a custom regex. My demands for MPV include running =youtube-dl=, so there is a regex that matches youtube.com or some of the video formats.
@@ -5152,7 +5165,7 @@ References:
     (shell-command-to-string (format "curl -L %s --output %s" tldr-source-zip-url tldr-saved-zip-path))
     (when (file-exists-p "/tmp/tldr")
       (delete-directory "/tmp/tldr" t))
-    (shell-command-to-string (format "unzip -d /tmp/tldr/ %s" tldr-saved-zip-path) nil nil)
+    (shell-command-to-string (format "unzip -d /tmp/tldr/ %s" tldr-saved-zip-path))
     (when (file-exists-p tldr-directory-path)
       (delete-directory tldr-directory-path 'recursive 'no-trash))
     (shell-command-to-string (format "mv %s %s" "/tmp/tldr/tldr-main" tldr-directory-path))))
@@ -5395,8 +5408,7 @@ In order for this to work in Guix, a service is necessary - [[file:Desktop.org::
   (add-to-list 'elcord-boring-buffers-regexp-list
                (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
   (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (= 14 num) "-" (* not-newline) ".org" eos))
-  )
+               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
 #+end_src
 *** Snow
 #+begin_src emacs-lisp
