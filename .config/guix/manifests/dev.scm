@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "libfaketime"
    "lua"
    "gcc-toolchain"
    "go"

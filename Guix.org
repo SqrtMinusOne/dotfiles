@@ -614,6 +614,8 @@ mkdir -p ~/.conda/envs
 conda create -p ~/.conda/envs/test
 #+end_src
 
+Fourth, you may need to unset =$PYTHONPATH= if you have any global packages installed, otherwise Python from anaconda will try to import them instead of the conda versions.
+
 Finally, I also want to have an ability to use global npm. Some settings for that are located in [[file:Console::*npm][Console.org]]. Here we want to unset =NPM_CONFIG_USERCONFIG= if there is npm available in the environment.
 
 So here is a script to set up conda hooks:
