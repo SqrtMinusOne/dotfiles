@@ -891,7 +891,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
      clojure-mode
      go-mode
      sh-mode
-     haskell-mode)
+     haskell-mode
+     web-mode)
    '("--" "---" "==" "===" "!=" "!==" "=!=" "=:=" "=/=" "<="
      ">=" "&&" "&&&" "&=" "++" "+++" "***" ";;" "!!" "??"
      "?:" "?." "?=" "<:" ":<" ":>" ">:" "<>" "<<<" ">>>"
@@ -1354,7 +1355,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-nmap :keymaps 'org-mode-map
       "C-x C-l" 'my/org-link-copy)
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
-  (setq org-agenda-files '("inbox.org" "projects.org" "work.org" "sem-11.org"))
+  (setq org-agenda-files '("inbox.org" "projects.org" "work.org" "sem-11.org" "life.org"))
   ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
   (setq org-capture-templates
         `(("i" "Inbox" entry  (file "inbox.org")
@@ -1541,7 +1542,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq org-refile-targets
       '(("projects.org" :maxlevel . 2)
-        ("work.org" :maxlevel . 2)))
+        ("work.org" :maxlevel . 2)
+        ("sem-11.org" :maxlevel . 3)
+        ("life.org" :maxlevel . 2)))
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 
@@ -2776,7 +2779,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :commands (langtool-check)
   :config
-  (setq langtool-language-tool-server-jar "/home/pavel/Programs/LanguageTool-5.1/languagetool-server.jar")
+  (setq langtool-language-tool-server-jar "/home/pavel/bin/LanguageTool-5.4/languagetool-server.jar")
   (setq langtool-mother-tongue "ru")
   (setq langtool-default-language "en-US"))
 
@@ -3034,6 +3037,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package lsp-haskell
   :straight t
   :after (lsp haskell-mode))
+
+(use-package lua-mode
+  :straight t
+  :mode "\\.lua\\'"
+  :hook (lua-mode . smartparens-mode))
+
+(my/set-smartparens-indent 'lua-mode)
 
 (use-package json-mode
   :straight t
