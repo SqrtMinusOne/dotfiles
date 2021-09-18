@@ -1,5 +1,7 @@
 (specifications->manifest
  '(
+   "make"
+   "hugo-extended"
    "libfaketime"
    "lua"
    "gcc-toolchain"

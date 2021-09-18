@@ -517,6 +517,7 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 |----------+-----------------------------|
 | system   | openvpn                     |
 | system   | openvpn-update-resolve-conf |
+| system   | vpnc                        |
 
 I'm not sure how to properly spin up VPN on Guix, so here is what I'm doing now, after some trial and error.
 
