@@ -291,7 +291,7 @@ The following is a straight.el bootstrap script.
 References:
 - [[https://github.com/raxod502/straight.el][straight.el repo]]
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref minimal
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -313,10 +313,50 @@ Set ~use-package-verbose~ to ~t~ to print out individual package loading time.
 References:
 - [[https://github.com/jwiegley/use-package][use-package repo]]
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref minimal
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
  ;; (setq use-package-verbose t)
+#+end_src
+** config variants & environment
+The following variable is true when my machine is not powerful enough for some resource-heavy packages.
+#+begin_src emacs-lisp
+(setq my/lowpower (string= (system-name) "azure"))
+#+end_src
+
+The following is true if Emacs is meant to be used with TRAMP over slow ssh.
+#+begin_src emacs-lisp
+(setq my/slow-ssh
+      (or
+       (string= (getenv "IS_TRAMP") "true")
+       (string= (system-name) "dev-digital")))
+#+end_src
+
+The following is true is Emacs is ran on a remote server where I don't need stuff like my org workflow
+#+begin_src emacs-lisp
+(setq my/remote-server
+      (or (string= (getenv "IS_REMOTE") "true")
+          (string= (system-name) "dev-digital")))
+#+end_src
+
+And the following is true if Emacs is run from termux on Android.
+#+begin_src emacs-lisp
+(setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
+#+end_src
+
+Also, I sometimes need to know if a program is running inside Emacs (say, inside a terminal emulator). To do that, I set the following environment variable:
+#+begin_src emacs-lisp
+(setenv "IS_EMACS" "true")
+#+end_src
+
+Finally, I want to have a minimal Emacs config for debugging purposes. This has just straight.el, use-packages and evil.
+#+begin_src emacs-lisp :tangle ~/.emacs.d/init-minimal.el :noweb yes
+<<minimal>>
+#+end_src
+
+To launch Emacs with this config, run
+#+begin_src bash :eval no :tangle no
+emacs -q -l ~/.emacs.d/init-minimal.el
 #+end_src
 ** Performance
 *** Garbage collection
@@ -341,28 +381,13 @@ Some time has passed, and I still don't know if there is any quantifiable advant
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 #+end_src
-*** Misc
-The following variable is true when my machine is not powerful enough for some resource-heavy packages.
-#+begin_src emacs-lisp
-(setq my/lowpower (string= (system-name) "azure"))
-#+end_src
-
-The following is true if Emacs is meant to be used with TRAMP over slow ssh.
-#+begin_src emacs-lisp
-(setq my/slow-ssh (string= (getenv "IS_TRAMP") "true"))
-#+end_src
-
-And the following is true if Emacs is run from termux on Android.
-#+begin_src emacs-lisp
-(setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
-#+end_src
 *** Native compilation
 Set number of jobs to 1 on low-power machines
 #+begin_src emacs-lisp
 (when my/lowpower
   (setq comp-async-jobs-number 1))
 #+end_src
-** Anaconda & environment
+** Anaconda
 [[https://www.anaconda.com/][Anaconda]] is a free package and environment manager. I currently use it to manage multiple versions of Python and Node.js
 
 The following code uses the conda package to activate the base environment on startup if Emacs is launched outside the environment.
@@ -386,11 +411,6 @@ References:
               (lambda (&rest _) (setenv "EMACS_CONDA_ENV" conda-env-current-name)))
   (unless (getenv "CONDA_DEFAULT_ENV")
     (conda-env-activate "general")))
-#+end_src
-
-Also, I sometimes need to know if a program is running inside Emacs (say, inside a terminal emulator). To do that, I set the following environment variable:
-#+begin_src emacs-lisp
-(setenv "IS_EMACS" "true")
 #+end_src
 ** Custom file location
 By default, custom writes stuff to =init.el=, which is somewhat annoying. The following makes a separate file =custom.el=
@@ -489,7 +509,7 @@ References:
 *** evil
 Basic evil configuration.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref minimal
 (use-package evil
   :straight t
   :init
@@ -572,7 +592,7 @@ Basic evil configuration.
 
 I don't enable the entire package, just the modes I need.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :noweb-ref minimal
 (use-package evil-collection
   :straight t
   :after evil
@@ -1227,7 +1247,7 @@ A company frontend with nice icons.
 #+begin_src emacs-lisp
 (use-package company-box
   :straight t
-  :if (not my/lowpower)
+  :if (and (display-graphic-p) (not my/lowpower))
   :after (company)
   :hook (company-mode . company-box-mode))
 #+end_src
@@ -1325,7 +1345,7 @@ Before I figure out how to package this for Guix:
 #+begin_src emacs-lisp :noweb yes
 (use-package wakatime-mode
   :straight (:host github :repo "SqrtMinusOne/wakatime-mode")
-  :if (not my/is-termux)
+  :if (not (or my/is-termux my/remote-server))
   :config
   (setq wakatime-ignore-exit-codes '(0 1 102))
   (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime-cli")))
@@ -1340,7 +1360,7 @@ Before I figure out how to package this for Guix:
 
 (use-package activity-watch-mode
   :straight t
-  :if (not my/is-termux)
+  :if (not (or my/is-termux my/remote-server))
   :config
   (global-activity-watch-mode))
 #+end_src
@@ -1653,7 +1673,7 @@ References:
 #+begin_src emacs-lisp
 (use-package emojify
   :straight t
-  :if (not (or my/lowpower my/is-termux))
+  :if (and (display-graphic-p) (not (or my/lowpower my/is-termux)))
   :hook (after-init . global-emojify-mode))
 #+end_src
 *** Ligatures
@@ -1661,7 +1681,7 @@ Ligature setup for the JetBrainsMono font.
 #+begin_src emacs-lisp
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
-  :if (not my/is-termux)
+  :if (display-graphic-p)
   :config
   (ligature-set-ligatures
    '(
@@ -1698,6 +1718,7 @@ Ligature setup for the JetBrainsMono font.
 *** Icons
 #+begin_src emacs-lisp
 (use-package all-the-icons
+  :if (display-graphic-p)
   :straight t)
 #+end_src
 *** Highlight todo
@@ -1812,7 +1833,7 @@ Display icons for files.
 #+begin_src emacs-lisp
 (use-package all-the-icons-dired
   :straight t
-  :if (not (or my/lowpower my/slow-ssh))
+  :if (not (or my/lowpower my/slow-ssh (not (display-graphic-p))))
   :hook (dired-mode . (lambda ()
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode))))
@@ -2037,6 +2058,7 @@ Open a terminal in the lower third of the frame with the =`= key.
             (kill-buffer (current-buffer))
           (select-window vterm-window))
       (vterm-other-window "vterm-subterminal"))))
+
 (unless my/slow-ssh
   (general-nmap "`" 'my/toggle-vterm-subteminal)
   (general-nmap "~" 'vterm))
@@ -2141,6 +2163,7 @@ Use the built-in org mode.
 #+begin_src emacs-lisp :noweb yes
 (use-package org
   :straight t
+  :if (not my/remote-server)
   :defer t
   :config
   (setq org-startup-indented t)
@@ -2488,7 +2511,7 @@ Refile targets
 *** Capture templates & various settings
 Settings for Org capture mode. The goal here is to have a non-disruptive process to capture various ideas.
 
-#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+#+begin_src emacs-lisp
 (setq org-capture-templates
       `(("i" "Inbox" entry  (file "inbox.org")
          ,(concat "* TODO %?\n"
@@ -2543,7 +2566,7 @@ Log DONE time
 *** org-ql
 [[https://github.com/alphapapa/org-ql][org-ql]] is a package to query the org files. I'm using it in my review workflow, perhaps later I'll find another usecases.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
 (use-package org-ql
   :straight (:fetcher github
                       :repo "alphapapa/org-ql"
@@ -2777,6 +2800,7 @@ A template looks like this:
 #+begin_src emacs-lisp
 (use-package org-journal
   :straight t
+  :if (not my/remote-server)
   :after org
   :config
   (setq org-journal-dir (concat org-directory "/journal"))
@@ -2840,7 +2864,8 @@ References:
 
 (use-package org-roam
   :straight (:host github :repo "org-roam/org-roam"
-             :files (:defaults "extensions/*.el"))
+                   :files (:defaults "extensions/*.el"))
+  :if (not my/remote-server)
   :after org
   :init
   (setq org-roam-directory (concat org-directory "/roam"))
@@ -2916,6 +2941,7 @@ As of now, this package loads Helm on start. To avoid this, I have to exclude He
 #+begin_src emacs-lisp
 (use-package org-ref
   :straight (:files (:defaults (:exclude "*helm*")))
+  :if (not my/remote-server)
   :init
   (setq org-ref-completion-library 'org-ref-ivy-cite)
   (setq bibtex-dialect 'biblatex)
@@ -3173,6 +3199,7 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
 
 (use-package org-present
   :straight (:host github :repo "rlister/org-present")
+  :if (not my/remote-server)
   :commands (org-present)
   :config
   (general-define-key
@@ -3213,6 +3240,7 @@ References:
 #+begin_src emacs-lisp
 (use-package org-make-toc
   :after (org)
+  :if (not my/remote-server)
   :commands
   (org-make-toc
    org-make-toc-insert
@@ -3379,7 +3407,7 @@ References:
 #+begin_src emacs-lisp
 (use-package lsp-mode
   :straight t
-  :if (not (or my/slow-ssh my/is-termux))
+  :if (not (or my/slow-ssh my/is-termux my/remote-server))
   :hook (
          (typescript-mode . lsp)
          (vue-mode . lsp)
@@ -3428,6 +3456,7 @@ Origami should've leveraged LSP folding, but it was too unstable at the moment I
 ;;   (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))
 
 (use-package lsp-treemacs
+  :after (lsp)
   :straight t
   :commands lsp-treemacs-errors-list)
 #+end_src
@@ -3489,6 +3518,7 @@ References:
 
 (use-package tree-sitter
   :straight t
+  :if (not my/remote-server)
   :hook ((typescript-mode . my/tree-sitter-if-not-mmm)
          (js-mode . my/tree-sitter-if-not-mmm)
          (python-mode . tree-sitter-mode)
@@ -4683,7 +4713,7 @@ Open a file managed by yadm.
 My notmuch config now resides in [[file:Mail.org][Mail.org]].
 
 #+begin_src emacs-lisp
-(unless my/is-termux
+(unless (or my/is-termux my/remote-server)
   (load-file (expand-file-name "mail.el" user-emacs-directory)))
 #+end_src
 *** Elfeed
@@ -4696,6 +4726,7 @@ Using my own fork until the modifications are merged into master.
 #+begin_src emacs-lisp
 (use-package elfeed
   :straight (:repo "SqrtMinusOne/elfeed" :host github)
+  :if (not my/remote-server)
   :commands (elfeed)
   :init
   (my-leader-def "ae" 'elfeed)
@@ -4803,6 +4834,7 @@ References:
 #+begin_src emacs-lisp :noweb yes
 (use-package emms
   :straight t
+  :if (not my/remote-server)
   :commands (emms-smart-browse
              emms-browser
              emms-add-url
@@ -4832,10 +4864,10 @@ References:
   <<emms-mpv-setup>>
   ;; evil-lion and evil-commentary shadow some gX bindings
   ;; (add-hook 'emms-browser-mode-hook
-            ;; (lambda ()
-              ;; (evil-lion-mode -1)
-              ;; (evil-commentary-mode -1)
-              ;; ))
+  ;; (lambda ()
+  ;; (evil-lion-mode -1)
+  ;; (evil-commentary-mode -1)
+  ;; ))
   ;; I have everything I need in polybar
   (emms-mode-line-mode -1)
   (emms-playing-time-display-mode -1)
@@ -5334,6 +5366,7 @@ Tecosaur's plugin to make beautiful code screenshots.
 #+begin_src emacs-lisp
 (use-package screenshot
   :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
+  :if (display-graphic-p)
   :commands (screenshot)
   :init
   (my-leader-def "S" 'screenshot))
@@ -5405,7 +5438,8 @@ In order for this to work in Guix, a service is necessary - [[file:Desktop.org::
   :if (and (or
             (string= (system-name) "indigo")
             (string= (system-name) "eminence"))
-           (not my/slow-ssh))
+           (not my/slow-ssh)
+           (not my/remote-server))
   :config
   (elcord-mode)
   (add-to-list 'elcord-boring-buffers-regexp-list

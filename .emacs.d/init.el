@@ -25,6 +25,21 @@
 (eval-when-compile (require 'use-package))
  ;; (setq use-package-verbose t)
 
+(setq my/lowpower (string= (system-name) "azure"))
+
+(setq my/slow-ssh
+      (or
+       (string= (getenv "IS_TRAMP") "true")
+       (string= (system-name) "dev-digital")))
+
+(setq my/remote-server
+      (or (string= (getenv "IS_REMOTE") "true")
+          (string= (system-name) "dev-digital")))
+
+(setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
+
+(setenv "IS_EMACS" "true")
+
 (setq gc-cons-threshold 80000000)
 (setq read-process-output-max (* 1024 1024))
 
@@ -36,12 +51,6 @@
                                 (unless (frame-focus-state)
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
-
-(setq my/lowpower (string= (system-name) "azure"))
-
-(setq my/slow-ssh (string= (getenv "IS_TRAMP") "true"))
-
-(setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
 
 (when my/lowpower
   (setq comp-async-jobs-number 1))
@@ -58,8 +67,6 @@
               (lambda (&rest _) (setenv "EMACS_CONDA_ENV" conda-env-current-name)))
   (unless (getenv "CONDA_DEFAULT_ENV")
     (conda-env-activate "general")))
-
-(setenv "IS_EMACS" "true")
 
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
@@ -615,7 +622,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package company-box
   :straight t
-  :if (not my/lowpower)
+  :if (and (display-graphic-p) (not my/lowpower))
   :after (company)
   :hook (company-mode . company-box-mode))
 
@@ -672,7 +679,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package wakatime-mode
   :straight (:host github :repo "SqrtMinusOne/wakatime-mode")
-  :if (not my/is-termux)
+  :if (not (or my/is-termux my/remote-server))
   :config
   (setq wakatime-ignore-exit-codes '(0 1 102))
   (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime-cli")))
@@ -684,7 +691,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package activity-watch-mode
   :straight t
-  :if (not my/is-termux)
+  :if (not (or my/is-termux my/remote-server))
   :config
   (global-activity-watch-mode))
 
@@ -870,12 +877,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package emojify
   :straight t
-  :if (not (or my/lowpower my/is-termux))
+  :if (and (display-graphic-p) (not (or my/lowpower my/is-termux)))
   :hook (after-init . global-emojify-mode))
 
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
-  :if (not my/is-termux)
+  :if (display-graphic-p)
   :config
   (ligature-set-ligatures
    '(
@@ -910,6 +917,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (global-ligature-mode t))
 
 (use-package all-the-icons
+  :if (display-graphic-p)
   :straight t)
 
 (use-package hl-todo
@@ -992,7 +1000,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package all-the-icons-dired
   :straight t
-  :if (not (or my/lowpower my/slow-ssh))
+  :if (not (or my/lowpower my/slow-ssh (not (display-graphic-p))))
   :hook (dired-mode . (lambda ()
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode))))
@@ -1151,6 +1159,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (kill-buffer (current-buffer))
           (select-window vterm-window))
       (vterm-other-window "vterm-subterminal"))))
+
 (unless my/slow-ssh
   (general-nmap "`" 'my/toggle-vterm-subteminal)
   (general-nmap "~" 'vterm))
@@ -1229,6 +1238,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package org
   :straight t
+  :if (not my/remote-server)
   :defer t
   :config
   (setq org-startup-indented t)
@@ -1357,22 +1367,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
   (setq org-agenda-files '("inbox.org" "projects.org" "work.org" "sem-11.org" "life.org"))
   ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
-  (setq org-capture-templates
-        `(("i" "Inbox" entry  (file "inbox.org")
-           ,(concat "* TODO %?\n"
-                    "/Entered on/ %U"))
-          ("e" "email" entry (file "inbox.org")
-           ,(concat "* TODO %:from %:subject \n"
-                    "/Entered on/ %U\n"
-                    "/Received on/ %:date-timestamp-inactive\n"
-                    "%a\n"))
-          ("f" "elfeed" entry (file "inbox.org")
-           ,(concat "* TODO %:elfeed-entry-title\n"
-                    "/Entered on/ %U\n"
-                    "%a\n"))))
   (add-to-list 'org-global-properties
                '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00"))
-  (setq org-log-done 'time))
+  (setq org-log-done 'time)
+  (use-package org-ql
+    :straight (:fetcher github
+                        :repo "alphapapa/org-ql"
+                        :files (:defaults (:exclude "helm-org-ql.el")))))
 
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
@@ -1548,6 +1549,20 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 
+(setq org-capture-templates
+      `(("i" "Inbox" entry  (file "inbox.org")
+         ,(concat "* TODO %?\n"
+                  "/Entered on/ %U"))
+        ("e" "email" entry (file "inbox.org")
+         ,(concat "* TODO %:from %:subject \n"
+                  "/Entered on/ %U\n"
+                  "/Received on/ %:date-timestamp-inactive\n"
+                  "%a\n"))
+        ("f" "elfeed" entry (file "inbox.org")
+         ,(concat "* TODO %:elfeed-entry-title\n"
+                  "/Entered on/ %U\n"
+                  "%a\n"))))
+
 (defun my/org-scheduled-get-time ()
   (let ((scheduled (org-get-scheduled-time (point))))
     (if scheduled
@@ -1571,11 +1586,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         ("tp" "Personal tasks"
          ((tags-todo "personal"
                      ((org-agenda-prefix-format "  %i %-12:c [%e] ")))))))
-
-(use-package org-ql
-  :straight (:fetcher github
-                      :repo "alphapapa/org-ql"
-                      :files (:defaults (:exclude "helm-org-ql.el"))))
 
 (setq my/git-diff-status
       '(("A" . added)
@@ -1756,6 +1766,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package org-journal
   :straight t
+  :if (not my/remote-server)
   :after org
   :config
   (setq org-journal-dir (concat org-directory "/journal"))
@@ -1802,7 +1813,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package org-roam
   :straight (:host github :repo "org-roam/org-roam"
-             :files (:defaults "extensions/*.el"))
+                   :files (:defaults "extensions/*.el"))
+  :if (not my/remote-server)
   :after org
   :init
   (setq org-roam-directory (concat org-directory "/roam"))
@@ -1846,6 +1858,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package org-ref
   :straight (:files (:defaults (:exclude "*helm*")))
+  :if (not my/remote-server)
   :init
   (setq org-ref-completion-library 'org-ref-ivy-cite)
   (setq bibtex-dialect 'biblatex)
@@ -1984,6 +1997,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package org-present
   :straight (:host github :repo "rlister/org-present")
+  :if (not my/remote-server)
   :commands (org-present)
   :config
   (general-define-key
@@ -2017,6 +2031,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package org-make-toc
   :after (org)
+  :if (not my/remote-server)
   :commands
   (org-make-toc
    org-make-toc-insert
@@ -2094,7 +2109,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package lsp-mode
   :straight t
-  :if (not (or my/slow-ssh my/is-termux))
+  :if (not (or my/slow-ssh my/is-termux my/remote-server))
   :hook (
          (typescript-mode . lsp)
          (vue-mode . lsp)
@@ -2138,6 +2153,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;;   (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))
 
 (use-package lsp-treemacs
+  :after (lsp)
   :straight t
   :commands lsp-treemacs-errors-list)
 
@@ -2178,6 +2194,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package tree-sitter
   :straight t
+  :if (not my/remote-server)
   :hook ((typescript-mode . my/tree-sitter-if-not-mmm)
          (js-mode . my/tree-sitter-if-not-mmm)
          (python-mode . tree-sitter-mode)
@@ -3122,11 +3139,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-define-key "C-c f" 'my/open-yadm-file)
 (my-leader-def "cf" 'my/open-yadm-file)
 
-(unless my/is-termux
+(unless (or my/is-termux my/remote-server)
   (load-file (expand-file-name "mail.el" user-emacs-directory)))
 
 (use-package elfeed
   :straight (:repo "SqrtMinusOne/elfeed" :host github)
+  :if (not my/remote-server)
   :commands (elfeed)
   :init
   (my-leader-def "ae" 'elfeed)
@@ -3208,6 +3226,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package emms
   :straight t
+  :if (not my/remote-server)
   :commands (emms-smart-browse
              emms-browser
              emms-add-url
@@ -3245,7 +3264,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                    (emms-player-simple-regexp
                     "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff"))
   ;; MPV setup
-  (add-to-list 'emms-player-list 'emms-player-mpv t)
+  (add-to-list 'emms-player-list 'emms-player-mpv)
   (emms-player-set emms-player-mpv
                    'regex
                    (rx (or (: "https://" (* nonl) "youtube.com" (* nonl))
@@ -3271,10 +3290,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (my/set-emms-mpd-youtube-quality (car my/youtube-dl-quality-list))
   ;; evil-lion and evil-commentary shadow some gX bindings
   ;; (add-hook 'emms-browser-mode-hook
-            ;; (lambda ()
-              ;; (evil-lion-mode -1)
-              ;; (evil-commentary-mode -1)
-              ;; ))
+  ;; (lambda ()
+  ;; (evil-lion-mode -1)
+  ;; (evil-commentary-mode -1)
+  ;; ))
   ;; I have everything I need in polybar
   (emms-mode-line-mode -1)
   (emms-playing-time-display-mode -1)
@@ -3569,6 +3588,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package screenshot
   :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
+  :if (display-graphic-p)
   :commands (screenshot)
   :init
   (my-leader-def "S" 'screenshot))
@@ -3617,7 +3637,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :if (and (or
             (string= (system-name) "indigo")
             (string= (system-name) "eminence"))
-           (not my/slow-ssh))
+           (not my/slow-ssh)
+           (not my/remote-server))
   :config
   (elcord-mode)
   (add-to-list 'elcord-boring-buffers-regexp-list
