@@ -20,20 +20,20 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
 :TOC:      :include all :depth 4
 :END:
 :CONTENTS:
-- [[#contents][Contents]]
 - [[#primary-setup][Primary setup]]
   - [[#measure-startup-speed][Measure startup speed]]
   - [[#straightel][straight.el]]
   - [[#use-package][use-package]]
+  - [[#config-variants--environment][config variants & environment]]
   - [[#performance][Performance]]
     - [[#garbage-collection][Garbage collection]]
     - [[#run-garbage-collection-when-emacs-is-unfocused][Run garbage collection when Emacs is unfocused]]
-    - [[#misc][Misc]]
     - [[#native-compilation][Native compilation]]
-  - [[#anaconda--environment][Anaconda & environment]]
+  - [[#anaconda][Anaconda]]
   - [[#custom-file-location][Custom file location]]
   - [[#private-config][Private config]]
   - [[#no-littering][No littering]]
+  - [[#prevent-emacs-from-closing][Prevent Emacs from closing]]
 - [[#global-editing-configuration][Global editing configuration]]
   - [[#general-keybindings-stuff][General keybindings stuff]]
     - [[#generalel][general.el]]
@@ -74,6 +74,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#off-helm][(OFF) Helm]]
   - [[#treemacs][Treemacs]]
     - [[#helper-functions][Helper functions]]
+    - [[#custom-icons][Custom icons]]
   - [[#projectile][Projectile]]
   - [[#company][Company]]
   - [[#git--magit][Git & Magit]]
@@ -129,6 +130,12 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#productivity--knowledge-management][Productivity & Knowledge management]]
     - [[#capture-templates--various-settings][Capture templates & various settings]]
     - [[#custom-agendas][Custom agendas]]
+    - [[#org-ql][org-ql]]
+    - [[#review-workflow][Review workflow]]
+      - [[#data-from-git--org-roam][Data from git & org-roam]]
+      - [[#data-from-org-journal][Data from org-journal]]
+      - [[#data-from-org-agenda-via-org-ql][Data from org-agenda via org-ql]]
+      - [[#capture-template][Capture template]]
     - [[#org-journal][Org Journal]]
     - [[#org-roam][Org Roam]]
       - [[#org-roam-ui][org-roam-ui]]
@@ -141,6 +148,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#better-headers][Better headers]]
     - [[#org-agenda-icons][Org Agenda Icons]]
   - [[#export][Export]]
+    - [[#general-settings][General settings]]
     - [[#hugo][Hugo]]
     - [[#jupyter-notebook][Jupyter Notebook]]
     - [[#html-export][Html export]]
@@ -148,7 +156,9 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#keybindings--stuff][Keybindings & stuff]]
     - [[#copy-a-link][Copy a link]]
   - [[#presentations][Presentations]]
-  - [[#toc][TOC]]
+  - [[#tools][Tools]]
+    - [[#toc][TOC]]
+    - [[#screenshots][Screenshots]]
   - [[#system-configuration][System configuration]]
     - [[#tables-for-guix-dependencies][Tables for Guix Dependencies]]
     - [[#noweb-evaluations][Noweb evaluations]]
@@ -169,7 +179,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#off-code-compass][(OFF) Code Compass]]
       - [[#dependencies][Dependencies]]
       - [[#plugin][Plugin]]
-    - [[#off-format-all][(OFF) Format-all]]
+    - [[#reformatter][Reformatter]]
     - [[#general-additional-config][General additional config]]
   - [[#web-development][Web development]]
     - [[#emmet][Emmet]]
@@ -223,7 +233,9 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#fish][fish]]
   - [[#sh][sh]]
   - [[#haskell][Haskell]]
+  - [[#lua][Lua]]
   - [[#json][JSON]]
+  - [[#sql][SQL]]
   - [[#yaml][YAML]]
   - [[#env][.env]]
   - [[#csv][CSV]]
@@ -238,7 +250,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#notmuch][Notmuch]]
     - [[#elfeed][Elfeed]]
       - [[#some-additions][Some additions]]
-      - [[#youtube][YouTube]]
+      - [[#youtube--emms][YouTube & EMMS]]
     - [[#emms][EMMS]]
       - [[#mpd][MPD]]
       - [[#mpv][MPV]]
@@ -1454,7 +1466,9 @@ My colorscheme of choice.
   :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
-  (load-theme 'doom-palenight t)
+  (if my/remote-server
+      (load-theme 'doom-gruvbox t)
+    (load-theme 'doom-palenight t))
   (doom-themes-visual-bell-config)
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
@@ -1732,7 +1746,7 @@ Highlight indent guides.
 #+begin_src emacs-lisp
 (use-package highlight-indent-guides
   :straight t
-  :if (not my/lowpower)
+  :if (not (or my/lowpower my/remote-server))
   :hook (
          (prog-mode . highlight-indent-guides-mode)
          (vue-mode . highlight-indent-guides-mode)
@@ -1932,6 +1946,12 @@ Some other optimization settings:
       (format "\\(%s\\)\\|\\(%s\\)"
               vc-ignore-dir-regexp
               tramp-file-name-regexp))
+#+end_src
+
+Set the default shell to =bin/bash= for TRAMP or on a remote server.
+#+begin_src emacs-lisp
+(when (or my/remote-server my/slow-ssh)
+  (setq explicit-shell-file-name "/bin/bash"))
 #+end_src
 
 Also, here is a hack to make TRAMP find =ls= on Guix:
@@ -3231,7 +3251,10 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
               (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
               (org-latex-preview '(64)))))
 #+end_src
-** TOC
+** Tools
+Various small packages.
+
+*** TOC
 Make a TOC inside the org file.
 
 References:
@@ -3246,6 +3269,14 @@ References:
    org-make-toc-insert
    org-make-toc-set
    org-make-toc-at-point)
+  :straight t)
+#+end_src
+*** Screenshots
+A nice package to make screenshots and insert them to the Org document.
+
+#+begin_src emacs-lisp
+(use-package org-attach-screenshot
+  :commands (org-attach-screenshot)
   :straight t)
 #+end_src
 ** System configuration
@@ -3622,9 +3653,11 @@ References:
   :branch "main"
   ))
 #+end_src
-*** CHECK (OFF) Format-all
-#+begin_src emacs-lisp :tangle no
-(use-package format-all
+*** Reformatter
+A general-purpose package to run formattters on files. While the most popular formatters are already packaged for Emacs, those that aren't can be invoked with this package.
+
+#+begin_src emacs-lisp
+(use-package reformatter
   :straight t)
 #+end_src
 *** General additional config
@@ -4603,7 +4636,32 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
   (my/set-smartparens-indent 'json-mode))
 #+end_src
 ** SQL
-TODO sql-formatter
+[[https://github.com/zeroturnaround/sql-formatter][sql-formatter]] is a nice JavaScript package for pretty-printing SQL queries. It is not packaged for Emacs, so the easiest way to use it seems to be to define a custom formatter via [[https://github.com/purcell/emacs-reformatter][reformatter]].
+
+Also, I've a simple function to switch dialects because I often alternate between them.
+
+So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL queries in Org Mode, so this qute package is handy.
+
+#+begin_src emacs-lisp
+(setq my/sqlformatter-dialect-choice
+      '("db2" "mariadb" "mysql" "n1ql" "plsql" "postgresql" "redshift" "spark" "sql" "tsql"))
+
+(setq my/sqlformatter-dialect "postgresql")
+
+(defun my/sqlformatter-set-dialect ()
+  "Set dialect for sql-formatter"
+  (interactive)
+  (setq my/sqlformatter-dialect
+        (completing-read "Dialect: " my/sqlformatter-dialect-choice)))
+
+(reformatter-define sqlformat
+  :program (executable-find "sql-formatter")
+  :args `("-l" ,my/sqlformatter-dialect))
+
+(my-leader-def
+  :keymaps '(sql-mode-map)
+  "rr" #'sqlformat-buffer)
+#+end_src
 ** YAML
 #+begin_src emacs-lisp
 (use-package yaml-mode
@@ -5239,6 +5297,8 @@ Finally, there is also an Emacs plugin for [[https://devdocs.io][devdocs.io]].
 ** Utilities
 *** pass
 I use [[https://www.passwordstore.org/][pass]] as my password manager. Expectedly, there is Emacs frontend for it.
+
+Although I use [[https://github.com/carnager/rofi-pass][this rofi frontend]] for actually inserting passwords.
 
 #+begin_src emacs-lisp
 (use-package pass

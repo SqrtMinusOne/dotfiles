@@ -737,7 +737,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
-  (load-theme 'doom-palenight t)
+  (if my/remote-server
+      (load-theme 'doom-gruvbox t)
+    (load-theme 'doom-palenight t))
   (doom-themes-visual-bell-config)
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
@@ -926,7 +928,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package highlight-indent-guides
   :straight t
-  :if (not my/lowpower)
+  :if (not (or my/lowpower my/remote-server))
   :hook (
          (prog-mode . highlight-indent-guides-mode)
          (vue-mode . highlight-indent-guides-mode)
@@ -1062,6 +1064,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (format "\\(%s\\)\\|\\(%s\\)"
               vc-ignore-dir-regexp
               tramp-file-name-regexp))
+
+(when (or my/remote-server my/slow-ssh)
+  (setq explicit-shell-file-name "/bin/bash"))
 
 (with-eval-after-load 'tramp
   (setq tramp-remote-path
@@ -2039,6 +2044,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    org-make-toc-at-point)
   :straight t)
 
+(use-package org-attach-screenshot
+  :commands (org-attach-screenshot)
+  :straight t)
+
 (defun my/extract-guix-dependencies (&optional category)
   (let ((dependencies '()))
     (org-table-map-tables
@@ -2204,6 +2213,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package tree-sitter-langs
   :straight t
   :after tree-sitter)
+
+(use-package reformatter
+  :straight t)
 
 (defun my/set-smartparens-indent (mode)
   (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
@@ -3070,6 +3082,25 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'json-mode #'hs-minor-mode)
   (my/set-smartparens-indent 'json-mode))
 
+(setq my/sqlformatter-dialect-choice
+      '("db2" "mariadb" "mysql" "n1ql" "plsql" "postgresql" "redshift" "spark" "sql" "tsql"))
+
+(setq my/sqlformatter-dialect "postgresql")
+
+(defun my/sqlformatter-set-dialect ()
+  "Set dialect for sql-formatter"
+  (interactive)
+  (setq my/sqlformatter-dialect
+        (completing-read "Dialect: " my/sqlformatter-dialect-choice)))
+
+(reformatter-define sqlformat
+  :program (executable-find "sql-formatter")
+  :args `("-l" ,my/sqlformatter-dialect))
+
+(my-leader-def
+  :keymaps '(sql-mode-map)
+  "rr" #'sqlformat-buffer)
+
 (use-package yaml-mode
   :straight t
   :mode "\\.yml\\'"
@@ -3264,7 +3295,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                    (emms-player-simple-regexp
                     "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff"))
   ;; MPV setup
-  (add-to-list 'emms-player-list 'emms-player-mpv)
+  (add-to-list 'emms-player-list 'emms-player-mpv t)
   (emms-player-set emms-player-mpv
                    'regex
                    (rx (or (: "https://" (* nonl) "youtube.com" (* nonl))
