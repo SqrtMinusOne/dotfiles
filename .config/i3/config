@@ -283,6 +283,7 @@ bindsym $mod+m mode "move" focus floating
 # [[file:../../Desktop.org::*Integration with rofi][Integration with rofi:1]]
 bindsym $mod+d exec "rofi -modi 'drun,run' -show drun"
 bindsym $mod+b exec --no-startup-id rofi-buku-mine
+bindsym $mod+minus exec rofi-pass; mode default
 
 bindsym $mod+apostrophe mode "rofi"
 
@@ -290,7 +291,7 @@ mode "rofi" {
     bindsym d exec "rofi -modi 'drun,run' -show drun"
     bindsym m exec rofi-man; mode default
     bindsym b exec rofi-buku-mine; mode default
-    bindsym k exec rofi-keepassxc -d ~/MEGAsync/Passwords.kdbx; mode default
+    bindsym k exec rofi-pass; mode default
     bindsym Escape mode "default"
 }
 # Integration with rofi:1 ends here

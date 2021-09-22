@@ -33,6 +33,8 @@
    "libnotify"
    "dunst"
    "flameshot"
+   "xset"
+   "rofi-pass"
    "rofi"
    "sunwait"
    "dateutils"
