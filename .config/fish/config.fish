@@ -60,3 +60,9 @@ bind -M insert \eh backward-char
 bind -M insert \ew forward-word
 bind -M insert \eb backward-word
 # Keybindings:1 ends here
+
+# [[file:../../Console.org::*Functions][Functions:1]]
+function e
+    eval $EDITOR $argv
+end
+# Functions:1 ends here

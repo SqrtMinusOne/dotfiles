@@ -489,6 +489,14 @@ bind -M insert \eh backward-char
 bind -M insert \ew forward-word
 bind -M insert \eb backward-word
 #+end_src
+** Functions
+A small function to open the file with =$EDITOR=.
+
+#+begin_src fish
+function e
+    eval $EDITOR $argv
+end
+#+end_src
 * Nushell
 :PROPERTIES:
 :header-args+: :tangle ./.config/nu/config.toml :comments link

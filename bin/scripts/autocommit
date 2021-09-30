@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [[file:../../Console.org::*=autocommmit=][=autocommmit=:1]]
+# [[file:../../Console.org::*=autocommit=][=autocommit=:1]]
 TIMEOUT_MIN=${TIMEOUT_MIN:-60}
 
 export DISPLAY=:0
@@ -58,4 +58,4 @@ fi
 if [[ $(git ls-files -u | wc -l) -gt 0 ]]; then
     notify-send -u critical "Autocommit $(pwd)" "Merge conflict!"
 fi
-# =autocommmit=:1 ends here
+# =autocommit=:1 ends here
