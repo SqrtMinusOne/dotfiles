@@ -643,7 +643,8 @@ I don't enable the entire package, just the modes I need.
      comint
      git-timemachine
      magit
-     prodigy)))
+     prodigy
+     slime)))
 #+end_src
 ** More keybindings
 The main keybindings setup is positioned after evil mode to take the latter into account.
@@ -770,6 +771,7 @@ And winner-mode to keep the history of window states.
   "h" 'previous-buffer
   "k" 'kill-buffer
   "b" 'persp-ivy-switch-buffer
+  "r" 'revert-buffer
   "u" 'ibuffer)
 #+end_src
 *** xref
@@ -1335,7 +1337,9 @@ References:
 (use-package yasnippet
   :straight t
   :config
-  (setq yas-snippet-dirs `(,(concat (expand-file-name user-emacs-directory) "snippets")))
+  (setq yas-snippet-dirs
+        `(,(concat (expand-file-name user-emacs-directory) "snippets")
+          yasnippet-snippets-dir))
   (setq yas-triggers-in-field t)
   (yas-global-mode 1))
 
@@ -2119,6 +2123,18 @@ Keybindings:
    "gd" #'my/vterm-dired-other-window
    "gD" #'my/vterm-dired-replace))
 #+end_src
+*** With-editor integration
+A package used by Magit to use the current Emacs instance as the =$EDITOR=.
+
+That is, with the help of [[file:Console.org::Functions][this function]], I can just write =e <filename>=, edit the file, and then return to the same vterm buffer. No more running vim inside Emacs.
+
+#+begin_src emacs-lisp
+(use-package with-editor
+  :straight t
+  :after (vterm)
+  :config
+  (add-hook 'vterm-mode-hook 'with-editor-export-editor))
+#+end_src
 ** Eshell
 A shell written in Emacs lisp. I don't use it as of now, but keep the config just in case.
 #+begin_src emacs-lisp
@@ -2705,7 +2721,7 @@ So, here is a list of queries results of which I want to see in the review templ
           (todo "DONE")))
         ("Attended meetings" closed scheduled
          (and
-          (tags "meeting")
+          (tags-inherited "meeting")
           (todo "PASSED")))
         ("Done project tasks" closed deadline
          (and
@@ -3683,7 +3699,6 @@ Configs for various web development technologies I'm using.
 
 | Type | Note                                              |
 |------+---------------------------------------------------|
-| TODO | Do not enable for every Svelte mode               |
 | TODO | make expand div[disabled] as <div disabled></div> |
 
 My bit of config here:
@@ -4277,13 +4292,22 @@ A package that checks for the metadata in Emacs Lisp packages.
   :config
   (flycheck-package-setup))
 #+end_src
-**** General
+**** General settings
 #+begin_src emacs-lisp
 (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
 (add-hook 'emacs-lisp-mode-hook #'lispy-mode)
 #+end_src
 *** Common lisp
+**** SLIME
+#+begin_src emacs-lisp
+(use-package slime
+  :straight t
+  :config
+  (setq inferior-lisp-program "sbcl")
+  (add-hook 'slime-repl-mode 'smartparens-mode))
+#+end_src
+**** General settings
 #+begin_src emacs-lisp
 (add-hook 'lisp-mode-hook #'aggressive-indent-mode)
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)

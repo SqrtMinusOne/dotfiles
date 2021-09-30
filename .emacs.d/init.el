@@ -671,7 +671,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package yasnippet
   :straight t
   :config
-  (setq yas-snippet-dirs `(,(concat (expand-file-name user-emacs-directory) "snippets")))
+  (setq yas-snippet-dirs
+        `(,(concat (expand-file-name user-emacs-directory) "snippets")
+          yasnippet-snippets-dir))
   (setq yas-triggers-in-field t)
   (yas-global-mode 1))
 
@@ -1193,6 +1195,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    "gd" #'my/vterm-dired-other-window
    "gD" #'my/vterm-dired-replace))
 
+(use-package with-editor
+  :straight t
+  :after (vterm)
+  :config
+  (add-hook 'vterm-mode-hook 'with-editor-export-editor))
+
 (defun my/configure-eshell ()
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
   (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
@@ -1680,7 +1688,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (todo "DONE")))
         ("Attended meetings" closed scheduled
          (and
-          (tags "meeting")
+          (tags-inherited "meeting")
           (todo "PASSED")))
         ("Done project tasks" closed deadline
          (and
