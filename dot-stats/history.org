@@ -206,7 +206,7 @@ notes
 #+RESULTS:
 :RESULTS:
 | Dual boot, rarely used |
-[[file:./.ob-jupyter/f39f5cf8e0a994482ac8a24875d1f0d46a28f1af.png]]
+[[file:./.ob-jupyter/3c6983044abfb21ba631ed1538a98a15c91d50aa.png]]
 :END:
 
 ** Plot all separately
