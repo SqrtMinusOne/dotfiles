@@ -18,7 +18,7 @@ References:
 
 #+TOC: headlines 6
 
-* Contents
+* Contents                                                         :noexport:
 :PROPERTIES:
 :TOC:      :include all :depth 3
 :END:
@@ -469,7 +469,7 @@ Fortunately, David Wilson has made [[https://github.com/SystemCrafters/guix-inst
 
 When an ISO is there, we have to write it on a USB stick. Run =sudo fdisk -l= to get a list of disks.
 
-The approach in the official instruction is to create a bootable USB with =dd=:
+The approach given in the official instruction is to create a bootable USB with =dd=:
 #+begin_example
 sudo dd of=/dev/sdxX if=<path-to-iso> status=progress && sync
 #+end_example
@@ -477,10 +477,11 @@ sudo dd of=/dev/sdxX if=<path-to-iso> status=progress && sync
 However, I couldn't make it work for some strange reason. Fortunately, =gnome-disk-utility= was able to produce a bootable USB.
 ** Installation
 Going further, the official instructions for installation & SystemCrafters wiki entry are pretty good, so it's not necessary to repeat them here.
+
 ** After installation
 After the installation, the strategy is as follows.
 
-Set a password for the main user (pavel). Login with openbox to get a tolerable interface because the i3 default config is horrible.
+Set a password for the main user (pavel). Login with openbox to get a tolerable interface because i3's default config is horrible.
 
 [[https://guix.gnu.org/en/manual/en/html_node/Keyboard-Layout-and-Networking-and-Partitioning.html#Keyboard-Layout-and-Networking-and-Partitioning][Connect to the internet]].
 
@@ -519,9 +520,9 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 | system   | openvpn-update-resolve-conf |
 | system   | vpnc                        |
 
-I'm not sure how to properly spin up VPN on Guix, so here is what I'm doing now, after some trial and error.
+I'm not sure how to properly spin up VPN on Guix, so here is what ended I'm doing after some trial and error.
 
-I'm currently using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config (=openvpn.ovpn=), modified as follows:
+I'm using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config (=openvpn.ovpn=), modified as follows:
 - paths to =ca=, =cert= and =key= are made absolute
   #+begin_src conf-space :tangle no
   ca /home/pavel/.vpn/ca.crt
@@ -600,6 +601,7 @@ nmcli connection up "$CONN"
 #+end_src
 ** flatpak
 As for now, the easiest way to install most of proprietary software is via flatpak. See the relevant section in [[file:Desktop.org][Desktop.org]].
+
 ** conda
 [[https://docs.conda.io/en/latest/][conda]] is a package manager, which I use for managing various versions of Python & Node.js.
 
@@ -607,9 +609,9 @@ It is packaged for GNU Guix, although the definition has its fair share of worka
 
 First, it's impossible to perform =conda init= to patch files like =.bashrc=, because the command is hell-bent on modifying =/gnu/store/=. So I do this manually, look for the =init_conda= procedures in [[file:Console.org][Console.org]].
 
-Second, base environment root is =/gnu/store=, so don't install anything there.
+Second, the base environment has =/gnu/store/...= as a root, so don't install anything there (and don't run =conda= with superuser rights!).
 
-Third, by default it tries to create envronments in =/gnu/store=. I think it's enough to create one environment like this to fix it:
+Third, by default it tries to create envronments in =/gnu/store=. It's enough to create one environment like this to fix it:
 #+begin_src sh
 mkdir -p ~/.conda/envs
 conda create -p ~/.conda/envs/test
@@ -621,7 +623,7 @@ Finally, I also want to have an ability to use global npm. Some settings for tha
 
 So here is a script to set up conda hooks:
 #+begin_src bash :tangle ~/bin/scripts/setup-conda-npm
-# Get writable conda envs with npm & without
+# Get writable conda envs with npm & without it
 readarray -t CONDA_ENVS_ALL <<< $(conda env list --json | jq '.envs[]')
 CONDA_ENVS_NPM=()
 CONDA_ENVS_NO_NPM=()
