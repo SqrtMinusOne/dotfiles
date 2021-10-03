@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# [[file:../../Desktop.org::*Move & resize windows][Move & resize windows:1]]
+if [[ $(xdotool getactivewindow getwindowname) =~ ^emacs(:.*)?@.* ]]; then
+    emacsclient -e "(balance-windows)" &
+fi
+i3_balance_workspace
+# Move & resize windows:1 ends here

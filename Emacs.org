@@ -817,6 +817,118 @@ Evil does a pretty good job of uniting these two in the set of vim-like keybindi
 (global-set-key (kbd "C-+") 'my/zoom-in)
 (global-set-key (kbd "C-=") 'my/zoom-out)
 #+end_src
+** i3 integration
+I'm a bit jealous of EXWM having a consistent set of keybindings to manage both Emacs windows and X windows, so I figured I could try to implement something like this with i3.
+
+The basic idea is to launch a normal i3 command with =i3-msg= in case the current window is not Emacs, otherwise pass that command to Emacs with =emacsclient=. In Emacs, execute the command if possible, otherwise pass the command back to i3.
+
+I actually tried to use EXWM but returned back to i3 because EXWM wasn't snappy enough. While this integration adds some overhead, I can't detect it even in the worst case (i3 -> Emacs -> i3), so the integration feels seamless.
+
+At any rate, we need a script to do the i3 -> Emacs part:
+#+begin_src bash :tangle ~/bin/scripts/emacs-i3-integration
+if [[ $(xdotool getactivewindow getwindowname) =~ ^emacs(:.*)?@.* ]]; then
+    command="(my/emacs-i3-integration \"$@\")"
+    emacsclient -e "$command"
+else
+    i3-msg $@
+fi
+#+end_src
+
+This script is being run from the [[file:Desktop.org::*i3wm][i3 configuration]].
+
+For the second part, we need to call i3 from emacs. Here is a simple macro to do just that:
+#+begin_src emacs-lisp
+(defmacro i3-msg (&rest args)
+  `(start-process "emacs-i3-windmove" nil "i3-msg" ,@args))
+#+end_src
+
+Also, we have to make sure that Emacs starts a server, so here is a hook to do just that:
+#+begin_src emacs-lisp
+(add-hook 'after-init-hook #'server-start)
+#+end_src
+
+Then we have to handle the required i3 commands. First, for the =focus= command I want to move to the Emacs window in the given direction if there is one, otherwise move to the X window in the same direction. Fortunately, i3 and windmove have the same names for directions, so the function is rather straightforward.
+
+Also, one caveat here is that the minibuffer is always below, so it is necessary to check for that as well.
+#+begin_src emacs-lisp
+(defun my/emacs-i3-windmove (dir)
+  (let ((other-window (windmove-find-other-window dir)))
+    (if (or (null other-window) (window-minibuffer-p other-window))
+        (i3-msg "focus" (symbol-name dir))
+      (windmove-do-window-select dir))))
+#+end_src
+
+For the =move= command I want to move the Emacs window in the required direction if there is space in there, otherwise move an X window, which will be the Emacs frame.
+
+I tried to use =evil-move-window= here, but it doesn't behave quite like i3, for instance, =(evil-move-window 'right)= in a tree-column split would move the window from the far left side to the far right side (bypassing center). =window-swap-states= with a window in the given direction does better.
+#+begin_src emacs-lisp
+(defun my/emacs-i3-move-window (dir)
+  (let ((other-window (windmove-find-other-window dir)))
+    (if (null other-window)
+        (i3-msg "move" (symbol-name dir))
+      (window-swap-states (selected-window) other-window))))
+#+end_src
+
+Next, =resize grow= and =resize shrink=. To avoid running resize when there is no place to resize to, here is a simple predicate which checks whether there is space in the given direction.
+#+begin_src emacs-lisp
+(defun my/emacs-i3-resize-direction-exists-p (dir)
+  (some #'windmove-find-other-window
+        (pcase dir
+          ('width '(left right))
+          ('height '(up down)))))
+#+end_src
+
+Now we can use that to perform the actual resizing. =evil-window-= functions do that nicely.
+#+begin_src emacs-lisp
+(defun my/emacs-i3-resize-window (dir kind value)
+  (if (or (one-window-p)
+          (not (my/emacs-i3-resize-direction-exists-p dir)))
+      (i3-msg "resize" (symbol-name kind) (symbol-name dir)
+              (format "%s px or %s ppt" value value))
+    (setq value (/ value 2))
+    (pcase kind
+      ('shrink
+       (pcase dir
+         ('width
+          (evil-window-decrease-width value))
+         ('height
+          (evil-window-decrease-height value))))
+      ('grow
+       (pcase dir
+         ('width
+          (evil-window-increase-width value))
+         ('height
+          (evil-window-increase-height value)))))))
+#+end_src
+
+[[https://github.com/emacsorphanage/transpose-frame][transpose-frame]] is a package to "transpose" the current frame layout, which behaves someone similar to the =layout toggle split= command in i3.
+#+begin_src emacs-lisp
+(use-package transpose-frame
+  :straight t
+  :commands (transpose-frame))
+#+end_src
+
+Finally, an entrypoint for the Emacs integration. In addition to the commands defined above, it processes =split= and =kill= commands and passes every other command back to i3.
+#+begin_src emacs-lisp
+(defun my/emacs-i3-integration (command)
+  (pcase command
+    ((rx bos "focus")
+     (my/emacs-i3-windmove
+      (intern (elt (split-string command) 1))))
+    ((rx bos "move")
+     (my/emacs-i3-move-window
+      (intern (elt (split-string command) 1))))
+    ((rx bos "resize")
+     (my/emacs-i3-resize-window
+       (intern (elt (split-string command) 2))
+       (intern (elt (split-string command) 1))
+       (string-to-number (elt (split-string command) 3))))
+    ("layout toggle split" (transpose-frame))
+    ("split h" (evil-window-split))
+    ("split v" (evil-window-vsplit))
+    ("kill" (evil-quit))
+    (- (i3-msg command))))
+#+end_src
 ** Editing helpers
 *** Visual fill column mode
 #+begin_src emacs-lisp

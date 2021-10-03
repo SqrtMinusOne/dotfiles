@@ -27,47 +27,48 @@ bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcu
 # General settings:1 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:1]]
-bindsym $mod+Shift+q kill
+bindsym $mod+Shift+q exec emacs-i3-integration kill
 # Managing windows:1 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:2]]
-bindsym $mod+h focus left
-bindsym $mod+j focus down
-bindsym $mod+k focus up
-bindsym $mod+l focus right
+bindsym $mod+h exec emacs-i3-integration focus left
+bindsym $mod+j exec emacs-i3-integration focus down
+bindsym $mod+k exec emacs-i3-integration focus up
+bindsym $mod+l exec emacs-i3-integration focus right
 
-bindsym $mod+Left focus left
-bindsym $mod+Down focus down
-bindsym $mod+Up focus up
-bindsym $mod+Right focus right
+bindsym $mod+Left exec emacs-i3-integration focus left
+bindsym $mod+Down exec emacs-i3-integration focus down
+bindsym $mod+Up exec emacs-i3-integration focus up
+bindsym $mod+Right exec emacs-i3-integration focus right
 # Managing windows:2 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:3]]
-bindsym $mod+Shift+h move left
-bindsym $mod+Shift+j move down
-bindsym $mod+Shift+k move up
-bindsym $mod+Shift+l move right
+bindsym $mod+Shift+h exec emacs-i3-integration move left
+bindsym $mod+Shift+j exec emacs-i3-integration move down
+bindsym $mod+Shift+k exec emacs-i3-integration move up
+bindsym $mod+Shift+l exec emacs-i3-integration move right
 
-bindsym $mod+Shift+Left move left
-bindsym $mod+Shift+Down move down
-bindsym $mod+Shift+Up move up
-bindsym $mod+Shift+Right move right
+bindsym $mod+Shift+Left exec emacs-i3-integration move left
+bindsym $mod+Shift+Down exec emacs-i3-integration move down
+bindsym $mod+Shift+Up exec emacs-i3-integration move up
+bindsym $mod+Shift+Right exec emacs-i3-integration move right
 # Managing windows:3 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:4]]
-bindsym $mod+s split h
-bindsym $mod+v split v
+bindsym $mod+s exec emacs-i3-integration split h
+bindsym $mod+v exec emacs-i3-integration split v
 # Managing windows:4 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:5]]
 # enter fullscreen mode for the focused container
 bindsym $mod+f fullscreen toggle
+bindsym $mod+c fullscreen toggle global
 # Managing windows:5 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:6]]
 bindsym $mod+w layout stacking
 bindsym $mod+t layout tabbed
-bindsym $mod+e layout toggle split
+bindsym $mod+e exec emacs-i3-integration layout toggle split
 # Managing windows:6 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:7]]
@@ -226,31 +227,31 @@ bindsym $mod+g mode "inner gaps"
 bindsym $mod+Shift+g mode "outer gaps"
 # Keybindings:1 ends here
 
-# [[file:../../Desktop.org::*Move & resize windows][Move & resize windows:1]]
-# resize window (you can also use the mouse for that)
+# [[file:../../Desktop.org::*Move & resize windows][Move & resize windows:2]]
 mode "resize" {
-    # These bindings trigger as soon as you enter the resize mode
 
-    bindsym h resize shrink width 10 px or 10 ppt
-    bindsym j resize grow height 10 px or 10 ppt
-    bindsym k resize shrink height 10 px or 10 ppt
-    bindsym l resize grow width 10 px or 10 ppt
+    bindsym h exec emacs-i3-integration resize shrink width 10 px or 10 ppt
+    bindsym j exec emacs-i3-integration resize grow height 10 px or 10 ppt
+    bindsym k exec emacs-i3-integration resize shrink height 10 px or 10 ppt
+    bindsym l exec emacs-i3-integration resize grow width 10 px or 10 ppt
 
-    bindsym Shift+h resize shrink width 100 px or 100 ppt
-    bindsym Shift+j resize grow height 100 px or 100 ppt
-    bindsym Shift+k resize shrink height 100 px or 100 ppt
-    bindsym Shift+l resize grow width 100 px or 100 ppt
+    bindsym Shift+h exec emacs-i3-integration resize shrink width 100 px or 100 ppt
+    bindsym Shift+j exec emacs-i3-integration resize grow height 100 px or 100 ppt
+    bindsym Shift+k exec emacs-i3-integration resize shrink height 100 px or 100 ppt
+    bindsym Shift+l exec emacs-i3-integration resize grow width 100 px or 100 ppt
 
     # same bindings, but for the arrow keys
-    bindsym Left resize shrink width 10 px or 10 ppt
-    bindsym Down resize grow height 10 px or 10 ppt
-    bindsym Up resize shrink height 10 px or 10 ppt
-    bindsym Right resize grow width 10 px or 10 ppt
+    bindsym Left  exec emacs-i3-integration resize shrink width 10 px or 10 ppt
+    bindsym Down  exec emacs-i3-integration resize grow height 10 px or 10 ppt
+    bindsym Up    exec emacs-i3-integration resize shrink height 10 px or 10 ppt
+    bindsym Right exec emacs-i3-integration resize grow width 10 px or 10 ppt
 
-    bindsym Shift+Left resize shrink width 100 px or 100 ppt
-    bindsym Shift+Down resize grow height 100 px or 100 ppt
-    bindsym Shift+Up resize shrink height 100 px or 100 ppt
-    bindsym Shift+Right resize grow width 100 px or 100 ppt
+    bindsym Shift+Left  exec emacs-i3-integration resize shrink width 100 px or 100 ppt
+    bindsym Shift+Down  exec emacs-i3-integration resize grow height 100 px or 100 ppt
+    bindsym Shift+Up    exec emacs-i3-integration resize shrink height 100 px or 100 ppt
+    bindsym Shift+Right exec emacs-i3-integration resize grow width 100 px or 100 ppt
+
+    bindsym equal exec i3-emacs-balance-windows
 
     # back to normal: Enter or Escape
     bindsym Return mode "default"
@@ -278,7 +279,7 @@ mode "move" {
 }
 
 bindsym $mod+m mode "move" focus floating
-# Move & resize windows:1 ends here
+# Move & resize windows:2 ends here
 
 # [[file:../../Desktop.org::*Integration with rofi][Integration with rofi:1]]
 bindsym $mod+d exec "rofi -modi 'drun,run' -show drun"

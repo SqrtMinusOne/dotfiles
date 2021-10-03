@@ -42,6 +42,7 @@
    "curl"
    "bind:utils"
    "polybar"
+   "python-i3-balance-workspace"
    "i3-gaps"
    "xinput"
    "xgamma"
