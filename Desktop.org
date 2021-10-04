@@ -281,6 +281,10 @@ bindsym $mod+Shift+r restart
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
 #+end_src
 ** Managing windows
+| Guix dependency     |
+|---------------------|
+| rust-i3-switch-tabs |
+
 Some keybindings for managing windows.
 
 =emacs-i3-integration= is a script to pass some command to Emacs to get a consistent set of keybindings in both i3 and Emacs. Check out [[file:Emacs.org::i3 integration][the section in Emacs.org]] for details.
@@ -320,6 +324,12 @@ Split windows
 #+begin_src conf-space
 bindsym $mod+s exec emacs-i3-integration split h
 bindsym $mod+v exec emacs-i3-integration split v
+#+end_src
+
+Switch tabs
+#+begin_src conf-space
+bindsym $mod+period exec i3-switch-tabs right
+bindsym $mod+comma exec i3-switch-tabs left
 #+end_src
 
 Enter fullscreen mode
@@ -396,10 +406,6 @@ bindsym $mod+Shift+7 move container to workspace $w7
 bindsym $mod+Shift+8 move container to workspace $w8
 bindsym $mod+Shift+9 move container to workspace $w9
 bindsym $mod+Shift+0 move container to workspace $w10
-
-# Cycle workspaces
-bindsym $mod+comma workspace prev
-bindsym $mod+period workspace next
 #+end_src
 
 ** Rules
@@ -2128,12 +2134,15 @@ This section generates manifests for various desktop software that I'm using.
 |----------+--------------------|
 | browsers | ungoogled-chromium |
 | browsers | firefox            |
-** Office
+** Office & Multimedia
 | Category | Guix dependency |
 |----------+-----------------|
 | office   | libreoffice     |
 | office   | gimp            |
 | office   | krita           |
+| office   | ffmpeg          |
+| office   | kdenlive        |
+| office   | inkscape        |
 ** LaTeX
 | Category | Guix dependency               |
 |----------+-------------------------------|
@@ -2158,6 +2167,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | libfaketime     |
 | dev      | hugo-extended   |
 | dev      | make            |
+| dev      | sbcl            |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
@@ -2482,6 +2492,7 @@ Other desktop programs I use are listed below.
 | anydesk                | Remote desktop software                   |
 | gnome-disk-utility     | Manage disks                              |
 | gparted                | Manage partitions                         |
+| xev                    | Test input                                |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no

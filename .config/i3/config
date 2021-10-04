@@ -60,39 +60,44 @@ bindsym $mod+v exec emacs-i3-integration split v
 # Managing windows:4 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:5]]
-# enter fullscreen mode for the focused container
-bindsym $mod+f fullscreen toggle
-bindsym $mod+c fullscreen toggle global
+bindsym $mod+period exec i3-switch-tabs right
+bindsym $mod+comma exec i3-switch-tabs left
 # Managing windows:5 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:6]]
-bindsym $mod+w layout stacking
-bindsym $mod+t layout tabbed
-bindsym $mod+e exec emacs-i3-integration layout toggle split
+# enter fullscreen mode for the focused container
+bindsym $mod+f fullscreen toggle
+bindsym $mod+c fullscreen toggle global
 # Managing windows:6 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:7]]
-bindsym $mod+Shift+f floating toggle
-bindsym $mod+z focus mode_toggle
+bindsym $mod+w layout stacking
+bindsym $mod+t layout tabbed
+bindsym $mod+e exec emacs-i3-integration layout toggle split
 # Managing windows:7 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:8]]
-bindsym $mod+Tab move workspace to output right
-bindsym $mod+q focus output right
+bindsym $mod+Shift+f floating toggle
+bindsym $mod+z focus mode_toggle
 # Managing windows:8 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:9]]
-bindsym $mod+a focus parent
-bindsym $mod+Shift+A focus child
+bindsym $mod+Tab move workspace to output right
+bindsym $mod+q focus output right
 # Managing windows:9 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:10]]
-bindsym $mod+i sticky toggle
+bindsym $mod+a focus parent
+bindsym $mod+Shift+A focus child
 # Managing windows:10 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:11]]
-bindsym $mod+x floating enable; sticky enable; move position 1220 0; resize set width 700 px
+bindsym $mod+i sticky toggle
 # Managing windows:11 ends here
+
+# [[file:../../Desktop.org::*Managing windows][Managing windows:12]]
+bindsym $mod+x floating enable; sticky enable; move position 1220 0; resize set width 700 px
+# Managing windows:12 ends here
 
 # [[file:../../Desktop.org::*Workspaces][Workspaces:1]]
 set $w1 "1 🚀"
@@ -126,10 +131,6 @@ bindsym $mod+Shift+7 move container to workspace $w7
 bindsym $mod+Shift+8 move container to workspace $w8
 bindsym $mod+Shift+9 move container to workspace $w9
 bindsym $mod+Shift+0 move container to workspace $w10
-
-# Cycle workspaces
-bindsym $mod+comma workspace prev
-bindsym $mod+period workspace next
 # Workspaces:1 ends here
 
 # [[file:../../Desktop.org::*Rules][Rules:1]]

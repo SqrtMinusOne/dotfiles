@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "xev"
    "gparted"
    "gnome-disk-utility"
    "anydesk"
@@ -43,6 +44,7 @@
    "bind:utils"
    "polybar"
    "python-i3-balance-workspace"
+   "rust-i3-switch-tabs"
    "i3-gaps"
    "xinput"
    "xgamma"

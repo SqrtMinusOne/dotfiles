@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "sbcl"
    "make"
    "hugo-extended"
    "libfaketime"
