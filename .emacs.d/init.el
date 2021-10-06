@@ -337,10 +337,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (global-set-key (kbd "C-+") 'my/zoom-in)
 (global-set-key (kbd "C-=") 'my/zoom-out)
 
+(add-hook 'after-init-hook #'server-start)
+
 (defmacro i3-msg (&rest args)
   `(start-process "emacs-i3-windmove" nil "i3-msg" ,@args))
-
-(add-hook 'after-init-hook #'server-start)
 
 (defun my/emacs-i3-windmove (dir)
   (let ((other-window (windmove-find-other-window dir)))
@@ -348,21 +348,32 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         (i3-msg "focus" (symbol-name dir))
       (windmove-do-window-select dir))))
 
-(defun my/emacs-i3-move-window (dir)
-  (let ((other-window (windmove-find-other-window dir)))
-    (if (null other-window)
-        (i3-msg "move" (symbol-name dir))
-      (window-swap-states (selected-window) other-window))))
-
-(defun my/emacs-i3-resize-direction-exists-p (dir)
-  (some #'windmove-find-other-window
+(defun my/emacs-i3-direction-exists-p (dir)
+  (some (lambda (dir)
+          (let ((win (windmove-find-other-window dir)))
+            (and win (not (window-minibuffer-p win)))))
         (pcase dir
           ('width '(left right))
           ('height '(up down)))))
 
+(defun my/emacs-i3-move-window (dir)
+  (let ((other-window (windmove-find-other-window dir))
+        (other-direction (my/emacs-i3-direction-exists-p
+                          (pcase dir
+                            ('up 'width)
+                            ('down 'width)
+                            ('left 'height)
+                            ('right 'height)))))
+    (cond
+     ((and other-window (not (window-minibuffer-p other-window)))
+      (window-swap-states (selected-window) other-window))
+     (other-direction
+      (evil-move-window dir))
+     (t (i3-msg "move" (symbol-name dir))))))
+
 (defun my/emacs-i3-resize-window (dir kind value)
   (if (or (one-window-p)
-          (not (my/emacs-i3-resize-direction-exists-p dir)))
+          (not (my/emacs-i3-direction-exists-p dir)))
       (i3-msg "resize" (symbol-name kind) (symbol-name dir)
               (format "%s px or %s ppt" value value))
     (setq value (/ value 2))
@@ -1992,7 +2003,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :hook (org-mode . org-superstar-mode))
 
-(setq org-export-backends '(md html latex beamer org))
+;; (setq org-export-backends '(md html latex beamer org))
 
 (use-package ox-hugo
   :straight t
@@ -3491,6 +3502,33 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    :states '(normal)
    :keymaps 'emms-playlist-mode-map
    "q" 'quit-window))
+
+(use-package ytel
+  :straight t
+  :commands (ytel)
+  :config
+  (setq ytel-invidious-api-url "https://invidio.xamh.de/")
+  (general-define-key
+   :states '(normal)
+   :keymaps 'ytel-mode-map
+   "q" #'ytel-quit
+   "s" #'ytel-search
+   "L" #'ytel-search-next-page
+   "H" #'ytel-search-previous-page
+   "RET" #'my/ytel-add-emms))
+
+(with-eval-after-load 'emms
+  (define-emms-source ytel (video)
+    (let ((track (emms-track
+                  'url (concat "https://www.youtube.com/watch?v="
+                               (ytel-video-id video)))))
+      (emms-track-set track 'info-title (ytel-video-title video))
+      (emms-track-set track 'info-artist (ytel-video-author video))
+      (emms-playlist-insert-track track))))
+
+(defun my/ytel-add-emms ()
+  (interactive)
+  (emms-add-ytel (ytel-get-current-video)))
 
 (defun my/toggle-shr-use-fonts ()
   "Toggle the shr-use-fonts variable in buffer"

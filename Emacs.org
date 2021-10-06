@@ -818,11 +818,17 @@ Evil does a pretty good job of uniting these two in the set of vim-like keybindi
 (global-set-key (kbd "C-=") 'my/zoom-out)
 #+end_src
 ** i3 integration
-I'm a bit jealous of EXWM having a consistent set of keybindings to manage both Emacs windows and X windows, so I figured I could try to implement something like this with i3.
+One advantage of EXWM for an Emacs user is that EXWM gives one set of keybindings to manage both Emacs windows and X windows. In every other WM, like my preferred [[https://i3wm.org][i3wm]], two orthogonal keymaps seem to be necessary. But, as both programs are quite customizable, I want to see whether I can replicate at least some part of the EXWM goodness in i3.
+
+But why not just use EXWM? One key reason is that to my taste (and perhaps on my hardware) EXWM didn't feel snappy enough. Also, I really like i3's tree-based layout structure; I feel like it fits my workflow much better than anything else I tried, including the master/stack paradigm of [[https://xmonad.org/][XMonad]]​, for instance.
+
+One common point of criticism of i3 is that it is not extensible enough, especially compared to WMs that are configured in an actual programing language, like the mentioned XMonad, [[http://www.qtile.org/][Qtile]], [[https://awesomewm.org/][Awesome]], etc. But I think i3's extensibility is underappreciated, although the contents of this section may lie closer to the limits of how far one can go there.
 
 The basic idea is to launch a normal i3 command with =i3-msg= in case the current window is not Emacs, otherwise pass that command to Emacs with =emacsclient=. In Emacs, execute the command if possible, otherwise pass the command back to i3.
 
-I actually tried to use EXWM but returned back to i3 because EXWM wasn't snappy enough. While this integration adds some overhead, I can't detect it even in the worst case (i3 -> Emacs -> i3), so the integration feels seamless.
+This may seem like a lot of overhead, but I didn't feel it even in the worst case (i3 -> Emacs -> i3), so at least in that regard, the interaction feels seamless. The only concern is that this command flow is vulnerable to Emacs getting stuck, but it is still much less of a problem than with EXWM.
+
+One interesting observation here is that Emacs windows and X windows are sort of one-level entities, so I can talk just about "windows".
 
 At any rate, we need a script to do the i3 -> Emacs part:
 #+begin_src bash :tangle ~/bin/scripts/emacs-i3-integration
@@ -836,20 +842,24 @@ fi
 
 This script is being run from the [[file:Desktop.org::*i3wm][i3 configuration]].
 
-For the second part, we need to call i3 from emacs. Here is a simple macro to do just that:
+For this to work, we need to make sure that Emacs starts a server, so here is an expression to do just that:
+#+BEGIN_SRC emacs-lisp
+(add-hook 'after-init-hook #'server-start)
+#+END_SRC
+
+And here is a simple macro to do the Emacs -> i3 part:
 #+begin_src emacs-lisp
 (defmacro i3-msg (&rest args)
   `(start-process "emacs-i3-windmove" nil "i3-msg" ,@args))
 #+end_src
 
-Also, we have to make sure that Emacs starts a server, so here is a hook to do just that:
-#+begin_src emacs-lisp
-(add-hook 'after-init-hook #'server-start)
-#+end_src
+Now we have to handle the required set of i3 commands. It is worth noting here that I'm not trying to implement a general mechanism to apply i3 commands to Emacs, rather I'm implementing a small subset that I use in my i3 configuration and that maps reasonably to the Emacs concepts.
 
-Then we have to handle the required i3 commands. First, for the =focus= command I want to move to the Emacs window in the given direction if there is one, otherwise move to the X window in the same direction. Fortunately, i3 and windmove have the same names for directions, so the function is rather straightforward.
+Also, I use [[https://github.com/emacs-evil/evil][evil-mode]] and generally configure the software to have vim-style bindings where possible. So if you don't use evil-mode you'd have to detangle the given functions from evil, but then, I guess, you do not use super+hjkl to manage windows either.
 
-Also, one caveat here is that the minibuffer is always below, so it is necessary to check for that as well.
+First, for the =focus= command I want to move to an Emacs window in the given direction if there is one, otherwise move to an X window in the same direction. Fortunately, i3 and windmove have the same names for directions, so the function is rather straightforward.
+
+One caveat here is that the minibuffer is always the bottom-most Emacs window, so it is necessary to check for that as well.
 #+begin_src emacs-lisp
 (defun my/emacs-i3-windmove (dir)
   (let ((other-window (windmove-find-other-window dir)))
@@ -858,31 +868,51 @@ Also, one caveat here is that the minibuffer is always below, so it is necessary
       (windmove-do-window-select dir))))
 #+end_src
 
-For the =move= command I want to move the Emacs window in the required direction if there is space in there, otherwise move an X window, which will be the Emacs frame.
+For the =move= I want the following behavior:
+- if there is space in the required directon, move the Emacs window there;
+- if there is no space in the required direction, but space in two orthogonal directions, move the Emacs window so that there is no more space in the orthogonal directions;
+- otherwise, move an X window (Emacs frame).
 
-I tried to use =evil-move-window= here, but it doesn't behave quite like i3, for instance, =(evil-move-window 'right)= in a tree-column split would move the window from the far left side to the far right side (bypassing center). =window-swap-states= with a window in the given direction does better.
-#+begin_src emacs-lisp
-(defun my/emacs-i3-move-window (dir)
-  (let ((other-window (windmove-find-other-window dir)))
-    (if (null other-window)
-        (i3-msg "move" (symbol-name dir))
-      (window-swap-states (selected-window) other-window))))
-#+end_src
+For the first part, =window-swap-states= with =windmove-find-other-window= do well enough.
 
-Next, =resize grow= and =resize shrink=. To avoid running resize when there is no place to resize to, here is a simple predicate which checks whether there is space in the given direction.
+=evil-move-window= works well for the second part. By itself it doesn't behave quite like i3, for instance, =(evil-move-window 'right)= in a three-column split would move the window from the far left side to the far right side (bypassing center). Hence the combination as described here.
+
+So here is a simple predicate which checks whether there is space in the given direction.
 #+begin_src emacs-lisp
-(defun my/emacs-i3-resize-direction-exists-p (dir)
-  (some #'windmove-find-other-window
+(defun my/emacs-i3-direction-exists-p (dir)
+  (some (lambda (dir)
+          (let ((win (windmove-find-other-window dir)))
+            (and win (not (window-minibuffer-p win)))))
         (pcase dir
           ('width '(left right))
           ('height '(up down)))))
 #+end_src
 
-Now we can use that to perform the actual resizing. =evil-window-= functions do that nicely.
+And the implementation of the move command.
+#+begin_src emacs-lisp
+(defun my/emacs-i3-move-window (dir)
+  (let ((other-window (windmove-find-other-window dir))
+        (other-direction (my/emacs-i3-direction-exists-p
+                          (pcase dir
+                            ('up 'width)
+                            ('down 'width)
+                            ('left 'height)
+                            ('right 'height)))))
+    (cond
+     ((and other-window (not (window-minibuffer-p other-window)))
+      (window-swap-states (selected-window) other-window))
+     (other-direction
+      (evil-move-window dir))
+     (t (i3-msg "move" (symbol-name dir))))))
+#+end_src
+
+Next on the line are =resize grow= and =resize shrink=. =evil-window-= functions do nicely for this task.
+
+This function also checks whether there is space to resize in the given direction with the help of the predicate defined above. The command is forwarded back to i3 if there is not.
 #+begin_src emacs-lisp
 (defun my/emacs-i3-resize-window (dir kind value)
   (if (or (one-window-p)
-          (not (my/emacs-i3-resize-direction-exists-p dir)))
+          (not (my/emacs-i3-direction-exists-p dir)))
       (i3-msg "resize" (symbol-name kind) (symbol-name dir)
               (format "%s px or %s ppt" value value))
     (setq value (/ value 2))
@@ -901,14 +931,14 @@ Now we can use that to perform the actual resizing. =evil-window-= functions do 
           (evil-window-increase-height value)))))))
 #+end_src
 
-[[https://github.com/emacsorphanage/transpose-frame][transpose-frame]] is a package to "transpose" the current frame layout, which behaves someone similar to the =layout toggle split= command in i3.
+[[https://github.com/emacsorphanage/transpose-frame][transpose-frame]] is a package to "transpose" the current frame layout, which behaves someone similar to the =layout toggle split= command in i3, so I'll use it as well.
 #+begin_src emacs-lisp
 (use-package transpose-frame
   :straight t
   :commands (transpose-frame))
 #+end_src
 
-Finally, an entrypoint for the Emacs integration. In addition to the commands defined above, it processes =split= and =kill= commands and passes every other command back to i3.
+Finally, the entrypoint for the Emacs integration. In addition to the commands defined above, it processes =split= and =kill= commands and passes every other command back to i3.
 #+begin_src emacs-lisp
 (defun my/emacs-i3-integration (command)
   (pcase command
@@ -3215,7 +3245,7 @@ Categories are broad labels to group agenda items.
 ** Export
 *** General settings
 #+begin_src emacs-lisp
-(setq org-export-backends '(md html latex beamer org))
+;; (setq org-export-backends '(md html latex beamer org))
 #+end_src
 *** Hugo
 #+begin_src emacs-lisp
@@ -5269,6 +5299,41 @@ The list will be in reverse order."
       (when alist
         (setq alists (cons alist alists)))
       alists)))
+#+end_src
+*** ytel
+[[https://github.com/gRastello/ytel][ytel]] is a YouTube (actually Invidious) frontend, which lets one search YouTube (whereas the setup with elfeed just lets one view the pre-defined subscriptions).
+
+The package doesn't provide evil bindings, so I define my own.
+#+begin_src emacs-lisp
+(use-package ytel
+  :straight t
+  :commands (ytel)
+  :config
+  (setq ytel-invidious-api-url "https://invidio.xamh.de/")
+  (general-define-key
+   :states '(normal)
+   :keymaps 'ytel-mode-map
+   "q" #'ytel-quit
+   "s" #'ytel-search
+   "L" #'ytel-search-next-page
+   "H" #'ytel-search-previous-page
+   "RET" #'my/ytel-add-emms))
+#+end_src
+
+And here is the same kind of integration with EMMS as in the elfeed setup:
+#+begin_src emacs-lisp
+(with-eval-after-load 'emms
+  (define-emms-source ytel (video)
+    (let ((track (emms-track
+                  'url (concat "https://www.youtube.com/watch?v="
+                               (ytel-video-id video)))))
+      (emms-track-set track 'info-title (ytel-video-title video))
+      (emms-track-set track 'info-artist (ytel-video-author video))
+      (emms-playlist-insert-track track))))
+
+(defun my/ytel-add-emms ()
+  (interactive)
+  (emms-add-ytel (ytel-get-current-video)))
 #+end_src
 *** EWW
 Emacs built-in web browser. +I wonder if anyone actually uses it.+
