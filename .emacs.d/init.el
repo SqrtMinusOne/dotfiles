@@ -23,7 +23,6 @@
 
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
- ;; (setq use-package-verbose t)
 
 (setq my/lowpower (string= (system-name) "azure"))
 
@@ -123,15 +122,13 @@
   (setq evil-want-integration t)
   (setq evil-want-C-u-scroll t)
   (setq evil-want-keybinding nil)
-  :config
-  (evil-mode 1)
   (setq evil-search-module 'evil-search)
   (setq evil-split-window-below t)
   (setq evil-vsplit-window-right t)
+  :config
+  (evil-mode 1)
   ;; (setq evil-respect-visual-line-mode t)
-  (evil-set-undo-system 'undo-tree)
-  ;; (add-to-list 'evil-emacs-state-modes 'dired-mode)
-  )
+  (evil-set-undo-system 'undo-tree))
 
 (use-package evil-surround
   :straight t
@@ -1626,6 +1623,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                  (when (not (string-match-p ".*\n" data-s)) "\n")
                  "#+end_src")
        (substring data-s drawer-start)))))
+
+(defun my/org-prj-dir (path)
+  (expand-file-name path (org-entry-get nil "PRJ-DIR" t)))
 
 (my-leader-def
   :infix "o"

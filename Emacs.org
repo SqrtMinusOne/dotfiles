@@ -292,9 +292,13 @@ A small function to print out the loading time and number of GCs during the load
                              (float-time
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
+#+end_src
 
+Set the following to =t= to print debug information during the startup. This will include the order in which the packages are loaded and the loading time of individual packages.
+#+begin_src emacs-lisp
 ;; (setq use-package-verbose t)
 #+end_src
+
 ** straight.el
 Straight.el is my Emacs package manager of choice. Its advantages & disadvantages over other options are listed pretty thoroughly in the README file in the repo.
 
@@ -328,15 +332,16 @@ References:
 #+begin_src emacs-lisp :noweb-ref minimal
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
- ;; (setq use-package-verbose t)
 #+end_src
-** config variants & environment
+** Config variants & environment
+This section is about optionating the Emacs config.
+
 The following variable is true when my machine is not powerful enough for some resource-heavy packages.
 #+begin_src emacs-lisp
 (setq my/lowpower (string= (system-name) "azure"))
 #+end_src
 
-The following is true if Emacs is meant to be used with TRAMP over slow ssh.
+The following is true if Emacs is meant to be used with TRAMP over slow ssh. Take a look at the [[*TRAMP][TRAMP]] section for more details.
 #+begin_src emacs-lisp
 (setq my/slow-ssh
       (or
@@ -394,17 +399,18 @@ Some time has passed, and I still don't know if there is any quantifiable advant
               (add-hook 'after-focus-change-function 'garbage-collect))))
 #+end_src
 *** Native compilation
-Set number of jobs to 1 on low-power machines
+Set the number of native compilation jobs to 1 on low-power machines.
+
 #+begin_src emacs-lisp
 (when my/lowpower
   (setq comp-async-jobs-number 1))
 #+end_src
 ** Anaconda
-[[https://www.anaconda.com/][Anaconda]] is a free package and environment manager. I currently use it to manage multiple versions of Python and Node.js
+[[https://www.anaconda.com/][Anaconda]] is a free package and environment manager. I currently use it to manage multiple versions of Python and Node.js. Take a look at [[file:Guix.org::*conda][the corresponding entry]] in the Guix config for details about using it on Guix.
 
 The following code uses the conda package to activate the base environment on startup if Emacs is launched outside the environment.
 
-Also, some strange things are happening if vterm is launched with conda activated from Emacs, so I advise =conda-env-activate= to set an auxililary environment variable.
+Also, some strange things are happening if vterm is launched with conda activated from Emacs, so I advise =conda-env-activate= to set an auxililary environment variable. This variable is used in the [[file:Console.org::*Anaconda][shell config]].
 
 References:
 - [[https://docs.anaconda.com/][Anaconda docs]]
@@ -425,20 +431,22 @@ References:
     (conda-env-activate "general")))
 #+end_src
 ** Custom file location
-By default, custom writes stuff to =init.el=, which is somewhat annoying. The following makes a separate file =custom.el=
+By default, custom writes stuff to =init.el=, which is somewhat annoying. The following makes it write to a separate file =custom.el=
+
 #+begin_src emacs-lisp
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
 #+end_src
 ** Private config
 I have some variables which I don't commit to the repo, e.g. my current location. They are stored in =private.el=
+
 #+begin_src emacs-lisp
 (let ((private-file (expand-file-name "private.el" user-emacs-directory)))
   (when (file-exists-p private-file)
     (load-file private-file)))
 #+end_src
 ** No littering
-By default emacs and its packages create a lot files in =.emacs.d= and in other places. [[https://github.com/emacscollective/no-littering][no-littering]] is a collective effort to redirect all of this to two folders in =user-emacs-directory=.
+By default Mmacs and its packages create a lot files in =.emacs.d= and in other places. [[https://github.com/emacscollective/no-littering][no-littering]] is a collective effort to redirect all of that to two folders in =user-emacs-directory=.
 
 #+begin_src emacs-lisp
 (use-package no-littering
@@ -465,9 +473,7 @@ References:
   (general-evil-setup))
 #+end_src
 *** which-key
-A package that displays the available keybindings in a popup.
-
-Pretty useful, as Emacs seems to have more keybindings than I can remember at any given point.
+A package that displays the available keybindings in a popup. The package is pretty useful, as Emacs seems to have more keybindings than I can remember at any given point.
 
 References:
 - [[https://github.com/justbur/emacs-which-key][which-key repo]]
@@ -511,13 +517,14 @@ A function to dump keybindings starting with a prefix to a buffer in tree-like f
   (switch-to-buffer-other-window "bindings"))
 #+end_src
 ** Evil mode
-A whole ecosystem of packages that emulates the main features of Vim. Probably the best vim emulator out there.
+An entire ecosystem of packages that emulates the main features of Vim. Probably the best vim emulator out there.
 
 The only problem is that the package name makes it hard to google anything by just typing "evil".
 
 References:
 - [[https://github.com/emacs-evil/evil][evil repo]]
 - [[https://www.youtube.com/watch?v=JWD1Fpdd4Pc][(YouTube) Evil Mode: Or, How I Learned to Stop Worrying and Love Emacs]]
+
 *** evil
 Basic evil configuration.
 
@@ -528,15 +535,13 @@ Basic evil configuration.
   (setq evil-want-integration t)
   (setq evil-want-C-u-scroll t)
   (setq evil-want-keybinding nil)
-  :config
-  (evil-mode 1)
   (setq evil-search-module 'evil-search)
   (setq evil-split-window-below t)
   (setq evil-vsplit-window-right t)
+  :config
+  (evil-mode 1)
   ;; (setq evil-respect-visual-line-mode t)
-  (evil-set-undo-system 'undo-tree)
-  ;; (add-to-list 'evil-emacs-state-modes 'dired-mode)
-  )
+  (evil-set-undo-system 'undo-tree))
 #+end_src
 *** Addons
 [[https://github.com/emacs-evil/evil-surround][evil-surround]] emulates one of my favorite vim plugins, surround.vim. Adds a lot of parentheses management options.
@@ -549,7 +554,7 @@ Basic evil configuration.
   (global-evil-surround-mode 1))
 #+end_src
 
-[[https://github.com/linktohack/evil-commentary][evil-commentary]] emulates commentary.vim.
+[[https://github.com/linktohack/evil-commentary][evil-commentary]] emulates commentary.vim. It gives actions for quick insertion and deletion of comments.
 
 #+begin_src emacs-lisp
 (use-package evil-commentary
@@ -592,7 +597,7 @@ Basic evil configuration.
   (evil-lion-mode))
 #+end_src
 
-[[https://github.com/redguardtoo/evil-matchit][evil-matchit]] makes "%" to match things like tags.
+[[https://github.com/redguardtoo/evil-matchit][evil-matchit]] makes "%" to match things like tags. It doesn't work perfectly, so I occasionally turn it off.
 #+begin_src emacs-lisp
 (use-package evil-matchit
   :straight t
@@ -600,9 +605,7 @@ Basic evil configuration.
   (global-evil-matchit-mode 1))
 #+end_src
 *** evil-collection
-[[https://github.com/emacs-evil/evil-collection][evil-collection]] is a package that provides evil bindings for a lot of different packages. One can see the whole list in the [[https://github.com/emacs-evil/evil-collection/tree/master/modes][modes]] folder.
-
-I don't enable the entire package, just the modes I need.
+[[https://github.com/emacs-evil/evil-collection][evil-collection]] is a package that provides evil bindings for a lot of different packages. One can see the complete list in the [[https://github.com/emacs-evil/evil-collection/tree/master/modes][modes]] folder.
 
 #+begin_src emacs-lisp :noweb-ref minimal
 (use-package evil-collection
@@ -698,7 +701,7 @@ Using the =SPC= key as a leader key, like in Doom Emacs or Spacemacs.
 (my-leader-def "E" 'eval-expression)
 #+end_src
 
-=general.el= has a nice integration with which-key, so I use this fact to show more descriptive annotations for certain groups of keybindings (the default one is =prefix=).
+=general.el= has a nice integration with which-key, so I use that to show more descriptive annotations for certain groups of keybindings (the default annotation is just =prefix=).
 #+begin_src emacs-lisp
 (my-leader-def
   "a" '(:which-key "apps"))
@@ -727,7 +730,7 @@ The built-in profiler is a magnificent tool to troubleshoot performance issues.
   "p" 'profiler-report)
 #+end_src
 *** Buffer switching
-Some keybindings I used in vim to switch buffers and can't let go of.
+Some keybindings I used in vim to switch buffers and can't let go of. But I think I started to use these less since I made an attempt in [[*i3 integration][i3 integration]].
 
 #+begin_src emacs-lisp
 (general-define-key
@@ -749,7 +752,10 @@ Some keybindings I used in vim to switch buffers and can't let go of.
  "d" 'kill-current-buffer)
 #+end_src
 
-And winner-mode to keep the history of window states.
+=winner-mode= to keep the history of window states.
+
+It doesn't play too well with perspective.el, that is it has a single history list for all of the perspectives. But it is still quite usable.
+
 #+begin_src emacs-lisp
 (winner-mode 1)
 
@@ -776,6 +782,7 @@ And winner-mode to keep the history of window states.
 #+end_src
 *** xref
 Some keybindings for xref and go to definition.
+
 #+begin_src emacs-lisp
 (general-nmap
   "gD" 'xref-find-definitions-other-window
@@ -790,7 +797,7 @@ There are multiple ways to fold text in Emacs.
 
 The most versatile is the built-in =hs-minor-mode=, which seems to work out of the box for Lisps, C-like languages and Python. =outline-minor-mode= works for org-mode, LaTeX and the like. There is a 3rd-party solution [[https://github.com/elp-revive/origami.el][origami.el]], but I don't use it at the moment.
 
-Evil does a pretty good job of uniting these two in the set of vim-like keybindings. I was using =SPC= in vim, but as now this isn't an option, I set =TAB= to toggle folding.
+Evil does a pretty good job of abstracting the first two with a set of vim-like keybindings. I was using =SPC= in vim, but as now this isn't an option, I set =TAB= to toggle folding.
 
 #+begin_src emacs-lisp
 (general-nmap :keymaps '(hs-minor-mode-map outline-minor-mode-map)
@@ -981,7 +988,7 @@ References:
 *** Aggressive Indent
 A package to keep the code intended.
 
-Doesn't work too well with js ecosystem, because the LSP-based indentation is rather slow but nice for Lisps.
+Doesn't work too well with many ecosystems because the LSP-based indentation is rather slow, but nice for Lisps.
 
 References:
 - [[https://github.com/Malabarba/aggressive-indent-mode][aggressive-indent-mode repo]]
@@ -1967,7 +1974,8 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
   "aD" #'my/dired-home)
 #+end_src
 ** Addons
-I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provides a lot of extensions for dired functionality, but it also creates some new problems, so I opt out of it. Fortunately, the one feature I want from this package - adding more colors to dired buffers - is available as a separate package
+I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provides a lot of extensions for dired functionality, but it also creates some new problems, so I opt out of it. Fortunately, the one feature I want from this package - adding more colors to dired buffers - is available as a separate package.
+
 #+begin_src emacs-lisp
 (use-package diredfl
   :straight t
@@ -2649,6 +2657,26 @@ To use, add the following snippet to the org file:
 Example usage:
 #+begin_example
 :post out_wrap(name="fig:chart", caption="График", data=*this*)
+#+end_example
+*** Managing a literate programming project
+A few tricks to do literate programming.
+
+I prefer to put the org files to a separate directory (e.g. =org=). So I've come up with the following solution to avoid manually prefixing the =:tangle= arguments.
+
+Set up the following argument with the path to the project root:
+#+begin_example
+#+PROPERTY: PRJ-DIR ..
+#+end_example
+
+A function to do the prefixing:
+#+begin_src emacs-lisp
+(defun my/org-prj-dir (path)
+  (expand-file-name path (org-entry-get nil "PRJ-DIR" t)))
+#+end_src
+
+Example usage is as follows:
+#+begin_example
+:tangle (my/org-prj-dir "sqrt_data/api/__init__.py")
 #+end_example
 ** Productivity & Knowledge management
 My ongoing effort to get a productivity setup in Org.
@@ -3564,27 +3592,6 @@ emacs -Q --batch -l run-tangle.el
 #+end_src
 
 I have added this line to yadm's =post_alt= hook, so tangle is run after =yadm alt=
-* OFF (OFF) EAF
-[[https://github.com/manateelazycat/emacs-application-framework][Emacs Application Framework]] provides a way to integrate PyQt applications with Emacs.
-
-I've made it work, but don't find any uses cases for me at the moment
-** Installation
-Requirements: Node >= 14
-#+begin_src bash :tangle no
-pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
-#+end_src
-** Config
-#+begin_src emacs-lisp :tangle no
-(use-package eaf
-  :straight (:host github :repo "manateelazycat/emacs-application-framework" :files ("*"))
-  :init
-  (use-package epc :defer t :straight t)
-  (use-package ctable :defer t :straight t)
-  (use-package deferred :defer t :straight t)
-  :config
-  (require 'eaf-evil)
-  (setq eaf-evil-leader-key "SPC"))
-#+end_src
 * Programming
 ** General setup
 *** LSP
@@ -5687,6 +5694,27 @@ Emacs' built-in calendar. Can even calculate sunrise and sunset times.
 
 (setq calendar-latitude 59.9375)
 (setq calendar-longitude 30.308611)
+#+end_src
+** OFF (OFF) EAF
+[[https://github.com/manateelazycat/emacs-application-framework][Emacs Application Framework]] provides a way to integrate PyQt applications with Emacs.
+
+I've made it work, but don't find any uses cases for me at the moment
+*** Installation
+Requirements: Node >= 14
+#+begin_src bash :tangle no
+pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
+#+end_src
+*** Config
+#+begin_src emacs-lisp :tangle no
+(use-package eaf
+  :straight (:host github :repo "manateelazycat/emacs-application-framework" :files ("*"))
+  :init
+  (use-package epc :defer t :straight t)
+  (use-package ctable :defer t :straight t)
+  (use-package deferred :defer t :straight t)
+  :config
+  (require 'eaf-evil)
+  (setq eaf-evil-leader-key "SPC"))
 #+end_src
 ** Fun
 *** Discord integration
