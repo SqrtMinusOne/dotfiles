@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "git-lfs"
    "sbcl"
    "make"
    "hugo-extended"

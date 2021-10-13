@@ -2168,6 +2168,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | hugo-extended   |
 | dev      | make            |
 | dev      | sbcl            |
+| dev      | git-lfs         |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
