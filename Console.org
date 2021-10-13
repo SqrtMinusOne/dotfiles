@@ -53,11 +53,13 @@
 :END:
 ** Environment
 #+begin_src sh
-# export EDITOR=/usr/bin/vim
-# export BROWSER=/usr/bin/firefox
 export QT_QPA_PLATFORMTHEME="qt5ct"
 export QT_AUTO_SCREEN_SCALE_FACTOR=0
-# export GTK2_RC_FILES="$HOME/.gtkrc-2.0"
+#+end_src
+
+Set ripgrep config path
+#+begin_src sh
+export RIPGREP_CONFIG_PATH=$HOME/.config/ripgrep/ripgreprc
 #+end_src
 ** My paths
 My script folders
@@ -843,6 +845,18 @@ key_bindings:
 | jmtpfs          | A tool to mount MTP devices (e.g. Android)  |
 | tokei           | Count lines of code                         |
 
+** ripgrep config
+Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.
+#+begin_src text :tangle ~/.config/ripgrep/ripgreprc
+--ignore-file=/home/pavel/.config/ripgrep/ripgrepignore
+#+end_src
+
+The corresponding ignore file:
+#+begin_src text :tangle ~/.config/ripgrep/ripgrepignore
+*.ts.snap
+#+end_src
+
+By default ripgrep doesn't read any configs, so it is necessary to set the =RIPGREP_CONFIG_PATH= variable in the [[*Environment][.profile.]]
 * Misc scripts
 ** =nt= - exec command with a finished notification
 Usage:
