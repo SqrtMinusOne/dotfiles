@@ -434,6 +434,7 @@ Enable vi keybindings & aliases. The alias syntax is the same as in bash, so it'
 fish_vi_key_bindings
 
 <<shell-aliases>>
+alias cad="conda activate (basename (pwd))"
 #+end_src
 
 

@@ -14,6 +14,7 @@ alias c="clear"
 alias ci="init_conda"
 alias ca="conda activate"
 alias cii="export INIT_CONDA=true && init_conda"
+alias cad="conda activate (basename (pwd))"
 # Fish:2 ends here
 
 # [[file:../../Console.org::*Fish][Fish:3]]
