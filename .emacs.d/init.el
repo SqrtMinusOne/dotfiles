@@ -1153,8 +1153,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (defun my/dired-bookmark-open ()
   (interactive)
-  (unless (boundp 'my/dired-bookmarks)
-    (load (concat user-emacs-directory "dired-bookmarks")))
   (let ((bookmarks
          (mapcar
           (lambda (el) (cons (format "%-30s %s" (car el) (cdr el)) (cdr el)))
@@ -3188,7 +3186,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (reformatter-define sqlformat
   :program (executable-find "sql-formatter")
-  :args `("-l" ,my/sqlformatter-dialect))
+  :args `("-l" ,my/sqlformatter-dialect, "-u"))
 
 (my-leader-def
   :keymaps '(sql-mode-map)
@@ -3295,7 +3293,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :after (elfeed)
   :config
-  (setq rmh-elfeed-org-files '("~/.emacs.d/elfeed.org"))
+  (setq rmh-elfeed-org-files '("~/.emacs.d/private.org"))
   (elfeed-org))
 
 (defun my/elfeed-search-filter-source (entry)
@@ -3318,6 +3316,65 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (let ((link (elfeed-entry-link elfeed-show-entry)))
     (when link
       (eww link))))
+
+(defface elfeed-videos-entry
+  `((t :foreground ,(doom-color 'red)))
+  "Face for the elfeed entries with tag \"videos\"")
+
+(defface elfeed-twitter-entry
+  `((t :foreground ,(doom-color 'blue)))
+  "Face for the elfeed entries with tah \"twitter\"")
+
+(defface elfeed-emacs-entry
+  `((t :foreground ,(doom-color 'magenta)))
+  "Face for the elfeed entries with tah \"emacs\"")
+
+(defface elfeed-music-entry
+  `((t :foreground ,(doom-color 'green)))
+  "Face for the elfeed entries with tah \"music\"")
+
+(defface elfeed-podcasts-entry
+  `((t :foreground ,(doom-color 'yellow)))
+  "Face for the elfeed entries with tag \"podcasts\"")
+
+(defface elfeed-blogs-entry
+  `((t :foreground ,(doom-color 'orange)))
+  "Face for the elfeed entries with tag \"blogs\"")
+
+(with-eval-after-load 'elfeed
+  (setq elfeed-search-face-alist
+        '((twitter elfeed-twitter-entry)
+          (podcasts elfeed-podcasts-entry)
+          (music elfeed-music-entry)
+          (videos elfeed-videos-entry)
+          (emacs elfeed-emacs-entry)
+          (blogs elfeed-blogs-entry)
+          (unread elfeed-search-unread-title-face))))
+
+(defun my/elfeed-toggle-score-sort ()
+  (interactive)
+  (setq elfeed-search-sort-function
+        (if elfeed-search-sort-function
+            nil
+          #'elfeed-score-sort))
+  (message "Sorting by score: %S" (if elfeed-search-sort-function "ON" "OFF"))
+  (elfeed-search-update--force))
+
+(use-package elfeed-score
+  :straight t
+  :after (elfeed)
+  :init
+  (setq elfeed-score-serde-score-file "~/.emacs.d/elfeed.score")
+  :config
+  (elfeed-score-enable)
+  (setq elfeed-search-print-entry-function #'elfeed-score-print-entry)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(elfeed-search-mode-map)
+   "=" elfeed-score-map)
+  (general-define-key
+   :keymaps '(elfeed-score-map)
+   "=" #'my/elfeed-toggle-score-sort))
 
 (defun my/get-youtube-url (link)
   (let ((watch-id (cadr

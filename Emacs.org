@@ -2118,19 +2118,16 @@ Also, here is a hack to make TRAMP find =ls= on Guix:
 ** Bookmarks
 A simple bookmark list for Dired, mainly to use with TRAMP. I may look into a proper bookmarking system later.
 
-Bookmarks are listed in the [[file:.emacs.d/dired-bookmarks.el][dired-bookmarks.el]] file, which looks like this:
+Bookmarks are listed in the [[file:.emacs.d/private.el][private.el]] file, which has an expression like this:
 #+begin_example emacs-lisp :tangle no
 (setq my/dired-bookmarks
       '(("sudo" . "/sudo::/")))
 #+end_example
 
 The file itself is encrypted with yadm.
-
 #+begin_src emacs-lisp
 (defun my/dired-bookmark-open ()
   (interactive)
-  (unless (boundp 'my/dired-bookmarks)
-    (load (concat user-emacs-directory "dired-bookmarks")))
   (let ((bookmarks
          (mapcar
           (lambda (el) (cons (format "%-30s %s" (car el) (cdr el)) (cdr el)))
@@ -4829,7 +4826,7 @@ So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL que
 
 (reformatter-define sqlformat
   :program (executable-find "sql-formatter")
-  :args `("-l" ,my/sqlformatter-dialect))
+  :args `("-l" ,my/sqlformatter-dialect, "-u"))
 
 (my-leader-def
   :keymaps '(sql-mode-map)
@@ -4987,10 +4984,9 @@ Using my own fork until the modifications are merged into master.
   :straight t
   :after (elfeed)
   :config
-  (setq rmh-elfeed-org-files '("~/.emacs.d/elfeed.org"))
+  (setq rmh-elfeed-org-files '("~/.emacs.d/private.org"))
   (elfeed-org))
 #+end_src
-
 **** Some additions
 Filter elfeed search buffer by the feed under the cursor.
 #+begin_src emacs-lisp
@@ -5017,6 +5013,73 @@ Open a URL with eww.
   (let ((link (elfeed-entry-link elfeed-show-entry)))
     (when link
       (eww link))))
+#+end_src
+**** Custom faces
+Setting up custom faces for certain tags to make the feed look a bit nicer.
+
+#+begin_src emacs-lisp
+(defface elfeed-videos-entry
+  `((t :foreground ,(doom-color 'red)))
+  "Face for the elfeed entries with tag \"videos\"")
+
+(defface elfeed-twitter-entry
+  `((t :foreground ,(doom-color 'blue)))
+  "Face for the elfeed entries with tah \"twitter\"")
+
+(defface elfeed-emacs-entry
+  `((t :foreground ,(doom-color 'magenta)))
+  "Face for the elfeed entries with tah \"emacs\"")
+
+(defface elfeed-music-entry
+  `((t :foreground ,(doom-color 'green)))
+  "Face for the elfeed entries with tah \"music\"")
+
+(defface elfeed-podcasts-entry
+  `((t :foreground ,(doom-color 'yellow)))
+  "Face for the elfeed entries with tag \"podcasts\"")
+
+(defface elfeed-blogs-entry
+  `((t :foreground ,(doom-color 'orange)))
+  "Face for the elfeed entries with tag \"blogs\"")
+
+(with-eval-after-load 'elfeed
+  (setq elfeed-search-face-alist
+        '((twitter elfeed-twitter-entry)
+          (podcasts elfeed-podcasts-entry)
+          (music elfeed-music-entry)
+          (videos elfeed-videos-entry)
+          (emacs elfeed-emacs-entry)
+          (blogs elfeed-blogs-entry)
+          (unread elfeed-search-unread-title-face))))
+#+end_src
+**** elfeed-score
+[[https://github.com/sp1ff/elfeed-score][elfeed-score]] is a package that implements scoring for the elfeed entries. Entries are scored by a set of rules for tags/title/content/etc and sorted by that score.
+
+#+begin_src emacs-lisp
+(defun my/elfeed-toggle-score-sort ()
+  (interactive)
+  (setq elfeed-search-sort-function
+        (if elfeed-search-sort-function
+            nil
+          #'elfeed-score-sort))
+  (message "Sorting by score: %S" (if elfeed-search-sort-function "ON" "OFF"))
+  (elfeed-search-update--force))
+
+(use-package elfeed-score
+  :straight t
+  :after (elfeed)
+  :init
+  (setq elfeed-score-serde-score-file "~/.emacs.d/elfeed.score")
+  :config
+  (elfeed-score-enable)
+  (setq elfeed-search-print-entry-function #'elfeed-score-print-entry)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(elfeed-search-mode-map)
+   "=" elfeed-score-map)
+  (general-define-key
+   :keymaps '(elfeed-score-map)
+   "=" #'my/elfeed-toggle-score-sort))
 #+end_src
 **** YouTube & EMMS
 Previously this block was opening MPV with =start-process=, but now I've managed to hook up MPV with EMMS. So there is the EMMS+elfeed "integration".
