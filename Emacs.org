@@ -2740,7 +2740,52 @@ Log DONE time
 #+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
 (setq org-log-done 'time)
 #+end_src
+*** Trello sync
+Some of the projects I'm participating in are managed via Trello, so I use [[http://org-trello.github.io/][org-trello]] to keep track of them. The package has a remarkably awkward keybindings setup, so my effort to call =my-leader-def= to set keybindings I like is no less awkward.
+
+Also, trello files are huge and have a lot of information and tasks which do not concern me, so I don't add them to =org-agenda-files=.
+
+#+begin_src emacs-lisp
+(use-package org-trello
+  :straight (:build (:not native-compile))
+  :commands (org-trello-mode)
+  :init
+  (setq org-trello-current-prefix-keybinding "C-c o")
+  (setq org-trello-add-tags nil)
+  (setq org-trello-files
+        (thread-last (concat org-directory "/trello")
+          (directory-files)
+          (seq-filter
+           (lambda (f) (string-match-p (rx ".org" eos) f)))
+          (mapcar
+           (lambda (f) (concat org-directory "/trello/" f)))))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (when (string-match-p (rx "trello") (or (buffer-file-name) ""))
+                (org-trello-mode))))
+  :config
+  (eval
+   `(my-leader-def
+      :infix "o t"
+      :keymaps '(org-trello-mode-map)
+      ,@(mapcan
+         (lambda (b) (list (nth 1 b) (macroexp-quote (nth 0 b))))
+         org-trello-interactive-command-binding-couples))))
+#+end_src
+*** org-ql
+[[https://github.com/alphapapa/org-ql][org-ql]] is a package to query the org files. I'm using it in my review workflow and for custom agenda views.
+
+#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+(use-package org-ql
+  :straight (:fetcher github
+                      :repo "alphapapa/org-ql"
+                      :files (:defaults (:exclude "helm-org-ql.el"))))
+#+end_src
 *** Custom agendas
+Some custom agendas to fit my workflow.
+
+Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I still want to see them in agenda, so I use =org-ql-block= from =org-ql=.
+
 #+begin_src emacs-lisp
 (defun my/org-scheduled-get-time ()
   (let ((scheduled (org-get-scheduled-time (point))))
@@ -2754,6 +2799,13 @@ Log DONE time
           (todo "NEXT"
                 ((org-agenda-prefix-format "  %i %-12:c [%e] ")
                  (org-agenda-overriding-header "Next tasks")))
+          (org-ql-block
+           `(and
+             (regexp ,(rx ":orgtrello_users:" (* nonl) "sqrtminusone"))
+             (todo)
+             (deadline))
+           ((org-agenda-files ',org-trello-files)
+            (org-ql-block-header "Trello assigned")))
           (tags-todo "inbox"
                      ((org-agenda-overriding-header "Inbox")
                       (org-agenda-prefix-format " %i %-12:c")
@@ -2765,15 +2817,6 @@ Log DONE time
         ("tp" "Personal tasks"
          ((tags-todo "personal"
                      ((org-agenda-prefix-format "  %i %-12:c [%e] ")))))))
-#+end_src
-*** org-ql
-[[https://github.com/alphapapa/org-ql][org-ql]] is a package to query the org files. I'm using it in my review workflow, perhaps later I'll find another usecases.
-
-#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
-(use-package org-ql
-  :straight (:fetcher github
-                      :repo "alphapapa/org-ql"
-                      :files (:defaults (:exclude "helm-org-ql.el"))))
 #+end_src
 *** Review workflow
 My take on a review workflow. As a baseline, I want to have a template that lists the important changes since the last review and other basic information. I'm doing reviews regularly, but the time intervals still may vary, hence this flexibility.
@@ -3179,6 +3222,23 @@ There are some problems with org roam v2, so I disabled it as of now. I will pro
   :disabled
   :config
   (org-roam-bibtex-mode))
+#+end_src
+*** Managing tables
+I use Org to manage some small tables which I want to process further. So here is a function that saves each table to a CSV file.
+#+begin_src emacs-lisp
+(defun my/export-org-tables-to-csv ()
+  (interactive)
+  (org-table-map-tables
+   (lambda ()
+     (when-let
+         (name
+          (plist-get (cadr (org-element-at-point)) :name))
+       (org-table-export
+        (concat
+         (file-name-directory
+          (buffer-file-name))
+         name ".csv")
+        "orgtbl-to-csv")))))
 #+end_src
 ** UI
 *** OFF (OFF) Instant equations preview
@@ -5208,15 +5268,22 @@ After all this is done, run =M-x emms-cache-set-from-mpd-all= to set cache from 
 | Guix dependency |
 |-----------------|
 | mpv             |
-| youtube-dl      |
+| yt-dlp          |
 
-[[https://mpv.io/][mpv]] is a decent media player, which has found a place in this configuration because it integrates with youtube-dl.
+[[https://mpv.io/][mpv]] is a decent media player, which has found a place in this configuration because it integrates with +youtube-dl+ yt-dlp.
+
+It looks like YouTube has started to throttle youtube-dl, and yt-dlp has a workaround for that particular case. Just don't forget to add the following like to the mpv config:
+#+begin_src conf-unix :tangle ~/.config/mpv/mpv.conf
+script-opts=ytdl_hook-ytdl_path=yt-dlp
+#+end_src
+
+It seems a bit strange to keep the MPV config in this file, but I don't use the program outside Emacs.
 
 #+begin_src emacs-lisp
 (add-to-list 'emms-player-list 'emms-player-mpv t)
 #+end_src
 
-Also a custom regex. My demands for MPV include running =youtube-dl=, so there is a regex that matches youtube.com or some of the video formats.
+Also a custom regex. My demands for MPV include running =yt-dlp=, so there is a regex that matches youtube.com or some of the video formats.
 #+begin_src emacs-lisp
 (emms-player-set emms-player-mpv
                  'regex
@@ -5224,7 +5291,7 @@ Also a custom regex. My demands for MPV include running =youtube-dl=, so there i
                          (+ (? (or "https://" "http://"))
                             (* nonl)
                             (regexp (eval (emms-player-simple-regexp
-                                           "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
+                            "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
 #+end_src
 
 By default MPV plays the video in the best possible quality, which may be pretty high, even too high with limited bandwidth. So here is the logic to choose the quality.
@@ -5821,6 +5888,16 @@ In order for this to work in Guix, a service is necessary - [[file:Desktop.org::
             :action (lambda (elem)
                       (setq zone-programs (vector (cdr elem)))
                       (zone))))
+#+end_src
+
+Also, a function to copy a URL to the video under cursor.
+#+begin_src emacs-lisp
+(defun my/ytel-kill-url ()
+  (interactive)
+  (kill-new
+   (concat
+    "https://www.youtube.com/watch?v="
+    (ytel-video-id (ytel-get-current-video)))))
 #+end_src
 * Guix settings
 | Guix dependency     | Description                   |

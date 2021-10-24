@@ -4,7 +4,7 @@
    "ripgrep"
    "emacs-vterm"
    "imagemagick"
-   "youtube-dl"
+   "yt-dlp"
    "mpv"
    "python-isort"
    "python-yapf"

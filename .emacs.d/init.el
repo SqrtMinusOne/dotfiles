@@ -1653,6 +1653,31 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                   "/Entered on/ %U\n"
                   "%a\n"))))
 
+(use-package org-trello
+  :straight (:build (:not native-compile))
+  :commands (org-trello-mode)
+  :init
+  (setq org-trello-current-prefix-keybinding "C-c o")
+  (setq org-trello-files
+        (thread-last (concat org-directory "/trello")
+          (directory-files)
+          (seq-filter
+           (lambda (f) (string-match-p (rx ".org" eos) f)))
+          (mapcar
+           (lambda (f) (concat org-directory "/trello/" f)))))
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (when (string-match-p (rx "trello") (or (buffer-file-name) ""))
+                (org-trello-mode))))
+  :config
+  (eval
+   `(my-leader-def
+      :infix "o t"
+      :keymaps '(org-trello-mode-map)
+      ,@(mapcan
+         (lambda (b) (list (nth 1 b) (macroexp-quote (nth 0 b))))
+         org-trello-interactive-command-binding-couples))))
+
 (defun my/org-scheduled-get-time ()
   (let ((scheduled (org-get-scheduled-time (point))))
     (if scheduled
@@ -1665,6 +1690,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (todo "NEXT"
                 ((org-agenda-prefix-format "  %i %-12:c [%e] ")
                  (org-agenda-overriding-header "Next tasks")))
+          (org-ql-block
+           `(and
+             (regexp ,(rx ":orgtrello_users:" (* nonl) "sqrtminusone"))
+             (todo)
+             (deadline))
+           ((org-agenda-files ',org-trello-files)
+            (org-ql-block-header "Trello")))
           (tags-todo "inbox"
                      ((org-agenda-overriding-header "Inbox")
                       (org-agenda-prefix-format " %i %-12:c")
@@ -1976,6 +2008,20 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :disabled
   :config
   (org-roam-bibtex-mode))
+
+(defun my/export-org-tables-to-csv ()
+  (interactive)
+  (org-table-map-tables
+   (lambda ()
+     (when-let
+         (name
+          (plist-get (cadr (org-element-at-point)) :name))
+       (org-table-export
+        (concat
+         (file-name-directory
+          (buffer-file-name))
+         name ".csv")
+        "orgtbl-to-csv")))))
 
 (use-package org-latex-impatient
   :straight (:repo "yangsheng6810/org-latex-impatient"
@@ -3452,7 +3498,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                            (+ (? (or "https://" "http://"))
                               (* nonl)
                               (regexp (eval (emms-player-simple-regexp
-                                             "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
+                              "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
   (setq my/youtube-dl-quality-list
         '("bestvideo[height<=720]+bestaudio/best[height<=720]"
           "bestvideo[height<=480]+bestaudio/best[height<=480]"
@@ -3872,3 +3918,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             :action (lambda (elem)
                       (setq zone-programs (vector (cdr elem)))
                       (zone))))
+
+(defun my/ytel-kill-url ()
+  (interactive)
+  (kill-new
+   (concat
+    "https://www.youtube.com/watch?v="
+    (ytel-video-id (ytel-get-current-video)))))
