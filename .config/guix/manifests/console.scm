@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "sshfs"
    "tokei"
    "jmtpfs"
    "unzip"

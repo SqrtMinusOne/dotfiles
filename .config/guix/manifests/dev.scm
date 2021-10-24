@@ -1,5 +1,7 @@
 (specifications->manifest
  '(
+   "gource"
+   "mysql"
    "git-lfs"
    "sbcl"
    "make"

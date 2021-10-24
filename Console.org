@@ -845,6 +845,7 @@ key_bindings:
 | unzip           |                                             |
 | jmtpfs          | A tool to mount MTP devices (e.g. Android)  |
 | tokei           | Count lines of code                         |
+| sshfs           | Mount stuff over SSH                        |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.
