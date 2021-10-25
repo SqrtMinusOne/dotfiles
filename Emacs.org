@@ -2348,6 +2348,8 @@ Use the built-in org mode.
   :straight t
   :if (not my/remote-server)
   :defer t
+  :init
+  (setq org-directory (expand-file-name "~/Documents/org-mode"))
   :config
   (setq org-startup-indented t)
   (setq org-return-follows-link t)
@@ -2686,7 +2688,6 @@ Some inspiration:
 
 Used files
 #+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
-(setq org-directory (expand-file-name "~/Documents/org-mode"))
 (setq org-agenda-files '("inbox.org" "projects.org" "work.org" "sem-11.org" "life.org"))
 ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
 #+end_src
@@ -2746,19 +2747,23 @@ Some of the projects I'm participating in are managed via Trello, so I use [[htt
 Also, trello files are huge and have a lot of information and tasks which do not concern me, so I don't add them to =org-agenda-files=.
 
 #+begin_src emacs-lisp
+(setq org-trello-files
+      (thread-last (concat org-directory "/trello")
+        (directory-files)
+        (seq-filter
+         (lambda (f) (string-match-p (rx ".org" eos) f)))
+        (mapcar
+         (lambda (f) (concat org-directory "/trello/" f)))))
+#+end_src
+
+#+begin_src emacs-lisp
 (use-package org-trello
   :straight (:build (:not native-compile))
   :commands (org-trello-mode)
   :init
   (setq org-trello-current-prefix-keybinding "C-c o")
   (setq org-trello-add-tags nil)
-  (setq org-trello-files
-        (thread-last (concat org-directory "/trello")
-          (directory-files)
-          (seq-filter
-           (lambda (f) (string-match-p (rx ".org" eos) f)))
-          (mapcar
-           (lambda (f) (concat org-directory "/trello/" f)))))
+
   (add-hook 'org-mode-hook
             (lambda ()
               (when (string-match-p (rx "trello") (or (buffer-file-name) ""))

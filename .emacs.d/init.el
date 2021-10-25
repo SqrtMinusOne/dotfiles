@@ -1327,6 +1327,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :if (not my/remote-server)
   :defer t
+  :init
+  (setq org-directory (expand-file-name "~/Documents/org-mode"))
   :config
   (setq org-startup-indented t)
   (setq org-return-follows-link t)
@@ -1451,7 +1453,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   
   (general-nmap :keymaps 'org-mode-map
       "C-x C-l" 'my/org-link-copy)
-  (setq org-directory (expand-file-name "~/Documents/org-mode"))
   (setq org-agenda-files '("inbox.org" "projects.org" "work.org" "sem-11.org" "life.org"))
   ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
   (add-to-list 'org-global-properties
@@ -1653,18 +1654,21 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                   "/Entered on/ %U\n"
                   "%a\n"))))
 
+(setq org-trello-files
+      (thread-last (concat org-directory "/trello")
+        (directory-files)
+        (seq-filter
+         (lambda (f) (string-match-p (rx ".org" eos) f)))
+        (mapcar
+         (lambda (f) (concat org-directory "/trello/" f)))))
+
 (use-package org-trello
   :straight (:build (:not native-compile))
   :commands (org-trello-mode)
   :init
   (setq org-trello-current-prefix-keybinding "C-c o")
-  (setq org-trello-files
-        (thread-last (concat org-directory "/trello")
-          (directory-files)
-          (seq-filter
-           (lambda (f) (string-match-p (rx ".org" eos) f)))
-          (mapcar
-           (lambda (f) (concat org-directory "/trello/" f)))))
+  (setq org-trello-add-tags nil)
+
   (add-hook 'org-mode-hook
             (lambda ()
               (when (string-match-p (rx "trello") (or (buffer-file-name) ""))
@@ -1696,7 +1700,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
              (todo)
              (deadline))
            ((org-agenda-files ',org-trello-files)
-            (org-ql-block-header "Trello")))
+            (org-ql-block-header "Trello assigned")))
           (tags-todo "inbox"
                      ((org-agenda-overriding-header "Inbox")
                       (org-agenda-prefix-format " %i %-12:c")
