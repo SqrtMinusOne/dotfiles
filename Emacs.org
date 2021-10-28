@@ -2773,6 +2773,7 @@ Also, trello files are huge and have a lot of information and tasks which do not
    `(my-leader-def
       :infix "o t"
       :keymaps '(org-trello-mode-map)
+      "" '(:which-key "trello")
       ,@(mapcan
          (lambda (b) (list (nth 1 b) (macroexp-quote (nth 0 b))))
          org-trello-interactive-command-binding-couples))))
@@ -3446,6 +3447,26 @@ Add a custom LaTeX template without default packages. Packages are indented to b
 
 (general-nmap :keymaps 'org-mode-map
     "C-x C-l" 'my/org-link-copy)
+#+end_src
+*** Open a file from =org-directory=
+A function to open a file from =org-directory=, excluding a few directories like =roam= and =journal=.
+
+#+begin_src emacs-lisp
+(defun my/org-file-open ()
+  (interactive)
+  (let* ((default-directory org-directory)
+         (project-files
+          (seq-filter
+           (lambda (f)
+             (and
+              (string-match-p (rx (* nonl) ".org" eos) f)
+              (not (string-match-p (rx (| "journal" "roam" "review" "archive")) f))))
+           (projectile-current-project-files))))
+    (find-file
+     (concat org-directory "/" (completing-read "Org file: " project-files)))))
+
+(my-leader-def
+  "o o" 'my/org-file-open)
 #+end_src
 ** Presentations
 Doing presentations with [[https://github.com/rlister/org-present][org-present]].

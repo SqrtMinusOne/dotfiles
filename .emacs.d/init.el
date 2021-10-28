@@ -1678,6 +1678,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    `(my-leader-def
       :infix "o t"
       :keymaps '(org-trello-mode-map)
+      "" '(:which-key "trello")
       ,@(mapcan
          (lambda (b) (list (nth 1 b) (macroexp-quote (nth 0 b))))
          org-trello-interactive-command-binding-couples))))
@@ -2120,6 +2121,22 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (general-nmap :keymaps 'org-mode-map
     "C-x C-l" 'my/org-link-copy)
+
+(defun my/org-file-open ()
+  (interactive)
+  (let* ((default-directory org-directory)
+         (project-files
+          (seq-filter
+           (lambda (f)
+             (and
+              (string-match-p (rx (* nonl) ".org" eos) f)
+              (not (string-match-p (rx (| "journal" "roam" "review" "archive")) f))))
+           (projectile-current-project-files))))
+    (find-file
+     (concat org-directory "/" (completing-read "Org file: " project-files)))))
+
+(my-leader-def
+  "o o" 'my/org-file-open)
 
 (use-package hide-mode-line
   :straight t
