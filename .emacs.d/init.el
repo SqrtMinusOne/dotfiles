@@ -958,6 +958,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package emojify
   :straight t
   :if (and (display-graphic-p) (not (or my/lowpower my/is-termux)))
+  :disabled
   :hook (after-init . global-emojify-mode))
 
 (use-package ligature
@@ -2050,7 +2051,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package org-superstar
   :straight t
+  :disabled
   :hook (org-mode . org-superstar-mode))
+
+(use-package org-bars
+  :straight (:repo "tonyaldon/org-bars" :host github)
+  :hook (org-mode . org-bars-mode))
+
+(defun my/org-no-ellipsis-in-headlines ()
+  (remove-from-invisibility-spec '(outline . t))
+  (add-to-invisibility-spec 'outline))
+
+(add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
 
 ;; (setq org-export-backends '(md html latex beamer org))
 
@@ -3280,6 +3292,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (add-hook 'dockerfile-mode 'smartparens-mode))
+
+(use-package crontab-mode
+  :straight t)
 
 (defun my/edit-configuration ()
   "Open the init file."

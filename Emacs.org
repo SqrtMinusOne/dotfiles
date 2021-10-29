@@ -1841,6 +1841,7 @@ References:
 (use-package emojify
   :straight t
   :if (and (display-graphic-p) (not (or my/lowpower my/is-termux)))
+  :disabled
   :hook (after-init . global-emojify-mode))
 #+end_src
 *** Ligatures
@@ -3312,11 +3313,34 @@ Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HE
        org-preview-latex-process-alist))
 #+end_src
 *** Better headers
+[[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]] is package that makes Org heading lines look a bit prettier.
+
+Disabled it for now because of overlapping functionality with org-bars.
+
 #+begin_src emacs-lisp
 (use-package org-superstar
   :straight t
+  :disabled
   :hook (org-mode . org-superstar-mode))
 #+end_src
+
+[[https://github.com/tonyaldon/org-bars][org-bars]] highlights Org indentation with bars.
+#+begin_src emacs-lisp
+(use-package org-bars
+  :straight (:repo "tonyaldon/org-bars" :host github)
+  :if (display-graphic-p)
+  :hook (org-mode . org-bars-mode))
+#+end_src
+
+Remove the elipsis at the end of folded headlines. The elipsis seems unnecesary with org-bars.
+#+begin_src emacs-lisp
+(defun my/org-no-ellipsis-in-headlines ()
+  (remove-from-invisibility-spec '(outline . t))
+  (add-to-invisibility-spec 'outline))
+
+(add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
+#+end_src
+
 *** Org Agenda Icons
 Categories are broad labels to group agenda items.
 
@@ -4958,6 +4982,11 @@ References:
   :straight t
   :config
   (add-hook 'dockerfile-mode 'smartparens-mode))
+#+end_src
+** crontab
+#+begin_src emacs-lisp
+(use-package crontab-mode
+  :straight t)
 #+end_src
 * Apps & Misc
 ** Managing dotfiles
