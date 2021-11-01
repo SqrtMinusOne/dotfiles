@@ -285,7 +285,8 @@ bindsym $mod+m mode "move" focus floating
 # [[file:../../Desktop.org::*Integration with rofi][Integration with rofi:1]]
 bindsym $mod+d exec "rofi -modi 'drun,run' -show drun"
 bindsym $mod+b exec --no-startup-id rofi-buku-mine
-bindsym $mod+minus exec rofi-pass; mode default
+bindsym $mod+minus exec rofi-pass
+bindsym $mod+equal exec rofimoji
 
 bindsym $mod+apostrophe mode "rofi"
 

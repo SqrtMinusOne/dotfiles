@@ -36,6 +36,7 @@
    "flameshot"
    "xset"
    "rofi-pass"
+   "rofimoji"
    "rofi"
    "sunwait"
    "dateutils"

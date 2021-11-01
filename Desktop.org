@@ -621,7 +621,8 @@ Keybindings to launch [[https://github.com/davatorium/rofi][rofi]]. For more det
 #+begin_src conf-space
 bindsym $mod+d exec "rofi -modi 'drun,run' -show drun"
 bindsym $mod+b exec --no-startup-id rofi-buku-mine
-bindsym $mod+minus exec rofi-pass; mode default
+bindsym $mod+minus exec rofi-pass
+bindsym $mod+equal exec rofimoji
 
 bindsym $mod+apostrophe mode "rofi"
 
@@ -1564,6 +1565,10 @@ if [[ ! -z $SELECTED ]]; then
     man -Tpdf $SELECTED | zathura -
 fi
 #+end_src
+*** Emojis
+| Guix dependency |
+|-----------------|
+| rofimoji        |
 *** pass
 | Guix dependency |
 |-----------------|
