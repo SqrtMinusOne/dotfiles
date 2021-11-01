@@ -2717,6 +2717,12 @@ Refile targets
 Settings for Org capture mode. The goal here is to have a non-disruptive process to capture various ideas.
 
 #+begin_src emacs-lisp
+(defun my/generate-inbox-note-name ()
+  (format
+   "%s/inbox-notes/%s.org"
+   org-directory
+   (format-time-string "%Y%m%d%H%M%S")))
+
 (setq org-capture-templates
       `(("i" "Inbox" entry  (file "inbox.org")
          ,(concat "* TODO %?\n"
@@ -2729,7 +2735,10 @@ Settings for Org capture mode. The goal here is to have a non-disruptive process
         ("f" "elfeed" entry (file "inbox.org")
          ,(concat "* TODO %:elfeed-entry-title\n"
                   "/Entered on/ %U\n"
-                  "%a\n"))))
+                  "%a\n"))
+        ("n" "note" entry (file my/generate-inbox-note-name)
+         ,(concat "* %?\n"
+                  "/Entered on/ %U"))))
 #+end_src
 
 Effort estimation
@@ -3135,7 +3144,7 @@ References:
 
 (my-leader-def
   :infix "or"
-  "r" '(:which-key "org-roam")
+  "" '(:which-key "org-roam")
   "i" 'org-roam-node-insert
   "r" 'org-roam-node-find
   "g" 'org-roam-graph
@@ -3213,8 +3222,9 @@ As of now, this package loads Helm on start. To avoid this, I have to exclude He
   (general-define-key
    :keymaps 'bibtex-mode-map
    "M-RET" 'org-ref-bibtex-hydra/body)
-  (add-to-list 'orhc-candidate-formats
-               '("online" . "  |${=key=}| ${title} ${url}")))
+  ;; (add-to-list 'orhc-candidate-formats
+  ;;              '("online" . "  |${=key=}| ${title} ${url}"))
+  )
 #+end_src
 
 *** org-roam-bibtex
@@ -5167,6 +5177,24 @@ Setting up custom faces for certain tags to make the feed look a bit nicer.
           (blogs elfeed-blogs-entry)
           (unread elfeed-search-unread-title-face))))
 #+end_src
+
+Also a function to automatically adjust these colors with the Doom theme.
+#+begin_src emacs-lisp
+(defun my/update-my-theme-elfeed (&rest _)
+  (custom-theme-set-faces
+   'my-theme
+   `(elfeed-videos-entry ((t :foreground ,(doom-color 'red))))
+   `(elfeed-twitter-entry ((t :foreground ,(doom-color 'blue))))
+   `(elfeed-emacs-entry ((t :foreground ,(doom-color 'magenta))))
+   `(elfeed-music-entry ((t :foreground ,(doom-color 'green))))
+   `(elfeed-podcasts-entry ((t :foreground ,(doom-color 'yellow))))
+   `(elfeed-blogs-entry ((t :foreground ,(doom-color 'orange)))))
+  (enable-theme 'my-theme))
+
+(advice-add 'load-theme :after #'my/update-my-theme-elfeed)
+(when (fboundp 'doom-color)
+  (my/update-my-theme-elfeed))
+#+end_src
 **** elfeed-score
 [[https://github.com/sp1ff/elfeed-score][elfeed-score]] is a package that implements scoring for the elfeed entries. Entries are scored by a set of rules for tags/title/content/etc and sorted by that score.
 
@@ -5919,7 +5947,7 @@ In order for this to work in Guix, a service is necessary - [[file:Desktop.org::
   (add-to-list 'elcord-boring-buffers-regexp-list
                (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
   (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
+               (rx bos (? "CAPTURE-") (= 14 num) "-" (* not-newline) ".org" eos)))
 #+end_src
 *** Snow
 #+begin_src emacs-lisp

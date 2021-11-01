@@ -1641,6 +1641,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 
+(defun my/generate-inbox-note-name ()
+  (format
+   "%s/inbox-notes/%s.org"
+   org-directory
+   (format-time-string "%Y%m%d%H%M%S")))
+
 (setq org-capture-templates
       `(("i" "Inbox" entry  (file "inbox.org")
          ,(concat "* TODO %?\n"
@@ -1653,7 +1659,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         ("f" "elfeed" entry (file "inbox.org")
          ,(concat "* TODO %:elfeed-entry-title\n"
                   "/Entered on/ %U\n"
-                  "%a\n"))))
+                  "%a\n"))
+        ("n" "note" entry (file my/generate-inbox-note-name)
+         ,(concat "* %?\n"
+                  "/Entered on/ %U"))))
 
 (setq org-trello-files
       (thread-last (concat org-directory "/trello")
@@ -1959,7 +1968,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def
   :infix "or"
-  "r" '(:which-key "org-roam")
+  "" '(:which-key "org-roam")
   "i" 'org-roam-node-insert
   "r" 'org-roam-node-find
   "g" 'org-roam-graph
@@ -2005,8 +2014,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (general-define-key
    :keymaps 'bibtex-mode-map
    "M-RET" 'org-ref-bibtex-hydra/body)
-  (add-to-list 'orhc-candidate-formats
-               '("online" . "  |${=key=}| ${title} ${url}")))
+  ;; (add-to-list 'orhc-candidate-formats
+  ;;              '("online" . "  |${=key=}| ${title} ${url}"))
+  )
 
 (use-package org-roam-bibtex
   :straight (:host github :repo "org-roam/org-roam-bibtex")
@@ -2056,6 +2066,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package org-bars
   :straight (:repo "tonyaldon/org-bars" :host github)
+  :if (display-graphic-p)
   :hook (org-mode . org-bars-mode))
 
 (defun my/org-no-ellipsis-in-headlines ()
@@ -3433,6 +3444,21 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (blogs elfeed-blogs-entry)
           (unread elfeed-search-unread-title-face))))
 
+(defun my/update-my-theme-elfeed (&rest _)
+  (custom-theme-set-faces
+   'my-theme
+   `(elfeed-videos-entry ((t :foreground ,(doom-color 'red))))
+   `(elfeed-twitter-entry ((t :foreground ,(doom-color 'blue))))
+   `(elfeed-emacs-entry ((t :foreground ,(doom-color 'magenta))))
+   `(elfeed-music-entry ((t :foreground ,(doom-color 'green))))
+   `(elfeed-podcasts-entry ((t :foreground ,(doom-color 'yellow))))
+   `(elfeed-blogs-entry ((t :foreground ,(doom-color 'orange)))))
+  (enable-theme 'my-theme))
+
+(advice-add 'load-theme :after #'my/update-my-theme-elfeed)
+(when (fboundp 'doom-color)
+  (my/update-my-theme-elfeed))
+
 (defun my/elfeed-toggle-score-sort ()
   (interactive)
   (setq elfeed-search-sort-function
@@ -3934,7 +3960,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-to-list 'elcord-boring-buffers-regexp-list
                (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
   (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (= 14 num) "-" (* not-newline) ".org" eos)))
+               (rx bos (? "CAPTURE-") (= 14 num) "-" (* not-newline) ".org" eos)))
 
 (use-package snow
   :straight (:repo "alphapapa/snow.el" :host github)
