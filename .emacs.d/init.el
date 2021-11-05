@@ -182,6 +182,7 @@
      pass
      calendar
      dired
+     ivy
      debug
      guix
      calc
@@ -957,9 +958,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package emojify
   :straight t
-  :if (and (display-graphic-p) (not (or my/lowpower my/is-termux)))
-  :disabled
-  :hook (after-init . global-emojify-mode))
+  :if (and (display-graphic-p) (not (or my/lowpower my/is-termux))))
 
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
@@ -3860,7 +3859,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :commands (prodigy)
   :init
-  (my-leader-def "ap" 'prodigy)
+  (my-leader-def "aP" 'prodigy)
   :config
   (when (not (boundp 'my/docker-directories))
     (load (concat user-emacs-directory "prodigy-config")))
@@ -3922,8 +3921,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :init
   (my-leader-def "ag" 'guix))
 
+(use-package pomm
+  :straight (:repo "SqrtMinusOne/pomm.el" :host github)
+  :commands (pomm)
+  :init
+  (my-leader-def "ap" #'pomm)
+  :config
+  (setq alert-default-style 'libnotify)
+  (add-hook 'pomm-on-tick-hook 'pomm-update-mode-line-string)
+  (add-hook 'pomm-on-status-changed-hook 'pomm-update-mode-line-string))
+
 (use-package pomidor
   :straight t
+  :disabled
   :commands (pomidor)
   :init
   (my-leader-def "aP" #'pomidor)

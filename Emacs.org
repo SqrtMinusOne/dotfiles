@@ -620,6 +620,7 @@ Basic evil configuration.
      pass
      calendar
      dired
+     ivy
      debug
      guix
      calc
@@ -1840,9 +1841,7 @@ References:
 #+begin_src emacs-lisp
 (use-package emojify
   :straight t
-  :if (and (display-graphic-p) (not (or my/lowpower my/is-termux)))
-  :disabled
-  :hook (after-init . global-emojify-mode))
+  :if (and (display-graphic-p) (not (or my/lowpower my/is-termux))))
 #+end_src
 *** Ligatures
 Ligature setup for the JetBrainsMono font.
@@ -5792,7 +5791,7 @@ The actual service definitions are in the =~/.emacs.d/prodigy.org=, which tangle
   :straight t
   :commands (prodigy)
   :init
-  (my-leader-def "ap" 'prodigy)
+  (my-leader-def "aP" 'prodigy)
   :config
   (when (not (boundp 'my/docker-directories))
     (load (concat user-emacs-directory "prodigy-config")))
@@ -5874,12 +5873,29 @@ An Emacs package to help managing GNU Guix.
   (my-leader-def "ag" 'guix))
 #+end_src
 ** Productivity
-*** Pomidor
+*** pomm
+My package for doing Pomodoro timer.
+
+#+begin_src emacs-lisp
+(use-package pomm
+  :straight (:repo "SqrtMinusOne/pomm.el" :host github)
+  :commands (pomm)
+  :init
+  (my-leader-def "ap" #'pomm)
+  :config
+  (setq alert-default-style 'libnotify)
+  (add-hook 'pomm-on-tick-hook 'pomm-update-mode-line-string)
+  (add-hook 'pomm-on-status-changed-hook 'pomm-update-mode-line-string))
+#+end_src
+*** OFF (OFF) Pomidor
 A simple pomodoro technique timer.
+
+Disabled it in favour of my own package.
 
 #+begin_src emacs-lisp
 (use-package pomidor
   :straight t
+  :disabled
   :commands (pomidor)
   :init
   (my-leader-def "aP" #'pomidor)
