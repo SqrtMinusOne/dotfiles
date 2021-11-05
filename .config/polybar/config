@@ -104,6 +104,14 @@ exec = /home/pavel/bin/polybar/aw_afk.sh
 interval = 60
 ; aw-afk:2 ends here
 
+; [[file:../../Desktop.org::*pomm][pomm:2]]
+[module/pomm]
+type = custom/script
+exec = /home/pavel/bin/polybar/pomm.sh
+interval = 1
+format-underline = ${colors.green-lighter}
+; pomm:2 ends here
+
 ; [[file:../../Desktop.org::*sun][sun:2]]
 [module/sun]
 type = custom/script
