@@ -24,7 +24,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#measure-startup-speed][Measure startup speed]]
   - [[#straightel][straight.el]]
   - [[#use-package][use-package]]
-  - [[#config-variants--environment][config variants & environment]]
+  - [[#config-variants--environment][Config variants & environment]]
   - [[#performance][Performance]]
     - [[#garbage-collection][Garbage collection]]
     - [[#run-garbage-collection-when-emacs-is-unfocused][Run garbage collection when Emacs is unfocused]]
@@ -54,6 +54,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#xref][xref]]
     - [[#folding][Folding]]
     - [[#zoom][Zoom]]
+  - [[#i3-integration][i3 integration]]
   - [[#editing-helpers][Editing helpers]]
     - [[#visual-fill-column-mode][Visual fill column mode]]
     - [[#smartparens][smartparens]]
@@ -71,7 +72,6 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#ivy-rich][ivy-rich]]
     - [[#prescient][prescient]]
     - [[#keybindings][Keybindings]]
-  - [[#off-helm][(OFF) Helm]]
   - [[#treemacs][Treemacs]]
     - [[#helper-functions][Helper functions]]
     - [[#custom-icons][Custom icons]]
@@ -112,6 +112,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#configuration][Configuration]]
     - [[#subterminal][Subterminal]]
     - [[#dired-integration][Dired integration]]
+    - [[#with-editor-integration][With-editor integration]]
   - [[#eshell][Eshell]]
 - [[#org-mode][Org Mode]]
   - [[#installation--basic-settings][Installation & basic settings]]
@@ -127,10 +128,12 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#managing-jupyter-kernels][Managing Jupyter kernels]]
     - [[#do-not-wrap-the-output-in-emacs-jupyter][Do not wrap the output in emacs-jupyter]]
     - [[#wrap-source-code-output][Wrap source code output]]
+    - [[#managing-a-literate-programming-project][Managing a literate programming project]]
   - [[#productivity--knowledge-management][Productivity & Knowledge management]]
     - [[#capture-templates--various-settings][Capture templates & various settings]]
-    - [[#custom-agendas][Custom agendas]]
+    - [[#trello-sync][Trello sync]]
     - [[#org-ql][org-ql]]
+    - [[#custom-agendas][Custom agendas]]
     - [[#review-workflow][Review workflow]]
       - [[#data-from-git--org-roam][Data from git & org-roam]]
       - [[#data-from-org-journal][Data from org-journal]]
@@ -142,6 +145,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
       - [[#org-roam-protocol][org-roam-protocol]]
     - [[#org-ref][org-ref]]
     - [[#org-roam-bibtex][org-roam-bibtex]]
+    - [[#managing-tables][Managing tables]]
   - [[#ui][UI]]
     - [[#off-instant-equations-preview][(OFF) Instant equations preview]]
     - [[#latex-fragments][LaTeX fragments]]
@@ -155,6 +159,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#latex][LaTeX]]
   - [[#keybindings--stuff][Keybindings & stuff]]
     - [[#copy-a-link][Copy a link]]
+    - [[#open-a-file-from-org-directory][Open a file from org-directory]]
   - [[#presentations][Presentations]]
   - [[#tools][Tools]]
     - [[#toc][TOC]]
@@ -163,9 +168,6 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#tables-for-guix-dependencies][Tables for Guix Dependencies]]
     - [[#noweb-evaluations][Noweb evaluations]]
     - [[#yadm-hook][yadm hook]]
-- [[#off-eaf][(OFF) EAF]]
-  - [[#installation][Installation]]
-  - [[#config][Config]]
 - [[#programming][Programming]]
   - [[#general-setup][General setup]]
     - [[#lsp][LSP]]
@@ -174,7 +176,12 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
       - [[#keybindings][Keybindings]]
     - [[#flycheck][Flycheck]]
     - [[#tree-sitter][Tree Sitter]]
-    - [[#off-dap][(OFF) DAP]]
+    - [[#dap][DAP]]
+      - [[#controls][Controls]]
+      - [[#ui-fixes][UI Fixes]]
+      - [[#helper-functions][Helper functions]]
+      - [[#improved-stack-frame-switching][Improved stack frame switching]]
+      - [[#debug-templates][Debug templates]]
     - [[#off-tabnine][(OFF) TabNine]]
     - [[#off-code-compass][(OFF) Code Compass]]
       - [[#dependencies][Dependencies]]
@@ -210,8 +217,10 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#meta-lisp][Meta Lisp]]
     - [[#emacs-lisp][Emacs Lisp]]
       - [[#package-lint][Package Lint]]
-      - [[#general][General]]
+      - [[#general-settings][General settings]]
     - [[#common-lisp][Common lisp]]
+      - [[#slime][SLIME]]
+      - [[#general-settings][General settings]]
     - [[#clojure][Clojure]]
     - [[#hy][Hy]]
     - [[#scheme][Scheme]]
@@ -241,6 +250,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
   - [[#csv][CSV]]
   - [[#off-pdf][(OFF) PDF]]
   - [[#docker][Docker]]
+  - [[#crontab][crontab]]
 - [[#apps--misc][Apps & Misc]]
   - [[#managing-dotfiles][Managing dotfiles]]
     - [[#open-emacs-config][Open Emacs config]]
@@ -250,6 +260,8 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#notmuch][Notmuch]]
     - [[#elfeed][Elfeed]]
       - [[#some-additions][Some additions]]
+      - [[#custom-faces][Custom faces]]
+      - [[#elfeed-score][elfeed-score]]
       - [[#youtube--emms][YouTube & EMMS]]
     - [[#emms][EMMS]]
       - [[#mpd][MPD]]
@@ -258,6 +270,7 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
       - [[#fetching-lyrics][Fetching lyrics]]
       - [[#some-keybindings][Some keybindings]]
       - [[#emms--mpd-fixes][EMMS & mpd Fixes]]
+    - [[#ytel][ytel]]
     - [[#eww][EWW]]
     - [[#erc][ERC]]
     - [[#google-translate][Google Translate]]
@@ -273,7 +286,8 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#proced][proced]]
     - [[#guix][Guix]]
   - [[#productivity][Productivity]]
-    - [[#pomidor][Pomidor]]
+    - [[#pomm][pomm]]
+    - [[#off-pomidor][(OFF) Pomidor]]
     - [[#calendar][Calendar]]
   - [[#fun][Fun]]
     - [[#discord-integration][Discord integration]]
@@ -1182,6 +1196,10 @@ References:
                ;; ivy-resume
                ;; ivy--restore-session
                lsp-ivy-workspace-symbol
+               dap-switch-stack-frame
+               my/dap-switch-stack-frame
+               dap-switch-session
+               dap-switch-thread
                counsel-grep
                ;; counsel-find-file
                counsel-git-grep
@@ -1228,64 +1246,11 @@ References:
  "M-RET" 'ivy-immediate-done
  [escape] 'minibuffer-keyboard-quit)
 #+end_src
-** OFF (OFF) Helm
-Config for the Helm incremental completion framework. I switched to Ivy some time ago, but keep the configuration just in case.
-#+begin_src emacs-lisp :tangle no
-(use-package helm
-  :init
-  (require 'helm-config)
-  (setq helm-split-window-in-side-p t)
-  (setq helm-move-to-line-cycle-in-source t)
-  :straight t
-  :config
-  (helm-mode 1)
-  (helm-autoresize-mode 1))
-
-(use-package helm-ag
-  :straight t)
-
-(use-package helm-rg
-  :straight t)
-
-(general-nmap
-  :keymaps 'helm-ag-mode-map
-  "RET" 'helm-ag-mode-jump
-  "M-RET" 'helm-ag-mode-jump-other-window)
-
-(general-nmap
-  :keymaps 'helm-occur-mode-map
-  "RET" 'helm-occur-mode-goto-line
-  "M-RET" 'helm-occur-mode-goto-line-ow)
-
-(general-define-key "M-x" 'helm-M-x)
-(my-leader-def
-  "fb" 'helm-buffers-list
-  "fs" 'helm-lsp-workspace-symbol
-  "fw" 'helm-lsp-global-workspace-symbol
-  "fc" 'helm-show-kill-ring
-  ;; "fa" 'helm-do-ag-project-root
-  "fm" 'helm-bookmarks
-  "ff" 'project-find-file
-  "fe" 'conda-env-activate)
-
-(my-leader-def "s" 'helm-occur)
-(my-leader-def "SPC" 'helm-resume)
-
-(general-define-key
-  :keymaps 'helm-map
-  "C-j" 'helm-next-line
-  "C-k" 'helm-previous-line)
-
-(general-define-key
-  :keymaps '(helm-find-files-map helm-locate-map)
-  "C-h" 'helm-find-files-up-one-level
-  "C-l" 'helm-execute-persistent-action)
-
-(general-imap
-  "C-y" 'helm-show-kill-ring)
-;; (general-nmap "C-p" 'project-find-file)
-#+end_src
 ** Treemacs
+| Type | Note                                                   |
+|------+--------------------------------------------------------|
+| TODO | Enable modeline only for particular treemacs instances |
+
 [[https://github.com/Alexander-Miller/treemacs][Treemacs]] calls itself a tree layout file explorer, but looks more like a project and workspace management system.
 
 Integrates with evil, magit, projectile and perspective. The latter is particularly great - each perspective can have its own treemacs workspace!
@@ -3841,17 +3806,17 @@ References:
   :straight t
   :after tree-sitter)
 #+end_src
-*** OFF (OFF) DAP
+*** DAP
 An Emacs client for Debugger Adapter Protocol.
 
-I don't use it now, because there are debuggers I like more for the technologies I'm currently using.
+As of time of this writing, I mostly debug TypeScript, so the main competitor is Chrome Inspector for node.js.
 
 References:
 - [[https://emacs-lsp.github.io/dap-mode/][dap-mode homepage]]
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 (use-package dap-mode
   :straight t
-  :defer t
+  :commands (dap-debug)
   :init
   (setq lsp-enable-dap-auto-configure nil)
   :config
@@ -3868,28 +3833,221 @@ References:
   (dap-mode 1)
   (dap-ui-mode 1)
   (dap-tooltip-mode 1)
-  (tooltip-mode 1)
-  (dap-ui-controls-mode 1))
+  (tooltip-mode 1))
+#+end_src
 
-(my-leader-def
-  :infix "d"
-  "d" 'dap-debug
-  "b" 'dap-breakpoint-toggle
-  "c" 'dap-breakpoint-condition
-  "wl" 'dap-ui-locals
-  "wb" 'dap-ui-breakpoints
-  "wr" 'dap-ui-repl
-  "ws" 'dap-ui-sessions
-  "we" 'dap-ui-expressions)
+**** Controls
+I don't like some keybindings in the built-in hydra, and there seems to be no easy way to modify the existing hydra, so I create my own. I tried to use transient, but the transient buffer seems to conflict with special buffers of DAP, and hydra does not.
 
-(my-leader-def
-  :infix "d"
-  :keymaps 'dap-mode-map
-  "h" 'dap-hydra)
+Also, I want the hydra to toggle UI windows instead of just opening them, so here is macro that defines such functions:
+#+begin_src emacs-lisp
+(with-eval-after-load 'dap-mode
+  (defmacro my/define-dap-ui-window-toggler (name)
+    `(defun ,(intern (concat "my/dap-ui-toggle-" name)) ()
+       ,(concat "Toggle DAP " name "buffer")
+       (interactive)
+       (if-let (window (get-buffer-window ,(intern (concat "dap-ui--" name "-buffer"))))
+           (quit-window nil window)
+         (,(intern (concat "dap-ui-" name))))))
 
+  (my/define-dap-ui-window-toggler "locals")
+  (my/define-dap-ui-window-toggler "expressions")
+  (my/define-dap-ui-window-toggler "sessions")
+  (my/define-dap-ui-window-toggler "breakpoints")
+  (my/define-dap-ui-window-toggler "repl"))
+#+end_src
+
+And here is the hydra:
+#+begin_src emacs-lisp
+(defhydra my/dap-hydra (:color pink :hint nil :foreign-keys run)
+  "
+^Stepping^         ^UI^                     ^Switch^                   ^Breakpoints^         ^Debug^                     ^Expressions
+^^^^^^^^------------------------------------------------------------------------------------------------------------------------------------------
+_n_: Next          _uc_: Controls           _ss_: Session              _bb_: Toggle          _dd_: Debug                 _ee_: Eval
+_i_: Step in       _ue_: Expressions        _st_: Thread               _bd_: Delete          _dr_: Debug recent          _er_: Eval region
+_o_: Step out      _ul_: Locals             _sf_: Stack frame          _ba_: Add             _dl_: Debug last            _es_: Eval thing at point
+_c_: Continue      _ur_: REPL               _su_: Up stack frame       _bc_: Set condition   _de_: Edit debug template   _ea_: Add expression
+_r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set hit count   _Q_:  Disconnect            _ed_: Remove expression
+                 _us_: Sessions           _sF_: Stack frame filtered _bl_: Set log message                           _eu_: Refresh expressions
+                 _ub_: Breakpoints                                                                               "
+
+  ("n" dap-next)
+  ("i" dap-step-in)
+  ("o" dap-step-out)
+  ("c" dap-continue)
+  ("r" dap-restart-frame)
+  ("uc" dap-ui-controls-mode)
+  ("ue" my/dap-ui-toggle-expressions)
+  ("ul" my/dap-ui-toggle-locals)
+  ("ur" my/dap-ui-toggle-repl)
+  ("uo" dap-ui-go-to-output-buffer)
+  ("us" my/dap-ui-toggle-sessions)
+  ("ub" my/dap-ui-toggle-breakpoints)
+  ("ss" dap-switch-session)
+  ("st" dap-switch-thread)
+  ("sf" dap-switch-stack-frame)
+  ("sF" my/dap-switch-stack-frame)
+  ("su" dap-up-stack-frame)
+  ("sd" dap-down-stack-frame)
+  ("bb" dap-breakpoint-toggle)
+  ("ba" dap-breakpoint-add)
+  ("bd" dap-breakpoint-delete)
+  ("bc" dap-breakpoint-condition)
+  ("bh" dap-breakpoint-hit-condition)
+  ("bl" dap-breakpoint-log-message)
+  ("dd" dap-debug)
+  ("dr" dap-debug-recent)
+  ("dl" dap-debug-last)
+  ("de" dap-debug-edit-template)
+  ("ee" dap-eval)
+  ("ea" dap-ui-expressions-add)
+  ("er" dap-eval-region)
+  ("es" dap-eval-thing-at-point)
+  ("ed" dap-ui-expressions-remove)
+  ("eu" dap-ui-expressions-refresh)
+  ("q" nil "quit" :color blue)
+  ("Q" dap-disconnect :color red))
+
+(my-leader-def "d" #'my/dap-hydra/body)
+#+end_src
+**** UI Fixes
+There are some problems with DAP UI in my setup.
+
+First, DAP uses Treemacs buffers quite extensively, and they hide the doom modeline for some reason, so I can't tell which buffer is active and can't see borders between buffers.
+
+Second, lines are truncated in some strange way, but calling =toggle-truncate-lines= seems to fix that.
+
+So I define a macro that creates a function that I can further use in an advice.
+
+#+begin_src emacs-lisp
+(defvar my/dap-mode-buffer-fixed nil)
+
+(with-eval-after-load 'dap-mode
+  (defmacro my/define-dap-tree-buffer-fixer (buffer-var buffer-name)
+    `(defun ,(intern (concat "my/fix-dap-ui-" buffer-name "-buffer")) (&rest _)
+       (with-current-buffer ,buffer-var
+         (unless my/dap-mode-buffer-fixed
+           (toggle-truncate-lines 1)
+           (doom-modeline-set-modeline 'info)
+           (setq-local my/dap-mode-buffer-fixed t)))))
+
+  (my/define-dap-tree-buffer-fixer dap-ui--locals-buffer "locals")
+  (my/define-dap-tree-buffer-fixer dap-ui--expressions-buffer "expressions")
+  (my/define-dap-tree-buffer-fixer dap-ui--sessions-buffer "sessions")
+  (my/define-dap-tree-buffer-fixer dap-ui--breakpoints-buffer "breakpoints")
+
+  (advice-add 'dap-ui-locals :after #'my/fix-dap-ui-locals-buffer)
+  (advice-add 'dap-ui-expressions :after #'my/fix-dap-ui-expressions-buffer)
+  (advice-add 'dap-ui-sessions :after #'my/fix-dap-ui-sessions-buffer)
+  (advice-add 'dap-ui-breakpoints :after #'my/fix-dap-ui-breakpoints-buffer))
+#+end_src
+**** Helper functions
+Some helper functions that make debugging with DAP easier.
+
+DAP seems to mess with window parameters from time to time. This function clears "bad" window parameters.
+#+begin_src emacs-lisp
+(defun my/clear-bad-window-parameters ()
+  "Clear window parameters that interrupt my workflow."
+  (interactive)
+  (let ((window (get-buffer-window (current-buffer))))
+    (set-window-parameter window 'no-delete-other-windows nil)))
+#+end_src
+
+A function to kill a value from a treemacs node.
+#+begin_src emacs-lisp
 (defun my/dap-yank-value-at-point (node)
   (interactive (list (treemacs-node-at-point)))
   (kill-new (message (plist-get (button-get node :item) :value))))
+#+end_src
+
+A function to open a value from a treemacs node in a new buffer.
+#+begin_src emacs-lisp
+(defun my/dap-display-value (node)
+  (interactive (list (treemacs-node-at-point)))
+  (let ((value (plist-get (button-get node :item) :value)))
+    (when value
+      (let ((buffer (generate-new-buffer "dap-value")))
+        (with-current-buffer buffer
+          (insert value))
+        (select-window (display-buffer buffer))))))
+#+end_src
+**** Improved stack frame switching
+One significant improvement over Chrome Inspector for my particular stack is an ability to filter the stack frame list, for instance to see only frames that relate to my current project.
+
+So, here are functions that customize the filters:
+#+begin_src emacs-lisp
+(with-eval-after-load 'dap-mode
+  (setq my/dap-stack-frame-filters
+        `(("node_modules,node:internal" . ,(rx (or "node_modules" "node:internal")))
+          ("node_modules" . ,(rx (or "node_modules")))
+          ("node:internal" . ,(rx (or "node:internal")))))
+
+  (setq my/dap-stack-frame-current-filter (cdar my/dap-stack-frame-filters))
+
+  (defun my/dap-stack-frame-filter-set ()
+    (interactive)
+    (setq my/dap-stack-frame-current-filter
+          (cdr
+           (assoc
+            (completing-read "Filter: " my/dap-stack-frame-filters)
+            my/dap-stack-frame-filters))))
+
+  (defun my/dap-stack-frame-filter (frame)
+    (when-let (path (dap--get-path-for-frame frame))
+      (not (string-match my/dap-stack-frame-current-filter path)))))
+#+end_src
+
+And here is a version of =dap-switch-stack-frame= that uses the said filter.
+#+begin_src emacs-lisp
+(defun my/dap-switch-stack-frame ()
+  "Switch stackframe by selecting another stackframe stackframes from current thread."
+  (interactive)
+  (when (not (dap--cur-session))
+    (error "There is no active session"))
+
+  (-if-let (thread-id (dap--debug-session-thread-id (dap--cur-session)))
+      (-if-let (stack-frames
+                (gethash
+                 thread-id
+                 (dap--debug-session-thread-stack-frames (dap--cur-session))))
+          (let* ((index 0)
+                 (stack-framces-filtered
+                  (-filter
+                   #'my/dap-stack-frame-filter
+                   stack-frames))
+                 (new-stack-frame
+                  (dap--completing-read
+                   "Select active frame: "
+                   stack-framces-filtered
+                   (-lambda ((frame &as &hash "name"))
+                     (if-let (frame-path (dap--get-path-for-frame frame))
+                         (format "%s: %s (in %s)"
+                                 (cl-incf index) name frame-path)
+                       (format "%s: %s" (cl-incf index) name)))
+                   nil
+                   t)))
+            (dap--go-to-stack-frame (dap--cur-session) new-stack-frame))
+        (->> (dap--cur-session)
+             dap--debug-session-name
+             (format "Current session %s is not stopped")
+             error))
+    (error "No thread is currently active %s" (dap--debug-session-name (dap--cur-session)))))
+#+end_src
+**** Debug templates
+Some debug templates I frequently use.
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'dap-mode
+  (dap-register-debug-template
+   "Node::Nest.js"
+   (list :type "node"
+         :request "attach"
+         :name "Node::Attach"
+         :port 9229
+         :outFiles ["${workspaceFolder}/dist/**/*.js"]
+         :sourceMaps t
+         :program "${workspaceFolder}/src/app.ts")))
+
 #+end_src
 *** OFF (OFF) TabNine
 A ML-based autocompletion system.
@@ -5878,8 +6036,8 @@ My package for doing Pomodoro timer.
 
 #+begin_src emacs-lisp
 (use-package pomm
-  :straight (:repo "SqrtMinusOne/pomm.el" :host github)
-  :commands (pomm)
+  ;; :straight (:repo "SqrtMinusOne/pomm.el" :host github)
+  :straight (:local-repo "~/Code/Emacs/pomm")
   :init
   (my-leader-def "ap" #'pomm)
   :config
@@ -5924,32 +6082,30 @@ Emacs' built-in calendar. Can even calculate sunrise and sunset times.
 (setq calendar-latitude 59.9375)
 (setq calendar-longitude 30.308611)
 #+end_src
-** OFF (OFF) EAF
-[[https://github.com/manateelazycat/emacs-application-framework][Emacs Application Framework]] provides a way to integrate PyQt applications with Emacs.
-
-I've made it work, but don't find any uses cases for me at the moment
-*** Installation
-Requirements: Node >= 14
-#+begin_src bash :tangle no
-pip install qtconsole markdown qrcode[pil] PyQt5 PyQtWebEngine
-#+end_src
-*** Config
-#+begin_src emacs-lisp :tangle no
-(use-package eaf
-  :straight (:host github :repo "manateelazycat/emacs-application-framework" :files ("*"))
-  :init
-  (use-package epc :defer t :straight t)
-  (use-package ctable :defer t :straight t)
-  (use-package deferred :defer t :straight t)
-  :config
-  (require 'eaf-evil)
-  (setq eaf-evil-leader-key "SPC"))
-#+end_src
 ** Fun
 *** Discord integration
 Integration with Discord. Shows which file is being edited in Emacs.
 
 In order for this to work in Guix, a service is necessary - [[file:Desktop.org::*Discord rich presence][Discord rich presence]].
+
+Some functions to override the displayed message:
+#+begin_src emacs-lisp
+(defun my/elcord-mask-buffer-name (name)
+  (cond
+   ((string-match-p (rx bos (? "CAPTURE-") (= 14 num) "-" (* not-newline) ".org" eos) name)
+    "<ORG-ROAM>")
+   ((string-match-p (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos) name)
+    "<ORG-JOURNAL>")
+   (t name)))
+
+(defun my/elcord-buffer-details-format-functions ()
+  (format "Editing %s" (my/elcord-mask-buffer-name (buffer-name))))
+
+(defun my/elcord-update-presence-mask-advice (r)
+  (list (my/elcord-mask-buffer-name (nth 0 r)) (nth 1 r)))
+#+end_src
+
+And the package configuration:
 #+begin_src emacs-lisp
 (use-package elcord
   :straight t
@@ -5959,11 +6115,9 @@ In order for this to work in Guix, a service is necessary - [[file:Desktop.org::
            (not my/slow-ssh)
            (not my/remote-server))
   :config
-  (elcord-mode)
-  (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos))
-  (add-to-list 'elcord-boring-buffers-regexp-list
-               (rx bos (? "CAPTURE-") (= 14 num) "-" (* not-newline) ".org" eos)))
+  (setq elcord-buffer-details-format-function #'my/elcord-buffer-details-format-functions)
+  (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)
+  (elcord-mode))
 #+end_src
 *** Snow
 #+begin_src emacs-lisp
