@@ -5,4 +5,8 @@
    "ffmpeg"
    "krita"
    "gimp"
-   "libreoffice"))
+   "libreoffice"
+   "zathura-djvu"
+   "zathura-pdf-mupdf"
+   "zathura-ps"
+   "zathura"))

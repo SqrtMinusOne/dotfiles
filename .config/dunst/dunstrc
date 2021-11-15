@@ -21,7 +21,7 @@
     # Show how many messages are currently hidden (because of geometry).
     indicate_hidden = yes
 
-    # Shrink window if it's smaller than the width.  Will be ignored if
+    # Shrink window if its smaller than the width.  Will be ignored if
     # width is 0.
     shrink = no
 

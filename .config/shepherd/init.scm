@@ -57,6 +57,13 @@
     #:start (make-forkexec-constructor '("xsettingsd"))
     #:stop (make-kill-destructor)))
 
+(define nm-applet
+  (make <service>
+    #:provides '(nm-applet)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("nm-applet"))
+    #:stop (make-kill-destructor)))
+
 (define discord-rich-presence
   (make <service>
     #:provides '(discord-rich-presence)
@@ -67,7 +74,7 @@
   (make <service>
     #:provides '(polkit-gnome)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/.guix-extra-profiles/desktop/desktop/libexec/polkit-gnome-authentication-agent-1"))
+    #:start (make-forkexec-constructor '("/home/pavel/.guix-extra-profiles/desktop-misc/desktop-misc/libexec/polkit-gnome-authentication-agent-1"))
     #:stop (make-kill-destructor)))
 
 (define xmodmap
@@ -103,8 +110,9 @@
  polkit-gnome
  vpn
  davmail
- xmodmap)
+ xmodmap
+ nm-applet)
 
 (action 'shepherd 'daemonize)
 
-(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome davmail xmodmap))
+(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome davmail xmodmap nm-applet))

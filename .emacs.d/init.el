@@ -243,7 +243,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :prefix "SPC"
   :states '(normal motion emacs))
 
-(general-def :states '(normal motion emacs) "SPC" nil)
+(general-def :states '(normal motion emacs)
+  "SPC" nil
+  "M-SPC" (general-key "SPC"))
+
+(general-def :states '(insert)
+  "M-SPC" (general-key "SPC" :state 'normal))
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
@@ -347,7 +352,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
       (windmove-do-window-select dir))))
 
 (defun my/emacs-i3-direction-exists-p (dir)
-  (some (lambda (dir)
+  (cl-some (lambda (dir)
           (let ((win (windmove-find-other-window dir)))
             (and win (not (window-minibuffer-p win)))))
         (pcase dir
@@ -959,10 +964,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)
   (setq doom-modeline-buffer-state-icon nil))
-
-(use-package emojify
-  :straight t
-  :if (and (display-graphic-p) (not (or my/lowpower my/is-termux))))
 
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
@@ -2299,6 +2300,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :if (not (or my/slow-ssh my/is-termux my/remote-server))
   :hook (
          (typescript-mode . lsp)
+         (js-mode . lsp)
          (vue-mode . lsp)
          (go-mode . lsp)
          (svelte-mode . lsp)
@@ -2400,6 +2402,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
 
   (setq dap-ui-variable-length 100)
+  (setq dap-auto-show-output nil)
   (require 'dap-node)
   (dap-node-setup)
 
@@ -2582,7 +2585,14 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
          :port 9229
          :outFiles ["${workspaceFolder}/dist/**/*.js"]
          :sourceMaps t
-         :program "${workspaceFolder}/src/app.ts")))
+         :program "${workspaceFolder}/src/app.ts"))
+  (dap-register-debug-template
+   "Node::Babel"
+   (list :type "node"
+         :request "attach"
+         :name "Node::Attach"
+         :port 9229
+         :program "${workspaceFolder}/dist/bin/www.js")))
 
 (use-package reformatter
   :straight t)
@@ -3748,7 +3758,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
                    (emms-player-simple-regexp
                     "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff"))
   ;; MPV setup
-  (add-to-list 'emms-player-list 'emms-player-mpv t)
+  (add-to-list 'emms-player-list 'emms-player-mpv)
   (emms-player-set emms-player-mpv
                    'regex
                    (rx (or (: "https://" (* nonl) "youtube.com" (* nonl))
@@ -4098,7 +4108,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
         (message "Sent %d to %d" (or signal 15) (cdr (assoc 'pid app)))))))
 
 (use-package screenshot
-  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
+  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el") :commit "f8204e82dc0c1158c401735d36a143e6f6d24cf5")
   :if (display-graphic-p)
   :commands (screenshot)
   :init
@@ -4118,8 +4128,8 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (my-leader-def "ag" 'guix))
 
 (use-package pomm
-  ;; :straight (:repo "SqrtMinusOne/pomm.el" :host github)
-  :straight (:local-repo "~/Code/Emacs/pomm")
+  :straight (:host github :repo "SqrtMinusOne/pomm.el" :files (:defaults "resources"))
+  ;; :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
   :init
   (my-leader-def "ap" #'pomm)
   :config
@@ -4160,6 +4170,8 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
     "<ORG-ROAM>")
    ((string-match-p (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos) name)
     "<ORG-JOURNAL>")
+   ((string-match-p (rx bos "EXWM") name)
+    "<EXWM>")
    (t name)))
 
 (defun my/elcord-buffer-details-format-functions ()

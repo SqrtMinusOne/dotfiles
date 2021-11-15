@@ -56,8 +56,8 @@ fi
 # Other package managers:3 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:4]]
-if [ -d "$HOME/.guix-extra-profiles/desktop" ]; then
-    export FONTCONFIG_PATH="$HOME/.guix-extra-profiles/desktop/desktop/etc/fonts"
+if [ -d "$HOME/.guix-extra-profiles/desktop-misc" ]; then
+    export FONTCONFIG_PATH="$HOME/.guix-extra-profiles/desktop-misc/desktop-misc/etc/fonts"
 fi
 # Other package managers:4 ends here
 

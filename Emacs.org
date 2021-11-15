@@ -710,7 +710,12 @@ Using the =SPC= key as a leader key, like in Doom Emacs or Spacemacs.
   :prefix "SPC"
   :states '(normal motion emacs))
 
-(general-def :states '(normal motion emacs) "SPC" nil)
+(general-def :states '(normal motion emacs)
+  "SPC" nil
+  "M-SPC" (general-key "SPC"))
+
+(general-def :states '(insert)
+  "M-SPC" (general-key "SPC" :state 'normal))
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
@@ -902,7 +907,7 @@ For the first part, =window-swap-states= with =windmove-find-other-window= do we
 So here is a simple predicate which checks whether there is space in the given direction.
 #+begin_src emacs-lisp
 (defun my/emacs-i3-direction-exists-p (dir)
-  (some (lambda (dir)
+  (cl-some (lambda (dir)
           (let ((win (windmove-find-other-window dir)))
             (and win (not (window-minibuffer-p win)))))
         (pcase dir
@@ -1798,16 +1803,6 @@ References:
   (setq doom-modeline-buffer-state-icon nil))
 #+end_src
 ** Font stuff
-*** Emojis
-| Note | Type                                                      |
-|------+-----------------------------------------------------------|
-| TODO | Figure out how to display emojis without prettify symbols |
-
-#+begin_src emacs-lisp
-(use-package emojify
-  :straight t
-  :if (and (display-graphic-p) (not (or my/lowpower my/is-termux))))
-#+end_src
 *** Ligatures
 Ligature setup for the JetBrainsMono font.
 #+begin_src emacs-lisp
@@ -3687,6 +3682,7 @@ References:
   :if (not (or my/slow-ssh my/is-termux my/remote-server))
   :hook (
          (typescript-mode . lsp)
+         (js-mode . lsp)
          (vue-mode . lsp)
          (go-mode . lsp)
          (svelte-mode . lsp)
@@ -3822,6 +3818,7 @@ References:
   :config
 
   (setq dap-ui-variable-length 100)
+  (setq dap-auto-show-output nil)
   (require 'dap-node)
   (dap-node-setup)
 
@@ -4046,7 +4043,14 @@ Some debug templates I frequently use.
          :port 9229
          :outFiles ["${workspaceFolder}/dist/**/*.js"]
          :sourceMaps t
-         :program "${workspaceFolder}/src/app.ts")))
+         :program "${workspaceFolder}/src/app.ts"))
+  (dap-register-debug-template
+   "Node::Babel"
+   (list :type "node"
+         :request "attach"
+         :name "Node::Attach"
+         :port 9229
+         :program "${workspaceFolder}/dist/bin/www.js")))
 
 #+end_src
 *** OFF (OFF) TabNine
@@ -5520,7 +5524,7 @@ script-opts=ytdl_hook-ytdl_path=yt-dlp
 It seems a bit strange to keep the MPV config in this file, but I don't use the program outside Emacs.
 
 #+begin_src emacs-lisp
-(add-to-list 'emms-player-list 'emms-player-mpv t)
+(add-to-list 'emms-player-list 'emms-player-mpv)
 #+end_src
 
 Also a custom regex. My demands for MPV include running =yt-dlp=, so there is a regex that matches youtube.com or some of the video formats.
@@ -6003,7 +6007,7 @@ Tecosaur's plugin to make beautiful code screenshots.
 
 #+begin_src emacs-lisp
 (use-package screenshot
-  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el"))
+  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el") :commit "f8204e82dc0c1158c401735d36a143e6f6d24cf5")
   :if (display-graphic-p)
   :commands (screenshot)
   :init
@@ -6036,8 +6040,8 @@ My package for doing Pomodoro timer.
 
 #+begin_src emacs-lisp
 (use-package pomm
-  ;; :straight (:repo "SqrtMinusOne/pomm.el" :host github)
-  :straight (:local-repo "~/Code/Emacs/pomm")
+  :straight (:host github :repo "SqrtMinusOne/pomm.el" :files (:defaults "resources"))
+  ;; :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
   :init
   (my-leader-def "ap" #'pomm)
   :config
@@ -6096,6 +6100,8 @@ Some functions to override the displayed message:
     "<ORG-ROAM>")
    ((string-match-p (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos) name)
     "<ORG-JOURNAL>")
+   ((string-match-p (rx bos "EXWM") name)
+    "<EXWM>")
    (t name)))
 
 (defun my/elcord-buffer-details-format-functions ()
