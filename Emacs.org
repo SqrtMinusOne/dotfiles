@@ -96,7 +96,6 @@ As with other files in the repo, parts prefixed with (OFF) are not used but kept
     - [[#my-title][My title]]
   - [[#modeline][Modeline]]
   - [[#font-stuff][Font stuff]]
-    - [[#emojis][Emojis]]
     - [[#ligatures][Ligatures]]
     - [[#icons][Icons]]
     - [[#highlight-todo][Highlight todo]]
