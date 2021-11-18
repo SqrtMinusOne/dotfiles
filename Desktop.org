@@ -260,13 +260,10 @@ References:
 - [[https://github.com/ch11ng/exwm/wiki][EXWM Wiki]]
 - [[https://github.com/daviwil/emacs-from-scratch/blob/master/Desktop.org][Emacs From Scratch config]]
 
-TODO Look at:
-- https://github.com/ch11ng/exwm/issues/202
-
 ** Xsession
-First things first, Emacs has to be launched as a window wanager. On a more conventional system I'd create a .desktop file in some system folder that can be seen by a login manager, but in the case of Guix it's a bit more complicated, because all such folders are not meant to be changed manually.
+First things first, Emacs has to be launched as a window manager. On a more conventional system, I'd create a .desktop file in some system folder that can be seen by a login manager, but in the case of Guix, it's a bit more complicated, because all such folders are not meant to be changed manually.
 
-However, GDM, the login manager that seems to be default on Guix, launches =~/.xsession= on the startup if it's present, which is just fine for my purposes.
+However, GDM, the login manager that seems to default on Guix, launches =~/.xsession= on the startup if it's present, which is just fine for my purposes.
 
 #+begin_src sh :tangle ~/.xsession
 # Source .profile
@@ -304,7 +301,7 @@ I want to launch some apps from EXWM instead of the Xsession file for two purpos
 - the app may need to have the entire desktop environment set up
 - or it may need to be restarted if Emacs is killed.
 
-As of now, these are polybar, feh and shepherd:
+As of now, these are polybar, feh and, shepherd:
 #+begin_src emacs-lisp
 (defun my/exwm-run-polybar ()
   (call-process "~/bin/polybar.sh"))
@@ -331,7 +328,7 @@ A predicate which checks whether there is space in the given direction:
 #+end_src
 
 And a function to move windows with the following behavior:
-- if there is space in the required directon, move the Emacs window there;
+- if there is space in the required direction, move the Emacs window there;
 - if there is no space in the required direction, but space in two orthogonal directions, move the Emacs window so that there is no more space in the orthogonal directions;
 #+begin_src emacs-lisp
 (defun my/exwm-move-window (dir)
@@ -451,41 +448,91 @@ Switch to the opposite monitor.
     (exwm-workspace-switch other)))
 #+end_src
 ** Switching buffers
-A single perspective usually has only a handful of EXWM buffers, so here are functions to cycle them
+A single perspective usually has only a handful of EXWM buffers, so here is a function to cycle them.
+
+Those buffers that are visible in another window are highlighted blue and skipped. The current buffer is highlighted yellow.
 #+begin_src emacs-lisp
 (defun my/cycle-persp-exwm-buffers (dir)
   (let* ((current (current-buffer))
          (ignore-rx (persp--make-ignore-buffer-rx))
-         (exwm-buffers
+         (visible-buffers '())
+         (exwm-data
           (cl-loop for buf in (persp-current-buffers)
+                   for is-another = (and (get-buffer-window buf) (not (eq current buf)))
                    if (and (buffer-live-p buf)
                            (eq 'exwm-mode (buffer-local-value 'major-mode buf))
                            (not (string-match-p ignore-rx (buffer-name buf))))
-                   collect buf))
-         (current-pos (or (cl-position current exwm-buffers) -1)))
-    (if (seq-empty-p exwm-buffers)
-        (message "No EXWM buffers!")
-      (let* ((next-pos (% (+ current-pos (length exwm-buffers)
+                   collect buf into all-buffers
+                   and if (not is-another) collect buf into cycle-buffers
+                   finally (return (list all-buffers cycle-buffers))))
+         (all-buffers (nth 0 exwm-data))
+         (cycle-buffers (nth 1 exwm-data))
+         (current-pos (or (cl-position current cycle-buffers) -1)))
+    (if (seq-empty-p cycle-buffers)
+        (message "No EXWM buffers to cycle!")
+      (let* ((next-pos (% (+ current-pos (length cycle-buffers)
                              (if (eq dir 'forward) 1 -1))
-                          (length exwm-buffers)))
-             (next-buffer (nth next-pos exwm-buffers)))
+                          (length cycle-buffers)))
+             (next-buffer (nth next-pos cycle-buffers)))
         (switch-to-buffer next-buffer)
         (message
          "%s"
          (mapconcat
           (lambda (buf)
             (let ((name (string-replace "EXWM :: " "" (buffer-name buf))))
-              (if (eq (current-buffer) buf)
-                  (concat
-                   "["
-                   (propertize name 'face `(foreground-color . ,(doom-color 'yellow)))
-                   "]")
-                   (format " %s " name))))
-          exwm-buffers
+              (cond
+               ((eq (current-buffer) buf)
+                (concat
+                 "["
+                 (propertize name 'face `(foreground-color . ,(doom-color 'yellow)))
+                 "]"))
+               ((not (member buf cycle-buffers))
+                (concat
+                 "["
+                 (propertize name 'face `(foreground-color . ,(doom-color 'blue)))
+                 "]"))
+               (t (format " %s " name)))))
+          all-buffers
           " "))))))
 #+end_src
+** Add all EXWM buffers to current perspective
+#+begin_src emacs-lisp
+(defun my/add-exwm-buffers-to-current-perspective ()
+  (interactive)
+  (let ((ignore-rx (persp--make-ignore-buffer-rx)))
+    (cl-loop for buf in (buffer-list)
+             if (and (buffer-live-p buf)
+                     (eq 'exwm-mode (buffer-local-value 'major-mode buf))
+                     (not (string-match-p ignore-rx (buffer-name buf))))
+             do (persp-add-buffer (buffer-name buf)))))
+#+end_src
+** Revive perspectives
+Occasionally the current perspective gets screwed up after a popup. This function attempts to fix it.
+
+#+begin_src emacs-lisp
+(defun my/exwm-revive-perspectives ()
+  "Make perspectives in the current frame not killed."
+  (interactive)
+  (let ((to-switch nil))
+    (maphash
+     (lambda (_ v)
+       (setf (persp-killed v) nil)
+       (unless to-switch
+         (setq to-switch v)))
+     (frame-parameter nil 'persp--hash))
+    (when to-switch
+      (persp-switch (persp-name to-switch)))))
+#+end_src
+** Locking up
+Run i3lock.
+
+#+begin_src emacs-lisp
+(defun my/exwm-lock ()
+  (interactive)
+  (my/run-in-background "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"))
+#+end_src
 ** Keybindings
-Setting keybindings for EXWM. This actually has to be in the =:config= block of the =use-package= form, that is it has to be run after EXWM is loaded, so I use noweb to put this block in a correct place.
+Setting keybindings for EXWM. This actually has to be in the =:config= block of the =use-package= form, that is it has to be run after EXWM is loaded, so I use noweb to put this block in the correct place.
 
 First, some prefixes for keybindings that are always passed to EXWM instead of the X application in =line-mode=:
 #+begin_src emacs-lisp :tangle no :noweb-ref exwm-keybindings
@@ -595,7 +642,7 @@ And keybindings that are available in both =char-mode= and =line-mode=:
 #+end_src
 
 ** Pinentry
-The GUI pinentry doesn't work too well with EXWM because of the popup windows, so we will the the built-in Emacs pinentry.
+The GUI pinentry doesn't work too well with EXWM because of issues with popup windows, so we will use the Emacs one.
 
 #+begin_src emacs-lisp
 (use-package pinentry

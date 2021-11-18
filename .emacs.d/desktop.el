@@ -92,33 +92,71 @@ _=_: Balance          "
 (defun my/cycle-persp-exwm-buffers (dir)
   (let* ((current (current-buffer))
          (ignore-rx (persp--make-ignore-buffer-rx))
-         (exwm-buffers
+         (visible-buffers '())
+         (exwm-data
           (cl-loop for buf in (persp-current-buffers)
+                   for is-another = (and (get-buffer-window buf) (not (eq current buf)))
                    if (and (buffer-live-p buf)
                            (eq 'exwm-mode (buffer-local-value 'major-mode buf))
                            (not (string-match-p ignore-rx (buffer-name buf))))
-                   collect buf))
-         (current-pos (or (cl-position current exwm-buffers) -1)))
-    (if (seq-empty-p exwm-buffers)
-        (message "No EXWM buffers!")
-      (let* ((next-pos (% (+ current-pos (length exwm-buffers)
+                   collect buf into all-buffers
+                   and if (not is-another) collect buf into cycle-buffers
+                   finally (return (list all-buffers cycle-buffers))))
+         (all-buffers (nth 0 exwm-data))
+         (cycle-buffers (nth 1 exwm-data))
+         (current-pos (or (cl-position current cycle-buffers) -1)))
+    (if (seq-empty-p cycle-buffers)
+        (message "No EXWM buffers to cycle!")
+      (let* ((next-pos (% (+ current-pos (length cycle-buffers)
                              (if (eq dir 'forward) 1 -1))
-                          (length exwm-buffers)))
-             (next-buffer (nth next-pos exwm-buffers)))
+                          (length cycle-buffers)))
+             (next-buffer (nth next-pos cycle-buffers)))
         (switch-to-buffer next-buffer)
         (message
          "%s"
          (mapconcat
           (lambda (buf)
             (let ((name (string-replace "EXWM :: " "" (buffer-name buf))))
-              (if (eq (current-buffer) buf)
-                  (concat
-                   "["
-                   (propertize name 'face `(foreground-color . ,(doom-color 'yellow)))
-                   "]")
-                   (format " %s " name))))
-          exwm-buffers
+              (cond
+               ((eq (current-buffer) buf)
+                (concat
+                 "["
+                 (propertize name 'face `(foreground-color . ,(doom-color 'yellow)))
+                 "]"))
+               ((not (member buf cycle-buffers))
+                (concat
+                 "["
+                 (propertize name 'face `(foreground-color . ,(doom-color 'blue)))
+                 "]"))
+               (t (format " %s " name)))))
+          all-buffers
           " "))))))
+
+(defun my/add-exwm-buffers-to-current-perspective ()
+  (interactive)
+  (let ((ignore-rx (persp--make-ignore-buffer-rx)))
+    (cl-loop for buf in (buffer-list)
+             if (and (buffer-live-p buf)
+                     (eq 'exwm-mode (buffer-local-value 'major-mode buf))
+                     (not (string-match-p ignore-rx (buffer-name buf))))
+             do (persp-add-buffer (buffer-name buf)))))
+
+(defun my/exwm-revive-perspectives ()
+  "Make perspectives in the current frame not killed."
+  (interactive)
+  (let ((to-switch nil))
+    (maphash
+     (lambda (_ v)
+       (setf (persp-killed v) nil)
+       (unless to-switch
+         (setq to-switch v)))
+     (frame-parameter nil 'persp--hash))
+    (when to-switch
+      (persp-switch (persp-name to-switch)))))
+
+(defun my/exwm-lock ()
+  (interactive)
+  (my/run-in-background "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"))
 
 (use-package pinentry
   :straight t
