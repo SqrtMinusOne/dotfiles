@@ -2322,6 +2322,10 @@ Use the built-in org mode.
   (add-hook 'org-mode-hook
             (lambda ()
               (rainbow-delimiters-mode -1)))
+  (require 'org-tempo)
+  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+  (add-to-list 'org-structure-template-alist '("py" . "src python"))
+  (add-to-list 'org-structure-template-alist '("sq" . "src sql"))
   <<org-crypt-setup>>
   (unless my/is-termux
     <<org-lang-setup>>)

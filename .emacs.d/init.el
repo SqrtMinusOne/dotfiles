@@ -1347,6 +1347,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'org-mode-hook
             (lambda ()
               (rainbow-delimiters-mode -1)))
+  (require 'org-tempo)
+  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+  (add-to-list 'org-structure-template-alist '("py" . "src python"))
+  (add-to-list 'org-structure-template-alist '("sq" . "src sql"))
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
   (setq org-tags-exclude-from-inheritance (quote ("crypt")))
