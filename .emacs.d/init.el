@@ -29,11 +29,13 @@
 (setq my/slow-ssh
       (or
        (string= (getenv "IS_TRAMP") "true")
-       (string= (system-name) "dev-digital")))
+       (string= (system-name) "dev-digital")
+       (string= (system-name) "violet")))
 
 (setq my/remote-server
       (or (string= (getenv "IS_REMOTE") "true")
-          (string= (system-name) "dev-digital")))
+          (string= (system-name) "dev-digital")
+          (string= (system-name) "violet")))
 
 (setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
 
@@ -2316,6 +2318,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
          ;; (csharp-mode . lsp)
          )
   :commands lsp
+  :init
+  (setq lsp-keymap-prefix nil)
   :config
   (setq lsp-idle-delay 1)
   (setq lsp-eslint-server-command '("node" "/home/pavel/.emacs.d/.cache/lsp/eslint/unzipped/extension/server/out/eslintServer.js" "--stdio"))

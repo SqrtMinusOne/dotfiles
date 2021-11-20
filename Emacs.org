@@ -359,14 +359,16 @@ The following is true if Emacs is meant to be used with TRAMP over slow ssh. Tak
 (setq my/slow-ssh
       (or
        (string= (getenv "IS_TRAMP") "true")
-       (string= (system-name) "dev-digital")))
+       (string= (system-name) "dev-digital")
+       (string= (system-name) "violet")))
 #+end_src
 
 The following is true is Emacs is ran on a remote server where I don't need stuff like my org workflow
 #+begin_src emacs-lisp
 (setq my/remote-server
       (or (string= (getenv "IS_REMOTE") "true")
-          (string= (system-name) "dev-digital")))
+          (string= (system-name) "dev-digital")
+          (string= (system-name) "violet")))
 #+end_src
 
 And the following is true if Emacs is run from termux on Android.
@@ -3697,6 +3699,8 @@ References:
          ;; (csharp-mode . lsp)
          )
   :commands lsp
+  :init
+  (setq lsp-keymap-prefix nil)
   :config
   (setq lsp-idle-delay 1)
   (setq lsp-eslint-server-command '("node" "/home/pavel/.emacs.d/.cache/lsp/eslint/unzipped/extension/server/out/eslintServer.js" "--stdio"))
