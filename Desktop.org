@@ -424,9 +424,8 @@ Store the information about which workspace is available on which monitor.
 (setq my/exwm-monitor-workspace '())
 
 (defun my/exwm-get-current-monitor ()
-  (let* ((info (shell-command-to-string "xdotool getmouselocation --shell | head -n 1"))
-         (coord (string-to-number (substring info 2))))
-    (if (> coord 1920) 1 0)))
+  (if (plist-get exwm-randr-workspace-monitor-plist exwm-workspace-current-index)
+      1 0))
 
 (defun my/exwm-update-current-monitor ()
   (setf (alist-get (my/exwm-get-current-monitor) my/exwm-monitor-workspace)
@@ -436,7 +435,7 @@ Store the information about which workspace is available on which monitor.
           #'my/exwm-update-current-monitor)
 #+end_src
 
-Switch to the opposite monitor.
+Switch to the opposite monitor. For now, this works only for two monitors because I don't have more.
 #+begin_src emacs-lisp :noweb-ref exwm-monitor-config :tangle no
 (defun my/exwm-switch-to-other-monitor ()
   (interactive)
@@ -444,8 +443,10 @@ Switch to the opposite monitor.
          (other (seq-some
                  (lambda (m)
                    (and (not (= (car m) current)) (cdr m)))
-                 my/exwm-monitor-workspace)))
-    (exwm-workspace-switch other)))
+                 my/exwm-monitor-workspace))
+         (focus-follows-mouse nil)
+         (mouse-autoselect-window nil))
+    ;; (exwm-workspace-switch other)))
 #+end_src
 ** Switching buffers
 A single perspective usually has only a handful of EXWM buffers, so here is a function to cycle them.

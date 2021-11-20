@@ -207,9 +207,8 @@ _=_: Balance          "
   (setq my/exwm-monitor-workspace '())
   
   (defun my/exwm-get-current-monitor ()
-    (let* ((info (shell-command-to-string "xdotool getmouselocation --shell | head -n 1"))
-           (coord (string-to-number (substring info 2))))
-      (if (> coord 1920) 1 0)))
+    (if (plist-get exwm-randr-workspace-monitor-plist exwm-workspace-current-index)
+        1 0))
   
   (defun my/exwm-update-current-monitor ()
     (setf (alist-get (my/exwm-get-current-monitor) my/exwm-monitor-workspace)
@@ -223,8 +222,10 @@ _=_: Balance          "
            (other (seq-some
                    (lambda (m)
                      (and (not (= (car m) current)) (cdr m)))
-                   my/exwm-monitor-workspace)))
-      (exwm-workspace-switch other)))
+                   my/exwm-monitor-workspace))
+           (focus-follows-mouse nil)
+           (mouse-autoselect-window nil))
+      ;; (exwm-workspace-switch other)))
   (setq exwm-input-prefix-keys
         `(?\C-x
           ?\C-w
