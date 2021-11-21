@@ -15,6 +15,8 @@
    "xinput"
    "xgamma"
    "xrandr"
+   "gnome-themes-extra"
    "xsettingsd"
+   "gnome-themes-standard"
    "papirus-icon-theme"
    "matcha-theme"))

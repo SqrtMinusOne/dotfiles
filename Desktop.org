@@ -215,11 +215,13 @@ Xft.dpi: <<get-dpi()>>
 ** Themes
 A few programs I use to customize the apperance are listed below.
 
-| Guix dependency    | Description             |
-|--------------------+-------------------------|
-| matcha-theme       | My preferred GTK theme  |
-| papirus-icon-theme | My preferred Icon theme |
-| xsettingsd         | X11 settings daemon     |
+| Guix dependency       | Description             |
+|-----------------------+-------------------------|
+| matcha-theme          | My preferred GTK theme  |
+| papirus-icon-theme    | My preferred Icon theme |
+| gnome-themes-standard |                         |
+| xsettingsd            | X11 settings daemon     |
+| gnome-themes-extra    |                         |
 
 [[https://github.com/derat/xsettingsd][xsettingsd]] is a lightweight daemon which configures X11 applications. It is launched with shepherd in the [[*Services][Services]] section.
 
@@ -446,7 +448,7 @@ Switch to the opposite monitor. For now, this works only for two monitors becaus
                  my/exwm-monitor-workspace))
          (focus-follows-mouse nil)
          (mouse-autoselect-window nil))
-    ;; (exwm-workspace-switch other)))
+    (exwm-workspace-switch other)))
 #+end_src
 ** Switching buffers
 A single perspective usually has only a handful of EXWM buffers, so here is a function to cycle them.
@@ -616,6 +618,8 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         ;; Basic controls
         (,(kbd "<XF86AudioRaiseVolume>") . ,(my/app-command "ponymix increase 5 --max-volume 150"))
         (,(kbd "<XF86AudioLowerVolume>") . ,(my/app-command "ponymix decrease 5 --max-volume 150"))
+        (,(kbd "<XF86MonBrightnessUp>") . ,(my/app-command "light -A 5"))
+        (,(kbd "<XF86MonBrightnessDown>") . ,(my/app-command "light -U 5"))
         (,(kbd "<XF86AudioMute>") . ,(my/app-command "ponymix toggle"))
 
         (,(kbd "<XF86AudioPlay>") . ,(my/app-command "mpc toggle"))

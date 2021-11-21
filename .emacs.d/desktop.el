@@ -225,7 +225,7 @@ _=_: Balance          "
                    my/exwm-monitor-workspace))
            (focus-follows-mouse nil)
            (mouse-autoselect-window nil))
-      ;; (exwm-workspace-switch other)))
+      (exwm-workspace-switch other)))
   (setq exwm-input-prefix-keys
         `(?\C-x
           ?\C-w
