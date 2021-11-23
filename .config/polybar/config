@@ -1,6 +1,5 @@
-; [[file:../../Desktop.org::*Colors][Colors:1]]
+; [[file:../../Desktop.org::*Colors][Colors:2]]
 [colors]
-; Palenight colorscheme https://github.com/JonathanSpeek/palenight-iterm2
 black = ${xrdb:color0}
 red = ${xrdb:color1}
 green = ${xrdb:color2}
@@ -9,56 +8,178 @@ blue = ${xrdb:color4}
 magenta = ${xrdb:color5}
 cyan = ${xrdb:color6}
 white = ${xrdb:color7}
-
-black-lighter = ${xrdb:color8}
-red-lighter = ${xrdb:color9}
-green-lighter = ${xrdb:color10}
-yellow-lighter = ${xrdb:color11}
-blue-lighter = ${xrdb:color12}
-magenta-lighter = ${xrdb:color13}
-cyan-lighter = ${xrdb:color14}
-white-lighter = ${xrdb:color15}
+light-black = ${xrdb:color8}
+light-red = ${xrdb:color9}
+light-green = ${xrdb:color10}
+light-yellow = ${xrdb:color11}
+light-blue = ${xrdb:color12}
+light-magenta = ${xrdb:color13}
+light-cyan = ${xrdb:color14}
+light-white = ${xrdb:color15}
 
 background = ${xrdb:background}
-foreground = ${xrdb:foreground}
-; Colors:1 ends here
+; foreground = ${xrdb:foreground}
+; Colors:2 ends here
 
-; [[file:../../Desktop.org::*Bar config][Bar config:1]]
+; [[file:../../Desktop.org::*Glyphs][Glyphs:1]]
+[glyph]
+gleft = 
+gright = 
+; Glyphs:1 ends here
+
+; [[file:../../Desktop.org::*Modules][Modules:4]]
+[module/glyph-light-blue--green]
+type = custom/text
+content-background = ${colors.light-blue}
+content-foreground = ${colors.green}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-red--light-blue]
+type = custom/text
+content-background = ${colors.red}
+content-foreground = ${colors.light-blue}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-light-blue--blue]
+type = custom/text
+content-background = ${colors.light-blue}
+content-foreground = ${colors.blue}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-yellow--light-blue]
+type = custom/text
+content-background = ${colors.yellow}
+content-foreground = ${colors.light-blue}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-green--yellow]
+type = custom/text
+content-background = ${colors.green}
+content-foreground = ${colors.yellow}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-red--green]
+type = custom/text
+content-background = ${colors.red}
+content-foreground = ${colors.green}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-green--red]
+type = custom/text
+content-background = ${colors.green}
+content-foreground = ${colors.red}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-yellow--green]
+type = custom/text
+content-background = ${colors.yellow}
+content-foreground = ${colors.green}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-blue--yellow]
+type = custom/text
+content-background = ${colors.blue}
+content-foreground = ${colors.yellow}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-light-green--blue]
+type = custom/text
+content-background = ${colors.light-green}
+content-foreground = ${colors.blue}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-yellow--light-green]
+type = custom/text
+content-background = ${colors.yellow}
+content-foreground = ${colors.light-green}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-white--yellow]
+type = custom/text
+content-background = ${colors.white}
+content-foreground = ${colors.yellow}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-blue--background]
+type = custom/text
+content-background = ${colors.blue}
+content-foreground = ${colors.background}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-background--white]
+type = custom/text
+content-background = ${colors.background}
+content-foreground = ${colors.white}
+content = ${glyph.gright}
+content-font = 5
+; Modules:4 ends here
+
+; [[file:../../Desktop.org::*Global bar config][Global bar config:1]]
 [bar/mybar]
 monitor = ${env:MONITOR:}
 width = 100%
 height = ${env:HEIGHT:27}
-offset-x = 0
-offset-y = 0
-radius = 0.0
 fixed-center = false
 bottom=true
 
 background = ${colors.background}
-foreground = ${colors.foreground}
+foreground = ${colors.black}
+; Global bar config:1 ends here
 
-line-size = 3
+; [[file:../../Desktop.org::*Global bar config][Global bar config:2]]
+; line-size = 3
 line-color = #f00
 
-padding-left = 0
-padding-right = 0
+padding = 0
 
-module-margin-left = 1
-module-margin-right = 1
+module-margin-left = 0
+module-margin-right = 0
+margin-bottom = 0
+margin-top = 0
 
-font-0 = ${env:FONT0:pango:monospace:size=10;1}
-font-1 = ${env:FONT1:NotoEmoji:scale=10:antialias=false;0}
-font-2 = ${env:FONT2:fontawesome:pixelsize=10;1}
-font-3 = ${env:FONT3:JetBrains Mono Nerd Font:monospace:size=10;1}
+; underline-size = 0
+border-size = 0
 
-modules-left = i3
+offset-x = 0
+offset-y = 0
+radius = 0.0
+; Global bar config:2 ends here
+
+; [[file:../../Desktop.org::*Global bar config][Global bar config:3]]
+; font-0 = ${env:FONT0:pango:monospace:size=10;1}
+; font-1 = ${env:FONT1:NotoEmoji:scale=10:antialias=false;0}
+; font-2 = ${env:FONT2:fontawesome:pixelsize=10;1}
+; font-3 = ${env:FONT3:JetBrains Mono Nerd Font:monospace:size=10;1}
+
+font-0 = pango:monospace:size=13;1
+font-1 = NotoEmoji:scale=10:antialias=false;0
+font-2 = fontawesome:pixelsize=13;2
+font-3 = JetBrains Mono Nerd Font:monospace:size=13;3
+font-4 = JetBrains Mono Nerd Font:monospace:size=17;4
+; Global bar config:3 ends here
+
+; [[file:../../Desktop.org::*Global bar config][Global bar config:4]]
+; modules-left = i3
 ; modules-center = test
 modules-right = ${env:RIGHT_BLOCKS}
 
 tray-position = ${env:TRAY:right}
 tray-padding = 0
 tray-maxsize = 16
-;tray-background = #0063ff
+tray-background = ${colors.background}
 
 wm-restack = i3
 ; override-redirect = true
@@ -68,19 +189,159 @@ scroll-down = i3wm-wsprev
 
 ; cursor-click = pointer
 ; cursor-scroll = ns-resize
+; Global bar config:4 ends here
 
+; [[file:../../Desktop.org::*Global bar config][Global bar config:5]]
 [settings]
 screenchange-reload = true
-;compositing-background = xor
-;compositing-background = screen
-;compositing-foreground = source
-;compositing-border = over
-;pseudo-transparency = false
+compositing-background = source
+compositing-foreground = over
+compositing-overline = over
+compositing-underline = over
+compositing-border = over
 
 [global/wm]
 margin-top = 0
 margin-bottom = 0
-; Bar config:1 ends here
+; Global bar config:5 ends here
+
+; [[file:../../Desktop.org::*pulseaudio][pulseaudio:1]]
+[module/pulseaudio]
+type = internal/pulseaudio
+use-ui-max = true
+
+bar-volume-width = 7
+; bar-volume-foreground-0 = ${colors.white}
+; bar-volume-foreground-1 = ${colors.yellow}
+; bar-volume-foreground-2 = ${colors.yellow}
+; bar-volume-foreground-3 = ${colors.blue}
+; bar-volume-foreground-4 = ${colors.blue}
+; bar-volume-foreground-5 = ${colors.green}
+; bar-volume-foreground-6 = ${colors.green}
+bar-volume-gradient = false
+bar-volume-indicator = |
+bar-volume-indicator-font = 2
+bar-volume-fill = ─
+bar-volume-fill-font = 2
+bar-volume-empty = ─
+bar-volume-empty-font = 2
+; bar-volume-empty-foreground = ${colors.light-white}
+
+format-volume = ♪ <ramp-volume> <label-volume>
+label-volume = %percentage%%
+
+ramp-volume-0 = ▁
+ramp-volume-1 = ▂
+ramp-volume-2 = ▃
+ramp-volume-3 = ▄
+ramp-volume-4 = ▅
+ramp-volume-5 = ▆
+ramp-volume-6 = ▇
+ramp-volume-7 = █
+
+format-muted = ♪ <label-muted>
+label-muted = MUTE
+
+format-volume-background = ${colors.white}
+format-muted-background = ${colors.white}
+
+; format-volume-underline = ${colors.white}
+; format-muted-underline = ${colors.light-black}
+; pulseaudio:1 ends here
+
+; [[file:../../Desktop.org::*mpd][mpd:1]]
+[module/mpd]
+type = internal/mpd
+
+format-playing = <toggle> <label-time> <label-song>
+format-paused = <toggle> <label-time> <label-song>
+format-stopped = " "
+label-song = [%album-artist%] %title%
+label-time = %elapsed%/%total%
+
+label-song-maxlen = 30
+label-song-ellipsis = true
+
+; format-playing-underline = ${colors.yellow}
+; format-paused-underline = ${colors.yellow}
+; format-stopped-underline = ${colors.yellow}
+
+format-playing-background = ${colors.yellow}
+format-paused-background = ${colors.yellow}
+format-stopped-background = ${colors.yellow}
+
+label-separator = 0
+separator-foreground = ${colors.red}
+
+icon-pause = 
+icon-play = 
+icon-stop = 
+icon-prev = 1
+icon-next = 2
+; mpd:1 ends here
+
+; [[file:../../Desktop.org::*cpu][cpu:1]]
+[module/cpu]
+type = internal/cpu
+format = " <label>"
+label = %percentage%%
+format-background = ${colors.light-green}
+; cpu:1 ends here
+
+; [[file:../../Desktop.org::*ram-memory][ram-memory:1]]
+[module/ram-memory]
+type = internal/memory
+interval = 10
+
+ramp-used-0 = ▁
+ramp-used-1 = ▂
+ramp-used-2 = ▃
+ramp-used-3 = ▄
+ramp-used-4 = ▅
+ramp-used-5 = ▆
+ramp-used-6 = ▇
+ramp-used-7 = █
+
+format =  <label>
+label=%gb_used:.1f%
+
+; format-underline = ${colors.blue}
+format-background = ${colors.blue}
+; ram-memory:1 ends here
+
+; [[file:../../Desktop.org::*swap-memory][swap-memory:1]]
+[module/swap-memory]
+type = internal/memory
+interval = 10
+
+label= %gb_swap_used:.1f%
+format-background = ${colors.yellow}
+; swap-memory:1 ends here
+
+; [[file:../../Desktop.org::*network][network:1]]
+[module/network]
+type = internal/network
+interval = 1
+
+interface = ${env:WLAN_INTERFACE}
+
+; format-connected = [<ramp-signal>] <label-connected>
+
+label-connected = ↓ %downspeed% ↑ %upspeed%
+label-disconnected = X
+
+; format-connected-underline = ${colors.green}
+; format-disconnected-underline = ${colors.red}
+format-connected-background = ${colors.green}
+format-disconnected-background = ${colors.green}
+
+ramp-signal-0 = 0
+ramp-signal-1 = 1
+ramp-signal-2 = 2
+ramp-signal-3 = 3
+ramp-signal-4 = 4
+ramp-signal-5 = 5
+; network:1 ends here
 
 ; [[file:../../Desktop.org::*ipstack-vpn][ipstack-vpn:2]]
 [module/ipstack-vpn]
@@ -89,35 +350,94 @@ exec = /home/pavel/bin/polybar/ipstack-vpn.sh
 interval = 1200
 ; ipstack-vpn:2 ends here
 
+; [[file:../../Desktop.org::*openvpn][openvpn:2]]
+[module/openvpn]
+type = custom/script
+exec = /home/pavel/bin/polybar/openvpn.sh
+format-background = ${colors.green}
+interval = 1200
+; openvpn:2 ends here
+
+; [[file:../../Desktop.org::*xkeyboard][xkeyboard:1]]
+[module/xkeyboard]
+type = internal/xkeyboard
+format = <label-layout>
+
+; format-underline = ${colors.magenta}
+format-background = ${colors.red}
+label-layout = %icon%
+layout-icon-0 = ru;RU
+layout-icon-1 = us;US
+; xkeyboard:1 ends here
+
+; [[file:../../Desktop.org::*battery][battery:1]]
+[module/battery]
+type = internal/battery
+battery = BAT0
+adapter = ADP0
+
+time-format = %H:%M
+format-discharging = <ramp-capacity> <label-discharging>
+format-discharging-background = ${colors.light-blue}
+format-charging-background = ${colors.light-blue}
+format-full-background = ${colors.light-blue}
+label-discharging = %percentage%% %time%
+label-charging =  %percentage%% %time%
+
+ramp-capacity-0 = 
+ramp-capacity-1 = 
+ramp-capacity-2 = 
+ramp-capacity-3 = 
+ramp-capacity-4 = 
+; battery:1 ends here
+
 ; [[file:../../Desktop.org::*weather][weather:2]]
 [module/weather]
 type = custom/script
 exec = /home/pavel/bin/polybar/weather.sh
-format-underline = ${colors.red}
+; format-underline = ${colors.red}
+format-background = ${colors.green}
 interval = 1200
 ; weather:2 ends here
+
+; [[file:../../Desktop.org::*sun][sun:2]]
+[module/sun]
+type = custom/script
+exec = /home/pavel/bin/polybar/sun.sh
+format-background = ${colors.yellow}
+interval = 60
+; sun:2 ends here
 
 ; [[file:../../Desktop.org::*aw-afk][aw-afk:2]]
 [module/aw-afk]
 type = custom/script
 exec = /home/pavel/bin/polybar/aw_afk.sh
 interval = 60
+format-background = ${colors.light-blue}
 ; aw-afk:2 ends here
+
+; [[file:../../Desktop.org::*date][date:1]]
+[module/date]
+type = internal/date
+interval = 5
+
+date =
+date-alt = "%Y-%m-%d"
+
+time = %H:%M
+time-alt = %H:%M:%S
+
+format-background = ${colors.blue}
+label = "%date% %time%"
+; date:1 ends here
 
 ; [[file:../../Desktop.org::*pomm][pomm:2]]
 [module/pomm]
 type = custom/script
 exec = /home/pavel/bin/polybar/pomm.sh
 interval = 1
-format-underline = ${colors.green-lighter}
+format-underline = ${colors.light-green}
 ; pomm:2 ends here
-
-; [[file:../../Desktop.org::*sun][sun:2]]
-[module/sun]
-type = custom/script
-exec = /home/pavel/bin/polybar/sun.sh
-interval = 60
-; sun:2 ends here
 
 ; [[file:../../Desktop.org::*SEP][SEP:1]]
 [module/SEP]
@@ -173,169 +493,3 @@ label-urgent-background = ${colors.red}
 label-urgent-foreground = ${colors.black}
 label-urgent-padding = 1
 ; i3:1 ends here
-
-; [[file:../../Desktop.org::*xkeyboard][xkeyboard:1]]
-[module/xkeyboard]
-type = internal/xkeyboard
-format = <label-layout>
-
-format-underline = ${colors.magenta}
-label-layout = %icon%
-layout-icon-0 = ru;RU
-layout-icon-1 = us;US
-; xkeyboard:1 ends here
-
-; [[file:../../Desktop.org::*mpd][mpd:1]]
-[module/mpd]
-type = internal/mpd
-
-format-playing = <toggle> <label-time> <label-song>
-format-paused = <toggle> <label-time> <label-song>
-format-stopped = 
-label-song = [%album-artist%] %title%
-label-time = %elapsed%/%total%
-
-label-song-maxlen = 30
-label-song-ellipsis = true
-
-format-playing-underline = ${colors.yellow}
-format-paused-underline = ${colors.yellow}
-format-stopped-underline = ${colors.yellow}
-
-label-separator = 0
-separator-foreground = ${colors.red}
-
-icon-pause = 
-icon-play = 
-icon-stop = 
-icon-prev = 1
-icon-next = 2
-; mpd:1 ends here
-
-; [[file:../../Desktop.org::*pulseaudio][pulseaudio:1]]
-[module/pulseaudio]
-type = internal/pulseaudio
-use-ui-max = true
-
-bar-volume-width = 7
-bar-volume-foreground-0 = ${colors.white}
-bar-volume-foreground-1 = ${colors.yellow}
-bar-volume-foreground-2 = ${colors.yellow}
-bar-volume-foreground-3 = ${colors.blue}
-bar-volume-foreground-4 = ${colors.blue}
-bar-volume-foreground-5 = ${colors.green}
-bar-volume-foreground-6 = ${colors.green}
-bar-volume-gradient = false
-bar-volume-indicator = |
-bar-volume-indicator-font = 2
-bar-volume-fill = ─
-bar-volume-fill-font = 2
-bar-volume-empty = ─
-bar-volume-empty-font = 2
-bar-volume-empty-foreground = ${colors.white-lighter}
-
-format-volume = ♪ <bar-volume> <label-volume>
-label-volume = %percentage%%
-
-format-mute = ♪ <label-muted>
-label-muted = MUTE
-
-format-volume-underline = ${colors.white}
-format-muted-underline = ${colors.black-lighter}
-; pulseaudio:1 ends here
-
-; [[file:../../Desktop.org::*cpu][cpu:1]]
-[module/cpu]
-type = internal/cpu
-format =   <label>
-label = %percentage%%
-format-underline = ${colors.green-lighter}
-; cpu:1 ends here
-
-; [[file:../../Desktop.org::*ram-memory][ram-memory:1]]
-[module/ram-memory]
-type = internal/memory
-interval = 10
-
-ramp-used-0 = ▁
-ramp-used-1 = ▂
-ramp-used-2 = ▃
-ramp-used-3 = ▄
-ramp-used-4 = ▅
-ramp-used-5 = ▆
-ramp-used-6 = ▇
-ramp-used-7 = █
-
-format =  <label>
-label=%gb_used:.1f%
-
-format-underline = ${colors.blue}
-; ram-memory:1 ends here
-
-; [[file:../../Desktop.org::*swap-memory][swap-memory:1]]
-[module/swap-memory]
-type = internal/memory
-interval = 10
-
-label= %gb_swap_used:.1f%
-format-underline = ${colors.yellow}
-; swap-memory:1 ends here
-
-; [[file:../../Desktop.org::*network][network:1]]
-[module/network]
-type = internal/network
-interval = 1
-
-interface = ${env:WLAN_INTERFACE}
-
-; format-connected = [<ramp-signal>] <label-connected>
-
-label-connected = ↓ %downspeed% ↑ %upspeed%
-label-disconnected = X
-
-format-connected-underline = ${colors.green}
-format-disconnected-underline = ${colors.red}
-
-ramp-signal-0 = 0
-ramp-signal-1 = 1
-ramp-signal-2 = 2
-ramp-signal-3 = 3
-ramp-signal-4 = 4
-ramp-signal-5 = 5
-; network:1 ends here
-
-; [[file:../../Desktop.org::*date][date:1]]
-[module/date]
-type = internal/date
-interval = 5
-
-date =
-date-alt = "%Y-%m-%d"
-
-time = %H:%M
-time-alt = %H:%M:%S
-
-format-underline = ${colors.cyan}
-label = "%date% %time%"
-; date:1 ends here
-
-; [[file:../../Desktop.org::*battery][battery:1]]
-[module/battery]
-type = internal/battery
-battery = BAT0
-adapter = ADP0
-
-time-format = %H:%M
-format-discharging = <ramp-capacity> <label-discharging>
-format-discharging-underline = ${colors.cyan}
-format-charging-underline = ${colors.yellow}
-format-full-underline = ${colors.green}
-label-discharging = %percentage%% %time%
-label-charging =  %percentage%% %time%
-
-ramp-capacity-0 = 
-ramp-capacity-1 = 
-ramp-capacity-2 = 
-ramp-capacity-3 = 
-ramp-capacity-4 = 
-; battery:1 ends here

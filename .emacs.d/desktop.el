@@ -293,6 +293,8 @@ _=_: Balance          "
           ;; Basic controls
           (,(kbd "<XF86AudioRaiseVolume>") . ,(my/app-command "ponymix increase 5 --max-volume 150"))
           (,(kbd "<XF86AudioLowerVolume>") . ,(my/app-command "ponymix decrease 5 --max-volume 150"))
+          (,(kbd "<XF86MonBrightnessUp>") . ,(my/app-command "light -A 5"))
+          (,(kbd "<XF86MonBrightnessDown>") . ,(my/app-command "light -U 5"))
           (,(kbd "<XF86AudioMute>") . ,(my/app-command "ponymix toggle"))
   
           (,(kbd "<XF86AudioPlay>") . ,(my/app-command "mpc toggle"))

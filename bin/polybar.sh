@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [[file:../Desktop.org::*Launching][Launching:1]]
+# [[file:../Desktop.org::*Launch script][Launch script:1]]
 hostname=$(hostname)
 # Settings varying on the hostname
 export WLAN_INTERFACE=$(nmcli -f DEVICE con show | grep -Ev "(.*docker.*|DEVICE|br.*|tun.*|veth.*|--)" | xargs)
@@ -34,10 +34,10 @@ declare -A BAR_HEIGHT=(
     ["HDMI-A-0"]="29"
 )
 declare -A BLOCKS=(
-    ["eDP"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
-    ["eDP-1"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP battery SEP sun aw-afk date TSEP"
-    ["DVI-D-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP sun aw-afk date TSEP"
-    ["HDMI-A-0"]="pulseaudio mpd SEP cpu ram-memory swap-memory SEP network ipstack-vpn SEP xkeyboard SEP weather SEP pomm sun aw-afk date TSEP"
+    ["eDP"]="glyph-background--white pulseaudio glyph-white--yellow mpd glyph-yellow--light-green cpu glyph-light-green--blue ram-memory glyph-blue--yellow swap-memory glyph-yellow--green network openvpn glyph-green--red xkeyboard glyph-red--light-blue battery glyph-light-blue--green weather glyph-green--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["eDP-1"]="glyph-background--white pulseaudio glyph-white--yellow mpd glyph-yellow--light-green cpu glyph-light-green--blue ram-memory glyph-blue--yellow swap-memory glyph-yellow--green network openvpn glyph-green--red xkeyboard glyph-red--light-blue battery glyph-light-blue--green weather glyph-green--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["DVI-D-0"]="glyph-background--white pulseaudio glyph-white--yellow mpd glyph-yellow--light-green cpu glyph-light-green--blue ram-memory glyph-blue--yellow swap-memory glyph-yellow--green network openvpn glyph-green--red xkeyboard glyph-red--green weather glyph-green--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["HDMI-A-0"]="glyph-background--white pulseaudio glyph-white--yellow mpd glyph-yellow--light-green cpu glyph-light-green--blue ram-memory glyph-blue--yellow swap-memory glyph-yellow--green network openvpn glyph-green--red xkeyboard glyph-red--green weather glyph-green--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
 )
 
 # Geolocation for some modules
@@ -58,12 +58,12 @@ for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     if [[ -z "$SCALE" ]]; then
         continue
     fi
-    export FONT0="pango:monospace:size=$SIZE;1"
-    export FONT1="NotoEmoji:scale=$SCALE:antialias=false;1"
-    export FONT2="fontawesome:pixelsize=$SIZE;1"
-    export FONT3="JetBrains Mono Nerd Font:monospace:size=$SIZE;1"
+    # export FONT0="pango:monospace:size=$SIZE;1"
+    # export FONT1="NotoEmoji:scale=$SCALE:antialias=false;1"
+    # export FONT2="fontawesome:pixelsize=$SIZE;1"
+    # export FONT3="JetBrains Mono Nerd Font:monospace:size=15;1"
     export HEIGHT=${BAR_HEIGHT[$MONITOR]}
     export RIGHT_BLOCKS=${BLOCKS[$MONITOR]}
     polybar mybar &
 done
-# Launching:1 ends here
+# Launch script:1 ends here
