@@ -1365,21 +1365,21 @@ To make life a bit easier, I'll define a single source of truth for modules and 
 So, here is a table with all modules.
 
 #+NAME: polybar_modules
-| Index | Module      | Color       | Glyph |
-|-------+-------------+-------------+-------|
-|     1 | pulseaudio  | white       | +     |
-|     2 | mpd         | yellow      | +     |
-|     3 | cpu         | light-green | +     |
-|     4 | ram-memory  | blue        | +     |
-|     5 | swap-memory | yellow      | +     |
-|     6 | network     | green       | +     |
-|     7 | openvpn     | green       |       |
-|     8 | xkeyboard   | red         | +     |
-|     9 | battery     | light-blue  | +     |
-|    10 | weather     | green       | +     |
-|    12 | sun         | yellow      | +     |
-|    13 | aw-afk      | light-blue  | +     |
-|    14 | date        | blue        | +     |
+| Index | Module      | Color         | Glyph |
+|-------+-------------+---------------+-------|
+|     1 | pulseaudio  | light-magenta | +     |
+|     2 | mpd         | magenta       | +     |
+|     3 | cpu         | cyan          | +     |
+|     4 | ram-memory  | light-green   | +     |
+|     5 | swap-memory | green         | +     |
+|     6 | network     | light-red     | +     |
+|     7 | openvpn     | light-red     |       |
+|     8 | xkeyboard   | red           | +     |
+|     9 | battery     | green         | +     |
+|    10 | weather     | light-yellow  | +     |
+|    12 | sun         | yellow        | +     |
+|    13 | aw-afk      | light-blue    | +     |
+|    14 | date        | blue          | +     |
 
 Some functions to use colors in the individual modules:
 #+NAME: get-polybar-bg
@@ -1408,10 +1408,11 @@ Also, I want to exclude some modules from certain monitors and machines. For now
 
 Now, we need to generate a set of glyphs. The code below generates all the required glyhps so that every combination of neighoring colors in the bar had one.
 #+NAME: polybar_extra_colors
-| Color 1    | Color 2    |
-|------------+------------|
-| background | white      |
-| blue       | background |
+| Color 1    | Color 2       |
+|------------+---------------|
+| background | white         |
+| background | light-magenta |
+| blue       | background    |
 
 #+NAME: polybar-generate-glyphs
 #+begin_src emacs-lisp :var table=polybar_modules exclude-table=polybar_modules_exclude extra=polybar_extra_colors
@@ -1554,10 +1555,10 @@ Fonts
 ; font-2 = ${env:FONT2:fontawesome:pixelsize=10;1}
 ; font-3 = ${env:FONT3:JetBrains Mono Nerd Font:monospace:size=10;1}
 
-font-0 = pango:monospace:size=13;1
-font-1 = NotoEmoji:scale=10:antialias=false;0
-font-2 = fontawesome:pixelsize=13;2
-font-3 = JetBrains Mono Nerd Font:monospace:size=13;3
+font-0 = pango:monospace:size=13;2
+font-1 = NotoEmoji:scale=10:antialias=false;1
+font-2 = fontawesome:pixelsize=13;3
+font-3 = JetBrains Mono Nerd Font:monospace:size=13;4
 font-4 = JetBrains Mono Nerd Font:monospace:size=17;4
 #+end_src
 

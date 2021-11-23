@@ -28,17 +28,17 @@ gright = 
 ; Glyphs:1 ends here
 
 ; [[file:../../Desktop.org::*Modules][Modules:4]]
-[module/glyph-light-blue--green]
+[module/glyph-green--light-yellow]
 type = custom/text
-content-background = ${colors.light-blue}
-content-foreground = ${colors.green}
+content-background = ${colors.green}
+content-foreground = ${colors.light-yellow}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-red--light-blue]
+[module/glyph-red--green]
 type = custom/text
 content-background = ${colors.red}
-content-foreground = ${colors.light-blue}
+content-foreground = ${colors.green}
 content = ${glyph.gright}
 content-font = 5
 
@@ -56,59 +56,59 @@ content-foreground = ${colors.light-blue}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-green--yellow]
+[module/glyph-light-yellow--yellow]
 type = custom/text
-content-background = ${colors.green}
+content-background = ${colors.light-yellow}
 content-foreground = ${colors.yellow}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-red--green]
+[module/glyph-red--light-yellow]
 type = custom/text
 content-background = ${colors.red}
-content-foreground = ${colors.green}
+content-foreground = ${colors.light-yellow}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-green--red]
+[module/glyph-light-red--red]
 type = custom/text
-content-background = ${colors.green}
+content-background = ${colors.light-red}
 content-foreground = ${colors.red}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-yellow--green]
+[module/glyph-green--light-red]
 type = custom/text
-content-background = ${colors.yellow}
+content-background = ${colors.green}
+content-foreground = ${colors.light-red}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-light-green--green]
+type = custom/text
+content-background = ${colors.light-green}
 content-foreground = ${colors.green}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-blue--yellow]
+[module/glyph-cyan--light-green]
 type = custom/text
-content-background = ${colors.blue}
-content-foreground = ${colors.yellow}
-content = ${glyph.gright}
-content-font = 5
-
-[module/glyph-light-green--blue]
-type = custom/text
-content-background = ${colors.light-green}
-content-foreground = ${colors.blue}
-content = ${glyph.gright}
-content-font = 5
-
-[module/glyph-yellow--light-green]
-type = custom/text
-content-background = ${colors.yellow}
+content-background = ${colors.cyan}
 content-foreground = ${colors.light-green}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-white--yellow]
+[module/glyph-magenta--cyan]
 type = custom/text
-content-background = ${colors.white}
-content-foreground = ${colors.yellow}
+content-background = ${colors.magenta}
+content-foreground = ${colors.cyan}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-light-magenta--magenta]
+type = custom/text
+content-background = ${colors.light-magenta}
+content-foreground = ${colors.magenta}
 content = ${glyph.gright}
 content-font = 5
 
@@ -116,6 +116,13 @@ content-font = 5
 type = custom/text
 content-background = ${colors.blue}
 content-foreground = ${colors.background}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-background--light-magenta]
+type = custom/text
+content-background = ${colors.background}
+content-foreground = ${colors.light-magenta}
 content = ${glyph.gright}
 content-font = 5
 
@@ -164,10 +171,10 @@ radius = 0.0
 ; font-2 = ${env:FONT2:fontawesome:pixelsize=10;1}
 ; font-3 = ${env:FONT3:JetBrains Mono Nerd Font:monospace:size=10;1}
 
-font-0 = pango:monospace:size=13;1
-font-1 = NotoEmoji:scale=10:antialias=false;0
-font-2 = fontawesome:pixelsize=13;2
-font-3 = JetBrains Mono Nerd Font:monospace:size=13;3
+font-0 = pango:monospace:size=13;2
+font-1 = NotoEmoji:scale=10:antialias=false;1
+font-2 = fontawesome:pixelsize=13;3
+font-3 = JetBrains Mono Nerd Font:monospace:size=13;4
 font-4 = JetBrains Mono Nerd Font:monospace:size=17;4
 ; Global bar config:3 ends here
 
@@ -242,8 +249,8 @@ ramp-volume-7 = █
 format-muted = ♪ <label-muted>
 label-muted = MUTE
 
-format-volume-background = ${colors.white}
-format-muted-background = ${colors.white}
+format-volume-background = ${colors.light-magenta}
+format-muted-background = ${colors.light-magenta}
 
 ; format-volume-underline = ${colors.white}
 ; format-muted-underline = ${colors.light-black}
@@ -266,9 +273,9 @@ label-song-ellipsis = true
 ; format-paused-underline = ${colors.yellow}
 ; format-stopped-underline = ${colors.yellow}
 
-format-playing-background = ${colors.yellow}
-format-paused-background = ${colors.yellow}
-format-stopped-background = ${colors.yellow}
+format-playing-background = ${colors.magenta}
+format-paused-background = ${colors.magenta}
+format-stopped-background = ${colors.magenta}
 
 label-separator = 0
 separator-foreground = ${colors.red}
@@ -285,7 +292,7 @@ icon-next = 2
 type = internal/cpu
 format = " <label>"
 label = %percentage%%
-format-background = ${colors.light-green}
+format-background = ${colors.cyan}
 ; cpu:1 ends here
 
 ; [[file:../../Desktop.org::*ram-memory][ram-memory:1]]
@@ -306,7 +313,7 @@ format =  <label>
 label=%gb_used:.1f%
 
 ; format-underline = ${colors.blue}
-format-background = ${colors.blue}
+format-background = ${colors.light-green}
 ; ram-memory:1 ends here
 
 ; [[file:../../Desktop.org::*swap-memory][swap-memory:1]]
@@ -315,7 +322,7 @@ type = internal/memory
 interval = 10
 
 label= %gb_swap_used:.1f%
-format-background = ${colors.yellow}
+format-background = ${colors.green}
 ; swap-memory:1 ends here
 
 ; [[file:../../Desktop.org::*network][network:1]]
@@ -332,8 +339,8 @@ label-disconnected = X
 
 ; format-connected-underline = ${colors.green}
 ; format-disconnected-underline = ${colors.red}
-format-connected-background = ${colors.green}
-format-disconnected-background = ${colors.green}
+format-connected-background = ${colors.light-red}
+format-disconnected-background = ${colors.light-red}
 
 ramp-signal-0 = 0
 ramp-signal-1 = 1
@@ -354,7 +361,7 @@ interval = 1200
 [module/openvpn]
 type = custom/script
 exec = /home/pavel/bin/polybar/openvpn.sh
-format-background = ${colors.green}
+format-background = ${colors.light-red}
 interval = 1200
 ; openvpn:2 ends here
 
@@ -378,9 +385,9 @@ adapter = ADP0
 
 time-format = %H:%M
 format-discharging = <ramp-capacity> <label-discharging>
-format-discharging-background = ${colors.light-blue}
-format-charging-background = ${colors.light-blue}
-format-full-background = ${colors.light-blue}
+format-discharging-background = ${colors.green}
+format-charging-background = ${colors.green}
+format-full-background = ${colors.green}
 label-discharging = %percentage%% %time%
 label-charging =  %percentage%% %time%
 
@@ -396,7 +403,7 @@ ramp-capacity-4 = 
 type = custom/script
 exec = /home/pavel/bin/polybar/weather.sh
 ; format-underline = ${colors.red}
-format-background = ${colors.green}
+format-background = ${colors.light-yellow}
 interval = 1200
 ; weather:2 ends here
 
