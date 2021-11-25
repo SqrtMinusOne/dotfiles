@@ -332,6 +332,7 @@ _=_: Balance          "
                        'face
                        `(foreground-color . ,(doom-color 'yellow)))
            "]"))
+    (setq my/exwm-mode-line-info-no-props (funcall exwm-workspace-index-map exwm-workspace-current-index))
     (force-mode-line-update))
   
   (add-hook 'exwm-workspace-switch-hook #'my/exwm-mode-line-info-update)

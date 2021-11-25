@@ -263,9 +263,9 @@ References:
 - [[https://github.com/daviwil/emacs-from-scratch/blob/master/Desktop.org][Emacs From Scratch config]]
 
 ** Xsession
-First things first, Emacs has to be launched as a window manager. On a more conventional system, I'd create a .desktop file in some system folder that can be seen by a login manager, but in the case of Guix, it's a bit more complicated, because all such folders are not meant to be changed manually.
+First things first, Emacs has to be launched as a window manager. On a more conventional system I'd create a .desktop file in some system folder that can be seen by a login manager, but in the case of Guix it's a bit more complicated, because all such folders are not meant to be changed manually.
 
-However, GDM, the login manager that seems to default on Guix, launches =~/.xsession= on the startup if it's present, which is just fine for my purposes.
+However, GDM, the login manager that seems to be the default on Guix, launches =~/.xsession= on the startup if it's present, which is just fine for my purposes.
 
 #+begin_src sh :tangle ~/.xsession
 # Source .profile
@@ -351,9 +351,6 @@ And a function to move windows with the following behavior:
 Something like this also goes for resizing windows. I'm used to the i3 "mode" for this functionality, and this seems to be a sensible approach.
 
 #+begin_src emacs-lisp
-(use-package transient
-  :straight t)
-
 (setq my/exwm-resize-value 5)
 
 (defun my/exwm-resize-window (dir kind &optional value)
@@ -391,6 +388,9 @@ Also, a transient for shortcuts for the most frequent apps.
 
 I wanted to make the interactive lambda a macro, but this doesn't seem to work the way I expect, so the code has a bit of duplication.
 #+begin_src emacs-lisp
+(use-package transient
+  :straight t)
+
 (defun my/run-in-background (command)
   (let ((command-parts (split-string command "[ ]+")))
     (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
@@ -689,6 +689,7 @@ Show current workspace in the modeline.
                      'face
                      `(foreground-color . ,(doom-color 'yellow)))
          "]"))
+  (setq my/exwm-mode-line-info-no-props (funcall exwm-workspace-index-map exwm-workspace-current-index))
   (force-mode-line-update))
 
 (add-hook 'exwm-workspace-switch-hook #'my/exwm-mode-line-info-update)
