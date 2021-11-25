@@ -73,8 +73,8 @@
 (load custom-file 'noerror)
 
 (let ((private-file (expand-file-name "private.el" user-emacs-directory)))
-  (when (file-exists-p private-file)
-    (load-file private-file)))
+
+    (load-file private-file))
 
 (use-package no-littering
   :straight t)
@@ -710,6 +710,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package company-box
   :straight t
+  :disabled
   :if (and (display-graphic-p) (not my/lowpower))
   :after (company)
   :hook (company-mode . company-box-mode))
@@ -835,11 +836,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (doom-themes-treemacs-config))
 
 (unless my/is-termux
-  (deftheme my-theme)
+  (deftheme my-theme-1)
 
   (defun my/update-my-theme (&rest _)
     (custom-theme-set-faces
-     'my-theme
+     'my-theme-1
      `(tab-bar-tab ((t (
                         :background ,(doom-color 'bg)
                         :foreground ,(doom-color 'yellow)
@@ -856,12 +857,24 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
      `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
      `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
      `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow)))))
-     `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow))))))
+     `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow)))))
+     `(spaceline-evil-emacs ((t :background ,(doom-color 'bg)
+                                :foreground ,(doom-color 'fg))))
+     `(spaceline-evil-insert ((t :background ,(doom-color 'green)
+                                 :foreground ,(doom-color 'base0))))
+     `(spaceline-evil-motion ((t :background ,(doom-color 'magenta)
+                                 :foreground ,(doom-color 'base0))))
+     `(spaceline-evil-normal ((t :background ,(doom-color 'blue)
+                                 :foreground ,(doom-color 'base0))))
+     `(spaceline-evil-replace ((t :background ,(doom-color 'yellow)
+                                  :foreground ,(doom-color 'base0))))
+     `(spaceline-evil-visual ((t :background ,(doom-color 'grey)
+                                 :foreground ,(doom-color 'base0)))))
     (custom-theme-set-variables
-     'my-theme
+     'my-theme-1
      `(aweshell-invalid-command-color ,(doom-color 'red))
      `(aweshell-valid-command-color ,(doom-color 'green)))
-    (enable-theme 'my-theme))
+    (enable-theme 'my-theme-1))
 
   (advice-add 'load-theme :after #'my/update-my-theme)
   (when (fboundp 'doom-color)
@@ -959,6 +972,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package doom-modeline
   :straight t
+  ;; :if (not (display-graphic-p))
   :init
   (setq doom-modeline-env-enable-python nil)
   (setq doom-modeline-env-enable-go nil)
@@ -966,6 +980,86 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)
   (setq doom-modeline-buffer-state-icon nil))
+
+(use-package spaceline
+  :straight t
+  :disabled
+  :config
+  (defun my/format-perspective-list ()
+    (format "[%s]"
+            (let ((curr (persp-current-name)))
+              (mapconcat
+               (lambda (name)
+                 (if (string-equal name curr)
+                     (propertize
+                      name
+                      'face
+                      'persp-selected-face)
+                   name))
+               (persp-names)
+               "|"))))
+  
+  (defvar my/spaceline-persp-list "")
+  
+  (defun my/persp-update-advice (&rest _)
+    (setq my/spaceline-persp-list (my/format-perspective-list)))
+  
+  (advice-add #'persp-update-modestring :after #'my/persp-update-advice)
+  (add-hook 'buffer-list-update-hook #'my/persp-update-advice)
+  (add-hook 'find-file-hook #'my/persp-update-advice)
+  
+  (spaceline-define-segment perspective
+    "Perspective.el"
+    my/spaceline-persp-list)
+  (defvar my/exwm-mode-line-info-no-props "")
+  
+  (spaceline-define-segment exwm
+    my/exwm-mode-line-info-no-props)
+  (spaceline-define-segment debug-on-error
+    (when debug-on-error
+      (propertize
+       ""
+       'face 'warning
+       'local-map (let ((map (make-sparse-keymap)))
+                    (define-key map
+                      [mode-line mouse-1]
+                      #'toggle-debug-on-error)
+                    map))))
+  
+  (spaceline-define-segment debug-on-quit
+    (when debug-on-quit
+      (propertize
+       ""
+       'face 'error
+       'local-map (let ((map (make-sparse-keymap)))
+                    (define-key map
+                      [mode-line mouse-1]
+                      #'toggle-debug-on-quit)
+                    map))))
+  (require 'spaceline-config)
+  
+  (spaceline-compile
+    "my"
+    '((evil-state :priority 100 :face (spaceline-highlight-face-evil-state))
+      (buffer-modified :priority 50)
+      (version-control :priority 25 :when active)
+      (buffer-id :priority 90))
+    '(;; (global)
+      (exwm :when active)
+      (perspective :when active)
+      (flycheck-error :when active)
+      (flycheck-warning :when active)
+      (debug-on-error :when active)
+      (debug-on-quit :when active)
+      (major-mode :when active :priority 90)
+      (selection-info :priority 95)
+      (line-column :when active  :priority 99)
+      (hud :when active :priority 99)))
+  
+  (spaceline-ml-my)
+  
+  (setq-default mode-line-format '("%e" (:eval (spaceline-ml-my))))
+  (setq mode-line-format '("%e" (:eval (spaceline-ml-my)))))
 
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
@@ -1974,7 +2068,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         `(("d" "default" plain "%?"
            :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
            :unnarrowed t)))
-  (require 'org-roam-protocol))
+  (require 'org-roam-protocol)
+  (general-define-key
+   :keymaps 'org-roam-mode-map
+   :states '(normal)
+   "TAB" #'magit-section-toggle
+   "q" #'quit-window
+   "k" #'magit-section-backward
+   "j" #'magit-section-forward
+   "gr" #'revert-buffer
+   "RET" #'org-roam-buffer-visit-thing))
 
 (my-leader-def
   :infix "or"
@@ -3659,14 +3762,14 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
 
 (defun my/update-my-theme-elfeed (&rest _)
   (custom-theme-set-faces
-   'my-theme
+   'my-theme-1
    `(elfeed-videos-entry ((t :foreground ,(doom-color 'red))))
    `(elfeed-twitter-entry ((t :foreground ,(doom-color 'blue))))
    `(elfeed-emacs-entry ((t :foreground ,(doom-color 'magenta))))
    `(elfeed-music-entry ((t :foreground ,(doom-color 'green))))
    `(elfeed-podcasts-entry ((t :foreground ,(doom-color 'yellow))))
    `(elfeed-blogs-entry ((t :foreground ,(doom-color 'orange)))))
-  (enable-theme 'my-theme))
+  (enable-theme 'my-theme-1))
 
 (advice-add 'load-theme :after #'my/update-my-theme-elfeed)
 (when (fboundp 'doom-color)
