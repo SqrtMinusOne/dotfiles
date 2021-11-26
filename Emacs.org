@@ -6,7 +6,8 @@
 #+OPTIONS: broken-links:auto h:6 toc:nil
 
 #+begin_quote
-One day we won't hate one another, no young boy will march to war and I will clean up my Emacs config. But that day isn'.
+One day we won't hate one another, no young boy will march to war and I will clean up my Emacs config. But that day isn't today.
+#+end_quote
 
 #+TOC: headlines 6
 

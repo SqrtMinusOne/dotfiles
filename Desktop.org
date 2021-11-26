@@ -614,6 +614,7 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "s-;") . my/exwm-apps)
         (,(kbd "s--") . ,(my/app-command "rofi-pass"))
         (,(kbd "s-=") . ,(my/app-command "rofimoji"))
+        (,(kbd "s-i") . ,(my/app-command "copyq menu"))
 
         ;; Basic controls
         (,(kbd "<XF86AudioRaiseVolume>") . ,(my/app-command "ponymix increase 5 --max-volume 150"))

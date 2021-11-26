@@ -976,6 +976,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :init
   (setq doom-modeline-env-enable-python nil)
   (setq doom-modeline-env-enable-go nil)
+  (setq doom-modeline-buffer-encoding 'nondefault)
+  (setq doom-modeline-hud t)
   :config
   (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)
@@ -4239,8 +4241,8 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (my-leader-def "ag" 'guix))
 
 (use-package pomm
-  :straight (:host github :repo "SqrtMinusOne/pomm.el" :files (:defaults "resources"))
-  ;; :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
+  ;; :straight (:host github :repo "SqrtMinusOne/pomm.el" :files (:defaults "resources"))
+  :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
   :init
   (my-leader-def "ap" #'pomm)
   :config

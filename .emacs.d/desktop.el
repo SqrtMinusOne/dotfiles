@@ -30,9 +30,6 @@
      (other-direction
       (evil-move-window dir)))))
 
-(use-package transient
-  :straight t)
-
 (setq my/exwm-resize-value 5)
 
 (defun my/exwm-resize-window (dir kind &optional value)
@@ -64,6 +61,9 @@ _=_: Balance          "
   ("l" (lambda () (interactive) (my/exwm-resize-window 'width 'grow)))
   ("=" balance-windows)
   ("q" nil "quit" :color blue))
+
+(use-package transient
+  :straight t)
 
 (defun my/run-in-background (command)
   (let ((command-parts (split-string command "[ ]+")))
@@ -289,6 +289,7 @@ _=_: Balance          "
           (,(kbd "s-;") . my/exwm-apps)
           (,(kbd "s--") . ,(my/app-command "rofi-pass"))
           (,(kbd "s-=") . ,(my/app-command "rofimoji"))
+          (,(kbd "s-i") . ,(my/app-command "copyq menu"))
   
           ;; Basic controls
           (,(kbd "<XF86AudioRaiseVolume>") . ,(my/app-command "ponymix increase 5 --max-volume 150"))
