@@ -60,16 +60,13 @@ Some of the notable programs are listed in the table below.
 
 * Some statistics
 If you are viewing the file in Emacs, eval the following to show the pictures with reasonable width:
-#+begin_src elisp :results none
-(setq-local org-image-actual-width '(1024))
-#+end_src
 
 ** History
-[[./dot-stats/img/all.png]]
+[[https://sqrtminusone.xyz/stats/all.png]]
 
-[[./dot-stats/img/emacs-vim.png]]
+[[https://sqrtminusone.xyz/stats/emacs-vim.png]]
 
-[[./dot-stats/img/literate-config.png]]
+[[https://sqrtminusone.xyz/stats/literate-config.png]]
 
 * Misc
 ** Notes
