@@ -1,0 +1,17 @@
+name: Update  Site
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  trigger_update:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Trigger site update
+        run: |
+          curl -X POST -u "$sqrtminusone:${{ secrets.ACCESS_TOKEN }}" \
+          -H "Accept: application/vnd.github.everest-preview+json"\
+          -H "Content-Type: application/json" \
+          --data '{"event_type": "build_application"}' \
+          https://api.github.com/repos/sqrtminusone/sqrtminusone.github.io/dispatches
