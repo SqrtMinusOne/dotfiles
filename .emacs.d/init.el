@@ -1,12 +1,4 @@
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (message "*** Emacs loaded in %s with %d garbage collections."
-                     (format "%.2f seconds"
-                             (float-time
-                              (time-subtract after-init-time before-init-time)))
-                     gcs-done)))
-
-;; (setq use-package-verbose t)
+(setq use-package-verbose t)
 
 (defvar bootstrap-version)
 (let ((bootstrap-file
@@ -40,6 +32,16 @@
 (setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
 
 (setenv "IS_EMACS" "true")
+
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "*** Emacs loaded in %s with %d garbage collections."
+                     (format "%.2f seconds"
+                             (float-time
+                              (time-subtract after-init-time before-init-time)))
+                     gcs-done)))
+
+;; (setq use-package-verbose t)
 
 (setq gc-cons-threshold 80000000)
 (setq read-process-output-max (* 1024 1024))
@@ -419,15 +421,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     ("kill" (evil-quit))
     (- (i3-msg command))))
 
-(use-package visual-fill-column
-  :straight t
-  :config
-  (add-hook 'visual-fill-column-mode-hook
-            (lambda () (setq visual-fill-column-center-text t))))
-
-(use-package smartparens
-  :straight t)
-
 (use-package aggressive-indent
   :commands (aggressive-indent-mode)
   :straight t)
@@ -440,12 +433,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (lambda ()
             (unless (cl-some #'derived-mode-p my/trailing-whitespace-modes)
               (delete-trailing-whitespace))))
-
-(use-package expand-region
-  :straight t
-  :commands (er/expand-region)
-  :init
-  (general-nmap "+" 'er/expand-region))
 
 (setq tab-always-indent nil)
 
@@ -482,135 +469,34 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq undo-strong-limit 100663296)
   (setq undo-outer-limit 1006632960))
 
-(use-package helpful
-  :straight t
-  :commands (helpful-callable
-             helpful-variable
-             helpful-key
-             helpful-macro
-             helpful-function
-             helpful-command))
-
-(my-leader-def
-  :infix "h"
-  "" '(:which-key "help")
-  "RET" 'view-order-manuals
-  "." 'display-local-help
-  "?" 'help-for-help
-  "C" 'describe-coding-system
-  "F" 'Info-goto-emacs-command-node
-  "I" 'describe-input-method
-  "K" 'Info-goto-emacs-key-command-node
-  "L" 'describe-language-environment
-  "P" 'describe-package
-  "S" 'info-lookup-symbol
-  "a" 'helm-apropos
-  "b" 'describe-bindings
-  "c" 'describe-key-briefly
-  "d" 'apropos-documentation
-  "e" 'view-echo-area-messages
-  "f" 'helpful-function
-  "g" 'describe-gnu-project
-  "h" 'view-hello-file
-  "i" 'info
-  "k" 'helpful-key
-  "l" 'view-lossage
-  "m" 'describe-mode
-  "n" 'view-emacs-news
-  "o" 'describe-symbol
-  "p" 'finder-by-keyword
-  "q" 'help-quit
-  "r" 'info-emacs-manual
-  "s" 'describe-syntax
-  "t" 'help-with-tutorial
-  "v" 'helpful-variable
-  "w" 'where-is
-  "<f1>" 'help-for-help)
-
-(use-package ivy
-  :straight t
-  :config
-  (setq ivy-use-virtual-buffers t)
-  (ivy-mode))
-
-(use-package counsel
-  :straight t
-  :after ivy
-  :config
-  (counsel-mode))
-
-(use-package swiper
-  :defer t
+(use-package yasnippet-snippets
   :straight t)
 
-(use-package ivy-rich
+(use-package yasnippet
   :straight t
-  :after ivy
   :config
-  (ivy-rich-mode 1)
-  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+  (setq yas-snippet-dirs
+        `(,(concat (expand-file-name user-emacs-directory) "snippets")
+          yasnippet-snippets-dir))
+  (setq yas-triggers-in-field t)
+  (yas-global-mode 1))
 
-(use-package ivy-prescient
+(general-imap "M-TAB" 'company-yasnippet)
+
+(use-package smartparens
+  :straight t)
+
+(use-package expand-region
   :straight t
-  :after counsel
+  :commands (er/expand-region)
+  :init
+  (general-nmap "+" 'er/expand-region))
+
+(use-package visual-fill-column
+  :straight t
   :config
-  (ivy-prescient-mode +1)
-  (setq ivy-prescient-retain-classic-highlighting t)
-  (prescient-persist-mode 1)
-  (setq ivy-prescient-sort-commands
-        '(:not swiper
-               swiper-isearch
-               ivy-switch-buffer
-               ;; ivy-resume
-               ;; ivy--restore-session
-               lsp-ivy-workspace-symbol
-               dap-switch-stack-frame
-               my/dap-switch-stack-frame
-               dap-switch-session
-               dap-switch-thread
-               counsel-grep
-               ;; counsel-find-file
-               counsel-git-grep
-               counsel-rg
-               counsel-ag
-               counsel-ack
-               counsel-fzf
-               counsel-pt
-               counsel-imenu
-               counsel-yank-pop
-               counsel-recentf
-               counsel-buffer-or-recentf
-               proced-filter-interactive
-               proced-sort-interactive))
-  ;; Do not use prescient in find-file
-  (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
-
-(my-leader-def
-  :infix "f"
-  "" '(:which-key "various completions")'
-  ;; "b" 'counsel-switch-buffer
-  "b" 'persp-ivy-switch-buffer
-  "e" 'conda-env-activate
-  "f" 'project-find-file
-  "c" 'counsel-yank-pop
-  "a" 'counsel-rg
-  "A" 'counsel-ag)
-
-(general-define-key
- :states '(insert normal)
- "C-y" 'counsel-yank-pop)
-
-(my-leader-def "SPC" 'ivy-resume)
-(my-leader-def "s" 'swiper-isearch
-  "S" 'swiper-all)
-
-(general-define-key
- :keymaps '(ivy-minibuffer-map swiper-map)
- "M-j" 'ivy-next-line
- "M-k" 'ivy-previous-line
- "<C-return>" 'ivy-call
- "M-RET" 'ivy-immediate-done
- [escape] 'minibuffer-keyboard-quit)
+  (add-hook 'visual-fill-column-mode-hook
+            (lambda () (setq visual-fill-column-center-text t))))
 
 (use-package treemacs
   :straight t
@@ -698,23 +584,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (general-nmap "C-p" 'counsel-projectile-find-file)
 
-(use-package company
-  :straight t
-  :config
-  (global-company-mode)
-  (setq company-idle-delay (if my/lowpower 0.5 0.125))
-  (setq company-dabbrev-downcase nil)
-  (setq company-show-numbers t))
-
-(general-imap "C-SPC" 'company-complete)
-
-(use-package company-box
-  :straight t
-  :disabled
-  :if (and (display-graphic-p) (not my/lowpower))
-  :after (company)
-  :hook (company-mode . company-box-mode))
-
 (use-package magit
   :straight t
   :commands (magit-status magit-file-dispatch)
@@ -754,19 +623,152 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-to-list 'editorconfig-indentation-alist
                '(emmet-mode emmet-indentation)))
 
-(use-package yasnippet-snippets
-  :straight t)
-
-(use-package yasnippet
+(use-package ivy
   :straight t
   :config
-  (setq yas-snippet-dirs
-        `(,(concat (expand-file-name user-emacs-directory) "snippets")
-          yasnippet-snippets-dir))
-  (setq yas-triggers-in-field t)
-  (yas-global-mode 1))
+  (setq ivy-use-virtual-buffers t)
+  (ivy-mode))
 
-(general-imap "M-TAB" 'company-yasnippet)
+(use-package counsel
+  :straight t
+  :after ivy
+  :config
+  (counsel-mode))
+
+(use-package swiper
+  :defer t
+  :straight t)
+
+(use-package ivy-rich
+  :straight t
+  :after ivy
+  :config
+  (ivy-rich-mode 1)
+  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+
+(use-package ivy-prescient
+  :straight t
+  :after counsel
+  :config
+  (ivy-prescient-mode +1)
+  (setq ivy-prescient-retain-classic-highlighting t)
+  (prescient-persist-mode 1)
+  (setq ivy-prescient-sort-commands
+        '(:not swiper
+               swiper-isearch
+               ivy-switch-buffer
+               ;; ivy-resume
+               ;; ivy--restore-session
+               lsp-ivy-workspace-symbol
+               dap-switch-stack-frame
+               my/dap-switch-stack-frame
+               dap-switch-session
+               dap-switch-thread
+               counsel-grep
+               ;; counsel-find-file
+               counsel-git-grep
+               counsel-rg
+               counsel-ag
+               counsel-ack
+               counsel-fzf
+               counsel-pt
+               counsel-imenu
+               counsel-yank-pop
+               counsel-recentf
+               counsel-buffer-or-recentf
+               proced-filter-interactive
+               proced-sort-interactive))
+  ;; Do not use prescient in find-file
+  (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
+
+(my-leader-def
+  :infix "f"
+  "" '(:which-key "various completions")'
+  ;; "b" 'counsel-switch-buffer
+  "b" 'persp-ivy-switch-buffer
+  "e" 'conda-env-activate
+  "f" 'project-find-file
+  "c" 'counsel-yank-pop
+  "a" 'counsel-rg
+  "A" 'counsel-ag)
+
+(general-define-key
+ :states '(insert normal)
+ "C-y" 'counsel-yank-pop)
+
+(my-leader-def "SPC" 'ivy-resume)
+(my-leader-def "s" 'swiper-isearch
+  "S" 'swiper-all)
+
+(general-define-key
+ :keymaps '(ivy-minibuffer-map swiper-map)
+ "M-j" 'ivy-next-line
+ "M-k" 'ivy-previous-line
+ "<C-return>" 'ivy-call
+ "M-RET" 'ivy-immediate-done
+ [escape] 'minibuffer-keyboard-quit)
+
+(use-package company
+  :straight t
+  :config
+  (global-company-mode)
+  (setq company-idle-delay (if my/lowpower 0.5 0.125))
+  (setq company-dabbrev-downcase nil)
+  (setq company-show-numbers t))
+
+(general-imap "C-SPC" 'company-complete)
+
+(use-package company-box
+  :straight t
+  :disabled
+  :if (and (display-graphic-p) (not my/lowpower))
+  :after (company)
+  :hook (company-mode . company-box-mode))
+
+(use-package helpful
+  :straight t
+  :commands (helpful-callable
+             helpful-variable
+             helpful-key
+             helpful-macro
+             helpful-function
+             helpful-command))
+
+(my-leader-def
+  :infix "h"
+  "" '(:which-key "help")
+  "RET" 'view-order-manuals
+  "." 'display-local-help
+  "?" 'help-for-help
+  "C" 'describe-coding-system
+  "F" 'Info-goto-emacs-command-node
+  "I" 'describe-input-method
+  "K" 'Info-goto-emacs-key-command-node
+  "L" 'describe-language-environment
+  "P" 'describe-package
+  "S" 'info-lookup-symbol
+  "a" 'helm-apropos
+  "b" 'describe-bindings
+  "c" 'describe-key-briefly
+  "d" 'apropos-documentation
+  "e" 'view-echo-area-messages
+  "f" 'helpful-function
+  "g" 'describe-gnu-project
+  "h" 'view-hello-file
+  "i" 'info
+  "k" 'helpful-key
+  "l" 'view-lossage
+  "m" 'describe-mode
+  "n" 'view-emacs-news
+  "o" 'describe-symbol
+  "p" 'finder-by-keyword
+  "q" 'help-quit
+  "r" 'info-emacs-manual
+  "s" 'describe-syntax
+  "t" 'help-with-tutorial
+  "v" 'helpful-variable
+  "w" 'where-is
+  "<f1>" 'help-for-help)
 
 (use-package wakatime-mode
   :straight (:host github :repo "SqrtMinusOne/wakatime-mode")
@@ -804,17 +806,26 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq make-pointer-invisible t)
 
+(show-paren-mode 1)
+
+(global-hl-line-mode 1)
+
 (global-display-line-numbers-mode 1)
 (line-number-mode nil)
 (setq display-line-numbers-type 'visual)
 (column-number-mode)
 
-(show-paren-mode 1)
-
 (setq word-wrap 1)
 (global-visual-line-mode 1)
 
-(global-hl-line-mode 1)
+(setq-default frame-title-format
+              '(""
+                "emacs"
+                (:eval
+                 (let ((project-name (projectile-project-name)))
+                   (if (not (string= "-" project-name))
+                       (format ":%s@%s" project-name (system-name))
+                     (format "@%s" (system-name)))))))
 
 (use-package auto-dim-other-buffers
   :straight t
@@ -882,14 +893,82 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
 
-(setq-default frame-title-format
-              '(""
-                "emacs"
-                (:eval
-                 (let ((project-name (projectile-project-name)))
-                   (if (not (string= "-" project-name))
-                       (format ":%s@%s" project-name (system-name))
-                     (format "@%s" (system-name)))))))
+(use-package ligature
+  :straight (:host github :repo "mickeynp/ligature.el")
+  :if (display-graphic-p)
+  :config
+  (ligature-set-ligatures
+   '(
+     typescript-mode
+     js2-mode
+     vue-mode
+     svelte-mode
+     scss-mode
+     php-mode
+     python-mode
+     js-mode
+     markdown-mode
+     clojure-mode
+     go-mode
+     sh-mode
+     haskell-mode
+     web-mode)
+   '("--" "---" "==" "===" "!=" "!==" "=!=" "=:=" "=/=" "<="
+     ">=" "&&" "&&&" "&=" "++" "+++" "***" ";;" "!!" "??"
+     "?:" "?." "?=" "<:" ":<" ":>" ">:" "<>" "<<<" ">>>"
+     "<<" ">>" "||" "-|" "_|_" "|-" "||-" "|=" "||=" "##"
+     "###" "####" "#{" "#[" "]#" "#(" "#?" "#_" "#_(" "#:"
+     "#!" "#=" "^=" "<$>" "<$" "$>" "<+>" "<+" "+>" "<*>"
+     "<*" "*>" "</" "</>" "/>" "<!--" "<#--" "-->" "->" "->>"
+     "<<-" "<-" "<=<" "=<<" "<<=" "<==" "<=>" "<==>" "==>" "=>"
+     "=>>" ">=>" ">>=" ">>-" ">-" ">--" "-<" "-<<" ">->" "<-<"
+     "<-|" "<=|" "|=>" "|->" "<->" "<~~" "<~" "<~>" "~~" "~~>"
+     "~>" "~-" "-~" "~@" "[||]" "|]" "[|" "|}" "{|" "[<"
+     ">]" "|>" "<|" "||>" "<||" "|||>" "<|||" "<|>" "..." ".."
+     ".=" ".-" "..<" ".?" "::" ":::" ":=" "::=" ":?" ":?>"
+     "//" "///" "/*" "*/" "/=" "//=" "/==" "@_" "__"))
+  (global-ligature-mode t))
+
+(use-package all-the-icons
+  :if (display-graphic-p)
+  :straight t)
+
+(use-package highlight-indent-guides
+  :straight t
+  :if (not (or my/lowpower my/remote-server))
+  :hook (
+         (prog-mode . highlight-indent-guides-mode)
+         (vue-mode . highlight-indent-guides-mode)
+         (LaTeX-mode . highlight-indent-guides-mode))
+  :config
+  (setq highlight-indent-guides-method 'bitmap)
+  (setq highlight-indent-guides-bitmap-function 'highlight-indent-guides--bitmap-line))
+
+(use-package rainbow-delimiters
+  :straight t
+  :if (not my/lowpower)
+  :hook ((prog-mode . rainbow-delimiters-mode)))
+
+(use-package rainbow-mode
+  :commands (rainbow-mode)
+  :straight t)
+
+(use-package hl-todo
+  :hook (prog-mode . hl-todo-mode)
+  :straight t)
+
+(use-package doom-modeline
+  :straight t
+  ;; :if (not (display-graphic-p))
+  :init
+  (setq doom-modeline-env-enable-python nil)
+  (setq doom-modeline-env-enable-go nil)
+  (setq doom-modeline-buffer-encoding 'nondefault)
+  (setq doom-modeline-hud t)
+  :config
+  (doom-modeline-mode 1)
+  (setq doom-modeline-minor-modes nil)
+  (setq doom-modeline-buffer-state-icon nil))
 
 (use-package perspective
   :straight t
@@ -932,499 +1011,1227 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    "m" #'my/persp-move-window-and-switch
    "f" #'my/persp-copy-window-and-switch))
 
-(setq my/project-title-separators "[-_ ]")
-
-(setq my/project-names-override-alist
-      '((".password-store" . "pass")))
-
-(defun my/shorten-project-name-elem (elem crop)
-  (if (string-match "^\\[.*\\]$" elem)
-      (concat "["
-              (my/shorten-project-name-elem (substring elem 1 (- (length elem) 1)) crop)
-              "]")
-    (let* ((prefix (car (s-match my/project-title-separators elem)))
-           (rest
-            (substring
-             (if prefix
-                 (substring elem (length prefix))
-               elem)
-             0 (if crop 1 nil))))
-      (concat prefix rest))))
-
-(defun my/shorten-project-name (project-name)
-  (or
-   (cdr (assoc project-name my/project-names-override-alist))
-   (let ((elems (s-slice-at my/project-title-separators project-name)))
-     (concat
-      (apply
-       #'concat
-       (cl-mapcar (lambda (elem) (my/shorten-project-name-elem elem t)) (butlast elems)))
-      (my/shorten-project-name-elem (car (last elems)) nil)))))
-
-(defun my/tab-bar-name-function ()
-  (let ((project-name (projectile-project-name)))
-    (if (string= "-" project-name)
-        (tab-bar-tab-name-current-with-count)
-      (concat "[" (my/shorten-project-name project-name) "] "
-              (replace-regexp-in-string "<.*>" "" (tab-bar-tab-name-current-with-count))))))
-
-(setq tab-bar-tab-name-function #'my/tab-bar-name-function)
-
-(use-package doom-modeline
+(use-package lsp-mode
   :straight t
-  ;; :if (not (display-graphic-p))
-  :init
-  (setq doom-modeline-env-enable-python nil)
-  (setq doom-modeline-env-enable-go nil)
-  (setq doom-modeline-buffer-encoding 'nondefault)
-  (setq doom-modeline-hud t)
-  :config
-  (doom-modeline-mode 1)
-  (setq doom-modeline-minor-modes nil)
-  (setq doom-modeline-buffer-state-icon nil))
-
-(use-package spaceline
-  :straight t
-  :disabled
-  :config
-  (defun my/format-perspective-list ()
-    (format "[%s]"
-            (let ((curr (persp-current-name)))
-              (mapconcat
-               (lambda (name)
-                 (if (string-equal name curr)
-                     (propertize
-                      name
-                      'face
-                      'persp-selected-face)
-                   name))
-               (persp-names)
-               "|"))))
-  
-  (defvar my/spaceline-persp-list "")
-  
-  (defun my/persp-update-advice (&rest _)
-    (setq my/spaceline-persp-list (my/format-perspective-list)))
-  
-  (advice-add #'persp-update-modestring :after #'my/persp-update-advice)
-  (add-hook 'buffer-list-update-hook #'my/persp-update-advice)
-  (add-hook 'find-file-hook #'my/persp-update-advice)
-  
-  (spaceline-define-segment perspective
-    "Perspective.el"
-    my/spaceline-persp-list)
-  (defvar my/exwm-mode-line-info-no-props "")
-  
-  (spaceline-define-segment exwm
-    my/exwm-mode-line-info-no-props)
-  (spaceline-define-segment debug-on-error
-    (when debug-on-error
-      (propertize
-       ""
-       'face 'warning
-       'local-map (let ((map (make-sparse-keymap)))
-                    (define-key map
-                      [mode-line mouse-1]
-                      #'toggle-debug-on-error)
-                    map))))
-  
-  (spaceline-define-segment debug-on-quit
-    (when debug-on-quit
-      (propertize
-       ""
-       'face 'error
-       'local-map (let ((map (make-sparse-keymap)))
-                    (define-key map
-                      [mode-line mouse-1]
-                      #'toggle-debug-on-quit)
-                    map))))
-  (require 'spaceline-config)
-  
-  (spaceline-compile
-    "my"
-    '((evil-state :priority 100 :face (spaceline-highlight-face-evil-state))
-      (buffer-modified :priority 50)
-      (version-control :priority 25 :when active)
-      (buffer-id :priority 90))
-    '(;; (global)
-      (exwm :when active)
-      (perspective :when active)
-      (flycheck-error :when active)
-      (flycheck-warning :when active)
-      (debug-on-error :when active)
-      (debug-on-quit :when active)
-      (major-mode :when active :priority 90)
-      (selection-info :priority 95)
-      (line-column :when active  :priority 99)
-      (hud :when active :priority 99)))
-  
-  (spaceline-ml-my)
-  
-  (setq-default mode-line-format '("%e" (:eval (spaceline-ml-my))))
-  (setq mode-line-format '("%e" (:eval (spaceline-ml-my)))))
-
-(use-package ligature
-  :straight (:host github :repo "mickeynp/ligature.el")
-  :if (display-graphic-p)
-  :config
-  (ligature-set-ligatures
-   '(
-     typescript-mode
-     js2-mode
-     vue-mode
-     svelte-mode
-     scss-mode
-     php-mode
-     python-mode
-     js-mode
-     markdown-mode
-     clojure-mode
-     go-mode
-     sh-mode
-     haskell-mode
-     web-mode)
-   '("--" "---" "==" "===" "!=" "!==" "=!=" "=:=" "=/=" "<="
-     ">=" "&&" "&&&" "&=" "++" "+++" "***" ";;" "!!" "??"
-     "?:" "?." "?=" "<:" ":<" ":>" ">:" "<>" "<<<" ">>>"
-     "<<" ">>" "||" "-|" "_|_" "|-" "||-" "|=" "||=" "##"
-     "###" "####" "#{" "#[" "]#" "#(" "#?" "#_" "#_(" "#:"
-     "#!" "#=" "^=" "<$>" "<$" "$>" "<+>" "<+" "+>" "<*>"
-     "<*" "*>" "</" "</>" "/>" "<!--" "<#--" "-->" "->" "->>"
-     "<<-" "<-" "<=<" "=<<" "<<=" "<==" "<=>" "<==>" "==>" "=>"
-     "=>>" ">=>" ">>=" ">>-" ">-" ">--" "-<" "-<<" ">->" "<-<"
-     "<-|" "<=|" "|=>" "|->" "<->" "<~~" "<~" "<~>" "~~" "~~>"
-     "~>" "~-" "-~" "~@" "[||]" "|]" "[|" "|}" "{|" "[<"
-     ">]" "|>" "<|" "||>" "<||" "|||>" "<|||" "<|>" "..." ".."
-     ".=" ".-" "..<" ".?" "::" ":::" ":=" "::=" ":?" ":?>"
-     "//" "///" "/*" "*/" "/=" "//=" "/==" "@_" "__"))
-  (global-ligature-mode t))
-
-(use-package all-the-icons
-  :if (display-graphic-p)
-  :straight t)
-
-(use-package hl-todo
-  :hook (prog-mode . hl-todo-mode)
-  :straight t)
-
-(use-package highlight-indent-guides
-  :straight t
-  :if (not (or my/lowpower my/remote-server))
+  :if (not (or my/slow-ssh my/is-termux my/remote-server))
   :hook (
-         (prog-mode . highlight-indent-guides-mode)
-         (vue-mode . highlight-indent-guides-mode)
-         (LaTeX-mode . highlight-indent-guides-mode))
+         (typescript-mode . lsp)
+         (js-mode . lsp)
+         (vue-mode . lsp)
+         (go-mode . lsp)
+         (svelte-mode . lsp)
+         ;; (python-mode . lsp)
+         (json-mode . lsp)
+         (haskell-mode . lsp)
+         (haskell-literate-mode . lsp)
+         (java-mode . lsp)
+         ;; (csharp-mode . lsp)
+         )
+  :commands lsp
+  :init
+  (setq lsp-keymap-prefix nil)
   :config
-  (setq highlight-indent-guides-method 'bitmap)
-  (setq highlight-indent-guides-bitmap-function 'highlight-indent-guides--bitmap-line))
+  (setq lsp-idle-delay 1)
+  (setq lsp-eslint-server-command '("node" "/home/pavel/.emacs.d/.cache/lsp/eslint/unzipped/extension/server/out/eslintServer.js" "--stdio"))
+  (setq lsp-eslint-run "onSave")
+  (setq lsp-signature-render-documentation nil)
+  ;; (lsp-headerline-breadcrumb-mode nil)
+  (setq lsp-headerline-breadcrumb-enable nil)
+  (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
 
-(use-package rainbow-delimiters
+(use-package lsp-ui
   :straight t
-  :if (not my/lowpower)
-  :hook ((prog-mode . rainbow-delimiters-mode))
-  ;; :commands (rainbow-delimiters-mode)
-  ;; :init
-  ;; (add-hook 'prog-mode-hook
-  ;;           (lambda ()
-  ;;             (unless (org-in-src-block-p)
-  ;;               (rainbow-delimiters-mode))))
-  )
-
-(use-package rainbow-mode
-  :commands (rainbow-mode)
-  :straight t)
-
-(use-package dired
-  :ensure nil
-  :custom ((dired-listing-switches "-alh --group-directories-first"))
-  :commands (dired)
+  :commands lsp-ui-mode
   :config
-  (setq dired-dwim-target t)
-  (setq wdired-allow-to-change-permissions t)
-  (setq wdired-create-parent-directories t)
-  (setq dired-recursive-copies 'always)
-  (setq dired-recursive-deletes 'always)
-  (setq dired-kill-when-opening-new-dired-buffer t)
-  (add-hook 'dired-mode-hook
-            (lambda ()
-              (setq truncate-lines t)
-              (visual-line-mode nil)))
-  (general-define-key
-   :states '(normal)
-   :keymaps 'dired-mode-map
-   "h" 'dired-up-directory
-   "l" 'dired-find-file
-   "=" 'dired-narrow
-   "-" 'dired-create-empty-file
-   "~" 'vterm
-   "<left>" 'dired-up-directory
-   "<right>" 'dired-find-file
-   "M-<return>" 'dired-open-xdg))
+  (setq lsp-ui-doc-delay 2)
+  (setq lsp-ui-sideline-show-hover nil))
 
-(defun my/dired-home ()
-  "Open dired at $HOME"
-  (interactive)
-  (dired (expand-file-name "~")))
+;; (use-package helm-lsp
+;;   :straight t
+;;   :commands helm-lsp-workspace-symbol)
+
+;; (use-package origami
+;;   :straight t
+;;   :hook (prog-mode . origami-mode))
+
+;; (use-package lsp-origami
+;;   :straight t
+;;   :config
+;;   (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))
+
+(use-package lsp-treemacs
+  :after (lsp)
+  :straight t
+  :commands lsp-treemacs-errors-list)
 
 (my-leader-def
-  "ad" #'dired
-  "aD" #'my/dired-home)
+  :infix "l"
+  "" '(:which-key "lsp")
+  "d" 'lsp-ui-peek-find-definitions
+  "r" 'lsp-rename
+  "u" 'lsp-ui-peek-find-references
+  "s" 'lsp-ui-find-workspace-symbol
+  "l" 'lsp-execute-code-action
+  "e" 'list-flycheck-errors)
 
-(use-package diredfl
+(use-package flycheck
   :straight t
-  :after dired
   :config
-  (diredfl-global-mode 1))
+  (global-flycheck-mode)
+  (setq flycheck-check-syntax-automatically '(save idle-buffer-switch mode-enabled))
+  ;; (add-hook 'evil-insert-state-exit-hook
+  ;;           (lambda ()
+  ;;             (if flycheck-checker
+  ;;                 (flycheck-buffer))
+  ;;             ))
+  (advice-add 'flycheck-eslint-config-exists-p :override (lambda() t))
+  (add-to-list 'display-buffer-alist
+               `(,(rx bos "*Flycheck errors*" eos)
+                 (display-buffer-reuse-window
+                  display-buffer-in-side-window)
+                 (side            . bottom)
+                 (reusable-frames . visible)
+                 (window-height   . 0.33))))
 
-(use-package dired-single
-  :after dired
-  :disabled
+(defun my/tree-sitter-if-not-mmm ()
+  (when (not (and (boundp 'mmm-temp-buffer-name)
+                  (string-equal mmm-temp-buffer-name (buffer-name))))
+    (tree-sitter-mode)
+    (tree-sitter-hl-mode)))
+
+(use-package tree-sitter
+  :straight t
+  :if (not my/remote-server)
+  :hook ((typescript-mode . my/tree-sitter-if-not-mmm)
+         (js-mode . my/tree-sitter-if-not-mmm)
+         (python-mode . tree-sitter-mode)
+         (python-mode . tree-sitter-hl-mode)
+         (csharp-mode . tree-sitter-mode)))
+
+(use-package tree-sitter-langs
+  :straight t
+  :after tree-sitter)
+
+(use-package dap-mode
+  :straight t
+  :commands (dap-debug)
+  :init
+  (setq lsp-enable-dap-auto-configure nil)
+  :config
+
+  (setq dap-ui-variable-length 100)
+  (setq dap-auto-show-output nil)
+  (require 'dap-node)
+  (dap-node-setup)
+
+  (require 'dap-chrome)
+  (dap-chrome-setup)
+
+  (require 'dap-python)
+
+  (dap-mode 1)
+  (dap-ui-mode 1)
+  (dap-tooltip-mode 1)
+  (tooltip-mode 1))
+
+(with-eval-after-load 'dap-mode
+  (defmacro my/define-dap-ui-window-toggler (name)
+    `(defun ,(intern (concat "my/dap-ui-toggle-" name)) ()
+       ,(concat "Toggle DAP " name "buffer")
+       (interactive)
+       (if-let (window (get-buffer-window ,(intern (concat "dap-ui--" name "-buffer"))))
+           (quit-window nil window)
+         (,(intern (concat "dap-ui-" name))))))
+
+  (my/define-dap-ui-window-toggler "locals")
+  (my/define-dap-ui-window-toggler "expressions")
+  (my/define-dap-ui-window-toggler "sessions")
+  (my/define-dap-ui-window-toggler "breakpoints")
+  (my/define-dap-ui-window-toggler "repl"))
+
+(defhydra my/dap-hydra (:color pink :hint nil :foreign-keys run)
+  "
+^Stepping^         ^UI^                     ^Switch^                   ^Breakpoints^         ^Debug^                     ^Expressions
+^^^^^^^^------------------------------------------------------------------------------------------------------------------------------------------
+_n_: Next          _uc_: Controls           _ss_: Session              _bb_: Toggle          _dd_: Debug                 _ee_: Eval
+_i_: Step in       _ue_: Expressions        _st_: Thread               _bd_: Delete          _dr_: Debug recent          _er_: Eval region
+_o_: Step out      _ul_: Locals             _sf_: Stack frame          _ba_: Add             _dl_: Debug last            _es_: Eval thing at point
+_c_: Continue      _ur_: REPL               _su_: Up stack frame       _bc_: Set condition   _de_: Edit debug template   _ea_: Add expression
+_r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set hit count   _Q_:  Disconnect            _ed_: Remove expression
+                 _us_: Sessions           _sF_: Stack frame filtered _bl_: Set log message                           _eu_: Refresh expressions
+                 _ub_: Breakpoints                                                                               "
+
+  ("n" dap-next)
+  ("i" dap-step-in)
+  ("o" dap-step-out)
+  ("c" dap-continue)
+  ("r" dap-restart-frame)
+  ("uc" dap-ui-controls-mode)
+  ("ue" my/dap-ui-toggle-expressions)
+  ("ul" my/dap-ui-toggle-locals)
+  ("ur" my/dap-ui-toggle-repl)
+  ("uo" dap-ui-go-to-output-buffer)
+  ("us" my/dap-ui-toggle-sessions)
+  ("ub" my/dap-ui-toggle-breakpoints)
+  ("ss" dap-switch-session)
+  ("st" dap-switch-thread)
+  ("sf" dap-switch-stack-frame)
+  ("sF" my/dap-switch-stack-frame)
+  ("su" dap-up-stack-frame)
+  ("sd" dap-down-stack-frame)
+  ("bb" dap-breakpoint-toggle)
+  ("ba" dap-breakpoint-add)
+  ("bd" dap-breakpoint-delete)
+  ("bc" dap-breakpoint-condition)
+  ("bh" dap-breakpoint-hit-condition)
+  ("bl" dap-breakpoint-log-message)
+  ("dd" dap-debug)
+  ("dr" dap-debug-recent)
+  ("dl" dap-debug-last)
+  ("de" dap-debug-edit-template)
+  ("ee" dap-eval)
+  ("ea" dap-ui-expressions-add)
+  ("er" dap-eval-region)
+  ("es" dap-eval-thing-at-point)
+  ("ed" dap-ui-expressions-remove)
+  ("eu" dap-ui-expressions-refresh)
+  ("q" nil "quit" :color blue)
+  ("Q" dap-disconnect :color red))
+
+(my-leader-def "d" #'my/dap-hydra/body)
+
+(defvar my/dap-mode-buffer-fixed nil)
+
+(with-eval-after-load 'dap-mode
+  (defmacro my/define-dap-tree-buffer-fixer (buffer-var buffer-name)
+    `(defun ,(intern (concat "my/fix-dap-ui-" buffer-name "-buffer")) (&rest _)
+       (with-current-buffer ,buffer-var
+         (unless my/dap-mode-buffer-fixed
+           (toggle-truncate-lines 1)
+           (doom-modeline-set-modeline 'info)
+           (setq-local my/dap-mode-buffer-fixed t)))))
+
+  (my/define-dap-tree-buffer-fixer dap-ui--locals-buffer "locals")
+  (my/define-dap-tree-buffer-fixer dap-ui--expressions-buffer "expressions")
+  (my/define-dap-tree-buffer-fixer dap-ui--sessions-buffer "sessions")
+  (my/define-dap-tree-buffer-fixer dap-ui--breakpoints-buffer "breakpoints")
+
+  (advice-add 'dap-ui-locals :after #'my/fix-dap-ui-locals-buffer)
+  (advice-add 'dap-ui-expressions :after #'my/fix-dap-ui-expressions-buffer)
+  (advice-add 'dap-ui-sessions :after #'my/fix-dap-ui-sessions-buffer)
+  (advice-add 'dap-ui-breakpoints :after #'my/fix-dap-ui-breakpoints-buffer))
+
+(defun my/clear-bad-window-parameters ()
+  "Clear window parameters that interrupt my workflow."
+  (interactive)
+  (let ((window (get-buffer-window (current-buffer))))
+    (set-window-parameter window 'no-delete-other-windows nil)))
+
+(defun my/dap-yank-value-at-point (node)
+  (interactive (list (treemacs-node-at-point)))
+  (kill-new (message (plist-get (button-get node :item) :value))))
+
+(defun my/dap-display-value (node)
+  (interactive (list (treemacs-node-at-point)))
+  (let ((value (plist-get (button-get node :item) :value)))
+    (when value
+      (let ((buffer (generate-new-buffer "dap-value")))
+        (with-current-buffer buffer
+          (insert value))
+        (select-window (display-buffer buffer))))))
+
+(with-eval-after-load 'dap-mode
+  (setq my/dap-stack-frame-filters
+        `(("node_modules,node:internal" . ,(rx (or "node_modules" "node:internal")))
+          ("node_modules" . ,(rx (or "node_modules")))
+          ("node:internal" . ,(rx (or "node:internal")))))
+
+  (setq my/dap-stack-frame-current-filter (cdar my/dap-stack-frame-filters))
+
+  (defun my/dap-stack-frame-filter-set ()
+    (interactive)
+    (setq my/dap-stack-frame-current-filter
+          (cdr
+           (assoc
+            (completing-read "Filter: " my/dap-stack-frame-filters)
+            my/dap-stack-frame-filters))))
+
+  (defun my/dap-stack-frame-filter (frame)
+    (when-let (path (dap--get-path-for-frame frame))
+      (not (string-match my/dap-stack-frame-current-filter path)))))
+
+(defun my/dap-switch-stack-frame ()
+  "Switch stackframe by selecting another stackframe stackframes from current thread."
+  (interactive)
+  (when (not (dap--cur-session))
+    (error "There is no active session"))
+
+  (-if-let (thread-id (dap--debug-session-thread-id (dap--cur-session)))
+      (-if-let (stack-frames
+                (gethash
+                 thread-id
+                 (dap--debug-session-thread-stack-frames (dap--cur-session))))
+          (let* ((index 0)
+                 (stack-framces-filtered
+                  (-filter
+                   #'my/dap-stack-frame-filter
+                   stack-frames))
+                 (new-stack-frame
+                  (dap--completing-read
+                   "Select active frame: "
+                   stack-framces-filtered
+                   (-lambda ((frame &as &hash "name"))
+                     (if-let (frame-path (dap--get-path-for-frame frame))
+                         (format "%s: %s (in %s)"
+                                 (cl-incf index) name frame-path)
+                       (format "%s: %s" (cl-incf index) name)))
+                   nil
+                   t)))
+            (dap--go-to-stack-frame (dap--cur-session) new-stack-frame))
+        (->> (dap--cur-session)
+             dap--debug-session-name
+             (format "Current session %s is not stopped")
+             error))
+    (error "No thread is currently active %s" (dap--debug-session-name (dap--cur-session)))))
+
+(with-eval-after-load 'dap-mode
+  (dap-register-debug-template
+   "Node::Nest.js"
+   (list :type "node"
+         :request "attach"
+         :name "Node::Attach"
+         :port 9229
+         :outFiles ["${workspaceFolder}/dist/**/*.js"]
+         :sourceMaps t
+         :program "${workspaceFolder}/src/app.ts"))
+  (dap-register-debug-template
+   "Node::Babel"
+   (list :type "node"
+         :request "attach"
+         :name "Node::Attach"
+         :port 9229
+         :program "${workspaceFolder}/dist/bin/www.js")))
+
+(use-package reformatter
   :straight t)
 
-(use-package all-the-icons-dired
+(defun my/set-smartparens-indent (mode)
+  (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
+
+(defun my/set-flycheck-eslint()
+  "Override flycheck checker with eslint."
+  (setq-local lsp-diagnostic-package :none)
+  (setq-local flycheck-checker 'javascript-eslint))
+
+(use-package emmet-mode
   :straight t
-  :if (not (or my/lowpower my/slow-ssh (not (display-graphic-p))))
-  :hook (dired-mode . (lambda ()
-                        (unless (string-match-p "/gnu/store" default-directory)
-                          (all-the-icons-dired-mode))))
+  :hook ((vue-html-mode . emmet-mode)
+         (svelte-mode . emmet-mode)
+         (web-mode . emmet-mode)
+         (html-mode . emmet-mode)
+         (css-mode . emmet-mode)
+         (scss-mode . emmet-mode))
   :config
-  (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
-  (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice)
-  (advice-add 'dired-kill-subdir :around #'all-the-icons-dired--refresh-advice))
+  ;; (setq emmet-indent-after-insert nil)
+  (setq my/emmet-mmm-submodes '(vue-html-mode css-mode))
+  (defun my/emmet-or-tab (&optional arg)
+    (interactive)
+    (if (and
+         (boundp 'mmm-current-submode)
+         mmm-current-submode
+         (not (member mmm-current-submode my/emmet-mmm-submodes)))
+        (indent-for-tab-command arg)
+      (or (emmet-expand-line arg)
+          (emmet-go-to-edit-point 1)
+          (indent-for-tab-command arg))))
+  (general-imap :keymaps 'emmet-mode-keymap
+    "TAB" 'my/emmet-or-tab
+    "<backtab>" 'emmet-prev-edit-point))
 
-(use-package dired-open
+(use-package prettier
+  :commands (prettier-prettify)
   :straight t
-  :commands (dired-open-xdg))
+  :init
+  (my-leader-def
+    :keymaps '(js-mode-map web-mode-map typescript-mode-map vue-mode-map svelte-mode-map)
+    "rr" #'prettier-prettify))
 
-(use-package dired-narrow
+(use-package typescript-mode
   :straight t
-  :commands (dired-narrow)
+  :mode "\\.ts\\'"
   :config
-  (general-define-key
-   :keymaps 'dired-narrow-map
-   [escape] 'keyboard-quit))
+  (add-hook 'typescript-mode-hook #'smartparens-mode)
+  (add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
+  (add-hook 'typescript-mode-hook #'hs-minor-mode)
+  (my/set-smartparens-indent 'typescript-mode))
 
-(use-package dired-git-info
+(add-hook 'js-mode-hook #'smartparens-mode)
+(add-hook 'js-mode-hook #'hs-minor-mode)
+(my/set-smartparens-indent 'js-mode)
+
+(use-package jest-test-mode
   :straight t
-  :after dired
-  :if (not my/slow-ssh)
+  :hook ((typescript-mode . jest-test-mode)
+         (js-mode . jest-test-mode))
   :config
-  (general-define-key
-   :keymap 'dired-mode-map
-   :states '(normal emacs)
-   ")" 'dired-git-info-mode))
+  (my-leader-def
+    :keymaps 'jest-test-mode-map
+    :infix "t"
+    "t" 'jest-test-run-at-point
+    "r" 'jest-test-run
+    "a" 'jest-test-run-all-tests))
 
-(defun my/dired-open-this-subdir ()
+(defun my/jest-test-run-at-point-copy ()
+  "Run the top level describe block of the current buffer's point."
   (interactive)
-  (dired (dired-current-directory)))
+  (let ((filename (jest-test-find-file))
+        (example  (jest-test-example-at-point)))
+    (if (and filename example)
+        (jest-test-from-project-directory filename
+          (let ((jest-test-options (seq-concatenate 'list jest-test-options (list "-t" example))))
+            (kill-new (jest-test-command filename))))
+      (message jest-test-not-found-message))))
 
-(defun my/dired-kill-all-subdirs ()
-  (interactive)
-  (let ((dir dired-directory))
-    (kill-buffer (current-buffer))
-    (dired dir)))
-
-(with-eval-after-load 'dired
-  (general-define-key
-   :states '(normal)
-   :keymaps 'dired-mode-map
-   "s" nil
-   "ss" 'dired-maybe-insert-subdir
-   "sl" 'dired-maybe-insert-subdir
-   "sq" 'dired-kill-subdir
-   "sk" 'dired-prev-subdir
-   "sj" 'dired-next-subdir
-   "sS" 'my/dired-open-this-subdir
-   "sQ" 'my/dired-kill-all-subdirs
-   (kbd "TAB") 'dired-hide-subdir))
-
-(setq tramp-verbose 1)
-
-(setq remote-file-name-inhibit-cache nil)
-(setq vc-ignore-dir-regexp
-      (format "\\(%s\\)\\|\\(%s\\)"
-              vc-ignore-dir-regexp
-              tramp-file-name-regexp))
-
-(when (or my/remote-server my/slow-ssh)
-  (setq explicit-shell-file-name "/bin/bash"))
-
-(with-eval-after-load 'tramp
-  (setq tramp-remote-path
-        (append tramp-remote-path
-                '(tramp-own-remote-path))))
-
-(defun my/dired-bookmark-open ()
-  (interactive)
-  (let ((bookmarks
-         (mapcar
-          (lambda (el) (cons (format "%-30s %s" (car el) (cdr el)) (cdr el)))
-          my/dired-bookmarks)))
-    (dired
-     (cdr
-      (assoc
-       (completing-read "Dired: " bookmarks nil nil "^")
-       bookmarks)))))
-
-(use-package vterm
-  ;; :straight t
-  :commands (vterm vterm-other-window)
+(use-package web-mode
+  :straight t
+  :commands (web-mode)
+  :init
+  (add-to-list 'auto-mode-alist '("\\.svelte\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.vue\\'" . web-mode))
   :config
-  (setq vterm-kill-buffer-on-exit t)
+  (add-hook 'web-mode-hook 'smartparens-mode)
+  (add-hook 'web-mode-hook 'hs-minor-mode)
+  (my/set-smartparens-indent 'web-mode))
 
-  (add-hook 'vterm-mode-hook
+(setq my/web-mode-lsp-extensions
+      `(,(rx ".svelte" eos)
+        ,(rx ".vue" eos)))
+
+(defun my/web-mode-lsp ()
+  (when (seq-some
+         (lambda (regex) (string-match-p regex (buffer-name)))
+         my/web-mode-lsp-extensions)
+    (lsp-deferred)))
+
+(add-hook 'web-mode-hook #'my/web-mode-lsp)
+
+(defun my/web-mode-vue-setup ()
+  (when (string-match-p (rx ".vue" eos) (buffer-name))
+    (setq-local web-mode-script-padding 0)))
+
+(add-hook 'web-mode-hook 'my/web-mode-vue-setup)
+
+(use-package vue-mode
+  :straight t
+  :disabled
+  :mode "\\.vue\\'"
+  :config
+  (add-hook 'vue-mode-hook #'hs-minor-mode)
+  (add-hook 'vue-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'vue-mode)
+  (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
+  (defun mmm-syntax-propertize-function (start stop)
+    (let ((saved-mode mmm-current-submode)
+          (saved-ovl  mmm-current-overlay))
+      (mmm-save-changed-local-variables
+       mmm-current-submode mmm-current-overlay)
+      (unwind-protect
+          (mapc (lambda (elt)
+                  (let* ((mode (car elt))
+                         (func (get mode 'mmm-syntax-propertize-function))
+                         (beg (cadr elt)) (end (nth 2 elt))
+                         (ovl (nth 3 elt))
+                         syntax-ppss-cache
+                         syntax-ppss-last)
+                    (goto-char beg)
+                    (mmm-set-current-pair mode ovl)
+                    (mmm-set-local-variables mode mmm-current-overlay)
+                    (save-restriction
+                      (if mmm-current-overlay
+                          (narrow-to-region (overlay-start mmm-current-overlay)
+                                            (overlay-end mmm-current-overlay))
+                        (narrow-to-region beg end))
+                      (cond
+                       (func
+                        (funcall func beg end))
+                       (font-lock-syntactic-keywords
+                        (let ((syntax-propertize-function nil))
+                          (font-lock-fontify-syntactic-keywords-region beg end))))
+                      (run-hook-with-args 'mmm-after-syntax-propertize-functions
+                                          mmm-current-overlay mode beg end))))
+                (mmm-regions-in start stop))
+        (mmm-set-current-pair saved-mode saved-ovl)
+        (mmm-set-local-variables (or saved-mode mmm-primary-mode) saved-ovl)))))
+
+(with-eval-after-load 'editorconfig
+  (add-to-list 'editorconfig-indentation-alist
+               '(vue-mode css-indent-offset
+                          js-indent-level
+                          sgml-basic-offset
+                          ssass-tab-width
+                          typescript-indent-level
+                          emmet-indentation
+                          vue-html-extra-indent)))
+
+(use-package svelte-mode
+  :straight t
+  :mode "\\.svelte\\'"
+  :disabled
+  :config
+  (add-hook 'svelte-mode-hook 'my/set-flycheck-eslint)
+  (add-hook 'svelte-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'svelte-mode)
+  ;; I have my own Emmet
+  (setq lsp-svelte-plugin-css-completions-emmet nil)
+  (setq lsp-svelte-plugin-html-completions-emmet nil))
+
+(add-hook 'scss-mode-hook #'smartparens-mode)
+(add-hook 'scss-mode-hook #'hs-minor-mode)
+(my/set-smartparens-indent 'scss-mode)
+
+(use-package php-mode
+  :straight t
+  :mode "\\.php\\'")
+
+(use-package tex
+  :straight auctex
+  :defer t
+  :config
+  (setq-default TeX-auto-save t)
+  (setq-default TeX-parse-self t)
+  (TeX-PDF-mode)
+  ;; Use XeLaTeX & stuff
+  (setq-default TeX-engine 'xetex)
+  (setq-default TeX-command-extra-options "-shell-escape")
+  (setq-default TeX-source-correlate-method 'synctex)
+  (TeX-source-correlate-mode)
+  (setq-default TeX-source-correlate-start-server t)
+  (setq-default LaTeX-math-menu-unicode t)
+
+  (setq-default font-latex-fontify-sectioning 1.3)
+
+  ;; Scale preview for my DPI
+  (setq-default preview-scale-function 1.4)
+  (when (boundp 'tex--prettify-symbols-alist)
+    (assoc-delete-all "--" tex--prettify-symbols-alist)
+    (assoc-delete-all "---" tex--prettify-symbols-alist))
+
+  (add-hook 'LaTeX-mode-hook
             (lambda ()
-              (setq-local global-display-line-numbers-mode nil)
-              (display-line-numbers-mode 0)))
+              (TeX-fold-mode 1)
+              (outline-minor-mode)))
 
+  (add-to-list 'TeX-view-program-selection
+               '(output-pdf "Zathura"))
 
-  (advice-add 'evil-collection-vterm-insert
-              :before (lambda (&rest args)
-                        (ignore-errors
-                          (apply #'vterm-reset-cursor-point args))))
+  ;; Do not run lsp within templated TeX files
+  (add-hook 'LaTeX-mode-hook
+            (lambda ()
+              (unless (string-match "\.hogan\.tex$" (buffer-name))
+                (lsp))
+              (setq-local lsp-diagnostic-package :none)
+              (setq-local flycheck-checker 'tex-chktex)))
 
-  (general-define-key
-   :keymaps 'vterm-mode-map
-   "M-q" 'vterm-send-escape
+  (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
+  (add-hook 'LaTeX-mode-hook #'smartparens-mode)
+  (add-hook 'LaTeX-mode-hook #'prettify-symbols-mode)
 
-   "C-h" 'evil-window-left
-   "C-l" 'evil-window-right
-   "C-k" 'evil-window-up
-   "C-j" 'evil-window-down
+  (my/set-smartparens-indent 'LaTeX-mode)
+  (require 'smartparens-latex)
 
-   "C-<right>" 'evil-window-right
-   "C-<left>" 'evil-window-left
-   "C-<up>" 'evil-window-up
-   "C-<down>" 'evil-window-down
+  (general-nmap
+    :keymaps '(LaTeX-mode-map latex-mode-map)
+    "RET" 'TeX-command-run-all
+    "C-c t" 'orgtbl-mode)
 
-   "M-<left>" 'vterm-send-left
-   "M-<right>" 'vterm-send-right
-   "M-<up>" 'vterm-send-up
-   "M-<down>" 'vterm-send-down)
+  (setq my/greek-alphabet
+        '(("a" . "\\alpha")
+          ("b" . "\\beta" )
+          ("g" . "\\gamma")
+          ("d" . "\\delta")
+          ("e" . "\\epsilon")
+          ("z" . "\\zeta")
+          ("h" . "\\eta")
+          ("o" . "\\theta")
+          ("i" . "\\iota")
+          ("k" . "\\kappa")
+          ("l" . "\\lambda")
+          ("m" . "\\mu")
+          ("n" . "\\nu")
+          ("x" . "\\xi")
+          ("p" . "\\pi")
+          ("r" . "\\rho")
+          ("s" . "\\sigma")
+          ("t" . "\\tau")
+          ("u" . "\\upsilon")
+          ("f" . "\\phi")
+          ("c" . "\\chi")
+          ("v" . "\\psi")
+          ("g" . "\\omega")))
+  
+  (setq my/latex-greek-prefix "'")
+  
+  ;; The same for capitalized letters
+  (dolist (elem my/greek-alphabet)
+    (let ((key (car elem))
+          (value (cdr elem)))
+      (when (string-equal key (downcase key))
+        (add-to-list 'my/greek-alphabet
+                     (cons
+                      (capitalize (car elem))
+                      (concat
+                       (substring value 0 1)
+                       (capitalize (substring value 1 2))
+                       (substring value 2)))))))
+  
+  (yas-define-snippets
+   'latex-mode
+   (mapcar
+    (lambda (elem)
+      (list (concat my/latex-greek-prefix (car elem)) (cdr elem) (concat "Greek letter " (car elem))))
+    my/greek-alphabet))
+  (setq my/english-alphabet
+        '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
+  
+  (dolist (elem my/english-alphabet)
+    (when (string-equal elem (downcase elem))
+      (add-to-list 'my/english-alphabet (upcase elem))))
+  
+  (setq my/latex-mathbb-prefix "`")
+  
+  (yas-define-snippets
+   'latex-mode
+   (mapcar
+    (lambda (elem)
+      (list (concat my/latex-mathbb-prefix elem) (concat "\\mathbb{" elem "}") (concat "Mathbb letter " elem)))
+    my/english-alphabet))
+  (setq my/latex-math-symbols
+        '(("x" . "\\times")
+          ("." . "\\cdot")
+          ("v" . "\\forall")
+          ("s" . "\\sum_{$1}^{$2}$0")
+          ("p" . "\\prod_{$1}^{$2}$0")
+          ("d" . "\\partial")
+          ("e" . "\\exists")
+          ("i" . "\\int_{$1}^{$2}$0")
+          ("c" . "\\cap")
+          ("u" . "\\cup")
+          ("0" . "\\emptyset")
+          ("^" . "\\widehat{$1}$0")
+          ("_" . "\\overline{$1}$0")
+          ("~" . "\\sim")
+          ("|" . "\\mid")
+          ("_|" . "\\perp")))
+  
+  (setq my/latex-math-prefix ";")
+  
+  (yas-define-snippets
+   'latex-mode
+   (mapcar
+    (lambda (elem)
+      (let ((key (car elem))
+            (value (cdr elem)))
+        (list (concat my/latex-math-prefix key) value (concat "Math symbol " value))))
+    my/latex-math-symbols))
+  (setq my/latex-section-snippets
+        '(("ch" . "\\chapter{$1}")
+          ("sec" . "\\section{$1}")
+          ("ssec" . "\\subsection{$1}")
+          ("sssec" . "\\subsubsection{$1}")
+          ("par" . "\\paragraph{$1}}")))
+  
+  (setq my/latex-section-snippets
+        (mapcar
+         (lambda (elem)
+           `(,(car elem)
+             ,(cdr elem)
+             ,(progn
+                (string-match "[a-z]+" (cdr elem))
+                (match-string 0 (cdr elem)))))
+         my/latex-section-snippets))
+  
+  (dolist (elem my/latex-section-snippets)
+    (let* ((key (nth 0 elem))
+           (value (nth 1 elem))
+           (desc (nth 2 elem))
+           (star-index (string-match "\{\$1\}" value)))
+      (add-to-list 'my/latex-section-snippets
+                   `(,(concat key "*")
+                     ,(concat
+                       (substring value 0 star-index)
+                       "*"
+                       (substring value star-index))
+                     ,(concat desc " with *")))
+      (add-to-list 'my/latex-section-snippets
+                   `(,(concat key "l")
+                     ,(concat value "%\n\\label{sec:$2}")
+                     ,(concat desc " with label")))))
+  
+  (dolist (elem my/latex-section-snippets)
+    (setf (nth 1 elem) (concat (nth 1 elem) "\n$0")))
+  
+  (yas-define-snippets
+   'latex-mode
+   my/latex-section-snippets))
 
-  (general-define-key
-   :keymaps 'vterm-mode-map
-   :states '(normal insert)
-   "<home>" 'vterm-beginning-of-line
-   "<end>" 'vterm-end-of-line)
-
-  (general-define-key
-   :keymaps 'vterm-mode-map
-   :states '(insert)
-   "C-r" 'vterm-send-C-r
-   "C-k" 'vterm-send-C-k
-   "C-j" 'vterm-send-C-j
-   "M-l" 'vterm-send-right
-   "M-h" 'vterm-send-left
-   "M-k" 'vterm-send-up
-   "M-j" 'vterm-send-down))
-
-(add-to-list 'display-buffer-alist
-             `(,"vterm-subterminal.*"
-               (display-buffer-reuse-window
-                display-buffer-in-side-window)
-               (side . bottom)
-               (reusable-frames . visible)
-               (window-height . 0.33)))
-
-(defun my/toggle-vterm-subteminal ()
-  "Toogle subteminal."
-  (interactive)
-  (let
-      ((vterm-window
-        (seq-find
-         (lambda (window)
-           (string-match
-            "vterm-subterminal.*"
-            (buffer-name (window-buffer window))))
-         (window-list))))
-    (if vterm-window
-        (if (eq (get-buffer-window (current-buffer)) vterm-window)
-            (kill-buffer (current-buffer))
-          (select-window vterm-window))
-      (vterm-other-window "vterm-subterminal"))))
-
-(unless my/slow-ssh
-  (general-nmap "`" 'my/toggle-vterm-subteminal)
-  (general-nmap "~" 'vterm))
-
-(defun my/vterm-get-pwd ()
-  (if vterm--process
-      (file-truename (format "/proc/%d/cwd" (process-id vterm--process)))
-    default-directory))
-
-(defun my/vterm-dired-other-window ()
-  "Open dired in vterm pwd in other window"
-  (interactive)
-  (dired-other-window (my/vterm-get-pwd)))
-
-(defun my/vterm-dired-replace ()
-  "Replace vterm with dired"
-  (interactive)
-  (let ((pwd (my/vterm-get-pwd)))
-    (kill-process vterm--process)
-    (dired pwd)))
-
-(with-eval-after-load 'vterm
-  (general-define-key
-   :keymaps 'vterm-mode-map
-   :states '(normal)
-   "gd" #'my/vterm-dired-other-window
-   "gD" #'my/vterm-dired-replace))
-
-(use-package with-editor
+(use-package ivy-bibtex
+  :commands (ivy-bibtex)
   :straight t
-  :after (vterm)
+  :init
+  (my-leader-def "fB" 'ivy-bibtex))
+
+(add-hook 'bibtex-mode 'smartparens-mode)
+
+(defun my/list-sty ()
+  (reverse
+   (sort
+    (seq-filter
+     (lambda (file) (if (string-match ".*\.sty$" file) 1 nil))
+     (directory-files
+      (seq-some
+       (lambda (dir)
+         (if (and
+              (f-directory-p dir)
+              (seq-some
+               (lambda (file) (string-match ".*\.sty$" file))
+               (directory-files dir))
+              ) dir nil))
+       (list "./styles" "../styles/" "." "..")) :full))
+    (lambda (f1 f2)
+      (let ((f1b (file-name-base f1))
+            (f1b (file-name-base f2)))
+        (cond
+         ((string-match-p ".*BibTex" f1) t)
+         ((and (string-match-p ".*Locale" f1) (not (string-match-p ".*BibTex" f2))) t)
+         ((string-match-p ".*Preamble" f2) t)
+         (t (string-lessp f1 f2))))))))
+
+(defun my/import-sty ()
+  (interactive)
+  (insert
+   (apply #'concat
+          (cl-mapcar
+           (lambda (file) (concat "\\usepackage{" (file-name-sans-extension (file-relative-name file default-directory)) "}\n"))
+           (my/list-sty)))))
+
+(defun my/import-sty-org ()
+  (interactive)
+  (insert
+   (apply #'concat
+          (cl-mapcar
+           (lambda (file) (concat "#+LATEX_HEADER: \\usepackage{" (file-name-sans-extension (file-relative-name file default-directory)) "}\n"))
+           (my/list-sty)))))
+
+(setq my/greek-alphabet
+      '(("a" . "\\alpha")
+        ("b" . "\\beta" )
+        ("g" . "\\gamma")
+        ("d" . "\\delta")
+        ("e" . "\\epsilon")
+        ("z" . "\\zeta")
+        ("h" . "\\eta")
+        ("o" . "\\theta")
+        ("i" . "\\iota")
+        ("k" . "\\kappa")
+        ("l" . "\\lambda")
+        ("m" . "\\mu")
+        ("n" . "\\nu")
+        ("x" . "\\xi")
+        ("p" . "\\pi")
+        ("r" . "\\rho")
+        ("s" . "\\sigma")
+        ("t" . "\\tau")
+        ("u" . "\\upsilon")
+        ("f" . "\\phi")
+        ("c" . "\\chi")
+        ("v" . "\\psi")
+        ("g" . "\\omega")))
+
+(setq my/latex-greek-prefix "'")
+
+;; The same for capitalized letters
+(dolist (elem my/greek-alphabet)
+  (let ((key (car elem))
+        (value (cdr elem)))
+    (when (string-equal key (downcase key))
+      (add-to-list 'my/greek-alphabet
+                   (cons
+                    (capitalize (car elem))
+                    (concat
+                     (substring value 0 1)
+                     (capitalize (substring value 1 2))
+                     (substring value 2)))))))
+
+(yas-define-snippets
+ 'latex-mode
+ (mapcar
+  (lambda (elem)
+    (list (concat my/latex-greek-prefix (car elem)) (cdr elem) (concat "Greek letter " (car elem))))
+  my/greek-alphabet))
+
+(setq my/english-alphabet
+      '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
+
+(dolist (elem my/english-alphabet)
+  (when (string-equal elem (downcase elem))
+    (add-to-list 'my/english-alphabet (upcase elem))))
+
+(setq my/latex-mathbb-prefix "`")
+
+(yas-define-snippets
+ 'latex-mode
+ (mapcar
+  (lambda (elem)
+    (list (concat my/latex-mathbb-prefix elem) (concat "\\mathbb{" elem "}") (concat "Mathbb letter " elem)))
+  my/english-alphabet))
+
+(setq my/latex-math-symbols
+      '(("x" . "\\times")
+        ("." . "\\cdot")
+        ("v" . "\\forall")
+        ("s" . "\\sum_{$1}^{$2}$0")
+        ("p" . "\\prod_{$1}^{$2}$0")
+        ("d" . "\\partial")
+        ("e" . "\\exists")
+        ("i" . "\\int_{$1}^{$2}$0")
+        ("c" . "\\cap")
+        ("u" . "\\cup")
+        ("0" . "\\emptyset")
+        ("^" . "\\widehat{$1}$0")
+        ("_" . "\\overline{$1}$0")
+        ("~" . "\\sim")
+        ("|" . "\\mid")
+        ("_|" . "\\perp")))
+
+(setq my/latex-math-prefix ";")
+
+(yas-define-snippets
+ 'latex-mode
+ (mapcar
+  (lambda (elem)
+    (let ((key (car elem))
+          (value (cdr elem)))
+      (list (concat my/latex-math-prefix key) value (concat "Math symbol " value))))
+  my/latex-math-symbols))
+
+(setq my/latex-section-snippets
+      '(("ch" . "\\chapter{$1}")
+        ("sec" . "\\section{$1}")
+        ("ssec" . "\\subsection{$1}")
+        ("sssec" . "\\subsubsection{$1}")
+        ("par" . "\\paragraph{$1}}")))
+
+(setq my/latex-section-snippets
+      (mapcar
+       (lambda (elem)
+         `(,(car elem)
+           ,(cdr elem)
+           ,(progn
+              (string-match "[a-z]+" (cdr elem))
+              (match-string 0 (cdr elem)))))
+       my/latex-section-snippets))
+
+(dolist (elem my/latex-section-snippets)
+  (let* ((key (nth 0 elem))
+         (value (nth 1 elem))
+         (desc (nth 2 elem))
+         (star-index (string-match "\{\$1\}" value)))
+    (add-to-list 'my/latex-section-snippets
+                 `(,(concat key "*")
+                   ,(concat
+                     (substring value 0 star-index)
+                     "*"
+                     (substring value star-index))
+                   ,(concat desc " with *")))
+    (add-to-list 'my/latex-section-snippets
+                 `(,(concat key "l")
+                   ,(concat value "%\n\\label{sec:$2}")
+                   ,(concat desc " with label")))))
+
+(dolist (elem my/latex-section-snippets)
+  (setf (nth 1 elem) (concat (nth 1 elem) "\n$0")))
+
+(yas-define-snippets
+ 'latex-mode
+ my/latex-section-snippets)
+
+(use-package markdown-mode
+  :straight t
+  :mode "\\.md\\'"
   :config
-  (add-hook 'vterm-mode-hook 'with-editor-export-editor))
-
-(defun my/configure-eshell ()
-  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
-  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-  (setq eshell-history-size 10000)
-  (setq eshell-hist-ingnoredups t)
-  (setq eshell-buffer-maximum-lines 10000)
-
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+  (setq markdown-command
+        (concat
+         "pandoc"
+         " --from=markdown --to=html"
+         " --standalone --mathjax --highlight-style=pygments"
+         " --css=pandoc.css"
+         " --quiet"
+         ))
+  (setq markdown-live-preview-delete-export 'delete-on-export)
+  (setq markdown-asymmetric-header t)
+  (setq markdown-open-command "/home/pavel/bin/scripts/chromium-sep")
+  (add-hook 'markdown-mode-hook #'smartparens-mode)
   (general-define-key
-   :states '(normal)
-   :keymaps 'eshell-mode-map
-   (kbd "C-h") 'evil-window-left
-   (kbd "C-l") 'evil-window-right
-   (kbd "C-k") 'evil-window-up
-   (kbd "C-j") 'evil-window-down))
+   :keymaps 'markdown-mode-map
+   "M-<left>" 'markdown-promote
+   "M-<right>" 'markdown-demote))
 
-(use-package eshell
-  :ensure nil
-  :after evil-collection
-  :commands (eshell)
+;; (use-package livedown
+;;   :straight (:host github :repo "shime/emacs-livedown")
+;;   :commands livedown-preview
+;;   :config
+;;   (setq livedown-browser "qutebrowser"))
+
+(use-package plantuml-mode
+  :straight t
+  :mode "(\\.\\(plantuml?\\|uml\\|puml\\)\\'"
   :config
-  (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
-  (when my/slow-ssh
-    (add-hook 'eshell-mode-hook
-              (lambda ()
-                (setq-local company-idle-delay 1000))))
-  (setq eshell-banner-message ""))
+  (setq plantuml-executable-path "/home/pavel/.guix-extra-profiles/emacs/emacs/bin/plantuml")
+  (setq plantuml-default-exec-mode 'executable)
+  (setq plantuml-indent-level 2)
+  (setq my/plantuml-indent-regexp-return "^\s*return\s+.+$")
+  (add-to-list
+   'plantuml-indent-regexp-end
+   my/plantuml-indent-regexp-return)
+  (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
+  (add-to-list 'auto-mode-alist '("\\.uml\\'" . plantuml-mode))
+  (add-hook 'plantuml-mode-hook #'smartparens-mode))
 
-(use-package aweshell
-  :straight (:repo "manateelazycat/aweshell" :host github)
-  :after eshell
+(general-nmap
+  :keymaps 'plantuml-mode-map
+  "RET" 'plantuml-preview)
+
+(use-package langtool
+  :straight t
+  :commands (langtool-check)
   :config
-  (setq eshell-highlight-prompt nil)
-  (setq eshell-prompt-function 'epe-theme-pipeline))
+  (setq langtool-language-tool-server-jar "/home/pavel/bin/LanguageTool-5.4/languagetool-server.jar")
+  (setq langtool-mother-tongue "ru")
+  (setq langtool-default-language "en-US"))
 
-(use-package eshell-info-banner
+(my-leader-def
+  :infix "L"
+  "" '(:which-key "languagetool")
+  "c" 'langtool-check
+  "s" 'langtool-server-stop
+  "d" 'langtool-check-done
+  "n" 'langtool-goto-next-error
+  "p" 'langtool-goto-previous-error
+  "l" 'langtool-correct-buffer)
+
+(use-package lispy
+  :commands (lispy-mode)
+  :straight t)
+
+(use-package lispyville
+  :hook (lispy-mode . lispyville-mode)
+  :straight t)
+
+(sp-with-modes sp-lisp-modes
+  (sp-local-pair "'" nil :actions nil))
+
+(use-package flycheck-package
+  :straight t
+  :after flycheck
+  :config
+  (flycheck-package-setup))
+
+(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
+;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+(add-hook 'emacs-lisp-mode-hook #'lispy-mode)
+
+(use-package slime
+  :straight t
+  :commands (slime)
+  :config
+  (setq inferior-lisp-program "sbcl")
+  (add-hook 'slime-repl-mode 'smartparens-mode))
+
+(add-hook 'lisp-mode-hook #'aggressive-indent-mode)
+;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
+(add-hook 'lisp-mode-hook #'lispy-mode)
+
+(use-package clojure-mode
+  :straight t
+  :mode "\\.clj[sc]?\\'"
+  :config
+  ;; (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
+  (add-hook 'clojure-mode-hook #'lispy-mode)
+  (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
+
+(use-package cider
+  :mode "\\.clj[sc]?\\'"
+  :straight t)
+
+(use-package hy-mode
+  :straight t
+  :mode "\\.hy\\'"
+  :config
+  (add-hook 'hy-mode-hook #'lispy-mode)
+  (add-hook 'hy-mode-hook #'aggressive-indent-mode))
+
+(use-package geiser
+  :straight t
+  :if (not my/lowpower)
+  :commands (geiser run-geiser)
+  :config
+  (setq geiser-default-implementation 'guile))
+
+(use-package geiser-guile
+  :straight t
+  :after geiser)
+
+(add-hook 'scheme-mode-hook #'aggressive-indent-mode)
+(add-hook 'scheme-mode-hook #'lispy-mode)
+
+(use-package clips-mode
+  :straight t
+  :mode "\\.cl\\'"
+  :config
+  (add-hook 'clips-mode 'lispy-mode))
+
+(setq my/pipenv-python-alist '())
+
+(defun my/get-pipenv-python ()
+  (let ((default-directory (projectile-project-root)))
+    (if (file-exists-p "Pipfile")
+        (let ((asc (assoc default-directory my/pipenv-python-alist)))
+          (if asc
+              (cdr asc)
+            (let ((python-executable
+                   (string-trim (shell-command-to-string "PIPENV_IGNORE_VIRTUALENVS=1 pipenv run which python 2>/dev/null"))))
+              (if (string-match-p ".*not found.*" python-executable)
+                  (message "Pipfile found, but not pipenv executable!")
+                (message (format "Found pipenv python: %s" python-executable))
+                (add-to-list 'my/pipenv-python-alist (cons default-directory python-executable))
+                python-executable))))
+      "python")))
+
+(use-package lsp-pyright
+  :straight t
   :defer t
   :if (not my/slow-ssh)
-  :straight (eshell-info-banner :type git
-                                :host github
-                                :repo "phundrak/eshell-info-banner.el")
-  :hook (eshell-banner-load . eshell-info-banner-update-banner))
+  :hook (python-mode . (lambda ()
+                         (require 'lsp-pyright)
+                         (setq-local lsp-pyright-python-executable-cmd (my/get-pipenv-python))
+                         (lsp))))
 
-(when my/slow-ssh
-  (general-nmap "`" 'aweshell-dedicated-toggle)
-  (general-nmap "~" 'eshell))
+(add-hook 'python-mode-hook #'smartparens-mode)
+(add-hook 'python-mode-hook #'hs-minor-mode)
+
+(use-package pipenv
+  :straight t
+  :hook (python-mode . pipenv-mode)
+  :if (not my/slow-ssh)
+  :init
+  (setq
+   pipenv-projectile-after-switch-function
+   #'pipenv-projectile-after-switch-extended))
+
+(use-package yapfify
+  :straight (:repo "JorisE/yapfify" :host github)
+  :commands (yapfify-region
+             yapfify-buffer
+             yapfify-region-or-buffer
+             yapf-mode))
+
+(use-package py-isort
+  :straight t
+  :commands (py-isort-buffer py-isort-region))
+
+(my-leader-def
+  :keymaps 'python-mode-map
+  "rr" (lambda ()
+         (interactive)
+         (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
+           (py-isort-buffer))
+         (yapfify-buffer)))
+
+(use-package sphinx-doc
+  :straight t
+  :hook (python-mode . sphinx-doc-mode)
+  :config
+  (my-leader-def
+    :keymaps 'sphinx-doc-mode-map
+    "rd" 'sphinx-doc))
+
+(defun my/set-pipenv-pytest ()
+  (setq-local
+   python-pytest-executable
+   (concat (my/get-pipenv-python) " -m pytest")))
+
+(use-package python-pytest
+  :straight t
+  :commands (python-pytest-dispatch)
+  :init
+  (my-leader-def
+    :keymaps 'python-mode-map
+    :infix "t"
+    "t" 'python-pytest-dispatch)
+  :config
+  (cl-defun python-pytest--run-as-comint (&key command)
+    "Run a pytest comint session for COMMAND."
+    (let* ((buffer (python-pytest--get-buffer))
+           (process (get-buffer-process buffer)))
+      (with-current-buffer buffer
+        (when (comint-check-proc buffer)
+          (unless (or compilation-always-kill
+                      (yes-or-no-p "Kill running pytest process?"))
+            (user-error "Aborting; pytest still running")))
+        (when process
+          (delete-process process))
+        (let ((inhibit-read-only t))
+          (erase-buffer))
+        (unless (eq major-mode 'python-pytest-mode)
+          (python-pytest-mode))
+        (compilation-forget-errors)
+        (display-buffer buffer)
+        (setq command (format "export COLUMNS=%s; %s"
+                              (- (window-width (get-buffer-window buffer)) 5)
+                              command))
+        (insert (format "cwd: %s\ncmd: %s\n\n" default-directory command))
+        (setq python-pytest--current-command command)
+        (when python-pytest-pdb-track
+          (add-hook
+           'comint-output-filter-functions
+           'python-pdbtrack-comint-output-filter-function
+           nil t))
+        (run-hooks 'python-pytest-setup-hook)
+        (make-comint-in-buffer "pytest" buffer "bash" nil "-c" command)
+        (run-hooks 'python-pytest-started-hook)
+        (setq process (get-buffer-process buffer))
+        (set-process-sentinel process #'python-pytest--process-sentinel))))
+  (add-hook 'python-mode-hook #'my/set-pipenv-pytest)
+  (when (derived-mode-p 'python-mode)
+    (my/set-pipenv-pytest)))
+
+(use-package code-cells
+  :straight t
+  :commands (code-cells-mode))
+
+(setq my/tensorboard-buffer "TensorBoard-out")
+
+(defun my/tensorboard ()
+  (interactive)
+  (start-process
+   "tensorboard"
+   my/tensorboard-buffer
+   "tensorboard"
+   "serve"
+   "--logdir"
+   (car (find-file-read-args "Directory: " t)))
+  (display-buffer my/tensorboard-buffer))
+
+(use-package lsp-java
+  :straight t
+  :after (lsp)
+  :config
+  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz"))
+
+(add-hook 'java-mode-hook #'smartparens-mode)
+;; (add-hook 'java-mode-hook #'hs-minor-mode)
+(my/set-smartparens-indent 'java-mode)
+
+(use-package go-mode
+  :straight t
+  :mode "\\.go\\'"
+  :config
+  (my/set-smartparens-indent 'go-mode)
+  (add-hook 'go-mode-hook #'smartparens-mode)
+  (add-hook 'go-mode-hook #'hs-minor-mode))
+
+(use-package csharp-mode
+  :straight t
+  :mode "\\.cs\\'"
+  :config
+  (setq lsp-csharp-server-path (executable-find "omnisharp-wrapper"))
+  (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
+  (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
+  (add-hook 'csharp-mode-hook #'hs-minor-mode)
+  (my/set-smartparens-indent 'csharp-tree-sitter-mode))
+
+(use-package csproj-mode
+  :straight t
+  :mode "\\.csproj\\'"
+  :config
+  (add-hook 'csproj-mode #'smartparens-mode))
+
+(use-package fish-mode
+  :straight t
+  :mode "\\.fish\\'"
+  :config
+ (add-hook 'fish-mode-hook #'smartparens-mode))
+
+(add-hook 'sh-mode-hook #'smartparens-mode)
+
+(use-package haskell-mode
+  :straight t
+  :mode "\\.hs\\'")
+
+(use-package lsp-haskell
+  :straight t
+  :after (lsp haskell-mode))
+
+(use-package lua-mode
+  :straight t
+  :mode "\\.lua\\'"
+  :hook (lua-mode . smartparens-mode))
+
+(my/set-smartparens-indent 'lua-mode)
+
+(use-package json-mode
+  :straight t
+  :mode "\\.json\\'"
+  :config
+  (add-hook 'json-mode #'smartparens-mode)
+  (add-hook 'json-mode #'hs-minor-mode)
+  (my/set-smartparens-indent 'json-mode))
+
+(setq my/sqlformatter-dialect-choice
+      '("db2" "mariadb" "mysql" "n1ql" "plsql" "postgresql" "redshift" "spark" "sql" "tsql"))
+
+(setq my/sqlformatter-dialect "postgresql")
+
+(defun my/sqlformatter-set-dialect ()
+  "Set dialect for sql-formatter"
+  (interactive)
+  (setq my/sqlformatter-dialect
+        (completing-read "Dialect: " my/sqlformatter-dialect-choice)))
+
+(reformatter-define sqlformat
+  :program (executable-find "sql-formatter")
+  :args `("-l" ,my/sqlformatter-dialect, "-u"))
+
+(my-leader-def
+  :keymaps '(sql-mode-map)
+  "rr" #'sqlformat-buffer)
+
+(use-package yaml-mode
+  :straight t
+  :mode "\\.yml\\'"
+  :config
+  (add-hook 'yaml-mode-hook 'smartparens-mode)
+  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+
+(use-package dotenv-mode
+  :straight t
+  :mode "\\.env\\..*\\'")
+
+(use-package csv-mode
+  :straight t
+  :mode "\\.csv\\'")
+
+(use-package dockerfile-mode
+  :mode "Dockerfile\\'"
+  :straight t
+  :config
+  (add-hook 'dockerfile-mode 'smartparens-mode))
+
+(use-package crontab-mode
+  :straight t)
 
 (use-package org
   :straight t
@@ -2406,1224 +3213,297 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             (when (member (buffer-file-name) my/org-config-files)
               (setq-local org-confirm-babel-evaluate nil))))
 
-(use-package lsp-mode
-  :straight t
-  :if (not (or my/slow-ssh my/is-termux my/remote-server))
-  :hook (
-         (typescript-mode . lsp)
-         (js-mode . lsp)
-         (vue-mode . lsp)
-         (go-mode . lsp)
-         (svelte-mode . lsp)
-         ;; (python-mode . lsp)
-         (json-mode . lsp)
-         (haskell-mode . lsp)
-         (haskell-literate-mode . lsp)
-         (java-mode . lsp)
-         ;; (csharp-mode . lsp)
-         )
-  :commands lsp
-  :init
-  (setq lsp-keymap-prefix nil)
+(use-package dired
+  :ensure nil
+  :custom ((dired-listing-switches "-alh --group-directories-first"))
+  :commands (dired)
   :config
-  (setq lsp-idle-delay 1)
-  (setq lsp-eslint-server-command '("node" "/home/pavel/.emacs.d/.cache/lsp/eslint/unzipped/extension/server/out/eslintServer.js" "--stdio"))
-  (setq lsp-eslint-run "onSave")
-  (setq lsp-signature-render-documentation nil)
-  ;; (lsp-headerline-breadcrumb-mode nil)
-  (setq lsp-headerline-breadcrumb-enable nil)
-  (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
-
-(use-package lsp-ui
-  :straight t
-  :commands lsp-ui-mode
-  :config
-  (setq lsp-ui-doc-delay 2)
-  (setq lsp-ui-sideline-show-hover nil))
-
-;; (use-package helm-lsp
-;;   :straight t
-;;   :commands helm-lsp-workspace-symbol)
-
-;; (use-package origami
-;;   :straight t
-;;   :hook (prog-mode . origami-mode))
-
-;; (use-package lsp-origami
-;;   :straight t
-;;   :config
-;;   (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))
-
-(use-package lsp-treemacs
-  :after (lsp)
-  :straight t
-  :commands lsp-treemacs-errors-list)
-
-(my-leader-def
-  :infix "l"
-  "" '(:which-key "lsp")
-  "d" 'lsp-ui-peek-find-definitions
-  "r" 'lsp-rename
-  "u" 'lsp-ui-peek-find-references
-  "s" 'lsp-ui-find-workspace-symbol
-  "l" 'lsp-execute-code-action
-  "e" 'list-flycheck-errors)
-
-(use-package flycheck
-  :straight t
-  :config
-  (global-flycheck-mode)
-  (setq flycheck-check-syntax-automatically '(save idle-buffer-switch mode-enabled))
-  ;; (add-hook 'evil-insert-state-exit-hook
-  ;;           (lambda ()
-  ;;             (if flycheck-checker
-  ;;                 (flycheck-buffer))
-  ;;             ))
-  (advice-add 'flycheck-eslint-config-exists-p :override (lambda() t))
-  (add-to-list 'display-buffer-alist
-               `(,(rx bos "*Flycheck errors*" eos)
-                 (display-buffer-reuse-window
-                  display-buffer-in-side-window)
-                 (side            . bottom)
-                 (reusable-frames . visible)
-                 (window-height   . 0.33))))
-
-(defun my/tree-sitter-if-not-mmm ()
-  (when (not (and (boundp 'mmm-temp-buffer-name)
-                  (string-equal mmm-temp-buffer-name (buffer-name))))
-    (tree-sitter-mode)
-    (tree-sitter-hl-mode)))
-
-(use-package tree-sitter
-  :straight t
-  :if (not my/remote-server)
-  :hook ((typescript-mode . my/tree-sitter-if-not-mmm)
-         (js-mode . my/tree-sitter-if-not-mmm)
-         (python-mode . tree-sitter-mode)
-         (python-mode . tree-sitter-hl-mode)
-         (csharp-mode . tree-sitter-mode)))
-
-(use-package tree-sitter-langs
-  :straight t
-  :after tree-sitter)
-
-(use-package dap-mode
-  :straight t
-  :commands (dap-debug)
-  :init
-  (setq lsp-enable-dap-auto-configure nil)
-  :config
-
-  (setq dap-ui-variable-length 100)
-  (setq dap-auto-show-output nil)
-  (require 'dap-node)
-  (dap-node-setup)
-
-  (require 'dap-chrome)
-  (dap-chrome-setup)
-
-  (require 'dap-python)
-
-  (dap-mode 1)
-  (dap-ui-mode 1)
-  (dap-tooltip-mode 1)
-  (tooltip-mode 1))
-
-(with-eval-after-load 'dap-mode
-  (defmacro my/define-dap-ui-window-toggler (name)
-    `(defun ,(intern (concat "my/dap-ui-toggle-" name)) ()
-       ,(concat "Toggle DAP " name "buffer")
-       (interactive)
-       (if-let (window (get-buffer-window ,(intern (concat "dap-ui--" name "-buffer"))))
-           (quit-window nil window)
-         (,(intern (concat "dap-ui-" name))))))
-
-  (my/define-dap-ui-window-toggler "locals")
-  (my/define-dap-ui-window-toggler "expressions")
-  (my/define-dap-ui-window-toggler "sessions")
-  (my/define-dap-ui-window-toggler "breakpoints")
-  (my/define-dap-ui-window-toggler "repl"))
-
-(defhydra my/dap-hydra (:color pink :hint nil :foreign-keys run)
-  "
-^Stepping^         ^UI^                     ^Switch^                   ^Breakpoints^         ^Debug^                     ^Expressions
-^^^^^^^^------------------------------------------------------------------------------------------------------------------------------------------
-_n_: Next          _uc_: Controls           _ss_: Session              _bb_: Toggle          _dd_: Debug                 _ee_: Eval
-_i_: Step in       _ue_: Expressions        _st_: Thread               _bd_: Delete          _dr_: Debug recent          _er_: Eval region
-_o_: Step out      _ul_: Locals             _sf_: Stack frame          _ba_: Add             _dl_: Debug last            _es_: Eval thing at point
-_c_: Continue      _ur_: REPL               _su_: Up stack frame       _bc_: Set condition   _de_: Edit debug template   _ea_: Add expression
-_r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set hit count   _Q_:  Disconnect            _ed_: Remove expression
-                 _us_: Sessions           _sF_: Stack frame filtered _bl_: Set log message                           _eu_: Refresh expressions
-                 _ub_: Breakpoints                                                                               "
-
-  ("n" dap-next)
-  ("i" dap-step-in)
-  ("o" dap-step-out)
-  ("c" dap-continue)
-  ("r" dap-restart-frame)
-  ("uc" dap-ui-controls-mode)
-  ("ue" my/dap-ui-toggle-expressions)
-  ("ul" my/dap-ui-toggle-locals)
-  ("ur" my/dap-ui-toggle-repl)
-  ("uo" dap-ui-go-to-output-buffer)
-  ("us" my/dap-ui-toggle-sessions)
-  ("ub" my/dap-ui-toggle-breakpoints)
-  ("ss" dap-switch-session)
-  ("st" dap-switch-thread)
-  ("sf" dap-switch-stack-frame)
-  ("sF" my/dap-switch-stack-frame)
-  ("su" dap-up-stack-frame)
-  ("sd" dap-down-stack-frame)
-  ("bb" dap-breakpoint-toggle)
-  ("ba" dap-breakpoint-add)
-  ("bd" dap-breakpoint-delete)
-  ("bc" dap-breakpoint-condition)
-  ("bh" dap-breakpoint-hit-condition)
-  ("bl" dap-breakpoint-log-message)
-  ("dd" dap-debug)
-  ("dr" dap-debug-recent)
-  ("dl" dap-debug-last)
-  ("de" dap-debug-edit-template)
-  ("ee" dap-eval)
-  ("ea" dap-ui-expressions-add)
-  ("er" dap-eval-region)
-  ("es" dap-eval-thing-at-point)
-  ("ed" dap-ui-expressions-remove)
-  ("eu" dap-ui-expressions-refresh)
-  ("q" nil "quit" :color blue)
-  ("Q" dap-disconnect :color red))
-
-(my-leader-def "d" #'my/dap-hydra/body)
-
-(defvar my/dap-mode-buffer-fixed nil)
-
-(with-eval-after-load 'dap-mode
-  (defmacro my/define-dap-tree-buffer-fixer (buffer-var buffer-name)
-    `(defun ,(intern (concat "my/fix-dap-ui-" buffer-name "-buffer")) (&rest _)
-       (with-current-buffer ,buffer-var
-         (unless my/dap-mode-buffer-fixed
-           (toggle-truncate-lines 1)
-           (doom-modeline-set-modeline 'info)
-           (setq-local my/dap-mode-buffer-fixed t)))))
-
-  (my/define-dap-tree-buffer-fixer dap-ui--locals-buffer "locals")
-  (my/define-dap-tree-buffer-fixer dap-ui--expressions-buffer "expressions")
-  (my/define-dap-tree-buffer-fixer dap-ui--sessions-buffer "sessions")
-  (my/define-dap-tree-buffer-fixer dap-ui--breakpoints-buffer "breakpoints")
-
-  (advice-add 'dap-ui-locals :after #'my/fix-dap-ui-locals-buffer)
-  (advice-add 'dap-ui-expressions :after #'my/fix-dap-ui-expressions-buffer)
-  (advice-add 'dap-ui-sessions :after #'my/fix-dap-ui-sessions-buffer)
-  (advice-add 'dap-ui-breakpoints :after #'my/fix-dap-ui-breakpoints-buffer))
-
-(defun my/clear-bad-window-parameters ()
-  "Clear window parameters that interrupt my workflow."
-  (interactive)
-  (let ((window (get-buffer-window (current-buffer))))
-    (set-window-parameter window 'no-delete-other-windows nil)))
-
-(defun my/dap-yank-value-at-point (node)
-  (interactive (list (treemacs-node-at-point)))
-  (kill-new (message (plist-get (button-get node :item) :value))))
-
-(defun my/dap-display-value (node)
-  (interactive (list (treemacs-node-at-point)))
-  (let ((value (plist-get (button-get node :item) :value)))
-    (when value
-      (let ((buffer (generate-new-buffer "dap-value")))
-        (with-current-buffer buffer
-          (insert value))
-        (select-window (display-buffer buffer))))))
-
-(with-eval-after-load 'dap-mode
-  (setq my/dap-stack-frame-filters
-        `(("node_modules,node:internal" . ,(rx (or "node_modules" "node:internal")))
-          ("node_modules" . ,(rx (or "node_modules")))
-          ("node:internal" . ,(rx (or "node:internal")))))
-
-  (setq my/dap-stack-frame-current-filter (cdar my/dap-stack-frame-filters))
-
-  (defun my/dap-stack-frame-filter-set ()
-    (interactive)
-    (setq my/dap-stack-frame-current-filter
-          (cdr
-           (assoc
-            (completing-read "Filter: " my/dap-stack-frame-filters)
-            my/dap-stack-frame-filters))))
-
-  (defun my/dap-stack-frame-filter (frame)
-    (when-let (path (dap--get-path-for-frame frame))
-      (not (string-match my/dap-stack-frame-current-filter path)))))
-
-(defun my/dap-switch-stack-frame ()
-  "Switch stackframe by selecting another stackframe stackframes from current thread."
-  (interactive)
-  (when (not (dap--cur-session))
-    (error "There is no active session"))
-
-  (-if-let (thread-id (dap--debug-session-thread-id (dap--cur-session)))
-      (-if-let (stack-frames
-                (gethash
-                 thread-id
-                 (dap--debug-session-thread-stack-frames (dap--cur-session))))
-          (let* ((index 0)
-                 (stack-framces-filtered
-                  (-filter
-                   #'my/dap-stack-frame-filter
-                   stack-frames))
-                 (new-stack-frame
-                  (dap--completing-read
-                   "Select active frame: "
-                   stack-framces-filtered
-                   (-lambda ((frame &as &hash "name"))
-                     (if-let (frame-path (dap--get-path-for-frame frame))
-                         (format "%s: %s (in %s)"
-                                 (cl-incf index) name frame-path)
-                       (format "%s: %s" (cl-incf index) name)))
-                   nil
-                   t)))
-            (dap--go-to-stack-frame (dap--cur-session) new-stack-frame))
-        (->> (dap--cur-session)
-             dap--debug-session-name
-             (format "Current session %s is not stopped")
-             error))
-    (error "No thread is currently active %s" (dap--debug-session-name (dap--cur-session)))))
-
-(with-eval-after-load 'dap-mode
-  (dap-register-debug-template
-   "Node::Nest.js"
-   (list :type "node"
-         :request "attach"
-         :name "Node::Attach"
-         :port 9229
-         :outFiles ["${workspaceFolder}/dist/**/*.js"]
-         :sourceMaps t
-         :program "${workspaceFolder}/src/app.ts"))
-  (dap-register-debug-template
-   "Node::Babel"
-   (list :type "node"
-         :request "attach"
-         :name "Node::Attach"
-         :port 9229
-         :program "${workspaceFolder}/dist/bin/www.js")))
-
-(use-package reformatter
-  :straight t)
-
-(defun my/set-smartparens-indent (mode)
-  (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-  (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
-
-(defun my/set-flycheck-eslint()
-  "Override flycheck checker with eslint."
-  (setq-local lsp-diagnostic-package :none)
-  (setq-local flycheck-checker 'javascript-eslint))
-
-(use-package emmet-mode
-  :straight t
-  :hook ((vue-html-mode . emmet-mode)
-         (svelte-mode . emmet-mode)
-         (web-mode . emmet-mode)
-         (html-mode . emmet-mode)
-         (css-mode . emmet-mode)
-         (scss-mode . emmet-mode))
-  :config
-  ;; (setq emmet-indent-after-insert nil)
-  (setq my/emmet-mmm-submodes '(vue-html-mode css-mode))
-  (defun my/emmet-or-tab (&optional arg)
-    (interactive)
-    (if (and
-         (boundp 'mmm-current-submode)
-         mmm-current-submode
-         (not (member mmm-current-submode my/emmet-mmm-submodes)))
-        (indent-for-tab-command arg)
-      (or (emmet-expand-line arg)
-          (emmet-go-to-edit-point 1)
-          (indent-for-tab-command arg))))
-  (general-imap :keymaps 'emmet-mode-keymap
-    "TAB" 'my/emmet-or-tab
-    "<backtab>" 'emmet-prev-edit-point))
-
-(use-package prettier
-  :commands (prettier-prettify)
-  :straight t
-  :init
-  (my-leader-def
-    :keymaps '(js-mode-map web-mode-map typescript-mode-map vue-mode-map svelte-mode-map)
-    "rr" #'prettier-prettify))
-
-(use-package typescript-mode
-  :straight t
-  :mode "\\.ts\\'"
-  :config
-  (add-hook 'typescript-mode-hook #'smartparens-mode)
-  (add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
-  (add-hook 'typescript-mode-hook #'hs-minor-mode)
-  (my/set-smartparens-indent 'typescript-mode))
-
-(add-hook 'js-mode-hook #'smartparens-mode)
-(add-hook 'js-mode-hook #'hs-minor-mode)
-(my/set-smartparens-indent 'js-mode)
-
-(use-package jest-test-mode
-  :straight t
-  :hook ((typescript-mode . jest-test-mode)
-         (js-mode . jest-test-mode))
-  :config
-  (my-leader-def
-    :keymaps 'jest-test-mode-map
-    :infix "t"
-    "t" 'jest-test-run-at-point
-    "r" 'jest-test-run
-    "a" 'jest-test-run-all-tests))
-
-(defun my/jest-test-run-at-point-copy ()
-  "Run the top level describe block of the current buffer's point."
-  (interactive)
-  (let ((filename (jest-test-find-file))
-        (example  (jest-test-example-at-point)))
-    (if (and filename example)
-        (jest-test-from-project-directory filename
-          (let ((jest-test-options (seq-concatenate 'list jest-test-options (list "-t" example))))
-            (kill-new (jest-test-command filename))))
-      (message jest-test-not-found-message))))
-
-(use-package web-mode
-  :straight t
-  :init
-  (add-to-list 'auto-mode-alist '("\\.svelte\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.vue\\'" . web-mode))
-  :config
-  (add-hook 'web-mode-hook 'smartparens-mode)
-  (add-hook 'web-mode-hook 'hs-minor-mode)
-  (my/set-smartparens-indent 'web-mode))
-
-(setq my/web-mode-lsp-extensions
-      `(,(rx ".svelte" eos)
-        ,(rx ".vue" eos)))
-
-(defun my/web-mode-lsp ()
-  (when (seq-some
-         (lambda (regex) (string-match-p regex (buffer-name)))
-         my/web-mode-lsp-extensions)
-    (lsp-deferred)))
-
-(add-hook 'web-mode-hook #'my/web-mode-lsp)
-
-(defun my/web-mode-vue-setup ()
-  (when (string-match-p (rx ".vue" eos) (buffer-name))
-    (setq-local web-mode-script-padding 0)))
-
-(add-hook 'web-mode-hook 'my/web-mode-vue-setup)
-
-(use-package vue-mode
-  :straight t
-  :disabled
-  :mode "\\.vue\\'"
-  :config
-  (add-hook 'vue-mode-hook #'hs-minor-mode)
-  (add-hook 'vue-mode-hook #'smartparens-mode)
-  (my/set-smartparens-indent 'vue-mode)
-  (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
-  (defun mmm-syntax-propertize-function (start stop)
-    (let ((saved-mode mmm-current-submode)
-          (saved-ovl  mmm-current-overlay))
-      (mmm-save-changed-local-variables
-       mmm-current-submode mmm-current-overlay)
-      (unwind-protect
-          (mapc (lambda (elt)
-                  (let* ((mode (car elt))
-                         (func (get mode 'mmm-syntax-propertize-function))
-                         (beg (cadr elt)) (end (nth 2 elt))
-                         (ovl (nth 3 elt))
-                         syntax-ppss-cache
-                         syntax-ppss-last)
-                    (goto-char beg)
-                    (mmm-set-current-pair mode ovl)
-                    (mmm-set-local-variables mode mmm-current-overlay)
-                    (save-restriction
-                      (if mmm-current-overlay
-                          (narrow-to-region (overlay-start mmm-current-overlay)
-                                            (overlay-end mmm-current-overlay))
-                        (narrow-to-region beg end))
-                      (cond
-                       (func
-                        (funcall func beg end))
-                       (font-lock-syntactic-keywords
-                        (let ((syntax-propertize-function nil))
-                          (font-lock-fontify-syntactic-keywords-region beg end))))
-                      (run-hook-with-args 'mmm-after-syntax-propertize-functions
-                                          mmm-current-overlay mode beg end))))
-                (mmm-regions-in start stop))
-        (mmm-set-current-pair saved-mode saved-ovl)
-        (mmm-set-local-variables (or saved-mode mmm-primary-mode) saved-ovl)))))
-
-(with-eval-after-load 'editorconfig
-  (add-to-list 'editorconfig-indentation-alist
-               '(vue-mode css-indent-offset
-                          js-indent-level
-                          sgml-basic-offset
-                          ssass-tab-width
-                          typescript-indent-level
-                          emmet-indentation
-                          vue-html-extra-indent)))
-
-(use-package svelte-mode
-  :straight t
-  :mode "\\.svelte\\'"
-  :disabled
-  :config
-  (add-hook 'svelte-mode-hook 'my/set-flycheck-eslint)
-  (add-hook 'svelte-mode-hook #'smartparens-mode)
-  (my/set-smartparens-indent 'svelte-mode)
-  ;; I have my own Emmet
-  (setq lsp-svelte-plugin-css-completions-emmet nil)
-  (setq lsp-svelte-plugin-html-completions-emmet nil))
-
-(add-hook 'scss-mode-hook #'smartparens-mode)
-(add-hook 'scss-mode-hook #'hs-minor-mode)
-(my/set-smartparens-indent 'scss-mode)
-
-(use-package php-mode
-  :straight t
-  :mode "\\.php\\'")
-
-(use-package tex
-  :straight auctex
-  :defer t
-  :config
-  (setq-default TeX-auto-save t)
-  (setq-default TeX-parse-self t)
-  (TeX-PDF-mode)
-  ;; Use XeLaTeX & stuff
-  (setq-default TeX-engine 'xetex)
-  (setq-default TeX-command-extra-options "-shell-escape")
-  (setq-default TeX-source-correlate-method 'synctex)
-  (TeX-source-correlate-mode)
-  (setq-default TeX-source-correlate-start-server t)
-  (setq-default LaTeX-math-menu-unicode t)
-
-  (setq-default font-latex-fontify-sectioning 1.3)
-
-  ;; Scale preview for my DPI
-  (setq-default preview-scale-function 1.4)
-  (when (boundp 'tex--prettify-symbols-alist)
-    (assoc-delete-all "--" tex--prettify-symbols-alist)
-    (assoc-delete-all "---" tex--prettify-symbols-alist))
-
-  (add-hook 'LaTeX-mode-hook
+  (setq dired-dwim-target t)
+  (setq wdired-allow-to-change-permissions t)
+  (setq wdired-create-parent-directories t)
+  (setq dired-recursive-copies 'always)
+  (setq dired-recursive-deletes 'always)
+  (setq dired-kill-when-opening-new-dired-buffer t)
+  (add-hook 'dired-mode-hook
             (lambda ()
-              (TeX-fold-mode 1)
-              (outline-minor-mode)))
-
-  (add-to-list 'TeX-view-program-selection
-               '(output-pdf "Zathura"))
-
-  ;; Do not run lsp within templated TeX files
-  (add-hook 'LaTeX-mode-hook
-            (lambda ()
-              (unless (string-match "\.hogan\.tex$" (buffer-name))
-                (lsp))
-              (setq-local lsp-diagnostic-package :none)
-              (setq-local flycheck-checker 'tex-chktex)))
-
-  (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
-  (add-hook 'LaTeX-mode-hook #'smartparens-mode)
-  (add-hook 'LaTeX-mode-hook #'prettify-symbols-mode)
-
-  (my/set-smartparens-indent 'LaTeX-mode)
-  (require 'smartparens-latex)
-
-  (general-nmap
-    :keymaps '(LaTeX-mode-map latex-mode-map)
-    "RET" 'TeX-command-run-all
-    "C-c t" 'orgtbl-mode)
-
-  (setq my/greek-alphabet
-        '(("a" . "\\alpha")
-          ("b" . "\\beta" )
-          ("g" . "\\gamma")
-          ("d" . "\\delta")
-          ("e" . "\\epsilon")
-          ("z" . "\\zeta")
-          ("h" . "\\eta")
-          ("o" . "\\theta")
-          ("i" . "\\iota")
-          ("k" . "\\kappa")
-          ("l" . "\\lambda")
-          ("m" . "\\mu")
-          ("n" . "\\nu")
-          ("x" . "\\xi")
-          ("p" . "\\pi")
-          ("r" . "\\rho")
-          ("s" . "\\sigma")
-          ("t" . "\\tau")
-          ("u" . "\\upsilon")
-          ("f" . "\\phi")
-          ("c" . "\\chi")
-          ("v" . "\\psi")
-          ("g" . "\\omega")))
-  
-  (setq my/latex-greek-prefix "'")
-  
-  ;; The same for capitalized letters
-  (dolist (elem my/greek-alphabet)
-    (let ((key (car elem))
-          (value (cdr elem)))
-      (when (string-equal key (downcase key))
-        (add-to-list 'my/greek-alphabet
-                     (cons
-                      (capitalize (car elem))
-                      (concat
-                       (substring value 0 1)
-                       (capitalize (substring value 1 2))
-                       (substring value 2)))))))
-  
-  (yas-define-snippets
-   'latex-mode
-   (mapcar
-    (lambda (elem)
-      (list (concat my/latex-greek-prefix (car elem)) (cdr elem) (concat "Greek letter " (car elem))))
-    my/greek-alphabet))
-  (setq my/english-alphabet
-        '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
-  
-  (dolist (elem my/english-alphabet)
-    (when (string-equal elem (downcase elem))
-      (add-to-list 'my/english-alphabet (upcase elem))))
-  
-  (setq my/latex-mathbb-prefix "`")
-  
-  (yas-define-snippets
-   'latex-mode
-   (mapcar
-    (lambda (elem)
-      (list (concat my/latex-mathbb-prefix elem) (concat "\\mathbb{" elem "}") (concat "Mathbb letter " elem)))
-    my/english-alphabet))
-  (setq my/latex-math-symbols
-        '(("x" . "\\times")
-          ("." . "\\cdot")
-          ("v" . "\\forall")
-          ("s" . "\\sum_{$1}^{$2}$0")
-          ("p" . "\\prod_{$1}^{$2}$0")
-          ("d" . "\\partial")
-          ("e" . "\\exists")
-          ("i" . "\\int_{$1}^{$2}$0")
-          ("c" . "\\cap")
-          ("u" . "\\cup")
-          ("0" . "\\emptyset")
-          ("^" . "\\widehat{$1}$0")
-          ("_" . "\\overline{$1}$0")
-          ("~" . "\\sim")
-          ("|" . "\\mid")
-          ("_|" . "\\perp")))
-  
-  (setq my/latex-math-prefix ";")
-  
-  (yas-define-snippets
-   'latex-mode
-   (mapcar
-    (lambda (elem)
-      (let ((key (car elem))
-            (value (cdr elem)))
-        (list (concat my/latex-math-prefix key) value (concat "Math symbol " value))))
-    my/latex-math-symbols))
-  (setq my/latex-section-snippets
-        '(("ch" . "\\chapter{$1}")
-          ("sec" . "\\section{$1}")
-          ("ssec" . "\\subsection{$1}")
-          ("sssec" . "\\subsubsection{$1}")
-          ("par" . "\\paragraph{$1}}")))
-  
-  (setq my/latex-section-snippets
-        (mapcar
-         (lambda (elem)
-           `(,(car elem)
-             ,(cdr elem)
-             ,(progn
-                (string-match "[a-z]+" (cdr elem))
-                (match-string 0 (cdr elem)))))
-         my/latex-section-snippets))
-  
-  (dolist (elem my/latex-section-snippets)
-    (let* ((key (nth 0 elem))
-           (value (nth 1 elem))
-           (desc (nth 2 elem))
-           (star-index (string-match "\{\$1\}" value)))
-      (add-to-list 'my/latex-section-snippets
-                   `(,(concat key "*")
-                     ,(concat
-                       (substring value 0 star-index)
-                       "*"
-                       (substring value star-index))
-                     ,(concat desc " with *")))
-      (add-to-list 'my/latex-section-snippets
-                   `(,(concat key "l")
-                     ,(concat value "%\n\\label{sec:$2}")
-                     ,(concat desc " with label")))))
-  
-  (dolist (elem my/latex-section-snippets)
-    (setf (nth 1 elem) (concat (nth 1 elem) "\n$0")))
-  
-  (yas-define-snippets
-   'latex-mode
-   my/latex-section-snippets))
-
-(use-package ivy-bibtex
-  :commands (ivy-bibtex)
-  :straight t
-  :init
-  (my-leader-def "fB" 'ivy-bibtex))
-
-(add-hook 'bibtex-mode 'smartparens-mode)
-
-(defun my/list-sty ()
-  (reverse
-   (sort
-    (seq-filter
-     (lambda (file) (if (string-match ".*\.sty$" file) 1 nil))
-     (directory-files
-      (seq-some
-       (lambda (dir)
-         (if (and
-              (f-directory-p dir)
-              (seq-some
-               (lambda (file) (string-match ".*\.sty$" file))
-               (directory-files dir))
-              ) dir nil))
-       (list "./styles" "../styles/" "." "..")) :full))
-    (lambda (f1 f2)
-      (let ((f1b (file-name-base f1))
-            (f1b (file-name-base f2)))
-        (cond
-         ((string-match-p ".*BibTex" f1) t)
-         ((and (string-match-p ".*Locale" f1) (not (string-match-p ".*BibTex" f2))) t)
-         ((string-match-p ".*Preamble" f2) t)
-         (t (string-lessp f1 f2))))))))
-
-(defun my/import-sty ()
-  (interactive)
-  (insert
-   (apply #'concat
-          (cl-mapcar
-           (lambda (file) (concat "\\usepackage{" (file-name-sans-extension (file-relative-name file default-directory)) "}\n"))
-           (my/list-sty)))))
-
-(defun my/import-sty-org ()
-  (interactive)
-  (insert
-   (apply #'concat
-          (cl-mapcar
-           (lambda (file) (concat "#+LATEX_HEADER: \\usepackage{" (file-name-sans-extension (file-relative-name file default-directory)) "}\n"))
-           (my/list-sty)))))
-
-(setq my/greek-alphabet
-      '(("a" . "\\alpha")
-        ("b" . "\\beta" )
-        ("g" . "\\gamma")
-        ("d" . "\\delta")
-        ("e" . "\\epsilon")
-        ("z" . "\\zeta")
-        ("h" . "\\eta")
-        ("o" . "\\theta")
-        ("i" . "\\iota")
-        ("k" . "\\kappa")
-        ("l" . "\\lambda")
-        ("m" . "\\mu")
-        ("n" . "\\nu")
-        ("x" . "\\xi")
-        ("p" . "\\pi")
-        ("r" . "\\rho")
-        ("s" . "\\sigma")
-        ("t" . "\\tau")
-        ("u" . "\\upsilon")
-        ("f" . "\\phi")
-        ("c" . "\\chi")
-        ("v" . "\\psi")
-        ("g" . "\\omega")))
-
-(setq my/latex-greek-prefix "'")
-
-;; The same for capitalized letters
-(dolist (elem my/greek-alphabet)
-  (let ((key (car elem))
-        (value (cdr elem)))
-    (when (string-equal key (downcase key))
-      (add-to-list 'my/greek-alphabet
-                   (cons
-                    (capitalize (car elem))
-                    (concat
-                     (substring value 0 1)
-                     (capitalize (substring value 1 2))
-                     (substring value 2)))))))
-
-(yas-define-snippets
- 'latex-mode
- (mapcar
-  (lambda (elem)
-    (list (concat my/latex-greek-prefix (car elem)) (cdr elem) (concat "Greek letter " (car elem))))
-  my/greek-alphabet))
-
-(setq my/english-alphabet
-      '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
-
-(dolist (elem my/english-alphabet)
-  (when (string-equal elem (downcase elem))
-    (add-to-list 'my/english-alphabet (upcase elem))))
-
-(setq my/latex-mathbb-prefix "`")
-
-(yas-define-snippets
- 'latex-mode
- (mapcar
-  (lambda (elem)
-    (list (concat my/latex-mathbb-prefix elem) (concat "\\mathbb{" elem "}") (concat "Mathbb letter " elem)))
-  my/english-alphabet))
-
-(setq my/latex-math-symbols
-      '(("x" . "\\times")
-        ("." . "\\cdot")
-        ("v" . "\\forall")
-        ("s" . "\\sum_{$1}^{$2}$0")
-        ("p" . "\\prod_{$1}^{$2}$0")
-        ("d" . "\\partial")
-        ("e" . "\\exists")
-        ("i" . "\\int_{$1}^{$2}$0")
-        ("c" . "\\cap")
-        ("u" . "\\cup")
-        ("0" . "\\emptyset")
-        ("^" . "\\widehat{$1}$0")
-        ("_" . "\\overline{$1}$0")
-        ("~" . "\\sim")
-        ("|" . "\\mid")
-        ("_|" . "\\perp")))
-
-(setq my/latex-math-prefix ";")
-
-(yas-define-snippets
- 'latex-mode
- (mapcar
-  (lambda (elem)
-    (let ((key (car elem))
-          (value (cdr elem)))
-      (list (concat my/latex-math-prefix key) value (concat "Math symbol " value))))
-  my/latex-math-symbols))
-
-(setq my/latex-section-snippets
-      '(("ch" . "\\chapter{$1}")
-        ("sec" . "\\section{$1}")
-        ("ssec" . "\\subsection{$1}")
-        ("sssec" . "\\subsubsection{$1}")
-        ("par" . "\\paragraph{$1}}")))
-
-(setq my/latex-section-snippets
-      (mapcar
-       (lambda (elem)
-         `(,(car elem)
-           ,(cdr elem)
-           ,(progn
-              (string-match "[a-z]+" (cdr elem))
-              (match-string 0 (cdr elem)))))
-       my/latex-section-snippets))
-
-(dolist (elem my/latex-section-snippets)
-  (let* ((key (nth 0 elem))
-         (value (nth 1 elem))
-         (desc (nth 2 elem))
-         (star-index (string-match "\{\$1\}" value)))
-    (add-to-list 'my/latex-section-snippets
-                 `(,(concat key "*")
-                   ,(concat
-                     (substring value 0 star-index)
-                     "*"
-                     (substring value star-index))
-                   ,(concat desc " with *")))
-    (add-to-list 'my/latex-section-snippets
-                 `(,(concat key "l")
-                   ,(concat value "%\n\\label{sec:$2}")
-                   ,(concat desc " with label")))))
-
-(dolist (elem my/latex-section-snippets)
-  (setf (nth 1 elem) (concat (nth 1 elem) "\n$0")))
-
-(yas-define-snippets
- 'latex-mode
- my/latex-section-snippets)
-
-(use-package markdown-mode
-  :straight t
-  :mode "\\.md\\'"
-  :config
-  (setq markdown-command
-        (concat
-         "pandoc"
-         " --from=markdown --to=html"
-         " --standalone --mathjax --highlight-style=pygments"
-         " --css=pandoc.css"
-         " --quiet"
-         ))
-  (setq markdown-live-preview-delete-export 'delete-on-export)
-  (setq markdown-asymmetric-header t)
-  (setq markdown-open-command "/home/pavel/bin/scripts/chromium-sep")
-  (add-hook 'markdown-mode-hook #'smartparens-mode)
+              (setq truncate-lines t)
+              (visual-line-mode nil)))
   (general-define-key
-   :keymaps 'markdown-mode-map
-   "M-<left>" 'markdown-promote
-   "M-<right>" 'markdown-demote))
+   :states '(normal)
+   :keymaps 'dired-mode-map
+   "h" 'dired-up-directory
+   "l" 'dired-find-file
+   "=" 'dired-narrow
+   "-" 'dired-create-empty-file
+   "~" 'vterm
+   "<left>" 'dired-up-directory
+   "<right>" 'dired-find-file
+   "M-<return>" 'dired-open-xdg))
 
-;; (use-package livedown
-;;   :straight (:host github :repo "shime/emacs-livedown")
-;;   :commands livedown-preview
-;;   :config
-;;   (setq livedown-browser "qutebrowser"))
-
-(use-package plantuml-mode
-  :straight t
-  :mode "(\\.\\(plantuml?\\|uml\\|puml\\)\\'"
-  :config
-  (setq plantuml-executable-path "/home/pavel/.guix-extra-profiles/emacs/emacs/bin/plantuml")
-  (setq plantuml-default-exec-mode 'executable)
-  (setq plantuml-indent-level 2)
-  (setq my/plantuml-indent-regexp-return "^\s*return\s+.+$")
-  (add-to-list
-   'plantuml-indent-regexp-end
-   my/plantuml-indent-regexp-return)
-  (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
-  (add-to-list 'auto-mode-alist '("\\.uml\\'" . plantuml-mode))
-  (add-hook 'plantuml-mode-hook #'smartparens-mode))
-
-(general-nmap
-  :keymaps 'plantuml-mode-map
-  "RET" 'plantuml-preview)
-
-(use-package langtool
-  :straight t
-  :commands (langtool-check)
-  :config
-  (setq langtool-language-tool-server-jar "/home/pavel/bin/LanguageTool-5.4/languagetool-server.jar")
-  (setq langtool-mother-tongue "ru")
-  (setq langtool-default-language "en-US"))
+(defun my/dired-home ()
+  "Open dired at $HOME"
+  (interactive)
+  (dired (expand-file-name "~")))
 
 (my-leader-def
-  :infix "L"
-  "" '(:which-key "languagetool")
-  "c" 'langtool-check
-  "s" 'langtool-server-stop
-  "d" 'langtool-check-done
-  "n" 'langtool-goto-next-error
-  "p" 'langtool-goto-previous-error
-  "l" 'langtool-correct-buffer)
+  "ad" #'dired
+  "aD" #'my/dired-home)
 
-(use-package lispy
-  :commands (lispy-mode)
+(use-package diredfl
+  :straight t
+  :after dired
+  :config
+  (diredfl-global-mode 1))
+
+(use-package dired-single
+  :after dired
+  :disabled
   :straight t)
 
-(use-package lispyville
-  :hook (lispy-mode . lispyville-mode)
-  :straight t)
-
-(sp-with-modes sp-lisp-modes
-  (sp-local-pair "'" nil :actions nil))
-
-(use-package flycheck-package
+(use-package all-the-icons-dired
   :straight t
-  :after flycheck
+  :if (not (or my/lowpower my/slow-ssh (not (display-graphic-p))))
+  :hook (dired-mode . (lambda ()
+                        (unless (string-match-p "/gnu/store" default-directory)
+                          (all-the-icons-dired-mode))))
   :config
-  (flycheck-package-setup))
+  (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
+  (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice)
+  (advice-add 'dired-kill-subdir :around #'all-the-icons-dired--refresh-advice))
 
-(add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
-;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
-(add-hook 'emacs-lisp-mode-hook #'lispy-mode)
-
-(use-package slime
+(use-package dired-open
   :straight t
+  :commands (dired-open-xdg))
+
+(use-package dired-narrow
+  :straight t
+  :commands (dired-narrow)
   :config
-  (setq inferior-lisp-program "sbcl")
-  (add-hook 'slime-repl-mode 'smartparens-mode))
+  (general-define-key
+   :keymaps 'dired-narrow-map
+   [escape] 'keyboard-quit))
 
-(add-hook 'lisp-mode-hook #'aggressive-indent-mode)
-;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
-(add-hook 'lisp-mode-hook #'lispy-mode)
-
-(use-package clojure-mode
+(use-package dired-git-info
   :straight t
-  :mode "\\.clj[sc]?\\'"
+  :after dired
+  :if (not my/slow-ssh)
   :config
-  ;; (add-hook 'clojure-mode-hook #'smartparens-strict-mode)
-  (add-hook 'clojure-mode-hook #'lispy-mode)
-  (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
+  (general-define-key
+   :keymap 'dired-mode-map
+   :states '(normal emacs)
+   ")" 'dired-git-info-mode))
 
-(use-package cider
-  :mode "\\.clj[sc]?\\'"
-  :straight t)
+(defun my/dired-open-this-subdir ()
+  (interactive)
+  (dired (dired-current-directory)))
 
-(use-package hy-mode
-  :straight t
-  :mode "\\.hy\\'"
+(defun my/dired-kill-all-subdirs ()
+  (interactive)
+  (let ((dir dired-directory))
+    (kill-buffer (current-buffer))
+    (dired dir)))
+
+(with-eval-after-load 'dired
+  (general-define-key
+   :states '(normal)
+   :keymaps 'dired-mode-map
+   "s" nil
+   "ss" 'dired-maybe-insert-subdir
+   "sl" 'dired-maybe-insert-subdir
+   "sq" 'dired-kill-subdir
+   "sk" 'dired-prev-subdir
+   "sj" 'dired-next-subdir
+   "sS" 'my/dired-open-this-subdir
+   "sQ" 'my/dired-kill-all-subdirs
+   (kbd "TAB") 'dired-hide-subdir))
+
+(setq tramp-verbose 1)
+
+(setq remote-file-name-inhibit-cache nil)
+(setq vc-ignore-dir-regexp
+      (format "\\(%s\\)\\|\\(%s\\)"
+              vc-ignore-dir-regexp
+              tramp-file-name-regexp))
+
+(when (or my/remote-server my/slow-ssh)
+  (setq explicit-shell-file-name "/bin/bash"))
+
+(with-eval-after-load 'tramp
+  (setq tramp-remote-path
+        (append tramp-remote-path
+                '(tramp-own-remote-path))))
+
+(defun my/dired-bookmark-open ()
+  (interactive)
+  (let ((bookmarks
+         (mapcar
+          (lambda (el) (cons (format "%-30s %s" (car el) (cdr el)) (cdr el)))
+          my/dired-bookmarks)))
+    (dired
+     (cdr
+      (assoc
+       (completing-read "Dired: " bookmarks nil nil "^")
+       bookmarks)))))
+
+(use-package vterm
+  ;; :straight t
+  :commands (vterm vterm-other-window)
   :config
-  (add-hook 'hy-mode-hook #'lispy-mode)
-  (add-hook 'hy-mode-hook #'aggressive-indent-mode))
+  (setq vterm-kill-buffer-on-exit t)
 
-(use-package geiser
+  (add-hook 'vterm-mode-hook
+            (lambda ()
+              (setq-local global-display-line-numbers-mode nil)
+              (display-line-numbers-mode 0)))
+
+
+  (advice-add 'evil-collection-vterm-insert
+              :before (lambda (&rest args)
+                        (ignore-errors
+                          (apply #'vterm-reset-cursor-point args))))
+
+  (general-define-key
+   :keymaps 'vterm-mode-map
+   "M-q" 'vterm-send-escape
+
+   "C-h" 'evil-window-left
+   "C-l" 'evil-window-right
+   "C-k" 'evil-window-up
+   "C-j" 'evil-window-down
+
+   "C-<right>" 'evil-window-right
+   "C-<left>" 'evil-window-left
+   "C-<up>" 'evil-window-up
+   "C-<down>" 'evil-window-down
+
+   "M-<left>" 'vterm-send-left
+   "M-<right>" 'vterm-send-right
+   "M-<up>" 'vterm-send-up
+   "M-<down>" 'vterm-send-down)
+
+  (general-define-key
+   :keymaps 'vterm-mode-map
+   :states '(normal insert)
+   "<home>" 'vterm-beginning-of-line
+   "<end>" 'vterm-end-of-line)
+
+  (general-define-key
+   :keymaps 'vterm-mode-map
+   :states '(insert)
+   "C-r" 'vterm-send-C-r
+   "C-k" 'vterm-send-C-k
+   "C-j" 'vterm-send-C-j
+   "M-l" 'vterm-send-right
+   "M-h" 'vterm-send-left
+   "M-k" 'vterm-send-up
+   "M-j" 'vterm-send-down))
+
+(add-to-list 'display-buffer-alist
+             `(,"vterm-subterminal.*"
+               (display-buffer-reuse-window
+                display-buffer-in-side-window)
+               (side . bottom)
+               (reusable-frames . visible)
+               (window-height . 0.33)))
+
+(defun my/toggle-vterm-subteminal ()
+  "Toogle subteminal."
+  (interactive)
+  (let
+      ((vterm-window
+        (seq-find
+         (lambda (window)
+           (string-match
+            "vterm-subterminal.*"
+            (buffer-name (window-buffer window))))
+         (window-list))))
+    (if vterm-window
+        (if (eq (get-buffer-window (current-buffer)) vterm-window)
+            (kill-buffer (current-buffer))
+          (select-window vterm-window))
+      (vterm-other-window "vterm-subterminal"))))
+
+(unless my/slow-ssh
+  (general-nmap "`" 'my/toggle-vterm-subteminal)
+  (general-nmap "~" 'vterm))
+
+(defun my/vterm-get-pwd ()
+  (if vterm--process
+      (file-truename (format "/proc/%d/cwd" (process-id vterm--process)))
+    default-directory))
+
+(defun my/vterm-dired-other-window ()
+  "Open dired in vterm pwd in other window"
+  (interactive)
+  (dired-other-window (my/vterm-get-pwd)))
+
+(defun my/vterm-dired-replace ()
+  "Replace vterm with dired"
+  (interactive)
+  (let ((pwd (my/vterm-get-pwd)))
+    (kill-process vterm--process)
+    (dired pwd)))
+
+(with-eval-after-load 'vterm
+  (general-define-key
+   :keymaps 'vterm-mode-map
+   :states '(normal)
+   "gd" #'my/vterm-dired-other-window
+   "gD" #'my/vterm-dired-replace))
+
+(use-package with-editor
   :straight t
-  :if (not my/lowpower)
+  :after (vterm)
   :config
-  (setq geiser-default-implementation 'guile))
+  (add-hook 'vterm-mode-hook 'with-editor-export-editor))
 
-(use-package geiser-guile
-  :straight t
-  :after geiser)
+(defun my/configure-eshell ()
+  (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
+  (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
+  (setq eshell-history-size 10000)
+  (setq eshell-hist-ingnoredups t)
+  (setq eshell-buffer-maximum-lines 10000)
 
-(add-hook 'scheme-mode-hook #'aggressive-indent-mode)
-(add-hook 'scheme-mode-hook #'lispy-mode)
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
+  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+  (general-define-key
+   :states '(normal)
+   :keymaps 'eshell-mode-map
+   (kbd "C-h") 'evil-window-left
+   (kbd "C-l") 'evil-window-right
+   (kbd "C-k") 'evil-window-up
+   (kbd "C-j") 'evil-window-down))
 
-(use-package clips-mode
-  :straight t
-  :mode "\\.cl\\'"
+(use-package eshell
+  :ensure nil
+  :after evil-collection
+  :commands (eshell)
   :config
-  (add-hook 'clips-mode 'lispy-mode))
+  (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
+  (when my/slow-ssh
+    (add-hook 'eshell-mode-hook
+              (lambda ()
+                (setq-local company-idle-delay 1000))))
+  (setq eshell-banner-message ""))
 
-(setq my/pipenv-python-alist '())
+(use-package aweshell
+  :straight (:repo "manateelazycat/aweshell" :host github)
+  :after eshell
+  :config
+  (setq eshell-highlight-prompt nil)
+  (setq eshell-prompt-function 'epe-theme-pipeline))
 
-(defun my/get-pipenv-python ()
-  (let ((default-directory (projectile-project-root)))
-    (if (file-exists-p "Pipfile")
-        (let ((asc (assoc default-directory my/pipenv-python-alist)))
-          (if asc
-              (cdr asc)
-            (let ((python-executable
-                   (string-trim (shell-command-to-string "PIPENV_IGNORE_VIRTUALENVS=1 pipenv run which python 2>/dev/null"))))
-              (if (string-match-p ".*not found.*" python-executable)
-                  (message "Pipfile found, but not pipenv executable!")
-                (message (format "Found pipenv python: %s" python-executable))
-                (add-to-list 'my/pipenv-python-alist (cons default-directory python-executable))
-                python-executable))))
-      "python")))
-
-(use-package lsp-pyright
-  :straight t
+(use-package eshell-info-banner
   :defer t
   :if (not my/slow-ssh)
-  :hook (python-mode . (lambda ()
-                         (require 'lsp-pyright)
-                         (setq-local lsp-pyright-python-executable-cmd (my/get-pipenv-python))
-                         (lsp))))
+  :straight (eshell-info-banner :type git
+                                :host github
+                                :repo "phundrak/eshell-info-banner.el")
+  :hook (eshell-banner-load . eshell-info-banner-update-banner))
 
-(add-hook 'python-mode-hook #'smartparens-mode)
-(add-hook 'python-mode-hook #'hs-minor-mode)
-
-(use-package pipenv
-  :straight t
-  :hook (python-mode . pipenv-mode)
-  :if (not my/slow-ssh)
-  :init
-  (setq
-   pipenv-projectile-after-switch-function
-   #'pipenv-projectile-after-switch-extended))
-
-(use-package yapfify
-  :straight (:repo "JorisE/yapfify" :host github)
-  :commands (yapfify-region
-             yapfify-buffer
-             yapfify-region-or-buffer
-             yapf-mode))
-
-(use-package py-isort
-  :straight t
-  :commands (py-isort-buffer py-isort-region))
-
-(my-leader-def
-  :keymaps 'python-mode-map
-  "rr" (lambda ()
-         (interactive)
-         (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
-           (py-isort-buffer))
-         (yapfify-buffer)))
-
-(use-package sphinx-doc
-  :straight t
-  :hook (python-mode . sphinx-doc-mode)
-  :config
-  (my-leader-def
-    :keymaps 'sphinx-doc-mode-map
-    "rd" 'sphinx-doc))
-
-(defun my/set-pipenv-pytest ()
-  (setq-local
-   python-pytest-executable
-   (concat (my/get-pipenv-python) " -m pytest")))
-
-(use-package python-pytest
-  :straight t
-  :commands (python-pytest-dispatch)
-  :init
-  (my-leader-def
-    :keymaps 'python-mode-map
-    :infix "t"
-    "t" 'python-pytest-dispatch)
-  :config
-  (cl-defun python-pytest--run-as-comint (&key command)
-    "Run a pytest comint session for COMMAND."
-    (let* ((buffer (python-pytest--get-buffer))
-           (process (get-buffer-process buffer)))
-      (with-current-buffer buffer
-        (when (comint-check-proc buffer)
-          (unless (or compilation-always-kill
-                      (yes-or-no-p "Kill running pytest process?"))
-            (user-error "Aborting; pytest still running")))
-        (when process
-          (delete-process process))
-        (let ((inhibit-read-only t))
-          (erase-buffer))
-        (unless (eq major-mode 'python-pytest-mode)
-          (python-pytest-mode))
-        (compilation-forget-errors)
-        (display-buffer buffer)
-        (setq command (format "export COLUMNS=%s; %s"
-                              (- (window-width (get-buffer-window buffer)) 5)
-                              command))
-        (insert (format "cwd: %s\ncmd: %s\n\n" default-directory command))
-        (setq python-pytest--current-command command)
-        (when python-pytest-pdb-track
-          (add-hook
-           'comint-output-filter-functions
-           'python-pdbtrack-comint-output-filter-function
-           nil t))
-        (run-hooks 'python-pytest-setup-hook)
-        (make-comint-in-buffer "pytest" buffer "bash" nil "-c" command)
-        (run-hooks 'python-pytest-started-hook)
-        (setq process (get-buffer-process buffer))
-        (set-process-sentinel process #'python-pytest--process-sentinel))))
-  (add-hook 'python-mode-hook #'my/set-pipenv-pytest)
-  (when (derived-mode-p 'python-mode)
-    (my/set-pipenv-pytest)))
-
-(use-package code-cells
-  :straight t
-  :commands (code-cells-mode))
-
-(setq my/tensorboard-buffer "TensorBoard-out")
-
-(defun my/tensorboard ()
-  (interactive)
-  (start-process
-   "tensorboard"
-   my/tensorboard-buffer
-   "tensorboard"
-   "serve"
-   "--logdir"
-   (car (find-file-read-args "Directory: " t)))
-  (display-buffer my/tensorboard-buffer))
-
-(use-package lsp-java
-  :straight t
-  :after (lsp)
-  :config
-  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz"))
-
-(add-hook 'java-mode-hook #'smartparens-mode)
-;; (add-hook 'java-mode-hook #'hs-minor-mode)
-(my/set-smartparens-indent 'java-mode)
-
-(use-package go-mode
-  :straight t
-  :mode "\\.go\\'"
-  :config
-  (my/set-smartparens-indent 'go-mode)
-  (add-hook 'go-mode-hook #'smartparens-mode)
-  (add-hook 'go-mode-hook #'hs-minor-mode))
-
-(use-package csharp-mode
-  :straight t
-  :mode "\\.cs\\'"
-  :config
-  (setq lsp-csharp-server-path (executable-find "omnisharp-wrapper"))
-  (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
-  (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
-  (add-hook 'csharp-mode-hook #'hs-minor-mode)
-  (my/set-smartparens-indent 'csharp-tree-sitter-mode))
-
-(use-package csproj-mode
-  :straight t
-  :mode "\\.csproj\\'"
-  :config
-  (add-hook 'csproj-mode #'smartparens-mode))
-
-(use-package fish-mode
-  :straight t
-  :mode "\\.fish\\'"
-  :config
- (add-hook 'fish-mode-hook #'smartparens-mode))
-
-(add-hook 'sh-mode-hook #'smartparens-mode)
-
-(use-package haskell-mode
-  :straight t
-  :mode "\\.hs\\'")
-
-(use-package lsp-haskell
-  :straight t
-  :after (lsp haskell-mode))
-
-(use-package lua-mode
-  :straight t
-  :mode "\\.lua\\'"
-  :hook (lua-mode . smartparens-mode))
-
-(my/set-smartparens-indent 'lua-mode)
-
-(use-package json-mode
-  :straight t
-  :mode "\\.json\\'"
-  :config
-  (add-hook 'json-mode #'smartparens-mode)
-  (add-hook 'json-mode #'hs-minor-mode)
-  (my/set-smartparens-indent 'json-mode))
-
-(setq my/sqlformatter-dialect-choice
-      '("db2" "mariadb" "mysql" "n1ql" "plsql" "postgresql" "redshift" "spark" "sql" "tsql"))
-
-(setq my/sqlformatter-dialect "postgresql")
-
-(defun my/sqlformatter-set-dialect ()
-  "Set dialect for sql-formatter"
-  (interactive)
-  (setq my/sqlformatter-dialect
-        (completing-read "Dialect: " my/sqlformatter-dialect-choice)))
-
-(reformatter-define sqlformat
-  :program (executable-find "sql-formatter")
-  :args `("-l" ,my/sqlformatter-dialect, "-u"))
-
-(my-leader-def
-  :keymaps '(sql-mode-map)
-  "rr" #'sqlformat-buffer)
-
-(use-package yaml-mode
-  :straight t
-  :mode "\\.yml\\'"
-  :config
-  (add-hook 'yaml-mode-hook 'smartparens-mode)
-  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
-  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
-
-(use-package dotenv-mode
-  :straight t
-  :mode "\\.env\\..*\\'")
-
-(use-package csv-mode
-  :straight t
-  :mode "\\.csv\\'")
-
-(use-package dockerfile-mode
-  :mode "Dockerfile\\'"
-  :straight t
-  :config
-  (add-hook 'dockerfile-mode 'smartparens-mode))
-
-(use-package crontab-mode
-  :straight t)
+(when my/slow-ssh
+  (general-nmap "`" 'aweshell-dedicated-toggle)
+  (general-nmap "~" 'eshell))
 
 (defun my/edit-configuration ()
   "Open the init file."
@@ -4243,6 +4123,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
 (use-package pomm
   ;; :straight (:host github :repo "SqrtMinusOne/pomm.el" :files (:defaults "resources"))
   :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
+  :commands (pomm)
   :init
   (my-leader-def "ap" #'pomm)
   :config

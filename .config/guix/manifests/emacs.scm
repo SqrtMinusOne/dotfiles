@@ -6,8 +6,8 @@
    "imagemagick"
    "yt-dlp"
    "mpv"
+   "graphviz"
+   "emacs-emacsql-sqlite3"
    "python-isort"
    "python-yapf"
-   "plantuml"
-   "graphviz"
-   "emacs-emacsql-sqlite3"))
+   "plantuml"))
