@@ -261,8 +261,8 @@ Settings for [[https://github.com/ch11ng/exwm][Emacs X Window Manager]], a tilin
 References:
 - [[https://github.com/ch11ng/exwm/wiki][EXWM Wiki]]
 - [[https://github.com/daviwil/emacs-from-scratch/blob/master/Desktop.org][Emacs From Scratch config]]
-
-** Xsession
+** Startup & UI
+*** Xsession
 First things first, Emacs has to be launched as a window manager. On a more conventional system I'd create a .desktop file in some system folder that can be seen by a login manager, but in the case of Guix it's a bit more complicated, because all such folders are not meant to be changed manually.
 
 However, GDM, the login manager that seems to be the default on Guix, launches =~/.xsession= on the startup if it's present, which is just fine for my purposes.
@@ -296,7 +296,7 @@ copyq &
 # exec dbus-launch --exit-with-session ~/.emacs.d/run-exwm.sh
 exec dbus-launch --exit-with-session emacs -mm --debug-init -l ~/.emacs.d/desktop.el
 #+end_src
-** Startup apps
+*** Startup apps
 Now that Emacs is launched, it is necessary to set up the EXWM-specific parts of config.
 
 I want to launch some apps from EXWM instead of the Xsession file for two purposes:
@@ -315,7 +315,56 @@ As of now, these are polybar, feh and, shepherd:
   (when (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
     (call-process "shepherd")))
 #+end_src
-** Moving windows
+*** Pinentry
+The GUI pinentry doesn't work too well with EXWM because of issues with popup windows, so we will use the Emacs one.
+
+#+begin_src emacs-lisp
+(use-package pinentry
+  :straight t
+  :after (exwm)
+  :config
+  (setenv "GPG_AGENT_INFO" nil) ;; use emacs pinentry
+  (setq auth-source-debug t)
+
+  (setq epg-gpg-program "gpg2") ;; not necessary
+  (require 'epa-file)
+  (epa-file-enable)
+  (setq epa-pinentry-mode 'loopback)
+  (setq epg-pinentry-mode 'loopback)
+  (pinentry-start)
+  (my/run-in-background "gpgconf --reload gpg-agent"))
+#+end_src
+
+#+begin_src conf-space :tangle ~/.gnupg/gpg-agent.conf
+default-cache-ttl 3600
+max-cache-ttl 3600
+allow-emacs-pinentry
+allow-loopback-pinentry
+#+end_src
+*** Modeline
+Show current workspace in the modeline.
+
+#+begin_src emacs-lisp :noweb-ref exwm-mode-line-config :tangle no
+(defvar my/exwm-mode-line-info "")
+
+(add-to-list 'mode-line-misc-info
+             '(:eval my/exwm-mode-line-info))
+
+(defun my/exwm-mode-line-info-update ()
+  (setq my/exwm-mode-line-info
+        (concat
+         "["
+         (propertize (funcall exwm-workspace-index-map exwm-workspace-current-index)
+                     'face
+                     `(foreground-color . ,(doom-color 'yellow)))
+         "]"))
+  (setq my/exwm-mode-line-info-no-props (funcall exwm-workspace-index-map exwm-workspace-current-index))
+  (force-mode-line-update))
+
+(add-hook 'exwm-workspace-switch-hook #'my/exwm-mode-line-info-update)
+#+end_src
+** Windows
+*** Moving windows
 My functions for managing windows. I initially wrote these to mimic the i3 behavior for my Emacs + i3 integration, but I want to try to keep them for the EXWM config as well to make the transition less painful.
 
 A predicate which checks whether there is space in the given direction:
@@ -347,7 +396,7 @@ And a function to move windows with the following behavior:
      (other-direction
       (evil-move-window dir)))))
 #+end_src
-** Resizing windows
+*** Resizing windows
 Something like this also goes for resizing windows. I'm used to the i3 "mode" for this functionality, and this seems to be a sensible approach.
 
 #+begin_src emacs-lisp
@@ -356,19 +405,24 @@ Something like this also goes for resizing windows. I'm used to the i3 "mode" fo
 (defun my/exwm-resize-window (dir kind &optional value)
   (unless value
     (setq value my/exwm-resize-value))
-  (pcase kind
-    ('shrink
-     (pcase dir
-       ('width
-        (evil-window-decrease-width value))
-       ('height
-        (evil-window-decrease-height value))))
-    ('grow
-     (pcase dir
-       ('width
-        (evil-window-increase-width value))
-       ('height
-        (evil-window-increase-height value))))))
+  (let* ((is-exwm-floating
+          (and (derived-mode-p 'exwm-mode)
+               exwm--floating-frame))
+         (func (if is-exwm-floating
+                   (intern
+                    (concat
+                     "exwm-layout-"
+                     (pcase kind ('shrink "shrink") ('grow "enlarge"))
+                     "-window"
+                     (pcase dir ('height "") ('width "-horizontally"))))
+                 (intern
+                  (concat
+                   "evil-window"
+                   (pcase kind ('shrink "-decrease-") ('grow "-increase-"))
+                   (symbol-name dir))))))
+    (when is-exwm-floating
+      (setq value (* 5 value)))
+    (funcall func value)))
 
 (defhydra my/exwm-resize-hydra (:color pink :hint nil :foreign-keys run)
   "
@@ -383,28 +437,24 @@ _=_: Balance          "
   ("=" balance-windows)
   ("q" nil "quit" :color blue))
 #+end_src
-** App shortcuts
-Also, a transient for shortcuts for the most frequent apps.
-
-I wanted to make the interactive lambda a macro, but this doesn't seem to work the way I expect, so the code has a bit of duplication.
+** Perspectives
 #+begin_src emacs-lisp
-(use-package transient
-  :straight t)
-
-(defun my/run-in-background (command)
-  (let ((command-parts (split-string command "[ ]+")))
-    (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
-
-(transient-define-prefix my/exwm-apps ()
-  ["Apps"
-   ("t" "Termnial (Alacritty)" (lambda () (interactive) (my/run-in-background "alacritty")))
-   ("b" "Browser (Firefox)" (lambda () (interactive) (my/run-in-background "firefox")))
-   ("v" "VK" (lambda () (interactive) (my/run-in-background "vk")))
-   ("s" "Slack" (lambda () (interactive) (my/run-in-background "slack-wrapper")))
-   ("d" "Discord" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord")))
-   ("q" "Quit" transient-quit-one)])
+(use-package perspective-exwm
+  :straight (:host github :repo "SqrtMinusOne/perspective-exwm.el")
+  :config
+  (setq perspective-exwm-override-initial-name
+        '((0 . "misc")
+          (1 . "core")
+          (2 . "browser")
+          (3 . "comms")
+          (4 . "dev")))
+  (general-define-key
+   :keymaps 'perspective-map
+   "e" #'perspective-exwm-move-to-workspace
+   "E" #'perspective-exwm-copy-to-workspace))
 #+end_src
-** Move workspace to another monitor
+** Workspaces
+*** Move workspace to another monitor
 A function to move the current workspace to another monitor.
 
 #+begin_src emacs-lisp
@@ -419,7 +469,7 @@ A function to move the current workspace to another monitor.
                      my/exwm-another-monitor)))
   (exwm-randr-refresh))
 #+end_src
-** Switch to the opposite monitor
+*** Switch to the opposite monitor
 Store the information about which workspace is available on which monitor.
 
 #+begin_src emacs-lisp :noweb-ref exwm-monitor-config :tangle no
@@ -450,83 +500,29 @@ Switch to the opposite monitor. For now, this works only for two monitors becaus
          (mouse-autoselect-window nil))
     (exwm-workspace-switch other)))
 #+end_src
-** Switching buffers
-A single perspective usually has only a handful of EXWM buffers, so here is a function to cycle them.
+** Apps
+*** App shortcuts
+Also, a transient for shortcuts for the most frequent apps.
 
-Those buffers that are visible in another window are highlighted blue and skipped. The current buffer is highlighted yellow.
+I wanted to make the interactive lambda a macro, but this doesn't seem to work the way I expect, so the code has a bit of duplication.
 #+begin_src emacs-lisp
-(defun my/cycle-persp-exwm-buffers (dir)
-  (let* ((current (current-buffer))
-         (ignore-rx (persp--make-ignore-buffer-rx))
-         (visible-buffers '())
-         (exwm-data
-          (cl-loop for buf in (persp-current-buffers)
-                   for is-another = (and (get-buffer-window buf) (not (eq current buf)))
-                   if (and (buffer-live-p buf)
-                           (eq 'exwm-mode (buffer-local-value 'major-mode buf))
-                           (not (string-match-p ignore-rx (buffer-name buf))))
-                   collect buf into all-buffers
-                   and if (not is-another) collect buf into cycle-buffers
-                   finally (return (list all-buffers cycle-buffers))))
-         (all-buffers (nth 0 exwm-data))
-         (cycle-buffers (nth 1 exwm-data))
-         (current-pos (or (cl-position current cycle-buffers) -1)))
-    (if (seq-empty-p cycle-buffers)
-        (message "No EXWM buffers to cycle!")
-      (let* ((next-pos (% (+ current-pos (length cycle-buffers)
-                             (if (eq dir 'forward) 1 -1))
-                          (length cycle-buffers)))
-             (next-buffer (nth next-pos cycle-buffers)))
-        (switch-to-buffer next-buffer)
-        (message
-         "%s"
-         (mapconcat
-          (lambda (buf)
-            (let ((name (string-replace "EXWM :: " "" (buffer-name buf))))
-              (cond
-               ((eq (current-buffer) buf)
-                (concat
-                 "["
-                 (propertize name 'face `(foreground-color . ,(doom-color 'yellow)))
-                 "]"))
-               ((not (member buf cycle-buffers))
-                (concat
-                 "["
-                 (propertize name 'face `(foreground-color . ,(doom-color 'blue)))
-                 "]"))
-               (t (format " %s " name)))))
-          all-buffers
-          " "))))))
-#+end_src
-** Add all EXWM buffers to current perspective
-#+begin_src emacs-lisp
-(defun my/add-exwm-buffers-to-current-perspective ()
-  (interactive)
-  (let ((ignore-rx (persp--make-ignore-buffer-rx)))
-    (cl-loop for buf in (buffer-list)
-             if (and (buffer-live-p buf)
-                     (eq 'exwm-mode (buffer-local-value 'major-mode buf))
-                     (not (string-match-p ignore-rx (buffer-name buf))))
-             do (persp-add-buffer (buffer-name buf)))))
-#+end_src
-** Revive perspectives
-Occasionally the current perspective gets screwed up after a popup. This function attempts to fix it.
+(use-package transient
+  :straight t)
 
-#+begin_src emacs-lisp
-(defun my/exwm-revive-perspectives ()
-  "Make perspectives in the current frame not killed."
-  (interactive)
-  (let ((to-switch nil))
-    (maphash
-     (lambda (_ v)
-       (setf (persp-killed v) nil)
-       (unless to-switch
-         (setq to-switch v)))
-     (frame-parameter nil 'persp--hash))
-    (when to-switch
-      (persp-switch (persp-name to-switch)))))
+(defun my/run-in-background (command)
+  (let ((command-parts (split-string command "[ ]+")))
+    (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
+
+(transient-define-prefix my/exwm-apps ()
+  ["Apps"
+   ("t" "Termnial (Alacritty)" (lambda () (interactive) (my/run-in-background "alacritty")))
+   ("b" "Browser (Firefox)" (lambda () (interactive) (my/run-in-background "firefox")))
+   ("v" "VK" (lambda () (interactive) (my/run-in-background "vk")))
+   ("s" "Slack" (lambda () (interactive) (my/run-in-background "slack-wrapper")))
+   ("d" "Discord" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord")))
+   ("q" "Quit" transient-quit-one)])
 #+end_src
-** Locking up
+*** Locking up
 Run i3lock.
 
 #+begin_src emacs-lisp
@@ -591,6 +587,7 @@ And keybindings that are available in both =char-mode= and =line-mode=:
 
         ;; Fullscreen
         (,(kbd "s-f") . exwm-layout-toggle-fullscreen)
+        (,(kbd "s-F") . exwm-floating-toggle-floating)
 
         ;; Quit
         (,(kbd "s-Q") . evil-quit)
@@ -605,6 +602,8 @@ And keybindings that are available in both =char-mode= and =line-mode=:
 
         ;; Switch buffers
         (,(kbd "s-e") . persp-ivy-switch-buffer)
+        (,(kbd "s-E") . perspective-exwm-switch-perspective)
+
 
         ;; Resize windows
         (,(kbd "s-r") . my/exwm-resize-hydra/body)
@@ -634,8 +633,8 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "s-<tab>") . my/exwm-workspace-switch-monitor)
 
         ;; Cycle EXWM windows in the current perspective
-        (,(kbd "s-[") . (lambda () (interactive) (my/cycle-persp-exwm-buffers 'backward)))
-        (,(kbd "s-]") . (lambda () (interactive) (my/cycle-persp-exwm-buffers 'forward)))
+        (,(kbd "s-[") . perspective-exwm-cycle-exwm-buffers-backward)
+        (,(kbd "s-]") . perspective-exwm-cycle-exwm-buffers-forward)
         (,(kbd "s-o") . ,(my/app-command "rofi -show window"))
 
         ;; 's-N': Switch to certain workspace with Super (Win) plus a number key (0 - 9)
@@ -647,53 +646,35 @@ And keybindings that are available in both =char-mode= and =line-mode=:
                   (number-sequence 0 9))))
 #+end_src
 
-** Pinentry
-The GUI pinentry doesn't work too well with EXWM because of issues with popup windows, so we will use the Emacs one.
-
+A function to apply changes to =exwm-input-global-keys=.
 #+begin_src emacs-lisp
-(use-package pinentry
-  :straight t
-  :after (exwm)
-  :config
-  (setenv "GPG_AGENT_INFO" nil) ;; use emacs pinentry
-  (setq auth-source-debug t)
-
-  (setq epg-gpg-program "gpg2") ;; not necessary
-  (require 'epa-file)
-  (epa-file-enable)
-  (setq epa-pinentry-mode 'loopback)
-  (setq epg-pinentry-mode 'loopback)
-  (pinentry-start)
-  (my/run-in-background "gpgconf --reload gpg-agent"))
+(defun my/exwm-update-global-keys ()
+  (interactive)
+  (setq exwm-input--global-keys nil)
+  (dolist (i exwm-input-global-keys)
+    (exwm-input--set-key (car i) (cdr i)))
+  (when exwm--connection
+    (exwm-input--update-global-prefix-keys)))
 #+end_src
+** Fixes
+*** Catch and report all errors raised when invoking command hooks
+Thanks David! https://github.com/daviwil/exwm/commit/7b1be884124711af0a02eac740bdb69446bc54cc
 
-#+begin_src conf-space :tangle ~/.gnupg/gpg-agent.conf
-default-cache-ttl 3600
-max-cache-ttl 3600
-allow-emacs-pinentry
-allow-loopback-pinentry
-#+end_src
-** Modeline
-Show current workspace in the modeline.
-
-#+begin_src emacs-lisp :noweb-ref exwm-mode-line-config :tangle no
-(defvar my/exwm-mode-line-info "")
-
-(add-to-list 'mode-line-misc-info
-             '(:eval my/exwm-mode-line-info))
-
-(defun my/exwm-mode-line-info-update ()
-  (setq my/exwm-mode-line-info
-        (concat
-         "["
-         (propertize (funcall exwm-workspace-index-map exwm-workspace-current-index)
-                     'face
-                     `(foreground-color . ,(doom-color 'yellow)))
-         "]"))
-  (setq my/exwm-mode-line-info-no-props (funcall exwm-workspace-index-map exwm-workspace-current-index))
-  (force-mode-line-update))
-
-(add-hook 'exwm-workspace-switch-hook #'my/exwm-mode-line-info-update)
+#+begin_src emacs-lisp :noweb-ref exwm-fixes :tangle no
+(defun exwm-input--fake-last-command ()
+  "Fool some packages into thinking there is a change in the buffer."
+  (setq last-command #'exwm-input--noop)
+  (condition-case hook-error
+      (progn
+        (run-hooks 'pre-command-hook)
+        (run-hooks 'post-command-hook))
+    ((error)
+     (exwm--log "Error occurred while running command hooks: %s\n\nBacktrace:\n\n%s"
+                hook-error
+                (with-temp-buffer
+                  (setq-local standard-output (current-buffer))
+                  (backtrace)
+                  (buffer-string))))))
 #+end_src
 ** EXWM config
 And the EXWM config itself.
@@ -733,10 +714,12 @@ And the EXWM config itself.
   <<exwm-monitor-config>>
   <<exwm-keybindings>>
   <<exwm-mode-line-config>>
+  <<exwm-fixes>>
 
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
   (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
 
+  (perspective-exwm-mode)
   (exwm-enable))
 #+end_src
 * i3wm

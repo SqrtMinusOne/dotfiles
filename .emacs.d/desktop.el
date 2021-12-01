@@ -8,6 +8,21 @@
   (when (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
     (call-process "shepherd")))
 
+(use-package pinentry
+  :straight t
+  :after (exwm)
+  :config
+  (setenv "GPG_AGENT_INFO" nil) ;; use emacs pinentry
+  (setq auth-source-debug t)
+
+  (setq epg-gpg-program "gpg2") ;; not necessary
+  (require 'epa-file)
+  (epa-file-enable)
+  (setq epa-pinentry-mode 'loopback)
+  (setq epg-pinentry-mode 'loopback)
+  (pinentry-start)
+  (my/run-in-background "gpgconf --reload gpg-agent"))
+
 (defun my/exwm-direction-exists-p (dir)
   (cl-some (lambda (dir)
           (let ((win (windmove-find-other-window dir)))
@@ -35,19 +50,24 @@
 (defun my/exwm-resize-window (dir kind &optional value)
   (unless value
     (setq value my/exwm-resize-value))
-  (pcase kind
-    ('shrink
-     (pcase dir
-       ('width
-        (evil-window-decrease-width value))
-       ('height
-        (evil-window-decrease-height value))))
-    ('grow
-     (pcase dir
-       ('width
-        (evil-window-increase-width value))
-       ('height
-        (evil-window-increase-height value))))))
+  (let* ((is-exwm-floating
+          (and (derived-mode-p 'exwm-mode)
+               exwm--floating-frame))
+         (func (if is-exwm-floating
+                   (intern
+                    (concat
+                     "exwm-layout-"
+                     (pcase kind ('shrink "shrink") ('grow "enlarge"))
+                     "-window"
+                     (pcase dir ('height "") ('width "-horizontally"))))
+                 (intern
+                  (concat
+                   "evil-window"
+                   (pcase kind ('shrink "-decrease-") ('grow "-increase-"))
+                   (symbol-name dir))))))
+    (when is-exwm-floating
+      (setq value (* 5 value)))
+    (funcall func value)))
 
 (defhydra my/exwm-resize-hydra (:color pink :hint nil :foreign-keys run)
   "
@@ -61,6 +81,31 @@ _=_: Balance          "
   ("l" (lambda () (interactive) (my/exwm-resize-window 'width 'grow)))
   ("=" balance-windows)
   ("q" nil "quit" :color blue))
+
+(use-package perspective-exwm
+  :straight (:host github :repo "SqrtMinusOne/perspective-exwm.el")
+  :config
+  (setq perspective-exwm-override-initial-name
+        '((0 . "misc")
+          (1 . "core")
+          (2 . "browser")
+          (3 . "comms")
+          (4 . "dev")))
+  (general-define-key
+   :keymaps 'perspective-map
+   "e" #'perspective-exwm-move-to-workspace
+   "E" #'perspective-exwm-copy-to-workspace))
+
+(defun my/exwm-workspace-switch-monitor ()
+  (interactive)
+  (if (plist-get exwm-randr-workspace-monitor-plist exwm-workspace-current-index)
+      (setq exwm-randr-workspace-monitor-plist
+            (map-delete exwm-randr-workspace-monitor-plist exwm-workspace-current-index))
+    (setq exwm-randr-workspace-monitor-plist
+          (plist-put exwm-randr-workspace-monitor-plist
+                     exwm-workspace-current-index
+                     my/exwm-another-monitor)))
+  (exwm-randr-refresh))
 
 (use-package transient
   :straight t)
@@ -78,100 +123,17 @@ _=_: Balance          "
    ("d" "Discord" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord")))
    ("q" "Quit" transient-quit-one)])
 
-(defun my/exwm-workspace-switch-monitor ()
-  (interactive)
-  (if (plist-get exwm-randr-workspace-monitor-plist exwm-workspace-current-index)
-      (setq exwm-randr-workspace-monitor-plist
-            (map-delete exwm-randr-workspace-monitor-plist exwm-workspace-current-index))
-    (setq exwm-randr-workspace-monitor-plist
-          (plist-put exwm-randr-workspace-monitor-plist
-                     exwm-workspace-current-index
-                     my/exwm-another-monitor)))
-  (exwm-randr-refresh))
-
-(defun my/cycle-persp-exwm-buffers (dir)
-  (let* ((current (current-buffer))
-         (ignore-rx (persp--make-ignore-buffer-rx))
-         (visible-buffers '())
-         (exwm-data
-          (cl-loop for buf in (persp-current-buffers)
-                   for is-another = (and (get-buffer-window buf) (not (eq current buf)))
-                   if (and (buffer-live-p buf)
-                           (eq 'exwm-mode (buffer-local-value 'major-mode buf))
-                           (not (string-match-p ignore-rx (buffer-name buf))))
-                   collect buf into all-buffers
-                   and if (not is-another) collect buf into cycle-buffers
-                   finally (return (list all-buffers cycle-buffers))))
-         (all-buffers (nth 0 exwm-data))
-         (cycle-buffers (nth 1 exwm-data))
-         (current-pos (or (cl-position current cycle-buffers) -1)))
-    (if (seq-empty-p cycle-buffers)
-        (message "No EXWM buffers to cycle!")
-      (let* ((next-pos (% (+ current-pos (length cycle-buffers)
-                             (if (eq dir 'forward) 1 -1))
-                          (length cycle-buffers)))
-             (next-buffer (nth next-pos cycle-buffers)))
-        (switch-to-buffer next-buffer)
-        (message
-         "%s"
-         (mapconcat
-          (lambda (buf)
-            (let ((name (string-replace "EXWM :: " "" (buffer-name buf))))
-              (cond
-               ((eq (current-buffer) buf)
-                (concat
-                 "["
-                 (propertize name 'face `(foreground-color . ,(doom-color 'yellow)))
-                 "]"))
-               ((not (member buf cycle-buffers))
-                (concat
-                 "["
-                 (propertize name 'face `(foreground-color . ,(doom-color 'blue)))
-                 "]"))
-               (t (format " %s " name)))))
-          all-buffers
-          " "))))))
-
-(defun my/add-exwm-buffers-to-current-perspective ()
-  (interactive)
-  (let ((ignore-rx (persp--make-ignore-buffer-rx)))
-    (cl-loop for buf in (buffer-list)
-             if (and (buffer-live-p buf)
-                     (eq 'exwm-mode (buffer-local-value 'major-mode buf))
-                     (not (string-match-p ignore-rx (buffer-name buf))))
-             do (persp-add-buffer (buffer-name buf)))))
-
-(defun my/exwm-revive-perspectives ()
-  "Make perspectives in the current frame not killed."
-  (interactive)
-  (let ((to-switch nil))
-    (maphash
-     (lambda (_ v)
-       (setf (persp-killed v) nil)
-       (unless to-switch
-         (setq to-switch v)))
-     (frame-parameter nil 'persp--hash))
-    (when to-switch
-      (persp-switch (persp-name to-switch)))))
-
 (defun my/exwm-lock ()
   (interactive)
   (my/run-in-background "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"))
 
-(use-package pinentry
-  :straight t
-  :after (exwm)
-  :config
-  (setenv "GPG_AGENT_INFO" nil) ;; use emacs pinentry
-  (setq auth-source-debug t)
-
-  (setq epg-gpg-program "gpg2") ;; not necessary
-  (require 'epa-file)
-  (epa-file-enable)
-  (setq epa-pinentry-mode 'loopback)
-  (setq epg-pinentry-mode 'loopback)
-  (pinentry-start)
-  (my/run-in-background "gpgconf --reload gpg-agent"))
+(defun my/exwm-update-global-keys ()
+  (interactive)
+  (setq exwm-input--global-keys nil)
+  (dolist (i exwm-input-global-keys)
+    (exwm-input--set-key (car i) (cdr i)))
+  (when exwm--connection
+    (exwm-input--update-global-prefix-keys)))
 
 (defun my/exwm-init ()
   (exwm-workspace-switch 1)
@@ -266,6 +228,7 @@ _=_: Balance          "
   
           ;; Fullscreen
           (,(kbd "s-f") . exwm-layout-toggle-fullscreen)
+          (,(kbd "s-F") . exwm-floating-toggle-floating)
   
           ;; Quit
           (,(kbd "s-Q") . evil-quit)
@@ -280,6 +243,8 @@ _=_: Balance          "
   
           ;; Switch buffers
           (,(kbd "s-e") . persp-ivy-switch-buffer)
+          (,(kbd "s-E") . perspective-exwm-switch-perspective)
+  
   
           ;; Resize windows
           (,(kbd "s-r") . my/exwm-resize-hydra/body)
@@ -309,8 +274,8 @@ _=_: Balance          "
           (,(kbd "s-<tab>") . my/exwm-workspace-switch-monitor)
   
           ;; Cycle EXWM windows in the current perspective
-          (,(kbd "s-[") . (lambda () (interactive) (my/cycle-persp-exwm-buffers 'backward)))
-          (,(kbd "s-]") . (lambda () (interactive) (my/cycle-persp-exwm-buffers 'forward)))
+          (,(kbd "s-[") . perspective-exwm-cycle-exwm-buffers-backward)
+          (,(kbd "s-]") . perspective-exwm-cycle-exwm-buffers-forward)
           (,(kbd "s-o") . ,(my/app-command "rofi -show window"))
   
           ;; 's-N': Switch to certain workspace with Super (Win) plus a number key (0 - 9)
@@ -337,8 +302,23 @@ _=_: Balance          "
     (force-mode-line-update))
   
   (add-hook 'exwm-workspace-switch-hook #'my/exwm-mode-line-info-update)
+  (defun exwm-input--fake-last-command ()
+    "Fool some packages into thinking there is a change in the buffer."
+    (setq last-command #'exwm-input--noop)
+    (condition-case hook-error
+        (progn
+          (run-hooks 'pre-command-hook)
+          (run-hooks 'post-command-hook))
+      ((error)
+       (exwm--log "Error occurred while running command hooks: %s\n\nBacktrace:\n\n%s"
+                  hook-error
+                  (with-temp-buffer
+                    (setq-local standard-output (current-buffer))
+                    (backtrace)
+                    (buffer-string))))))
 
   (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
   (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
 
+  (perspective-exwm-mode)
   (exwm-enable))
