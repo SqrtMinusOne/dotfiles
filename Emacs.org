@@ -121,9 +121,6 @@ My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an aweso
       - [[#improved-stack-frame-switching][Improved stack frame switching]]
       - [[#debug-templates][Debug templates]]
     - [[#off-tabnine][(OFF) TabNine]]
-    - [[#off-code-compass][(OFF) Code Compass]]
-      - [[#dependencies][Dependencies]]
-      - [[#plugin][Plugin]]
     - [[#reformatter][Reformatter]]
     - [[#general-additional-config][General additional config]]
   - [[#web-development][Web development]]
@@ -133,9 +130,6 @@ My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an aweso
     - [[#javascript][JavaScript]]
     - [[#jest][Jest]]
     - [[#web-mode][web-mode]]
-    - [[#off-vuejs][(OFF) Vue.js]]
-      - [[#mmm-mode-fix][mmm-mode fix]]
-    - [[#off-svelte][(OFF) Svelte]]
     - [[#scss][SCSS]]
     - [[#php][PHP]]
   - [[#latex][LaTeX]]
@@ -183,6 +177,7 @@ My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an aweso
   - [[#lua][Lua]]
   - [[#json][JSON]]
   - [[#sql][SQL]]
+  - [[#sparql][SPARQL]]
   - [[#yaml][YAML]]
   - [[#env][.env]]
   - [[#csv][CSV]]
@@ -291,21 +286,19 @@ My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an aweso
     - [[#guix][Guix]]
   - [[#productivity][Productivity]]
     - [[#pomm][pomm]]
-    - [[#off-pomidor][(OFF) Pomidor]]
-    - [[#calendar][Calendar]]
-  - [[#fun][Fun]]
-    - [[#discord-integration][Discord integration]]
-    - [[#snow][Snow]]
-    - [[#zone][Zone]]
 - [[#guix-settings][Guix settings]]
 :END:
 * Some remarks
 I decided not to keep configs for features that I do not use anymore, because this config is already huge. But here are last commits which had these feature presented.
 
-| Feature    | Last commit                              |
-|------------+------------------------------------------|
-| tab-bar.el | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
-| spaceline  | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
+| Feature      | Last commit                              |
+|--------------+------------------------------------------|
+| tab-bar.el   | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
+| spaceline    | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
+| code compass | 8594d6f53e42c70bbf903e168607841854818a38 |
+| vue-mode     | 8594d6f53e42c70bbf903e168607841854818a38 |
+| svelte-mode  | 8594d6f53e42c70bbf903e168607841854818a38 |
+| pomidor      | 8594d6f53e42c70bbf903e168607841854818a38 |
 * Bootstrap
 Setting up the environment, performance tuning and a few basic settings.
 
@@ -1377,7 +1370,9 @@ References:
                counsel-recentf
                counsel-buffer-or-recentf
                proced-filter-interactive
-               proced-sort-interactive))
+               proced-sort-interactive
+               my/exwm-switch-perspective
+               perspective-exwm-switch-perspective))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 #+end_src
@@ -2254,10 +2249,10 @@ Some debug templates I frequently use.
          :program "${workspaceFolder}/dist/bin/www.js")))
 
 #+end_src
-*** OFF (OFF) TabNine
+*** TabNine
 A ML-based autocompletion system.
 
-More often than not gives really good results, but is slow as hell & consumes a lot of RAM. Also, LSP-provided completions were more useful in my experience.
+More often than not gives +really+ somewhat good results, but is slow as hell & consumes a lot of RAM. Also, LSP-provided completions were more useful in my experience.
 
 References:
 - [[https://www.tabnine.com/][TabNine Homepage]]
@@ -2265,37 +2260,19 @@ References:
 (use-package company-tabnine
   :straight t
   :if (not my/lowpower)
-  :after company
-  :config
-  (add-to-list 'company-backends #'company-tabnine))
-#+end_src
-*** OFF (OFF) Code Compass
-A set of code analyzing tools.
+  :after company)
 
-References:
-- [[https://github.com/ag91/code-compass][code-compass repo]]
 
-**** Dependencies
-#+begin_src emacs-lisp :tangle no
-(use-package async
-  :straight t)
-(use-package dash
-  :straight t)
-(use-package f
-  :straight t)
-(use-package s
-  :straight t)
-(use-package simple-httpd
-  :straight t)
-#+end_src
-**** Plugin
-#+begin_src emacs-lisp :tangle no
-(use-package code-compass
-  :straight (
-  :repo "ag91/code-compass"
-  :files ("code-compass.el")
-  :branch "main"
-  ))
+(define-minor-mode company-tabnine-mode
+  "Use company-tabnine"
+  :after-hook
+  (progn
+    (if company-tabnine-mode
+        (progn
+          (make-local-variable 'company-backends)
+          (add-to-list 'company-backends 'company-tabnine))
+      (setq company-backends (remove 'company-tabnine company-backends))
+      (kill-local-variable company-backends))))
 #+end_src
 *** Reformatter
 A general-purpose package to run formattters on files. While the most popular formatters are already packaged for Emacs, those that aren't can be invoked with this package.
@@ -2454,83 +2431,6 @@ Vue settings
     (setq-local web-mode-script-padding 0)))
 
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
-#+end_src
-*** OFF (OFF) Vue.js
-#+begin_src emacs-lisp :noweb yes
-(use-package vue-mode
-  :straight t
-  :disabled
-  :mode "\\.vue\\'"
-  :config
-  (add-hook 'vue-mode-hook #'hs-minor-mode)
-  (add-hook 'vue-mode-hook #'smartparens-mode)
-  (my/set-smartparens-indent 'vue-mode)
-  (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
-  <<override-mmm-mode-func>>)
-
-(with-eval-after-load 'editorconfig
-  (add-to-list 'editorconfig-indentation-alist
-               '(vue-mode css-indent-offset
-                          js-indent-level
-                          sgml-basic-offset
-                          ssass-tab-width
-                          typescript-indent-level
-                          emmet-indentation
-                          vue-html-extra-indent)))
-#+end_src
-**** mmm-mode fix
-References:
-- [[https://github.com/purcell/mmm-mode/issues/112][mmm-mode issue]]
-
-#+begin_src emacs-lisp :noweb-ref override-mmm-mode-func :tangle no
-(defun mmm-syntax-propertize-function (start stop)
-  (let ((saved-mode mmm-current-submode)
-        (saved-ovl  mmm-current-overlay))
-    (mmm-save-changed-local-variables
-     mmm-current-submode mmm-current-overlay)
-    (unwind-protect
-        (mapc (lambda (elt)
-                (let* ((mode (car elt))
-                       (func (get mode 'mmm-syntax-propertize-function))
-                       (beg (cadr elt)) (end (nth 2 elt))
-                       (ovl (nth 3 elt))
-                       syntax-ppss-cache
-                       syntax-ppss-last)
-                  (goto-char beg)
-                  (mmm-set-current-pair mode ovl)
-                  (mmm-set-local-variables mode mmm-current-overlay)
-                  (save-restriction
-                    (if mmm-current-overlay
-                        (narrow-to-region (overlay-start mmm-current-overlay)
-                                          (overlay-end mmm-current-overlay))
-                      (narrow-to-region beg end))
-                    (cond
-                     (func
-                      (funcall func beg end))
-                     (font-lock-syntactic-keywords
-                      (let ((syntax-propertize-function nil))
-                        (font-lock-fontify-syntactic-keywords-region beg end))))
-                    (run-hook-with-args 'mmm-after-syntax-propertize-functions
-                                        mmm-current-overlay mode beg end))))
-              (mmm-regions-in start stop))
-      (mmm-set-current-pair saved-mode saved-ovl)
-      (mmm-set-local-variables (or saved-mode mmm-primary-mode) saved-ovl))))
-#+end_src
-*** OFF (OFF) Svelte
-Had some problems with this and tree-sitter. Web-mode seems to be doing better.
-
-#+begin_src emacs-lisp
-(use-package svelte-mode
-  :straight t
-  :mode "\\.svelte\\'"
-  :disabled
-  :config
-  (add-hook 'svelte-mode-hook 'my/set-flycheck-eslint)
-  (add-hook 'svelte-mode-hook #'smartparens-mode)
-  (my/set-smartparens-indent 'svelte-mode)
-  ;; I have my own Emmet
-  (setq lsp-svelte-plugin-css-completions-emmet nil)
-  (setq lsp-svelte-plugin-html-completions-emmet nil))
 #+end_src
 *** SCSS
 #+begin_src emacs-lisp
@@ -3317,6 +3217,11 @@ So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL que
   :keymaps '(sql-mode-map)
   "rr" #'sqlformat-buffer)
 #+end_src
+** SPARQL
+#+begin_src emacs-lisp
+(use-package sparql-mode
+  :straight t)
+#+end_src
 ** YAML
 #+begin_src emacs-lisp
 (use-package yaml-mode
@@ -3515,7 +3420,8 @@ Enable languages
    (shell . t)
    (plantuml . t)
    (octave . t)
-   (jupyter . t)))
+   (jupyter . t)
+   (sparql . t)))
 
 (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
 #+end_src
@@ -6033,115 +5939,6 @@ My package for doing Pomodoro timer.
   (setq alert-default-style 'libnotify)
   (add-hook 'pomm-on-tick-hook 'pomm-update-mode-line-string)
   (add-hook 'pomm-on-status-changed-hook 'pomm-update-mode-line-string))
-#+end_src
-*** OFF (OFF) Pomidor
-A simple pomodoro technique timer.
-
-Disabled it in favour of my own package.
-
-#+begin_src emacs-lisp
-(use-package pomidor
-  :straight t
-  :disabled
-  :commands (pomidor)
-  :init
-  (my-leader-def "aP" #'pomidor)
-  :config
-  (setq pomidor-sound-tick nil)
-  (setq pomidor-sound-tack nil)
-  (general-define-key
-   :states '(normal)
-   :keymaps 'pomidor-mode-map
-   (kbd "q") #'quit-window
-   (kbd "Q") #'pomidor-quit
-   (kbd "R") #'pomidor-reset
-   (kbd "h") #'pomidor-hold
-   (kbd "H") #'pomidor-unhold
-   (kbd "RET") #'pomidor-stop
-   (kbd "M-RET") #'pomidor-break))
-#+end_src
-*** Calendar
-Emacs' built-in calendar. Can even calculate sunrise and sunset times.
-
-#+begin_src emacs-lisp
-(setq calendar-date-style 'iso) ;; YYYY/mm/dd
-(setq calendar-week-start-day 1)
-(setq calendar-time-display-form '(24-hours ":" minutes))
-
-(setq calendar-latitude 59.9375)
-(setq calendar-longitude 30.308611)
-#+end_src
-** Fun
-*** Discord integration
-Integration with Discord. Shows which file is being edited in Emacs.
-
-In order for this to work in Guix, a service is necessary - [[file:Desktop.org::*Discord rich presence][Discord rich presence]].
-
-Some functions to override the displayed message:
-#+begin_src emacs-lisp
-(defun my/elcord-mask-buffer-name (name)
-  (cond
-   ((string-match-p (rx bos (? "CAPTURE-") (= 14 num) "-" (* not-newline) ".org" eos) name)
-    "<ORG-ROAM>")
-   ((string-match-p (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos) name)
-    "<ORG-JOURNAL>")
-   ((string-match-p (rx bos "EXWM") name)
-    "<EXWM>")
-   (t name)))
-
-(defun my/elcord-buffer-details-format-functions ()
-  (format "Editing %s" (my/elcord-mask-buffer-name (buffer-name))))
-
-(defun my/elcord-update-presence-mask-advice (r)
-  (list (my/elcord-mask-buffer-name (nth 0 r)) (nth 1 r)))
-#+end_src
-
-And the package configuration:
-#+begin_src emacs-lisp
-(use-package elcord
-  :straight t
-  :if (and (or
-            (string= (system-name) "indigo")
-            (string= (system-name) "eminence"))
-           (not my/slow-ssh)
-           (not my/remote-server))
-  :config
-  (setq elcord-buffer-details-format-function #'my/elcord-buffer-details-format-functions)
-  (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)
-  (elcord-mode))
-#+end_src
-*** Snow
-#+begin_src emacs-lisp
-(use-package snow
-  :straight (:repo "alphapapa/snow.el" :host github)
-  :commands (snow))
-#+end_src
-*** Zone
-#+begin_src emacs-lisp
-(use-package zone
-  :ensure nil
-  :config
-  (setq original-zone-programs (copy-sequence zone-programs)))
-
-(defun my/zone-with-select ()
-  (interactive)
-  (ivy-read "Zone programs"
-            (cl-pairlis
-             (cl-mapcar 'symbol-name original-zone-programs)
-             original-zone-programs)
-            :action (lambda (elem)
-                      (setq zone-programs (vector (cdr elem)))
-                      (zone))))
-#+end_src
-
-Also, a function to copy a URL to the video under cursor.
-#+begin_src emacs-lisp
-(defun my/ytel-kill-url ()
-  (interactive)
-  (kill-new
-   (concat
-    "https://www.youtube.com/watch?v="
-    (ytel-video-id (ytel-get-current-video)))))
 #+end_src
 * Guix settings
 | Guix dependency     | Description                   |

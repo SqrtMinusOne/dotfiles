@@ -1,5 +1,3 @@
-(setq use-package-verbose t)
-
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -1423,70 +1421,6 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
 
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 
-(use-package vue-mode
-  :straight t
-  :disabled
-  :mode "\\.vue\\'"
-  :config
-  (add-hook 'vue-mode-hook #'hs-minor-mode)
-  (add-hook 'vue-mode-hook #'smartparens-mode)
-  (my/set-smartparens-indent 'vue-mode)
-  (add-hook 'vue-mode-hook (lambda () (set-face-background 'mmm-default-submode-face nil)))
-  (defun mmm-syntax-propertize-function (start stop)
-    (let ((saved-mode mmm-current-submode)
-          (saved-ovl  mmm-current-overlay))
-      (mmm-save-changed-local-variables
-       mmm-current-submode mmm-current-overlay)
-      (unwind-protect
-          (mapc (lambda (elt)
-                  (let* ((mode (car elt))
-                         (func (get mode 'mmm-syntax-propertize-function))
-                         (beg (cadr elt)) (end (nth 2 elt))
-                         (ovl (nth 3 elt))
-                         syntax-ppss-cache
-                         syntax-ppss-last)
-                    (goto-char beg)
-                    (mmm-set-current-pair mode ovl)
-                    (mmm-set-local-variables mode mmm-current-overlay)
-                    (save-restriction
-                      (if mmm-current-overlay
-                          (narrow-to-region (overlay-start mmm-current-overlay)
-                                            (overlay-end mmm-current-overlay))
-                        (narrow-to-region beg end))
-                      (cond
-                       (func
-                        (funcall func beg end))
-                       (font-lock-syntactic-keywords
-                        (let ((syntax-propertize-function nil))
-                          (font-lock-fontify-syntactic-keywords-region beg end))))
-                      (run-hook-with-args 'mmm-after-syntax-propertize-functions
-                                          mmm-current-overlay mode beg end))))
-                (mmm-regions-in start stop))
-        (mmm-set-current-pair saved-mode saved-ovl)
-        (mmm-set-local-variables (or saved-mode mmm-primary-mode) saved-ovl)))))
-
-(with-eval-after-load 'editorconfig
-  (add-to-list 'editorconfig-indentation-alist
-               '(vue-mode css-indent-offset
-                          js-indent-level
-                          sgml-basic-offset
-                          ssass-tab-width
-                          typescript-indent-level
-                          emmet-indentation
-                          vue-html-extra-indent)))
-
-(use-package svelte-mode
-  :straight t
-  :mode "\\.svelte\\'"
-  :disabled
-  :config
-  (add-hook 'svelte-mode-hook 'my/set-flycheck-eslint)
-  (add-hook 'svelte-mode-hook #'smartparens-mode)
-  (my/set-smartparens-indent 'svelte-mode)
-  ;; I have my own Emmet
-  (setq lsp-svelte-plugin-css-completions-emmet nil)
-  (setq lsp-svelte-plugin-html-completions-emmet nil))
-
 (add-hook 'scss-mode-hook #'smartparens-mode)
 (add-hook 'scss-mode-hook #'hs-minor-mode)
 (my/set-smartparens-indent 'scss-mode)
@@ -2208,6 +2142,9 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   :keymaps '(sql-mode-map)
   "rr" #'sqlformat-buffer)
 
+(use-package sparql-mode
+  :straight t)
+
 (use-package yaml-mode
   :straight t
   :mode "\\.yml\\'"
@@ -2281,7 +2218,8 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
        (shell . t)
        (plantuml . t)
        (octave . t)
-       (jupyter . t)))
+       (jupyter . t)
+       (sparql . t)))
     
     (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
     (org-babel-jupyter-override-src-block "python")
@@ -4130,84 +4068,3 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (setq alert-default-style 'libnotify)
   (add-hook 'pomm-on-tick-hook 'pomm-update-mode-line-string)
   (add-hook 'pomm-on-status-changed-hook 'pomm-update-mode-line-string))
-
-(use-package pomidor
-  :straight t
-  :disabled
-  :commands (pomidor)
-  :init
-  (my-leader-def "aP" #'pomidor)
-  :config
-  (setq pomidor-sound-tick nil)
-  (setq pomidor-sound-tack nil)
-  (general-define-key
-   :states '(normal)
-   :keymaps 'pomidor-mode-map
-   (kbd "q") #'quit-window
-   (kbd "Q") #'pomidor-quit
-   (kbd "R") #'pomidor-reset
-   (kbd "h") #'pomidor-hold
-   (kbd "H") #'pomidor-unhold
-   (kbd "RET") #'pomidor-stop
-   (kbd "M-RET") #'pomidor-break))
-
-(setq calendar-date-style 'iso) ;; YYYY/mm/dd
-(setq calendar-week-start-day 1)
-(setq calendar-time-display-form '(24-hours ":" minutes))
-
-(setq calendar-latitude 59.9375)
-(setq calendar-longitude 30.308611)
-
-(defun my/elcord-mask-buffer-name (name)
-  (cond
-   ((string-match-p (rx bos (? "CAPTURE-") (= 14 num) "-" (* not-newline) ".org" eos) name)
-    "<ORG-ROAM>")
-   ((string-match-p (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos) name)
-    "<ORG-JOURNAL>")
-   ((string-match-p (rx bos "EXWM") name)
-    "<EXWM>")
-   (t name)))
-
-(defun my/elcord-buffer-details-format-functions ()
-  (format "Editing %s" (my/elcord-mask-buffer-name (buffer-name))))
-
-(defun my/elcord-update-presence-mask-advice (r)
-  (list (my/elcord-mask-buffer-name (nth 0 r)) (nth 1 r)))
-
-(use-package elcord
-  :straight t
-  :if (and (or
-            (string= (system-name) "indigo")
-            (string= (system-name) "eminence"))
-           (not my/slow-ssh)
-           (not my/remote-server))
-  :config
-  (setq elcord-buffer-details-format-function #'my/elcord-buffer-details-format-functions)
-  (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)
-  (elcord-mode))
-
-(use-package snow
-  :straight (:repo "alphapapa/snow.el" :host github)
-  :commands (snow))
-
-(use-package zone
-  :ensure nil
-  :config
-  (setq original-zone-programs (copy-sequence zone-programs)))
-
-(defun my/zone-with-select ()
-  (interactive)
-  (ivy-read "Zone programs"
-            (cl-pairlis
-             (cl-mapcar 'symbol-name original-zone-programs)
-             original-zone-programs)
-            :action (lambda (elem)
-                      (setq zone-programs (vector (cdr elem)))
-                      (zone))))
-
-(defun my/ytel-kill-url ()
-  (interactive)
-  (kill-new
-   (concat
-    "https://www.youtube.com/watch?v="
-    (ytel-video-id (ytel-get-current-video)))))
