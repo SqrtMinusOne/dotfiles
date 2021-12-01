@@ -28,17 +28,17 @@ gright = 
 ; Glyphs:1 ends here
 
 ; [[file:../../Desktop.org::*Modules][Modules:4]]
-[module/glyph-green--light-yellow]
+[module/glyph-light-cyan--cyan]
 type = custom/text
-content-background = ${colors.green}
-content-foreground = ${colors.light-yellow}
+content-background = ${colors.light-cyan}
+content-foreground = ${colors.cyan}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-red--green]
+[module/glyph-magenta--light-cyan]
 type = custom/text
-content-background = ${colors.red}
-content-foreground = ${colors.green}
+content-background = ${colors.magenta}
+content-foreground = ${colors.light-cyan}
 content = ${glyph.gright}
 content-font = 5
 
@@ -385,9 +385,9 @@ adapter = ADP0
 
 time-format = %H:%M
 format-discharging = <ramp-capacity> <label-discharging>
-format-discharging-background = ${colors.green}
-format-charging-background = ${colors.green}
-format-full-background = ${colors.green}
+format-discharging-background = ${colors.light-cyan}
+format-charging-background = ${colors.light-cyan}
+format-full-background = ${colors.light-cyan}
 label-discharging = %percentage%% %time%
 label-charging =  %percentage%% %time%
 

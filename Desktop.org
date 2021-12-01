@@ -1354,13 +1354,13 @@ So, here is a table with all modules.
 |-------+-------------+---------------+-------|
 |     1 | pulseaudio  | light-magenta | +     |
 |     2 | mpd         | magenta       | +     |
+|     9 | battery     | light-cyan    | +     |
 |     3 | cpu         | cyan          | +     |
 |     4 | ram-memory  | light-green   | +     |
 |     5 | swap-memory | green         | +     |
 |     6 | network     | light-red     | +     |
 |     7 | openvpn     | light-red     |       |
 |     8 | xkeyboard   | red           | +     |
-|     9 | battery     | green         | +     |
 |    10 | weather     | light-yellow  | +     |
 |    12 | sun         | yellow        | +     |
 |    13 | aw-afk      | light-blue    | +     |
