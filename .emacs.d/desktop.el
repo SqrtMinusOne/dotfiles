@@ -200,6 +200,8 @@ _=_: Balance          "
    :keymaps '(exwm-mode-map)
    "C-q" 'exwm-input-send-next-key
    "<print>" (my/app-command "flameshot gui")
+   "<mode-line> s-<mouse-4>" 'perspective-exwm-cycle-exwm-buffers-backward
+   "<mode-line> s-<mouse-5>" 'perspective-exwm-cycle-exwm-buffers-forward
    "M-x" 'counsel-M-x
    "M-SPC" (general-key "SPC"))
   (setq exwm-input-simulation-keys `((,(kbd "M-w") . ,(kbd "C-w"))
@@ -243,8 +245,7 @@ _=_: Balance          "
   
           ;; Switch buffers
           (,(kbd "s-e") . persp-ivy-switch-buffer)
-          (,(kbd "s-E") . perspective-exwm-switch-perspective)
-  
+          (,(kbd "s-E") . my/persp-ivy-switch-buffer-other-window)
   
           ;; Resize windows
           (,(kbd "s-r") . my/exwm-resize-hydra/body)
@@ -273,9 +274,12 @@ _=_: Balance          "
           (,(kbd "s-W") . exwm-workspace-move-window)
           (,(kbd "s-<tab>") . my/exwm-workspace-switch-monitor)
   
-          ;; Cycle EXWM windows in the current perspective
+          ;; Perspectives
           (,(kbd "s-[") . perspective-exwm-cycle-exwm-buffers-backward)
           (,(kbd "s-]") . perspective-exwm-cycle-exwm-buffers-forward)
+          (,(kbd "s-<mouse-4>") . perspective-exwm-cycle-exwm-buffers-backward)
+          (,(kbd "s-<mouse-5>") . perspective-exwm-cycle-exwm-buffers-forward)
+          (,(kbd "s-`") . perspective-exwm-switch-perspective)
           (,(kbd "s-o") . ,(my/app-command "rofi -show window"))
   
           ;; 's-N': Switch to certain workspace with Super (Win) plus a number key (0 - 9)

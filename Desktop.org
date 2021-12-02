@@ -342,7 +342,7 @@ allow-emacs-pinentry
 allow-loopback-pinentry
 #+end_src
 *** Modeline
-Show current workspace in the modeline.
+Show the current workspace in the modeline.
 
 #+begin_src emacs-lisp :noweb-ref exwm-mode-line-config :tangle no
 (defvar my/exwm-mode-line-info "")
@@ -364,6 +364,8 @@ Show current workspace in the modeline.
 (add-hook 'exwm-workspace-switch-hook #'my/exwm-mode-line-info-update)
 #+end_src
 ** Windows
+A bunch of functions related to managing windows in EXWM
+
 *** Moving windows
 My functions for managing windows. I initially wrote these to mimic the i3 behavior for my Emacs + i3 integration, but I want to try to keep them for the EXWM config as well to make the transition less painful.
 
@@ -438,6 +440,11 @@ _=_: Balance          "
   ("q" nil "quit" :color blue))
 #+end_src
 ** Perspectives
+My package that integrates perspective.el with EXWM.
+
+References:
+- [[https://github.com/SqrtMinusOne/perspective-exwm.el][perspective-exwm.el repo]]
+
 #+begin_src emacs-lisp
 (use-package perspective-exwm
   :straight (:host github :repo "SqrtMinusOne/perspective-exwm.el")
@@ -502,7 +509,7 @@ Switch to the opposite monitor. For now, this works only for two monitors becaus
 #+end_src
 ** Apps
 *** App shortcuts
-Also, a transient for shortcuts for the most frequent apps.
+A transient for shortcuts for the most frequent apps.
 
 I wanted to make the interactive lambda a macro, but this doesn't seem to work the way I expect, so the code has a bit of duplication.
 #+begin_src emacs-lisp
@@ -551,6 +558,8 @@ Also other local keybindings, that are also available only in =line-mode=:
  :keymaps '(exwm-mode-map)
  "C-q" 'exwm-input-send-next-key
  "<print>" (my/app-command "flameshot gui")
+ "<mode-line> s-<mouse-4>" 'perspective-exwm-cycle-exwm-buffers-backward
+ "<mode-line> s-<mouse-5>" 'perspective-exwm-cycle-exwm-buffers-forward
  "M-x" 'counsel-M-x
  "M-SPC" (general-key "SPC"))
 #+end_src
@@ -602,8 +611,7 @@ And keybindings that are available in both =char-mode= and =line-mode=:
 
         ;; Switch buffers
         (,(kbd "s-e") . persp-ivy-switch-buffer)
-        (,(kbd "s-E") . perspective-exwm-switch-perspective)
-
+        (,(kbd "s-E") . my/persp-ivy-switch-buffer-other-window)
 
         ;; Resize windows
         (,(kbd "s-r") . my/exwm-resize-hydra/body)
@@ -632,9 +640,12 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "s-W") . exwm-workspace-move-window)
         (,(kbd "s-<tab>") . my/exwm-workspace-switch-monitor)
 
-        ;; Cycle EXWM windows in the current perspective
+        ;; Perspectives
         (,(kbd "s-[") . perspective-exwm-cycle-exwm-buffers-backward)
         (,(kbd "s-]") . perspective-exwm-cycle-exwm-buffers-forward)
+        (,(kbd "s-<mouse-4>") . perspective-exwm-cycle-exwm-buffers-backward)
+        (,(kbd "s-<mouse-5>") . perspective-exwm-cycle-exwm-buffers-forward)
+        (,(kbd "s-`") . perspective-exwm-switch-perspective)
         (,(kbd "s-o") . ,(my/app-command "rofi -show window"))
 
         ;; 's-N': Switch to certain workspace with Super (Win) plus a number key (0 - 9)
@@ -658,7 +669,7 @@ A function to apply changes to =exwm-input-global-keys=.
 #+end_src
 ** Fixes
 *** Catch and report all errors raised when invoking command hooks
-Thanks David! https://github.com/daviwil/exwm/commit/7b1be884124711af0a02eac740bdb69446bc54cc
+- *CREDIT*: Thanks David! https://github.com/daviwil/exwm/commit/7b1be884124711af0a02eac740bdb69446bc54cc
 
 #+begin_src emacs-lisp :noweb-ref exwm-fixes :tangle no
 (defun exwm-input--fake-last-command ()
