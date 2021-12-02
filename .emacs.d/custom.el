@@ -20,7 +20,7 @@
  '(sp-autoskip-opening-pair t)
  '(sp-highlight-pair-overlay nil)
  '(wakatime-python-bin nil)
- '(warning-suppress-types '((comp) (:warning) (lsp-mode) (comp))))
+ '(warning-suppress-types '((emacs) (comp) (:warning) (lsp-mode) (comp))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

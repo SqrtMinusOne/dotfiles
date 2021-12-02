@@ -675,7 +675,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                counsel-recentf
                counsel-buffer-or-recentf
                proced-filter-interactive
-               proced-sort-interactive))
+               proced-sort-interactive
+               perspective-exwm-switch-perspective
+               my/persp-ivy-switch-buffer-other-window))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 
@@ -733,40 +735,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
              helpful-command))
 
 (my-leader-def
-  :infix "h"
-  "" '(:which-key "help")
-  "RET" 'view-order-manuals
-  "." 'display-local-help
-  "?" 'help-for-help
-  "C" 'describe-coding-system
-  "F" 'Info-goto-emacs-command-node
-  "I" 'describe-input-method
-  "K" 'Info-goto-emacs-key-command-node
-  "L" 'describe-language-environment
-  "P" 'describe-package
-  "S" 'info-lookup-symbol
-  "a" 'helm-apropos
-  "b" 'describe-bindings
-  "c" 'describe-key-briefly
-  "d" 'apropos-documentation
-  "e" 'view-echo-area-messages
-  "f" 'helpful-function
-  "g" 'describe-gnu-project
-  "h" 'view-hello-file
-  "i" 'info
-  "k" 'helpful-key
-  "l" 'view-lossage
-  "m" 'describe-mode
-  "n" 'view-emacs-news
-  "o" 'describe-symbol
-  "p" 'finder-by-keyword
-  "q" 'help-quit
-  "r" 'info-emacs-manual
-  "s" 'describe-syntax
-  "t" 'help-with-tutorial
-  "v" 'helpful-variable
-  "w" 'where-is
-  "<f1>" 'help-for-help)
+  "h" '(:keymap help-map :which-key "help"))
+
+(general-define-key
+ :keymaps 'help-map
+ "f" 'helpful-function
+ "k" 'helpful-key
+ "v" 'helpful-variable
+ "o" 'helpful-symbol)
 
 (use-package wakatime-mode
   :straight (:host github :repo "SqrtMinusOne/wakatime-mode")
@@ -1002,6 +978,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (call-interactively #'persp-switch)
     (persp-add-buffer (buffer-name buffer))
     (switch-to-buffer buffer)))
+
+(defun my/persp-ivy-switch-buffer-other-window (arg)
+  (interactive "P")
+  (declare-function ivy-switch-buffer-other-window "ivy.el")
+  (persp--switch-buffer-ivy-counsel-helper
+   arg
+   (lambda ()
+     (ivy-read "Switch to buffer in other window: " #'internal-complete-buffer
+               :keymap ivy-switch-buffer-map
+               :preselect (buffer-name (other-buffer (current-buffer)))
+               :action #'ivy--switch-buffer-other-window-action
+               :matcher #'ivy--switch-buffer-matcher
+               :caller 'ivy-switch-buffer))))
 
 (with-eval-after-load 'perspective
   (general-define-key
@@ -4068,3 +4057,64 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (setq alert-default-style 'libnotify)
   (add-hook 'pomm-on-tick-hook 'pomm-update-mode-line-string)
   (add-hook 'pomm-on-status-changed-hook 'pomm-update-mode-line-string))
+
+(setq calendar-date-style 'iso) ;; YYYY/mm/dd
+(setq calendar-week-start-day 1)
+(setq calendar-time-display-form '(24-hours ":" minutes))
+
+(setq calendar-latitude 59.9375)
+(setq calendar-longitude 30.308611)
+
+(defun my/elcord-mask-buffer-name (name)
+  (cond
+   ((string-match-p (rx bos (? "CAPTURE-") (= 14 num) "-" (* not-newline) ".org" eos) name)
+    "<ORG-ROAM>")
+   ((string-match-p (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos) name)
+    "<ORG-JOURNAL>")
+   ((string-match-p (rx bos "EXWM") name)
+    "<EXWM>")
+   (t name)))
+
+(defun my/elcord-buffer-details-format-functions ()
+  (format "Editing %s" (my/elcord-mask-buffer-name (buffer-name))))
+
+(defun my/elcord-update-presence-mask-advice (r)
+  (list (my/elcord-mask-buffer-name (nth 0 r)) (nth 1 r)))
+
+(use-package elcord
+  :straight t
+  :if (and (or
+            (string= (system-name) "indigo")
+            (string= (system-name) "eminence"))
+           (not my/slow-ssh)
+           (not my/remote-server))
+  :config
+  (setq elcord-buffer-details-format-function #'my/elcord-buffer-details-format-functions)
+  (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)
+  (elcord-mode))
+
+(use-package snow
+  :straight (:repo "alphapapa/snow.el" :host github)
+  :commands (snow))
+
+(use-package zone
+  :ensure nil
+  :config
+  (setq original-zone-programs (copy-sequence zone-programs)))
+
+(defun my/zone-with-select ()
+  (interactive)
+  (ivy-read "Zone programs"
+            (cl-pairlis
+             (cl-mapcar 'symbol-name original-zone-programs)
+             original-zone-programs)
+            :action (lambda (elem)
+                      (setq zone-programs (vector (cdr elem)))
+                      (zone))))
+
+(defun my/ytel-kill-url ()
+  (interactive)
+  (kill-new
+   (concat
+    "https://www.youtube.com/watch?v="
+    (ytel-video-id (ytel-get-current-video)))))
