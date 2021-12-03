@@ -114,14 +114,22 @@ _=_: Balance          "
   (let ((command-parts (split-string command "[ ]+")))
     (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
 
-(transient-define-prefix my/exwm-apps ()
-  ["Apps"
-   ("t" "Termnial (Alacritty)" (lambda () (interactive) (my/run-in-background "alacritty")))
-   ("b" "Browser (Firefox)" (lambda () (interactive) (my/run-in-background "firefox")))
-   ("v" "VK" (lambda () (interactive) (my/run-in-background "vk")))
-   ("s" "Slack" (lambda () (interactive) (my/run-in-background "slack-wrapper")))
-   ("d" "Discord" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord")))
-   ("q" "Quit" transient-quit-one)])
+(defhydra my/exwm-apps-hydra (:color blue :hint nil)
+  "
+^Apps^
+_t_: Terminal (Alacritty)
+_b_: Browser (Firefox)
+_v_: VK
+_s_: Slack
+_d_: Discord
+"
+  ("t" (lambda () (interactive)
+         (persp-switch "term")
+         (my/run-in-background "alacritty")))
+  ("b" (lambda () (interactive) (my/run-in-background "firefox")))
+  ("v" (lambda () (interactive) (my/run-in-background "vk")))
+  ("s" (lambda () (interactive) (my/run-in-background "slack-wrapper")))
+  ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
 
 (defun my/exwm-lock ()
   (interactive)
@@ -252,7 +260,7 @@ _=_: Balance          "
   
           ;; Apps & stuff
           (,(kbd "s-p") . ,(my/app-command "rofi -modi drun,run -show drun"))
-          (,(kbd "s-;") . my/exwm-apps)
+          (,(kbd "s-;") . my/exwm-apps-hydra/body)
           (,(kbd "s--") . ,(my/app-command "rofi-pass"))
           (,(kbd "s-=") . ,(my/app-command "rofimoji"))
           (,(kbd "s-i") . ,(my/app-command "copyq menu"))
