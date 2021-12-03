@@ -407,7 +407,7 @@ if [[ ! -z "$INIT_CONDA" ]]; then
     init_conda
 fi
 #+end_src
-*** Starship prompt
+*** Starship
 #+begin_src bash
 if [[ -z "$SIMPLE" ]]; then
     eval "$(starship init bash)"

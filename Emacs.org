@@ -1829,7 +1829,7 @@ Copy the current buffer to a perspective and switch to it.
     (switch-to-buffer buffer)))
 #+end_src
 
-Switch to perspective buffer in other window.
+Switch to a perspective buffer in other window.
 #+begin_src emacs-lisp
 (defun my/persp-ivy-switch-buffer-other-window (arg)
   (interactive "P")
@@ -2704,7 +2704,7 @@ Section snippets. The code turned out to be more complicated than just writing t
  'latex-mode
  my/latex-section-snippets)
 #+end_src
-** Other markup languages
+** Other markup & natural languages
 *** Markdown
 #+begin_src emacs-lisp
 (use-package markdown-mode
@@ -2786,7 +2786,8 @@ References:
   "l" 'langtool-correct-buffer)
 #+end_src
 ** Lisp
-These are your father's parentheses. Elegant weapons for a more... civilized age.
+[[./dot-imgs/lisp_cycles.png]]
+
 *** Meta Lisp
 Some packages for editing various Lisps.
 #+begin_src emacs-lisp
@@ -3092,6 +3093,66 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
    (car (find-file-read-args "Directory: " t)))
   (display-buffer my/tensorboard-buffer))
 #+end_src
+** Data serialization
+*** JSON
+#+begin_src emacs-lisp
+(use-package json-mode
+  :straight t
+  :mode "\\.json\\'"
+  :config
+  (add-hook 'json-mode #'smartparens-mode)
+  (add-hook 'json-mode #'hs-minor-mode)
+  (my/set-smartparens-indent 'json-mode))
+#+end_src
+*** CSV
+#+begin_src emacs-lisp
+(use-package csv-mode
+  :straight t
+  :mode "\\.csv\\'")
+#+end_src
+*** YAML
+#+begin_src emacs-lisp
+(use-package yaml-mode
+  :straight t
+  :mode "\\.yml\\'"
+  :config
+  (add-hook 'yaml-mode-hook 'smartparens-mode)
+  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+#+end_src
+** Configuration
+*** .env
+#+begin_src emacs-lisp
+(use-package dotenv-mode
+  :straight t
+  :mode "\\.env\\..*\\'")
+#+end_src
+*** Docker
+#+begin_src emacs-lisp
+(use-package dockerfile-mode
+  :mode "Dockerfile\\'"
+  :straight t
+  :config
+  (add-hook 'dockerfile-mode 'smartparens-mode))
+#+end_src
+*** crontab
+#+begin_src emacs-lisp
+(use-package crontab-mode
+  :straight t)
+#+end_src
+** Shell
+*** sh
+#+begin_src emacs-lisp
+(add-hook 'sh-mode-hook #'smartparens-mode)
+#+end_src
+*** fish
+#+begin_src emacs-lisp
+(use-package fish-mode
+  :straight t
+  :mode "\\.fish\\'"
+  :config
+ (add-hook 'fish-mode-hook #'smartparens-mode))
+#+end_src
 ** Java
 #+begin_src emacs-lisp
 (use-package lsp-java
@@ -3140,18 +3201,6 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
   :config
   (add-hook 'csproj-mode #'smartparens-mode))
 #+end_src
-** fish
-#+begin_src emacs-lisp
-(use-package fish-mode
-  :straight t
-  :mode "\\.fish\\'"
-  :config
- (add-hook 'fish-mode-hook #'smartparens-mode))
-#+end_src
-** sh
-#+begin_src emacs-lisp
-(add-hook 'sh-mode-hook #'smartparens-mode)
-#+end_src
 ** Haskell
 #+begin_src emacs-lisp
 (use-package haskell-mode
@@ -3170,16 +3219,6 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
   :hook (lua-mode . smartparens-mode))
 
 (my/set-smartparens-indent 'lua-mode)
-#+end_src
-** JSON
-#+begin_src emacs-lisp
-(use-package json-mode
-  :straight t
-  :mode "\\.json\\'"
-  :config
-  (add-hook 'json-mode #'smartparens-mode)
-  (add-hook 'json-mode #'hs-minor-mode)
-  (my/set-smartparens-indent 'json-mode))
 #+end_src
 ** SQL
 [[https://github.com/zeroturnaround/sql-formatter][sql-formatter]] is a nice JavaScript package for pretty-printing SQL queries. It is not packaged for Emacs, so the easiest way to use it seems to be to define a custom formatter via [[https://github.com/purcell/emacs-reformatter][reformatter]].
@@ -3211,41 +3250,6 @@ So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL que
 ** SPARQL
 #+begin_src emacs-lisp
 (use-package sparql-mode
-  :straight t)
-#+end_src
-** YAML
-#+begin_src emacs-lisp
-(use-package yaml-mode
-  :straight t
-  :mode "\\.yml\\'"
-  :config
-  (add-hook 'yaml-mode-hook 'smartparens-mode)
-  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
-  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
-#+end_src
-** .env
-#+begin_src emacs-lisp
-(use-package dotenv-mode
-  :straight t
-  :mode "\\.env\\..*\\'")
-#+end_src
-** CSV
-#+begin_src emacs-lisp
-(use-package csv-mode
-  :straight t
-  :mode "\\.csv\\'")
-#+end_src
-** Docker
-#+begin_src emacs-lisp
-(use-package dockerfile-mode
-  :mode "Dockerfile\\'"
-  :straight t
-  :config
-  (add-hook 'dockerfile-mode 'smartparens-mode))
-#+end_src
-** crontab
-#+begin_src emacs-lisp
-(use-package crontab-mode
   :straight t)
 #+end_src
 * Org Mode

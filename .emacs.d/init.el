@@ -2047,6 +2047,47 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
    (car (find-file-read-args "Directory: " t)))
   (display-buffer my/tensorboard-buffer))
 
+(use-package json-mode
+  :straight t
+  :mode "\\.json\\'"
+  :config
+  (add-hook 'json-mode #'smartparens-mode)
+  (add-hook 'json-mode #'hs-minor-mode)
+  (my/set-smartparens-indent 'json-mode))
+
+(use-package csv-mode
+  :straight t
+  :mode "\\.csv\\'")
+
+(use-package yaml-mode
+  :straight t
+  :mode "\\.yml\\'"
+  :config
+  (add-hook 'yaml-mode-hook 'smartparens-mode)
+  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
+
+(use-package dotenv-mode
+  :straight t
+  :mode "\\.env\\..*\\'")
+
+(use-package dockerfile-mode
+  :mode "Dockerfile\\'"
+  :straight t
+  :config
+  (add-hook 'dockerfile-mode 'smartparens-mode))
+
+(use-package crontab-mode
+  :straight t)
+
+(add-hook 'sh-mode-hook #'smartparens-mode)
+
+(use-package fish-mode
+  :straight t
+  :mode "\\.fish\\'"
+  :config
+ (add-hook 'fish-mode-hook #'smartparens-mode))
+
 (use-package lsp-java
   :straight t
   :after (lsp)
@@ -2081,14 +2122,6 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   :config
   (add-hook 'csproj-mode #'smartparens-mode))
 
-(use-package fish-mode
-  :straight t
-  :mode "\\.fish\\'"
-  :config
- (add-hook 'fish-mode-hook #'smartparens-mode))
-
-(add-hook 'sh-mode-hook #'smartparens-mode)
-
 (use-package haskell-mode
   :straight t
   :mode "\\.hs\\'")
@@ -2103,14 +2136,6 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   :hook (lua-mode . smartparens-mode))
 
 (my/set-smartparens-indent 'lua-mode)
-
-(use-package json-mode
-  :straight t
-  :mode "\\.json\\'"
-  :config
-  (add-hook 'json-mode #'smartparens-mode)
-  (add-hook 'json-mode #'hs-minor-mode)
-  (my/set-smartparens-indent 'json-mode))
 
 (setq my/sqlformatter-dialect-choice
       '("db2" "mariadb" "mysql" "n1ql" "plsql" "postgresql" "redshift" "spark" "sql" "tsql"))
@@ -2132,31 +2157,6 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   "rr" #'sqlformat-buffer)
 
 (use-package sparql-mode
-  :straight t)
-
-(use-package yaml-mode
-  :straight t
-  :mode "\\.yml\\'"
-  :config
-  (add-hook 'yaml-mode-hook 'smartparens-mode)
-  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
-  (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
-
-(use-package dotenv-mode
-  :straight t
-  :mode "\\.env\\..*\\'")
-
-(use-package csv-mode
-  :straight t
-  :mode "\\.csv\\'")
-
-(use-package dockerfile-mode
-  :mode "Dockerfile\\'"
-  :straight t
-  :config
-  (add-hook 'dockerfile-mode 'smartparens-mode))
-
-(use-package crontab-mode
   :straight t)
 
 (use-package org
