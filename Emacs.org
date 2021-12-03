@@ -749,7 +749,7 @@ Change the universal argument to =M-u=. I use =C-u= to scroll up, as I'm used to
   :states '(normal motion emacs insert visual)
   "M-u" 'universal-argument)
 #+end_src
-**** CHECK Profiler
+**** Profiler
 The built-in profiler is a magnificent tool to troubleshoot performance issues.
 
 #+begin_src emacs-lisp
@@ -835,7 +835,7 @@ Evil does a pretty good job of abstracting the first two with a set of vim-like 
   "ze" 'hs-hide-level
   "TAB" 'evil-toggle-fold)
 #+end_src
-**** CHECK Zoom UI
+**** Zoom UI
 #+begin_src emacs-lisp
 (defun my/zoom-in ()
   "Increase font size by 10 points"
@@ -1242,7 +1242,7 @@ Function to open dired and vterm at given nodes.
 (general-nmap "C-p" 'counsel-projectile-find-file)
 #+end_src
 *** Git & Magit
-[[https://magit.vc/][Magic]] is a git interface for Emacs. The closest non-Emacs alternative (sans actual clones) I know is [[https://github.com/jesseduffield/lazygit][lazygit]], which I used before Emacs.
+[[https://magit.vc/][Magit]] is a git interface for Emacs. The closest non-Emacs alternative (sans actual clones) I know is [[https://github.com/jesseduffield/lazygit][lazygit]], which I used before Emacs.
 
 [[https://github.com/emacsorphanage/git-gutter][git-gutter]] is a package which shows git changes for each line (added/changed/deleted lines).
 
@@ -1430,7 +1430,6 @@ A company frontend with nice icons. Disabled since the base company got icons su
 #+begin_src emacs-lisp
 (use-package company-box
   :straight t
-  :disabled
   :if (and (display-graphic-p) (not my/lowpower))
   :after (company)
   :hook (company-mode . company-box-mode))
@@ -1808,7 +1807,7 @@ However, I don't like that list of workspaces is displayed inside the modeline r
    "x" 'persp-ivy-switch-buffer
    "u" 'persp-ibuffer))
 #+end_src
-*** Some functions
+*** Functions to manage buffers
 Move the current buffer to a perspective and switch to it.
 #+begin_src emacs-lisp
 (defun my/persp-move-window-and-switch ()
@@ -1852,6 +1851,21 @@ Add keybindings to the default map.
    :keymaps 'perspective-map
    "m" #'my/persp-move-window-and-switch
    "f" #'my/persp-copy-window-and-switch))
+#+end_src
+*** Automating perspectives
+I'd like to have various Emacs apps open up in their designated perspectives (also in their designated workspaces when I'm using EXWM).
+
+So, here is a macro to run something in a given perspective in a given workspace. This is meant to be used in general.el keybindings.
+#+begin_src emacs-lisp
+(defmacro my/command-in-persp (command-name persp-name workspace-index &rest args)
+  `'((lambda ()
+       (interactive)
+       (when (and ,workspace-index (fboundp #'exwm-workspace-switch-create))
+         (exwm-workspace-switch-create ,workspace-index))
+       (persp-switch ,persp-name)
+       (delete-other-windows)
+       ,@args)
+     :wk ,command-name))
 #+end_src
 * Programming
 ** General setup
@@ -2239,31 +2253,6 @@ Some debug templates I frequently use.
          :port 9229
          :program "${workspaceFolder}/dist/bin/www.js")))
 
-#+end_src
-*** TabNine
-A ML-based autocompletion system.
-
-More often than not gives +really+ somewhat good results, but is slow as hell & consumes a lot of RAM. Also, LSP-provided completions were more useful in my experience.
-
-References:
-- [[https://www.tabnine.com/][TabNine Homepage]]
-#+begin_src emacs-lisp :tangle no
-(use-package company-tabnine
-  :straight t
-  :if (not my/lowpower)
-  :after company)
-
-
-(define-minor-mode company-tabnine-mode
-  "Use company-tabnine"
-  :after-hook
-  (progn
-    (if company-tabnine-mode
-        (progn
-          (make-local-variable 'company-backends)
-          (add-to-list 'company-backends 'company-tabnine))
-      (setq company-backends (remove 'company-tabnine company-backends))
-      (kill-local-variable company-backends))))
 #+end_src
 *** Reformatter
 A general-purpose package to run formattters on files. While the most popular formatters are already packaged for Emacs, those that aren't can be invoked with this package.
@@ -3126,6 +3115,15 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
 (use-package dotenv-mode
   :straight t
   :mode "\\.env\\..*\\'")
+#+end_src
+*** .gitignore
+A package to quickly create =.gitignore= files.
+
+#+begin_src emacs-lisp
+(use-package gitignore-templates
+  :straight t
+  :commands (gitignore-templates-insert
+             gitignore-templates-new-file))
 #+end_src
 *** Docker
 #+begin_src emacs-lisp
@@ -4683,7 +4681,7 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
 
 (my-leader-def
   "ad" #'dired
-  "aD" #'my/dired-home)
+  "aD" (my/command-in-persp "dired $HOME" "dired" nil (dired (expand-file-name "~"))))
 #+end_src
 *** Addons
 I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provides a lot of extensions for dired functionality, but it also creates some new problems, so I opt out of it. Fortunately, the one feature I want from this package - adding more colors to dired buffers - is available as a separate package.
@@ -5128,7 +5126,7 @@ Using my own fork until the modifications are merged into master.
   :if (not my/remote-server)
   :commands (elfeed)
   :init
-  (my-leader-def "ae" 'elfeed)
+  (my-leader-def "ae" (my/command-in-persp "elfeed" "elfeed" 0 (elfeed)))
   :config
   (setq elfeed-db-directory "~/.elfeed")
   (setq elfeed-enclosure-default-dir (expand-file-name "~/Downloads"))
@@ -5328,7 +5326,7 @@ References:
   (my-leader-def
     :infix "as"
     "" '(:which-key "emms")
-    "s" 'emms-smart-browse
+    "s" (my/command-in-persp "emms" "EMMS" 0 (emms-smart-browse))
     "b" 'emms-browser
     "p" 'emms-pause
     "q" 'emms-stop
@@ -5627,7 +5625,7 @@ ERC is a built-it Emacs IRC client.
   :commands (erc erc-tls)
   :straight (:type built-in)
   :init
-  (my-leader-def "ai" #'erc-tls)
+  (my-leader-def "ai" (my/command-in-persp "erc" "ERC" 0 (erc-tls)))
   :config
   ;; Logging
   (setq erc-log-channels-directory "~/.erc/logs")
@@ -5925,8 +5923,8 @@ My package for doing Pomodoro timer.
 
 #+begin_src emacs-lisp
 (use-package pomm
-  ;; :straight (:host github :repo "SqrtMinusOne/pomm.el" :files (:defaults "resources"))
-  :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
+  :straight (:host github :repo "SqrtMinusOne/pomm.el" :files (:defaults "resources"))
+  ;; :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
   :commands (pomm)
   :init
   (my-leader-def "ap" #'pomm)

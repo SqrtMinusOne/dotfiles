@@ -720,7 +720,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package company-box
   :straight t
-  :disabled
   :if (and (display-graphic-p) (not my/lowpower))
   :after (company)
   :hook (company-mode . company-box-mode))
@@ -997,6 +996,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    :keymaps 'perspective-map
    "m" #'my/persp-move-window-and-switch
    "f" #'my/persp-copy-window-and-switch))
+
+(defmacro my/command-in-persp (command-name persp-name workspace-index &rest args)
+  `'((lambda ()
+       (interactive)
+       (when (and ,workspace-index (fboundp #'exwm-workspace-switch-create))
+         (exwm-workspace-switch-create ,workspace-index))
+       (persp-switch ,persp-name)
+       (delete-other-windows)
+       ,@args)
+     :wk ,command-name))
 
 (use-package lsp-mode
   :straight t
@@ -2070,6 +2079,11 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
 (use-package dotenv-mode
   :straight t
   :mode "\\.env\\..*\\'")
+
+(use-package gitignore-templates
+  :straight t
+  :commands (gitignore-templates-insert
+             gitignore-templates-new-file))
 
 (use-package dockerfile-mode
   :mode "Dockerfile\\'"
@@ -3174,7 +3188,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
 
 (my-leader-def
   "ad" #'dired
-  "aD" #'my/dired-home)
+  "aD" (my/command-in-persp "dired $HOME" "dired" nil (dired (expand-file-name "~"))))
 
 (use-package diredfl
   :straight t
@@ -3487,7 +3501,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   :if (not my/remote-server)
   :commands (elfeed)
   :init
-  (my-leader-def "ae" 'elfeed)
+  (my-leader-def "ae" (my/command-in-persp "elfeed" "elfeed" 0 (elfeed)))
   :config
   (setq elfeed-db-directory "~/.elfeed")
   (setq elfeed-enclosure-default-dir (expand-file-name "~/Downloads"))
@@ -3651,7 +3665,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (my-leader-def
     :infix "as"
     "" '(:which-key "emms")
-    "s" 'emms-smart-browse
+    "s" (my/command-in-persp "emms" "EMMS" 0 (emms-smart-browse))
     "b" 'emms-browser
     "p" 'emms-pause
     "q" 'emms-stop
@@ -3836,7 +3850,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   :commands (erc erc-tls)
   :straight (:type built-in)
   :init
-  (my-leader-def "ai" #'erc-tls)
+  (my-leader-def "ai" (my/command-in-persp "erc" "ERC" 0 (erc-tls)))
   :config
   ;; Logging
   (setq erc-log-channels-directory "~/.erc/logs")
@@ -4048,8 +4062,8 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (my-leader-def "ag" 'guix))
 
 (use-package pomm
-  ;; :straight (:host github :repo "SqrtMinusOne/pomm.el" :files (:defaults "resources"))
-  :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
+  :straight (:host github :repo "SqrtMinusOne/pomm.el" :files (:defaults "resources"))
+  ;; :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
   :commands (pomm)
   :init
   (my-leader-def "ap" #'pomm)

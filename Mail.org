@@ -424,7 +424,7 @@ Root keybindings:
 (my-leader-def
   :infix "am"
   "" '(:which-key "notmuch")
-  "m" 'notmuch)
+  "m" (my/command-in-persp "notmuch" "mail" 0 (notmuch)))
 #+end_src
 
 #+NAME: root_tags
@@ -475,7 +475,7 @@ And the following does the same for my general.el definer:
     (dolist (tag filter_tags)
       (add-to-list
        'bindings
-       (format "\"%s\" '((lambda () (interactive) (notmuch-search \"%s\")) :which-key \"%s\")"
+       (format "\"%s\" (my/command-in-persp \"%s\" \"mail\" 0 (notmuch-search \"%s\"))"
                (concat (nth 1 root_tag) (nth 1 tag))
                (concat "tag:" (nth 0 root_tag)
                        (unless (string-empty-p (nth 0 tag))
