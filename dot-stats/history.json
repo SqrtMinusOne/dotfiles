@@ -78,7 +78,17 @@
         "color": "b",
         "states": [
           {
-            "startDate": "2020-05-08"
+            "startDate": "2020-05-08",
+            "endDate": "2021-11-14"
+          }
+        ]
+      },
+      {
+        "name": "EXWM",
+        "color": "m",
+        "states": [
+          {
+            "startDate": "2021-11-14"
           }
         ]
       },
