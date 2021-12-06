@@ -2749,6 +2749,14 @@ Section snippets. The code turned out to be more complicated than just writing t
   :keymaps 'plantuml-mode-map
   "RET" 'plantuml-preview)
 #+end_src
+*** Subtitles
+A major mode to work with subtitles.
+
+#+begin_src emacs-lisp
+(use-package subed
+  :straight (:host github :repo "rndusr/subed" :files ("subed/*.el"))
+  :mode (rx (| "srt" "vtt" "ass") eos))
+#+end_src
 *** LanguageTool
 LanguageTool is a great offline spell checker. For some reason, the download link is nowhere to be found on the home page, so it is listed in the references as well.
 
@@ -4060,6 +4068,9 @@ References:
   (setq org-roam-capture-templates
         `(("d" "default" plain "%?"
            :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+           :unnarrowed t)
+          ("e" "encrypted" plain "%?"
+           :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
            :unnarrowed t)))
   (require 'org-roam-protocol)
   (general-define-key

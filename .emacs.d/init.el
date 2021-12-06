@@ -1835,6 +1835,10 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   :keymaps 'plantuml-mode-map
   "RET" 'plantuml-preview)
 
+(use-package subed
+  :straight (:host github :repo "rndusr/subed" :files ("subed/*.el"))
+  :mode (rx (| "srt" "vtt" "ass") eos))
+
 (use-package langtool
   :straight t
   :commands (langtool-check)
@@ -2817,6 +2821,9 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (setq org-roam-capture-templates
         `(("d" "default" plain "%?"
            :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+           :unnarrowed t)
+          ("e" "encrypted" plain "%?"
+           :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
            :unnarrowed t)))
   (require 'org-roam-protocol)
   (general-define-key
@@ -3446,22 +3453,13 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (general-nmap "`" 'aweshell-dedicated-toggle)
   (general-nmap "~" 'eshell))
 
-(defun my/edit-configuration ()
-  "Open the init file."
-  (interactive)
-  (find-file "~/Emacs.org"))
+(general-define-key
+ "C-c c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org")))
 
-;; (defun my/edit-exwm-configuration ()
-;;   "Open the exwm config file."
-;;   (interactive)
-;;   (find-file "~/.emacs.d/exwm.org"))
-
-(general-define-key "C-c c" 'my/edit-configuration)
-;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
 (my-leader-def
   :infix "c"
   "" '(:which-key "configuration")
-  "c" 'my/edit-configuration)
+  "c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org")))
 
 (with-eval-after-load 'tramp
   (add-to-list 'tramp-methods
@@ -3490,8 +3488,14 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
      (split-string
       (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
 
-(general-define-key "C-c f" 'my/open-yadm-file)
-(my-leader-def "cf" 'my/open-yadm-file)
+(general-define-key
+ "C-c f" (my/command-in-persp
+          "yadm file" "conf" 1
+          (my/open-yadm-file)))
+(my-leader-def
+  "cf" (my/command-in-persp
+        "yadm file" "conf" 1
+        (my/open-yadm-file)))
 
 (unless (or my/is-termux my/remote-server)
   (load-file (expand-file-name "mail.el" user-emacs-directory)))
