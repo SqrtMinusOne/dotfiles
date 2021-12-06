@@ -562,11 +562,11 @@ Also other local keybindings, that are also available only in =line-mode=:
 
 (general-define-key
  :keymaps '(exwm-mode-map)
- "C-q" 'exwm-input-send-next-key
+ "C-q" #'exwm-input-send-next-key
  "<print>" (my/app-command "flameshot gui")
- "<mode-line> s-<mouse-4>" 'perspective-exwm-cycle-exwm-buffers-backward
- "<mode-line> s-<mouse-5>" 'perspective-exwm-cycle-exwm-buffers-forward
- "M-x" 'counsel-M-x
+ "<mode-line> s-<mouse-4>" #'perspective-exwm-cycle-exwm-buffers-backward
+ "<mode-line> s-<mouse-5>" #'perspective-exwm-cycle-exwm-buffers-forward
+ "M-x" #'counsel-M-x
  "M-SPC" (general-key "SPC"))
 #+end_src
 

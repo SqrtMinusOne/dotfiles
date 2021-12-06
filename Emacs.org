@@ -3535,7 +3535,7 @@ So there we have a minor mode that overrides this behavior.
 (advice-add 'jupyter-org-scalar :around #'my/jupyter-org-scalar-around)
 #+end_src
 *** Wrap source code output
-A function to remove :RESULTS: drawer from the results. Once again, necessary because emacs-jupyter doesn't seem to respect :results raw.
+A function to remove the :RESULTS: drawer from results. Once again, it's necessary because emacs-jupyter doesn't seem to respect =:results raw=.
 #+begin_src emacs-lisp
 (defun my/org-strip-results (data)
   (replace-regexp-in-string ":\\(RESULTS\\|END\\):\n" "" data))
@@ -3543,10 +3543,10 @@ A function to remove :RESULTS: drawer from the results. Once again, necessary be
 
 And an all-in-one function to:
 - prepend =#+NAME:= and =#+CAPTION:= to the source block output. Useful if the output is an image.
-- strip :RESULTS: drawer from the output, if necessary
+- strip the :RESULTS: drawer from the output, if necessary
 - wrap results in the =src= block
 
-As for now, looks sufficient to format source code outputs to get a tolerable LaTeX.
+As for now, it looks sufficient to format source code outputs to get a tolerable LaTeX.
 
 #+begin_src emacs-lisp
 (defun my/org-caption-wrap (data &optional name caption attrs strip-drawer src-wrap)
@@ -5048,22 +5048,13 @@ A bunch of functions for managing dotfiles with yadm.
 
 *** Open Emacs config
 #+begin_src emacs-lisp
-(defun my/edit-configuration ()
-  "Open the init file."
-  (interactive)
-  (find-file "~/Emacs.org"))
+(general-define-key
+ "C-c c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org")))
 
-;; (defun my/edit-exwm-configuration ()
-;;   "Open the exwm config file."
-;;   (interactive)
-;;   (find-file "~/.emacs.d/exwm.org"))
-
-(general-define-key "C-c c" 'my/edit-configuration)
-;; (general-define-key "C-c C" 'my/edit-exwm-configuration)
 (my-leader-def
   :infix "c"
   "" '(:which-key "configuration")
-  "c" 'my/edit-configuration)
+  "c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org")))
 #+end_src
 *** Open Magit for yadm
 Idea:
@@ -5102,8 +5093,14 @@ Open a file managed by yadm.
      (split-string
       (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
 
-(general-define-key "C-c f" 'my/open-yadm-file)
-(my-leader-def "cf" 'my/open-yadm-file)
+(general-define-key
+ "C-c f" (my/command-in-persp
+          "yadm file" "conf" 1
+          (my/open-yadm-file)))
+(my-leader-def
+  "cf" (my/command-in-persp
+        "yadm file" "conf" 1
+        (my/open-yadm-file)))
 #+end_src
 ** Internet & Multimedia
 *** Notmuch
