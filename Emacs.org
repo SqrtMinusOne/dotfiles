@@ -5276,32 +5276,42 @@ Also a function to automatically adjust these colors with the Doom theme.
    :keymaps '(elfeed-score-map)
    "=" #'my/elfeed-toggle-score-sort))
 #+end_src
-**** YouTube & EMMS
+**** YouTube, podcasts & EMMS
 Previously this block was opening MPV with =start-process=, but now I've managed to hook up MPV with EMMS. So there is the EMMS+elfeed "integration".
 
-The following function converts URLs from Invidious and the like to YouTube.
+There are multiple kinds of entries that I want to be opened by EMMS. First, a function that returns a YouTube URL:
 #+begin_src emacs-lisp
-(defun my/get-youtube-url (link)
+(defun my/get-youtube-url (entry)
   (let ((watch-id (cadr
                    (assoc "watch?v"
                           (url-parse-query-string
                            (substring
                             (url-filename
-                             (url-generic-parse-url link))
+                             (url-generic-parse-url (elfeed-entry-link entry)))
                             1))))))
-    (concat "https://www.youtube.com/watch?v=" watch-id)))
+    (when watch-id
+      (concat "https://www.youtube.com/watch?v=" watch-id))))
+#+end_src
+
+Second, a function that returns a URL to an enclosure. This is generally how podcasts are distributed.
+#+begin_src emacs-lisp
+(defun my/get-enclosures-url (entry)
+  (caar (elfeed-entry-enclosures entry)))
 #+end_src
 
 Now, a function to add YouTube link with metadata from elfeed to EMMS.
 #+begin_src emacs-lisp
 (with-eval-after-load 'emms
   (define-emms-source elfeed (entry)
-    (let ((track (emms-track
-                  'url (my/get-youtube-url (elfeed-entry-link entry)))))
-      (emms-track-set track 'info-title (elfeed-entry-title entry))
-      (emms-playlist-insert-track track))))
+    (let ((url (or (my/get-enclosures-url entry)
+                   (my/get-youtube-url entry))))
+      (unless url
+        (error "URL not found"))
+      (let ((track (emms-track 'url url)))
+        (emms-track-set track 'info-title (elfeed-entry-title entry))
+        (emms-playlist-insert-track track)))))
 
-(defun my/elfeed-add-emms-youtube ()
+(defun my/elfeed-add-emms ()
   (interactive)
   (emms-add-elfeed elfeed-show-entry)
   (elfeed-tag elfeed-show-entry 'watched)
@@ -5311,7 +5321,7 @@ Now, a function to add YouTube link with metadata from elfeed to EMMS.
   (general-define-key
    :states '(normal)
    :keymaps 'elfeed-show-mode-map
-   "gm" #'my/elfeed-add-emms-youtube))
+   "gm" #'my/elfeed-add-emms))
 #+end_src
 *** EMMS
 EMMS is the Emacs Multi-Media System. I use it to control MPD & MPV.

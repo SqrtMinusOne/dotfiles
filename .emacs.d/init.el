@@ -3627,24 +3627,31 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
    :keymaps '(elfeed-score-map)
    "=" #'my/elfeed-toggle-score-sort))
 
-(defun my/get-youtube-url (link)
+(defun my/get-youtube-url (entry)
   (let ((watch-id (cadr
                    (assoc "watch?v"
                           (url-parse-query-string
                            (substring
                             (url-filename
-                             (url-generic-parse-url link))
+                             (url-generic-parse-url (elfeed-entry-link entry)))
                             1))))))
-    (concat "https://www.youtube.com/watch?v=" watch-id)))
+    (when watch-id
+      (concat "https://www.youtube.com/watch?v=" watch-id))))
+
+(defun my/get-enclosures-url (entry)
+  (caar (elfeed-entry-enclosures entry)))
 
 (with-eval-after-load 'emms
   (define-emms-source elfeed (entry)
-    (let ((track (emms-track
-                  'url (my/get-youtube-url (elfeed-entry-link entry)))))
-      (emms-track-set track 'info-title (elfeed-entry-title entry))
-      (emms-playlist-insert-track track))))
+    (let ((url (or (my/get-enclosures-url entry)
+                   (my/get-youtube-url entry))))
+      (unless url
+        (error "URL not found"))
+      (let ((track (emms-track 'url url)))
+        (emms-track-set track 'info-title (elfeed-entry-title entry))
+        (emms-playlist-insert-track track)))))
 
-(defun my/elfeed-add-emms-youtube ()
+(defun my/elfeed-add-emms ()
   (interactive)
   (emms-add-elfeed elfeed-show-entry)
   (elfeed-tag elfeed-show-entry 'watched)
@@ -3654,7 +3661,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (general-define-key
    :states '(normal)
    :keymaps 'elfeed-show-mode-map
-   "gm" #'my/elfeed-add-emms-youtube))
+   "gm" #'my/elfeed-add-emms))
 
 (use-package emms
   :straight t
