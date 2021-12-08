@@ -123,9 +123,7 @@ _v_: VK
 _s_: Slack
 _d_: Discord
 "
-  ("t" (lambda () (interactive)
-         (persp-switch "term")
-         (my/run-in-background "alacritty")))
+  ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
   ("b" (lambda () (interactive) (my/run-in-background "firefox")))
   ("v" (lambda () (interactive) (my/run-in-background "vk")))
   ("s" (lambda () (interactive) (my/run-in-background "slack-wrapper")))
@@ -135,6 +133,23 @@ _d_: Discord
   (interactive)
   (my/run-in-background "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"))
 
+(defun my/exwm-configure-window ()
+  (interactive)
+  (pcase exwm-class-name
+    ((or "Firefox" "Nightly")
+     (perspective-exwm-assign-window
+      :workspace-index 2
+      :persp-name "browser"))
+    ("Alacritty"
+     (perspective-exwm-assign-window
+      :persp-name "term"))
+    ((or "VK" "Slack" "Discord" "TelegramDesktop")
+     (perspective-exwm-assign-window
+      :workspace-index 3
+      :persp-name "comms"))))
+
+(add-hook 'exwm-manage-finish-hook #'my/exwm-configure-window)
+
 (defun my/exwm-update-global-keys ()
   (interactive)
   (setq exwm-input--global-keys nil)
@@ -142,6 +157,13 @@ _d_: Discord
     (exwm-input--set-key (car i) (cdr i)))
   (when exwm--connection
     (exwm-input--update-global-prefix-keys)))
+
+(defun my/fix-exwm-floating-windows ()
+  (setq-local exwm-workspace-warp-cursor nil)
+  (setq-local mouse-autoselect-window nil)
+  (setq-local focus-follows-mouse nil))
+
+(add-hook 'exwm-floating-setup-hook #'my/fix-exwm-floating-windows)
 
 (defun my/exwm-init ()
   (exwm-workspace-switch 1)
@@ -206,11 +228,11 @@ _d_: Discord
   
   (general-define-key
    :keymaps '(exwm-mode-map)
-   "C-q" 'exwm-input-send-next-key
+   "C-q" #'exwm-input-send-next-key
    "<print>" (my/app-command "flameshot gui")
-   "<mode-line> s-<mouse-4>" 'perspective-exwm-cycle-exwm-buffers-backward
-   "<mode-line> s-<mouse-5>" 'perspective-exwm-cycle-exwm-buffers-forward
-   "M-x" 'counsel-M-x
+   "<mode-line> s-<mouse-4>" #'perspective-exwm-cycle-exwm-buffers-backward
+   "<mode-line> s-<mouse-5>" #'perspective-exwm-cycle-exwm-buffers-forward
+   "M-x" #'counsel-M-x
    "M-SPC" (general-key "SPC"))
   (setq exwm-input-simulation-keys `((,(kbd "M-w") . ,(kbd "C-w"))
                                      (,(kbd "M-c") . ,(kbd "C-c"))))

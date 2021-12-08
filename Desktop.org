@@ -527,9 +527,7 @@ _v_: VK
 _s_: Slack
 _d_: Discord
 "
-  ("t" (lambda () (interactive)
-         (persp-switch "term")
-         (my/run-in-background "alacritty")))
+  ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
   ("b" (lambda () (interactive) (my/run-in-background "firefox")))
   ("v" (lambda () (interactive) (my/run-in-background "vk")))
   ("s" (lambda () (interactive) (my/run-in-background "slack-wrapper")))
@@ -542,6 +540,27 @@ Run i3lock.
 (defun my/exwm-lock ()
   (interactive)
   (my/run-in-background "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"))
+#+end_src
+*** Auto-assign apps
+A function to automatially assign an app to its designated workspace and perspective.
+
+#+begin_src emacs-lisp
+(defun my/exwm-configure-window ()
+  (interactive)
+  (pcase exwm-class-name
+    ((or "Firefox" "Nightly")
+     (perspective-exwm-assign-window
+      :workspace-index 2
+      :persp-name "browser"))
+    ("Alacritty"
+     (perspective-exwm-assign-window
+      :persp-name "term"))
+    ((or "VK" "Slack" "Discord" "TelegramDesktop")
+     (perspective-exwm-assign-window
+      :workspace-index 3
+      :persp-name "comms"))))
+
+(add-hook 'exwm-manage-finish-hook #'my/exwm-configure-window)
 #+end_src
 ** Keybindings
 Setting keybindings for EXWM. This actually has to be in the =:config= block of the =use-package= form, that is it has to be run after EXWM is loaded, so I use noweb to put this block in the correct place.
@@ -692,6 +711,15 @@ A function to apply changes to =exwm-input-global-keys=.
                   (setq-local standard-output (current-buffer))
                   (backtrace)
                   (buffer-string))))))
+#+end_src
+*** Improve floating windows behavior
+#+begin_src emacs-lisp
+(defun my/fix-exwm-floating-windows ()
+  (setq-local exwm-workspace-warp-cursor nil)
+  (setq-local mouse-autoselect-window nil)
+  (setq-local focus-follows-mouse nil))
+
+(add-hook 'exwm-floating-setup-hook #'my/fix-exwm-floating-windows)
 #+end_src
 ** EXWM config
 And the EXWM config itself.
