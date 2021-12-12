@@ -677,7 +677,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                proced-filter-interactive
                proced-sort-interactive
                perspective-exwm-switch-perspective
-               my/persp-ivy-switch-buffer-other-window))
+               my/persp-ivy-switch-buffer-other-window
+               lsp-execute-code-action))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 

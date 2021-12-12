@@ -82,6 +82,25 @@ _=_: Balance          "
   ("=" balance-windows)
   ("q" nil "quit" :color blue))
 
+(defun my/exwm-fill-other-window (&rest _)
+  (interactive)
+  (when (and (eq major-mode 'exwm-mode) (not (eq (next-window) (get-buffer-window))))
+    (let ((other-exwm-buffer
+           (cl-loop with other-buffer = (persp-other-buffer)
+                    for buf in (sort (persp-current-buffers) (lambda (a _) (eq a other-buffer)))
+                    with current-buffer = (current-buffer)
+                    when (and (not (eq current-buffer buf))
+                              (buffer-live-p buf)
+                              (not (string-match-p (persp--make-ignore-buffer-rx) (buffer-name buf)))
+                              (not (get-buffer-window buf)))
+                    return buf)))
+      (when other-exwm-buffer
+        (with-selected-window (next-window)
+          (switch-to-buffer other-exwm-buffer))))))
+
+(advice-add 'evil-window-split :after #'my/exwm-fill-other-window)
+(advice-add 'evil-window-vsplit :after #'my/exwm-fill-other-window)
+
 (use-package perspective-exwm
   :straight (:host github :repo "SqrtMinusOne/perspective-exwm.el")
   :config
@@ -146,7 +165,11 @@ _d_: Discord
     ((or "VK" "Slack" "Discord" "TelegramDesktop")
      (perspective-exwm-assign-window
       :workspace-index 3
-      :persp-name "comms"))))
+      :persp-name "comms"))
+    ((or "Chromium-browser" "jetbrains-datagrip")
+     (perspective-exwm-assign-window
+      :workspace-index 4
+      :persp-name "dev"))))
 
 (add-hook 'exwm-manage-finish-hook #'my/exwm-configure-window)
 
