@@ -1577,11 +1577,12 @@ Title format, which looks something like =emacs:project@hostname=.
 (setq-default frame-title-format
               '(""
                 "emacs"
-                (:eval
-                 (let ((project-name (projectile-project-name)))
-                   (if (not (string= "-" project-name))
-                       (format ":%s@%s" project-name (system-name))
-                     (format "@%s" (system-name)))))))
+                ;; (:eval
+                ;;  (let ((project-name (projectile-project-name)))
+                ;;    (if (not (string= "-" project-name))
+                ;;        (format ":%s@%s" project-name (system-name))
+                ;;      (format "@%s" (system-name)))))
+                ))
 #+end_src
 ** Themes and colors
 *** Dim inactive buffers
@@ -1758,9 +1759,9 @@ Highlight TODOs and stuff
   :straight t)
 #+end_src
 ** Doom Modeline
-A modeline from Doom Emacs.
+A modeline from Doom Emacs. A big advantage of this package is that it just works out of the box and does not require much customization.
 
-A big advantage of this package is that it just works out of the box and does not require much customization. For now I opted out of it in favour of spaceline because I want to have a more powerline-ish look.
+I've tried a bunch of other options, including [[https://github.com/TheBB/spaceline][spaceline]], but in the end decided that Doom Modeline works best for me.
 
 References:
 - [[https://github.com/seagle0128/doom-modeline][Doom Modeline]]
@@ -1774,10 +1775,12 @@ References:
   (setq doom-modeline-env-enable-go nil)
   (setq doom-modeline-buffer-encoding 'nondefault)
   (setq doom-modeline-hud t)
+  (setq doom-modeline-persp-icon nil)
+  (setq doom-modeline-persp-name nil)
   :config
-  (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)
-  (setq doom-modeline-buffer-state-icon nil))
+  (setq doom-modeline-buffer-state-icon nil)
+  (doom-modeline-mode 1))
 #+end_src
 ** perspective.el
 [[https://github.com/nex3/perspective-el][perspective.el]] is a package which provides gives Emacs capacities to group buffers into "perspectives", which are like workspaces in tiling WMs.
@@ -3260,7 +3263,7 @@ So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL que
   :straight t)
 #+end_src
 * Org Mode
-The best feature of Emacs. Just after every other best feature of Emacs, probably.
+*Org mode* is a tool that leverages plain-text files for various tasks, like making notes, literate programming, task management, etc.
 
 References:
 - [[https://orgmode.org/][Org Mode homepage]]
@@ -3302,11 +3305,28 @@ Use the built-in org mode.
 #+end_src
 
 *** Encryption
+Setting up =org-crypt= to encrypt a part of a file.
+
 #+begin_src emacs-lisp :noweb-ref org-crypt-setup
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
 (setq org-tags-exclude-from-inheritance (quote ("crypt")))
 (setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205")
+#+end_src
+
+This enables encryption for Org segments which are tagged =:crypt:=.
+
+Another way to encrypt org files is to save them with extension =.org.gpg=. That way by default epa always prompts for a key, which is not what I want when there is in fact only one key to select. So I make the following advice:
+#+begin_src emacs-lisp
+(defun my/epa--select-keys-around (fun prompt keys)
+  (if (= (seq-length keys) 1)
+      keys
+    (funcall fun prompt keys)))
+
+(with-eval-after-load 'epa
+  (advice-add #'epa--select-keys :around #'my/epa--select-keys-around))
+
+(setq epa-file-encrypt-to '("DE004F32AFA00205"))
 #+end_src
 *** org-contrib
 =org-contrib= is a package with various additions to Org. I use the following:
@@ -3327,6 +3347,8 @@ Use the built-in org mode.
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
 #+end_src
 ** Integration with evil
+A package to add more evil-mode keybindings to org-mode.
+
 #+begin_src emacs-lisp
 (use-package evil-org
   :straight t
@@ -3619,6 +3641,7 @@ Some inspiration:
 
 Used files
 #+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+(setq org-roam-directory (concat org-directory "/roam"))
 (setq org-agenda-files '("inbox.org" "projects.org" "work.org" "sem-11.org" "life.org"))
 ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
 #+end_src
@@ -3763,6 +3786,165 @@ Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I sti
         ("tp" "Personal tasks"
          ((tags-todo "personal"
                      ((org-agenda-prefix-format "  %i %-12:c [%e] ")))))))
+#+end_src
+*** Org Journal
+[[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining a journal in org mode. I want to have its entries separate from my knowledge base.
+
+#+begin_src emacs-lisp
+(use-package org-journal
+  :straight t
+  :if (not my/remote-server)
+  :after org
+  :config
+  (setq org-journal-dir (concat org-directory "/journal"))
+  (setq org-journal-file-type 'weekly)
+  (setq org-journal-file-format "%Y-%m-%d.org")
+  (setq org-journal-date-format "%A, %Y-%m-%d")
+  (setq org-journal-enable-encryption t))
+
+(my-leader-def
+  :infix "oj"
+  "" '(:which-key "org-journal")
+  "j" 'org-journal-new-entry
+  "o" 'org-journal-open-current-journal-file
+  "s" 'org-journal-search)
+#+end_src
+
+Also, I want to store some information in the journal as properties of the record. So below is a function which does just that.
+
+As of now, it stores Emacs version, hostname, location and current EMMS track if there is one.
+#+begin_src emacs-lisp
+(defun my/set-journal-header ()
+  (org-set-property "Emacs" emacs-version)
+  (org-set-property "Hostname" system-name)
+  (when (boundp 'my/location)
+    (org-set-property "Location" my/location))
+  (when (fboundp 'emms-playlist-current-selected-track)
+    (let ((track (emms-playlist-current-selected-track)))
+      (when track
+        (let ((album (cdr (assoc 'info-album track)))
+              (artist (or (cdr (assoc 'info-albumartist track))
+                          (cdr (assoc 'info-album track))))
+              (title (cdr (assoc 'info-title track)))
+              (string ""))
+          (when artist
+            (setq string (concat string "[" artist "] ")))
+          (when album
+            (setq string (concat string album " - ")))
+          (when title
+            (setq string (concat string title)))
+          (when (> (length string) 0)
+            (org-set-property "EMMS_Track" string)))))))
+
+(add-hook 'org-journal-after-entry-create-hook
+          #'my/set-journal-header)
+#+end_src
+*** Org Roam
+[[https://github.com/org-roam/org-roam][org-roam]] is a plain-text knowledge database.
+
+**** Basic package configuration
+| Guix dependency       |
+|-----------------------|
+| emacs-emacsql-sqlite3 |
+| graphviz              |
+
+References:
+- [[https://github.com/org-roam/org-roam/wiki/Hitchhiker%27s-Rough-Guide-to-Org-roam-V2][Hitchhiker's Rough Guide to Org roam V2]]
+
+#+begin_src emacs-lisp
+(use-package emacsql-sqlite
+  :defer t
+  :straight (:type built-in))
+
+(use-package org-roam
+  :straight (:host github :repo "org-roam/org-roam"
+                   :files (:defaults "extensions/*.el"))
+  :if (not my/remote-server)
+  :after org
+  :init
+  (setq org-roam-file-extensions '("org"))
+  (setq org-roam-v2-ack t)
+  (setq orb-insert-interface 'ivy-bibtex)
+  :config
+  (org-roam-setup)
+  (require 'org-roam-protocol))
+#+end_src
+**** Capture templates and dailies
+#+begin_src emacs-lisp
+(setq org-roam-capture-templates
+      `(("d" "default" plain "%?"
+         :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+         :unnarrowed t)
+        ("e" "encrypted" plain "%?"
+         :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
+         :unnarrowed t)))
+
+(setq org-roam-dailies-capture-templates
+      '(("d" "default" entry
+         "* %?"
+         :target (file+head "%<%Y-%m-%d>.org.gpg"
+                            "#+title: %<%Y-%m-%d>\n"))))
+#+end_src
+**** Keybindings
+#+begin_src emacs-lisp
+(my-leader-def
+  :infix "or"
+  "" '(:which-key "org-roam")
+  "i" 'org-roam-node-insert
+  "r" 'org-roam-node-find
+  "g" 'org-roam-graph
+  "c" 'org-roam-capture
+  "b" 'org-roam-buffer-toggle)
+
+(with-eval-after-load 'org-roam
+  (general-define-key
+   :keymaps 'org-roam-mode-map
+   :states '(normal)
+   "TAB" #'magit-section-toggle
+   "q" #'quit-window
+   "k" #'magit-section-backward
+   "j" #'magit-section-forward
+   "gr" #'revert-buffer
+   "RET" #'org-roam-buffer-visit-thing))
+
+(with-eval-after-load 'org
+  (my-leader-def
+    :keymap 'org-mode-map
+    :infix "or"
+    "t" 'org-roam-tag-add
+    "T" 'org-toam-tag-remove)
+  (general-define-key
+   :keymap 'org-mode-map
+   "C-c i" 'org-id-get-create
+   "C-c l o" 'org-roam-node-insert))
+#+end_src
+**** org-roam-ui
+A browser frontend to visualize a Roam directory in a form of a graph.
+
+#+begin_src emacs-lisp
+(use-package org-roam-ui
+  :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
+  :after org-roam
+  ;; :hook (org-roam . org-roam-ui-mode)
+  :init
+  (my-leader-def "oru" #'org-roam-ui-mode))
+#+end_src
+**** org-roam-protocol
+Open links such as =org-protocol://= from browser. Run =M-x server-start= for org-protocol to work.
+
+#+begin_src conf :tangle ~/.local/share/applications/org-protocol.desktop
+[Desktop Entry]
+Name=Org-Protocol
+Exec=emacsclient %u
+Icon=emacs-icon
+Type=Application
+Terminal=false
+MimeType=x-scheme-handler/org-protocol
+#+end_src
+
+Don't forget to run the following after setup:
+#+begin_src bash :tangle no
+xdg-mime default org-protocol.desktop x-scheme-handler/org-protocol
 #+end_src
 *** Review workflow
 My take on a review workflow. As a baseline, I want to have a template that lists the important changes since the last review and other basic information. I'm doing reviews regularly, but the time intervals still may vary, hence this flexibility.
@@ -3985,152 +4167,6 @@ A template looks like this:
           "\n")))
 
 (add-to-list 'org-capture-templates my/org-review-capture-template t)
-#+end_src
-*** Org Journal
-[[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining a journal in org mode. I want to have its entries separate from my knowledge base.
-
-#+begin_src emacs-lisp
-(use-package org-journal
-  :straight t
-  :if (not my/remote-server)
-  :after org
-  :config
-  (setq org-journal-dir (concat org-directory "/journal"))
-  (setq org-journal-file-type 'weekly)
-  (setq org-journal-file-format "%Y-%m-%d.org")
-  (setq org-journal-date-format "%A, %Y-%m-%d")
-  (setq org-journal-enable-encryption t))
-
-(my-leader-def
-  :infix "oj"
-  "" '(:which-key "org-journal")
-  "j" 'org-journal-new-entry
-  "o" 'org-journal-open-current-journal-file
-  "s" 'org-journal-search)
-#+end_src
-
-Also, I want to store some information in the journal as properties of the record. So below is a function which does just that.
-
-As of now, it stores Emacs version, hostname, location and current EMMS track if there is one.
-#+begin_src emacs-lisp
-(defun my/set-journal-header ()
-  (org-set-property "Emacs" emacs-version)
-  (org-set-property "Hostname" system-name)
-  (when (boundp 'my/location)
-    (org-set-property "Location" my/location))
-  (when (fboundp 'emms-playlist-current-selected-track)
-    (let ((track (emms-playlist-current-selected-track)))
-      (when track
-        (let ((album (cdr (assoc 'info-album track)))
-              (artist (or (cdr (assoc 'info-albumartist track))
-                          (cdr (assoc 'info-album track))))
-              (title (cdr (assoc 'info-title track)))
-              (string ""))
-          (when artist
-            (setq string (concat string "[" artist "] ")))
-          (when album
-            (setq string (concat string album " - ")))
-          (when title
-            (setq string (concat string title)))
-          (when (> (length string) 0)
-            (org-set-property "EMMS_Track" string)))))))
-
-(add-hook 'org-journal-after-entry-create-hook
-          #'my/set-journal-header)
-#+end_src
-*** Org Roam
-[[https://github.com/org-roam/org-roam][org-roam]] is a plain-text knowledge database.
-
-| Guix dependency       |
-|-----------------------|
-| emacs-emacsql-sqlite3 |
-| graphviz              |
-
-References:
-- [[https://github.com/org-roam/org-roam/wiki/Hitchhiker%27s-Rough-Guide-to-Org-roam-V2][Hitchhiker's Rough Guide to Org roam V2]]
-
-#+begin_src emacs-lisp
-(use-package emacsql-sqlite
-  :defer t
-  :straight (:type built-in))
-
-(use-package org-roam
-  :straight (:host github :repo "org-roam/org-roam"
-                   :files (:defaults "extensions/*.el"))
-  :if (not my/remote-server)
-  :after org
-  :init
-  (setq org-roam-directory (concat org-directory "/roam"))
-  (setq org-roam-file-extensions '("org"))
-  (setq org-roam-v2-ack t)
-  (setq orb-insert-interface 'ivy-bibtex)
-  :config
-  (org-roam-setup)
-  (setq org-roam-capture-templates
-        `(("d" "default" plain "%?"
-           :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
-           :unnarrowed t)
-          ("e" "encrypted" plain "%?"
-           :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
-           :unnarrowed t)))
-  (require 'org-roam-protocol)
-  (general-define-key
-   :keymaps 'org-roam-mode-map
-   :states '(normal)
-   "TAB" #'magit-section-toggle
-   "q" #'quit-window
-   "k" #'magit-section-backward
-   "j" #'magit-section-forward
-   "gr" #'revert-buffer
-   "RET" #'org-roam-buffer-visit-thing))
-
-(my-leader-def
-  :infix "or"
-  "" '(:which-key "org-roam")
-  "i" 'org-roam-node-insert
-  "r" 'org-roam-node-find
-  "g" 'org-roam-graph
-  "c" 'org-roam-capture
-  "b" 'org-roam-buffer-toggle)
-
-(with-eval-after-load 'org
-  (my-leader-def
-    :keymap 'org-mode-map
-    :infix "or"
-    "t" 'org-roam-tag-add
-    "T" 'org-toam-tag-remove)
-  (general-define-key
-   :keymap 'org-mode-map
-   "C-c i" 'org-id-get-create
-   "C-c l o" 'org-roam-node-insert))
-#+end_src
-**** org-roam-ui
-A browser frontend to visualize a Roam directory in a form of a graph.
-
-#+begin_src emacs-lisp
-(use-package org-roam-ui
-  :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
-  :after org-roam
-  ;; :hook (org-roam . org-roam-ui-mode)
-  :init
-  (my-leader-def "oru" #'org-roam-ui-mode))
-#+end_src
-**** org-roam-protocol
-Open links such as =org-protocol://= from browser. Run =M-x server-start= for org-protocol to work.
-
-#+begin_src conf :tangle ~/.local/share/applications/org-protocol.desktop
-[Desktop Entry]
-Name=Org-Protocol
-Exec=emacsclient %u
-Icon=emacs-icon
-Type=Application
-Terminal=false
-MimeType=x-scheme-handler/org-protocol
-#+end_src
-
-Don't forget to run the following after setup:
-#+begin_src bash :tangle no
-xdg-mime default org-protocol.desktop x-scheme-handler/org-protocol
 #+end_src
 *** org-ref
 | Type | Description                     |
@@ -4379,6 +4415,7 @@ Add a custom LaTeX template without default packages. Packages are indented to b
   (my/setup-org-latex))
 #+end_src
 ** Keybindings & stuff
+*** General keybindings
 #+begin_src emacs-lisp :tangle no :noweb-ref org-keys-setup
 (general-define-key
  :keymaps 'org-mode-map
@@ -4444,7 +4481,10 @@ A function to open a file from =org-directory=, excluding a few directories like
 (my-leader-def
   "o o" 'my/org-file-open)
 #+end_src
-** Presentations
+** Tools
+Various small packages.
+
+*** Presentations
 Doing presentations with [[https://github.com/rlister/org-present][org-present]].
 
 #+begin_src emacs-lisp
@@ -4496,9 +4536,6 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
               (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
               (org-latex-preview '(64)))))
 #+end_src
-** Tools
-Various small packages.
-
 *** TOC
 Make a TOC inside the org file.
 
@@ -4525,7 +4562,7 @@ A nice package to make screenshots and insert them to the Org document.
   :straight t)
 #+end_src
 ** System configuration
-Functions used across my literate config files.
+Functions related to literate configuration.
 
 *** Tables for Guix Dependencies
 A function to extract Guix dependencies from the org file.

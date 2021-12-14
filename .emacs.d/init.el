@@ -795,11 +795,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq-default frame-title-format
               '(""
                 "emacs"
-                (:eval
-                 (let ((project-name (projectile-project-name)))
-                   (if (not (string= "-" project-name))
-                       (format ":%s@%s" project-name (system-name))
-                     (format "@%s" (system-name)))))))
+                ;; (:eval
+                ;;  (let ((project-name (projectile-project-name)))
+                ;;    (if (not (string= "-" project-name))
+                ;;        (format ":%s@%s" project-name (system-name))
+                ;;      (format "@%s" (system-name)))))
+                ))
 
 (use-package auto-dim-other-buffers
   :straight t
@@ -939,10 +940,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq doom-modeline-env-enable-go nil)
   (setq doom-modeline-buffer-encoding 'nondefault)
   (setq doom-modeline-hud t)
+  (setq doom-modeline-persp-icon nil)
+  (setq doom-modeline-persp-name nil)
   :config
-  (doom-modeline-mode 1)
   (setq doom-modeline-minor-modes nil)
-  (setq doom-modeline-buffer-state-icon nil))
+  (setq doom-modeline-buffer-state-icon nil)
+  (doom-modeline-mode 1))
 
 (use-package perspective
   :straight t
@@ -2313,6 +2316,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   
   (general-nmap :keymaps 'org-mode-map
       "C-x C-l" 'my/org-link-copy)
+  (setq org-roam-directory (concat org-directory "/roam"))
   (setq org-agenda-files '("inbox.org" "projects.org" "work.org" "sem-11.org" "life.org"))
   ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
   (add-to-list 'org-global-properties
@@ -2327,6 +2331,16 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
 (org-crypt-use-before-save-magic)
 (setq org-tags-exclude-from-inheritance (quote ("crypt")))
 (setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205")
+
+(defun my/epa--select-keys-around (fun prompt keys)
+  (if (= (seq-length keys) 1)
+      keys
+    (funcall fun prompt keys)))
+
+(with-eval-after-load 'epa
+  (advice-add #'epa--select-keys :around #'my/epa--select-keys-around))
+
+(setq epa-file-encrypt-to '("DE004F32AFA00205"))
 
 (use-package org-contrib
   :straight (org-contrib
@@ -2583,6 +2597,118 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
          ((tags-todo "personal"
                      ((org-agenda-prefix-format "  %i %-12:c [%e] ")))))))
 
+(use-package org-journal
+  :straight t
+  :if (not my/remote-server)
+  :after org
+  :config
+  (setq org-journal-dir (concat org-directory "/journal"))
+  (setq org-journal-file-type 'weekly)
+  (setq org-journal-file-format "%Y-%m-%d.org")
+  (setq org-journal-date-format "%A, %Y-%m-%d")
+  (setq org-journal-enable-encryption t))
+
+(my-leader-def
+  :infix "oj"
+  "" '(:which-key "org-journal")
+  "j" 'org-journal-new-entry
+  "o" 'org-journal-open-current-journal-file
+  "s" 'org-journal-search)
+
+(defun my/set-journal-header ()
+  (org-set-property "Emacs" emacs-version)
+  (org-set-property "Hostname" system-name)
+  (when (boundp 'my/location)
+    (org-set-property "Location" my/location))
+  (when (fboundp 'emms-playlist-current-selected-track)
+    (let ((track (emms-playlist-current-selected-track)))
+      (when track
+        (let ((album (cdr (assoc 'info-album track)))
+              (artist (or (cdr (assoc 'info-albumartist track))
+                          (cdr (assoc 'info-album track))))
+              (title (cdr (assoc 'info-title track)))
+              (string ""))
+          (when artist
+            (setq string (concat string "[" artist "] ")))
+          (when album
+            (setq string (concat string album " - ")))
+          (when title
+            (setq string (concat string title)))
+          (when (> (length string) 0)
+            (org-set-property "EMMS_Track" string)))))))
+
+(add-hook 'org-journal-after-entry-create-hook
+          #'my/set-journal-header)
+
+(use-package emacsql-sqlite
+  :defer t
+  :straight (:type built-in))
+
+(use-package org-roam
+  :straight (:host github :repo "org-roam/org-roam"
+                   :files (:defaults "extensions/*.el"))
+  :if (not my/remote-server)
+  :after org
+  :init
+  (setq org-roam-file-extensions '("org"))
+  (setq org-roam-v2-ack t)
+  (setq orb-insert-interface 'ivy-bibtex)
+  :config
+  (org-roam-setup)
+  (require 'org-roam-protocol))
+
+(setq org-roam-capture-templates
+      `(("d" "default" plain "%?"
+         :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+         :unnarrowed t)
+        ("e" "encrypted" plain "%?"
+         :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
+         :unnarrowed t)))
+
+(setq org-roam-dailies-capture-templates
+      '(("d" "default" entry
+         "* %?"
+         :target (file+head "%<%Y-%m-%d>.org.gpg"
+                            "#+title: %<%Y-%m-%d>\n"))))
+
+(my-leader-def
+  :infix "or"
+  "" '(:which-key "org-roam")
+  "i" 'org-roam-node-insert
+  "r" 'org-roam-node-find
+  "g" 'org-roam-graph
+  "c" 'org-roam-capture
+  "b" 'org-roam-buffer-toggle)
+
+(with-eval-after-load 'org-roam
+  (general-define-key
+   :keymaps 'org-roam-mode-map
+   :states '(normal)
+   "TAB" #'magit-section-toggle
+   "q" #'quit-window
+   "k" #'magit-section-backward
+   "j" #'magit-section-forward
+   "gr" #'revert-buffer
+   "RET" #'org-roam-buffer-visit-thing))
+
+(with-eval-after-load 'org
+  (my-leader-def
+    :keymap 'org-mode-map
+    :infix "or"
+    "t" 'org-roam-tag-add
+    "T" 'org-toam-tag-remove)
+  (general-define-key
+   :keymap 'org-mode-map
+   "C-c i" 'org-id-get-create
+   "C-c l o" 'org-roam-node-insert))
+
+(use-package org-roam-ui
+  :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
+  :after org-roam
+  ;; :hook (org-roam . org-roam-ui-mode)
+  :init
+  (my-leader-def "oru" #'org-roam-ui-mode))
+
 (setq my/git-diff-status
       '(("A" . added)
         ("C" . copied)
@@ -2759,110 +2885,6 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
           "\n")))
 
 (add-to-list 'org-capture-templates my/org-review-capture-template t)
-
-(use-package org-journal
-  :straight t
-  :if (not my/remote-server)
-  :after org
-  :config
-  (setq org-journal-dir (concat org-directory "/journal"))
-  (setq org-journal-file-type 'weekly)
-  (setq org-journal-file-format "%Y-%m-%d.org")
-  (setq org-journal-date-format "%A, %Y-%m-%d")
-  (setq org-journal-enable-encryption t))
-
-(my-leader-def
-  :infix "oj"
-  "" '(:which-key "org-journal")
-  "j" 'org-journal-new-entry
-  "o" 'org-journal-open-current-journal-file
-  "s" 'org-journal-search)
-
-(defun my/set-journal-header ()
-  (org-set-property "Emacs" emacs-version)
-  (org-set-property "Hostname" system-name)
-  (when (boundp 'my/location)
-    (org-set-property "Location" my/location))
-  (when (fboundp 'emms-playlist-current-selected-track)
-    (let ((track (emms-playlist-current-selected-track)))
-      (when track
-        (let ((album (cdr (assoc 'info-album track)))
-              (artist (or (cdr (assoc 'info-albumartist track))
-                          (cdr (assoc 'info-album track))))
-              (title (cdr (assoc 'info-title track)))
-              (string ""))
-          (when artist
-            (setq string (concat string "[" artist "] ")))
-          (when album
-            (setq string (concat string album " - ")))
-          (when title
-            (setq string (concat string title)))
-          (when (> (length string) 0)
-            (org-set-property "EMMS_Track" string)))))))
-
-(add-hook 'org-journal-after-entry-create-hook
-          #'my/set-journal-header)
-
-(use-package emacsql-sqlite
-  :defer t
-  :straight (:type built-in))
-
-(use-package org-roam
-  :straight (:host github :repo "org-roam/org-roam"
-                   :files (:defaults "extensions/*.el"))
-  :if (not my/remote-server)
-  :after org
-  :init
-  (setq org-roam-directory (concat org-directory "/roam"))
-  (setq org-roam-file-extensions '("org"))
-  (setq org-roam-v2-ack t)
-  (setq orb-insert-interface 'ivy-bibtex)
-  :config
-  (org-roam-setup)
-  (setq org-roam-capture-templates
-        `(("d" "default" plain "%?"
-           :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
-           :unnarrowed t)
-          ("e" "encrypted" plain "%?"
-           :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
-           :unnarrowed t)))
-  (require 'org-roam-protocol)
-  (general-define-key
-   :keymaps 'org-roam-mode-map
-   :states '(normal)
-   "TAB" #'magit-section-toggle
-   "q" #'quit-window
-   "k" #'magit-section-backward
-   "j" #'magit-section-forward
-   "gr" #'revert-buffer
-   "RET" #'org-roam-buffer-visit-thing))
-
-(my-leader-def
-  :infix "or"
-  "" '(:which-key "org-roam")
-  "i" 'org-roam-node-insert
-  "r" 'org-roam-node-find
-  "g" 'org-roam-graph
-  "c" 'org-roam-capture
-  "b" 'org-roam-buffer-toggle)
-
-(with-eval-after-load 'org
-  (my-leader-def
-    :keymap 'org-mode-map
-    :infix "or"
-    "t" 'org-roam-tag-add
-    "T" 'org-toam-tag-remove)
-  (general-define-key
-   :keymap 'org-mode-map
-   "C-c i" 'org-id-get-create
-   "C-c l o" 'org-roam-node-insert))
-
-(use-package org-roam-ui
-  :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
-  :after org-roam
-  ;; :hook (org-roam . org-roam-ui-mode)
-  :init
-  (my-leader-def "oru" #'org-roam-ui-mode))
 
 (use-package org-ref
   :straight (:files (:defaults (:exclude "*helm*")))
