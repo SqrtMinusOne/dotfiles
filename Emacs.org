@@ -1,6 +1,6 @@
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:bash       :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
-#+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el :mkdirp yes :eval never-export
+#+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el :mkdirp yes :eval never-export :exports none
 #+TODO: CHECK(s) | OFF(o)
 #+TITLE: Emacs config
 #+OPTIONS: broken-links:auto h:6 toc:nil
@@ -9,7 +9,35 @@
 One day we won't hate one another, no young boy will march to war and I will clean up my Emacs config. But that day isn't today.
 #+end_quote
 
+* Introduction
 My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an awesome +text editor+ program that can do almost anything.
+
+At the moment of this writing, this "almost anything" includes:
+- *Writing code*. With LSP & Co this functionality of Emacs may rival that of IDEs, and is at least on par with editors like VS Code.\\
+  One thing where Emacs is particularly good is writing Lisp code, e.g. Clojure, Common Lisp, and, of course, Emacs Lisp.
+- *Literate programming* with Org Mode. That includes:
+  - Configuring the entirety of my software that can be configured with text files.
+  - Interactive programming like one provided by Jupyter Notebook.
+- *File management*. Dired is my primary file manager.
+- *Email*, with notmuch.
+- *Multimedia management*, with EMMS.
+- *RSS feed reader*, with elfeed.
+- *Task management*, with Org Mode.
+- *Managing passwords*, with pass.
+- *IRC*, with ERC.
+- *Formatting documents*, also with Org Mode. When the document is too complex, I prefer to write plain LaTeX, but I've come to the conclusion that in most cases Org Mode covers my needs there.
+- *X Window management*, with EXWM. So I could say I literally live in Emacs.
+- ...
+
+As I have hinted above, this file is a piece of literate configuration, which means that the actual code is interweaved with English-language commentary. One could argue that the commentary, not the code, is the primary entity of the file.
+
+But at the same time, the configuration is personal, so in fact, the primary benefactor of the literate structure is me. The commentary is primarily meant to capture my state of mind at the moment of writing the code, which is immensely helpful for maintaining the code in the future. Besides, I can't say I'm stable with it.
+
+Occasionally I save some promising experimentations from scratch buffers without much comment. Or I may not have enough time to describe things in substantial detail. Or, as it is at the moment when I'm writing this, I have the time to write down whatever I consider necessary. Or, when I'm writing a blog post about Emacs configuration, I usually incorporate some things back into this config.
+
+And of course, human minds share many similarities, so if you are an avid Emacs user, you probably can extract something of value from here. Although in this case, your configuration has a decent chance to have everything I'm doing here. But who knows, because somehow mine is over 6000 LoC at the moment, despite being just a bit over a year old.
+
+If however, by some twist of fate, this document is one of the first things you see about Emacs, it won't be a good resource for you. And you definitely shouldn't try to launch this config as it is. If I could suggest only one resource, I'd advise David Wilson's [[https://www.youtube.com/c/SystemCrafters][System Crafters]] YouTube channel.
 
 #+TOC: headlines 6
 
@@ -289,7 +317,7 @@ My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an aweso
 - [[#guix-settings][Guix settings]]
 :END:
 * Some remarks
-I decided not to keep configs for features that I do not use anymore, because this config is already huge. But here are last commits which had these feature presented.
+I decided not to keep configs for features that I do not use anymore because this config is already huge. But here are the last commits that had these features presented.
 
 | Feature      | Last commit                              |
 |--------------+------------------------------------------|
@@ -338,7 +366,7 @@ References:
 (eval-when-compile (require 'use-package))
 #+end_src
 ** Variables & environment
-This section is about optionating the Emacs config.
+This section is about optioning the Emacs config.
 
 The following variable is true when my machine is not powerful enough for some resource-heavy packages.
 #+begin_src emacs-lisp
@@ -354,7 +382,7 @@ The following is true if Emacs is meant to be used with TRAMP over slow ssh. Tak
        (string= (system-name) "violet")))
 #+end_src
 
-The following is true is Emacs is ran on a remote server where I don't need stuff like my org workflow
+The following is true is Emacs is run on a remote server where I don't need stuff like my org workflow
 #+begin_src emacs-lisp
 (setq my/remote-server
       (or (string= (getenv "IS_REMOTE") "true")
@@ -372,7 +400,7 @@ Also, I sometimes need to know if a program is running inside Emacs (say, inside
 (setenv "IS_EMACS" "true")
 #+end_src
 
-Finally, I want to have a minimal Emacs config for debugging purposes. This has just straight.el, use-packages and evil.
+Finally, I want to have a minimal Emacs config for debugging purposes. This has just straight.el, use-packages, and evil.
 #+begin_src emacs-lisp :tangle ~/.emacs.d/init-minimal.el :noweb yes
 <<minimal>>
 #+end_src
@@ -433,7 +461,7 @@ Set the number of native compilation jobs to 1 on low-power machines.
 
 The following code uses the conda package to activate the base environment on startup if Emacs is launched outside the environment.
 
-Also, some strange things are happening if vterm is launched with conda activated from Emacs, so I advise =conda-env-activate= to set an auxililary environment variable. This variable is used in the [[file:Console.org::*Anaconda][shell config]].
+Also, some strange things are happening if vterm is launched with conda activated from Emacs, so I advise =conda-env-activate= to set an auxiliary environment variable. This variable is used in the [[file:Console.org::*Anaconda][shell config]].
 
 References:
 - [[https://docs.anaconda.com/][Anaconda docs]]
@@ -470,7 +498,7 @@ I have some variables which I don't commit to the repo, e.g. my current location
     (load-file private-file))
 #+end_src
 *** No littering
-By default Mmacs and its packages create a lot files in =.emacs.d= and in other places. [[https://github.com/emacscollective/no-littering][no-littering]] is a collective effort to redirect all of that to two folders in =user-emacs-directory=.
+By default Emacs and its packages create a lot files in =.emacs.d= and in other places. [[https://github.com/emacscollective/no-littering][no-littering]] is a collective effort to redirect all of that to two folders in =user-emacs-directory=.
 
 #+begin_src emacs-lisp
 (use-package no-littering
@@ -515,7 +543,7 @@ References:
 #+end_src
 
 **** dump keybindings
-A function to dump keybindings starting with a prefix to a buffer in tree-like form.
+A function to dump keybindings starting with a prefix to a buffer in a tree-like form.
 
 #+begin_src emacs-lisp
 (defun my/dump-bindings-recursive (prefix &optional level)
@@ -531,7 +559,7 @@ A function to dump keybindings starting with a prefix to a buffer in tree-like f
        (+ 2 (or level 0))))))
 
 (defun my/dump-bindings (prefix)
-  "Dump keybindings starting with PREFIX in tree-like form."
+  "Dump keybindings starting with PREFIX in a tree-like form."
   (interactive "sPrefix: ")
   (with-current-buffer (get-buffer-create "bindings")
     (point-max)
@@ -627,6 +655,22 @@ Basic evil configuration.
   :straight t
   :config
   (global-evil-matchit-mode 1))
+#+end_src
+**** My additions
+Do ex search in other buffer. Like =*=, but switch to other buffer and search there.
+
+#+begin_src emacs-lisp
+(defun my/evil-ex-search-word-forward-other-window (count &optional symbol)
+  (interactive (list (prefix-numeric-value current-prefix-arg)
+                     evil-symbol-word-search))
+  (save-excursion
+    (evil-ex-start-word-search nil 'forward count symbol))
+  (other-window 1)
+  (evil-ex-search-next))
+
+(general-define-key
+ :states '(normal)
+ "&" #'my/evil-ex-search-word-forward-other-window)
 #+end_src
 **** evil-collection
 [[https://github.com/emacs-evil/evil-collection][evil-collection]] is a package that provides evil bindings for a lot of different packages. One can see the complete list in the [[https://github.com/emacs-evil/evil-collection/tree/master/modes][modes]] folder.
@@ -826,7 +870,7 @@ Some keybindings for xref and go to definition.
 **** Folding
 There are multiple ways to fold text in Emacs.
 
-The most versatile is the built-in =hs-minor-mode=, which seems to work out of the box for Lisps, C-like languages and Python. =outline-minor-mode= works for org-mode, LaTeX and the like. There is a 3rd-party solution [[https://github.com/elp-revive/origami.el][origami.el]], but I don't use it at the moment.
+The most versatile is the built-in =hs-minor-mode=, which seems to work out of the box for Lisps, C-like languages, and Python. =outline-minor-mode= works for org-mode, LaTeX and the like. There is a 3rd-party solution [[https://github.com/elp-revive/origami.el][origami.el]], but I don't use it at the moment.
 
 Evil does a pretty good job of abstracting the first two with a set of vim-like keybindings. I was using =SPC= in vim, but as now this isn't an option, I set =TAB= to toggle folding.
 
@@ -909,7 +953,7 @@ One caveat here is that the minibuffer is always the bottom-most Emacs window, s
 #+end_src
 
 For the =move= I want the following behavior:
-- if there is space in the required directon, move the Emacs window there;
+- if there is space in the required direction, move the Emacs window there;
 - if there is no space in the required direction, but space in two orthogonal directions, move the Emacs window so that there is no more space in the orthogonal directions;
 - otherwise, move an X window (Emacs frame).
 
@@ -1000,12 +1044,12 @@ Finally, the entrypoint for the Emacs integration. In addition to the commands d
     (- (i3-msg command))))
 #+end_src
 ** Editing text
-Various packages, tricks ans settings that help with the central task of Emacs - editing text.
+Various packages, tricks, and settings that help with the central task of Emacs - editing text.
 *** Indentation & whitespace
 **** Aggressive Indent
 A package to keep the code intended.
 
-Doesn't work too well with many ecosystems because the LSP-based indentation is rather slow, but nice for Lisps.
+Doesn't work too well with many ecosystems because the LSP-based indentation is rather slow but nice for Lisps.
 
 References:
 - [[https://github.com/Malabarba/aggressive-indent-mode][aggressive-indent-mode repo]]
@@ -1141,7 +1185,7 @@ A package to select an ever-increasing (or ever-decreasing) region of text.
 
 [[https://github.com/Alexander-Miller/treemacs][Treemacs]] calls itself a tree layout file explorer, but looks more like a project and workspace management system.
 
-Integrates with evil, magit, projectile and perspective. The latter is particularly great - each perspective can have its own treemacs workspace!
+Integrates with evil, magit, projectile, and perspective. The latter is particularly great - each perspective can have its own treemacs workspace!
 
 #+begin_src emacs-lisp
 (use-package treemacs
@@ -1246,7 +1290,7 @@ Function to open dired and vterm at given nodes.
 
 [[https://github.com/emacsorphanage/git-gutter][git-gutter]] is a package which shows git changes for each line (added/changed/deleted lines).
 
-[[https://github.com/emacsmirror/git-timemachine][git-timemachine]] allows to visit previous versions of a file.
+[[https://github.com/emacsmirror/git-timemachine][git-timemachine]] allows visiting previous versions of a file.
 
 #+begin_src emacs-lisp
 (use-package magit
@@ -1761,7 +1805,7 @@ Highlight TODOs and stuff
 ** Doom Modeline
 A modeline from Doom Emacs. A big advantage of this package is that it just works out of the box and does not require much customization.
 
-I've tried a bunch of other options, including [[https://github.com/TheBB/spaceline][spaceline]], but in the end decided that Doom Modeline works best for me.
+I tried a bunch of other options, including [[https://github.com/TheBB/spaceline][spaceline]], but in the end, decided that Doom Modeline works best for me.
 
 References:
 - [[https://github.com/seagle0128/doom-modeline][Doom Modeline]]
@@ -1981,7 +2025,7 @@ An incremental code parsing system, constructing a syntax tree at runtime.
 
 Right now it doesn't do much except provide a better syntax highlighting than regexes, but this integration is a rather recent development. There are already some major modes built on top of this thing.
 
-Also, it seems to break if ran from mmm-mode, so there is a small workaround.
+Also, it seems to break if run from mmm-mode, so there is a small workaround.
 
 References:
 - [[https://tree-sitter.github.io/tree-sitter/][Tree-sitter library]]
@@ -2010,7 +2054,7 @@ References:
 *** DAP
 An Emacs client for Debugger Adapter Protocol.
 
-As of time of this writing, I mostly debug TypeScript, so the main competitor is Chrome Inspector for node.js.
+As of the time of this writing, I mostly debug TypeScript, so the main competitor is Chrome Inspector for node.js.
 
 References:
 - [[https://emacs-lsp.github.io/dap-mode/][dap-mode homepage]]
@@ -2041,7 +2085,7 @@ References:
 **** Controls
 I don't like some keybindings in the built-in hydra, and there seems to be no easy way to modify the existing hydra, so I create my own. I tried to use transient, but the transient buffer seems to conflict with special buffers of DAP, and hydra does not.
 
-Also, I want the hydra to toggle UI windows instead of just opening them, so here is macro that defines such functions:
+Also, I want the hydra to toggle UI windows instead of just opening them, so here is a macro that defines such functions:
 #+begin_src emacs-lisp
 (with-eval-after-load 'dap-mode
   (defmacro my/define-dap-ui-window-toggler (name)
@@ -2119,7 +2163,7 @@ First, DAP uses Treemacs buffers quite extensively, and they hide the doom model
 
 Second, lines are truncated in some strange way, but calling =toggle-truncate-lines= seems to fix that.
 
-So I define a macro that creates a function that I can further use in an advice.
+So I define a macro that creates a function that I can further use in advices.
 
 #+begin_src emacs-lisp
 (defvar my/dap-mode-buffer-fixed nil)
@@ -2174,7 +2218,7 @@ A function to open a value from a treemacs node in a new buffer.
         (select-window (display-buffer buffer))))))
 #+end_src
 **** Improved stack frame switching
-One significant improvement over Chrome Inspector for my particular stack is an ability to filter the stack frame list, for instance to see only frames that relate to my current project.
+One significant improvement over Chrome Inspector for my particular stack is an ability to filter the stack frame list, for instance, to see only frames that relate to my current project.
 
 So, here are functions that customize the filters:
 #+begin_src emacs-lisp
@@ -2259,7 +2303,7 @@ Some debug templates I frequently use.
 
 #+end_src
 *** Reformatter
-A general-purpose package to run formattters on files. While the most popular formatters are already packaged for Emacs, those that aren't can be invoked with this package.
+A general-purpose package to run formatters on files. While the most popular formatters are already packaged for Emacs, those that aren't can be invoked with this package.
 
 #+begin_src emacs-lisp
 (use-package reformatter
@@ -2980,7 +3024,7 @@ References:
   :commands (py-isort-buffer py-isort-region))
 #+end_src
 
-The following bindings calls yapf & isort on the buffer
+The following binding calls yapf & isort on the buffer
 #+begin_src emacs-lisp
 (my-leader-def
   :keymaps 'python-mode-map
@@ -3003,7 +3047,7 @@ A package to generate sphinx-compatible docstrings.
     "rd" 'sphinx-doc))
 #+end_src
 *** pytest
-[[https://docs.pytest.org/en/6.2.x/][pytest]] is an unit testing framework for Python.
+[[https://docs.pytest.org/en/6.2.x/][pytest]] is a unit testing framework for Python.
 
 Once again a function to set pytest executable from pipenv.
 
@@ -3032,7 +3076,7 @@ References:
     (my/set-pipenv-pytest)))
 #+end_src
 **** Fix comint buffer width
-For some reason default comint output width is way too large.
+For some reason, the default comint output width is way too large.
 
 To fix that, I've modified the following function in the =python-pytest= package.
 #+begin_src emacs-lisp :noweb-ref override-pytest-run :tangle no
@@ -3233,9 +3277,9 @@ A package to quickly create =.gitignore= files.
 ** SQL
 [[https://github.com/zeroturnaround/sql-formatter][sql-formatter]] is a nice JavaScript package for pretty-printing SQL queries. It is not packaged for Emacs, so the easiest way to use it seems to be to define a custom formatter via [[https://github.com/purcell/emacs-reformatter][reformatter]].
 
-Also, I've a simple function to switch dialects because I often alternate between them.
+Also, I've made a simple function to switch dialects because I often alternate between them.
 
-So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL queries in Org Mode, so this qute package is handy.
+So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL queries in Org Mode, so this quite package is handy.
 
 #+begin_src emacs-lisp
 (setq my/sqlformatter-dialect-choice
@@ -3630,6 +3674,108 @@ Example usage is as follows:
 #+begin_example
 :tangle (my/org-prj-dir "sqrt_data/api/__init__.py")
 #+end_example
+** Tools
+Various small packages.
+
+*** Presentations
+Doing presentations with [[https://github.com/rlister/org-present][org-present]].
+
+#+begin_src emacs-lisp
+(use-package hide-mode-line
+  :straight t
+  :after (org-present))
+
+(defun my/present-next-with-latex ()
+  (interactive)
+  (org-present-next)
+  (org-latex-preview '(16)))
+
+(defun my/present-prev-with-latex ()
+  (interactive)
+  (org-present-prev)
+  (org-latex-preview '(16)))
+
+(use-package org-present
+  :straight (:host github :repo "rlister/org-present")
+  :if (not my/remote-server)
+  :commands (org-present)
+  :config
+  (general-define-key
+   :keymaps 'org-present-mode-keymap
+   "<next>" 'my/present-next-with-latex
+   "<prior>" 'my/present-prev-with-latex)
+  (add-hook 'org-present-mode-hook
+            (lambda ()
+              (blink-cursor-mode 0)
+              (org-present-big)
+              ;; (org-display-inline-images)
+              (org-present-hide-cursor)
+              (org-present-read-only)
+              (display-line-numbers-mode 0)
+              (hide-mode-line-mode +1)
+              (setq-local org-format-latex-options
+                          (plist-put org-format-latex-options
+                                     :scale (* org-present-text-scale my/org-latex-scale 0.5)))
+              (org-latex-preview '(16))))
+  (add-hook 'org-present-mode-quit-hook
+            (lambda ()
+              (blink-cursor-mode 1)
+              (org-present-small)
+              ;; (org-remove-inline-images)
+              (org-present-show-cursor)
+              (org-present-read-write)
+              (display-line-numbers-mode 1)
+              (hide-mode-line-mode 0)
+              (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
+              (org-latex-preview '(64)))))
+#+end_src
+*** TOC
+Make a TOC inside the org file.
+
+References:
+- [[https://github.com/alphapapa/org-make-toc][alphapapa/org-make-toc]]
+
+#+begin_src emacs-lisp
+(use-package org-make-toc
+  :after (org)
+  :if (not my/remote-server)
+  :commands
+  (org-make-toc
+   org-make-toc-insert
+   org-make-toc-set
+   org-make-toc-at-point)
+  :straight t)
+#+end_src
+*** Screenshots
+A nice package to make screenshots and insert them to the Org document.
+
+#+begin_src emacs-lisp
+(use-package org-attach-screenshot
+  :commands (org-attach-screenshot)
+  :straight t)
+#+end_src
+*** Transclusion
+A package that implements transclusions in Org Mode, that is rendering a part of one file inside of another file.
+
+#+begin_src emacs-lisp
+(use-package org-transclusion
+  :after org
+  :straight (:host github :repo "nobiot/org-transclusion")
+  :config
+  (add-to-list 'org-transclusion-extensions 'org-transclusion-indent-mode)
+  (require 'org-transclusion-indent-mode)
+  (general-define-key
+   :keymaps '(org-transclusion-map)
+   :states '(normal)
+   "RET" #'org-transclusion-open-source
+   "gr" #'org-transclusion-refresh)
+  (general-define-key
+   :keymaps '(org-mode-map)
+   :states 'normal
+   "C-c t a" #'org-transclusion-add
+   "C-c t A" #'org-transclusion-add-all
+   "C-c t t" #'org-transclusion-mode))
+#+end_src
 ** Productivity & Knowledge management
 My ongoing effort to get a productivity setup in Org.
 
@@ -3810,9 +3956,9 @@ Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I sti
   "s" 'org-journal-search)
 #+end_src
 
-Also, I want to store some information in the journal as properties of the record. So below is a function which does just that.
+Also, I want to store some information in the journal as properties of the record. So below is a function that does just that.
 
-As of now, it stores Emacs version, hostname, location and current EMMS track if there is one.
+As of now, it stores Emacs version, hostname, location, and current EMMS track if there is one.
 #+begin_src emacs-lisp
 (defun my/set-journal-header ()
   (org-set-property "Emacs" emacs-version)
@@ -3870,6 +4016,8 @@ References:
   (require 'org-roam-protocol))
 #+end_src
 **** Capture templates and dailies
+Capture templates for =org-roam-capture=. As for now, nothing too complicated here.
+
 #+begin_src emacs-lisp
 (setq org-roam-capture-templates
       `(("d" "default" plain "%?"
@@ -3878,23 +4026,403 @@ References:
         ("e" "encrypted" plain "%?"
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
          :unnarrowed t)))
+#+end_src
+**** Org Roam Dailies
+=org-roam-dailies= provides journaling capabilities similar to [[https://github.com/bastibe/org-journal][Org Journal]]. I was using the latter for half a year or so but decided to try to use Org Roam for this purpose.
 
+Org Roam has an advantage that, well, its entries form a database, which means I can look for backlinks to the journal and such.
+
+I'd like to have my entries encrypted, so I save them with =.org.gpg=. Org Roam still caches them in plaintext though, but at least that way records can be safely pushed to a repository.
+
+Similar to my previous workflow with Org Journal, I want to have some information on what is happening when I make a record. So, here is a function to figure out that a track played by EMMS:
+#+begin_src emacs-lisp
+(defun my/make-daily-header-track ()
+  (when (fboundp 'emms-playlist-current-selected-track)
+    (let ((track (emms-playlist-current-selected-track)))
+      (when track
+        (let ((album (cdr (assoc 'info-album track)))
+              (artist (or (cdr (assoc 'info-albumartist track))
+                          (cdr (assoc 'info-album track))))
+              (title (cdr (assoc 'info-title track)))
+              (string ""))
+          (when artist
+            (setq string (concat string "[" artist "] ")))
+          (when album
+            (setq string (concat string album " - ")))
+          (when title
+            (setq string (concat string title)))
+          (when (> (length string) 0)
+            string))))))
+#+end_src
+
+And here is a function to make a corresponding property drawer.
+#+begin_src emacs-lisp
+(defun my/make-daily-header ()
+  (string-join
+   (seq-filter
+    #'identity
+    `(":PROPERTIES:"
+      ,(format ":Emacs:      %s" emacs-version)
+      ,(format ":Hostname:   %s" system-name)
+      ,(when (boundp 'my/location)
+         (format ":Location:   %s" my/location))
+      ,(when-let (track (my/make-daily-header-track))
+         (format ":EMMS_Track: %s" track))
+      ":END:"))
+   "\n"))
+#+end_src
+
+Now we can define a capture template for =org-roam-dailies=. This one creates one file for one day; I tried to make something like one per week, but apparently, Org Roam is keen to assign one ID for one file, which is not quite what I want.
+
+#+begin_src emacs-lisp
 (setq org-roam-dailies-capture-templates
-      '(("d" "default" entry
-         "* %?"
-         :target (file+head "%<%Y-%m-%d>.org.gpg"
-                            "#+title: %<%Y-%m-%d>\n"))))
+      `(("d" "default" entry
+         ,(string-join
+           '("* %<%H:%M>"
+             "%(my/make-daily-header)"
+             "%?")
+           "\n")
+         :target
+         (file+head "%<%Y-%m-%d>.org.gpg"
+                    ,(string-join
+                      '("#+TITLE: %<%Y-%m-%d, %A>"
+                        "#+FILETAGS: log"
+                        "")
+                      "\n")))))
+#+end_src
+**** Managing projects in Org Roam
+Org Roam is also pretty good for managing projects.
+
+- *CREDIT*: Thanks to David Wilson [[https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/][for ideas]]
+
+***** Integration with Org Agenda
+Because projects usually have various timestamps and deadlines, I want the project files to populate my =org-agenda-files=.
+
+So here I define a simple macro to filter the Roam notes list from unwanted entries.
+#+begin_src emacs-lisp
+(cl-defmacro my/org-roam-filter-by-tag (&optional &key (include nil) (exclude nil))
+  `(lambda (node)
+     (let ((tags (org-roam-node-tags node)))
+       (and
+        ,(if include
+             `(or
+               ,@(mapcar (lambda (tag)
+                           `(member ,tag tags))
+                         include))
+           t)
+        ,@(mapcar (lambda (tag)
+                    `(not (member ,tag tags)))
+                  exclude)))))
+
+(defun my/org-roam-list-notes-by-tag (tag-name)
+  (mapcar #'org-roam-node-file
+          (seq-filter
+           (my/org-roam-filter-by-tag :include (tag-name))
+           (org-roam-node-list))))
+#+end_src
+
+Now, let's integrate the found project notes to the rest of Org Mode. Besides =org-agenda-files=, I want them to serve as refile targets, so here is a function that updated both variables. That function is called on initialization after the initial values of both variables are set, but can also be called manually.
+#+begin_src emacs-lisp
+(defun my/org-roam-refresh-agenda-list ()
+  (interactive)
+  (let ((project-files (my/org-roam-list-notes-by-tag "org")))
+    (setq org-agenda-files
+          (seq-uniq
+           `(,@org-agenda-files
+             ,@project-files)))
+    (dolist (file project-files)
+      (add-to-list 'org-refile-targets
+                   `(,file :maxlevel . 2)))))
+
+(with-eval-after-load 'org-roam
+  (my/org-roam-refresh-agenda-list))
+#+end_src
+
+David Wilson has proposed a function to automatically update =org-agenda-buffers= after capturing a project, but that's a bit too complicated to pull off correctly.
+***** Capturing tasks and projects
+Find or capture a project.
+
+#+begin_src emacs-lisp
+(defun my/org-roam-find-project ()
+  (interactive)
+  (org-roam-node-find
+   nil
+   nil
+   (my/org-roam-filter-by-tag :include ("org"))
+   :templates
+   `(("p" "project" plain ,(string-join
+                            '("%?"
+                              "* Tasks"
+                              "** TODO Add initials tasks"
+                              "* Log        :log_here:")
+                            "\n")
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                         "#+title: ${title}\n#+category: ${title}\n#+filetags: :org:log_here:")
+      :unnarrowed t))))
+#+end_src
+
+Find or capture a project task. I'm not sure if I'll be using it, as usually capture tasks to inbox and then refile them to where they belong, but I'll leave the function here for now.
+#+begin_src emacs-lisp
+(defun my/org-roam-capture-task ()
+  (interactive)
+  (org-roam-capture-
+   :node (org-roam-node-read
+          nil
+          (my/org-roam-filter-by-tag :include ("org")))
+   :templates
+   `(("p" "project" plain "** TODO %?"
+      :if-new (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
+                             ,(string-join
+                               '("%?"
+                                 "* Tasks"
+                                 "** TODO Add initials tasks"
+                                 "* Log        :log_here:")
+                               "\n")
+                             ("Tasks"))))))
+#+end_src
+**** Automatic transclusion for Dailies
+I've been using org-journal for quite some time, and while it's great, I don't like its linear structure too much. I have all kinds of stuff written there - things related to my job, various personal projects, etc, and it's pretty hard to query a specific thing.
+
+Now that I migrated all the things I've been working on to Org Roam, I can reference some Roam nodes and check backlinks for a particular node, e.g. for a project. But even that isn't quite good enough, because I'd also like to search the references and somehow see the list of records related just to this particular node.
+
+So, I've come up with the following solution. I'll use the following syntax in the daily note:
+#+begin_example
+[<link>]: <content>
+#+end_example
+
+And if that node has a filetag =log_here=, this line will be transcluded under a particular header in that node:
+#+begin_example
+,* <log-header>             :log_here:
+...
+,** <daily-header>
+,#+transclude: <link>
+#+end_example
+
+So, first, we have to extract all such links from the daily file. The function below will return a list of items like =(node line-number line-count title)=
+#+begin_src emacs-lisp
+(defun my/org-roam-daily-extract-target-links ()
+  (save-excursion
+    (goto-char (point-min))
+    (cl-loop while (not (eobp))
+             do (forward-line 1)
+             for match = (save-excursion
+                           (search-forward-regexp
+                            (rx "[" (* nonl) "]")
+                            (line-end-position)
+                            t))
+             for node = (when-let (link (org-element-link-parser))
+                          (when (string-equal (plist-get (cadr link) :type) "id")
+                            (when-let (node (org-roam-node-from-id
+                                             (plist-get (cadr link) :path)))
+                              (and (member "log_here" (org-roam-node-tags node))
+                                   node))))
+             if (and node match)
+             collect (list
+                      node
+                      (line-number-at-pos)
+                      ;; Hardcoded for now
+                      1
+                      (save-excursion
+                        (org-back-to-heading)
+                        (org-element-property :title (org-element-at-point)))))))
+#+end_src
+
+And this is a good point to introduce a function that inserts a link which can be found by the function above:
+#+begin_src emacs-lisp
+(defun my/org-roam-node-insert-log ()
+  (interactive)
+  (beginning-of-line)
+  (org-roam-node-insert
+   (my/org-roam-filter-by-tag :include ("log_here")))
+  (insert ": "))
+#+end_src
+
+Second, insert all these links to the target node. The daily header is just a title of the current node:
+#+begin_src emacs-lisp
+(defun my/org-roam-daily-get-transclude-header ()
+  (let ((kws (org-collect-keywords '("TITLE"))))
+    (unless kws
+      (error "No title found!"))
+    (cadar kws)))
+#+end_src
+
+This daily header should be inserted under the log header, which is a header with =log_here= tag. Let's make a function to find that header:
+#+begin_src emacs-lisp
+(defun my/org-roam-daily-find-log-header ()
+  (let ((log-header nil))
+    (org-map-entries
+     (lambda ()
+       (let* ((headline (org-element-at-point))
+              (tags (mapcar #'substring-no-properties
+                            (org-element-property :tags headline))))
+         (when (member "log_here" tags)
+           (setq log-header headline)))))
+    (unless log-header
+      (error "Header with :log_here: tag not found"))
+    log-header))
+#+end_src
+
+Here is a bit of craziness. I want the list of daily headers to be ordered alphabetically. So, I need a function that inserts a header while preserving the alphabetical order.
+#+begin_src emacs-lisp
+(defun my/org-insert-alphabetical-header (root-header target-header)
+  (let ((target-headline)
+        (last-header "")
+        (last-headline)
+        (first-headline))
+    (goto-char (org-element-property :begin root-header))
+    ;; Map the tree under root-header
+    (org-map-tree
+     (lambda ()
+       (let* ((headline (org-element-at-point))
+              (header (org-element-property :title headline)))
+         (when (/= (point) (org-element-property :begin root-header))
+           ;; Try to find a heading with title equal to target-header
+           (when (string-equal target-header header)
+             (setq target-headline headline))
+           ;; Or try to find a heading < target-header
+           (when (and (string-lessp header target-header)
+                      (string-greaterp header last-header))
+             (setq last-header header)
+             (setq last-headline headline))
+           (unless first-headline
+             (setq first-headline headline))))))
+    (if target-headline
+        ;; If a matching header is found, clear its contents
+        (let ((content-start (save-excursion
+                               (goto-char
+                                (org-element-property :begin target-headline))
+                               (forward-line 1)
+                               (point)))
+              (content-end (org-element-property :end target-headline)))
+          (if (<= content-start content-end)
+              (progn
+                (delete-region content-start content-end)
+                (goto-char (org-element-property :begin target-headline))
+                (end-of-line)
+                (insert "\n"))
+            (goto-char content-end)))
+      ;; If a heading < target-header is found, insert the new one just after it
+      (if last-headline
+          (progn
+            (goto-char (org-element-property :begin last-headline))
+            (org-insert-heading-respect-content)
+            (insert target-header)
+            (insert "\n"))
+        ;; If neither is found, insert a new heading before the first headline
+        (if first-headline
+            (progn
+              (goto-char (org-element-property :begin first-headline))
+              (org-insert-heading)
+              (insert target-header)
+              (insert "\n"))
+          ;; If there is not even a first heading, that means the target header is empty
+          (goto-char (org-element-property :begin root-header))
+          (org-insert-heading-respect-content)
+          (org-do-demote)
+          (insert target-header)
+          (insert "\n"))))))
+#+end_src
+
+With that out of the way, we can format the list generated by =my/org-roam-daily-extract-target-links=:
+#+begin_src emacs-lisp
+(defun my/org-roam-daily-format-target-links (links path)
+  (string-trim
+   (cl-loop for i from 0 to (length links)
+            for link in links
+            for line-number = (nth 1 link)
+            for line-count = (nth 2 link)
+            for title = (nth 3 link)
+            for prev-title = (if (> i 0) (nth 3 (nth (1- i) links)) "")
+            concat (string-join
+                    (seq-filter
+                     #'identity
+                     `(,(unless (string-equal title prev-title)
+                          (format "%s:" title))
+                       ,(format "#+transclude: [[file:%s]] :lines %d-%d"
+                                path
+                                line-number
+                                (+ line-number line-count -1))
+                       ""
+                       ""))
+                    "\n"))))
+#+end_src
+
+Put it all together. Yay!
+#+begin_src emacs-lisp
+(defun my/org-roam-daily-dispatch-transclusions ()
+  (interactive)
+  (let* ((targets (my/org-roam-daily-extract-target-links))
+         (target-groups
+          (seq-group-by
+           (lambda (item)
+             (org-roam-node-file (nth 0 item)))
+           targets))
+         (header (my/org-roam-daily-get-transclude-header))
+         (path (buffer-file-name)))
+    (dolist (group target-groups)
+      (with-temp-file (car group)
+        (insert-file-contents (car group))
+        (org-mode)
+        (my/org-insert-alphabetical-header
+         (my/org-roam-daily-find-log-header)
+         header)
+        (insert (my/org-roam-daily-format-target-links (cdr group) path))))))
+#+end_src
+
+Finally, let's put this function into the save hook:
+#+begin_src emacs-lisp
+(defun my/org-roam-daily-transclusions-hook ()
+  (when (org-roam-dailies--daily-note-p)
+    (my/org-roam-daily-dispatch-transclusions)
+    (message "Tranclusions dispatched!")))
+
+(with-eval-after-load 'org-roam
+  (add-hook 'after-save-hook #'my/org-roam-daily-transclusions-hook))
 #+end_src
 **** Keybindings
+A set of keybindings to quickly access things in Org Roam.
+
+As of now, I have 3 categories of nodes in Org Roam:
+- dailies (tag =log=)
+- project notes (tag =org=)
+- Zettlekasten, which is everything else.
+
+So I want to have a separate fuzzy search for every category. =my/org-roam-find-project= for project nodes is already defined above, here is the rest:
+#+begin_src emacs-lisp
+(defun my/org-roam-find-zk ()
+  (interactive)
+  (org-roam-node-find
+   nil
+   nil
+   (my/org-roam-filter-by-tag :exclude ("log" "org"))))
+
+(defun my/org-roam-find-daily ()
+  (interactive)
+  (org-roam-node-find
+   nil
+   nil
+   (my/org-roam-filter-by-tag :include ("log"))))
+#+end_src
+
+And here are keybindings.
 #+begin_src emacs-lisp
 (my-leader-def
   :infix "or"
   "" '(:which-key "org-roam")
   "i" 'org-roam-node-insert
-  "r" 'org-roam-node-find
+  "r" '(my/org-roam-find-zk :wk "ZK")
+  "p" '(my/org-roam-find-project :wk "Projects")
   "g" 'org-roam-graph
   "c" 'org-roam-capture
   "b" 'org-roam-buffer-toggle)
+
+(my-leader-def
+  :infix "od"
+  "" '(:which-key "org-roam-dailies")
+  "d" #'org-roam-dailies-capture-today
+  "o" #'org-roam-dailies-goto-today
+  "f" #'my/org-roam-find-daily
+  "i" #'my/org-roam-node-insert-log)
 
 (with-eval-after-load 'org-roam
   (general-define-key
@@ -3918,7 +4446,7 @@ References:
    "C-c i" 'org-id-get-create
    "C-c l o" 'org-roam-node-insert))
 #+end_src
-**** org-roam-ui
+**** Org Roam UI
 A browser frontend to visualize a Roam directory in a form of a graph.
 
 #+begin_src emacs-lisp
@@ -3929,7 +4457,7 @@ A browser frontend to visualize a Roam directory in a form of a graph.
   :init
   (my-leader-def "oru" #'org-roam-ui-mode))
 #+end_src
-**** org-roam-protocol
+**** Org Roam Protocol
 Open links such as =org-protocol://= from browser. Run =M-x server-start= for org-protocol to work.
 
 #+begin_src conf :tangle ~/.local/share/applications/org-protocol.desktop
@@ -3947,6 +4475,10 @@ Don't forget to run the following after setup:
 xdg-mime default org-protocol.desktop x-scheme-handler/org-protocol
 #+end_src
 *** Review workflow
+| Type | Note                             |
+|------+----------------------------------|
+| TODO | Update this for org-roam dailies |
+
 My take on a review workflow. As a baseline, I want to have a template that lists the important changes since the last review and other basic information. I'm doing reviews regularly, but the time intervals still may vary, hence this flexibility.
 
 **** Data from git & org-roam
@@ -3973,7 +4505,7 @@ First, as I have [[file:Console.org::=autocommit=][autocommit]] set up in my org
      (split-string files "\n" t))))
 #+end_src
 
-I'll use it to get a list of added and changed Roam files since the last review. Date should have be in a format =YYYY-MM-DD=.
+I'll use it to get a list of added and changed Roam files since the last review. The date should be in a format =YYYY-MM-DD=.
 #+begin_src emacs-lisp
 (defun my/org-changed-files-since-date (date)
   (let ((default-directory org-directory))
@@ -4014,7 +4546,7 @@ Now we are ready to format this list to insert it into the capture template.
                 "\n"))))))
 #+end_src
 **** Data from org-journal
-Second, I want to have a list of new jounal entries since the last review.
+Second, I want to have a list of new journal entries since the last review.
 
 #+begin_src emacs-lisp
 (defun my/org-journal-entries-since-date (rev-date)
@@ -4081,7 +4613,7 @@ The query will be executed like this: =(and (date-field :from rev-date) query)=
       :order-by (nth 2 saved))))
 #+end_src
 
-Format one element of query result.
+Format one element of the query result.
 #+begin_src emacs-lisp
 (defun my/org-review-format-element (elem)
   (concat
@@ -4301,7 +4833,7 @@ Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HE
        org-preview-latex-process-alist))
 #+end_src
 *** Better headers
-[[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]] is package that makes Org heading lines look a bit prettier.
+[[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]] is a package that makes Org heading lines look a bit prettier.
 
 Disabled it for now because of overlapping functionality with org-bars.
 
@@ -4320,7 +4852,7 @@ Disabled it for now because of overlapping functionality with org-bars.
   :hook (org-mode . org-bars-mode))
 #+end_src
 
-Remove the elipsis at the end of folded headlines. The elipsis seems unnecesary with org-bars.
+Remove the ellipsis at the end of folded headlines. The ellipsis seems unnecessary with org-bars.
 #+begin_src emacs-lisp
 (defun my/org-no-ellipsis-in-headlines ()
   (remove-from-invisibility-spec '(outline . t))
@@ -4329,10 +4861,10 @@ Remove the elipsis at the end of folded headlines. The elipsis seems unnecesary 
 (add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
 #+end_src
 
-*** Org Agenda Icons
+*** OFF (OFF) Org Agenda Icons
 Categories are broad labels to group agenda items.
 
-#+begin_src emacs-lisp :noweb-ref org-ui-setup :tangle no
+#+begin_src emacs-lisp :tangle no
 (if (not my/lowpower)
     (setq org-agenda-category-icon-alist
           `(("inbox" ,(list (all-the-icons-faicon "inbox")) nil nil :ascent center)
@@ -4480,86 +5012,6 @@ A function to open a file from =org-directory=, excluding a few directories like
 
 (my-leader-def
   "o o" 'my/org-file-open)
-#+end_src
-** Tools
-Various small packages.
-
-*** Presentations
-Doing presentations with [[https://github.com/rlister/org-present][org-present]].
-
-#+begin_src emacs-lisp
-(use-package hide-mode-line
-  :straight t
-  :after (org-present))
-
-(defun my/present-next-with-latex ()
-  (interactive)
-  (org-present-next)
-  (org-latex-preview '(16)))
-
-(defun my/present-prev-with-latex ()
-  (interactive)
-  (org-present-prev)
-  (org-latex-preview '(16)))
-
-(use-package org-present
-  :straight (:host github :repo "rlister/org-present")
-  :if (not my/remote-server)
-  :commands (org-present)
-  :config
-  (general-define-key
-   :keymaps 'org-present-mode-keymap
-   "<next>" 'my/present-next-with-latex
-   "<prior>" 'my/present-prev-with-latex)
-  (add-hook 'org-present-mode-hook
-            (lambda ()
-              (blink-cursor-mode 0)
-              (org-present-big)
-              ;; (org-display-inline-images)
-              (org-present-hide-cursor)
-              (org-present-read-only)
-              (display-line-numbers-mode 0)
-              (hide-mode-line-mode +1)
-              (setq-local org-format-latex-options
-                          (plist-put org-format-latex-options
-                                     :scale (* org-present-text-scale my/org-latex-scale 0.5)))
-              (org-latex-preview '(16))))
-  (add-hook 'org-present-mode-quit-hook
-            (lambda ()
-              (blink-cursor-mode 1)
-              (org-present-small)
-              ;; (org-remove-inline-images)
-              (org-present-show-cursor)
-              (org-present-read-write)
-              (display-line-numbers-mode 1)
-              (hide-mode-line-mode 0)
-              (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
-              (org-latex-preview '(64)))))
-#+end_src
-*** TOC
-Make a TOC inside the org file.
-
-References:
-- [[https://github.com/alphapapa/org-make-toc][alphapapa/org-make-toc]]
-
-#+begin_src emacs-lisp
-(use-package org-make-toc
-  :after (org)
-  :if (not my/remote-server)
-  :commands
-  (org-make-toc
-   org-make-toc-insert
-   org-make-toc-set
-   org-make-toc-at-point)
-  :straight t)
-#+end_src
-*** Screenshots
-A nice package to make screenshots and insert them to the Org document.
-
-#+begin_src emacs-lisp
-(use-package org-attach-screenshot
-  :commands (org-attach-screenshot)
-  :straight t)
 #+end_src
 ** System configuration
 Functions related to literate configuration.
@@ -4743,7 +5195,7 @@ I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provi
   (diredfl-global-mode 1))
 #+end_src
 
-+Reuse the current dired buffer instead of spamming new ones.+ Looks like not neccesary with Emacs 28.1
++Reuse the current dired buffer instead of spamming new ones.+ Looks like not necessary with Emacs 28.1
 #+begin_src emacs-lisp
 (use-package dired-single
   :after dired
@@ -5268,7 +5720,7 @@ Setting up custom faces for certain tags to make the feed look a bit nicer.
           (unread elfeed-search-unread-title-face))))
 #+end_src
 
-Also a function to automatically adjust these colors with the Doom theme.
+Also, a function to automatically adjust these colors with the Doom theme.
 #+begin_src emacs-lisp
 (defun my/update-my-theme-elfeed (&rest _)
   (custom-theme-set-faces
@@ -5337,7 +5789,7 @@ Second, a function that returns a URL to an enclosure. This is generally how pod
   (caar (elfeed-entry-enclosures entry)))
 #+end_src
 
-Now, a function to add YouTube link with metadata from elfeed to EMMS.
+Now, a function to add a YouTube link with metadata from elfeed to EMMS.
 #+begin_src emacs-lisp
 (with-eval-after-load 'emms
   (define-emms-source elfeed (entry)
@@ -5477,7 +5929,7 @@ Also a custom regex. My demands for MPV include running =yt-dlp=, so there is a 
                             "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
 #+end_src
 
-By default MPV plays the video in the best possible quality, which may be pretty high, even too high with limited bandwidth. So here is the logic to choose the quality.
+By default, MPV plays the video in the best possible quality, which may be pretty high, even too high with limited bandwidth. So here is the logic to choose the quality.
 #+begin_src emacs-lisp
 (setq my/youtube-dl-quality-list
       '("bestvideo[height<=720]+bestaudio/best[height<=720]"
@@ -6044,6 +6496,17 @@ And the package configuration:
 (use-package snow
   :straight (:repo "alphapapa/snow.el" :host github)
   :commands (snow))
+#+end_src
+*** Power mode
+When Emacs doesn't feel powerful enough.
+
+Watch out if you are using EXWM.
+
+#+begin_src emacs-lisp
+(use-package power-mode
+  :straight (:host github :repo "elizagamedev/power-mode.el")
+  :disabled
+  :commands (power-mode))
 #+end_src
 *** Zone
 #+begin_src emacs-lisp

@@ -109,7 +109,7 @@
        (+ 2 (or level 0))))))
 
 (defun my/dump-bindings (prefix)
-  "Dump keybindings starting with PREFIX in tree-like form."
+  "Dump keybindings starting with PREFIX in a tree-like form."
   (interactive "sPrefix: ")
   (with-current-buffer (get-buffer-create "bindings")
     (point-max)
@@ -171,6 +171,18 @@
   :straight t
   :config
   (global-evil-matchit-mode 1))
+
+(defun my/evil-ex-search-word-forward-other-window (count &optional symbol)
+  (interactive (list (prefix-numeric-value current-prefix-arg)
+                     evil-symbol-word-search))
+  (save-excursion
+    (evil-ex-start-word-search nil 'forward count symbol))
+  (other-window 1)
+  (evil-ex-search-next))
+
+(general-define-key
+ :states '(normal)
+ "&" #'my/evil-ex-search-word-forward-other-window)
 
 (use-package evil-collection
   :straight t
@@ -2265,17 +2277,6 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
             (car item)
             (plist-put (cdr item) :latex-header my/latex-preview-header)))
          org-preview-latex-process-alist))
-  (if (not my/lowpower)
-      (setq org-agenda-category-icon-alist
-            `(("inbox" ,(list (all-the-icons-faicon "inbox")) nil nil :ascent center)
-              ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
-              ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
-              ("personal" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
-              ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
-              ;; ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
-              ;; ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
-              ;; ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center)
-              ("." ,(list (all-the-icons-faicon "circle-o")) nil nil :ascent center))))
   (general-define-key
    :keymaps 'org-mode-map
    "C-c d" 'org-decrypt-entry
@@ -2500,6 +2501,86 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
 (defun my/org-prj-dir (path)
   (expand-file-name path (org-entry-get nil "PRJ-DIR" t)))
 
+(use-package hide-mode-line
+  :straight t
+  :after (org-present))
+
+(defun my/present-next-with-latex ()
+  (interactive)
+  (org-present-next)
+  (org-latex-preview '(16)))
+
+(defun my/present-prev-with-latex ()
+  (interactive)
+  (org-present-prev)
+  (org-latex-preview '(16)))
+
+(use-package org-present
+  :straight (:host github :repo "rlister/org-present")
+  :if (not my/remote-server)
+  :commands (org-present)
+  :config
+  (general-define-key
+   :keymaps 'org-present-mode-keymap
+   "<next>" 'my/present-next-with-latex
+   "<prior>" 'my/present-prev-with-latex)
+  (add-hook 'org-present-mode-hook
+            (lambda ()
+              (blink-cursor-mode 0)
+              (org-present-big)
+              ;; (org-display-inline-images)
+              (org-present-hide-cursor)
+              (org-present-read-only)
+              (display-line-numbers-mode 0)
+              (hide-mode-line-mode +1)
+              (setq-local org-format-latex-options
+                          (plist-put org-format-latex-options
+                                     :scale (* org-present-text-scale my/org-latex-scale 0.5)))
+              (org-latex-preview '(16))))
+  (add-hook 'org-present-mode-quit-hook
+            (lambda ()
+              (blink-cursor-mode 1)
+              (org-present-small)
+              ;; (org-remove-inline-images)
+              (org-present-show-cursor)
+              (org-present-read-write)
+              (display-line-numbers-mode 1)
+              (hide-mode-line-mode 0)
+              (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
+              (org-latex-preview '(64)))))
+
+(use-package org-make-toc
+  :after (org)
+  :if (not my/remote-server)
+  :commands
+  (org-make-toc
+   org-make-toc-insert
+   org-make-toc-set
+   org-make-toc-at-point)
+  :straight t)
+
+(use-package org-attach-screenshot
+  :commands (org-attach-screenshot)
+  :straight t)
+
+(use-package org-transclusion
+  :after org
+  :straight (:host github :repo "nobiot/org-transclusion")
+  :config
+  (add-to-list 'org-transclusion-extensions 'org-transclusion-indent-mode)
+  (require 'org-transclusion-indent-mode)
+  (general-define-key
+   :keymaps '(org-transclusion-map)
+   :states '(normal)
+   "RET" #'org-transclusion-open-source
+   "gr" #'org-transclusion-refresh)
+  (general-define-key
+   :keymaps '(org-mode-map)
+   :states 'normal
+   "C-c t a" #'org-transclusion-add
+   "C-c t A" #'org-transclusion-add-all
+   "C-c t t" #'org-transclusion-mode))
+
 (my-leader-def
   :infix "o"
   "" '(:which-key "org-mode")
@@ -2665,20 +2746,310 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
          :unnarrowed t)))
 
+(defun my/make-daily-header-track ()
+  (when (fboundp 'emms-playlist-current-selected-track)
+    (let ((track (emms-playlist-current-selected-track)))
+      (when track
+        (let ((album (cdr (assoc 'info-album track)))
+              (artist (or (cdr (assoc 'info-albumartist track))
+                          (cdr (assoc 'info-album track))))
+              (title (cdr (assoc 'info-title track)))
+              (string ""))
+          (when artist
+            (setq string (concat string "[" artist "] ")))
+          (when album
+            (setq string (concat string album " - ")))
+          (when title
+            (setq string (concat string title)))
+          (when (> (length string) 0)
+            string))))))
+
+(defun my/make-daily-header ()
+  (string-join
+   (seq-filter
+    #'identity
+    `(":PROPERTIES:"
+      ,(format ":Emacs:      %s" emacs-version)
+      ,(format ":Hostname:   %s" system-name)
+      ,(when (boundp 'my/location)
+         (format ":Location:   %s" my/location))
+      ,(when-let (track (my/make-daily-header-track))
+         (format ":EMMS_Track: %s" track))
+      ":END:"))
+   "\n"))
+
 (setq org-roam-dailies-capture-templates
-      '(("d" "default" entry
-         "* %?"
-         :target (file+head "%<%Y-%m-%d>.org.gpg"
-                            "#+title: %<%Y-%m-%d>\n"))))
+      `(("d" "default" entry
+         ,(string-join
+           '("* %<%H:%M>"
+             "%(my/make-daily-header)"
+             "%?")
+           "\n")
+         :target
+         (file+head "%<%Y-%m-%d>.org.gpg"
+                    ,(string-join
+                      '("#+TITLE: %<%Y-%m-%d, %A>"
+                        "#+FILETAGS: log"
+                        "")
+                      "\n")))))
+
+(cl-defmacro my/org-roam-filter-by-tag (&optional &key (include nil) (exclude nil))
+  `(lambda (node)
+     (let ((tags (org-roam-node-tags node)))
+       (and
+        ,(if include
+             `(or
+               ,@(mapcar (lambda (tag)
+                           `(member ,tag tags))
+                         include))
+           t)
+        ,@(mapcar (lambda (tag)
+                    `(not (member ,tag tags)))
+                  exclude)))))
+
+(defun my/org-roam-list-notes-by-tag (tag-name)
+  (mapcar #'org-roam-node-file
+          (seq-filter
+           (my/org-roam-filter-by-tag :include (tag-name))
+           (org-roam-node-list))))
+
+(defun my/org-roam-refresh-agenda-list ()
+  (interactive)
+  (let ((project-files (my/org-roam-list-notes-by-tag "org")))
+    (setq org-agenda-files
+          (seq-uniq
+           `(,@org-agenda-files
+             ,@project-files)))
+    (dolist (file project-files)
+      (add-to-list 'org-refile-targets
+                   `(,file :maxlevel . 2)))))
+
+(with-eval-after-load 'org-roam
+  (my/org-roam-refresh-agenda-list))
+
+(defun my/org-roam-find-project ()
+  (interactive)
+  (org-roam-node-find
+   nil
+   nil
+   (my/org-roam-filter-by-tag :include ("org"))
+   :templates
+   `(("p" "project" plain ,(string-join
+                            '("%?"
+                              "* Tasks"
+                              "** TODO Add initials tasks"
+                              "* Log        :log_here:")
+                            "\n")
+      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                         "#+title: ${title}\n#+category: ${title}\n#+filetags: :org:log_here:")
+      :unnarrowed t))))
+
+(defun my/org-roam-capture-task ()
+  (interactive)
+  (org-roam-capture-
+   :node (org-roam-node-read
+          nil
+          (my/org-roam-filter-by-tag :include ("org")))
+   :templates
+   `(("p" "project" plain "** TODO %?"
+      :if-new (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
+                             ,(string-join
+                               '("%?"
+                                 "* Tasks"
+                                 "** TODO Add initials tasks"
+                                 "* Log        :log_here:")
+                               "\n")
+                             ("Tasks"))))))
+
+(defun my/org-roam-daily-extract-target-links ()
+  (save-excursion
+    (goto-char (point-min))
+    (cl-loop while (not (eobp))
+             do (forward-line 1)
+             for match = (save-excursion
+                           (search-forward-regexp
+                            (rx "[" (* nonl) "]")
+                            (line-end-position)
+                            t))
+             for node = (when-let (link (org-element-link-parser))
+                          (when (string-equal (plist-get (cadr link) :type) "id")
+                            (when-let (node (org-roam-node-from-id
+                                             (plist-get (cadr link) :path)))
+                              (and (member "log_here" (org-roam-node-tags node))
+                                   node))))
+             if (and node match)
+             collect (list
+                      node
+                      (line-number-at-pos)
+                      ;; Hardcoded for now
+                      1
+                      (save-excursion
+                        (org-back-to-heading)
+                        (org-element-property :title (org-element-at-point)))))))
+
+(defun my/org-roam-node-insert-log ()
+  (interactive)
+  (beginning-of-line)
+  (org-roam-node-insert
+   (my/org-roam-filter-by-tag :include ("log_here")))
+  (insert ": "))
+
+(defun my/org-roam-daily-get-transclude-header ()
+  (let ((kws (org-collect-keywords '("TITLE"))))
+    (unless kws
+      (error "No title found!"))
+    (cadar kws)))
+
+(defun my/org-roam-daily-find-log-header ()
+  (let ((log-header nil))
+    (org-map-entries
+     (lambda ()
+       (let* ((headline (org-element-at-point))
+              (tags (mapcar #'substring-no-properties
+                            (org-element-property :tags headline))))
+         (when (member "log_here" tags)
+           (setq log-header headline)))))
+    (unless log-header
+      (error "Header with :log_here: tag not found"))
+    log-header))
+
+(defun my/org-insert-alphabetical-header (root-header target-header)
+  (let ((target-headline)
+        (last-header "")
+        (last-headline)
+        (first-headline))
+    (goto-char (org-element-property :begin root-header))
+    ;; Map the tree under root-header
+    (org-map-tree
+     (lambda ()
+       (let* ((headline (org-element-at-point))
+              (header (org-element-property :title headline)))
+         (when (/= (point) (org-element-property :begin root-header))
+           ;; Try to find a heading with title equal to target-header
+           (when (string-equal target-header header)
+             (setq target-headline headline))
+           ;; Or try to find a heading < target-header
+           (when (and (string-lessp header target-header)
+                      (string-greaterp header last-header))
+             (setq last-header header)
+             (setq last-headline headline))
+           (unless first-headline
+             (setq first-headline headline))))))
+    (if target-headline
+        ;; If a matching header is found, clear its contents
+        (let ((content-start (save-excursion
+                               (goto-char
+                                (org-element-property :begin target-headline))
+                               (forward-line 1)
+                               (point)))
+              (content-end (org-element-property :end target-headline)))
+          (if (<= content-start content-end)
+              (progn
+                (delete-region content-start content-end)
+                (goto-char (org-element-property :begin target-headline))
+                (end-of-line)
+                (insert "\n"))
+            (goto-char content-end)))
+      ;; If a heading < target-header is found, insert the new one just after it
+      (if last-headline
+          (progn
+            (goto-char (org-element-property :begin last-headline))
+            (org-insert-heading-respect-content)
+            (insert target-header)
+            (insert "\n"))
+        ;; If neither is found, insert a new heading before the first headline
+        (if first-headline
+            (progn
+              (goto-char (org-element-property :begin first-headline))
+              (org-insert-heading)
+              (insert target-header)
+              (insert "\n"))
+          ;; If there is not even a first heading, that means the target header is empty
+          (goto-char (org-element-property :begin root-header))
+          (org-insert-heading-respect-content)
+          (org-do-demote)
+          (insert target-header)
+          (insert "\n"))))))
+
+(defun my/org-roam-daily-format-target-links (links path)
+  (string-trim
+   (cl-loop for i from 0 to (length links)
+            for link in links
+            for line-number = (nth 1 link)
+            for line-count = (nth 2 link)
+            for title = (nth 3 link)
+            for prev-title = (if (> i 0) (nth 3 (nth (1- i) links)) "")
+            concat (string-join
+                    (seq-filter
+                     #'identity
+                     `(,(unless (string-equal title prev-title)
+                          (format "%s:" title))
+                       ,(format "#+transclude: [[file:%s]] :lines %d-%d"
+                                path
+                                line-number
+                                (+ line-number line-count -1))
+                       ""
+                       ""))
+                    "\n"))))
+
+(defun my/org-roam-daily-dispatch-transclusions ()
+  (interactive)
+  (let* ((targets (my/org-roam-daily-extract-target-links))
+         (target-groups
+          (seq-group-by
+           (lambda (item)
+             (org-roam-node-file (nth 0 item)))
+           targets))
+         (header (my/org-roam-daily-get-transclude-header))
+         (path (buffer-file-name)))
+    (dolist (group target-groups)
+      (with-temp-file (car group)
+        (insert-file-contents (car group))
+        (org-mode)
+        (my/org-insert-alphabetical-header
+         (my/org-roam-daily-find-log-header)
+         header)
+        (insert (my/org-roam-daily-format-target-links (cdr group) path))))))
+
+(defun my/org-roam-daily-transclusions-hook ()
+  (when (org-roam-dailies--daily-note-p)
+    (my/org-roam-daily-dispatch-transclusions)
+    (message "Tranclusions dispatched!")))
+
+(with-eval-after-load 'org-roam
+  (add-hook 'after-save-hook #'my/org-roam-daily-transclusions-hook))
+
+(defun my/org-roam-find-zk ()
+  (interactive)
+  (org-roam-node-find
+   nil
+   nil
+   (my/org-roam-filter-by-tag :exclude ("log" "org"))))
+
+(defun my/org-roam-find-daily ()
+  (interactive)
+  (org-roam-node-find
+   nil
+   nil
+   (my/org-roam-filter-by-tag :include ("log"))))
 
 (my-leader-def
   :infix "or"
   "" '(:which-key "org-roam")
   "i" 'org-roam-node-insert
-  "r" 'org-roam-node-find
+  "r" '(my/org-roam-find-zk :wk "ZK")
+  "p" '(my/org-roam-find-project :wk "Projects")
   "g" 'org-roam-graph
   "c" 'org-roam-capture
   "b" 'org-roam-buffer-toggle)
+
+(my-leader-def
+  :infix "od"
+  "" '(:which-key "org-roam-dailies")
+  "d" #'org-roam-dailies-capture-today
+  "o" #'org-roam-dailies-goto-today
+  "f" #'my/org-roam-find-daily
+  "i" #'my/org-roam-node-insert-log)
 
 (with-eval-after-load 'org-roam
   (general-define-key
@@ -3053,68 +3424,6 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
 
 (my-leader-def
   "o o" 'my/org-file-open)
-
-(use-package hide-mode-line
-  :straight t
-  :after (org-present))
-
-(defun my/present-next-with-latex ()
-  (interactive)
-  (org-present-next)
-  (org-latex-preview '(16)))
-
-(defun my/present-prev-with-latex ()
-  (interactive)
-  (org-present-prev)
-  (org-latex-preview '(16)))
-
-(use-package org-present
-  :straight (:host github :repo "rlister/org-present")
-  :if (not my/remote-server)
-  :commands (org-present)
-  :config
-  (general-define-key
-   :keymaps 'org-present-mode-keymap
-   "<next>" 'my/present-next-with-latex
-   "<prior>" 'my/present-prev-with-latex)
-  (add-hook 'org-present-mode-hook
-            (lambda ()
-              (blink-cursor-mode 0)
-              (org-present-big)
-              ;; (org-display-inline-images)
-              (org-present-hide-cursor)
-              (org-present-read-only)
-              (display-line-numbers-mode 0)
-              (hide-mode-line-mode +1)
-              (setq-local org-format-latex-options
-                          (plist-put org-format-latex-options
-                                     :scale (* org-present-text-scale my/org-latex-scale 0.5)))
-              (org-latex-preview '(16))))
-  (add-hook 'org-present-mode-quit-hook
-            (lambda ()
-              (blink-cursor-mode 1)
-              (org-present-small)
-              ;; (org-remove-inline-images)
-              (org-present-show-cursor)
-              (org-present-read-write)
-              (display-line-numbers-mode 1)
-              (hide-mode-line-mode 0)
-              (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
-              (org-latex-preview '(64)))))
-
-(use-package org-make-toc
-  :after (org)
-  :if (not my/remote-server)
-  :commands
-  (org-make-toc
-   org-make-toc-insert
-   org-make-toc-set
-   org-make-toc-at-point)
-  :straight t)
-
-(use-package org-attach-screenshot
-  :commands (org-attach-screenshot)
-  :straight t)
 
 (defun my/extract-guix-dependencies (&optional category)
   (let ((dependencies '()))
@@ -4144,6 +4453,11 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
 (use-package snow
   :straight (:repo "alphapapa/snow.el" :host github)
   :commands (snow))
+
+(use-package power-mode
+  :straight (:host github :repo "elizagamedev/power-mode.el")
+  :disabled
+  :commands (power-mode))
 
 (use-package zone
   :ensure nil
