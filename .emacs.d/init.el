@@ -127,6 +127,8 @@
   (setq evil-search-module 'evil-search)
   (setq evil-split-window-below t)
   (setq evil-vsplit-window-right t)
+  (unless (display-graphic-p)
+    (setq evil-want-C-i-jump nil))
   :config
   (evil-mode 1)
   ;; (setq evil-respect-visual-line-mode t)
@@ -2318,7 +2320,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (general-nmap :keymaps 'org-mode-map
       "C-x C-l" 'my/org-link-copy)
   (setq org-roam-directory (concat org-directory "/roam"))
-  (setq org-agenda-files '("inbox.org" "projects.org" "work.org" "sem-11.org" "life.org"))
+  (setq org-agenda-files '("inbox.org"))
   ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
   (add-to-list 'org-global-properties
                '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00"))
@@ -2738,13 +2740,32 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (org-roam-setup)
   (require 'org-roam-protocol))
 
+(setq my/org-roam-project-template
+      `("p" "project" plain ,(string-join
+                              '("%?"
+                                "* Tasks"
+                                "** TODO Add initials tasks"
+                                "* Log        :log_here:")
+                              "\n")
+        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                           ,(string-join
+                             '("#+title: ${title}"
+                               "#+category: ${title}"
+                               "#+filetags: :org:log_here:"
+                               "#+TODO: TODO(t) NEXT(n) HOLD(h) | NO(q) DONE(d)"
+                               "#+TODO: FUTURE(f) | PASSED(p)"
+                               "#+STARTUP: logdone overview")
+                             "\n"))
+        :unnarrowed t))
+
 (setq org-roam-capture-templates
       `(("d" "default" plain "%?"
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
          :unnarrowed t)
         ("e" "encrypted" plain "%?"
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
-         :unnarrowed t)))
+         :unnarrowed t)
+        ,my/org-roam-project-template))
 
 (defun my/make-daily-header-track ()
   (when (fboundp 'emms-playlist-current-selected-track)
@@ -2834,32 +2855,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
    nil
    (my/org-roam-filter-by-tag :include ("org"))
    :templates
-   `(("p" "project" plain ,(string-join
-                            '("%?"
-                              "* Tasks"
-                              "** TODO Add initials tasks"
-                              "* Log        :log_here:")
-                            "\n")
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-                         "#+title: ${title}\n#+category: ${title}\n#+filetags: :org:log_here:")
-      :unnarrowed t))))
-
-(defun my/org-roam-capture-task ()
-  (interactive)
-  (org-roam-capture-
-   :node (org-roam-node-read
-          nil
-          (my/org-roam-filter-by-tag :include ("org")))
-   :templates
-   `(("p" "project" plain "** TODO %?"
-      :if-new (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
-                             ,(string-join
-                               '("%?"
-                                 "* Tasks"
-                                 "** TODO Add initials tasks"
-                                 "* Log        :log_here:")
-                               "\n")
-                             ("Tasks"))))))
+   `(,my/org-roam-project-template)))
 
 (defun my/org-roam-daily-extract-target-links ()
   (save-excursion
@@ -3103,59 +3099,65 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (let ((default-directory org-directory))
     (my/get-files-status (format "@{%s}" date))))
 
-(defun my/org-review-format-roam (rev)
-  (let* ((changes (my/org-changed-files-since-date rev))
-         (new-roam
-          (seq-filter
-           (lambda (elem)
-             (and (eq (car elem) 'added)
-                  (string-match-p (rx bos "roam") (cdr elem))))
-           changes))
-         (changed-roam
-          (seq-filter
-           (lambda (elem)
-             (and (eq (car elem) 'modified)
-                  (string-match-p (rx bos "roam") (cdr elem))))
-           changes)))
-    (concat
-     (unless (seq-empty-p new-roam)
-       (concat "** New Roam entries \n"
-               (mapconcat
-                (lambda (entry)
-                  (format "- [[file:%s][%s]]" (cdr entry) (cdr entry)))
-                new-roam
-                "\n")
-               "\n"))
-     (unless (seq-empty-p changed-roam)
-       (concat "** Changed Roam entries \n"
-               (mapconcat
-                (lambda (entry)
-                  (format "- [[file:%s][%s]]" (cdr entry) (cdr entry)))
-                changed-roam
-                "\n"))))))
+(setq my/org-review-roam-queries
+      '((:status added
+                 :tags (:include ("org"))
+                 :title "New Project Entries")
+        (:status changed
+                 :tags (:include ("org"))
+                 :title "Changed Project Entries")
+        (:status added
+                 :tags (:include ("log") :exclude ("org" "log_here"))
+                 :title "New Dailies")
+        (:status added
+                 :tags (:exclude ("log" "org"))
+                 :title "New Zettelkasten Entries")
+        (:status changed
+                 :tags (:exclude ("log" "org"))
+                 :title "Changed Zettelkasten Entries")))
 
-(defun my/org-journal-entries-since-date (rev-date)
-  (mapcar
-   (lambda (date)
-     (let ((time (encode-time (parse-time-string date))))
-       `((file . ,(org-journal--get-entry-path time))
-         (header . ,(format-time-string org-journal-date-format time)))))
-   (seq-filter
-    (lambda (date) (string-lessp rev-date date))
-    (mapcar
-     (lambda (date)
-       (format "%04d-%02d-%02dT00:00:00+0300" (nth 2 date) (nth 0 date) (nth 1 date)))
-     (org-journal--list-dates)))))
-
-(defun my/org-review-format-journal (rev-date)
-  (mapconcat
-   (lambda (item)
-     (format "- [[file:%s::*%s][%s]]"
-             (cdr (assoc 'file item))
-             (cdr (assoc 'header item))
-             (cdr (assoc 'header item))))
-   (my/org-journal-entries-since-date rev-date)
-   "\n"))
+(defun my/org-review-format-roam (changes)
+  (cl-loop for query in my/org-review-roam-queries
+           with nodes = (org-roam-node-list)
+           with node-tags = (mapcar #'org-roam-node-tags nodes)
+           for include-tags = (plist-get (plist-get query :tags) :include)
+           for exclude-tags = (plist-get (plist-get query :tags) :exclude)
+           ;; List of nodes filtered by :tags in query
+           for filtered-nodes =
+           (cl-loop for node in nodes
+                    for tags in node-tags
+                    if (and
+                        (or (seq-empty-p include-tags)
+                            (seq-intersection include-tags tags))
+                        (or (seq-empty-p exclude-tags)
+                            (not (seq-intersection exclude-tags tags))))
+                    collect node)
+           ;; List of changes filtered by :status in query
+           for filtered-changes =
+           (cl-loop for change in changes
+                    if (and (eq (car change) (plist-get query :status))
+                            (string-match-p (rx bos "roam") (cdr change)))
+                    collect (cdr change))
+           ;; Intersection of the two filtered lists
+           for final-nodes =
+           (cl-loop for node in filtered-nodes
+                    for path = (file-relative-name (org-roam-node-file node)
+                                                   org-directory)
+                    if (member path filtered-changes)
+                    collect node)
+           ;; If the intersction list is not empty, format it to the result
+           if final-nodes
+           concat (format "** %s\n" (plist-get query :title))
+           ;; FInal list of links, sorted by title
+           and concat (cl-loop for node in (seq-sort
+                                            (lambda (node1 node2)
+                                              (string-lessp
+                                               (org-roam-node-title node1)
+                                               (org-roam-node-title node2)))
+                                            final-nodes)
+                               concat (format "- [[id:%s][%s]]\n"
+                                              (org-roam-node-id node)
+                                              (org-roam-node-title node)))))
 
 (setq my/org-ql-review-queries
       `(("Waitlist" scheduled scheduled
@@ -3219,9 +3221,6 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
 
 (setq my/org-review-directory "review")
 
-(defun my/org-review-get-filename ()
-  (concat my/org-review-directory "/" (format-time-string "%Y-%m-%d.org" (current-time))))
-
 (defun my/get-last-review-date ()
   (substring
    (or
@@ -3229,33 +3228,37 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
      'string-greaterp
      (-filter
       (lambda (f) (not (or (string-equal f ".") (string-equal f ".."))))
-      (directory-files (f-join org-directory my/org-review-directory))))
+      (directory-files (f-join org-roam-directory my/org-review-directory))))
     (format-time-string
      "%Y-%m-%d"
      (time-subtract
       (current-time)
-      (seconds-to-time (* 60 60 24 7)))))
+      (seconds-to-time (* 60 60 24 14)))))
    0 10))
 
 (setq my/org-review-capture-template
-      `("r" "Review" plain (file ,(my/org-review-get-filename))
+      `("r" "Review" plain
         ,(string-join
-          '("#+TITLE: Review %t"
+          '("#+title: %<%Y-%m-%d>: REVIEW"
+            "#+category: REVIEW"
+            "#+filetags: log review"
+            "#+STARTUP: overview"
             ""
             "Last review date: %(org-timestamp-translate (org-timestamp-from-string (format \"<%s>\" (my/get-last-review-date))))"
             ""
             "* Roam"
-            "%(my/org-review-format-roam (my/get-last-review-date))"
-            "* Journal"
-            "New journal entries:"
-            "%(my/org-review-format-journal (my/get-last-review-date))"
+            "%(my/org-review-format-roam (my/org-changed-files-since-date (my/get-last-review-date)))"
             "* Agenda"
             "%(my/org-review-format-queries (my/get-last-review-date))"
-            "* Thoughts                                                            :crypt:"
+            "* Thoughts"
             "%?")
-          "\n")))
+          "\n")
+        :if-new (file "review/%<%Y-%m-%d>.org.gpg")))
 
-(add-to-list 'org-capture-templates my/org-review-capture-template t)
+(defun my/org-roam-capture-review ()
+  (interactive)
+  (org-roam-capture- :node (org-roam-node-create)
+                     :templates `(,my/org-review-capture-template)))
 
 (use-package org-ref
   :straight (:files (:defaults (:exclude "*helm*")))
@@ -4032,8 +4035,11 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   (add-hook 'emms-playlist-cleared-hook 'emms-player-mpd-clear)
   (emms-player-set emms-player-mpd
                    'regex
-                   (emms-player-simple-regexp
-                    "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff"))
+                   (rx (or (: "https://" (* nonl) (or "acast.com") (* nonl))
+                           (+ (? (or "https://" "http://"))
+                              (* nonl)
+                              (regexp (eval (emms-player-simple-regexp
+                                             "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff")))))))
   ;; MPV setup
   (add-to-list 'emms-player-list 'emms-player-mpv)
   (emms-player-set emms-player-mpv

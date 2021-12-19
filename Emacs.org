@@ -590,6 +590,8 @@ Basic evil configuration.
   (setq evil-search-module 'evil-search)
   (setq evil-split-window-below t)
   (setq evil-vsplit-window-right t)
+  (unless (display-graphic-p)
+    (setq evil-want-C-i-jump nil))
   :config
   (evil-mode 1)
   ;; (setq evil-respect-visual-line-mode t)
@@ -3788,7 +3790,7 @@ Some inspiration:
 Used files
 #+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
 (setq org-roam-directory (concat org-directory "/roam"))
-(setq org-agenda-files '("inbox.org" "projects.org" "work.org" "sem-11.org" "life.org"))
+(setq org-agenda-files '("inbox.org"))
 ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
 #+end_src
 
@@ -4019,13 +4021,32 @@ References:
 Capture templates for =org-roam-capture=. As for now, nothing too complicated here.
 
 #+begin_src emacs-lisp
+(setq my/org-roam-project-template
+      `("p" "project" plain ,(string-join
+                              '("%?"
+                                "* Tasks"
+                                "** TODO Add initials tasks"
+                                "* Log        :log_here:")
+                              "\n")
+        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+                           ,(string-join
+                             '("#+title: ${title}"
+                               "#+category: ${title}"
+                               "#+filetags: :org:log_here:"
+                               "#+TODO: TODO(t) NEXT(n) HOLD(h) | NO(q) DONE(d)"
+                               "#+TODO: FUTURE(f) | PASSED(p)"
+                               "#+STARTUP: logdone overview")
+                             "\n"))
+        :unnarrowed t))
+
 (setq org-roam-capture-templates
       `(("d" "default" plain "%?"
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
          :unnarrowed t)
         ("e" "encrypted" plain "%?"
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
-         :unnarrowed t)))
+         :unnarrowed t)
+        ,my/org-roam-project-template))
 #+end_src
 **** Org Roam Dailies
 =org-roam-dailies= provides journaling capabilities similar to [[https://github.com/bastibe/org-journal][Org Journal]]. I was using the latter for half a year or so but decided to try to use Org Roam for this purpose.
@@ -4150,35 +4171,7 @@ Find or capture a project.
    nil
    (my/org-roam-filter-by-tag :include ("org"))
    :templates
-   `(("p" "project" plain ,(string-join
-                            '("%?"
-                              "* Tasks"
-                              "** TODO Add initials tasks"
-                              "* Log        :log_here:")
-                            "\n")
-      :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-                         "#+title: ${title}\n#+category: ${title}\n#+filetags: :org:log_here:")
-      :unnarrowed t))))
-#+end_src
-
-Find or capture a project task. I'm not sure if I'll be using it, as usually capture tasks to inbox and then refile them to where they belong, but I'll leave the function here for now.
-#+begin_src emacs-lisp
-(defun my/org-roam-capture-task ()
-  (interactive)
-  (org-roam-capture-
-   :node (org-roam-node-read
-          nil
-          (my/org-roam-filter-by-tag :include ("org")))
-   :templates
-   `(("p" "project" plain "** TODO %?"
-      :if-new (file+head+olp "%<%Y%m%d%H%M%S>-${slug}.org"
-                             ,(string-join
-                               '("%?"
-                                 "* Tasks"
-                                 "** TODO Add initials tasks"
-                                 "* Log        :log_here:")
-                               "\n")
-                             ("Tasks"))))))
+   `(,my/org-roam-project-template)))
 #+end_src
 **** Automatic transclusion for Dailies
 I've been using org-journal for quite some time, and while it's great, I don't like its linear structure too much. I have all kinds of stuff written there - things related to my job, various personal projects, etc, and it's pretty hard to query a specific thing.
@@ -4385,7 +4378,7 @@ A set of keybindings to quickly access things in Org Roam.
 As of now, I have 3 categories of nodes in Org Roam:
 - dailies (tag =log=)
 - project notes (tag =org=)
-- Zettlekasten, which is everything else.
+- Zettelkasten, which is everything else.
 
 So I want to have a separate fuzzy search for every category. =my/org-roam-find-project= for project nodes is already defined above, here is the rest:
 #+begin_src emacs-lisp
@@ -4475,14 +4468,14 @@ Don't forget to run the following after setup:
 xdg-mime default org-protocol.desktop x-scheme-handler/org-protocol
 #+end_src
 *** Review workflow
-| Type | Note                             |
-|------+----------------------------------|
-| TODO | Update this for org-roam dailies |
-
 My take on a review workflow. As a baseline, I want to have a template that lists the important changes since the last review and other basic information. I'm doing reviews regularly, but the time intervals still may vary, hence this flexibility.
 
-**** Data from git & org-roam
+This section has seen some updates over time.
+
+**** Data from git
 First, as I have [[file:Console.org::=autocommit=][autocommit]] set up in my org directory, here is a handy function to get an alist of changed files of a form =(status . path)=. In principle, the =rev= parameter can be a commit, tag, etc but here I'm interested in a form like =@{2021-08-30}=.
+
+Also in principle, Org Roam DB also stores stuff like creation time and modification time, but I started this section before I started using Org Roam extensively, so git works fine for me.
 
 #+begin_src emacs-lisp
 (setq my/git-diff-status
@@ -4505,78 +4498,89 @@ First, as I have [[file:Console.org::=autocommit=][autocommit]] set up in my org
      (split-string files "\n" t))))
 #+end_src
 
-I'll use it to get a list of added and changed Roam files since the last review. The date should be in a format =YYYY-MM-DD=.
+I'll use it to get a list of added and changed files in the Org directory since the last review. The date should be in a format =YYYY-MM-DD=.
 #+begin_src emacs-lisp
 (defun my/org-changed-files-since-date (date)
   (let ((default-directory org-directory))
     (my/get-files-status (format "@{%s}" date))))
 #+end_src
+**** Data from org-roam
+Now that we have the list of new & changed files, I want to sort into a bunch of categories: projects, log entries, etc. The categories are defined by tags.
 
-Now we are ready to format this list to insert it into the capture template.
+So here is a list of plists that sets these categories. The properties are as follows:
+- =:status= is a git status for the file
+- =:tags= is a plist that sets up the following conditions for the Roam node
+  - =:include= - should be empty or one of these should be present
+  - =:exclude= - should be empty or none of these should be present
+- =:title= is the name of category as I want it to be seen in the review template
 #+begin_src emacs-lisp
-(defun my/org-review-format-roam (rev)
-  (let* ((changes (my/org-changed-files-since-date rev))
-         (new-roam
-          (seq-filter
-           (lambda (elem)
-             (and (eq (car elem) 'added)
-                  (string-match-p (rx bos "roam") (cdr elem))))
-           changes))
-         (changed-roam
-          (seq-filter
-           (lambda (elem)
-             (and (eq (car elem) 'modified)
-                  (string-match-p (rx bos "roam") (cdr elem))))
-           changes)))
-    (concat
-     (unless (seq-empty-p new-roam)
-       (concat "** New Roam entries \n"
-               (mapconcat
-                (lambda (entry)
-                  (format "- [[file:%s][%s]]" (cdr entry) (cdr entry)))
-                new-roam
-                "\n")
-               "\n"))
-     (unless (seq-empty-p changed-roam)
-       (concat "** Changed Roam entries \n"
-               (mapconcat
-                (lambda (entry)
-                  (format "- [[file:%s][%s]]" (cdr entry) (cdr entry)))
-                changed-roam
-                "\n"))))))
-#+end_src
-**** Data from org-journal
-Second, I want to have a list of new journal entries since the last review.
-
-#+begin_src emacs-lisp
-(defun my/org-journal-entries-since-date (rev-date)
-  (mapcar
-   (lambda (date)
-     (let ((time (encode-time (parse-time-string date))))
-       `((file . ,(org-journal--get-entry-path time))
-         (header . ,(format-time-string org-journal-date-format time)))))
-   (seq-filter
-    (lambda (date) (string-lessp rev-date date))
-    (mapcar
-     (lambda (date)
-       (format "%04d-%02d-%02dT00:00:00+0300" (nth 2 date) (nth 0 date) (nth 1 date)))
-     (org-journal--list-dates)))))
+(setq my/org-review-roam-queries
+      '((:status added
+                 :tags (:include ("org"))
+                 :title "New Project Entries")
+        (:status changed
+                 :tags (:include ("org"))
+                 :title "Changed Project Entries")
+        (:status added
+                 :tags (:include ("log") :exclude ("org" "log_here"))
+                 :title "New Dailies")
+        (:status added
+                 :tags (:exclude ("log" "org"))
+                 :title "New Zettelkasten Entries")
+        (:status changed
+                 :tags (:exclude ("log" "org"))
+                 :title "Changed Zettelkasten Entries")))
 #+end_src
 
-Format the results:
+This list is used to extract & format the relevant section of the review template.
+
+=cl-loop= seems pretty good as a control flow structure, but I'll see if it is also pretty good at producing poorly maintainable code. At least at the moment of this writing, the function below looks rather concise.
 #+begin_src emacs-lisp
-(defun my/org-review-format-journal (rev-date)
-  (mapconcat
-   (lambda (item)
-     (format "- [[file:%s::*%s][%s]]"
-             (cdr (assoc 'file item))
-             (cdr (assoc 'header item))
-             (cdr (assoc 'header item))))
-   (my/org-journal-entries-since-date rev-date)
-   "\n"))
+(defun my/org-review-format-roam (changes)
+  (cl-loop for query in my/org-review-roam-queries
+           with nodes = (org-roam-node-list)
+           with node-tags = (mapcar #'org-roam-node-tags nodes)
+           for include-tags = (plist-get (plist-get query :tags) :include)
+           for exclude-tags = (plist-get (plist-get query :tags) :exclude)
+           ;; List of nodes filtered by :tags in query
+           for filtered-nodes =
+           (cl-loop for node in nodes
+                    for tags in node-tags
+                    if (and
+                        (or (seq-empty-p include-tags)
+                            (seq-intersection include-tags tags))
+                        (or (seq-empty-p exclude-tags)
+                            (not (seq-intersection exclude-tags tags))))
+                    collect node)
+           ;; List of changes filtered by :status in query
+           for filtered-changes =
+           (cl-loop for change in changes
+                    if (and (eq (car change) (plist-get query :status))
+                            (string-match-p (rx bos "roam") (cdr change)))
+                    collect (cdr change))
+           ;; Intersection of the two filtered lists
+           for final-nodes =
+           (cl-loop for node in filtered-nodes
+                    for path = (file-relative-name (org-roam-node-file node)
+                                                   org-directory)
+                    if (member path filtered-changes)
+                    collect node)
+           ;; If the intersction list is not empty, format it to the result
+           if final-nodes
+           concat (format "** %s\n" (plist-get query :title))
+           ;; FInal list of links, sorted by title
+           and concat (cl-loop for node in (seq-sort
+                                            (lambda (node1 node2)
+                                              (string-lessp
+                                               (org-roam-node-title node1)
+                                               (org-roam-node-title node2)))
+                                            final-nodes)
+                               concat (format "- [[id:%s][%s]]\n"
+                                              (org-roam-node-id node)
+                                              (org-roam-node-title node)))))
 #+end_src
 **** Data from org-agenda via org-ql
-Third, I want to list some changes in my agenda. This section will change depending on what I'm currently working on.
++Third+ second, I want to list some changes in my agenda. This section will change depending on what I'm currently working on.
 
 So, here is a list of queries results of which I want to see in the review template. The format is =(name date-field order-by-field query)=.
 #+begin_src emacs-lisp
@@ -4652,15 +4656,12 @@ Execute all the saved queries and format an Org list for the capture template.
 **** Capture template
 Now, we have to put all this together and define a capture template for the review.
 
-I'll use a separate directory for the review files, just like for org-journal and org-roam. The filename will have a format =YYYY-MM-DD.org=, which will also free me from the effort of storing the last review date somewhere.
++I'll use a separate directory for the review files, just like for org-journal and org-roam.+ I'll store the review files in org-roam. Time will tell if that's a good idea. The filename will have a format =YYYY-MM-DD.org=, which will also free me from the effort of storing the last review date somewhere.
 
 If somehow there are no files in the folder, fallback to the current date minus one week.
 
 #+begin_src emacs-lisp
 (setq my/org-review-directory "review")
-
-(defun my/org-review-get-filename ()
-  (concat my/org-review-directory "/" (format-time-string "%Y-%m-%d.org" (current-time))))
 
 (defun my/get-last-review-date ()
   (substring
@@ -4669,36 +4670,40 @@ If somehow there are no files in the folder, fallback to the current date minus 
      'string-greaterp
      (-filter
       (lambda (f) (not (or (string-equal f ".") (string-equal f ".."))))
-      (directory-files (f-join org-directory my/org-review-directory))))
+      (directory-files (f-join org-roam-directory my/org-review-directory))))
     (format-time-string
      "%Y-%m-%d"
      (time-subtract
       (current-time)
-      (seconds-to-time (* 60 60 24 7)))))
+      (seconds-to-time (* 60 60 24 14)))))
    0 10))
 #+end_src
 
 A template looks like this:
 #+begin_src emacs-lisp
 (setq my/org-review-capture-template
-      `("r" "Review" plain (file ,(my/org-review-get-filename))
+      `("r" "Review" plain
         ,(string-join
-          '("#+TITLE: Review %t"
+          '("#+title: %<%Y-%m-%d>: REVIEW"
+            "#+category: REVIEW"
+            "#+filetags: log review"
+            "#+STARTUP: overview"
             ""
             "Last review date: %(org-timestamp-translate (org-timestamp-from-string (format \"<%s>\" (my/get-last-review-date))))"
             ""
             "* Roam"
-            "%(my/org-review-format-roam (my/get-last-review-date))"
-            "* Journal"
-            "New journal entries:"
-            "%(my/org-review-format-journal (my/get-last-review-date))"
+            "%(my/org-review-format-roam (my/org-changed-files-since-date (my/get-last-review-date)))"
             "* Agenda"
             "%(my/org-review-format-queries (my/get-last-review-date))"
-            "* Thoughts                                                            :crypt:"
+            "* Thoughts"
             "%?")
-          "\n")))
+          "\n")
+        :if-new (file "review/%<%Y-%m-%d>.org.gpg")))
 
-(add-to-list 'org-capture-templates my/org-review-capture-template t)
+(defun my/org-roam-capture-review ()
+  (interactive)
+  (org-roam-capture- :node (org-roam-node-create)
+                     :templates `(,my/org-review-capture-template)))
 #+end_src
 *** org-ref
 | Type | Description                     |
@@ -5891,8 +5896,11 @@ Set a custom regex for MPD. EMMS sets up the default one from MPD's diagnostic o
 #+begin_src emacs-lisp
 (emms-player-set emms-player-mpd
                  'regex
-                 (emms-player-simple-regexp
-                  "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff"))
+                 (rx (or (: "https://" (* nonl) (or "acast.com") (* nonl))
+                         (+ (? (or "https://" "http://"))
+                            (* nonl)
+                            (regexp (eval (emms-player-simple-regexp
+                                           "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff")))))))
 #+end_src
 
 After all this is done, run =M-x emms-cache-set-from-mpd-all= to set cache from MPD. If everything is correct, EMMS browser will be populated with MPD database.
