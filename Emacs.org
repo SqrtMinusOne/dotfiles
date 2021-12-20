@@ -740,9 +740,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
     (abort-recursive-edit)))
 
+(defun my/escape-key ()
+  (interactive)
+  (evil-ex-nohighlight)
+  (keyboard-quit))
+
 (general-define-key
  :keymaps '(normal visual global)
- [escape] 'keyboard-quit)
+ [escape] #'my/escape-key)
 
 (general-define-key
  :keymaps '(minibuffer-local-map
@@ -2281,6 +2286,65 @@ And here is a version of =dap-switch-stack-frame= that uses the said filter.
              error))
     (error "No thread is currently active %s" (dap--debug-session-name (dap--cur-session)))))
 #+end_src
+**** Smarter switch to stack frame
+- *CREDIT*: Thanks @yyoncho on the Emacs LSP Discord for helping me with this!
+
+By default, when a breakpoint is hit, dap always pop us the buffer in the active EXWM workspace and in the active perspective. I'd like it to switch to an existing buffer instead.
+
+So first we need to locate EXWM workspace for the file with =path=:
+#+begin_src emacs-lisp
+(defun my/exwm-perspective-find-buffer (path)
+  "Find a buffer with PATH in all EXWM perspectives.
+
+Returns (<buffer> . <workspace-index>) or nil."
+  (let* ((buf (cl-loop for buf being buffers
+                       if (and (buffer-file-name buf)
+                               (f-equal-p (buffer-file-name buf) path))
+                       return buf))
+         (target-workspace
+          (and buf
+               (cl-loop for frame in exwm-workspace--list
+                        if (with-selected-frame frame
+                             (cl-loop for persp-name being the hash-keys of (perspectives-hash)
+                                      if (member buf (persp-buffers
+                                                      (gethash persp-name (perspectives-hash))))
+                                      return persp-name))
+                        return (cl-position frame exwm-workspace--list)))))
+    (when target-workspace (cons buf target-workspace))))
+#+end_src
+
+And override =dap--go-to-stack-frame= to take that into account:
+#+begin_src emacs-lisp
+(defun my/dap--go-to-stack-frame-override (debug-session stack-frame)
+  "Make STACK-FRAME the active STACK-FRAME of DEBUG-SESSION."
+  (with-lsp-workspace (dap--debug-session-workspace debug-session)
+    (when stack-frame
+      (-let* (((&hash "line" line "column" column "name" name) stack-frame)
+              (path (dap--get-path-for-frame stack-frame)))
+        (setf (dap--debug-session-active-frame debug-session) stack-frame)
+        ;; If we have a source file with path attached, open it and
+        ;; position the point in the line/column referenced in the
+        ;; stack trace.
+        (if (and path (file-exists-p path))
+            (progn
+              (let ((exwm-target (my/exwm-perspective-find-buffer path)))
+                (if exwm-target
+                    (progn
+                      (unless (= (cdr exwm-target) exwm-workspace-current-index)
+                        (exwm-workspace-switch (cdr exwm-target)))
+                      (persp-switch-to-buffer (car exwm-target)))
+                  (select-window (get-mru-window (selected-frame) nil))
+                  (find-file path)))
+              (goto-char (point-min))
+              (forward-line (1- line))
+              (forward-char column))
+          (message "No source code for %s. Cursor at %s:%s." name line column))))
+    (run-hook-with-args 'dap-stack-frame-changed-hook debug-session)))
+
+(with-eval-after-load 'exwm
+  (with-eval-after-load 'dap-mode
+    (advice-add #'dap--go-to-stack-frame :override #'my/dap--go-to-stack-frame-override)))
+#+end_src
 **** Debug templates
 Some debug templates I frequently use.
 
@@ -3806,10 +3870,7 @@ Hotkeys
 Refile targets
 #+begin_src emacs-lisp
 (setq org-refile-targets
-      '(("projects.org" :maxlevel . 2)
-        ("work.org" :maxlevel . 2)
-        ("sem-11.org" :maxlevel . 3)
-        ("life.org" :maxlevel . 2)))
+      '())
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 #+end_src
@@ -3909,6 +3970,8 @@ Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I sti
     (if scheduled
         (format-time-string "%Y-%m-%d" scheduled)
       "")))
+
+(setq org-agenda-hide-tags-regexp (rx (or "org" "log" "log_here")))
 
 (setq org-agenda-custom-commands
       `(("p" "My outline"

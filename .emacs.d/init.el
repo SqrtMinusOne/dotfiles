@@ -238,9 +238,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
     (abort-recursive-edit)))
 
+(defun my/escape-key ()
+  (interactive)
+  (evil-ex-nohighlight)
+  (keyboard-quit))
+
 (general-define-key
  :keymaps '(normal visual global)
- [escape] 'keyboard-quit)
+ [escape] #'my/escape-key)
 
 (general-define-key
  :keymaps '(minibuffer-local-map
@@ -1307,6 +1312,55 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
              (format "Current session %s is not stopped")
              error))
     (error "No thread is currently active %s" (dap--debug-session-name (dap--cur-session)))))
+
+(defun my/exwm-perspective-find-buffer (path)
+  "Find a buffer with PATH in all EXWM perspectives.
+
+Returns (<buffer> . <workspace-index>) or nil."
+  (let* ((buf (cl-loop for buf being buffers
+                       if (and (buffer-file-name buf)
+                               (f-equal-p (buffer-file-name buf) path))
+                       return buf))
+         (target-workspace
+          (and buf
+               (cl-loop for frame in exwm-workspace--list
+                        if (with-selected-frame frame
+                             (cl-loop for persp-name being the hash-keys of (perspectives-hash)
+                                      if (member buf (persp-buffers
+                                                      (gethash persp-name (perspectives-hash))))
+                                      return persp-name))
+                        return (cl-position frame exwm-workspace--list)))))
+    (when target-workspace (cons buf target-workspace))))
+
+(defun my/dap--go-to-stack-frame-override (debug-session stack-frame)
+  "Make STACK-FRAME the active STACK-FRAME of DEBUG-SESSION."
+  (with-lsp-workspace (dap--debug-session-workspace debug-session)
+    (when stack-frame
+      (-let* (((&hash "line" line "column" column "name" name) stack-frame)
+              (path (dap--get-path-for-frame stack-frame)))
+        (setf (dap--debug-session-active-frame debug-session) stack-frame)
+        ;; If we have a source file with path attached, open it and
+        ;; position the point in the line/column referenced in the
+        ;; stack trace.
+        (if (and path (file-exists-p path))
+            (progn
+              (let ((exwm-target (my/exwm-perspective-find-buffer path)))
+                (if exwm-target
+                    (progn
+                      (unless (= (cdr exwm-target) exwm-workspace-current-index)
+                        (exwm-workspace-switch (cdr exwm-target)))
+                      (persp-switch-to-buffer (car exwm-target)))
+                  (select-window (get-mru-window (selected-frame) nil))
+                  (find-file path)))
+              (goto-char (point-min))
+              (forward-line (1- line))
+              (forward-char column))
+          (message "No source code for %s. Cursor at %s:%s." name line column))))
+    (run-hook-with-args 'dap-stack-frame-changed-hook debug-session)))
+
+(with-eval-after-load 'exwm
+  (with-eval-after-load 'dap-mode
+    (advice-add #'dap--go-to-stack-frame :override #'my/dap--go-to-stack-frame-override)))
 
 (with-eval-after-load 'dap-mode
   (dap-register-debug-template
@@ -2590,10 +2644,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   "a" 'org-agenda)
 
 (setq org-refile-targets
-      '(("projects.org" :maxlevel . 2)
-        ("work.org" :maxlevel . 2)
-        ("sem-11.org" :maxlevel . 3)
-        ("life.org" :maxlevel . 2)))
+      '())
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 
@@ -2654,6 +2705,8 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
     (if scheduled
         (format-time-string "%Y-%m-%d" scheduled)
       "")))
+
+(setq org-agenda-hide-tags-regexp (rx (or "org" "log" "log_here")))
 
 (setq org-agenda-custom-commands
       `(("p" "My outline"
