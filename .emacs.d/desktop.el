@@ -219,28 +219,41 @@ _d_: Discord
   (setq mouse-autoselect-window t)
   (setq focus-follows-mouse t)
 
-  (setq my/exwm-monitor-workspace '())
+  (setq my/exwm-last-workspaces '(1))
   
-  (defun my/exwm-get-current-monitor ()
-    (if (plist-get exwm-randr-workspace-monitor-plist exwm-workspace-current-index)
-        1 0))
-  
-  (defun my/exwm-update-current-monitor ()
-    (setf (alist-get (my/exwm-get-current-monitor) my/exwm-monitor-workspace)
-          exwm-workspace-current-index))
+  (defun my/exwm-store-last-workspace ()
+    (setq my/exwm-last-workspaces
+          (seq-uniq (cons exwm-workspace-current-index
+                          my/exwm-last-workspaces))))
   
   (add-hook 'exwm-workspace-switch-hook
-            #'my/exwm-update-current-monitor)
+            #'my/exwm-store-last-workspace)
   (defun my/exwm-switch-to-other-monitor ()
     (interactive)
-    (let* ((current (my/exwm-get-current-monitor))
-           (other (seq-some
-                   (lambda (m)
-                     (and (not (= (car m) current)) (cdr m)))
-                   my/exwm-monitor-workspace))
-           (focus-follows-mouse nil)
-           (mouse-autoselect-window nil))
-      (exwm-workspace-switch other)))
+    (let* ((current-monitor
+            (plist-get exwm-randr-workspace-output-plist
+                       (cl-position (selected-frame)
+                                    exwm-workspace--list)))
+           (all-monitors
+            (seq-uniq
+             (cons nil
+                   (cl-loop for (key value) on exwm-randr-workspace-output-plist
+                            by 'cddr collect value))))
+           (other-monitor
+            (nth
+             (% (1+ (cl-position current-monitor all-monitors))
+                (length all-monitors))
+             all-monitors)))
+      (exwm-workspace-switch
+       (cl-loop for i in (append my/exwm-last-workspaces
+                                 (cl-loop for i from 0
+                                          for _ in exwm-workspace--list
+                                          collect i))
+                if (if other-monitor
+                       (string-equal (plist-get exwm-randr-workspace-output-plist i)
+                                     other-monitor)
+                     (not (plist-get exwm-randr-workspace-output-plist i)))
+                return i))))
   (setq exwm-input-prefix-keys
         `(?\C-x
           ?\C-w
@@ -342,23 +355,11 @@ _d_: Discord
                           (interactive)
                           (exwm-workspace-switch-create ,i))))
                     (number-sequence 0 9))))
-  (defvar my/exwm-mode-line-info "")
-  
-  (add-to-list 'mode-line-misc-info
-               '(:eval my/exwm-mode-line-info))
-  
-  (defun my/exwm-mode-line-info-update ()
-    (setq my/exwm-mode-line-info
-          (concat
-           "["
-           (propertize (funcall exwm-workspace-index-map exwm-workspace-current-index)
-                       'face
-                       `(foreground-color . ,(doom-color 'yellow)))
-           "]"))
-    (setq my/exwm-mode-line-info-no-props (funcall exwm-workspace-index-map exwm-workspace-current-index))
-    (force-mode-line-update))
-  
-  (add-hook 'exwm-workspace-switch-hook #'my/exwm-mode-line-info-update)
+  (use-package exwm-modeline
+    :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
+    :after (exwm)
+    :config
+    (add-hook 'exwm-init-hook #'exwm-modeline-mode))
   (defun exwm-input--fake-last-command ()
     "Fool some packages into thinking there is a change in the buffer."
     (setq last-command #'exwm-input--noop)
