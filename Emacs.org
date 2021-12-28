@@ -1186,10 +1186,6 @@ A package to select an ever-increasing (or ever-decreasing) region of text.
 #+end_src
 ** Working with projects
 *** Treemacs
-| Type | Note                                                   |
-|------+--------------------------------------------------------|
-| TODO | Enable modeline only for particular treemacs instances |
-
 [[https://github.com/Alexander-Miller/treemacs][Treemacs]] calls itself a tree layout file explorer, but looks more like a project and workspace management system.
 
 Integrates with evil, magit, projectile, and perspective. The latter is particularly great - each perspective can have its own treemacs workspace!
@@ -1957,6 +1953,8 @@ References:
   (setq lsp-signature-render-documentation nil)
   ;; (lsp-headerline-breadcrumb-mode nil)
   (setq lsp-headerline-breadcrumb-enable nil)
+  (setq lsp-modeline-code-actions-enable nil)
+  (setq lsp-modeline-diagnostics-enable nil)
   (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
 
 (use-package lsp-ui
@@ -2344,6 +2342,8 @@ And override =dap--go-to-stack-frame= to take that into account:
 (with-eval-after-load 'exwm
   (with-eval-after-load 'dap-mode
     (advice-add #'dap--go-to-stack-frame :override #'my/dap--go-to-stack-frame-override)))
+
+;; (advice-remove #'dap--go-to-stack-frame #'my/dap--go-to-stack-frame-override)
 #+end_src
 **** Debug templates
 Some debug templates I frequently use.
@@ -2868,7 +2868,7 @@ A major mode to work with subtitles.
 
 #+begin_src emacs-lisp
 (use-package subed
-  :straight (:host github :repo "rndusr/subed" :files ("subed/*.el"))
+  :straight (:host github :repo "rndusr/subed" :files ("subed/*.el") :build (:not native-compile))
   :mode (rx (| "srt" "vtt" "ass") eos))
 #+end_src
 *** LanguageTool
@@ -4792,17 +4792,20 @@ As of now, this package loads Helm on start. To avoid this, I have to exclude He
   :config
   (general-define-key
    :keymaps 'org-mode-map
-   :infix "C-c l"
-   "" '(:which-key "org-ref")
-   "l" 'org-ref-ivy-insert-cite-link
-   "r" 'org-ref-ivy-insert-ref-link
-   "h" 'org-ref-cite-hydra/body)
+   "C-c l" #'org-ref-insert-link-hydra/body)
   (general-define-key
    :keymaps 'bibtex-mode-map
    "M-RET" 'org-ref-bibtex-hydra/body)
   ;; (add-to-list 'orhc-candidate-formats
   ;;              '("online" . "  |${=key=}| ${title} ${url}"))
   )
+
+(defun my/org-ref-select-bibliograhy ()
+  (interactive)
+  (setq-local org-ref-default-bibliography
+              `(,(read-file-name "Bibliograhy: " nil nil t)))
+  (setq-local reftex-default-bibliography org-ref-default-bibliography)
+  (setq-local bibtex-completion-bibliography org-ref-default-bibliography))
 #+end_src
 
 *** org-roam-bibtex
@@ -6578,6 +6581,11 @@ Watch out if you are using EXWM.
   :straight (:host github :repo "elizagamedev/power-mode.el")
   :disabled
   :commands (power-mode))
+#+end_src
+*** Redacted
+#+begin_src emacs-lisp
+(use-package redacted
+  :straight (:host github :repo "bkaestner/redacted.el"))
 #+end_src
 *** Zone
 #+begin_src emacs-lisp

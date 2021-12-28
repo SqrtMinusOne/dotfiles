@@ -1056,6 +1056,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq lsp-signature-render-documentation nil)
   ;; (lsp-headerline-breadcrumb-mode nil)
   (setq lsp-headerline-breadcrumb-enable nil)
+  (setq lsp-modeline-code-actions-enable nil)
+  (setq lsp-modeline-diagnostics-enable nil)
   (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
 
 (use-package lsp-ui
@@ -1361,6 +1363,8 @@ Returns (<buffer> . <workspace-index>) or nil."
 (with-eval-after-load 'exwm
   (with-eval-after-load 'dap-mode
     (advice-add #'dap--go-to-stack-frame :override #'my/dap--go-to-stack-frame-override)))
+
+;; (advice-remove #'dap--go-to-stack-frame #'my/dap--go-to-stack-frame-override)
 
 (with-eval-after-load 'dap-mode
   (dap-register-debug-template
@@ -3326,17 +3330,20 @@ Returns (<buffer> . <workspace-index>) or nil."
   :config
   (general-define-key
    :keymaps 'org-mode-map
-   :infix "C-c l"
-   "" '(:which-key "org-ref")
-   "l" 'org-ref-ivy-insert-cite-link
-   "r" 'org-ref-ivy-insert-ref-link
-   "h" 'org-ref-cite-hydra/body)
+   "C-c l" #'org-ref-insert-link-hydra/body)
   (general-define-key
    :keymaps 'bibtex-mode-map
    "M-RET" 'org-ref-bibtex-hydra/body)
   ;; (add-to-list 'orhc-candidate-formats
   ;;              '("online" . "  |${=key=}| ${title} ${url}"))
   )
+
+(defun my/org-ref-select-bibliograhy ()
+  (interactive)
+  (setq-local org-ref-default-bibliography
+              `(,(read-file-name "Bibliograhy: " nil nil t)))
+  (setq-local reftex-default-bibliography org-ref-default-bibliography)
+  (setq-local bibtex-completion-bibliography org-ref-default-bibliography))
 
 (use-package org-roam-bibtex
   :straight (:host github :repo "org-roam/org-roam-bibtex")
@@ -4517,6 +4524,9 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight (:host github :repo "elizagamedev/power-mode.el")
   :disabled
   :commands (power-mode))
+
+(use-package redacted
+  :straight (:host github :repo "bkaestner/redacted.el"))
 
 (use-package zone
   :ensure nil
