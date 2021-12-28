@@ -332,7 +332,7 @@ The GUI pinentry doesn't work too well with EXWM because of issues with popup wi
   (setq epa-pinentry-mode 'loopback)
   (setq epg-pinentry-mode 'loopback)
   (pinentry-start)
-  (my/run-in-background "gpgconf --reload gpg-agent"))
+  )
 #+end_src
 
 #+begin_src conf-space :tangle ~/.gnupg/gpg-agent.conf
@@ -535,9 +535,6 @@ Switch to the opposite monitor.
 *** App shortcuts
 A +transient+ hydra for shortcuts for the most frequent apps.
 #+begin_src emacs-lisp
-(use-package transient
-  :straight t)
-
 (defun my/run-in-background (command)
   (let ((command-parts (split-string command "[ ]+")))
     (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
@@ -759,9 +756,7 @@ And the EXWM config itself.
   (my/exwm-run-polybar)
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
-  ;; (with-eval-after-load 'perspective
-  ;;   (my/exwm-setup-perspectives))
-  )
+  (my/run-in-background "gpgconf --reload gpg-agent"))
 
 (defun my/exwm-update-class ()
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))

@@ -21,7 +21,7 @@
   (setq epa-pinentry-mode 'loopback)
   (setq epg-pinentry-mode 'loopback)
   (pinentry-start)
-  (my/run-in-background "gpgconf --reload gpg-agent"))
+  )
 
 (defun my/exwm-direction-exists-p (dir)
   (cl-some (lambda (dir)
@@ -126,9 +126,6 @@ _=_: Balance          "
                      my/exwm-another-monitor)))
   (exwm-randr-refresh))
 
-(use-package transient
-  :straight t)
-
 (defun my/run-in-background (command)
   (let ((command-parts (split-string command "[ ]+")))
     (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
@@ -194,6 +191,7 @@ _d_: Discord
   (my/exwm-run-polybar)
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
+  (my/run-in-background "gpgconf --reload gpg-agent")
   ;; (with-eval-after-load 'perspective
   ;;   (my/exwm-setup-perspectives))
   )
