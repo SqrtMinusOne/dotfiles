@@ -73,8 +73,8 @@
 (load custom-file 'noerror)
 
 (let ((private-file (expand-file-name "private.el" user-emacs-directory)))
-
-    (load-file private-file))
+  (when (file-exists-p private-file)
+    (load-file private-file)))
 
 (use-package no-littering
   :straight t)
@@ -1912,7 +1912,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   "RET" 'plantuml-preview)
 
 (use-package subed
-  :straight (:host github :repo "rndusr/subed" :files ("subed/*.el"))
+  :straight (:host github :repo "rndusr/subed" :files ("subed/*.el") :build (:not native-compile))
   :mode (rx (| "srt" "vtt" "ass") eos))
 
 (use-package langtool
@@ -3065,7 +3065,9 @@ Returns (<buffer> . <workspace-index>) or nil."
         (insert (my/org-roam-daily-format-target-links (cdr group) path))))))
 
 (defun my/org-roam-daily-transclusions-hook ()
-  (when (org-roam-dailies--daily-note-p)
+  (when (and
+         (fboundp 'org-roam-dailies--daily-note-p)
+         (org-roam-dailies--daily-note-p))
     (my/org-roam-daily-dispatch-transclusions)
     (message "Tranclusions dispatched!")))
 

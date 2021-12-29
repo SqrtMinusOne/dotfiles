@@ -494,8 +494,8 @@ I have some variables which I don't commit to the repo, e.g. my current location
 
 #+begin_src emacs-lisp
 (let ((private-file (expand-file-name "private.el" user-emacs-directory)))
-
-    (load-file private-file))
+  (when (file-exists-p private-file)
+    (load-file private-file)))
 #+end_src
 *** No littering
 By default Emacs and its packages create a lot files in =.emacs.d= and in other places. [[https://github.com/emacscollective/no-littering][no-littering]] is a collective effort to redirect all of that to two folders in =user-emacs-directory=.
@@ -4428,7 +4428,9 @@ Put it all together. Yay!
 Finally, let's put this function into the save hook:
 #+begin_src emacs-lisp
 (defun my/org-roam-daily-transclusions-hook ()
-  (when (org-roam-dailies--daily-note-p)
+  (when (and
+         (fboundp 'org-roam-dailies--daily-note-p)
+         (org-roam-dailies--daily-note-p))
     (my/org-roam-daily-dispatch-transclusions)
     (message "Tranclusions dispatched!")))
 
