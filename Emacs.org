@@ -5621,12 +5621,14 @@ A bunch of functions for managing dotfiles with yadm.
 *** Open Emacs config
 #+begin_src emacs-lisp
 (general-define-key
- "C-c c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org")))
+ ;; "C-c c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org"))
+ "C-c c" `(,(lambda () (interactive) (find-file "~/Emacs.org")) :wk "Emacs.org"))
 
 (my-leader-def
   :infix "c"
   "" '(:which-key "configuration")
-  "c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org")))
+  ;; "c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org"))
+  "c" `(,(lambda () (interactive) (find-file "~/Emacs.org")) :wk "Emacs.org"))
 #+end_src
 *** Open Magit for yadm
 Idea:
@@ -5666,13 +5668,10 @@ Open a file managed by yadm.
       (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
 
 (general-define-key
- "C-c f" (my/command-in-persp
-          "yadm file" "conf" 1
-          (my/open-yadm-file)))
+ "C-c f" '(my/open-yadm-file :wk "yadm file"))
+
 (my-leader-def
-  "cf" (my/command-in-persp
-        "yadm file" "conf" 1
-        (my/open-yadm-file)))
+  "cf" '(my/open-yadm-file :wk "yadm file"))
 #+end_src
 ** Internet & Multimedia
 *** Notmuch
