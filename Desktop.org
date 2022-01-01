@@ -261,6 +261,7 @@ Settings for [[https://github.com/ch11ng/exwm][Emacs X Window Manager]], a tilin
 References:
 - [[https://github.com/ch11ng/exwm/wiki][EXWM Wiki]]
 - [[https://github.com/daviwil/emacs-from-scratch/blob/master/Desktop.org][Emacs From Scratch config]]
+
 ** Startup & UI
 *** Xsession
 First things first, Emacs has to be launched as a window manager. On a more conventional system I'd create a .desktop file in some system folder that can be seen by a login manager, but in the case of Guix it's a bit more complicated, because all such folders are not meant to be changed manually.
@@ -453,6 +454,8 @@ By default splitting a window duplicates the current buffer, but because one EXW
 ** Perspectives
 My package that integrates perspective.el with EXWM.
 
+=perspective-exwm-mode= is called in the EXWM configure section.
+
 References:
 - [[https://github.com/SqrtMinusOne/perspective-exwm.el][perspective-exwm.el repo]]
 
@@ -471,100 +474,8 @@ References:
    "e" #'perspective-exwm-move-to-workspace
    "E" #'perspective-exwm-copy-to-workspace))
 #+end_src
-** Workspaces
-*** Move workspace to another monitor
-A function to move the current workspace to another monitor.
 
-#+begin_src emacs-lisp
-(defun my/exwm-workspace-switch-monitor ()
-  (interactive)
-  (if (plist-get exwm-randr-workspace-monitor-plist exwm-workspace-current-index)
-      (setq exwm-randr-workspace-monitor-plist
-            (map-delete exwm-randr-workspace-monitor-plist exwm-workspace-current-index))
-    (setq exwm-randr-workspace-monitor-plist
-          (plist-put exwm-randr-workspace-monitor-plist
-                     exwm-workspace-current-index
-                     my/exwm-another-monitor)))
-  (exwm-randr-refresh))
-#+end_src
-*** Switch to the opposite monitor
-I want to be able to switch to the opposite monitor with a keybinding. To do that, I store the list of the last workspaces I used and pick the most recent one from the other monitor.
-
-#+begin_src emacs-lisp :noweb-ref exwm-monitor-config :tangle no
-(setq my/exwm-last-workspaces '(1))
-
-(defun my/exwm-store-last-workspace ()
-  (setq my/exwm-last-workspaces
-        (seq-uniq (cons exwm-workspace-current-index
-                        my/exwm-last-workspaces))))
-
-(add-hook 'exwm-workspace-switch-hook
-          #'my/exwm-store-last-workspace)
-#+end_src
-
-Switch to the opposite monitor.
-#+begin_src emacs-lisp :noweb-ref exwm-monitor-config :tangle no
-(defun my/exwm-switch-to-other-monitor ()
-  (interactive)
-  (let* ((current-monitor
-          (plist-get exwm-randr-workspace-output-plist
-                     (cl-position (selected-frame)
-                                  exwm-workspace--list)))
-         (all-monitors
-          (seq-uniq
-           (cons nil
-                 (cl-loop for (key value) on exwm-randr-workspace-output-plist
-                          by 'cddr collect value))))
-         (other-monitor
-          (nth
-           (% (1+ (cl-position current-monitor all-monitors))
-              (length all-monitors))
-           all-monitors)))
-    (exwm-workspace-switch
-     (cl-loop for i in (append my/exwm-last-workspaces
-                               (cl-loop for i from 0
-                                        for _ in exwm-workspace--list
-                                        collect i))
-              if (if other-monitor
-                     (string-equal (plist-get exwm-randr-workspace-output-plist i)
-                                   other-monitor)
-                   (not (plist-get exwm-randr-workspace-output-plist i)))
-              return i))))
-#+end_src
-** Apps
-*** App shortcuts
-A +transient+ hydra for shortcuts for the most frequent apps.
-#+begin_src emacs-lisp
-(defun my/run-in-background (command)
-  (let ((command-parts (split-string command "[ ]+")))
-    (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
-
-(defhydra my/exwm-apps-hydra (:color blue :hint nil)
-  "
-^Apps^
-_t_: Terminal (Alacritty)
-_b_: Browser (Firefox)
-_v_: VK
-_s_: Slack
-_d_: Discord
-"
-  ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
-  ("b" (lambda () (interactive) (my/run-in-background "firefox")))
-  ("v" (lambda () (interactive) (my/run-in-background "vk")))
-  ("s" (lambda () (interactive) (my/run-in-background "slack-wrapper")))
-  ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
-#+end_src
-*** Locking up
-Run i3lock.
-
-#+begin_src emacs-lisp
-(defun my/exwm-lock ()
-  (interactive)
-  (my/run-in-background "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"))
-#+end_src
-*** Auto-assign apps
-A function to automatially assign an app to its designated workspace and perspective.
-
+The package also provides a nice function to automatically assign apps to their designated workspaces and perspectives.
 #+begin_src emacs-lisp
 (defun my/exwm-configure-window ()
   (interactive)
@@ -587,7 +498,133 @@ A function to automatially assign an app to its designated workspace and perspec
 
 (add-hook 'exwm-manage-finish-hook #'my/exwm-configure-window)
 #+end_src
+** Workspaces and multi-monitor setup
+A section about improving management of EXWM workspaces.
+
+*** Tracking recently used workspaces
+First of all, I want to track the workspaces list in the usage order. This will be immensely useful a bit later.
+
+I'm not sure if there's some built-in functionality in EXWM that I could use here, but that seems simple enough to define.
+
+#+begin_src emacs-lisp
+(setq my/exwm-last-workspaces '(1))
+
+(defun my/exwm-store-last-workspace ()
+  (setq my/exwm-last-workspaces
+        (seq-uniq (cons exwm-workspace-current-index
+                        my/exwm-last-workspaces))))
+
+(add-hook 'exwm-workspace-switch-hook
+          #'my/exwm-store-last-workspace)
+#+end_src
+
+As workspaces may also disappear, I also need a function to remove deleted workspaces from the list.
+#+begin_src emacs-lisp
+(defun my/exwm-last-workspaces-clear ()
+  (setq my/exwm-last-workspaces
+        (seq-filter
+         (lambda (i) (nth i exwm-workspace--list))
+         my/exwm-last-workspaces)))
+#+end_src
+*** Cycling monitors
+I also need a function to cycle the monitor list. While it is possible to retrieve the monitor list from =exwm-randr-workspace-output-plist=, this won't scale well beyond two monitors and changing the list on the fly.
+
+So there's just a variable with the monitors in the required order.
+#+begin_src emacs-lisp
+(setq my/exwm-monitor-list
+      (pcase (system-name)
+        ("indigo" '(nil "DVI-D-0"))
+        (_ '(nil))))
+#+end_src
+
+And a function to cycle this list.
+#+begin_src emacs-lisp
+(defun my/exwm-get-other-monitor (dir)
+  (let* ((current-monitor
+          (plist-get exwm-randr-workspace-output-plist
+                     (cl-position (selected-frame)
+                                  exwm-workspace--list)))
+         (other-monitor
+          (nth
+           (% (+ (cl-position current-monitor my/exwm-monitor-list
+                              :test #'string-equal)
+                 (length my/exwm-monitor-list)
+                 (pcase dir
+                   ('right 1)
+                   ('left -1)))
+              (length my/exwm-monitor-list))
+           my/exwm-monitor-list)))
+    other-monitor))
+#+end_src
+*** Move workspace to another monitor
+One feature I got accustomed to from i3 is switching to another monitor with =s-<tab>=. So let's use the functionality to cycle monitors to implement that.
+
+This is actually quite easy to implement - one just has to update =exwm-randr-workspace-monitor-plist= accordingly and run =exwm-randr-refresh=.
+#+begin_src emacs-lisp
+(defun my/exwm-workspace-switch-monitor ()
+  (interactive)
+  (let ((new-monitor (my/exwm-get-other-monitor 'right))
+        (current-monitor (plist-get
+                          exwm-randr-workspace-monitor-plist
+                          exwm-workspace-current-index)))
+    (when (and current-monitor
+               (>= 1
+                   (cl-loop for (key value) on exwm-randr-workspace-monitor-plist
+                            by 'cddr
+                            if (string-equal value current-monitor) sum 1)))
+      (error "Can't remove the last workspace on the monitor!"))
+    (setq exwm-randr-workspace-monitor-plist
+          (map-delete exwm-randr-workspace-monitor-plist exwm-workspace-current-index))
+    (when new-monitor
+      (setq exwm-randr-workspace-monitor-plist
+            (plist-put exwm-randr-workspace-monitor-plist
+                       exwm-workspace-current-index
+                       new-monitor))))
+  (exwm-randr-refresh))
+#+end_src
+*** Switch to another monitor
+And a function to switch to another monitor, which in fact switches to the most recently used workspace on the target monitor. Just as in my i3 config, I bind this to =s-q=.
+
+One caveat here is that on the startup the =my/exwm-last-workspaces= variable won't have any values from other monitor(s), so this list is concatenated with the list of available workspace indices.
+
+#+begin_src emacs-lisp
+(defun my/exwm-switch-to-other-monitor (&optional dir)
+  (interactive)
+  (my/exwm-last-workspaces-clear)
+  (exwm-workspace-switch
+   (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
+            for i in (append my/exwm-last-workspaces
+                             (cl-loop for i from 0
+                                      for _ in exwm-workspace--list
+                                      collect i))
+            if (if other-monitor
+                   (string-equal (plist-get exwm-randr-workspace-output-plist i)
+                                 other-monitor)
+                 (not (plist-get exwm-randr-workspace-output-plist i)))
+            return i)))
+#+end_src
+*** Windmove between monitors
+One final (for now) piece of i3 that I want here is using =s-h= and =s-l= to switch between monitors as well as between windows.
+
+To do that, there is a function that switches to another window in given direction if it finds one, and switches to a monitor in the same direction otherwise.
+
+#+begin_src emacs-lisp
+(defun my/exwm-windmove (dir)
+  (if (or (eq dir 'down) (eq dir 'up))
+      (windmove-do-window-select dir)
+    (let ((other-window (windmove-find-other-window dir))
+          (other-monitor (my/exwm-get-other-monitor dir))
+          (opposite-dir (pcase dir
+                          ('left 'right)
+                          ('right 'left))))
+      (if other-window
+          (windmove-do-window-select dir)
+        (my/exwm-switch-to-other-monitor dir)
+        (cl-loop while (windmove-find-other-window opposite-dir)
+                 do (windmove-do-window-select opposite-dir))))))
+#+end_src
 ** Keybindings
+*** EXWM keybindings
 Setting keybindings for EXWM. This actually has to be in the =:config= block of the =use-package= form, that is it has to be run after EXWM is loaded, so I use noweb to put this block in the correct place.
 
 First, some prefixes for keybindings that are always passed to EXWM instead of the X application in =line-mode=:
@@ -628,15 +665,15 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "s-R") . exwm-reset)
 
         ;; Switch windows
-        (,(kbd "s-<left>"). windmove-left)
-        (,(kbd "s-<right>") . windmove-right)
-        (,(kbd "s-<up>") . windmove-up)
-        (,(kbd "s-<down>") . windmove-down)
+        (,(kbd "s-<left>") . (lambda () (interactive) (my/exwm-windmove 'left)))
+        (,(kbd "s-<right>") . (lambda () (interactive) (my/exwm-windmove 'right)))
+        (,(kbd "s-<up>") . (lambda () (interactive) (my/exwm-windmove 'up)))
+        (,(kbd "s-<down>") . (lambda () (interactive) (my/exwm-windmove 'down)))
 
-        (,(kbd "s-h"). windmove-left)
-        (,(kbd "s-l") . windmove-right)
-        (,(kbd "s-k") . windmove-up)
-        (,(kbd "s-j") . windmove-down)
+        (,(kbd "s-h"). (lambda () (interactive) (my/exwm-windmove 'left)))
+        (,(kbd "s-l") . (lambda () (interactive) (my/exwm-windmove 'right)))
+        (,(kbd "s-k") . (lambda () (interactive) (my/exwm-windmove 'up)))
+        (,(kbd "s-j") . (lambda () (interactive) (my/exwm-windmove 'down)))
 
         ;; Moving windows
         (,(kbd "s-H") . (lambda () (interactive) (my/exwm-move-window 'left)))
@@ -717,6 +754,36 @@ A function to apply changes to =exwm-input-global-keys=.
   (when exwm--connection
     (exwm-input--update-global-prefix-keys)))
 #+end_src
+*** App shortcuts
+A +transient+ hydra for shortcuts for the most frequent apps.
+#+begin_src emacs-lisp
+(defun my/run-in-background (command)
+  (let ((command-parts (split-string command "[ ]+")))
+    (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
+
+(defhydra my/exwm-apps-hydra (:color blue :hint nil)
+  "
+^Apps^
+_t_: Terminal (Alacritty)
+_b_: Browser (Firefox)
+_v_: VK
+_s_: Slack
+_d_: Discord
+"
+  ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
+  ("b" (lambda () (interactive) (my/run-in-background "firefox")))
+  ("v" (lambda () (interactive) (my/run-in-background "vk")))
+  ("s" (lambda () (interactive) (my/run-in-background "slack-wrapper")))
+  ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
+#+end_src
+*** Locking up
+Run i3lock.
+
+#+begin_src emacs-lisp
+(defun my/exwm-lock ()
+  (interactive)
+  (my/run-in-background "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"))
+#+end_src
 ** Fixes
 *** Catch and report all errors raised when invoking command hooks
 - *CREDIT*: Thanks David! https://github.com/daviwil/exwm/commit/7b1be884124711af0a02eac740bdb69446bc54cc
@@ -738,6 +805,8 @@ A function to apply changes to =exwm-input-global-keys=.
                   (buffer-string))))))
 #+end_src
 *** Improve floating windows behavior
+These 3 settings seem to cause particular trouble with floating windows. Setting them to =nil= improves the stability greatly.
+
 #+begin_src emacs-lisp
 (defun my/fix-exwm-floating-windows ()
   (setq-local exwm-workspace-warp-cursor nil)
@@ -779,7 +848,7 @@ And the EXWM config itself.
   (setq mouse-autoselect-window t)
   (setq focus-follows-mouse t)
 
-  <<exwm-monitor-config>>
+  <<exwm-workspace-config>>
   <<exwm-keybindings>>
   <<exwm-mode-line-config>>
   <<exwm-fixes>>

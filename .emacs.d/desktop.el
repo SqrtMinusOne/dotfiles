@@ -115,16 +115,122 @@ _=_: Balance          "
    "e" #'perspective-exwm-move-to-workspace
    "E" #'perspective-exwm-copy-to-workspace))
 
+(defun my/exwm-configure-window ()
+  (interactive)
+  (pcase exwm-class-name
+    ((or "Firefox" "Nightly")
+     (perspective-exwm-assign-window
+      :workspace-index 2
+      :persp-name "browser"))
+    ("Alacritty"
+     (perspective-exwm-assign-window
+      :persp-name "term"))
+    ((or "VK" "Slack" "Discord" "TelegramDesktop")
+     (perspective-exwm-assign-window
+      :workspace-index 3
+      :persp-name "comms"))
+    ((or "Chromium-browser" "jetbrains-datagrip")
+     (perspective-exwm-assign-window
+      :workspace-index 4
+      :persp-name "dev"))))
+
+(add-hook 'exwm-manage-finish-hook #'my/exwm-configure-window)
+
+(setq my/exwm-last-workspaces '(1))
+
+(defun my/exwm-store-last-workspace ()
+  (setq my/exwm-last-workspaces
+        (seq-uniq (cons exwm-workspace-current-index
+                        my/exwm-last-workspaces))))
+
+(add-hook 'exwm-workspace-switch-hook
+          #'my/exwm-store-last-workspace)
+
+(defun my/exwm-last-workspaces-clear ()
+  (setq my/exwm-last-workspaces
+        (seq-filter
+         (lambda (i) (nth i exwm-workspace--list))
+         my/exwm-last-workspaces)))
+
+(setq my/exwm-monitor-list
+      (pcase (system-name)
+        ("indigo" '(nil "DVI-D-0"))
+        (_ '(nil))))
+
+(defun my/exwm-get-other-monitor (dir)
+  (let* ((current-monitor
+          (plist-get exwm-randr-workspace-output-plist
+                     (cl-position (selected-frame)
+                                  exwm-workspace--list)))
+         (other-monitor
+          (nth
+           (% (+ (cl-position current-monitor my/exwm-monitor-list
+                              :test #'string-equal)
+                 (length my/exwm-monitor-list)
+                 (pcase dir
+                   ('right 1)
+                   ('left -1)))
+              (length my/exwm-monitor-list))
+           my/exwm-monitor-list)))
+    other-monitor))
+
 (defun my/exwm-workspace-switch-monitor ()
   (interactive)
-  (if (plist-get exwm-randr-workspace-monitor-plist exwm-workspace-current-index)
-      (setq exwm-randr-workspace-monitor-plist
-            (map-delete exwm-randr-workspace-monitor-plist exwm-workspace-current-index))
+  (let ((new-monitor (my/exwm-get-other-monitor 'right))
+        (current-monitor (plist-get
+                          exwm-randr-workspace-monitor-plist
+                          exwm-workspace-current-index)))
+    (when (and current-monitor
+               (>= 1
+                   (cl-loop for (key value) on exwm-randr-workspace-monitor-plist
+                            by 'cddr
+                            if (string-equal value current-monitor) sum 1)))
+      (error "Can't remove the last workspace on the monitor!"))
     (setq exwm-randr-workspace-monitor-plist
-          (plist-put exwm-randr-workspace-monitor-plist
-                     exwm-workspace-current-index
-                     my/exwm-another-monitor)))
+          (map-delete exwm-randr-workspace-monitor-plist exwm-workspace-current-index))
+    (when new-monitor
+      (setq exwm-randr-workspace-monitor-plist
+            (plist-put exwm-randr-workspace-monitor-plist
+                       exwm-workspace-current-index
+                       new-monitor))))
   (exwm-randr-refresh))
+
+(defun my/exwm-switch-to-other-monitor (&optional dir)
+  (interactive)
+  (my/exwm-last-workspaces-clear)
+  (exwm-workspace-switch
+   (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
+            for i in (append my/exwm-last-workspaces
+                             (cl-loop for i from 0
+                                      for _ in exwm-workspace--list
+                                      collect i))
+            if (if other-monitor
+                   (string-equal (plist-get exwm-randr-workspace-output-plist i)
+                                 other-monitor)
+                 (not (plist-get exwm-randr-workspace-output-plist i)))
+            return i)))
+
+(defun my/exwm-windmove (dir)
+  (if (or (eq dir 'down) (eq dir 'up))
+      (windmove-do-window-select dir)
+    (let ((other-window (windmove-find-other-window dir))
+          (other-monitor (my/exwm-get-other-monitor dir))
+          (opposite-dir (pcase dir
+                          ('left 'right)
+                          ('right 'left))))
+      (if other-window
+          (windmove-do-window-select dir)
+        (my/exwm-switch-to-other-monitor dir)
+        (cl-loop while (windmove-find-other-window opposite-dir)
+                 do (windmove-do-window-select opposite-dir))))))
+
+(defun my/exwm-update-global-keys ()
+  (interactive)
+  (setq exwm-input--global-keys nil)
+  (dolist (i exwm-input-global-keys)
+    (exwm-input--set-key (car i) (cdr i)))
+  (when exwm--connection
+    (exwm-input--update-global-prefix-keys)))
 
 (defun my/run-in-background (command)
   (let ((command-parts (split-string command "[ ]+")))
@@ -149,35 +255,6 @@ _d_: Discord
   (interactive)
   (my/run-in-background "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"))
 
-(defun my/exwm-configure-window ()
-  (interactive)
-  (pcase exwm-class-name
-    ((or "Firefox" "Nightly")
-     (perspective-exwm-assign-window
-      :workspace-index 2
-      :persp-name "browser"))
-    ("Alacritty"
-     (perspective-exwm-assign-window
-      :persp-name "term"))
-    ((or "VK" "Slack" "Discord" "TelegramDesktop")
-     (perspective-exwm-assign-window
-      :workspace-index 3
-      :persp-name "comms"))
-    ((or "Chromium-browser" "jetbrains-datagrip")
-     (perspective-exwm-assign-window
-      :workspace-index 4
-      :persp-name "dev"))))
-
-(add-hook 'exwm-manage-finish-hook #'my/exwm-configure-window)
-
-(defun my/exwm-update-global-keys ()
-  (interactive)
-  (setq exwm-input--global-keys nil)
-  (dolist (i exwm-input-global-keys)
-    (exwm-input--set-key (car i) (cdr i)))
-  (when exwm--connection
-    (exwm-input--update-global-prefix-keys)))
-
 (defun my/fix-exwm-floating-windows ()
   (setq-local exwm-workspace-warp-cursor nil)
   (setq-local mouse-autoselect-window nil)
@@ -191,10 +268,7 @@ _d_: Discord
   (my/exwm-run-polybar)
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
-  (my/run-in-background "gpgconf --reload gpg-agent")
-  ;; (with-eval-after-load 'perspective
-  ;;   (my/exwm-setup-perspectives))
-  )
+  (my/run-in-background "gpgconf --reload gpg-agent"))
 
 (defun my/exwm-update-class ()
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))
@@ -217,41 +291,7 @@ _d_: Discord
   (setq mouse-autoselect-window t)
   (setq focus-follows-mouse t)
 
-  (setq my/exwm-last-workspaces '(1))
   
-  (defun my/exwm-store-last-workspace ()
-    (setq my/exwm-last-workspaces
-          (seq-uniq (cons exwm-workspace-current-index
-                          my/exwm-last-workspaces))))
-  
-  (add-hook 'exwm-workspace-switch-hook
-            #'my/exwm-store-last-workspace)
-  (defun my/exwm-switch-to-other-monitor ()
-    (interactive)
-    (let* ((current-monitor
-            (plist-get exwm-randr-workspace-output-plist
-                       (cl-position (selected-frame)
-                                    exwm-workspace--list)))
-           (all-monitors
-            (seq-uniq
-             (cons nil
-                   (cl-loop for (key value) on exwm-randr-workspace-output-plist
-                            by 'cddr collect value))))
-           (other-monitor
-            (nth
-             (% (1+ (cl-position current-monitor all-monitors))
-                (length all-monitors))
-             all-monitors)))
-      (exwm-workspace-switch
-       (cl-loop for i in (append my/exwm-last-workspaces
-                                 (cl-loop for i from 0
-                                          for _ in exwm-workspace--list
-                                          collect i))
-                if (if other-monitor
-                       (string-equal (plist-get exwm-randr-workspace-output-plist i)
-                                     other-monitor)
-                     (not (plist-get exwm-randr-workspace-output-plist i)))
-                return i))))
   (setq exwm-input-prefix-keys
         `(?\C-x
           ?\C-w
@@ -276,15 +316,15 @@ _d_: Discord
           (,(kbd "s-R") . exwm-reset)
   
           ;; Switch windows
-          (,(kbd "s-<left>"). windmove-left)
-          (,(kbd "s-<right>") . windmove-right)
-          (,(kbd "s-<up>") . windmove-up)
-          (,(kbd "s-<down>") . windmove-down)
+          (,(kbd "s-<left>") . (lambda () (interactive) (my/exwm-windmove 'left)))
+          (,(kbd "s-<right>") . (lambda () (interactive) (my/exwm-windmove 'right)))
+          (,(kbd "s-<up>") . (lambda () (interactive) (my/exwm-windmove 'up)))
+          (,(kbd "s-<down>") . (lambda () (interactive) (my/exwm-windmove 'down)))
   
-          (,(kbd "s-h"). windmove-left)
-          (,(kbd "s-l") . windmove-right)
-          (,(kbd "s-k") . windmove-up)
-          (,(kbd "s-j") . windmove-down)
+          (,(kbd "s-h"). (lambda () (interactive) (my/exwm-windmove 'left)))
+          (,(kbd "s-l") . (lambda () (interactive) (my/exwm-windmove 'right)))
+          (,(kbd "s-k") . (lambda () (interactive) (my/exwm-windmove 'up)))
+          (,(kbd "s-j") . (lambda () (interactive) (my/exwm-windmove 'down)))
   
           ;; Moving windows
           (,(kbd "s-H") . (lambda () (interactive) (my/exwm-move-window 'left)))
