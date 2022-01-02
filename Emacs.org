@@ -1,6 +1,6 @@
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:bash       :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
-#+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el :mkdirp yes :eval never-export :exports none
+#+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el :mkdirp yes :eval never-export :exports both
 #+TODO: CHECK(s) | OFF(o)
 #+TITLE: Emacs config
 #+OPTIONS: broken-links:auto h:6 toc:nil

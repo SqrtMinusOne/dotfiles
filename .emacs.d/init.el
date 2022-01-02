@@ -3851,12 +3851,14 @@ Returns (<buffer> . <workspace-index>) or nil."
   (general-nmap "~" 'eshell))
 
 (general-define-key
- "C-c c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org")))
+ ;; "C-c c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org"))
+ "C-c c" `(,(lambda () (interactive) (find-file "~/Emacs.org")) :wk "Emacs.org"))
 
 (my-leader-def
   :infix "c"
   "" '(:which-key "configuration")
-  "c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org")))
+  ;; "c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org"))
+  "c" `(,(lambda () (interactive) (find-file "~/Emacs.org")) :wk "Emacs.org"))
 
 (with-eval-after-load 'tramp
   (add-to-list 'tramp-methods
@@ -3886,13 +3888,10 @@ Returns (<buffer> . <workspace-index>) or nil."
       (shell-command-to-string "yadm ls-files $HOME --full-name") "\n")))))
 
 (general-define-key
- "C-c f" (my/command-in-persp
-          "yadm file" "conf" 1
-          (my/open-yadm-file)))
+ "C-c f" '(my/open-yadm-file :wk "yadm file"))
+
 (my-leader-def
-  "cf" (my/command-in-persp
-        "yadm file" "conf" 1
-        (my/open-yadm-file)))
+  "cf" '(my/open-yadm-file :wk "yadm file"))
 
 (unless (or my/is-termux my/remote-server)
   (load-file (expand-file-name "mail.el" user-emacs-directory)))
