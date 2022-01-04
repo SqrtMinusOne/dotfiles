@@ -1,0 +1,22 @@
+(specifications->manifest
+ '(
+   "xev"
+   "gparted"
+   "gnome-disk-utility"
+   "anydesk"
+   "qbittorrent"
+   "gnome-font-viewer"
+   "xdg-utils"
+   "telegram-desktop"
+   "thunar"
+   "copyq"
+   "feh"
+   "polkit-gnome"
+   "fontconfig"
+   "xmodmap"
+   "network-manager-applet"
+   "pavucontrol"
+   "ponymix"
+   "light"
+   "arandr"
+   "xprop"))
