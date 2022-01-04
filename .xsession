@@ -16,7 +16,7 @@ xrdb -merge ~/.Xresources
 xset -b
 
 # Use i3lock as a screen locker
-xss-lock -- i3lock &
+xss-lock -- i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png &
 
 # Some apps that have to be launched only once.
 picom &

@@ -256,15 +256,21 @@ fi
 :PROPERTIES:
 :header-args+: :tangle ~/.emacs.d/desktop.el
 :END:
-Settings for [[https://github.com/ch11ng/exwm][Emacs X Window Manager]], a tiling WM implemented in Emacs Lisp.
+Settings for [[https://github.com/ch11ng/exwm][Emacs X Window Manager]], a tiling WM implemented in Emacs Lisp. This part has a few bits copied from my blog post.
 
 References:
 - [[https://github.com/ch11ng/exwm/wiki][EXWM Wiki]]
 - [[https://github.com/daviwil/emacs-from-scratch/blob/master/Desktop.org][Emacs From Scratch config]]
+- [[https://sqrtminusone.xyz/posts/2022-01-03-exwm/][Using EXWM and perspective.el on a multi-monitor setup]]
 
 ** Startup & UI
 *** Xsession
 First things first, Emacs has to be launched as a window manager. On a more conventional system I'd create a .desktop file in some system folder that can be seen by a login manager, but in the case of Guix it's a bit more complicated, because all such folders are not meant to be changed manually.
+
+| Category     | Guix dependency |
+|--------------+-----------------|
+| desktop-misc | xinit           |
+| desktop-misc | xss-lock        |
 
 However, GDM, the login manager that seems to be the default on Guix, launches =~/.xsession= on the startup if it's present, which is just fine for my purposes.
 
@@ -285,7 +291,7 @@ xrdb -merge ~/.Xresources
 xset -b
 
 # Use i3lock as a screen locker
-xss-lock -- i3lock &
+xss-lock -- i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png &
 
 # Some apps that have to be launched only once.
 picom &
@@ -332,8 +338,7 @@ The GUI pinentry doesn't work too well with EXWM because of issues with popup wi
   (epa-file-enable)
   (setq epa-pinentry-mode 'loopback)
   (setq epg-pinentry-mode 'loopback)
-  (pinentry-start)
-  )
+  (pinentry-start))
 #+end_src
 
 #+begin_src conf-space :tangle ~/.gnupg/gpg-agent.conf
@@ -345,10 +350,9 @@ allow-loopback-pinentry
 *** Modeline
 Show the current workspace in the modeline.
 
-#+begin_src emacs-lisp :noweb-ref exwm-mode-line-config :tangle no
+#+begin_src emacs-lisp
 (use-package exwm-modeline
   :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
-  :after (exwm)
   :config
   (add-hook 'exwm-init-hook #'exwm-modeline-mode))
 #+end_src
@@ -356,24 +360,30 @@ Show the current workspace in the modeline.
 A bunch of functions related to managing windows in EXWM.
 
 *** Moving windows
-My functions for managing windows. I initially wrote these to mimic the i3 behavior for my Emacs + i3 integration, but I want to try to keep them for the EXWM config as well to make the transition less painful.
-
-A predicate which checks whether there is space in the given direction:
-#+begin_src emacs-lisp
-(defun my/exwm-direction-exists-p (dir)
-  (cl-some (lambda (dir)
-          (let ((win (windmove-find-other-window dir)))
-            (and win (not (window-minibuffer-p win)))))
-        (pcase dir
-          ('width '(left right))
-          ('height '(up down)))))
-#+end_src
-
-And a function to move windows with the following behavior:
+As I wrote in my [[https://sqrtminusone.xyz/posts/2021-10-04-emacs-i3/][Emacs and i3]] post, I want to have a rather specific behavior when moving windows (which does resemble i3 in some way):
 - if there is space in the required direction, move the Emacs window there;
 - if there is no space in the required direction, but space in two orthogonal directions, move the Emacs window so that there is no more space in the orthogonal directions;
+
+I can't say it's better or worse than the built-in functionality or one provided by evil, but I'm used to it and I think it fits better for managing a lot of windows.
+
+So, first, we need a predicate that checks whether there is space in the given direction:
+#+begin_src emacs-lisp
+(defun my/exwm-direction-exists-p (dir)
+  "Check if there is space in the direction DIR.
+
+Does not take the minibuffer into account."
+  (cl-some (lambda (dir)
+             (let ((win (windmove-find-other-window dir)))
+               (and win (not (window-minibuffer-p win)))))
+           (pcase dir
+             ('width '(left right))
+             ('height '(up down)))))
+#+end_src
+
+And a function to implement that:
 #+begin_src emacs-lisp
 (defun my/exwm-move-window (dir)
+  "Move the current window in the direction DIR."
   (let ((other-window (windmove-find-other-window dir))
         (other-direction (my/exwm-direction-exists-p
                           (pcase dir
@@ -387,13 +397,22 @@ And a function to move windows with the following behavior:
      (other-direction
       (evil-move-window dir)))))
 #+end_src
-*** Resizing windows
-A hydra so resize windows. It also mimics i3's behavior somewhat.
 
+My preferred keybindings for this part are, of course, =s-<H|J|K|L>=.
+*** Resizing windows
+I find this odd that there are different commands to resize tiling and floating windows. So let's define one command to perform both resizes depending on the context:
 #+begin_src emacs-lisp
 (setq my/exwm-resize-value 5)
 
 (defun my/exwm-resize-window (dir kind &optional value)
+  "Resize the current window in the direction DIR.
+
+DIR is either 'height or 'width, KIND is either 'shrink or
+ 'grow.  VALUE is `my/exwm-resize-value' by default.
+
+If the window is an EXWM floating window, execute the
+corresponding command from the exwm-layout group, execute the
+command from the evil-window group."
   (unless value
     (setq value my/exwm-resize-value))
   (let* ((is-exwm-floating
@@ -414,7 +433,12 @@ A hydra so resize windows. It also mimics i3's behavior somewhat.
     (when is-exwm-floating
       (setq value (* 5 value)))
     (funcall func value)))
+#+end_src
 
+This function will call =exwm-layout-<shrink|grow>[-horizontally]= for EXWM floating window and =evil-window-<decrease|increase>-<width|height>= otherwise.
+
+This function can be bound to the required keybindings directly, but I prefer a hydra to emulate the i3 submode:
+#+begin_src emacs-lisp
 (defhydra my/exwm-resize-hydra (:color pink :hint nil :foreign-keys run)
   "
 ^Resize^
@@ -429,10 +453,16 @@ _=_: Balance          "
   ("q" nil "quit" :color blue))
 #+end_src
 *** Improving splitting windows
-By default splitting a window duplicates the current buffer, but because one EXWM buffer can be only in one window, this function opens some other buffer in the split in that case.
+=M-x evil-window-[v]split= (bound to =C-w v= and =C-w s= by default) are the default evil command to do splits.
 
+One EXWM-related issue though is that by default doing such a split "copies" the current buffer to the new window. But as EXWM buffer cannot be "copied" like that, some other buffer is displayed in the split, and generally, that's not a buffer I want.
+
+For instance, I prefer to have Chrome DevTools as a separate window. When I click "Inspect" on something, the DevTools window replaces my Ungoogled Chromium window. I press =C-w v=, and most often I have something like =*scratch*= buffer in the opened split instead of the previous Chromium window.
+
+To implement better behavior, I define the following advice:
 #+begin_src emacs-lisp
 (defun my/exwm-fill-other-window (&rest _)
+  "Open the most recently used buffer in the next window."
   (interactive)
   (when (and (eq major-mode 'exwm-mode) (not (eq (next-window) (get-buffer-window))))
     (let ((other-exwm-buffer
@@ -447,21 +477,32 @@ By default splitting a window duplicates the current buffer, but because one EXW
       (when other-exwm-buffer
         (with-selected-window (next-window)
           (switch-to-buffer other-exwm-buffer))))))
+#+end_src
 
+This is meant to be called after doing an either vertical or horizontal split, so it's advised like that:
+#+begin_src emacs-lisp
 (advice-add 'evil-window-split :after #'my/exwm-fill-other-window)
 (advice-add 'evil-window-vsplit :after #'my/exwm-fill-other-window)
 #+end_src
-** Perspectives
-My package that integrates perspective.el with EXWM.
 
-=perspective-exwm-mode= is called in the EXWM configure section.
+This works as follows. If the current buffer is an EXWM buffer and there are other windows open (that is, =(next-window)= is not the current window), the function tries to find another suitable buffer to be opened in the split. And that also takes the perspectives into account, so buffers are searched only within the current perspective, and the buffer returned by =persp-other-buffer= will be the top candidate.
+** Perspectives
+[[https://github.com/nex3/perspective-el][perspective.el]] is one package I like that provides workspaces for Emacs, called "perspectives". Each perspective has a separate buffer list, window layout, and a few other things that make it easier to separate things within Emacs.
+
+One feature I'd like to highlight is integration between perspective.el and [[https://github.com/Alexander-Miller/treemacs][treemacs]], where one perspective can have a separate treemacs tree. Although now tab-bar.el seems to be getting into shape to compete with perspective.el, as of the time of this writing, there's no such integration, at least not out of the box.
+
+perspective.el works with EXWM more or less as one would expect - each EXWM workspace has its own set of perspectives. That way it feels somewhat like having multiple Emacs frames in a tiling window manager, although, of course, much more integrated with Emacs.
+
+However, there are still some issues. For instance, I was having strange behaviors with floating windows, EXWM buffers in perspectives, etc. So I've made a package called [[https://github.com/SqrtMinusOne/perspective-exwm.el][perspective-exwm.el]] that does two things:
+- Fixes issues I found with some advises and hooks. Take a look at the package homepage for more detail on that.
+- Provides some additional functionality that makes use of both perspective.el and EXWM.
 
 References:
 - [[https://github.com/SqrtMinusOne/perspective-exwm.el][perspective-exwm.el repo]]
 
 #+begin_src emacs-lisp
 (use-package perspective-exwm
-  :straight (:host github :repo "SqrtMinusOne/perspective-exwm.el")
+  :straight t
   :config
   (setq perspective-exwm-override-initial-name
         '((0 . "misc")
@@ -475,7 +516,9 @@ References:
    "E" #'perspective-exwm-copy-to-workspace))
 #+end_src
 
-The package also provides a nice function to automatically assign apps to their designated workspaces and perspectives.
+By default, a new Emacs buffer opens in the current perspective in the current workspace, but sure enough, it's possible to change that.
+
+For EXWM windows, the =perspective-exwm= package provides a function called =perspective-exwm-assign-window=, which is intended to be used in =exwm-manage-finish-hook=, for instance:
 #+begin_src emacs-lisp
 (defun my/exwm-configure-window ()
   (interactive)
@@ -501,15 +544,22 @@ The package also provides a nice function to automatically assign apps to their 
 ** Workspaces and multi-monitor setup
 A section about improving management of EXWM workspaces.
 
+Some features, common in other tiling WMs, are missing in EXWM out of the box, namely:
+- a command to [[https://i3wm.org/docs/userguide.html#_focusing_moving_containers][switch to another monitor]];
+- a command to [[https://i3wm.org/docs/userguide.html#move_to_outputs][move the current workspace to another monitor]];
+- using the same commands to switch between windows and monitors.
+
+Here's my take on implementing them.
+
 *** Tracking recently used workspaces
-First of all, I want to track the workspaces list in the usage order. This will be immensely useful a bit later.
+First up though, we need to track the workspaces in the usage order. I'm not sure if there's some built-in functionality in EXWM for that, but it seems simple enough to implement.
 
-I'm not sure if there's some built-in functionality in EXWM that I could use here, but that seems simple enough to define.
-
+Here is a snippet of code that does it:
 #+begin_src emacs-lisp
 (setq my/exwm-last-workspaces '(1))
 
 (defun my/exwm-store-last-workspace ()
+  "Save the last workspace to `my/exwm-last-workspaces'."
   (setq my/exwm-last-workspaces
         (seq-uniq (cons exwm-workspace-current-index
                         my/exwm-last-workspaces))))
@@ -518,55 +568,93 @@ I'm not sure if there's some built-in functionality in EXWM that I could use her
           #'my/exwm-store-last-workspace)
 #+end_src
 
-As workspaces may also disappear, I also need a function to remove deleted workspaces from the list.
+The variable =my/exwm-last-workspaces= stores the workspace indices; the first item is the index of the current workspace, the second item is the index of the previous workspace, and so on.
+
+One note here is that workspaces may also disappear (e.g. after =M-x exwm-workspace-delete=), so we also need a function to clean the list:
 #+begin_src emacs-lisp
 (defun my/exwm-last-workspaces-clear ()
+  "Clean `my/exwm-last-workspaces' from deleted workspaces."
   (setq my/exwm-last-workspaces
         (seq-filter
          (lambda (i) (nth i exwm-workspace--list))
          my/exwm-last-workspaces)))
 #+end_src
-*** Cycling monitors
-I also need a function to cycle the monitor list. While it is possible to retrieve the monitor list from =exwm-randr-workspace-output-plist=, this won't scale well beyond two monitors and changing the list on the fly.
 
-So there's just a variable with the monitors in the required order.
-#+begin_src emacs-lisp
+*** The monitor list
+The second piece of the puzzle is getting the monitor list in the right order.
+
+While it is possible to retrieve the monitor list from =exwm-randr-workspace-output-plist=, this won't scale well beyond two monitors, mainly because changing this variable may screw up the order.
+
+So the easiest way is to just define the variable like that:
+#+begin_src emacs-lisp :eval no
 (setq my/exwm-monitor-list
       (pcase (system-name)
         ("indigo" '(nil "DVI-D-0"))
         (_ '(nil))))
 #+end_src
 
-And a function to cycle this list.
+If you are changing the RandR configuration on the fly, this variable will also need to be changed, but for now, I don't have such a necessity.
+
+A function to get the current monitor:
+#+begin_src emacs-lisp :eval no
+(defun my/exwm-get-current-monitor ()
+  "Return the current monitor name or nil."
+  (plist-get exwm-randr-workspace-output-plist
+             (cl-position (selected-frame)
+                          exwm-workspace--list)))
+#+end_src
+
+And a function to cycle the monitor list in either direction:
 #+begin_src emacs-lisp
 (defun my/exwm-get-other-monitor (dir)
-  (let* ((current-monitor
-          (plist-get exwm-randr-workspace-output-plist
-                     (cl-position (selected-frame)
-                                  exwm-workspace--list)))
-         (other-monitor
-          (nth
-           (% (+ (cl-position current-monitor my/exwm-monitor-list
-                              :test #'string-equal)
-                 (length my/exwm-monitor-list)
-                 (pcase dir
-                   ('right 1)
-                   ('left -1)))
-              (length my/exwm-monitor-list))
-           my/exwm-monitor-list)))
-    other-monitor))
-#+end_src
-*** Move workspace to another monitor
-One feature I got accustomed to from i3 is switching to another monitor with =s-<tab>=. So let's use the functionality to cycle monitors to implement that.
+  "Cycle the monitor list in the direction DIR.
 
-This is actually quite easy to implement - one just has to update =exwm-randr-workspace-monitor-plist= accordingly and run =exwm-randr-refresh=.
+DIR is either 'left or 'right."
+  (nth
+   (% (+ (cl-position
+          (my/exwm-get-current-monitor)
+          my/exwm-monitor-list
+          :test #'string-equal)
+         (length my/exwm-monitor-list)
+         (pcase dir
+           ('right 1)
+           ('left -1)))
+      (length my/exwm-monitor-list))
+   my/exwm-monitor-list))
+#+end_src
+*** Switch to another monitor
+With the functions from the previous two sections, we can implement switching to another monitor by switching to the most recently used workspace on that monitor.
+
+One caveat here is that on the startup the =my/exwm-last-workspaces= variable won't have any values from other monitor(s), so this list is concatenated with the list of available workspace indices.
+#+begin_src emacs-lisp
+(defun my/exwm-switch-to-other-monitor (&optional dir)
+  "Switch to another monitor."
+  (interactive)
+  (my/exwm-last-workspaces-clear)
+  (exwm-workspace-switch
+   (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
+            for i in (append my/exwm-last-workspaces
+                             (cl-loop for i from 0
+                                      for _ in exwm-workspace--list
+                                      collect i))
+            if (if other-monitor
+                   (string-equal (plist-get exwm-randr-workspace-output-plist i)
+                                 other-monitor)
+                 (not (plist-get exwm-randr-workspace-output-plist i)))
+            return i)))
+#+end_src
+
+I bind this function to =s-q=, as I'm used from i3.
+*** Move the workspace to another monitor
+Now, moving the workspace to another monitor.
+
+This is actually quite easy to pull off - one just has to update =exwm-randr-workspace-monitor-plist= accordingly and run =exwm-randr-refresh=. I just add another check there because I don't want some monitor to remain without workspaces at all.
 #+begin_src emacs-lisp
 (defun my/exwm-workspace-switch-monitor ()
+  "Move the current workspace to another monitor."
   (interactive)
   (let ((new-monitor (my/exwm-get-other-monitor 'right))
-        (current-monitor (plist-get
-                          exwm-randr-workspace-monitor-plist
-                          exwm-workspace-current-index)))
+        (current-monitor (my/exwm-get-current-monitor)))
     (when (and current-monitor
                (>= 1
                    (cl-loop for (key value) on exwm-randr-workspace-monitor-plist
@@ -582,34 +670,15 @@ This is actually quite easy to implement - one just has to update =exwm-randr-wo
                        new-monitor))))
   (exwm-randr-refresh))
 #+end_src
-*** Switch to another monitor
-And a function to switch to another monitor, which in fact switches to the most recently used workspace on the target monitor. Just as in my i3 config, I bind this to =s-q=.
 
-One caveat here is that on the startup the =my/exwm-last-workspaces= variable won't have any values from other monitor(s), so this list is concatenated with the list of available workspace indices.
-
-#+begin_src emacs-lisp
-(defun my/exwm-switch-to-other-monitor (&optional dir)
-  (interactive)
-  (my/exwm-last-workspaces-clear)
-  (exwm-workspace-switch
-   (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
-            for i in (append my/exwm-last-workspaces
-                             (cl-loop for i from 0
-                                      for _ in exwm-workspace--list
-                                      collect i))
-            if (if other-monitor
-                   (string-equal (plist-get exwm-randr-workspace-output-plist i)
-                                 other-monitor)
-                 (not (plist-get exwm-randr-workspace-output-plist i)))
-            return i)))
-#+end_src
+In my configuration this is bound to =s-<tab>=.
 *** Windmove between monitors
-One final (for now) piece of i3 that I want here is using =s-h= and =s-l= to switch between monitors as well as between windows.
+And the final (for now) piece of the puzzle is using the same command to switch between windows and monitors. E.g. when the focus is on the right-most window on one monitor, I want the command to switch to the left-most window on the monitor to the right instead of saying "No window right from the selected window", as =windmove-right= does.
 
-To do that, there is a function that switches to another window in given direction if it finds one, and switches to a monitor in the same direction otherwise.
-
+So here is my implementation of that. It always does =windmove-do-select-window= for ='down= and ='up=. For ='right= and ='left= though, the function calls the previously defined function to switch to other monitor if =windmove-find-other-window= doesn't return anything.
 #+begin_src emacs-lisp
 (defun my/exwm-windmove (dir)
+  "Move to window or monitor in the direction DIR."
   (if (or (eq dir 'down) (eq dir 'up))
       (windmove-do-window-select dir)
     (let ((other-window (windmove-find-other-window dir))
@@ -2997,12 +3066,12 @@ wintypes:
 };
 #+end_src
 * Zathura
-| Category | Guix dependency     |
-|----------+---------------------|
-| office   | zathura             |
-| office   | zathura-ps          |
-| office   | zathura-pdf-mupdf   |
-| office   | zathura-djvu        |
+| Category | Guix dependency   |
+|----------+-------------------|
+| office   | zathura           |
+| office   | zathura-ps        |
+| office   | zathura-pdf-mupdf |
+| office   | zathura-djvu      |
 
 [[https://pwmt.org/projects/zathura/][Zathura]] is a pdf viewer with vim-like keybindings. One of my favorite features is an ability to invert the document colors.
 
@@ -3052,6 +3121,7 @@ This section generates manifests for various desktop software that I'm using.
 | office   | ffmpeg          |
 | office   | kdenlive        |
 | office   | inkscape        |
+| office   | evince          |
 ** LaTeX
 | Category | Guix dependency               |
 |----------+-------------------------------|

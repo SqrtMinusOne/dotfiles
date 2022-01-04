@@ -20,18 +20,26 @@
   (epa-file-enable)
   (setq epa-pinentry-mode 'loopback)
   (setq epg-pinentry-mode 'loopback)
-  (pinentry-start)
-  )
+  (pinentry-start))
+
+(use-package exwm-modeline
+  :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
+  :config
+  (add-hook 'exwm-init-hook #'exwm-modeline-mode))
 
 (defun my/exwm-direction-exists-p (dir)
+  "Check if there is space in the direction DIR.
+
+Does not take the minibuffer into account."
   (cl-some (lambda (dir)
-          (let ((win (windmove-find-other-window dir)))
-            (and win (not (window-minibuffer-p win)))))
-        (pcase dir
-          ('width '(left right))
-          ('height '(up down)))))
+             (let ((win (windmove-find-other-window dir)))
+               (and win (not (window-minibuffer-p win)))))
+           (pcase dir
+             ('width '(left right))
+             ('height '(up down)))))
 
 (defun my/exwm-move-window (dir)
+  "Move the current window in the direction DIR."
   (let ((other-window (windmove-find-other-window dir))
         (other-direction (my/exwm-direction-exists-p
                           (pcase dir
@@ -48,6 +56,14 @@
 (setq my/exwm-resize-value 5)
 
 (defun my/exwm-resize-window (dir kind &optional value)
+  "Resize the current window in the direction DIR.
+
+DIR is either 'height or 'width, KIND is either 'shrink or
+ 'grow.  VALUE is `my/exwm-resize-value' by default.
+
+If the window is an EXWM floating window, execute the
+corresponding command from the exwm-layout group, execute the
+command from the evil-window group."
   (unless value
     (setq value my/exwm-resize-value))
   (let* ((is-exwm-floating
@@ -83,6 +99,7 @@ _=_: Balance          "
   ("q" nil "quit" :color blue))
 
 (defun my/exwm-fill-other-window (&rest _)
+  "Open the most recently used buffer in the next window."
   (interactive)
   (when (and (eq major-mode 'exwm-mode) (not (eq (next-window) (get-buffer-window))))
     (let ((other-exwm-buffer
@@ -102,7 +119,7 @@ _=_: Balance          "
 (advice-add 'evil-window-vsplit :after #'my/exwm-fill-other-window)
 
 (use-package perspective-exwm
-  :straight (:host github :repo "SqrtMinusOne/perspective-exwm.el")
+  :straight t
   :config
   (setq perspective-exwm-override-initial-name
         '((0 . "misc")
@@ -139,6 +156,7 @@ _=_: Balance          "
 (setq my/exwm-last-workspaces '(1))
 
 (defun my/exwm-store-last-workspace ()
+  "Save the last workspace to `my/exwm-last-workspaces'."
   (setq my/exwm-last-workspaces
         (seq-uniq (cons exwm-workspace-current-index
                         my/exwm-last-workspaces))))
@@ -147,6 +165,7 @@ _=_: Balance          "
           #'my/exwm-store-last-workspace)
 
 (defun my/exwm-last-workspaces-clear ()
+  "Clean `my/exwm-last-workspaces' from deleted workspaces."
   (setq my/exwm-last-workspaces
         (seq-filter
          (lambda (i) (nth i exwm-workspace--list))
@@ -157,29 +176,49 @@ _=_: Balance          "
         ("indigo" '(nil "DVI-D-0"))
         (_ '(nil))))
 
+(defun my/exwm-get-current-monitor ()
+  "Return the current monitor name or nil."
+  (plist-get exwm-randr-workspace-output-plist
+             (cl-position (selected-frame)
+                          exwm-workspace--list)))
+
 (defun my/exwm-get-other-monitor (dir)
-  (let* ((current-monitor
-          (plist-get exwm-randr-workspace-output-plist
-                     (cl-position (selected-frame)
-                                  exwm-workspace--list)))
-         (other-monitor
-          (nth
-           (% (+ (cl-position current-monitor my/exwm-monitor-list
-                              :test #'string-equal)
-                 (length my/exwm-monitor-list)
-                 (pcase dir
-                   ('right 1)
-                   ('left -1)))
-              (length my/exwm-monitor-list))
-           my/exwm-monitor-list)))
-    other-monitor))
+  "Cycle the monitor list in the direction DIR.
+
+DIR is either 'left or 'right."
+  (nth
+   (% (+ (cl-position
+          (my/exwm-get-current-monitor)
+          my/exwm-monitor-list
+          :test #'string-equal)
+         (length my/exwm-monitor-list)
+         (pcase dir
+           ('right 1)
+           ('left -1)))
+      (length my/exwm-monitor-list))
+   my/exwm-monitor-list))
+
+(defun my/exwm-switch-to-other-monitor (&optional dir)
+  "Switch to another monitor."
+  (interactive)
+  (my/exwm-last-workspaces-clear)
+  (exwm-workspace-switch
+   (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
+            for i in (append my/exwm-last-workspaces
+                             (cl-loop for i from 0
+                                      for _ in exwm-workspace--list
+                                      collect i))
+            if (if other-monitor
+                   (string-equal (plist-get exwm-randr-workspace-output-plist i)
+                                 other-monitor)
+                 (not (plist-get exwm-randr-workspace-output-plist i)))
+            return i)))
 
 (defun my/exwm-workspace-switch-monitor ()
+  "Move the current workspace to another monitor."
   (interactive)
   (let ((new-monitor (my/exwm-get-other-monitor 'right))
-        (current-monitor (plist-get
-                          exwm-randr-workspace-monitor-plist
-                          exwm-workspace-current-index)))
+        (current-monitor (my/exwm-get-current-monitor)))
     (when (and current-monitor
                (>= 1
                    (cl-loop for (key value) on exwm-randr-workspace-monitor-plist
@@ -195,22 +234,8 @@ _=_: Balance          "
                        new-monitor))))
   (exwm-randr-refresh))
 
-(defun my/exwm-switch-to-other-monitor (&optional dir)
-  (interactive)
-  (my/exwm-last-workspaces-clear)
-  (exwm-workspace-switch
-   (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
-            for i in (append my/exwm-last-workspaces
-                             (cl-loop for i from 0
-                                      for _ in exwm-workspace--list
-                                      collect i))
-            if (if other-monitor
-                   (string-equal (plist-get exwm-randr-workspace-output-plist i)
-                                 other-monitor)
-                 (not (plist-get exwm-randr-workspace-output-plist i)))
-            return i)))
-
 (defun my/exwm-windmove (dir)
+  "Move to window or monitor in the direction DIR."
   (if (or (eq dir 'down) (eq dir 'up))
       (windmove-do-window-select dir)
     (let ((other-window (windmove-find-other-window dir))
@@ -393,11 +418,7 @@ _d_: Discord
                           (interactive)
                           (exwm-workspace-switch-create ,i))))
                     (number-sequence 0 9))))
-  (use-package exwm-modeline
-    :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
-    :after (exwm)
-    :config
-    (add-hook 'exwm-init-hook #'exwm-modeline-mode))
+  
   (defun exwm-input--fake-last-command ()
     "Fool some packages into thinking there is a change in the buffer."
     (setq last-command #'exwm-input--noop)
