@@ -137,8 +137,8 @@ if [[ ! -z "$INIT_CONDA" ]]; then
 fi
 # Anaconda:1 ends here
 
-# [[file:Console.org::*Starship prompt][Starship prompt:1]]
+# [[file:Console.org::*Starship][Starship:1]]
 if [[ -z "$SIMPLE" ]]; then
     eval "$(starship init bash)"
 fi
-# Starship prompt:1 ends here
+# Starship:1 ends here

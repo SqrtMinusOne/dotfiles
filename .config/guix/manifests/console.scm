@@ -1,9 +1,11 @@
 (specifications->manifest
  '(
+   "git-lfs"
    "sshfs"
    "tokei"
    "jmtpfs"
    "unzip"
+   "zip"
    "password-store"
    "p7zip"
    "fzf"

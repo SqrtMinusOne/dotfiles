@@ -61,6 +61,11 @@ Set ripgrep config path
 #+begin_src sh
 export RIPGREP_CONFIG_PATH=$HOME/.config/ripgrep/ripgreprc
 #+end_src
+
+hledger path
+#+begin_src sh
+export LEDGER_FILE=~/Documents/org-mode/ledger/ledger.journal
+#+end_src
 ** My paths
 My script folders
 #+begin_src sh
@@ -842,10 +847,12 @@ key_bindings:
 | fzf             | fuzzy finder                                |
 | p7zip           | archiver                                    |
 | password-store  | CLI password manager                        |
+| zip             |                                             |
 | unzip           |                                             |
 | jmtpfs          | A tool to mount MTP devices (e.g. Android)  |
 | tokei           | Count lines of code                         |
 | sshfs           | Mount stuff over SSH                        |
+| git-lfs         |                                             |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.

@@ -7,6 +7,10 @@ export QT_AUTO_SCREEN_SCALE_FACTOR=0
 export RIPGREP_CONFIG_PATH=$HOME/.config/ripgrep/ripgreprc
 # Environment:2 ends here
 
+# [[file:Console.org::*Environment][Environment:3]]
+export LEDGER_FILE=~/Documents/org-mode/ledger/ledger.journal
+# Environment:3 ends here
+
 # [[file:Console.org::*My paths][My paths:1]]
 if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin:$PATH"
