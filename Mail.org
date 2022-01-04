@@ -135,6 +135,7 @@ remotepass = <<mail-password()>>
 remoteport = 1143
 starttls = no
 ssl = no
+sslcacertfile = /etc/ssl/certs/ca-certificates.crt
 #+end_src
 * Notmuch
 | Guix dependency |
