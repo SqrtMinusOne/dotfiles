@@ -850,6 +850,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                         :background ,(doom-color 'bg)
                         :foreground ,(doom-color 'yellow)
                         :underline ,(doom-color 'yellow)))))
+     `(tab-bar ((t (:background nil :foreground nil))))
      `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
      `(org-block-begin-line ((t (
                                  :background ,(color-darken-name (doom-color 'bg) 3)
@@ -2647,8 +2648,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   "c" 'org-capture
   "a" 'org-agenda)
 
-(setq org-refile-targets
-      '())
+(setq org-refile-targets '())
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 
@@ -2900,7 +2900,9 @@ Returns (<buffer> . <workspace-index>) or nil."
              ,@project-files)))
     (dolist (file project-files)
       (add-to-list 'org-refile-targets
-                   `(,file :maxlevel . 2)))))
+                   `(,file :tag . "refile"))
+      (add-to-list 'org-refile-targets
+                   `(,file :regexp . ,(rx (or "Tasks")))))))
 
 (with-eval-after-load 'org-roam
   (my/org-roam-refresh-agenda-list))
@@ -2913,6 +2915,23 @@ Returns (<buffer> . <workspace-index>) or nil."
    (my/org-roam-filter-by-tag :include ("org"))
    :templates
    `(,my/org-roam-project-template)))
+
+(defun my/org-target-refile (&optional arg)
+  (interactive "P")
+  (let* ((selected-file
+          (completing-read
+           "Refile to: "
+           (seq-uniq (mapcar #'car org-refile-targets))))
+         (org-refile-targets
+          (cl-loop for target in org-refile-targets
+                   if (string-equal (car target) selected-file)
+                   collect target)))
+    (org-refile-cache-clear)
+    (org-refile arg)))
+
+(general-define-key
+ :keymaps 'org-mode-map
+ "C-c C-w" #'my/org-target-refile)
 
 (defun my/org-roam-daily-extract-target-links ()
   (save-excursion
@@ -4481,6 +4500,20 @@ Returns (<buffer> . <workspace-index>) or nil."
   (setq alert-default-style 'libnotify)
   (add-hook 'pomm-on-tick-hook 'pomm-update-mode-line-string)
   (add-hook 'pomm-on-status-changed-hook 'pomm-update-mode-line-string))
+
+(use-package hledger-mode
+  :straight t
+  :mode (rx ".journal" eos)
+  :config
+  (setq hledger-jfile (concat org-directory "/ledger/ledger.journal"))
+  (add-hook 'hledger-mode-hook
+            (lambda ()
+              (make-local-variable 'company-backends)
+              (add-to-list 'company-backends 'hledger-company))))
+
+(use-package flycheck-hledger
+  :straight t
+  :after (hledger-mode))
 
 (setq calendar-date-style 'iso) ;; YYYY/mm/dd
 (setq calendar-week-start-day 1)

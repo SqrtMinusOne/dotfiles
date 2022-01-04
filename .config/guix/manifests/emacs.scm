@@ -3,6 +3,7 @@
    "the-silver-searcher"
    "ripgrep"
    "emacs-vterm"
+   "hledger"
    "imagemagick"
    "yt-dlp"
    "mpv"
