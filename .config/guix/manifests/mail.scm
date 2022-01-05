@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "emacs-notmuch"
    "msmtp"
    "parallel"
    "notmuch"
