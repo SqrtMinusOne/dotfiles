@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "glibc-locales"
    "git-lfs"
    "sshfs"
    "tokei"

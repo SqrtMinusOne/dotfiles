@@ -41,6 +41,10 @@ export JUPYTER_CONFIG_DIR=$HOME/.config/jupyter
 export GUIX_PACKAGE_PATH=~/guix-packages
 # Guix settings:3 ends here
 
+# [[file:Console.org::*Guix settings][Guix settings:4]]
+export GUIX_LOCPATH=$HOME/.guix-extra-profiles/console/console/lib/locale
+# Guix settings:4 ends here
+
 # [[file:Console.org::*Other package managers][Other package managers:1]]
 if [ -d "$HOME/.cask" ]; then
     export PATH="/home/pavel/.cask/bin:$PATH"
