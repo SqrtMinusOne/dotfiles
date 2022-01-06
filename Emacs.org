@@ -1112,7 +1112,7 @@ Some default settings to manage tabs.
 (setq auto-save-default nil)
 #+end_src
 *** Undo Tree
-Replaces Emacs build-in sequential undo system with a tree-based one. Probably one of the greatest options of Emacs as a text editor.
+Replaces Emacs built-in sequential undo system with a tree-based one. Probably one of the greatest options of Emacs as a text editor.
 
 References:
 - [[https://www.emacswiki.org/emacs/UndoTree][UndoTree on EmacsWiki]]
@@ -1180,6 +1180,7 @@ A package to select an ever-increasing (or ever-decreasing) region of text.
 #+begin_src emacs-lisp
 (use-package visual-fill-column
   :straight t
+  :commands (visual-fill-column-mode)
   :config
   (add-hook 'visual-fill-column-mode-hook
             (lambda () (setq visual-fill-column-center-text t))))
@@ -3483,6 +3484,7 @@ References:
 #+begin_src emacs-lisp :noweb-ref org-lang-setup
 (use-package jupyter
   :straight t
+  :after (org)
   :if (not my/is-termux)
   :init
   (my-leader-def "ar" 'jupyter-run-repl))
@@ -3511,6 +3513,7 @@ Fortunately, =emacs-jupyter= provides a function for that problem as well.
 *** Hy
 #+begin_src emacs-lisp :noweb-ref org-lang-setup
 (use-package ob-hy
+  :after (org)
   :straight t)
 #+end_src
 *** View HTML in browser
@@ -5286,7 +5289,7 @@ I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provi
 #+begin_src emacs-lisp
 (use-package diredfl
   :straight t
-  :after dired
+  :after (dired)
   :config
   (diredfl-global-mode 1))
 #+end_src
@@ -6496,7 +6499,9 @@ Tecosaur's plugin to make beautiful code screenshots.
 
 #+begin_src emacs-lisp
 (use-package screenshot
-  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el") :commit "f8204e82dc0c1158c401735d36a143e6f6d24cf5")
+  :straight (:repo "tecosaur/screenshot"
+                   :host github
+                   :build (:not compile))
   :if (display-graphic-p)
   :commands (screenshot)
   :init
@@ -6540,7 +6545,7 @@ My package for doing Pomodoro timer.
   (add-hook 'pomm-on-status-changed-hook 'pomm-update-mode-line-string))
 #+end_src
 *** hledger
-Trying out hledger.
+[[hledger.org/][hledger]] is a plain-text double-entry accounting software. I use it for managing my personal finances, and thus far it's great.
 
 | Guix dependency |
 |-----------------|
@@ -6631,6 +6636,7 @@ Watch out if you are using EXWM.
 *** Redacted
 #+begin_src emacs-lisp
 (use-package redacted
+  :commands (redacted-mode)
   :straight (:host github :repo "bkaestner/redacted.el"))
 #+end_src
 *** Zone
