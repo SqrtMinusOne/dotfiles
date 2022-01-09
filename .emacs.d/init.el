@@ -511,6 +511,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package visual-fill-column
   :straight t
+  :commands (visual-fill-column-mode)
   :config
   (add-hook 'visual-fill-column-mode-hook
             (lambda () (setq visual-fill-column-center-text t))))
@@ -2284,10 +2285,12 @@ Returns (<buffer> . <workspace-index>) or nil."
   (unless my/is-termux
     (use-package jupyter
       :straight t
+      :after (org)
       :if (not my/is-termux)
       :init
       (my-leader-def "ar" 'jupyter-run-repl))
     (use-package ob-hy
+      :after (org)
       :straight t)
     (setq org-plantuml-executable-path "/home/pavel/.guix-extra-profiles/emacs/emacs/bin/plantuml")
     (setq org-plantuml-exec-mode 'plantuml)
@@ -2429,6 +2432,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package jupyter
   :straight t
+  :after (org)
   :if (not my/is-termux)
   :init
   (my-leader-def "ar" 'jupyter-run-repl))
@@ -2444,6 +2448,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (org-babel-jupyter-aliases-from-kernelspecs t))
 
 (use-package ob-hy
+  :after (org)
   :straight t)
 
 (setq my/org-view-html-tmp-dir "/tmp/org-html-preview/")
@@ -3626,7 +3631,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package diredfl
   :straight t
-  :after dired
+  :after (dired)
   :config
   (diredfl-global-mode 1))
 
@@ -4482,7 +4487,9 @@ Returns (<buffer> . <workspace-index>) or nil."
         (message "Sent %d to %d" (or signal 15) (cdr (assoc 'pid app)))))))
 
 (use-package screenshot
-  :straight (:repo "tecosaur/screenshot" :host github :files ("screenshot.el") :commit "f8204e82dc0c1158c401735d36a143e6f6d24cf5")
+  :straight (:repo "tecosaur/screenshot"
+                   :host github
+                   :build (:not compile))
   :if (display-graphic-p)
   :commands (screenshot)
   :init
@@ -4571,6 +4578,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :commands (power-mode))
 
 (use-package redacted
+  :commands (redacted-mode)
   :straight (:host github :repo "bkaestner/redacted.el"))
 
 (use-package zone
