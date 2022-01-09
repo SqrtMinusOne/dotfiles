@@ -60,14 +60,14 @@
         (list (channel
                (name 'nonguix)
                (url "https://gitlab.com/nonguix/nonguix")
-               (commit "d3c5eea0cbfe3e5bfbcf1fe15bc916fefacc624f"))
+               (commit "393b8e0405f44835c498d7735a8ae9ff4682b07f"))
               (channel
                (name 'guix)
                (url "https://git.savannah.gnu.org/git/guix.git")
-               (commit "cf88c967afbf15c58efb0ba37d6638f1be9a0481"))))
+               (commit "4c812db049d5c9f2c438748e180f9486ad221b0a"))))
        (inferior
         (inferior-for-channels channels)))
-    (first (lookup-inferior-packages inferior "linux" "5.12.9"))))
+    (first (lookup-inferior-packages inferior "linux" "5.15.12"))))
  ;; (kernel linux)
  (initrd microcode-initrd)
  (firmware (list linux-firmware))
