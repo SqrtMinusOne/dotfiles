@@ -2955,9 +2955,13 @@ Returns (<buffer> . <workspace-index>) or nil."
                       (line-number-at-pos)
                       ;; Hardcoded for now
                       1
-                      (save-excursion
-                        (org-back-to-heading)
-                        (org-element-property :title (org-element-at-point)))))))
+                      (let ((title
+                             (save-excursion
+                               (org-back-to-heading)
+                               (org-element-property :title (org-element-at-point)))))
+                        (if (stringp title)
+                            title
+                          (substring-no-properties (car title))))))))
 
 (defun my/org-roam-node-insert-log ()
   (interactive)
@@ -3300,19 +3304,26 @@ Returns (<buffer> . <workspace-index>) or nil."
 (setq my/org-review-directory "review")
 
 (defun my/get-last-review-date ()
-  (substring
-   (or
-    (-max-by
-     'string-greaterp
-     (-filter
-      (lambda (f) (not (or (string-equal f ".") (string-equal f ".."))))
-      (directory-files (f-join org-roam-directory my/org-review-directory))))
-    (format-time-string
-     "%Y-%m-%d"
-     (time-subtract
-      (current-time)
-      (seconds-to-time (* 60 60 24 14)))))
-   0 10))
+  (->
+   (substring
+    (or
+     (-max-by
+      'string-greaterp
+      (-filter
+       (lambda (f) (not (or (string-equal f ".") (string-equal f ".."))))
+       (directory-files (f-join org-roam-directory my/org-review-directory))))
+     (format-time-string
+      "%Y-%m-%d"
+      (time-subtract
+       (current-time)
+       (seconds-to-time (* 60 60 24 14)))))
+    0 10)
+   (concat "T00:00:00-00:00")
+   parse-time-string
+   encode-time
+   (time-add (seconds-to-time (* 60 60 24)))
+   ((lambda (time)
+      (format-time-string "%Y-%m-%d" time)))))
 
 (setq my/org-review-capture-template
       `("r" "Review" plain
@@ -4119,7 +4130,7 @@ Returns (<buffer> . <workspace-index>) or nil."
                            (+ (? (or "https://" "http://"))
                               (* nonl)
                               (regexp (eval (emms-player-simple-regexp
-                                             "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff")))))))
+                                             "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff" "m4a")))))))
   ;; MPV setup
   (add-to-list 'emms-player-list 'emms-player-mpv)
   (emms-player-set emms-player-mpv
