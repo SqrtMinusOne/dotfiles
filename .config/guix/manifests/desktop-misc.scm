@@ -19,4 +19,6 @@
    "ponymix"
    "light"
    "arandr"
-   "xprop"))
+   "xprop"
+   "xss-lock"
+   "xinit"))
