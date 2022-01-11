@@ -67,7 +67,7 @@
   (advice-add 'conda-env-activate :after
               (lambda (&rest _)
                 (setenv "EMACS_CONDA_ENV" conda-env-current-name)
-                (setenv "INIT_CONDA" "true"))
+                (setenv "INIT_CONDA" "true")))
   (advice-add 'conda-env-deactivate :after
               (lambda (&rest _)
                 (setenv "EMACS_CONDA_ENV" nil)
