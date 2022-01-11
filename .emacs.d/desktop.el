@@ -202,17 +202,18 @@ DIR is either 'left or 'right."
   "Switch to another monitor."
   (interactive)
   (my/exwm-last-workspaces-clear)
-  (exwm-workspace-switch
-   (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
-            for i in (append my/exwm-last-workspaces
-                             (cl-loop for i from 0
-                                      for _ in exwm-workspace--list
-                                      collect i))
-            if (if other-monitor
-                   (string-equal (plist-get exwm-randr-workspace-output-plist i)
-                                 other-monitor)
-                 (not (plist-get exwm-randr-workspace-output-plist i)))
-            return i)))
+  (let ((mouse-autoselect-window nil))
+    (exwm-workspace-switch
+     (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
+              for i in (append my/exwm-last-workspaces
+                               (cl-loop for i from 0
+                                        for _ in exwm-workspace--list
+                                        collect i))
+              if (if other-monitor
+                     (string-equal (plist-get exwm-randr-workspace-output-plist i)
+                                   other-monitor)
+                   (not (plist-get exwm-randr-workspace-output-plist i)))
+              return i))))
 
 (defun my/exwm-workspace-switch-monitor ()
   "Move the current workspace to another monitor."
@@ -245,9 +246,16 @@ DIR is either 'left or 'right."
                           ('right 'left))))
       (if other-window
           (windmove-do-window-select dir)
-        (my/exwm-switch-to-other-monitor dir)
+        (let ((mouse-autoselect-window nil))
+          (my/exwm-switch-to-other-monitor dir))
         (cl-loop while (windmove-find-other-window opposite-dir)
                  do (windmove-do-window-select opposite-dir))))))
+
+(defun my/exwm-quit ()
+  (interactive)
+  (when (or (not (eq (selected-window) (next-window)))
+            (y-or-n-p "This is the last window. Are you sure?"))
+    (evil-quit)))
 
 (defun my/exwm-update-global-keys ()
   (interactive)
@@ -362,7 +370,7 @@ _d_: Discord
           (,(kbd "s-F") . exwm-floating-toggle-floating)
   
           ;; Quit
-          (,(kbd "s-Q") . evil-quit)
+          (,(kbd "s-Q") . my/exwm-quit)
   
           ;; Split windows
           (,(kbd "s-s") . evil-window-vsplit)

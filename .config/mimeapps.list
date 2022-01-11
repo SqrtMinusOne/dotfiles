@@ -1,3 +1,4 @@
+# [[file:../Desktop.org::*MIME][MIME:1]]
 [Default Applications]
 text/html=firefox.desktop
 x-scheme-handler/http=firefox.desktop
@@ -11,3 +12,4 @@ image/jpeg=feh.desktop
 
 [Added Associations]
 x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop;
+# MIME:1 ends here
