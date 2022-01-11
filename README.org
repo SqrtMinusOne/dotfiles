@@ -45,12 +45,8 @@ Table of contents and software:
 Uses yadm's =post_alt= hook to create symlinks
 ** Encrypted files
 #+begin_src text :tangle ~/.config/yadm/encrypt
-.config/newsboat/urls
-.config/filezilla/sitemanager.xml
-.config/filezilla/filezilla.xml
 Mail/thexcloud/.credentials.gmailieer.json
 Mail/progin6304/.credentials.gmailieer.json
-.emacs.d/dired-bookmarks.el
 .emacs.d/private.org
 .emacs.d/private.el
 .emacs.d/.trello/sqrtminusone.el
