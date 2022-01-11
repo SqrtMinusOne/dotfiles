@@ -63,14 +63,22 @@
   (setq conda-anaconda-home (string-replace "/bin/conda" "" (executable-find "conda")))
   (setq conda-env-home-directory (expand-file-name "~/.conda/"))
   (setq conda-env-subdirectory "envs")
-  (setenv "INIT_CONDA" "true")
+
   (advice-add 'conda-env-activate :after
-              (lambda (&rest _) (setenv "EMACS_CONDA_ENV" conda-env-current-name)))
+              (lambda (&rest _)
+                (setenv "EMACS_CONDA_ENV" conda-env-current-name)
+                (setenv "INIT_CONDA" "true"))
+  (advice-add 'conda-env-deactivate :after
+              (lambda (&rest _)
+                (setenv "EMACS_CONDA_ENV" nil)
+                (setenv "INIT_CONDA" nil)))
   (unless (getenv "CONDA_DEFAULT_ENV")
     (conda-env-activate "general")))
 
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
+
+(setq auth-source-debug nil)
 
 (let ((private-file (expand-file-name "private.el" user-emacs-directory)))
   (when (file-exists-p private-file)
@@ -619,6 +627,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (lines
            (show-lines       . t)
            (show-message     . t)))))
+
+(use-package forge
+  :after magit
+  :straight t
+  :config
+  (add-to-list 'forge-alist '("gitlab.etu.ru"
+                              "gitlab.etu.ru/api/v4"
+                              "gitlab.etu.ru"
+                              forge-gitlab-repository)))
 
 (use-package git-gutter
   :straight t
@@ -1193,7 +1210,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   ("ue" my/dap-ui-toggle-expressions)
   ("ul" my/dap-ui-toggle-locals)
   ("ur" my/dap-ui-toggle-repl)
-  ("uo" dap-ui-go-to-output-buffer)
+  ("uo" dap-go-to-output-buffer)
   ("us" my/dap-ui-toggle-sessions)
   ("ub" my/dap-ui-toggle-breakpoints)
   ("ss" dap-switch-session)
@@ -4302,7 +4319,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (setq erc-save-buffer-on-part t)
   ;; Config of my ZNC instance.
   (setq erc-server "sqrtminusone.xyz")
-  (setq erc-port 1984)
+  (setq erc-port 6697)
   (setq erc-nick "sqrtminusone")
   (setq erc-user-full-name "Pavel Korytov")
   (setq erc-password (password-store-get "Selfhosted/ZNC"))

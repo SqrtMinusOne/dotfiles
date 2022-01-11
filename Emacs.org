@@ -475,9 +475,15 @@ References:
   (setq conda-anaconda-home (string-replace "/bin/conda" "" (executable-find "conda")))
   (setq conda-env-home-directory (expand-file-name "~/.conda/"))
   (setq conda-env-subdirectory "envs")
-  (setenv "INIT_CONDA" "true")
+
   (advice-add 'conda-env-activate :after
-              (lambda (&rest _) (setenv "EMACS_CONDA_ENV" conda-env-current-name)))
+              (lambda (&rest _)
+                (setenv "EMACS_CONDA_ENV" conda-env-current-name)
+                (setenv "INIT_CONDA" "true"))
+  (advice-add 'conda-env-deactivate :after
+              (lambda (&rest _)
+                (setenv "EMACS_CONDA_ENV" nil)
+                (setenv "INIT_CONDA" nil)))
   (unless (getenv "CONDA_DEFAULT_ENV")
     (conda-env-activate "general")))
 #+end_src
@@ -488,6 +494,10 @@ By default, custom writes stuff to =init.el=, which is somewhat annoying. The fo
 #+begin_src emacs-lisp
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
+#+end_src
+*** authinfo
+#+begin_src emacs-lisp
+(setq auth-source-debug nil)
 #+end_src
 *** Private config
 I have some variables which I don't commit to the repo, e.g. my current location. They are stored in =private.el=
@@ -1292,6 +1302,8 @@ Function to open dired and vterm at given nodes.
 *** Git & Magit
 [[https://magit.vc/][Magit]] is a git interface for Emacs. The closest non-Emacs alternative (sans actual clones) I know is [[https://github.com/jesseduffield/lazygit][lazygit]], which I used before Emacs.
 
+[[https://github.com/magit/forge][forge]] provides integration with forges, such as GitHub and GitLab.
+
 [[https://github.com/emacsorphanage/git-gutter][git-gutter]] is a package which shows git changes for each line (added/changed/deleted lines).
 
 [[https://github.com/emacsmirror/git-timemachine][git-timemachine]] allows visiting previous versions of a file.
@@ -1314,6 +1326,15 @@ Function to open dired and vterm at given nodes.
           (lines
            (show-lines       . t)
            (show-message     . t)))))
+
+(use-package forge
+  :after magit
+  :straight t
+  :config
+  (add-to-list 'forge-alist '("gitlab.etu.ru"
+                              "gitlab.etu.ru/api/v4"
+                              "gitlab.etu.ru"
+                              forge-gitlab-repository)))
 
 (use-package git-gutter
   :straight t
@@ -2133,7 +2154,7 @@ _r_: Restart frame _uo_: Output             _sd_: Down stack frame     _bh_: Set
   ("ue" my/dap-ui-toggle-expressions)
   ("ul" my/dap-ui-toggle-locals)
   ("ur" my/dap-ui-toggle-repl)
-  ("uo" dap-ui-go-to-output-buffer)
+  ("uo" dap-go-to-output-buffer)
   ("us" my/dap-ui-toggle-sessions)
   ("ub" my/dap-ui-toggle-breakpoints)
   ("ss" dap-switch-session)
@@ -6252,7 +6273,7 @@ ERC is a built-it Emacs IRC client.
   (setq erc-save-buffer-on-part t)
   ;; Config of my ZNC instance.
   (setq erc-server "sqrtminusone.xyz")
-  (setq erc-port 1984)
+  (setq erc-port 6697)
   (setq erc-nick "sqrtminusone")
   (setq erc-user-full-name "Pavel Korytov")
   (setq erc-password (password-store-get "Selfhosted/ZNC"))
