@@ -23,7 +23,17 @@ Table of contents and software:
 - [[file:Guix.org][Guix.org]]
 - [[file:Mail.org][Mail.org]]
   - /Active/: [[file:Mail.org::*Lieer][Lieer]], [[file:Mail.org::*DavMail][DavMail]], [[file:Mail.org::*OfflineIMAP][OfflineIMAP]], [[file:Mail.org::*Notmuch][Notmuch]]
-* Posts about my configuration
+
+(/Apparently, these links work only in Emacs 🙁/)
+
+A few other repositories I may consider a part of my config:
+- [[https://github.com/SqrtMinusOne/channel-q][channel-q]] is my Guix channel
+- [[https://github.com/SqrtMinusOne/sqrt-data][sqrt-data]] is a home for my statistics gathering effort
+- Emacs packages that I wrote (so far, all of them originated in my Emacs config):
+  - [[https://github.com/SqrtMinusOne/lyrics-fetcher.el][lyrics-fetcher.el]], [[https://github.com/SqrtMinusOne/pomm.el][pomm.el]], [[https://github.com/SqrtMinusOne/perspective-exwm.el][perspective-exwm.el]], [[https://github.com/SqrtMinusOne/exwm-modeline][exwm-modeline.el]]
+
+Posts about my configuration:
+- [[https://sqrtminusone.xyz/posts/2022-01-03-exwm/][Using EXWM and perspective.el on a multi-monitor setup]]
 - [[https://sqrtminusone.xyz/posts/2021-10-04-emacs-i3/][Getting a consistent set of keybindings between i3 and Emacs]]
 - [[https://sqrtminusone.xyz/posts/2021-09-07-emms/][My EMMS and elfeed setup]]
 - [[https://sqrtminusone.xyz/posts/2021-05-01-org-python/][Replacing Jupyter Notebook with Org Mode]]
