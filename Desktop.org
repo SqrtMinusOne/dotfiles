@@ -3475,6 +3475,15 @@ Run my [[file:Guix.org::*VPN][OpenVPN setup]]. Not lauching this automatially, a
     #:start (make-forkexec-constructor '("/home/pavel/bin/davmail"))
     #:stop (make-kill-destructor)))
 #+end_src
+** sqrt-data
+#+begin_src scheme
+(define sqrt-data
+  (make <service>
+    #:provides '(sqrt-data)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("sqrt_data" "cron" "run-client-cron"))
+    #:stop (make-kill-destructor)))
+#+end_src
 ** Shepherd config
 Register services
 #+begin_src scheme
@@ -3492,7 +3501,8 @@ Register services
  vpn
  davmail
  xmodmap
- nm-applet)
+ nm-applet
+ sqrt-data)
 #+end_src
 
 Daemonize shepherd
@@ -3502,7 +3512,20 @@ Daemonize shepherd
 
 Run services
 #+begin_src scheme
-(for-each start '(mpd mpd-watcher mcron aw-server aw-watcher-afk aw-watcher-window pulseeffects xsettingsd discord-rich-presence polkit-gnome davmail xmodmap nm-applet))
+(for-each start '(mpd
+                  mpd-watcher
+                  mcron
+                  aw-server
+                  aw-watcher-afk
+                  aw-watcher-window
+                  pulseeffects
+                  xsettingsd
+                  discord-rich-presence
+                  polkit-gnome
+                  davmail
+                  xmodmap
+                  nm-applet
+                  sqrt-data))
 #+end_src
 ** Sync
 | Guix dependency |
