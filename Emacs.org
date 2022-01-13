@@ -728,7 +728,8 @@ Do ex search in other buffer. Like =*=, but switch to other buffer and search th
      git-timemachine
      magit
      prodigy
-     slime)))
+     slime
+     forge)))
 #+end_src
 *** My keybindings
 Various keybindings settings that I can't put anywhere else.

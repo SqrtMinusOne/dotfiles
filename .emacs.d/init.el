@@ -234,7 +234,8 @@
      git-timemachine
      magit
      prodigy
-     slime)))
+     slime
+     forge)))
 
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
