@@ -132,6 +132,21 @@ for profile in $profiles; do
   guix package --profile="$profilePath/$profileName" --manifest="$HOME/.config/guix/manifests/$profileName.scm"
 done
 #+end_src
+** Run =guix package= in profile
+#+begin_src bash :tangle ./bin/scripts/pp
+GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
+
+profileName=$(basename $1)
+profileName="${profileName%.*}"
+profilePath="$GUIX_EXTRA_PROFILES/$profileName"
+
+if [ -d $profilePath ]; then
+    guix package --profile="$profilePath/$profileName" ${@:2}
+else
+    echo -e "No profile found at path: " $profilePath
+fi
+
+#+end_src
 * Channels
 Specifying additional channels.
 

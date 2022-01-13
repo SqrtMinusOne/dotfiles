@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# [[file:../../Guix.org::*Run =guix package= in profile][Run =guix package= in profile:1]]
+GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
+
+profileName=$(basename $1)
+profileName="${profileName%.*}"
+profilePath="$GUIX_EXTRA_PROFILES/$profileName"
+
+if [ -d $profilePath ]; then
+    guix package --profile="$profilePath/$profileName" ${@:2}
+else
+    echo -e "No profile found at path: " $profilePath
+fi
+# Run =guix package= in profile:1 ends here

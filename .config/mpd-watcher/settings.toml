@@ -1,0 +1,5 @@
+log_folder = '/home/pavel/logs-sync/mpd/logs'
+exception_timeout = 5
+exception_count = 10
+listened_threshold = 0.5
+custom_attrs = ['musicbrainz_albumid', 'musicbrainz_artistid', 'musicbrainz_trackid']
