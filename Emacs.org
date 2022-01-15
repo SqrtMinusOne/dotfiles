@@ -321,6 +321,7 @@ I decided not to keep configs for features that I do not use anymore because thi
 
 | Feature      | Last commit                              |
 |--------------+------------------------------------------|
+| treemacs     | 3d87852745caacc0863c747f1fa9871d367240d2 |
 | tab-bar.el   | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
 | spaceline    | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
 | code compass | 8594d6f53e42c70bbf903e168607841854818a38 |
@@ -1197,83 +1198,10 @@ A package to select an ever-increasing (or ever-decreasing) region of text.
             (lambda () (setq visual-fill-column-center-text t))))
 #+end_src
 ** Working with projects
-*** Treemacs
-[[https://github.com/Alexander-Miller/treemacs][Treemacs]] calls itself a tree layout file explorer, but looks more like a project and workspace management system.
+Packages related to managing projects.
 
-Integrates with evil, magit, projectile, and perspective. The latter is particularly great - each perspective can have its own treemacs workspace!
+Another important package that also touches this category is [[*Dired][dired]], but it has its separate section in "Applications". I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, but in the end, decided that dired with [[https://github.com/jojojames/dired-sidebar][dired-sidebar]] does a better job.
 
-#+begin_src emacs-lisp
-(use-package treemacs
-  :straight t
-  :commands (treemacs treemacs-switch-workspace treemacs-edit-workspace)
-  :config
-  (setq treemacs-follow-mode nil)
-  (setq treemacs-follow-after-init nil)
-  (setq treemacs-space-between-root-nodes nil)
-  (treemacs-git-mode 'extended)
-  (add-to-list 'treemacs-pre-file-insert-predicates #'treemacs-is-file-git-ignored?)
-  (general-define-key
-   :keymaps 'treemacs-mode-map
-   [mouse-1] #'treemacs-single-click-expand-action
-   "M-l" #'treemacs-root-down
-   "M-h" #'treemacs-root-up))
-
-(use-package treemacs-evil
-  :after (treemacs evil)
-  :straight t)
-
-(use-package treemacs-magit
-  :after (treemacs magit)
-  :straight t)
-
-(use-package treemacs-perspective
-  :after (treemacs perspective)
-  :straight t
-  :config
-  (treemacs-set-scope-type 'Perspectives))
-
-(general-define-key
- :keymaps '(normal override global)
- "C-n" 'treemacs)
-
-(general-define-key
- :keymaps '(treemacs-mode-map) [mouse-1] #'treemacs-single-click-expand-action)
-
-(my-leader-def
-  :infix "t"
-  "" '(:which-key "treemacs")
-  "w" 'treemacs-switch-workspace
-  "e" 'treemacs-edit-workspaces)
-#+end_src
-**** Helper functions
-Function to open dired and vterm at given nodes.
-
-#+begin_src emacs-lisp
-(defun my/treemacs-open-dired ()
-  "Open dired at given treemacs node"
-  (interactive)
-  (let (path (treemacs--prop-at-point :path))
-    (dired path)))
-
-(defun my/treemacs-open-vterm ()
-  "Open vterm at given treemacs node"
-  (interactive)
-  (let ((default-directory (file-name-directory (treemacs--prop-at-point :path))))
-    (vterm)))
-
-(with-eval-after-load 'treemacs
-  (general-define-key
-   :keymaps 'treemacs-mode-map
-   :states '(treemacs)
-   "gd" 'my/treemacs-open-dired
-   "gt" 'my/treemacs-open-vterm
-   "`" 'my/treemacs-open-vterm))
-#+end_src
-**** Custom icons
-#+begin_src emacs-lisp
-;; (treemacs-define-custom-icon (concat " " (all-the-icons-fileicon "typescript")) "spec.ts")
-;; (setq treemacs-file-extension-regex (rx "." (or "spec.ts" (+ (not "."))) eos))
-#+end_src
 *** Projectile
 [[https://github.com/bbatsov/projectile][Projectile]] gives a bunch of useful functions for managing projects, like finding files within a project, fuzzy-find, replace, etc.
 
@@ -1289,10 +1217,6 @@ Function to open dired and vterm at given nodes.
 
 (use-package counsel-projectile
   :after (counsel projectile)
-  :straight t)
-
-(use-package treemacs-projectile
-  :after (treemacs projectile)
   :straight t)
 
 (my-leader-def
@@ -1683,57 +1607,79 @@ My colorscheme of choice.
 *** Custom theme
 A custom theme, dependent on Doom. I set all my custom variables there.
 
+To make defining colors a bit easier, here is a function to blend two colors, taken from [[https://oremacs.com/2015/04/28/blending-faces/][this post]] by abo-abo.
+#+begin_src emacs-lisp
+(defun my/color-join (r g b)
+  "Build a color from R G B.
+Inverse of `color-values'."
+  (format "#%02x%02x%02x"
+          (ash r -8)
+          (ash g -8)
+          (ash b -8)))
+
+(defun my/color-blend (c1 c2 &optional alpha)
+  "Blend the two colors C1 and C2 with ALPHA.
+C1 and C2 are in the format of `color-values'.
+ALPHA is a number between 0.0 and 1.0 which corresponds to the
+influence of C1 on the result."
+  (setq alpha (or alpha 0.5))
+  (apply #'my/color-join
+         (cl-mapcar
+          (lambda (x y)
+            (round (+ (* x alpha) (* y (- 1 alpha)))))
+          c1 c2)))
+#+end_src
+
 A custom theme is necessary because if one calls =custom-set-faces= and =custom-set-variables= in code, whenever a variable is changed and saved in a customize buffer, data from all calls of these functions is saved as well.
 
 Also, a hook allows me to change doom-theme more or less at will, although I do that only to switch to a light theme once in a blue moon.
 #+begin_src emacs-lisp
+(deftheme my-theme-1)
+
+(defun my/update-my-theme (&rest _)
+  (custom-theme-set-faces
+   'my-theme-1
+   `(tab-bar-tab ((t (
+                      :background ,(doom-color 'bg)
+                      :foreground ,(doom-color 'yellow)
+                      :underline ,(doom-color 'yellow)))))
+   `(tab-bar ((t (:background nil :foreground nil))))
+   `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+   `(org-block-begin-line ((t (
+                               :background ,(color-darken-name (doom-color 'bg) 3)
+                               :foreground ,(doom-color 'grey)))))
+   `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
+   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
+   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
+   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
+   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
+   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
+   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow)))))
+   `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow))))))
+  (setq my/dired-blend-coef 0.9)
+  (setq my/dired-subtree-colors '(red yellow green blue magenta violet))
+  (cl-loop for i from 1
+           for color in my/dired-subtree-colors
+           for face = (intern (format "dired-subtree-depth-%d-face" i))
+           do (custom-theme-set-faces
+               'my-theme-1
+               `(,face
+                 ((t (:background ,(my/color-blend
+                                    (color-values (doom-color 'bg))
+                                    (color-values (doom-color color))
+                                    my/dired-blend-coef)))))))
+  (custom-theme-set-variables
+   'my-theme-1
+   `(aweshell-invalid-command-color ,(doom-color 'red))
+   `(aweshell-valid-command-color ,(doom-color 'green)))
+  (enable-theme 'my-theme-1))
+
 (unless my/is-termux
-  (deftheme my-theme-1)
-
-  (defun my/update-my-theme (&rest _)
-    (custom-theme-set-faces
-     'my-theme-1
-     `(tab-bar-tab ((t (
-                        :background ,(doom-color 'bg)
-                        :foreground ,(doom-color 'yellow)
-                        :underline ,(doom-color 'yellow)))))
-     `(tab-bar ((t (:background nil :foreground nil))))
-     `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-     `(org-block-begin-line ((t (
-                                 :background ,(color-darken-name (doom-color 'bg) 3)
-                                 :foreground ,(doom-color 'grey)))))
-     `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-     `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
-     `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
-     `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
-     `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
-     `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
-     `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
-     `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow)))))
-     `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow)))))
-     `(spaceline-evil-emacs ((t :background ,(doom-color 'bg)
-                                :foreground ,(doom-color 'fg))))
-     `(spaceline-evil-insert ((t :background ,(doom-color 'green)
-                                 :foreground ,(doom-color 'base0))))
-     `(spaceline-evil-motion ((t :background ,(doom-color 'magenta)
-                                 :foreground ,(doom-color 'base0))))
-     `(spaceline-evil-normal ((t :background ,(doom-color 'blue)
-                                 :foreground ,(doom-color 'base0))))
-     `(spaceline-evil-replace ((t :background ,(doom-color 'yellow)
-                                  :foreground ,(doom-color 'base0))))
-     `(spaceline-evil-visual ((t :background ,(doom-color 'grey)
-                                 :foreground ,(doom-color 'base0)))))
-    (custom-theme-set-variables
-     'my-theme-1
-     `(aweshell-invalid-command-color ,(doom-color 'red))
-     `(aweshell-valid-command-color ,(doom-color 'green)))
-    (enable-theme 'my-theme-1))
-
   (advice-add 'load-theme :after #'my/update-my-theme)
   (when (fboundp 'doom-color)
     (my/update-my-theme)))
 #+end_src
-
 ** Fonts
 *** Frame font
 To install a font, download the font and unpack it into the =.local/share/fonts= directory. Create one if it doesn't exist.
@@ -1944,6 +1890,29 @@ So, here is a macro to run something in a given perspective in a given workspace
 #+end_src
 * Programming
 ** General setup
+*** Treemacs
+[[https://github.com/Alexander-Miller/treemacs][Treemacs]] is a quite large & powerful package, but as of now I've replaced it with dired. However, I still have a small configuration because lsp-mode and dap-mode depend on it.
+
+#+begin_src emacs-lisp :tangle no
+(use-package treemacs
+  :straight t
+  :defer t
+  :config
+  ;; (setq treemacs-follow-mode nil)
+  ;; (setq treemacs-follow-after-init nil)
+  (setq treemacs-space-between-root-nodes nil)
+  ;; (treemacs-git-mode 'extended)
+  ;; (add-to-list 'treemacs-pre-file-insert-predicates #'treemacs-is-file-git-ignored?)
+  (general-define-key
+   :keymaps 'treemacs-mode-map
+   [mouse-1] #'treemacs-single-click-expand-action
+   "M-l" #'treemacs-root-down
+   "M-h" #'treemacs-root-up))
+
+(use-package treemacs-evil
+  :after (treemacs evil)
+  :straight t)
+#+end_src
 *** LSP
 LSP-mode provides an IDE-like experience for Emacs - real-time diagnostic, code actions, intelligent autocompletion, etc.
 
@@ -5328,6 +5297,37 @@ I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provi
   :after (dired)
   :config
   (diredfl-global-mode 1))
+#+end_src
+
+[[https://github.com/Fuco1/dired-hacks#dired-subtree][dired-subtree]] is a package that enables managing Dired buffers in a tree-like manner. By default =evil-collection= maps =dired-subtree-toggle= to =TAB=.
+#+begin_src emacs-lisp
+(use-package dired-subtree
+  :after (dired)
+  :straight t)
+#+end_src
+
+[[https://github.com/jojojames/dired-sidebar][dired-sidebar]] enables opening Dired in sidebar. For me, with dired-subtree this makes dired a better option than Treemacs.
+#+begin_src emacs-lisp
+(use-package dired-sidebar
+  :straight t
+  :after (dired)
+  :commands (dired-sidebar-toggle-sidebar)
+  :init
+  (general-define-key
+   :keymaps '(normal override global)
+   "C-n" 'dired-sidebar-toggle-sidebar)
+  :config
+  (defun my/dired-sidebar-setup ()
+    (toggle-truncate-lines 1)
+    (display-line-numbers-mode -1)
+    (setq-local dired-subtree-use-backgrounds nil))
+  (general-define-key
+   :keymaps 'dired-sidebar-mode-map
+   :states '(normal emacs)
+   "l" 'dired-sidebar-find-file
+   "h" 'dired-sidebar-up-directory
+   "=" 'dired-narrow)
+  (add-hook 'dired-sidebar-mode-hook #'my/dired-sidebar-setup))
 #+end_src
 
 +Reuse the current dired buffer instead of spamming new ones.+ Looks like not necessary with Emacs 28.1

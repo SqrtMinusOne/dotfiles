@@ -525,71 +525,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'visual-fill-column-mode-hook
             (lambda () (setq visual-fill-column-center-text t))))
 
-(use-package treemacs
-  :straight t
-  :commands (treemacs treemacs-switch-workspace treemacs-edit-workspace)
-  :config
-  (setq treemacs-follow-mode nil)
-  (setq treemacs-follow-after-init nil)
-  (setq treemacs-space-between-root-nodes nil)
-  (treemacs-git-mode 'extended)
-  (add-to-list 'treemacs-pre-file-insert-predicates #'treemacs-is-file-git-ignored?)
-  (general-define-key
-   :keymaps 'treemacs-mode-map
-   [mouse-1] #'treemacs-single-click-expand-action
-   "M-l" #'treemacs-root-down
-   "M-h" #'treemacs-root-up))
-
-(use-package treemacs-evil
-  :after (treemacs evil)
-  :straight t)
-
-(use-package treemacs-magit
-  :after (treemacs magit)
-  :straight t)
-
-(use-package treemacs-perspective
-  :after (treemacs perspective)
-  :straight t
-  :config
-  (treemacs-set-scope-type 'Perspectives))
-
-(general-define-key
- :keymaps '(normal override global)
- "C-n" 'treemacs)
-
-(general-define-key
- :keymaps '(treemacs-mode-map) [mouse-1] #'treemacs-single-click-expand-action)
-
-(my-leader-def
-  :infix "t"
-  "" '(:which-key "treemacs")
-  "w" 'treemacs-switch-workspace
-  "e" 'treemacs-edit-workspaces)
-
-(defun my/treemacs-open-dired ()
-  "Open dired at given treemacs node"
-  (interactive)
-  (let (path (treemacs--prop-at-point :path))
-    (dired path)))
-
-(defun my/treemacs-open-vterm ()
-  "Open vterm at given treemacs node"
-  (interactive)
-  (let ((default-directory (file-name-directory (treemacs--prop-at-point :path))))
-    (vterm)))
-
-(with-eval-after-load 'treemacs
-  (general-define-key
-   :keymaps 'treemacs-mode-map
-   :states '(treemacs)
-   "gd" 'my/treemacs-open-dired
-   "gt" 'my/treemacs-open-vterm
-   "`" 'my/treemacs-open-vterm))
-
-;; (treemacs-define-custom-icon (concat " " (all-the-icons-fileicon "typescript")) "spec.ts")
-;; (setq treemacs-file-extension-regex (rx "." (or "spec.ts" (+ (not "."))) eos))
-
 (use-package projectile
   :straight t
   :config
@@ -600,10 +535,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package counsel-projectile
   :after (counsel projectile)
-  :straight t)
-
-(use-package treemacs-projectile
-  :after (treemacs projectile)
   :straight t)
 
 (my-leader-def
@@ -859,48 +790,68 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
 
+(defun my/color-join (r g b)
+  "Build a color from R G B.
+Inverse of `color-values'."
+  (format "#%02x%02x%02x"
+          (ash r -8)
+          (ash g -8)
+          (ash b -8)))
+
+(defun my/color-blend (c1 c2 &optional alpha)
+  "Blend the two colors C1 and C2 with ALPHA.
+C1 and C2 are in the format of `color-values'.
+ALPHA is a number between 0.0 and 1.0 which corresponds to the
+influence of C1 on the result."
+  (setq alpha (or alpha 0.5))
+  (apply #'my/color-join
+         (cl-mapcar
+          (lambda (x y)
+            (round (+ (* x alpha) (* y (- 1 alpha)))))
+          c1 c2)))
+
+(deftheme my-theme-1)
+
+(defun my/update-my-theme (&rest _)
+  (custom-theme-set-faces
+   'my-theme-1
+   `(tab-bar-tab ((t (
+                      :background ,(doom-color 'bg)
+                      :foreground ,(doom-color 'yellow)
+                      :underline ,(doom-color 'yellow)))))
+   `(tab-bar ((t (:background nil :foreground nil))))
+   `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+   `(org-block-begin-line ((t (
+                               :background ,(color-darken-name (doom-color 'bg) 3)
+                               :foreground ,(doom-color 'grey)))))
+   `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
+   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
+   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
+   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
+   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
+   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
+   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
+   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow)))))
+   `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow))))))
+  (setq my/dired-blend-coef 0.9)
+  (setq my/dired-subtree-colors '(red yellow green blue magenta violet))
+  (cl-loop for i from 1
+           for color in my/dired-subtree-colors
+           for face = (intern (format "dired-subtree-depth-%d-face" i))
+           do (custom-theme-set-faces
+               'my-theme-1
+               `(,face
+                 ((t (:background ,(my/color-blend
+                                    (color-values (doom-color 'bg))
+                                    (color-values (doom-color color))
+                                    my/dired-blend-coef)))))))
+  (custom-theme-set-variables
+   'my-theme-1
+   `(aweshell-invalid-command-color ,(doom-color 'red))
+   `(aweshell-valid-command-color ,(doom-color 'green)))
+  (enable-theme 'my-theme-1))
+
 (unless my/is-termux
-  (deftheme my-theme-1)
-
-  (defun my/update-my-theme (&rest _)
-    (custom-theme-set-faces
-     'my-theme-1
-     `(tab-bar-tab ((t (
-                        :background ,(doom-color 'bg)
-                        :foreground ,(doom-color 'yellow)
-                        :underline ,(doom-color 'yellow)))))
-     `(tab-bar ((t (:background nil :foreground nil))))
-     `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-     `(org-block-begin-line ((t (
-                                 :background ,(color-darken-name (doom-color 'bg) 3)
-                                 :foreground ,(doom-color 'grey)))))
-     `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-     `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
-     `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
-     `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
-     `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
-     `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
-     `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
-     `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow)))))
-     `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow)))))
-     `(spaceline-evil-emacs ((t :background ,(doom-color 'bg)
-                                :foreground ,(doom-color 'fg))))
-     `(spaceline-evil-insert ((t :background ,(doom-color 'green)
-                                 :foreground ,(doom-color 'base0))))
-     `(spaceline-evil-motion ((t :background ,(doom-color 'magenta)
-                                 :foreground ,(doom-color 'base0))))
-     `(spaceline-evil-normal ((t :background ,(doom-color 'blue)
-                                 :foreground ,(doom-color 'base0))))
-     `(spaceline-evil-replace ((t :background ,(doom-color 'yellow)
-                                  :foreground ,(doom-color 'base0))))
-     `(spaceline-evil-visual ((t :background ,(doom-color 'grey)
-                                 :foreground ,(doom-color 'base0)))))
-    (custom-theme-set-variables
-     'my-theme-1
-     `(aweshell-invalid-command-color ,(doom-color 'red))
-     `(aweshell-valid-command-color ,(doom-color 'green)))
-    (enable-theme 'my-theme-1))
-
   (advice-add 'load-theme :after #'my/update-my-theme)
   (when (fboundp 'doom-color)
     (my/update-my-theme)))
@@ -3655,6 +3606,31 @@ Returns (<buffer> . <workspace-index>) or nil."
   :after (dired)
   :config
   (diredfl-global-mode 1))
+
+(use-package dired-subtree
+  :after (dired)
+  :straight t)
+
+(use-package dired-sidebar
+  :straight t
+  :after (dired)
+  :commands (dired-sidebar-toggle-sidebar)
+  :init
+  (general-define-key
+   :keymaps '(normal override global)
+   "C-n" 'dired-sidebar-toggle-sidebar)
+  :config
+  (defun my/dired-sidebar-setup ()
+    (toggle-truncate-lines 1)
+    (display-line-numbers-mode -1)
+    (setq-local dired-subtree-use-backgrounds nil))
+  (general-define-key
+   :keymaps 'dired-sidebar-mode-map
+   :states '(normal emacs)
+   "l" 'dired-sidebar-find-file
+   "h" 'dired-sidebar-up-directory
+   "=" 'dired-narrow)
+  (add-hook 'dired-sidebar-mode-hook #'my/dired-sidebar-setup))
 
 (use-package dired-single
   :after dired
