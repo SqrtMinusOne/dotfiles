@@ -3022,7 +3022,10 @@ Returns (<buffer> . <workspace-index>) or nil."
     (org-map-tree
      (lambda ()
        (let* ((headline (org-element-at-point))
-              (header (org-element-property :title headline)))
+              (header-raw (org-element-property :title headline))
+              (header (if (stringp header-raw)
+                          header-raw
+                        (substring-no-properties (car header-raw)))))
          (when (/= (point) (org-element-property :begin root-header))
            ;; Try to find a heading with title equal to target-header
            (when (string-equal target-header header)
@@ -4312,18 +4315,14 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package erc
   :commands (erc erc-tls)
   :straight (:type built-in)
-  :init
-  (my-leader-def "ai" (my/command-in-persp "erc" "ERC" 0 (erc-tls)))
   :config
-  ;; Logging
   (setq erc-log-channels-directory "~/.erc/logs")
   (setq erc-save-buffer-on-part t)
-  ;; Config of my ZNC instance.
-  (setq erc-server "sqrtminusone.xyz")
-  (setq erc-port 6697)
-  (setq erc-nick "sqrtminusone")
-  (setq erc-user-full-name "Pavel Korytov")
-  (setq erc-password (password-store-get "Selfhosted/ZNC"))
+  (add-to-list 'erc-modules 'autojoin)
+  (add-to-list 'erc-modules 'log)
+  (erc-update-modules)
+  (setq erc-autojoin-channels-alist
+        `((,(rx "libera.chat") "#systemcrafters")))
   (setq erc-kill-buffer-on-part t)
   (setq erc-track-shorten-start 8))
 
@@ -4345,7 +4344,15 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package znc
   :straight t
-  :after (erc))
+  :commands (znc-erc)
+  :after (erc)
+  :init
+  (my-leader-def "ai" (my/command-in-persp "erc" "ERC" 0 (znc-erc)))
+  :config
+  (setq znc-servers
+        `(("sqrtminusone.xyz" 6697 t
+           ((libera "sqrtminusone"
+                    ,(password-store-get "Selfhosted/ZNC")))))))
 
 (use-package google-translate
   :straight t
