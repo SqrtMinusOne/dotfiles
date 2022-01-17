@@ -1907,7 +1907,12 @@ So, here is a macro to run something in a given perspective in a given workspace
    :keymaps 'treemacs-mode-map
    [mouse-1] #'treemacs-single-click-expand-action
    "M-l" #'treemacs-root-down
-   "M-h" #'treemacs-root-up))
+   "M-h" #'treemacs-root-up
+   "q" #'treemacs-quit)
+  (general-define-key
+   :keymaps 'treemacs-mode-map
+   :states '(normal emacs)
+   "q" 'treemacs-quit))
 
 (use-package treemacs-evil
   :after (treemacs evil)
@@ -3324,6 +3329,15 @@ A package to quickly create =.gitignore= files.
   :straight t
   :after (lsp haskell-mode))
 #+end_src
+** nix
+#+begin_src emacs-lisp
+(use-package nix-mode
+  :straight t
+  :mode "\\.nix\\'"
+  :config
+  (add-hook 'nix-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'nix-mode))
+#+end_src
 ** Lua
 #+begin_src emacs-lisp
 (use-package lua-mode
@@ -4212,7 +4226,7 @@ Now, let's integrate the found project notes to the rest of Org Mode. Besides =o
       (add-to-list 'org-refile-targets
                    `(,file :tag . "refile"))
       (add-to-list 'org-refile-targets
-                   `(,file :regexp . ,(rx (or "Tasks")))))))
+                   `(,file :regexp . ,(rx (or "Tasks" "Events")))))))
 
 (with-eval-after-load 'org-roam
   (my/org-roam-refresh-agenda-list))
@@ -4522,7 +4536,8 @@ And here are keybindings.
     :keymap 'org-mode-map
     :infix "or"
     "t" 'org-roam-tag-add
-    "T" 'org-toam-tag-remove)
+    "T" 'org-toam-tag-remove
+    "s" 'org-roam-db-autosync-mode)
   (general-define-key
    :keymap 'org-mode-map
    "C-c i" 'org-id-get-create
@@ -6308,7 +6323,6 @@ ZNC support. Seems to provide a few nice features for ZNC.
 (use-package znc
   :straight t
   :commands (znc-erc)
-  :after (erc)
   :init
   (my-leader-def "ai" (my/command-in-persp "erc" "ERC" 0 (znc-erc)))
   :config

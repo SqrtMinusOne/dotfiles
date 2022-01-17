@@ -2195,6 +2195,13 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight t
   :after (lsp haskell-mode))
 
+(use-package nix-mode
+  :straight t
+  :mode "\\.nix\\'"
+  :config
+  (add-hook 'nix-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'nix-mode))
+
 (use-package lua-mode
   :straight t
   :mode "\\.lua\\'"
@@ -2876,7 +2883,7 @@ Returns (<buffer> . <workspace-index>) or nil."
       (add-to-list 'org-refile-targets
                    `(,file :tag . "refile"))
       (add-to-list 'org-refile-targets
-                   `(,file :regexp . ,(rx (or "Tasks")))))))
+                   `(,file :regexp . ,(rx (or "Tasks" "Events")))))))
 
 (with-eval-after-load 'org-roam
   (my/org-roam-refresh-agenda-list))
@@ -3122,7 +3129,8 @@ Returns (<buffer> . <workspace-index>) or nil."
     :keymap 'org-mode-map
     :infix "or"
     "t" 'org-roam-tag-add
-    "T" 'org-toam-tag-remove)
+    "T" 'org-toam-tag-remove
+    "s" 'org-roam-db-autosync-mode)
   (general-define-key
    :keymap 'org-mode-map
    "C-c i" 'org-id-get-create
@@ -4321,7 +4329,6 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package znc
   :straight t
   :commands (znc-erc)
-  :after (erc)
   :init
   (my-leader-def "ai" (my/command-in-persp "erc" "ERC" 0 (znc-erc)))
   :config
