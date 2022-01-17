@@ -67,3 +67,7 @@ function e
     eval $EDITOR $argv
 end
 # Functions:1 ends here
+
+# [[file:../../Console.org::*direnv][direnv:1]]
+direnv hook fish | source
+# direnv:1 ends here

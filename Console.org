@@ -510,6 +510,10 @@ function e
     eval $EDITOR $argv
 end
 #+end_src
+** direnv
+#+begin_src fish
+direnv hook fish | source
+#+end_src
 * Nushell
 :PROPERTIES:
 :header-args+: :tangle ./.config/nu/config.toml :comments link
@@ -859,6 +863,7 @@ key_bindings:
 | sshfs           | Mount stuff over SSH                        |
 | git-lfs         |                                             |
 | glibc-locales   |                                             |
+| direnv          |                                             |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.

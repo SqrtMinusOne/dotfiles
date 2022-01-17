@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "direnv"
    "glibc-locales"
    "git-lfs"
    "sshfs"
