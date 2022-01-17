@@ -3162,6 +3162,7 @@ This section generates manifests for various desktop software that I'm using.
 | Category | Guix dependency |
 |----------+-----------------|
 | dev      | conda           |
+| dev      | pandoc          |
 | dev      | docker-compose  |
 | dev      | postgresql      |
 | dev      | virt-manager    |

@@ -16,4 +16,5 @@
    "virt-manager"
    "postgresql"
    "docker-compose"
+   "pandoc"
    "conda"))
