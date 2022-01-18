@@ -3,13 +3,15 @@
 
 [[https://forthebadge.com/images/badges/works-on-my-machine.svg]]
 
-A set of my GNU/Linux configuration files. [[https://github.com/SqrtMinusOne/dotfiles][View at GitHub]].
+These are my GNU/Linux configuration files. [[https://github.com/SqrtMinusOne/dotfiles][View at GitHub]].
 
-The majority of the software is configured with [[https://leanpub.com/lit-config/read][literate configuration]] strategy via Emacs' Org Mode. This way has its advantages and disadvantages, but overall it's pretty nice to keep the configs interweaved with comments in a handful of files.
+Most of the software is configured with [[https://leanpub.com/lit-config/read][literate configuration]] strategy via Emacs' [[https://orgmode.org/][Org Mode]]. This way has its pros and cons, but overall it's pretty nice to keep the configs interweaved with comments in a handful of files.
 
-The files themselves are managed and deployed via [[https://yadm.io/][yadm]], but I mostly use Org Mode rich noweb whenever I can instead of what yadm offers.
+The files themselves are managed and deployed via [[https://yadm.io/][yadm]], but I use Org Mode for things like config templating.
 
-My current GNU/Linux distribution is [[https://guix.gnu.org/][GNU Guix]]. In the context of this repo, Guix allows me to list all the used programs in manifests, which means I have the same set of programs across multiple machines. Look for tables with "Guix dependency" in the header.
+My current GNU/Linux distribution is [[https://guix.gnu.org/][GNU Guix]]. I like Guix because, among other things, it allows [[https://guix.gnu.org/cookbook/en/html_node/Advanced-package-management.html#Advanced-package-management][declaring the required software]] in configuration files, so I can have the same set of programs across multiple machines (look for tables with "Guix dependency" in the header).
+
+The central program to all of that is, of course [[https://www.gnu.org/software/emacs/][GNU Emacs]]. As of the moment of this writing, it takes ~50% of my screen time and has the largest share of configuration here.
 
 Table of contents and software:
 - [[file:Emacs.org][Emacs.org]]
@@ -24,7 +26,7 @@ Table of contents and software:
 - [[file:Mail.org][Mail.org]]
   - /Active/: [[file:Mail.org::*Lieer][Lieer]], [[file:Mail.org::*DavMail][DavMail]], [[file:Mail.org::*OfflineIMAP][OfflineIMAP]], [[file:Mail.org::*Notmuch][Notmuch]]
 
-(/Apparently, these links work only in Emacs 🙁/)
+(/Apparently, links on the second level work only in Emacs 🙁/)
 
 A few other repositories I may consider a part of my config:
 - [[https://github.com/SqrtMinusOne/channel-q][channel-q]] is my Guix channel

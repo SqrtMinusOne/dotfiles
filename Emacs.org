@@ -16,7 +16,7 @@ At the moment of this writing, this "almost anything" includes:
 - *Writing code*. With LSP & Co this functionality of Emacs may rival that of IDEs, and is at least on par with editors like VS Code.\\
   One thing where Emacs is particularly good is writing Lisp code, e.g. Clojure, Common Lisp, and, of course, Emacs Lisp.
 - *Literate programming* with Org Mode. That includes:
-  - Configuring the entirety of my software that can be configured with text files.
+  - Configuring the entirety of my software (that can be configured with text files).
   - Interactive programming like one provided by Jupyter Notebook.
 - *File management*. Dired is my primary file manager.
 - *Email*, with notmuch.
@@ -29,9 +29,9 @@ At the moment of this writing, this "almost anything" includes:
 - *X Window management*, with EXWM. So I could say I literally live in Emacs.
 - ...
 
-As I have hinted above, this file is a piece of literate configuration, which means that the actual code is interweaved with English-language commentary. One could argue that the commentary, not the code, is the primary entity of the file.
+As I have hinted above, this file is a piece of literate configuration, which means that the actual code is interweaved with English-language commentary. One could argue that the commentary, not the code, is the citizen entity of the file.
 
-But at the same time, the configuration is personal, so in fact, the primary benefactor of the literate structure is me. The commentary is primarily meant to capture my state of mind at the moment of writing the code, which is immensely helpful for maintaining the code in the future. Besides, I can't say I'm stable with it.
+But at the same time, the configuration is personal, so the primary benefactor of the literate structure is me. The commentary is primarily meant to capture my state of mind at the moment of writing the code, which is immensely helpful for maintaining the code in the future. So the quality and quantity of the commentary are... varying.
 
 Occasionally I save some promising experimentations from scratch buffers without much comment. Or I may not have enough time to describe things in substantial detail. Or, as it is at the moment when I'm writing this, I have the time to write down whatever I consider necessary. Or, when I'm writing a blog post about Emacs configuration, I usually incorporate some things back into this config.
 
