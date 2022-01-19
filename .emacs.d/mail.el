@@ -16,6 +16,7 @@
   (setq send-mail-function #'sendmail-send-it)
   (setq mml-secure-openpgp-sign-with-sender t)
   (setq notmuch-mua-user-agent-function 'notmuch-mua-user-agent-full)
+  (setq notmuch-address-command 'as-is)
   (add-hook 'notmuch-hello-mode-hook
             (lambda () (display-line-numbers-mode 0))))
 

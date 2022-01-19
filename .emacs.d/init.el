@@ -2386,8 +2386,8 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package org-contrib
   :straight (org-contrib
              :type git
-             :host nil
              :repo "https://git.sr.ht/~bzg/org-contrib"
+             :files (:defaults (:exclude "lisp/org-contacts.el"))
              :build t)
   :after (org)
   :config
@@ -3368,6 +3368,18 @@ Returns (<buffer> . <workspace-index>) or nil."
   :disabled
   :config
   (org-roam-bibtex-mode))
+
+(use-package org-contacts
+  :straight (:type git
+                   :repo "https://git.sr.ht/~bzg/org-contrib"
+                   :files ("lisp/org-contacts.el")
+                   :build (:not compile))
+  :after (notmuch)
+  :commands (org-contacts)
+  :config
+  (require 'cl)
+  (setq org-contacts-files (list
+                            (concat org-directory "/contacts.org"))))
 
 (defun my/export-org-tables-to-csv ()
   (interactive)
