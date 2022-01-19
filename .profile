@@ -11,6 +11,13 @@ export RIPGREP_CONFIG_PATH=$HOME/.config/ripgrep/ripgreprc
 export LEDGER_FILE=~/Documents/org-mode/ledger/ledger.journal
 # Environment:3 ends here
 
+# [[file:Console.org::*Environment][Environment:4]]
+if command -v termux-setup-storage; then
+    export IS_ANDROID=true
+    [[ -f ~/.android_profile ]] && . ~/.android_profile
+fi
+# Environment:4 ends here
+
 # [[file:Console.org::*My paths][My paths:1]]
 if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin:$PATH"

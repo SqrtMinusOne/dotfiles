@@ -66,6 +66,14 @@ hledger path
 #+begin_src sh
 export LEDGER_FILE=~/Documents/org-mode/ledger/ledger.journal
 #+end_src
+
+Checking if running inside termux
+#+begin_src sh
+if command -v termux-setup-storage > /dev/null; then
+    export IS_ANDROID=true
+    [[ -f ~/.android_profile ]] && . ~/.android_profile
+fi
+#+end_src
 ** My paths
 My script folders
 #+begin_src sh
@@ -253,12 +261,20 @@ export SHELL
 #+end_src
 
 We are being invoked from a non-interactive shell.  If this is an SSH session (as in "ssh host command"), source /etc/profile so we get PATH and other essential variables.
-
 #+begin_src bash
 if [[ $- != *i* ]]
 then
     [[ -n "$SSH_CLIENT" && -f "/etc/bashrc" ]] && source /etc/profile
     return
+fi
+#+end_src
+
+If =termux-setup-storage= is available, then we're running inside termux. It is necessary to source =~/.profile= manually.
+#+begin_src bash
+if command -v termux-setup-storage > /dev/null; then
+    if [[ -z "$IS_ANDROID" ]]; then
+        source ~/.profile
+    fi
 fi
 #+end_src
 

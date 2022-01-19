@@ -11,18 +11,26 @@ fi
 # Startup & environment:2 ends here
 
 # [[file:Console.org::*Startup & environment][Startup & environment:3]]
-if [[ -f "/etc/bashrc" ]]; then
-    source /etc/bashrc
+if command -v termux-setup-storage > /dev/null; then
+    if [[ -z "$IS_ANDROID" ]]; then
+        source ~/.profile
+    fi
 fi
 # Startup & environment:3 ends here
 
 # [[file:Console.org::*Startup & environment][Startup & environment:4]]
-xhost +local:root > /dev/null 2>&1
+if [[ -f "/etc/bashrc" ]]; then
+    source /etc/bashrc
+fi
 # Startup & environment:4 ends here
 
 # [[file:Console.org::*Startup & environment][Startup & environment:5]]
-export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
+xhost +local:root > /dev/null 2>&1
 # Startup & environment:5 ends here
+
+# [[file:Console.org::*Startup & environment][Startup & environment:6]]
+export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
+# Startup & environment:6 ends here
 
 # [[file:Console.org::*Launch fish][Launch fish:1]]
 use_fish=true
