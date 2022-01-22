@@ -12,10 +12,12 @@
   (setq message-sendmail-envelope-from 'header)
   (setq mail-envelope-from 'header)
   (setq notmuch-always-prompt-for-sender t)
+  (setq message-send-mail-function #'message-send-mail-with-sendmail)
   (setq sendmail-program (executable-find "msmtp"))
   (setq send-mail-function #'sendmail-send-it)
   (setq mml-secure-openpgp-sign-with-sender t)
   (setq notmuch-mua-user-agent-function 'notmuch-mua-user-agent-full)
+  ;; Use org-contacts for completion
   (setq notmuch-address-command 'as-is)
   (add-hook 'notmuch-hello-mode-hook
             (lambda () (display-line-numbers-mode 0))))
