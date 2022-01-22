@@ -1001,6 +1001,30 @@ influence of C1 on the result."
        ,@args)
      :wk ,command-name))
 
+(use-package treemacs
+  :straight t
+  :defer t
+  :config
+  ;; (setq treemacs-follow-mode nil)
+  ;; (setq treemacs-follow-after-init nil)
+  (setq treemacs-space-between-root-nodes nil)
+  ;; (treemacs-git-mode 'extended)
+  ;; (add-to-list 'treemacs-pre-file-insert-predicates #'treemacs-is-file-git-ignored?)
+  (general-define-key
+   :keymaps 'treemacs-mode-map
+   [mouse-1] #'treemacs-single-click-expand-action
+   "M-l" #'treemacs-root-down
+   "M-h" #'treemacs-root-up
+   "q" #'treemacs-quit)
+  (general-define-key
+   :keymaps 'treemacs-mode-map
+   :states '(normal emacs)
+   "q" 'treemacs-quit))
+
+(use-package treemacs-evil
+  :after (treemacs evil)
+  :straight t)
+
 (use-package lsp-mode
   :straight t
   :if (not (or my/slow-ssh my/is-termux my/remote-server))
@@ -2539,6 +2563,23 @@ Returns (<buffer> . <workspace-index>) or nil."
                  (when (not (string-match-p ".*\n" data-s)) "\n")
                  "#+end_src")
        (substring data-s drawer-start)))))
+
+(defun my/babel-ansi ()
+  (when-let ((beg (org-babel-where-is-src-block-result nil nil)))
+    (save-excursion
+      (goto-char beg)
+      (when (looking-at org-babel-result-regexp)
+        (let ((end (org-babel-result-end))
+              (ansi-color-context-region nil))
+          (ansi-color-apply-on-region beg end))))))
+
+(define-minor-mode org-babel-ansi-colors-mode
+  "Apply ANSI color codes to Org Babel results."
+  :global t
+  :after-hook
+  (if org-babel-ansi-colors-mode
+      (add-hook 'org-babel-after-execute-hook #'my/babel-ansi)
+    (remove-hook 'org-babel-after-execute-hook #'my/babel-ansi)))
 
 (defun my/org-prj-dir (path)
   (expand-file-name path (org-entry-get nil "PRJ-DIR" t)))

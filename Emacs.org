@@ -1893,7 +1893,7 @@ So, here is a macro to run something in a given perspective in a given workspace
 *** Treemacs
 [[https://github.com/Alexander-Miller/treemacs][Treemacs]] is a quite large & powerful package, but as of now I've replaced it with dired. However, I still have a small configuration because lsp-mode and dap-mode depend on it.
 
-#+begin_src emacs-lisp :tangle no
+#+begin_src emacs-lisp
 (use-package treemacs
   :straight t
   :defer t
@@ -3665,7 +3665,8 @@ I've also noticed that there are JSON files left in the runtime folder whenever 
       (dolist (file to-delete)
         (delete-file (car file))))))
 #+end_src
-*** Do not wrap the output in emacs-jupyter
+*** Output post-processing
+**** Do not wrap the output in emacs-jupyter
 Emacs-jupyter has its own insertion mechanisms, which always prepends output statements with =:=. That is not desirable in cases where a kernel supports only plain output, e.g. calysto_hy kernel.
 
 So there we have a minor mode that overrides this behavior.
@@ -3686,7 +3687,7 @@ So there we have a minor mode that overrides this behavior.
 
 (advice-add 'jupyter-org-scalar :around #'my/jupyter-org-scalar-around)
 #+end_src
-*** Wrap source code output
+**** Wrap source code output
 A function to remove the :RESULTS: drawer from results. Once again, it's necessary because emacs-jupyter doesn't seem to respect =:results raw=.
 #+begin_src emacs-lisp
 (defun my/org-strip-results (data)
@@ -3731,6 +3732,29 @@ Example usage:
 #+begin_example
 :post out_wrap(name="fig:chart", caption="График", data=*this*)
 #+end_example
+**** Apply ANSI color codes
+*SOURCE*: [[https://emacs.stackexchange.com/questions/44664/apply-ansi-color-escape-sequences-for-org-babel-results][Apply ANSI color escape sequences for Org Babel results]]
+
+A minor mode to apply ANSI color codes after execution.
+#+begin_src emacs-lisp
+(defun my/babel-ansi ()
+  (when-let ((beg (org-babel-where-is-src-block-result nil nil)))
+    (save-excursion
+      (goto-char beg)
+      (when (looking-at org-babel-result-regexp)
+        (let ((end (org-babel-result-end))
+              (ansi-color-context-region nil))
+          (ansi-color-apply-on-region beg end))))))
+
+(define-minor-mode org-babel-ansi-colors-mode
+  "Apply ANSI color codes to Org Babel results."
+  :global t
+  :after-hook
+  (if org-babel-ansi-colors-mode
+      (add-hook 'org-babel-after-execute-hook #'my/babel-ansi)
+    (remove-hook 'org-babel-after-execute-hook #'my/babel-ansi)))
+#+end_src
+
 *** Managing a literate programming project
 A few tricks to do literate programming.
 
