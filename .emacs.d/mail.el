@@ -7,6 +7,9 @@
 (use-package notmuch
   ;; :ensure nil
   :commands (notmuch notmuch-search)
+  :init
+  (my/use-doom-colors
+   (notmuch-wash-cited-text :foreground (doom-color 'yellow)))
   :config
   (setq mail-specify-envelope-from t)
   (setq message-sendmail-envelope-from 'header)
@@ -18,6 +21,7 @@
   (setq mml-secure-openpgp-sign-with-sender t)
   (setq notmuch-mua-user-agent-function 'notmuch-mua-user-agent-full)
   ;; Use org-contacts for completion
+  (require 'org-contacts)
   (setq notmuch-address-command 'as-is)
   (add-hook 'notmuch-hello-mode-hook
             (lambda () (display-line-numbers-mode 0))))

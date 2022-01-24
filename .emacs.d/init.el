@@ -31,13 +31,16 @@
 
 (setenv "IS_EMACS" "true")
 
+(setq my/emacs-started nil)
+
 (add-hook 'emacs-startup-hook
           (lambda ()
             (message "*** Emacs loaded in %s with %d garbage collections."
                      (format "%.2f seconds"
                              (float-time
                               (time-subtract after-init-time before-init-time)))
-                     gcs-done)))
+                     gcs-done))
+          (setq my/emacs-started t))
 
 ;; (setq use-package-verbose t)
 
@@ -771,12 +774,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                 ;;      (format "@%s" (system-name)))))
                 ))
 
-(use-package auto-dim-other-buffers
-  :straight t
-  :if (display-graphic-p)
-  :config
-  (auto-dim-other-buffers-mode t))
-
 (use-package doom-themes
   :straight t
   :if (not my/is-termux)
@@ -812,49 +809,46 @@ influence of C1 on the result."
 
 (deftheme my-theme-1)
 
+(defvar my/doom-theme-update-colors-hook nil)
+
+(defmacro my/use-doom-colors (&rest data)
+  `(progn
+     (add-hook 'my/doom-theme-update-colors-hook
+               (lambda ()
+                 (custom-theme-set-faces
+                  'my-theme-1
+                  ,@(cl-loop for i in data collect
+                             `(,'\`
+                               (,(car i)
+                                ((t (,@(cl-loop for (key value) on (cdr i) by #'cddr
+                                                append `(,key (,'\, ,value))))))))))))
+     (when (and (fboundp 'doom-color) my/emacs-started)
+       (my/update-my-theme))))
+
 (defun my/update-my-theme (&rest _)
-  (custom-theme-set-faces
-   'my-theme-1
-   `(tab-bar-tab ((t (
-                      :background ,(doom-color 'bg)
-                      :foreground ,(doom-color 'yellow)
-                      :underline ,(doom-color 'yellow)))))
-   `(tab-bar ((t (:background nil :foreground nil))))
-   `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-   `(org-block-begin-line ((t (
-                               :background ,(color-darken-name (doom-color 'bg) 3)
-                               :foreground ,(doom-color 'grey)))))
-   `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
-   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
-   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
-   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
-   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
-   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
-   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow)))))
-   `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow))))))
-  (setq my/dired-blend-coef 0.9)
-  (setq my/dired-subtree-colors '(red yellow green blue magenta violet))
-  (cl-loop for i from 1
-           for color in my/dired-subtree-colors
-           for face = (intern (format "dired-subtree-depth-%d-face" i))
-           do (custom-theme-set-faces
-               'my-theme-1
-               `(,face
-                 ((t (:background ,(my/color-blend
-                                    (color-values (doom-color 'bg))
-                                    (color-values (doom-color color))
-                                    my/dired-blend-coef)))))))
-  (custom-theme-set-variables
-   'my-theme-1
-   `(aweshell-invalid-command-color ,(doom-color 'red))
-   `(aweshell-valid-command-color ,(doom-color 'green)))
+  (run-hooks 'my/doom-theme-update-colors-hook)
   (enable-theme 'my-theme-1))
 
 (unless my/is-termux
   (advice-add 'load-theme :after #'my/update-my-theme)
   (when (fboundp 'doom-color)
-    (my/update-my-theme)))
+    (my/update-my-theme))
+  (add-hook 'emacs-startup-hook #'my/update-my-theme))
+
+(my/use-doom-colors
+ (tab-bar-tab :background (doom-color 'bg)
+              :foreground (doom-color 'yellow)
+              :underline (doom-color 'yellow))
+ (tab-bar :background nil :foreground nil))
+
+(use-package auto-dim-other-buffers
+  :straight t
+  :if (display-graphic-p)
+  :config
+  (auto-dim-other-buffers-mode t)
+  (my/use-doom-colors
+   (auto-dim-other-buffers-face
+    :background (color-darken-name (doom-color 'bg) 3))))
 
 (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
 
@@ -3472,6 +3466,11 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
 
+(my/use-doom-colors
+ (org-block :background (color-darken-name (doom-color 'bg) 3))
+ (org-block-begin-line :background (color-darken-name (doom-color 'bg) 3)
+                       :foreground (doom-color 'grey)))
+
 ;; (setq org-export-backends '(md html latex beamer org))
 
 (use-package ox-hugo
@@ -3916,6 +3915,12 @@ Returns (<buffer> . <workspace-index>) or nil."
   :ensure nil
   :after evil-collection
   :commands (eshell)
+  :init
+  (my/use-doom-colors
+   (epe-pipeline-delimiter-face :foreground (doom-color 'green))
+   (epe-pipeline-host-face      :foreground (doom-color 'blue))
+   (epe-pipeline-time-face      :foreground (doom-color 'yellow))
+   (epe-pipeline-user-face      :foreground (doom-color 'red)))
   :config
   (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
   (when my/slow-ssh
@@ -3927,6 +3932,10 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package aweshell
   :straight (:repo "manateelazycat/aweshell" :host github)
   :after eshell
+  :init
+  (my/use-doom-colors
+   (aweshell-alert-buffer-face  :background (color-darken-name (doom-color 'bg) 3))
+   (aweshell-alert-command-face :foreground (doom-color 'red) :weight 'bold))
   :config
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
@@ -4042,29 +4051,32 @@ Returns (<buffer> . <workspace-index>) or nil."
     (when link
       (eww link))))
 
-(defface elfeed-videos-entry
-  `((t :foreground ,(doom-color 'red)))
+(defface elfeed-videos-entry nil
   "Face for the elfeed entries with tag \"videos\"")
 
-(defface elfeed-twitter-entry
-  `((t :foreground ,(doom-color 'blue)))
+(defface elfeed-twitter-entry nil
   "Face for the elfeed entries with tah \"twitter\"")
 
-(defface elfeed-emacs-entry
-  `((t :foreground ,(doom-color 'magenta)))
+(defface elfeed-emacs-entry nil
   "Face for the elfeed entries with tah \"emacs\"")
 
-(defface elfeed-music-entry
-  `((t :foreground ,(doom-color 'green)))
+(defface elfeed-music-entry nil
   "Face for the elfeed entries with tah \"music\"")
 
-(defface elfeed-podcasts-entry
-  `((t :foreground ,(doom-color 'yellow)))
+(defface elfeed-podcasts-entry nil
   "Face for the elfeed entries with tag \"podcasts\"")
 
-(defface elfeed-blogs-entry
-  `((t :foreground ,(doom-color 'orange)))
+(defface elfeed-blogs-entry nil
   "Face for the elfeed entries with tag \"blogs\"")
+
+(my/use-doom-colors
+(elfeed-search-tag-face :foreground (doom-color 'yellow))
+ (elfeed-videos-entry :foreground (doom-color 'red))
+ (elfeed-twitter-entry :foreground (doom-color 'blue))
+ (elfeed-emacs-entry :foreground (doom-color 'magenta))
+ (elfeed-music-entry :foreground (doom-color 'green))
+ (elfeed-podcasts-entry :foreground (doom-color 'yellow))
+ (elfeed-blogs-entry :foreground (doom-color 'orange)))
 
 (with-eval-after-load 'elfeed
   (setq elfeed-search-face-alist

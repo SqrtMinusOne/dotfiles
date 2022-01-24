@@ -414,13 +414,16 @@ emacs -q -l ~/.emacs.d/init-minimal.el
 *** Measure startup speed
 A small function to print out the loading time and number of GCs during the loading. Can be useful as a point of data for optimizing Emacs startup time.
 #+begin_src emacs-lisp
+(setq my/emacs-started nil)
+
 (add-hook 'emacs-startup-hook
           (lambda ()
             (message "*** Emacs loaded in %s with %d garbage collections."
                      (format "%.2f seconds"
                              (float-time
                               (time-subtract after-init-time before-init-time)))
-                     gcs-done)))
+                     gcs-done))
+          (setq my/emacs-started t))
 #+end_src
 
 Set the following to =t= to print debug information during the startup. This will include the order in which the packages are loaded and the loading time of individual packages.
@@ -1579,15 +1582,6 @@ Title format, which looks something like =emacs:project@hostname=.
                 ))
 #+end_src
 ** Themes and colors
-*** Dim inactive buffers
-Dim inactive buffers.
-#+begin_src emacs-lisp
-(use-package auto-dim-other-buffers
-  :straight t
-  :if (display-graphic-p)
-  :config
-  (auto-dim-other-buffers-mode t))
-#+end_src
 *** Doom themes
 My colorscheme of choice.
 #+begin_src emacs-lisp
@@ -1605,7 +1599,9 @@ My colorscheme of choice.
   (doom-themes-treemacs-config))
 #+end_src
 *** Custom theme
-A custom theme, dependent on Doom. I set all my custom variables there.
+Here I define a custom theme, dependent on Doom color.
+
+A custom theme is necessary because if one calls =custom-set-faces= and =custom-set-variables= in code, whenever a variable is changed and saved in a customize buffer, data from all calls of these functions is saved as well.
 
 To make defining colors a bit easier, here is a function to blend two colors, taken from [[https://oremacs.com/2015/04/28/blending-faces/][this post]] by abo-abo.
 #+begin_src emacs-lisp
@@ -1630,55 +1626,62 @@ influence of C1 on the result."
           c1 c2)))
 #+end_src
 
-A custom theme is necessary because if one calls =custom-set-faces= and =custom-set-variables= in code, whenever a variable is changed and saved in a customize buffer, data from all calls of these functions is saved as well.
-
-Also, a hook allows me to change doom-theme more or less at will, although I do that only to switch to a light theme once in a blue moon.
+Defining the theme itself.
 #+begin_src emacs-lisp
 (deftheme my-theme-1)
+#+end_src
 
+A macro to simplify defining custom colors.
+#+begin_src emacs-lisp
+(defvar my/doom-theme-update-colors-hook nil)
+
+(defmacro my/use-doom-colors (&rest data)
+  `(progn
+     (add-hook 'my/doom-theme-update-colors-hook
+               (lambda ()
+                 (custom-theme-set-faces
+                  'my-theme-1
+                  ,@(cl-loop for i in data collect
+                             `(,'\`
+                               (,(car i)
+                                ((t (,@(cl-loop for (key value) on (cdr i) by #'cddr
+                                                append `(,key (,'\, ,value))))))))))))
+     (when (and (fboundp 'doom-color) my/emacs-started)
+       (my/update-my-theme))))
+#+end_src
+
+This macro puts lambdas to =my/doom-theme-update-colors-hook= that updates faces in =my-theme-1=. Now I have to call this hook:
+#+begin_src emacs-lisp
 (defun my/update-my-theme (&rest _)
-  (custom-theme-set-faces
-   'my-theme-1
-   `(tab-bar-tab ((t (
-                      :background ,(doom-color 'bg)
-                      :foreground ,(doom-color 'yellow)
-                      :underline ,(doom-color 'yellow)))))
-   `(tab-bar ((t (:background nil :foreground nil))))
-   `(org-block ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-   `(org-block-begin-line ((t (
-                               :background ,(color-darken-name (doom-color 'bg) 3)
-                               :foreground ,(doom-color 'grey)))))
-   `(auto-dim-other-buffers-face ((t (:background ,(color-darken-name (doom-color 'bg) 3)))))
-   `(aweshell-alert-buffer-face ((t (:foreground ,(doom-color 'red) :weight bold))))
-   `(aweshell-alert-command-face ((t (:foreground ,(doom-color 'yellow) :weight bold))))
-   `(epe-pipeline-delimiter-face ((t (:foreground ,(doom-color 'green)))))
-   `(epe-pipeline-host-face ((t (:foreground ,(doom-color 'blue)))))
-   `(epe-pipeline-time-face ((t (:foreground ,(doom-color 'yellow)))))
-   `(epe-pipeline-user-face ((t (:foreground ,(doom-color 'red)))))
-   `(elfeed-search-tag-face ((t (:foreground ,(doom-color 'yellow)))))
-   `(notmuch-wash-cited-text ((t (:foreground ,(doom-color 'yellow))))))
-  (setq my/dired-blend-coef 0.9)
-  (setq my/dired-subtree-colors '(red yellow green blue magenta violet))
-  (cl-loop for i from 1
-           for color in my/dired-subtree-colors
-           for face = (intern (format "dired-subtree-depth-%d-face" i))
-           do (custom-theme-set-faces
-               'my-theme-1
-               `(,face
-                 ((t (:background ,(my/color-blend
-                                    (color-values (doom-color 'bg))
-                                    (color-values (doom-color color))
-                                    my/dired-blend-coef)))))))
-  (custom-theme-set-variables
-   'my-theme-1
-   `(aweshell-invalid-command-color ,(doom-color 'red))
-   `(aweshell-valid-command-color ,(doom-color 'green)))
+  (run-hooks 'my/doom-theme-update-colors-hook)
   (enable-theme 'my-theme-1))
 
 (unless my/is-termux
   (advice-add 'load-theme :after #'my/update-my-theme)
   (when (fboundp 'doom-color)
-    (my/update-my-theme)))
+    (my/update-my-theme))
+  (add-hook 'emacs-startup-hook #'my/update-my-theme))
+#+end_src
+
+Defining colors for =tab-bar.el=:
+#+begin_src emacs-lisp
+(my/use-doom-colors
+ (tab-bar-tab :background (doom-color 'bg)
+              :foreground (doom-color 'yellow)
+              :underline (doom-color 'yellow))
+ (tab-bar :background nil :foreground nil))
+#+end_src
+*** Dim inactive buffers
+Dim inactive buffers.
+#+begin_src emacs-lisp
+(use-package auto-dim-other-buffers
+  :straight t
+  :if (display-graphic-p)
+  :config
+  (auto-dim-other-buffers-mode t)
+  (my/use-doom-colors
+   (auto-dim-other-buffers-face
+    :background (color-darken-name (doom-color 'bg) 3))))
 #+end_src
 ** Fonts
 *** Frame font
@@ -5036,22 +5039,12 @@ Remove the ellipsis at the end of folded headlines. The ellipsis seems unnecessa
 
 (add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
 #+end_src
-
-*** OFF (OFF) Org Agenda Icons
-Categories are broad labels to group agenda items.
-
-#+begin_src emacs-lisp :tangle no
-(if (not my/lowpower)
-    (setq org-agenda-category-icon-alist
-          `(("inbox" ,(list (all-the-icons-faicon "inbox")) nil nil :ascent center)
-            ("work" ,(list (all-the-icons-faicon "cog")) nil nil :ascent center)
-            ("education" ,(list (all-the-icons-material "build")) nil nil :ascent center)
-            ("personal" ,(list (all-the-icons-faicon "music")) nil nil :ascent center)
-            ("misc" ,(list (all-the-icons-material "archive")) nil nil :ascent center)
-            ;; ("lesson" ,(list (all-the-icons-faicon "book")) nil nil :ascent center)
-            ;; ("meeting" ,(list (all-the-icons-material "chat")) nil nil :ascent center)
-            ;; ("event" ,(list (all-the-icons-octicon "clock")) nil nil :ascent center)
-            ("." ,(list (all-the-icons-faicon "circle-o")) nil nil :ascent center))))
+*** Override colors
+#+begin_src emacs-lisp
+(my/use-doom-colors
+ (org-block :background (color-darken-name (doom-color 'bg) 3))
+ (org-block-begin-line :background (color-darken-name (doom-color 'bg) 3)
+                       :foreground (doom-color 'grey)))
 #+end_src
 ** Export
 *** General settings
@@ -5724,6 +5717,12 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
   :ensure nil
   :after evil-collection
   :commands (eshell)
+  :init
+  (my/use-doom-colors
+   (epe-pipeline-delimiter-face :foreground (doom-color 'green))
+   (epe-pipeline-host-face      :foreground (doom-color 'blue))
+   (epe-pipeline-time-face      :foreground (doom-color 'yellow))
+   (epe-pipeline-user-face      :foreground (doom-color 'red)))
   :config
   (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
   (when my/slow-ssh
@@ -5735,6 +5734,10 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
 (use-package aweshell
   :straight (:repo "manateelazycat/aweshell" :host github)
   :after eshell
+  :init
+  (my/use-doom-colors
+   (aweshell-alert-buffer-face  :background (color-darken-name (doom-color 'bg) 3))
+   (aweshell-alert-command-face :foreground (doom-color 'red) :weight 'bold))
   :config
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
@@ -5891,29 +5894,32 @@ Open a URL with eww.
 Setting up custom faces for certain tags to make the feed look a bit nicer.
 
 #+begin_src emacs-lisp
-(defface elfeed-videos-entry
-  `((t :foreground ,(doom-color 'red)))
+(defface elfeed-videos-entry nil
   "Face for the elfeed entries with tag \"videos\"")
 
-(defface elfeed-twitter-entry
-  `((t :foreground ,(doom-color 'blue)))
+(defface elfeed-twitter-entry nil
   "Face for the elfeed entries with tah \"twitter\"")
 
-(defface elfeed-emacs-entry
-  `((t :foreground ,(doom-color 'magenta)))
+(defface elfeed-emacs-entry nil
   "Face for the elfeed entries with tah \"emacs\"")
 
-(defface elfeed-music-entry
-  `((t :foreground ,(doom-color 'green)))
+(defface elfeed-music-entry nil
   "Face for the elfeed entries with tah \"music\"")
 
-(defface elfeed-podcasts-entry
-  `((t :foreground ,(doom-color 'yellow)))
+(defface elfeed-podcasts-entry nil
   "Face for the elfeed entries with tag \"podcasts\"")
 
-(defface elfeed-blogs-entry
-  `((t :foreground ,(doom-color 'orange)))
+(defface elfeed-blogs-entry nil
   "Face for the elfeed entries with tag \"blogs\"")
+
+(my/use-doom-colors
+(elfeed-search-tag-face :foreground (doom-color 'yellow))
+ (elfeed-videos-entry :foreground (doom-color 'red))
+ (elfeed-twitter-entry :foreground (doom-color 'blue))
+ (elfeed-emacs-entry :foreground (doom-color 'magenta))
+ (elfeed-music-entry :foreground (doom-color 'green))
+ (elfeed-podcasts-entry :foreground (doom-color 'yellow))
+ (elfeed-blogs-entry :foreground (doom-color 'orange)))
 
 (with-eval-after-load 'elfeed
   (setq elfeed-search-face-alist

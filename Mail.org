@@ -408,6 +408,9 @@ Finally the proper notmuch settings:
 (use-package notmuch
   ;; :ensure nil
   :commands (notmuch notmuch-search)
+  :init
+  (my/use-doom-colors
+   (notmuch-wash-cited-text :foreground (doom-color 'yellow)))
   :config
   (setq mail-specify-envelope-from t)
   (setq message-sendmail-envelope-from 'header)
