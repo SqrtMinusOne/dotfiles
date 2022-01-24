@@ -207,6 +207,7 @@ So, here are the rules which match tags & folders:
 | job.digital.docs         | Job_Digital.Docs         |
 | job.digital.support      | Job_Digital.Support      |
 | job.digital.superservice | Job_Digital.Superservice |
+| job.digital.applicants   | Job_Digital.Applicants   |
 
 And below is a noweb function, which generates the following commands for notmuch to execute:
 - /before/ sync:
@@ -418,6 +419,7 @@ Finally the proper notmuch settings:
   (setq mml-secure-openpgp-sign-with-sender t)
   (setq notmuch-mua-user-agent-function 'notmuch-mua-user-agent-full)
   ;; Use org-contacts for completion
+  (require 'org-contacts)
   (setq notmuch-address-command 'as-is)
   (add-hook 'notmuch-hello-mode-hook
             (lambda () (display-line-numbers-mode 0))))

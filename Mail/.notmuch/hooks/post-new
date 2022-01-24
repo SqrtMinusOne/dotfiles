@@ -21,6 +21,8 @@ notmuch tag +job.digital.support "path:pvkorytov_etu/Job_Digital.Support/cur/** 
 notmuch tag -job.digital.support "NOT path:pvkorytov_etu/Job_Digital.Support/cur/** AND tag:job.digital.support AND tag:pvkorytov"
 notmuch tag +job.digital.superservice "path:pvkorytov_etu/Job_Digital.Superservice/cur/** AND NOT tag:job.digital.superservice"
 notmuch tag -job.digital.superservice "NOT path:pvkorytov_etu/Job_Digital.Superservice/cur/** AND tag:job.digital.superservice AND tag:pvkorytov"
+notmuch tag +job.digital.applicants "path:pvkorytov_etu/Job_Digital.Applicants/cur/** AND NOT tag:job.digital.applicants"
+notmuch tag -job.digital.applicants "NOT path:pvkorytov_etu/Job_Digital.Applicants/cur/** AND tag:job.digital.applicants AND tag:pvkorytov"
 echo "Post-new filters done"
 notmuch tag -new "tag:new"
 # =post_new=:2 ends here
