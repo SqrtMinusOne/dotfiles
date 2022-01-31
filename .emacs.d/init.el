@@ -2771,11 +2771,26 @@ Returns (<buffer> . <workspace-index>) or nil."
   "o" 'org-journal-open-current-journal-file
   "s" 'org-journal-search)
 
+(use-package org-journal-tags
+  :straight (:fetcher git :repo "https://sqrtminusone.xyz/git/SqrtMinusOne/org-journal-tags.git")
+  :after (org-journal)
+  :config
+  (org-journal-tags-autosync-mode)
+  (my-leader-def
+    :infix "oj"
+    "s" #'org-journal-tags-status)
+  (general-define-key
+   :keymaps 'org-journal-mode-map
+   "C-c t" #'org-journal-tags-insert-tag))
+
 (defun my/set-journal-header ()
   (org-set-property "Emacs" emacs-version)
   (org-set-property "Hostname" system-name)
+  (org-journal-tags-prop-apply-delta :add (list (format "host.%s" (system-name))))
   (when (boundp 'my/location)
     (org-set-property "Location" my/location))
+  (when (boundp 'my/loc-tag)
+    (org-journal-tags-prop-apply-delta :add (list my/loc-tag)))
   (when (fboundp 'emms-playlist-current-selected-track)
     (let ((track (emms-playlist-current-selected-track)))
       (when track
@@ -2817,14 +2832,13 @@ Returns (<buffer> . <workspace-index>) or nil."
       `("p" "project" plain ,(string-join
                               '("%?"
                                 "* Tasks"
-                                "** TODO Add initials tasks"
-                                "* Log        :log_here:")
+                                "** TODO Add initial tasks")
                               "\n")
         :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
                            ,(string-join
                              '("#+title: ${title}"
                                "#+category: ${title}"
-                               "#+filetags: :org:log_here:"
+                               "#+filetags: :org:"
                                "#+TODO: TODO(t) NEXT(n) HOLD(h) | NO(q) DONE(d)"
                                "#+TODO: FUTURE(f) | PASSED(p)"
                                "#+STARTUP: logdone overview")
@@ -2839,53 +2853,6 @@ Returns (<buffer> . <workspace-index>) or nil."
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
          :unnarrowed t)
         ,my/org-roam-project-template))
-
-(defun my/make-daily-header-track ()
-  (when (fboundp 'emms-playlist-current-selected-track)
-    (let ((track (emms-playlist-current-selected-track)))
-      (when track
-        (let ((album (cdr (assoc 'info-album track)))
-              (artist (or (cdr (assoc 'info-albumartist track))
-                          (cdr (assoc 'info-album track))))
-              (title (cdr (assoc 'info-title track)))
-              (string ""))
-          (when artist
-            (setq string (concat string "[" artist "] ")))
-          (when album
-            (setq string (concat string album " - ")))
-          (when title
-            (setq string (concat string title)))
-          (when (> (length string) 0)
-            string))))))
-
-(defun my/make-daily-header ()
-  (string-join
-   (seq-filter
-    #'identity
-    `(":PROPERTIES:"
-      ,(format ":Emacs:      %s" emacs-version)
-      ,(format ":Hostname:   %s" system-name)
-      ,(when (boundp 'my/location)
-         (format ":Location:   %s" my/location))
-      ,(when-let (track (my/make-daily-header-track))
-         (format ":EMMS_Track: %s" track))
-      ":END:"))
-   "\n"))
-
-(setq org-roam-dailies-capture-templates
-      `(("d" "default" entry
-         ,(string-join
-           '("* %<%H:%M>"
-             "%(my/make-daily-header)"
-             "%?")
-           "\n")
-         :target
-         (file+head "%<%Y-%m-%d>.org.gpg"
-                    ,(string-join
-                      '("#+TITLE: %<%Y-%m-%d, %A>"
-                        "#+FILETAGS: log"
-                        "")
-                      "\n")))))
 
 (cl-defmacro my/org-roam-filter-by-tag (&optional &key (include nil) (exclude nil))
   `(lambda (node)
@@ -2949,186 +2916,12 @@ Returns (<buffer> . <workspace-index>) or nil."
  :keymaps 'org-mode-map
  "C-c C-w" #'my/org-target-refile)
 
-(defun my/org-roam-daily-extract-target-links ()
-  (save-excursion
-    (goto-char (point-min))
-    (cl-loop while (not (eobp))
-             do (forward-line 1)
-             for match = (save-excursion
-                           (search-forward-regexp
-                            (rx "[" (* nonl) "]")
-                            (line-end-position)
-                            t))
-             for node = (when-let (link (org-element-link-parser))
-                          (when (string-equal (plist-get (cadr link) :type) "id")
-                            (when-let (node (org-roam-node-from-id
-                                             (plist-get (cadr link) :path)))
-                              (and (member "log_here" (org-roam-node-tags node))
-                                   node))))
-             if (and node match)
-             collect (list
-                      node
-                      (line-number-at-pos)
-                      ;; Hardcoded for now
-                      1
-                      (let ((title
-                             (save-excursion
-                               (org-back-to-heading)
-                               (org-element-property :title (org-element-at-point)))))
-                        (if (stringp title)
-                            title
-                          (substring-no-properties (car title))))))))
-
-(defun my/org-roam-node-insert-log ()
-  (interactive)
-  (beginning-of-line)
-  (org-roam-node-insert
-   (my/org-roam-filter-by-tag :include ("log_here")))
-  (insert ": "))
-
-(defun my/org-roam-daily-get-transclude-header ()
-  (let ((kws (org-collect-keywords '("TITLE"))))
-    (unless kws
-      (error "No title found!"))
-    (cadar kws)))
-
-(defun my/org-roam-daily-find-log-header ()
-  (let ((log-header nil))
-    (org-map-entries
-     (lambda ()
-       (let* ((headline (org-element-at-point))
-              (tags (mapcar #'substring-no-properties
-                            (org-element-property :tags headline))))
-         (when (member "log_here" tags)
-           (setq log-header headline)))))
-    (unless log-header
-      (error "Header with :log_here: tag not found"))
-    log-header))
-
-(defun my/org-insert-alphabetical-header (root-header target-header)
-  (let ((target-headline)
-        (last-header "")
-        (last-headline)
-        (first-headline))
-    (goto-char (org-element-property :begin root-header))
-    ;; Map the tree under root-header
-    (org-map-tree
-     (lambda ()
-       (let* ((headline (org-element-at-point))
-              (header-raw (org-element-property :title headline))
-              (header (if (stringp header-raw)
-                          header-raw
-                        (substring-no-properties (car header-raw)))))
-         (when (/= (point) (org-element-property :begin root-header))
-           ;; Try to find a heading with title equal to target-header
-           (when (string-equal target-header header)
-             (setq target-headline headline))
-           ;; Or try to find a heading < target-header
-           (when (and (string-lessp header target-header)
-                      (string-greaterp header last-header))
-             (setq last-header header)
-             (setq last-headline headline))
-           (unless first-headline
-             (setq first-headline headline))))))
-    (if target-headline
-        ;; If a matching header is found, clear its contents
-        (let ((content-start (save-excursion
-                               (goto-char
-                                (org-element-property :begin target-headline))
-                               (forward-line 1)
-                               (point)))
-              (content-end (org-element-property :end target-headline)))
-          (if (<= content-start content-end)
-              (progn
-                (delete-region content-start content-end)
-                (goto-char (org-element-property :begin target-headline))
-                (end-of-line)
-                (insert "\n"))
-            (goto-char content-end)))
-      ;; If a heading < target-header is found, insert the new one just after it
-      (if last-headline
-          (progn
-            (goto-char (org-element-property :begin last-headline))
-            (org-insert-heading-respect-content)
-            (insert target-header)
-            (insert "\n"))
-        ;; If neither is found, insert a new heading before the first headline
-        (if first-headline
-            (progn
-              (goto-char (org-element-property :begin first-headline))
-              (org-insert-heading)
-              (insert target-header)
-              (insert "\n"))
-          ;; If there is not even a first heading, that means the target header is empty
-          (goto-char (org-element-property :begin root-header))
-          (org-insert-heading-respect-content)
-          (org-do-demote)
-          (insert target-header)
-          (insert "\n"))))))
-
-(defun my/org-roam-daily-format-target-links (links path)
-  (string-trim
-   (cl-loop for i from 0 to (length links)
-            for link in links
-            for line-number = (nth 1 link)
-            for line-count = (nth 2 link)
-            for title = (nth 3 link)
-            for prev-title = (if (> i 0) (nth 3 (nth (1- i) links)) "")
-            concat (string-join
-                    (seq-filter
-                     #'identity
-                     `(,(unless (string-equal title prev-title)
-                          (format "%s:" title))
-                       ,(format "#+transclude: [[file:%s]] :lines %d-%d"
-                                path
-                                line-number
-                                (+ line-number line-count -1))
-                       ""
-                       ""))
-                    "\n"))))
-
-(defun my/org-roam-daily-dispatch-transclusions ()
-  (interactive)
-  (let* ((targets (my/org-roam-daily-extract-target-links))
-         (target-groups
-          (seq-group-by
-           (lambda (item)
-             (org-roam-node-file (nth 0 item)))
-           targets))
-         (header (my/org-roam-daily-get-transclude-header))
-         (path (buffer-file-name)))
-    (dolist (group target-groups)
-      (with-temp-file (car group)
-        (insert-file-contents (car group))
-        (org-mode)
-        (my/org-insert-alphabetical-header
-         (my/org-roam-daily-find-log-header)
-         header)
-        (insert (my/org-roam-daily-format-target-links (cdr group) path))))))
-
-(defun my/org-roam-daily-transclusions-hook ()
-  (when (and
-         (fboundp 'org-roam-dailies--daily-note-p)
-         (org-roam-dailies--daily-note-p))
-    (my/org-roam-daily-dispatch-transclusions)
-    (message "Tranclusions dispatched!")))
-
-(with-eval-after-load 'org-roam
-  (add-hook 'after-save-hook #'my/org-roam-daily-transclusions-hook))
-
 (defun my/org-roam-find-zk ()
   (interactive)
   (org-roam-node-find
    nil
    nil
-   (my/org-roam-filter-by-tag :exclude ("log" "org"))))
-
-(defun my/org-roam-find-daily ()
-  (interactive)
-  (org-roam-node-find
-   nil
-   nil
-   (my/org-roam-filter-by-tag :include ("log"))))
+   (my/org-roam-filter-by-tag :exclude ("org"))))
 
 (my-leader-def
   :infix "or"
@@ -3139,14 +2932,6 @@ Returns (<buffer> . <workspace-index>) or nil."
   "g" 'org-roam-graph
   "c" 'org-roam-capture
   "b" 'org-roam-buffer-toggle)
-
-(my-leader-def
-  :infix "od"
-  "" '(:which-key "org-roam-dailies")
-  "d" #'org-roam-dailies-capture-today
-  "o" #'org-roam-dailies-goto-today
-  "f" #'my/org-roam-find-daily
-  "i" #'my/org-roam-node-insert-log)
 
 (with-eval-after-load 'org-roam
   (general-define-key
@@ -3209,13 +2994,10 @@ Returns (<buffer> . <workspace-index>) or nil."
                  :tags (:include ("org"))
                  :title "Changed Project Entries")
         (:status added
-                 :tags (:include ("log") :exclude ("org" "log_here"))
-                 :title "New Dailies")
-        (:status added
-                 :tags (:exclude ("log" "org"))
+                 :tags (:exclude ("org"))
                  :title "New Zettelkasten Entries")
         (:status changed
-                 :tags (:exclude ("log" "org"))
+                 :tags (:exclude ("org"))
                  :title "Changed Zettelkasten Entries")))
 
 (defun my/org-review-format-roam (changes)

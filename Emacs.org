@@ -46,6 +46,7 @@ If however, by some twist of fate, this document is one of the first things you 
 :TOC:      :include all :depth 4
 :END:
 :CONTENTS:
+- [[#introduction][Introduction]]
 - [[#some-remarks][Some remarks]]
 - [[#bootstrap][Bootstrap]]
   - [[#packages][Packages]]
@@ -60,6 +61,7 @@ If however, by some twist of fate, this document is one of the first things you 
   - [[#anaconda][Anaconda]]
   - [[#config-files][Config files]]
     - [[#custom-file-location][Custom file location]]
+    - [[#authinfo][authinfo]]
     - [[#private-config][Private config]]
     - [[#no-littering][No littering]]
   - [[#prevent-emacs-from-closing][Prevent Emacs from closing]]
@@ -67,42 +69,16 @@ If however, by some twist of fate, this document is one of the first things you 
   - [[#keybindings][Keybindings]]
     - [[#generalel][general.el]]
     - [[#which-key][which-key]]
-      - [[#dump-keybindings][dump keybindings]]
     - [[#evil][Evil]]
-      - [[#evil-mode][Evil-mode]]
-      - [[#addons][Addons]]
-      - [[#evil-collection][evil-collection]]
     - [[#my-keybindings][My keybindings]]
-      - [[#escape-key][Escape key]]
-      - [[#home--end][Home & end]]
-      - [[#my-leader][My leader]]
-      - [[#universal-argument][Universal argument]]
-      - [[#profiler][Profiler]]
-      - [[#buffer-switching][Buffer switching]]
-      - [[#buffer-management][Buffer management]]
-      - [[#xref][xref]]
-      - [[#folding][Folding]]
-      - [[#zoom-ui][Zoom UI]]
   - [[#i3-integration][i3 integration]]
   - [[#editing-text][Editing text]]
     - [[#indentation--whitespace][Indentation & whitespace]]
-      - [[#aggressive-indent][Aggressive Indent]]
-      - [[#delete-trailing-whitespace][Delete trailing whitespace]]
-      - [[#tabs][Tabs]]
     - [[#settings][Settings]]
-      - [[#scrolling][Scrolling]]
-      - [[#clipboard][Clipboard]]
-      - [[#backups][Backups]]
     - [[#undo-tree][Undo Tree]]
     - [[#snippets][Snippets]]
     - [[#other-small-packages][Other small packages]]
-      - [[#managing-parentheses-smartparens][Managing parentheses (smartparens)]]
-      - [[#expand-region][Expand region]]
-      - [[#visual-fill-column-mode][Visual fill column mode]]
   - [[#working-with-projects][Working with projects]]
-    - [[#treemacs][Treemacs]]
-      - [[#helper-functions][Helper functions]]
-      - [[#custom-icons][Custom icons]]
     - [[#projectile][Projectile]]
     - [[#git--magit][Git & Magit]]
     - [[#editorconfig][Editorconfig]]
@@ -123,9 +99,9 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#word-wrapping][Word wrapping]]
     - [[#custom-frame-format][Custom frame format]]
   - [[#themes-and-colors][Themes and colors]]
-    - [[#dim-inactive-buffers][Dim inactive buffers]]
     - [[#doom-themes][Doom themes]]
     - [[#custom-theme][Custom theme]]
+    - [[#dim-inactive-buffers][Dim inactive buffers]]
   - [[#fonts][Fonts]]
     - [[#frame-font][Frame font]]
     - [[#ligatures][Ligatures]]
@@ -133,22 +109,15 @@ If however, by some twist of fate, this document is one of the first things you 
   - [[#text-highlight][Text highlight]]
   - [[#doom-modeline][Doom Modeline]]
   - [[#perspectiveel][perspective.el]]
-    - [[#some-functions][Some functions]]
+    - [[#functions-to-manage-buffers][Functions to manage buffers]]
+    - [[#automating-perspectives][Automating perspectives]]
 - [[#programming][Programming]]
   - [[#general-setup][General setup]]
+    - [[#treemacs][Treemacs]]
     - [[#lsp][LSP]]
-      - [[#setup][Setup]]
-      - [[#integrations][Integrations]]
-      - [[#keybindings][Keybindings]]
     - [[#flycheck][Flycheck]]
     - [[#tree-sitter][Tree Sitter]]
     - [[#dap][DAP]]
-      - [[#controls][Controls]]
-      - [[#ui-fixes][UI Fixes]]
-      - [[#helper-functions][Helper functions]]
-      - [[#improved-stack-frame-switching][Improved stack frame switching]]
-      - [[#debug-templates][Debug templates]]
-    - [[#off-tabnine][(OFF) TabNine]]
     - [[#reformatter][Reformatter]]
     - [[#general-additional-config][General additional config]]
   - [[#web-development][Web development]]
@@ -165,22 +134,15 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#bibtex][BibTeX]]
     - [[#import-sty][Import *.sty]]
     - [[#snippets][Snippets]]
-      - [[#greek-letters][Greek letters]]
-      - [[#english-letters][English letters]]
-      - [[#math-symbols][Math symbols]]
-      - [[#section-snippets][Section snippets]]
-  - [[#other-markup-languages][Other markup languages]]
+  - [[#other-markup--natural-languages][Other markup & natural languages]]
     - [[#markdown][Markdown]]
     - [[#plantuml][PlantUML]]
+    - [[#subtitles][Subtitles]]
     - [[#languagetool][LanguageTool]]
   - [[#lisp][Lisp]]
     - [[#meta-lisp][Meta Lisp]]
     - [[#emacs-lisp][Emacs Lisp]]
-      - [[#package-lint][Package Lint]]
-      - [[#general-settings][General settings]]
     - [[#common-lisp][Common lisp]]
-      - [[#slime][SLIME]]
-      - [[#general-settings][General settings]]
     - [[#clojure][Clojure]]
     - [[#hy][Hy]]
     - [[#scheme][Scheme]]
@@ -191,26 +153,30 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#isort][isort]]
     - [[#sphinx-doc][sphinx-doc]]
     - [[#pytest][pytest]]
-      - [[#fix-comint-buffer-width][Fix comint buffer width]]
     - [[#code-cells][code-cells]]
     - [[#tensorboard][tensorboard]]
+  - [[#data-serialization][Data serialization]]
+    - [[#json][JSON]]
+    - [[#csv][CSV]]
+    - [[#yaml][YAML]]
+  - [[#configuration][Configuration]]
+    - [[#env][.env]]
+    - [[#gitignore][.gitignore]]
+    - [[#docker][Docker]]
+    - [[#crontab][crontab]]
+  - [[#shell][Shell]]
+    - [[#sh][sh]]
+    - [[#fish][fish]]
   - [[#java][Java]]
   - [[#go][Go]]
   - [[#net][.NET]]
     - [[#c][C#]]
     - [[#msbuild][MSBuild]]
-  - [[#fish][fish]]
-  - [[#sh][sh]]
   - [[#haskell][Haskell]]
+  - [[#nix][nix]]
   - [[#lua][Lua]]
-  - [[#json][JSON]]
   - [[#sql][SQL]]
   - [[#sparql][SPARQL]]
-  - [[#yaml][YAML]]
-  - [[#env][.env]]
-  - [[#csv][CSV]]
-  - [[#docker][Docker]]
-  - [[#crontab][crontab]]
 - [[#org-mode][Org Mode]]
   - [[#installation--basic-settings][Installation & basic settings]]
     - [[#encryption][Encryption]]
@@ -223,31 +189,30 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#plantuml][PlantUML]]
     - [[#setup][Setup]]
     - [[#managing-jupyter-kernels][Managing Jupyter kernels]]
-    - [[#do-not-wrap-the-output-in-emacs-jupyter][Do not wrap the output in emacs-jupyter]]
-    - [[#wrap-source-code-output][Wrap source code output]]
+    - [[#output-post-processing][Output post-processing]]
     - [[#managing-a-literate-programming-project][Managing a literate programming project]]
+  - [[#tools][Tools]]
+    - [[#presentations][Presentations]]
+    - [[#toc][TOC]]
+    - [[#screenshots][Screenshots]]
+    - [[#transclusion][Transclusion]]
   - [[#productivity--knowledge-management][Productivity & Knowledge management]]
     - [[#capture-templates--various-settings][Capture templates & various settings]]
     - [[#trello-sync][Trello sync]]
     - [[#org-ql][org-ql]]
     - [[#custom-agendas][Custom agendas]]
-    - [[#review-workflow][Review workflow]]
-      - [[#data-from-git--org-roam][Data from git & org-roam]]
-      - [[#data-from-org-journal][Data from org-journal]]
-      - [[#data-from-org-agenda-via-org-ql][Data from org-agenda via org-ql]]
-      - [[#capture-template][Capture template]]
     - [[#org-journal][Org Journal]]
     - [[#org-roam][Org Roam]]
-      - [[#org-roam-ui][org-roam-ui]]
-      - [[#org-roam-protocol][org-roam-protocol]]
+    - [[#review-workflow][Review workflow]]
     - [[#org-ref][org-ref]]
     - [[#org-roam-bibtex][org-roam-bibtex]]
+    - [[#org-contacts][org-contacts]]
     - [[#managing-tables][Managing tables]]
   - [[#ui][UI]]
     - [[#off-instant-equations-preview][(OFF) Instant equations preview]]
     - [[#latex-fragments][LaTeX fragments]]
     - [[#better-headers][Better headers]]
-    - [[#org-agenda-icons][Org Agenda Icons]]
+    - [[#override-colors][Override colors]]
   - [[#export][Export]]
     - [[#general-settings][General settings]]
     - [[#hugo][Hugo]]
@@ -255,12 +220,9 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#html-export][Html export]]
     - [[#latex][LaTeX]]
   - [[#keybindings--stuff][Keybindings & stuff]]
+    - [[#general-keybindings][General keybindings]]
     - [[#copy-a-link][Copy a link]]
     - [[#open-a-file-from-org-directory][Open a file from org-directory]]
-  - [[#presentations][Presentations]]
-  - [[#tools][Tools]]
-    - [[#toc][TOC]]
-    - [[#screenshots][Screenshots]]
   - [[#system-configuration][System configuration]]
     - [[#tables-for-guix-dependencies][Tables for Guix Dependencies]]
     - [[#noweb-evaluations][Noweb evaluations]]
@@ -274,10 +236,6 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#bookmarks][Bookmarks]]
   - [[#shells][Shells]]
     - [[#vterm][vterm]]
-      - [[#configuration][Configuration]]
-      - [[#subterminal][Subterminal]]
-      - [[#dired-integration][Dired integration]]
-      - [[#with-editor-integration][With-editor integration]]
     - [[#eshell][Eshell]]
   - [[#managing-dotfiles][Managing dotfiles]]
     - [[#open-emacs-config][Open Emacs config]]
@@ -286,20 +244,11 @@ If however, by some twist of fate, this document is one of the first things you 
   - [[#internet--multimedia][Internet & Multimedia]]
     - [[#notmuch][Notmuch]]
     - [[#elfeed][Elfeed]]
-      - [[#some-additions][Some additions]]
-      - [[#custom-faces][Custom faces]]
-      - [[#elfeed-score][elfeed-score]]
-      - [[#youtube--emms][YouTube & EMMS]]
     - [[#emms][EMMS]]
-      - [[#mpd][MPD]]
-      - [[#mpv][MPV]]
-      - [[#cache-cleanup][Cache cleanup]]
-      - [[#fetching-lyrics][Fetching lyrics]]
-      - [[#some-keybindings][Some keybindings]]
-      - [[#emms--mpd-fixes][EMMS & mpd Fixes]]
     - [[#ytel][ytel]]
     - [[#eww][EWW]]
     - [[#erc][ERC]]
+    - [[#off-jabber][(OFF) jabber]]
     - [[#google-translate][Google Translate]]
   - [[#reading-documentation][Reading documentation]]
     - [[#tldr][tldr]]
@@ -314,20 +263,29 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#guix][Guix]]
   - [[#productivity][Productivity]]
     - [[#pomm][pomm]]
+    - [[#hledger][hledger]]
+    - [[#calendar][Calendar]]
+  - [[#fun][Fun]]
+    - [[#discord-integration][Discord integration]]
+    - [[#snow][Snow]]
+    - [[#power-mode][Power mode]]
+    - [[#redacted][Redacted]]
+    - [[#zone][Zone]]
 - [[#guix-settings][Guix settings]]
 :END:
 * Some remarks
 I decided not to keep configs for features that I do not use anymore because this config is already huge. But here are the last commits that had these features presented.
 
-| Feature      | Last commit                              |
-|--------------+------------------------------------------|
-| treemacs     | 3d87852745caacc0863c747f1fa9871d367240d2 |
-| tab-bar.el   | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
-| spaceline    | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
-| code compass | 8594d6f53e42c70bbf903e168607841854818a38 |
-| vue-mode     | 8594d6f53e42c70bbf903e168607841854818a38 |
-| svelte-mode  | 8594d6f53e42c70bbf903e168607841854818a38 |
-| pomidor      | 8594d6f53e42c70bbf903e168607841854818a38 |
+| Feature          | Last commit                              |
+|------------------+------------------------------------------|
+| org-roam dailies | d2648918fcc338bd5c1cd6d5c0aa60a65077ccf7 |
+| treemacs         | 3d87852745caacc0863c747f1fa9871d367240d2 |
+| tab-bar.el       | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
+| spaceline        | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
+| code compass     | 8594d6f53e42c70bbf903e168607841854818a38 |
+| vue-mode         | 8594d6f53e42c70bbf903e168607841854818a38 |
+| svelte-mode      | 8594d6f53e42c70bbf903e168607841854818a38 |
+| pomidor          | 8594d6f53e42c70bbf903e168607841854818a38 |
 * Bootstrap
 Setting up the environment, performance tuning and a few basic settings.
 
@@ -4038,7 +3996,7 @@ Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I sti
 *** Org Journal
 [[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining a journal in org mode. I want(ed) to have its entries separate from my knowledge base.
 
-For now I've switched to Org Roam Dailies, but keeping it here because I'm not yet settled on my journaling workflow.
+I've tried switching to Org Roam Dailies, but in the end decided that org-journal fits my workflow better.
 
 #+begin_src emacs-lisp
 (use-package org-journal
@@ -4060,15 +4018,33 @@ For now I've switched to Org Roam Dailies, but keeping it here because I'm not y
   "s" 'org-journal-search)
 #+end_src
 
-Also, I want to store some information in the journal as properties of the record. So below is a function that does just that.
+[[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]] is my package that implements a tagging system for org-journal.
+#+begin_src emacs-lisp
+(use-package org-journal-tags
+  :straight (:fetcher git :repo "https://sqrtminusone.xyz/git/SqrtMinusOne/org-journal-tags.git")
+  :after (org-journal)
+  :config
+  (org-journal-tags-autosync-mode)
+  (my-leader-def
+    :infix "oj"
+    "s" #'org-journal-tags-status)
+  (general-define-key
+   :keymaps 'org-journal-mode-map
+   "C-c t" #'org-journal-tags-insert-tag))
+#+end_src
+
+I also want to store some information in the journal as properties of the record. So below is a function that does just that.
 
 As of now, it stores Emacs version, hostname, location, and current EMMS track if there is one.
 #+begin_src emacs-lisp
 (defun my/set-journal-header ()
   (org-set-property "Emacs" emacs-version)
   (org-set-property "Hostname" system-name)
+  (org-journal-tags-prop-apply-delta :add (list (format "host.%s" (system-name))))
   (when (boundp 'my/location)
     (org-set-property "Location" my/location))
+  (when (boundp 'my/loc-tag)
+    (org-journal-tags-prop-apply-delta :add (list my/loc-tag)))
   (when (fboundp 'emms-playlist-current-selected-track)
     (let ((track (emms-playlist-current-selected-track)))
       (when track
@@ -4119,7 +4095,7 @@ References:
   (org-roam-setup)
   (require 'org-roam-protocol))
 #+end_src
-**** Capture templates and dailies
+**** Capture templates
 Capture templates for =org-roam-capture=. As for now, nothing too complicated here.
 
 #+begin_src emacs-lisp
@@ -4127,14 +4103,13 @@ Capture templates for =org-roam-capture=. As for now, nothing too complicated he
       `("p" "project" plain ,(string-join
                               '("%?"
                                 "* Tasks"
-                                "** TODO Add initials tasks"
-                                "* Log        :log_here:")
+                                "** TODO Add initial tasks")
                               "\n")
         :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
                            ,(string-join
                              '("#+title: ${title}"
                                "#+category: ${title}"
-                               "#+filetags: :org:log_here:"
+                               "#+filetags: :org:"
                                "#+TODO: TODO(t) NEXT(n) HOLD(h) | NO(q) DONE(d)"
                                "#+TODO: FUTURE(f) | PASSED(p)"
                                "#+STARTUP: logdone overview")
@@ -4149,69 +4124,6 @@ Capture templates for =org-roam-capture=. As for now, nothing too complicated he
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
          :unnarrowed t)
         ,my/org-roam-project-template))
-#+end_src
-**** Org Roam Dailies
-=org-roam-dailies= provides journaling capabilities similar to [[https://github.com/bastibe/org-journal][Org Journal]]. I was using the latter for half a year or so but decided to try to use Org Roam for this purpose.
-
-Org Roam has an advantage that, well, its entries form a database, which means I can look for backlinks to the journal and such.
-
-I'd like to have my entries encrypted, so I save them with =.org.gpg=. Org Roam still caches them in plaintext though, but at least that way records can be safely pushed to a repository.
-
-Similar to my previous workflow with Org Journal, I want to have some information on what is happening when I make a record. So, here is a function to figure out that a track played by EMMS:
-#+begin_src emacs-lisp
-(defun my/make-daily-header-track ()
-  (when (fboundp 'emms-playlist-current-selected-track)
-    (let ((track (emms-playlist-current-selected-track)))
-      (when track
-        (let ((album (cdr (assoc 'info-album track)))
-              (artist (or (cdr (assoc 'info-albumartist track))
-                          (cdr (assoc 'info-album track))))
-              (title (cdr (assoc 'info-title track)))
-              (string ""))
-          (when artist
-            (setq string (concat string "[" artist "] ")))
-          (when album
-            (setq string (concat string album " - ")))
-          (when title
-            (setq string (concat string title)))
-          (when (> (length string) 0)
-            string))))))
-#+end_src
-
-And here is a function to make a corresponding property drawer.
-#+begin_src emacs-lisp
-(defun my/make-daily-header ()
-  (string-join
-   (seq-filter
-    #'identity
-    `(":PROPERTIES:"
-      ,(format ":Emacs:      %s" emacs-version)
-      ,(format ":Hostname:   %s" system-name)
-      ,(when (boundp 'my/location)
-         (format ":Location:   %s" my/location))
-      ,(when-let (track (my/make-daily-header-track))
-         (format ":EMMS_Track: %s" track))
-      ":END:"))
-   "\n"))
-#+end_src
-
-Now we can define a capture template for =org-roam-dailies=. This one creates one file for one day; I tried to make something like one per week, but apparently, Org Roam is keen to assign one ID for one file, which is not quite what I want.
-
-#+begin_src emacs-lisp
-(setq org-roam-dailies-capture-templates
-      `(("d" "default" entry
-         ,(string-join
-           '("* %<%H:%M>"
-             "%(my/make-daily-header)"
-             "%?")
-           "\n")
-         :target
-         (file+head "%<%Y-%m-%d>.org.gpg"
-                    ,(string-join
-                      '("#+TITLE: %<%Y-%m-%d, %A>"
-                        "#+FILETAGS: log"
-                        "")
-                      "\n")))))
 #+end_src
 **** Managing projects in Org Roam
 Org Roam is also pretty good for managing projects.
@@ -4298,219 +4210,10 @@ Because in the previous section I've added a lot of stuff to the =org-refile-tar
  :keymaps 'org-mode-map
  "C-c C-w" #'my/org-target-refile)
 #+end_src
-**** Automatic transclusion for Dailies
-I've been using org-journal for quite some time, and while it's great, I don't like its linear structure too much. I have all kinds of stuff written there - things related to my job, various personal projects, etc, and it's pretty hard to query a specific thing.
-
-Now that I migrated all the things I've been working on to Org Roam, I can reference some Roam nodes and check backlinks for a particular node, e.g. for a project. But even that isn't quite good enough, because I'd also like to search the references and somehow see the list of records related just to this particular node.
-
-So, I've come up with the following solution. I'll use the following syntax in the daily note:
-#+begin_example
-[<link>]: <content>
-#+end_example
-
-And if that node has a filetag =log_here=, this line will be transcluded under a particular header in that node:
-#+begin_example
-,* <log-header>             :log_here:
-...
-,** <daily-header>
-,#+transclude: <link>
-#+end_example
-
-So, first, we have to extract all such links from the daily file. The function below will return a list of items like =(node line-number line-count title)=
-#+begin_src emacs-lisp
-(defun my/org-roam-daily-extract-target-links ()
-  (save-excursion
-    (goto-char (point-min))
-    (cl-loop while (not (eobp))
-             do (forward-line 1)
-             for match = (save-excursion
-                           (search-forward-regexp
-                            (rx "[" (* nonl) "]")
-                            (line-end-position)
-                            t))
-             for node = (when-let (link (org-element-link-parser))
-                          (when (string-equal (plist-get (cadr link) :type) "id")
-                            (when-let (node (org-roam-node-from-id
-                                             (plist-get (cadr link) :path)))
-                              (and (member "log_here" (org-roam-node-tags node))
-                                   node))))
-             if (and node match)
-             collect (list
-                      node
-                      (line-number-at-pos)
-                      ;; Hardcoded for now
-                      1
-                      (let ((title
-                             (save-excursion
-                               (org-back-to-heading)
-                               (org-element-property :title (org-element-at-point)))))
-                        (if (stringp title)
-                            title
-                          (substring-no-properties (car title))))))))
-#+end_src
-
-And this is a good point to introduce a function that inserts a link which can be found by the function above:
-#+begin_src emacs-lisp
-(defun my/org-roam-node-insert-log ()
-  (interactive)
-  (beginning-of-line)
-  (org-roam-node-insert
-   (my/org-roam-filter-by-tag :include ("log_here")))
-  (insert ": "))
-#+end_src
-
-Second, insert all these links to the target node. The daily header is just a title of the current node:
-#+begin_src emacs-lisp
-(defun my/org-roam-daily-get-transclude-header ()
-  (let ((kws (org-collect-keywords '("TITLE"))))
-    (unless kws
-      (error "No title found!"))
-    (cadar kws)))
-#+end_src
-
-This daily header should be inserted under the log header, which is a header with =log_here= tag. Let's make a function to find that header:
-#+begin_src emacs-lisp
-(defun my/org-roam-daily-find-log-header ()
-  (let ((log-header nil))
-    (org-map-entries
-     (lambda ()
-       (let* ((headline (org-element-at-point))
-              (tags (mapcar #'substring-no-properties
-                            (org-element-property :tags headline))))
-         (when (member "log_here" tags)
-           (setq log-header headline)))))
-    (unless log-header
-      (error "Header with :log_here: tag not found"))
-    log-header))
-#+end_src
-
-Here is a bit of craziness. I want the list of daily headers to be ordered alphabetically. So, I need a function that inserts a header while preserving the alphabetical order.
-#+begin_src emacs-lisp
-(defun my/org-insert-alphabetical-header (root-header target-header)
-  (let ((target-headline)
-        (last-header "")
-        (last-headline)
-        (first-headline))
-    (goto-char (org-element-property :begin root-header))
-    ;; Map the tree under root-header
-    (org-map-tree
-     (lambda ()
-       (let* ((headline (org-element-at-point))
-              (header-raw (org-element-property :title headline))
-              (header (if (stringp header-raw)
-                          header-raw
-                        (substring-no-properties (car header-raw)))))
-         (when (/= (point) (org-element-property :begin root-header))
-           ;; Try to find a heading with title equal to target-header
-           (when (string-equal target-header header)
-             (setq target-headline headline))
-           ;; Or try to find a heading < target-header
-           (when (and (string-lessp header target-header)
-                      (string-greaterp header last-header))
-             (setq last-header header)
-             (setq last-headline headline))
-           (unless first-headline
-             (setq first-headline headline))))))
-    (if target-headline
-        ;; If a matching header is found, clear its contents
-        (let ((content-start (save-excursion
-                               (goto-char
-                                (org-element-property :begin target-headline))
-                               (forward-line 1)
-                               (point)))
-              (content-end (org-element-property :end target-headline)))
-          (if (<= content-start content-end)
-              (progn
-                (delete-region content-start content-end)
-                (goto-char (org-element-property :begin target-headline))
-                (end-of-line)
-                (insert "\n"))
-            (goto-char content-end)))
-      ;; If a heading < target-header is found, insert the new one just after it
-      (if last-headline
-          (progn
-            (goto-char (org-element-property :begin last-headline))
-            (org-insert-heading-respect-content)
-            (insert target-header)
-            (insert "\n"))
-        ;; If neither is found, insert a new heading before the first headline
-        (if first-headline
-            (progn
-              (goto-char (org-element-property :begin first-headline))
-              (org-insert-heading)
-              (insert target-header)
-              (insert "\n"))
-          ;; If there is not even a first heading, that means the target header is empty
-          (goto-char (org-element-property :begin root-header))
-          (org-insert-heading-respect-content)
-          (org-do-demote)
-          (insert target-header)
-          (insert "\n"))))))
-#+end_src
-
-With that out of the way, we can format the list generated by =my/org-roam-daily-extract-target-links=:
-#+begin_src emacs-lisp
-(defun my/org-roam-daily-format-target-links (links path)
-  (string-trim
-   (cl-loop for i from 0 to (length links)
-            for link in links
-            for line-number = (nth 1 link)
-            for line-count = (nth 2 link)
-            for title = (nth 3 link)
-            for prev-title = (if (> i 0) (nth 3 (nth (1- i) links)) "")
-            concat (string-join
-                    (seq-filter
-                     #'identity
-                     `(,(unless (string-equal title prev-title)
-                          (format "%s:" title))
-                       ,(format "#+transclude: [[file:%s]] :lines %d-%d"
-                                path
-                                line-number
-                                (+ line-number line-count -1))
-                       ""
-                       ""))
-                    "\n"))))
-#+end_src
-
-Put it all together. Yay!
-#+begin_src emacs-lisp
-(defun my/org-roam-daily-dispatch-transclusions ()
-  (interactive)
-  (let* ((targets (my/org-roam-daily-extract-target-links))
-         (target-groups
-          (seq-group-by
-           (lambda (item)
-             (org-roam-node-file (nth 0 item)))
-           targets))
-         (header (my/org-roam-daily-get-transclude-header))
-         (path (buffer-file-name)))
-    (dolist (group target-groups)
-      (with-temp-file (car group)
-        (insert-file-contents (car group))
-        (org-mode)
-        (my/org-insert-alphabetical-header
-         (my/org-roam-daily-find-log-header)
-         header)
-        (insert (my/org-roam-daily-format-target-links (cdr group) path))))))
-#+end_src
-
-Finally, let's put this function into the save hook:
-#+begin_src emacs-lisp
-(defun my/org-roam-daily-transclusions-hook ()
-  (when (and
-         (fboundp 'org-roam-dailies--daily-note-p)
-         (org-roam-dailies--daily-note-p))
-    (my/org-roam-daily-dispatch-transclusions)
-    (message "Tranclusions dispatched!")))
-
-(with-eval-after-load 'org-roam
-  (add-hook 'after-save-hook #'my/org-roam-daily-transclusions-hook))
-#+end_src
 **** Keybindings
 A set of keybindings to quickly access things in Org Roam.
 
-As of now, I have 3 categories of nodes in Org Roam:
-- dailies (tag =log=)
+As of now, I have 2 categories of nodes in Org Roam:
 - project notes (tag =org=)
 - Zettelkasten, which is everything else.
 
@@ -4521,14 +4224,7 @@ So I want to have a separate fuzzy search for every category. =my/org-roam-find-
   (org-roam-node-find
    nil
    nil
-   (my/org-roam-filter-by-tag :exclude ("log" "org"))))
-
-(defun my/org-roam-find-daily ()
-  (interactive)
-  (org-roam-node-find
-   nil
-   nil
-   (my/org-roam-filter-by-tag :include ("log"))))
+   (my/org-roam-filter-by-tag :exclude ("org"))))
 #+end_src
 
 And here are keybindings.
@@ -4542,14 +4238,6 @@ And here are keybindings.
   "g" 'org-roam-graph
   "c" 'org-roam-capture
   "b" 'org-roam-buffer-toggle)
-
-(my-leader-def
-  :infix "od"
-  "" '(:which-key "org-roam-dailies")
-  "d" #'org-roam-dailies-capture-today
-  "o" #'org-roam-dailies-goto-today
-  "f" #'my/org-roam-find-daily
-  "i" #'my/org-roam-node-insert-log)
 
 (with-eval-after-load 'org-roam
   (general-define-key
@@ -4657,13 +4345,10 @@ So here is a list of plists that sets these categories. The properties are as fo
                  :tags (:include ("org"))
                  :title "Changed Project Entries")
         (:status added
-                 :tags (:include ("log") :exclude ("org" "log_here"))
-                 :title "New Dailies")
-        (:status added
-                 :tags (:exclude ("log" "org"))
+                 :tags (:exclude ("org"))
                  :title "New Zettelkasten Entries")
         (:status changed
-                 :tags (:exclude ("log" "org"))
+                 :tags (:exclude ("org"))
                  :title "Changed Zettelkasten Entries")))
 #+end_src
 
@@ -6393,6 +6078,20 @@ ZNC support. Seems to provide a few nice features for ZNC.
         `(("sqrtminusone.xyz" 6697 t
            ((libera "sqrtminusone"
                     ,(password-store-get "Selfhosted/ZNC")))))))
+#+end_src
+*** OFF (OFF) jabber
+#+begin_src emacs-lisp :tangle no
+(use-package srv
+  :straight t
+  :defer t)
+
+(use-package fsm
+  :straight t
+  :defer t)
+
+(use-package emacs-jabber
+  :straight (jabber :host nil :repo
+                    "https://tildegit.org/wgreenhouse/emacs-jabber"))
 #+end_src
 *** Google Translate
 Emacs interface to Google Translate.
