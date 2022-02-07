@@ -4015,7 +4015,7 @@ I've tried switching to Org Roam Dailies, but in the end decided that org-journa
   "" '(:which-key "org-journal")
   "j" 'org-journal-new-entry
   "o" 'org-journal-open-current-journal-file
-  "s" 'org-journal-search)
+  "s" 'org-journal-tags-status)
 #+end_src
 
 [[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]] is my package that implements a tagging system for org-journal.
@@ -4025,9 +4025,6 @@ I've tried switching to Org Roam Dailies, but in the end decided that org-journa
   :after (org-journal)
   :config
   (org-journal-tags-autosync-mode)
-  (my-leader-def
-    :infix "oj"
-    "s" #'org-journal-tags-status)
   (general-define-key
    :keymaps 'org-journal-mode-map
    "C-c t" #'org-journal-tags-insert-tag))
@@ -5737,7 +5734,10 @@ References:
     "q" 'emms-stop
     "h" 'emms-previous
     "l" 'emms-next
-    "u" 'emms-player-mpd-connect)
+    "u" 'emms-player-mpd-connect
+    "ww" 'emms-lyrics
+    "wb" 'emms-lyrics-toggle-display-on-minibuffer
+    "wm" 'emms-lyrics-toggle-display-on-modeline)
   (setq emms-mode-line-icon-enabled-p nil)
   :config
   (require 'emms-setup)
@@ -5886,7 +5886,29 @@ My package for fetching EMMS lyrics and album covers.
    :keymaps 'emms-browser-mode-map
    "gl" 'lyrics-fetcher-emms-browser-show-at-point
    "gC" 'lyrics-fetcher-emms-browser-fetch-covers-at-point
-   "go" 'lyrics-fetcher-emms-browser-open-large-cover-at-point))
+   "go" 'lyrics-fetcher-emms-browser-open-large-cover-at-point)
+
+  (advice-add #'emms-lyrics-mode-line
+              :override #'my/emms-lyrics-mode-line-override))
+#+end_src
+
+Also advice to change the location of the lyrics in the mode line.
+#+begin_src emacs-lisp
+(defun my/emms-lyrics-mode-line-override ()
+  (add-to-list 'global-mode-string
+               '(:eval emms-lyrics-mode-line-string)))
+
+(defun my/emms-lyrics-restore-mode-line-override ()
+  "Restore the mode line."
+  (setq global-mode-string
+	    (remove '(:eval emms-lyrics-mode-line-string) global-mode-string))
+  (force-mode-line-update))
+
+(with-eval-after-load 'emms-lyrics
+  (advice-add #'emms-lyrics-mode-line
+              :override #'my/emms-lyrics-mode-line-override)
+  (advice-add #'emms-lyrics-restore-mode-line
+              :override #'my/emms-lyrics-restore-mode-line-override))
 #+end_src
 **** Some keybindings
 #+begin_src emacs-lisp

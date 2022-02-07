@@ -2769,16 +2769,13 @@ Returns (<buffer> . <workspace-index>) or nil."
   "" '(:which-key "org-journal")
   "j" 'org-journal-new-entry
   "o" 'org-journal-open-current-journal-file
-  "s" 'org-journal-search)
+  "s" 'org-journal-tags-status)
 
 (use-package org-journal-tags
   :straight (:fetcher git :repo "https://sqrtminusone.xyz/git/SqrtMinusOne/org-journal-tags.git")
   :after (org-journal)
   :config
   (org-journal-tags-autosync-mode)
-  (my-leader-def
-    :infix "oj"
-    "s" #'org-journal-tags-status)
   (general-define-key
    :keymaps 'org-journal-mode-map
    "C-c t" #'org-journal-tags-insert-tag))
@@ -4090,7 +4087,26 @@ Returns (<buffer> . <workspace-index>) or nil."
    :keymaps 'emms-browser-mode-map
    "gl" 'lyrics-fetcher-emms-browser-show-at-point
    "gC" 'lyrics-fetcher-emms-browser-fetch-covers-at-point
-   "go" 'lyrics-fetcher-emms-browser-open-large-cover-at-point))
+   "go" 'lyrics-fetcher-emms-browser-open-large-cover-at-point)
+
+  (advice-add #'emms-lyrics-mode-line
+              :override #'my/emms-lyrics-mode-line-override))
+
+(defun my/emms-lyrics-mode-line-override ()
+  (add-to-list 'global-mode-string
+               '(:eval emms-lyrics-mode-line-string)))
+
+(defun my/emms-lyrics-restore-mode-line-override ()
+  "Restore the mode line."
+  (setq global-mode-string
+	    (remove '(:eval emms-lyrics-mode-line-string) global-mode-string))
+  (force-mode-line-update))
+
+(with-eval-after-load 'emms-lyrics
+  (advice-add #'emms-lyrics-mode-line
+              :override #'my/emms-lyrics-mode-line-override)
+  (advice-add #'emms-lyrics-restore-mode-line
+              :override #'my/emms-lyrics-restore-mode-line-override))
 
 (with-eval-after-load 'emms-browser
   (general-define-key
