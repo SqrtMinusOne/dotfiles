@@ -29,7 +29,7 @@ At the moment of this writing, this "almost anything" includes:
 - *X Window management*, with EXWM. So I could say I literally live in Emacs.
 - ...
 
-As I have hinted above, this file is a piece of literate configuration, which means that the actual code is interweaved with English-language commentary. One could argue that the commentary, not the code, is the citizen entity of the file.
+As I have hinted above, this file is a piece of literate configuration, which means that the actual code is interweaved with English-language commentary. One could argue that the commentary, not the code, is the primary entity of the file.
 
 But at the same time, the configuration is personal, so the primary benefactor of the literate structure is me. The commentary is primarily meant to capture my state of mind at the moment of writing the code, which is immensely helpful for maintaining the code in the future. So the quality and quantity of the commentary are... varying.
 
