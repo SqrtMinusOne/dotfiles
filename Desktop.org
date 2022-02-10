@@ -150,6 +150,7 @@ Most of the colors are from the Palenight theme. Colorcodes are taken from [[htt
 | light-magenta | color13 | #e1acff |
 | light-cyan    | color14 | #a3f7ff |
 | light-white   | color15 | #ffffff |
+| color-fg      |         | #000000 |
 
 The table above is the only source of truth for colors in this config.
 
@@ -181,14 +182,14 @@ However, I'd rather use the =Xresources= file wherever possible. Here is the cod
 
 #+NAME: get-xresources
 #+begin_src emacs-lisp :var table=colors
-(apply
- #'concat
- (mapcar
-  (lambda (elem)
-    (concat "*" (nth 1 elem) ": " (nth 2 elem) "\n"))
-  (seq-filter
-   (lambda (elem) (nth 1 elem))
-   table)))
+(mapconcat
+ (lambda (elem)
+   (concat "*" (nth 1 elem) ": " (nth 2 elem)))
+ (seq-filter
+  (lambda (elem) (and (nth 1 elem)
+                      (not (string-empty-p (nth 1 elem)))))
+  table)
+ "\n")
 #+end_src
 
 #+begin_src conf-xdefaults :noweb yes :tangle ~/.Xresources
@@ -249,9 +250,11 @@ x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
 image/png=feh.desktop
 image/jpg=feh.desktop
 image/jpeg=feh.desktop
+application/pdf=zathura-wrapper.desktop
 
 [Added Associations]
 x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop;
+application/pdf=zathura-wrapper.desktop
 #+end_src
 ** Device-specific settings
 | Guix dependency | Description                                |
@@ -1543,12 +1546,13 @@ First, let's use xrdb colors in polybar. To avoid code duplication, I generate t
 #+NAME: get-polybar-colors
 #+begin_src emacs-lisp :var table=colors :tangle no
 (mapconcat
-  (lambda (elem)
-    (format "%s = ${xrdb:%s}" (nth 0 elem) (nth 1 elem)))
-  (seq-filter
-   (lambda (elem) (nth 1 elem))
-   table)
-   "\n")
+ (lambda (elem)
+   (format "%s = ${xrdb:%s}" (nth 0 elem) (nth 1 elem)))
+ (seq-filter
+  (lambda (elem) (when-let (name (nth 1 elem))
+                   (not (string-empty-p name))))
+  table)
+ "\n")
 #+end_src
 
 #+begin_src conf-windows :noweb yes
@@ -1661,9 +1665,7 @@ Now, we need to generate a set of glyphs. The code below generates all the requi
                 (lambda (elt)
                   (not (or
                         (member (nth 1 elt) exclude)
-                        (not (string-equal (nth 3 elt) "+"))))))
-               ;; (seq-map (lambda (elt) (nth 1 elt)))
-               )))
+                        (not (string-equal (nth 3 elt) "+")))))))))
           (seq-uniq)))
        (color-changes nil))
   (dolist (e extra)
@@ -2298,6 +2300,7 @@ interval = 100000
 
 *** i3
 Show i3wm workspaces
+
 #+begin_src conf-windows
 [module/i3]
 type = internal/i3
@@ -3105,14 +3108,30 @@ wintypes:
 
 #+begin_src conf-space :noweb yes :tangle .config/zathura/zathurarc
 set abort-clear-search false
-set show-scrollbars true
-set show-h-scrollbar true
-set show-v-scrollbar true
+set guioptions cs
 set selection-clipboard clipboard
-set recolor-lightcolor <<get-color(name="black", quote=1)>>
 set recolor true
 map <C-r> set recolor false
 map <C-R> set recolor true
+
+set recolor-lightcolor <<get-color(name="black", quote=1)>>
+
+set completion-bg <<get-color(name="black", quote=1)>>
+set completion-fg <<get-color(name="white", quote=1)>>
+set completion-group-bg <<get-color(name="light-black", quote=1)>>
+set completion-group-fg <<get-color(name="white", quote=1)>>
+set completion-highlight-bg <<get-color(name="magenta", quote=1)>>
+set completion-highlight-fg <<get-color(name="black", quote=1)>>
+
+set inputbar-bg <<get-color(name="black", quote=1)>>
+set inputbar-fg <<get-color(name="light-magenta", quote=1)>>
+set statusbar-bg <<get-color(name="black", quote=1)>>
+set statusbar-fg <<get-color(name="light-magenta", quote=1)>>
+
+set notification-error-bg <<get-color(name="red", quote=1)>>
+set notification-error-fg <<get-color(name="color-fg", quote=1)>>
+set notification-warning-bg <<get-color(name="yellow", quote=1)>>
+set notification-warning-fg <<get-color(name="color-fg", quote=1)>>
 #+end_src
 
 For some reason zathura doesn't pick up the plugin directory, so I make a wrapper that sets the directory up:
@@ -3128,7 +3147,7 @@ Name=Zathura
 Exec=/home/pavel/bin/zathura-wrapper %U
 #+end_src
 
-Add the following like to the =mimeapps.list=
+Add the following line to the =mimeapps.list=
 #+begin_example
 application/pdf=zathura-wrapper.desktop
 #+end_example

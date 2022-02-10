@@ -1,11 +1,27 @@
 # [[file:../../Desktop.org::*Zathura][Zathura:1]]
 set abort-clear-search false
-set show-scrollbars true
-set show-h-scrollbar true
-set show-v-scrollbar true
+set guioptions cs
 set selection-clipboard clipboard
-set recolor-lightcolor "#292d3e"
 set recolor true
 map <C-r> set recolor false
 map <C-R> set recolor true
+
+set recolor-lightcolor "#292d3e"
+
+set completion-bg "#292d3e"
+set completion-fg "#d0d0d0"
+set completion-group-bg "#434758"
+set completion-group-fg "#d0d0d0"
+set completion-highlight-bg "#c792ea"
+set completion-highlight-fg "#292d3e"
+
+set inputbar-bg "#292d3e"
+set inputbar-fg "#e1acff"
+set statusbar-bg "#292d3e"
+set statusbar-fg "#e1acff"
+
+set notification-error-bg "#f07178"
+set notification-error-fg "#000000"
+set notification-warning-bg "#ffcb6b"
+set notification-warning-fg "#000000"
 # Zathura:1 ends here
