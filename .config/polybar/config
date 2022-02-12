@@ -21,13 +21,13 @@ background = ${xrdb:background}
 ; foreground = ${xrdb:foreground}
 ; Colors:2 ends here
 
-; [[file:../../Desktop.org::*Glyphs][Glyphs:1]]
+; [[file:../../Desktop.org::*Glyph settings][Glyph settings:1]]
 [glyph]
 gleft = 
 gright = 
-; Glyphs:1 ends here
+; Glyph settings:1 ends here
 
-; [[file:../../Desktop.org::*Modules][Modules:4]]
+; [[file:../../Desktop.org::*Generating glyphs][Generating glyphs:3]]
 [module/glyph-light-cyan--cyan]
 type = custom/text
 content-background = ${colors.light-cyan}
@@ -132,7 +132,7 @@ content-background = ${colors.background}
 content-foreground = ${colors.white}
 content = ${glyph.gright}
 content-font = 5
-; Modules:4 ends here
+; Generating glyphs:3 ends here
 
 ; [[file:../../Desktop.org::*Global bar config][Global bar config:1]]
 [bar/mybar]

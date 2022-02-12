@@ -16,6 +16,7 @@
     light-magenta: #e1acff;
     light-cyan: #a3f7ff;
     light-white: #ffffff;
+    color-fg: #000000;
     
 
     foreground:                  @white;

@@ -251,6 +251,56 @@ DIR is either 'left or 'right."
         (cl-loop while (windmove-find-other-window opposite-dir)
                  do (windmove-do-window-select opposite-dir))))))
 
+(use-package ivy-posframe
+  :straight t
+  :config
+  (setq ivy-posframe-parameters '((left-fringe . 10)
+                                  (right-fringe . 10)
+                                  (parent-frame . nil)))
+  (setq ivy-posframe-height-alist '((t . 20)))
+  (setq ivy-posframe-min-width 160)
+  (setq ivy-posframe-min-height 5)
+  (setq ivy-posframe-display-functions-alist
+        '((swiper . ivy-display-function-fallback)
+          (swiper-isearch . ivy-display-function-fallback)
+          (t . ivy-posframe-display)))
+  (ivy-posframe-mode 1))
+
+(defun my/advise-fn-suspend-follow-mouse (fn &rest args)
+  (let ((focus-follows-mouse nil)
+        (mouse-autoselect-window nil)
+        (pos (x-mouse-absolute-pixel-position)))
+    (unwind-protect
+        (apply fn args)
+      (x-set-mouse-absolute-pixel-position (car pos)
+                                           (cdr pos)))))
+
+(advice-add #'ivy-posframe--read :around #'my/advise-fn-suspend-follow-mouse)
+
+(defun my/setup-posframe (posframe)
+  (with-selected-frame posframe
+    (setq-local exwm-workspace-warp-cursor nil)
+    (setq-local mouse-autoselect-window nil)
+    (setq-local focus-follows-mouse nil))
+  posframe)
+
+(advice-add #'posframe--create-posframe :filter-return #'my/setup-posframe)
+
+(defun my/counsel-linux-app-format-function (name comment _exec)
+  (format "% -45s%s"
+          (propertize
+           (ivy--truncate-string name 45)
+           'face 'counsel-application-name)
+          (if comment
+              (concat ": " (ivy--truncate-string comment 100))
+            "")))
+
+(setq counsel-linux-app-format-function #'my/counsel-linux-app-format-function)
+
+(use-package ivy-pass
+  :straight (:host github :repo "SqrtMinusOne/ivy-pass")
+  :after (exwm))
+
 (defun my/exwm-quit ()
   (interactive)
   (when (or (not (eq (selected-window) (next-window)))
@@ -388,9 +438,10 @@ _d_: Discord
           (,(kbd "s-r") . my/exwm-resize-hydra/body)
   
           ;; Apps & stuff
-          (,(kbd "s-p") . ,(my/app-command "rofi -modi drun,run -show drun"))
+          (,(kbd "s-p") . counsel-linux-app)
+          (,(kbd "s-P") . async-shell-command)
           (,(kbd "s-;") . my/exwm-apps-hydra/body)
-          (,(kbd "s--") . ,(my/app-command "rofi-pass"))
+          (,(kbd "s--") . ivy-pass)
           (,(kbd "s-=") . ,(my/app-command "rofimoji"))
           (,(kbd "s-i") . ,(my/app-command "copyq menu"))
   

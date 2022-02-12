@@ -14,6 +14,9 @@ My general desktop environment configuration.
 
 Parts prefixed with (OFF) are not used, but kept for historic purposes. For some reason GitHub's org renderer ignores TODO status, hence such a prefix. Round brackets instead of square ones to prevent GitHub's org renderer from screwing up.
 
+References:
+- [[https://sqrtminusone.xyz/posts/2022-02-12-literate/][A few cases of literate configuration]]. My blog post that explains some of techniques from this file.
+
 #+TOC: headlines 6
 
 * Contents                                                         :noexport:
@@ -129,8 +132,9 @@ Parts prefixed with (OFF) are not used, but kept for historic purposes. For some
 :END:
 * Global customization
 ** Colors
-Most of the colors are from the Palenight theme. Colorcodes are taken from [[https://github.com/JonathanSpeek/palenight-iterm2][this repo]]:
+My favorite color theme is Palenight ([[https://github.com/JonathanSpeek/palenight-iterm2][color codes]]), and I want to have one source of truth for these colors. Except for Emacs itself, which has [[https://github.com/doomemacs/themes#theme-list][doom-palenight]] (and in which I occasionally switch to =doom-one-light=, e.g. when reading a long text), it can be done rather nicely with Org Mode.
 
+First, let's define a table with all the color codes:
 #+tblname: colors
 | color         | key     | value   |
 |---------------+---------+---------|
@@ -154,18 +158,13 @@ Most of the colors are from the Palenight theme. Colorcodes are taken from [[htt
 
 The table above is the only source of truth for colors in this config.
 
-The first way to get colors of it is to use the following noweb:
+Contents of this table can then be [[https://orgmode.org/manual/Environment-of-a-Code-Block.html][accessed from a code block]]. Let's define one to return the color code based on its name:
 #+NAME: get-color
 #+begin_src emacs-lisp :var table=colors name="black" quote=0
 (let ((color (seq-some (lambda (e) (and (string= name (car e)) (nth 2 e))) table)))
   (if (> quote 0)
       (concat "\"" color "\"")
     color))
-#+end_src
-
-Also, run the following to disable configuration for noweb evaluations:
-#+begin_src emacs-lisp
-(setq-local org-confirm-babel-evaluate nil)
 #+end_src
 
 Test:
@@ -198,6 +197,8 @@ However, I'd rather use the =Xresources= file wherever possible. Here is the cod
 *background: <<get-color(name="black")>>
 *foreground: <<get-color(name="white")>>
 #+end_src
+
+So, whenever a program is capable of reading =.Xresources=, it will get colors from there, otherwise, it will get colors from noweb expressions in the literate config. Thus, in both cases, the color is set in a single Org Mode table.
 *** Fonts
 Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting has to be unique for each machine, which means I cannot commit =Xresources= to the repo.
 
@@ -714,6 +715,88 @@ So here is my implementation of that. It always does =windmove-do-select-window=
         (cl-loop while (windmove-find-other-window opposite-dir)
                  do (windmove-do-window-select opposite-dir))))))
 #+end_src
+** Completions
+Setting up some completion interfaces that fit particularly well to use with EXWM. While rofi also works, I want to use Emacs functionality wherever possible to have one completion interface everywhere.
+
+*** ivy-posframe
+[[https://github.com/tumashu/ivy-posframe][ivy-posframe]] is an extension to show ivy candidates in a posframe.
+
+Take a look at [[https://github.com/ch11ng/exwm/issues/550][this issue]] in the EXWM repo about setting it up.
+
+#+begin_src emacs-lisp
+(use-package ivy-posframe
+  :straight t
+  :config
+  (setq ivy-posframe-parameters '((left-fringe . 10)
+                                  (right-fringe . 10)
+                                  (parent-frame . nil)))
+  (setq ivy-posframe-height-alist '((t . 20)))
+  (setq ivy-posframe-min-width 160)
+  (setq ivy-posframe-min-height 5)
+  (setq ivy-posframe-display-functions-alist
+        '((swiper . ivy-display-function-fallback)
+          (swiper-isearch . ivy-display-function-fallback)
+          (t . ivy-posframe-display)))
+  (ivy-posframe-mode 1))
+#+end_src
+**** Disable mouse movement
+*SOURCE*: https://github.com/ch11ng/exwm/issues/550#issuecomment-744784838
+
+#+begin_src emacs-lisp
+(defun my/advise-fn-suspend-follow-mouse (fn &rest args)
+  (let ((focus-follows-mouse nil)
+        (mouse-autoselect-window nil)
+        (pos (x-mouse-absolute-pixel-position)))
+    (unwind-protect
+        (apply fn args)
+      (x-set-mouse-absolute-pixel-position (car pos)
+                                           (cdr pos)))))
+
+(advice-add #'ivy-posframe--read :around #'my/advise-fn-suspend-follow-mouse)
+#+end_src
+**** Disable changing focus
+Not sure about that. The cursor occasionally changes focus when I'm exiting posframe, and this doesn't catch all the cases.
+
+#+begin_src emacs-lisp
+(defun my/setup-posframe (posframe)
+  (with-selected-frame posframe
+    (setq-local exwm-workspace-warp-cursor nil)
+    (setq-local mouse-autoselect-window nil)
+    (setq-local focus-follows-mouse nil))
+  posframe)
+
+(advice-add #'posframe--create-posframe :filter-return #'my/setup-posframe)
+#+end_src
+*** Linux app
+=counsel-linux-app= is a counsel interface to select a Linux desktop application.
+
+By default, it also shows paths from =/gnu/store=, so there is a custom formatter function.
+#+begin_src emacs-lisp
+(defun my/counsel-linux-app-format-function (name comment _exec)
+  (format "% -45s%s"
+          (propertize
+           (ivy--truncate-string name 45)
+           'face 'counsel-application-name)
+          (if comment
+              (concat ": " (ivy--truncate-string comment 100))
+            "")))
+
+(setq counsel-linux-app-format-function #'my/counsel-linux-app-format-function)
+#+end_src
+
+Also, by default it tries to launch stuff with =gtk-launch=, which is in the =gtk+= package.
+
+| Category     | Guix dependency |
+|--------------+-----------------|
+| desktop-misc | gtk+:bin        |
+*** ivy-pass
+[[https://github.com/SqrtMinusOne/ivy-pass][ivy-pass]] is another package of mine, inspired by [[https://github.com/carnager/rofi-pass][rofi-pass]].
+
+#+begin_src emacs-lisp
+(use-package ivy-pass
+  :straight (:host github :repo "SqrtMinusOne/ivy-pass")
+  :after (exwm))
+#+end_src
 ** Keybindings
 *** EXWM keybindings
 Setting keybindings for EXWM. This actually has to be in the =:config= block of the =use-package= form, that is it has to be run after EXWM is loaded, so I use noweb to put this block in the correct place.
@@ -804,9 +887,10 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "s-r") . my/exwm-resize-hydra/body)
 
         ;; Apps & stuff
-        (,(kbd "s-p") . ,(my/app-command "rofi -modi drun,run -show drun"))
+        (,(kbd "s-p") . counsel-linux-app)
+        (,(kbd "s-P") . async-shell-command)
         (,(kbd "s-;") . my/exwm-apps-hydra/body)
-        (,(kbd "s--") . ,(my/app-command "rofi-pass"))
+        (,(kbd "s--") . ivy-pass)
         (,(kbd "s-=") . ,(my/app-command "rofimoji"))
         (,(kbd "s-i") . ,(my/app-command "copyq menu"))
 
@@ -971,7 +1055,7 @@ And the EXWM config itself.
 
 =i3lock= is disabled because the global one has to be used.
 
-[[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], but i3 seems to fit my workflow best.
+[[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], +but i3 seems to fit my workflow best+ and decided to switch to EXWM. This section is kept just in case.
 
 [[https://github.com/Airblader/i3][i3-gaps]] is an i3 fork with a few features like window gaps. I like to enable inner gaps when there is at least one container in a workspace.
 
@@ -1533,15 +1617,21 @@ exec "xmodmap ~/.Xmodmap"
 
 [[https://github.com/polybar/polybar][Polybar]] is a nice-looking, WM-agnostic statusbar program.
 
-I switched to polybar because I wanted to try out some WMs other than i3, but decided to stick with i3 for now.
++I switched to polybar because I wanted to try out some WMs other than i3, but decided to stick with i3 for now.+ Still using polybar with EXWM and pretty happy with it.
 
 Don't forget to install the Google Noto Color Emoji font. Guix package with all Noto fonts is way too large.
 
 References:
 - [[https://github.com/polybar/polybar/wiki][polybar docs]]
 ** General settings
+In relation to literate configuration, this is the most +crazy+ advanced case of the former so far in my config.
+
+My polybar has:
+- colors from the general color theme;
+- powerline-ish decorations between modules.
+
 *** Colors
-First, let's use xrdb colors in polybar. To avoid code duplication, I generate them via noweb.
+The "colors" part is straightforward enough. Polybar can use =Xresources=, so we just need to generate the appropriate bindings of Xresources to the polybar variables:
 
 #+NAME: get-polybar-colors
 #+begin_src emacs-lisp :var table=colors :tangle no
@@ -1562,31 +1652,28 @@ First, let's use xrdb colors in polybar. To avoid code duplication, I generate t
 background = ${xrdb:background}
 ; foreground = ${xrdb:foreground}
 #+end_src
-*** Glyphs
-Also, let's try to use some glyphs. The [[https://github.com/adi1090x/polybar-themes][polybar-themes]] repository can give some inspiration on what is possible, here I am replicating a powerline-ish look.
+*** Glyph settings
+As for the module decorations though, I find it ironic that with all this fancy rendering around I have to resort to Unicode glyphs.
 
-Although polybar makes it a bit more awkward than it could've been. The approach is to put a glyph between two blocks like this:
+Anyhow, the approach is to put a glyph between two blocks like this:
 #+begin_example
 block1  block2
 #+end_example
 
-And set the colors like that:
-|            | block1 | glyph | block 2 |
+And set the foreground and background colors like that:
+|            | block1 | glyph | block2  |
 |------------+--------+-------+---------|
 | foreground | F1     | B2    | F2      |
 | background | B1     | B1    | B2      |
 
-So, let's define the glyph symbols:
+So, that's a start. First, let's define the glyph symbols in the polybar config:
 #+begin_src conf-windows
 [glyph]
 gleft = 
 gright = 
 #+end_src
-*** Modules
-To make life a bit easier, I'll define a single source of truth for modules and their colors here.
-
-So, here is a table with all modules.
-
+*** Defining modules
+As we want to interweave polybar modules with these glyphs in the right order and with the right colors, it is reasonable to define a single source of truth:
 #+NAME: polybar_modules
 | Index | Module      | Color         | Glyph |
 |-------+-------------+---------------+-------|
@@ -1604,7 +1691,15 @@ So, here is a table with all modules.
 |    13 | aw-afk      | light-blue    | +     |
 |    14 | date        | blue          | +     |
 
-Some functions to use colors in the individual modules:
+Also excluding some modules from certain monitors, which for now is about excluding =battery= from the monitors of my desktop PC:
+
+#+NAME: polybar_modules_exclude
+| Monitor  | Exclude |
+|----------+---------|
+| DVI-D-0  | battery |
+| HDMI-A-0 | battery |
+
+Another thing we need to do is to set the color of modules in accordance with the =polybar_modules= table. The background can be determined from the =Color= column with the following code block:
 #+NAME: get-polybar-bg
 #+begin_src emacs-lisp :var table=polybar_modules module="pulseaudio"
 (format
@@ -1616,20 +1711,12 @@ Some functions to use colors in the individual modules:
    table)))
 #+end_src
 
-#+NAME: get-polybar-fg
-#+begin_src emacs-lisp module="pulseaudio"
-"${colors.black}"
-#+end_src
+That block is meant to be invoked in each module definition.
 
-Also, I want to exclude some modules from certain monitors and machines. For now this concerns just the battery module, so I exclude it from the monitors of my desktop PC. In future I may need to rework this to include hostname, but as long as all my machines have separate monitor names, it works fine.
+*** Generating glyphs
+To generate the required set of glyphs, we need a glyph for every possible combination of adjacent colors that can occur in polybar.
 
-#+NAME: polybar_modules_exclude
-| Monitor  | Exclude |
-|----------+---------|
-| DVI-D-0  | battery |
-| HDMI-A-0 | battery |
-
-Now, we need to generate a set of glyphs. The code below generates all the required glyhps so that every combination of neighoring colors in the bar had one.
+Most of these combinations can be inferred from the =polybar_modules= table, the rest are defined in another table:
 #+NAME: polybar_extra_colors
 | Color 1    | Color 2       |
 |------------+---------------|
@@ -1697,11 +1784,36 @@ content-font = 5"
    "\n"))
 #+end_src
 
+Here's a rough outline of how the code works:
+- =monitors= is a list of unique monitors in =exclude-table=
+- =exclude-combilnations= is a list of lists of module names to be excluded for each monitor
+- =module-glyphs-combinations= is a list of lists of actual modules for each monitor
+- =color-changes= is a list of unique adjacent colors across modules in all monitors
+
+Finally, =color-changes= is used to generate glyph modules that look like this:
+#+begin_src conf-windows :tangle no
+[module/glyph-light-cyan--cyan]
+type = custom/text
+content-background = ${colors.light-cyan}
+content-foreground = ${colors.cyan}
+content = ${glyph.gright}
+content-font = 5
+#+end_src
+
+As of now, 15 of such modules is generated.
+
+Include this to the polybar config itself:
 #+begin_src conf-windows :noweb yes
 <<polybar-generate-glyphs()>>
 #+end_src
+*** Generating set of modules
+To configure polybar itself, we need to generate a set of modules for each monitor.
 
-And a set of modules interweaved with corresponding glyphs for each monitor:
+The parameters here, excluding the two required tables, are:
+- =monitor= - the current monitor on which to filter out the blocks by the =polybar_modules_exclude= table,
+- =first-color= - the first color of the first glyph,
+- =last-color= - the second color of the last glyph.
+
 #+NAME: polybar-generate-modules
 #+begin_src emacs-lisp :var table=polybar_modules exclude-table=polybar_modules_exclude monitor="DVI-D-0" first-color="background" last-color="background"
 (let* ((exclude-modules
@@ -1730,6 +1842,8 @@ And a set of modules interweaved with corresponding glyphs for each monitor:
     " ")
    (unless (string-empty-p last-color) (format " glyph-%s--%s " prev-color last-color))))
 #+end_src
+
+The polybar config doesn't support conditional statements, but it does support environment variables, so I pass the parameters from in the launch script.
 
 *** Global bar config
 Global bar configuration.
@@ -3047,6 +3161,8 @@ fade-delta = 10
 fade-exclude = [
   "class_i = 'keynav'",
   "class_g = 'keynav'",
+  "class_i = 'emacs'",
+  "class_g = 'emacs'",
 ]
 #+end_src
 ** Opacity

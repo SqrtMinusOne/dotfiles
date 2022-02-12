@@ -20,5 +20,6 @@
    "light"
    "arandr"
    "xprop"
+   "gtk+:bin"
    "xss-lock"
    "xinit"))
