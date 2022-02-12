@@ -3962,7 +3962,10 @@ Returns (<buffer> . <workspace-index>) or nil."
     "q" 'emms-stop
     "h" 'emms-previous
     "l" 'emms-next
-    "u" 'emms-player-mpd-connect)
+    "u" 'emms-player-mpd-connect
+    "ww" 'emms-lyrics
+    "wb" 'emms-lyrics-toggle-display-on-minibuffer
+    "wm" 'emms-lyrics-toggle-display-on-modeline)
   (setq emms-mode-line-icon-enabled-p nil)
   :config
   (require 'emms-setup)

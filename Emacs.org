@@ -4868,13 +4868,51 @@ A function to open a file from =org-directory=, excluding a few directories like
 Functions related to literate configuration.
 
 *** Tables for Guix Dependencies
-A function to extract Guix dependencies from the org file.
+This section deals with using [[https://guix.gnu.org/en/cookbook/en/html_node/Advanced-package-management.html#Advanced-package-management][using profiles in GNU Guix]].
 
-- If column name matches =[G|g]uix.*dep=, its contents will be added to the result.
-- If =CATEGORY= is passed, a column with name =[C|c]ategory= will be used to filter results. That way one file can be used to produce multiple manifests.
-- If =CATEGORY= is not passed, entries with non-empty category will be filtered out
-- If there is a =[D|d]isabled= column, entries that have a non-empty value in this column will be filtered out.
+A "profile" in Guix is a way to group package installations. For instance, I have a "music" profile that has software like [[https://www.musicpd.org/][MPD]], [[https://github.com/ncmpcpp/ncmpcpp][ncmpcpp]] that I'm still occasionally using because of its tag editor, etc. Corresponding to that profile, there's a manifest named =music.scm= that looks like this:
+#+begin_src scheme
+(specifications->manifest
+ '(
+   "flac"
+   "cuetools"
+   "shntool"
+   "mpd-mpc"
+   "mpd-watcher"
+   "picard"
+   "ncmpcpp"
+   "mpd"))
+#+end_src
 
+I could generate this file with =org-babel= as any other, but that is often not so convenient. For example, I have a [[https://github.com/polybar/polybar][polybar]] module that uses [[https://github.com/risacher/sunwait][sunwait]] to show sunset and sunrise times, and ideally, I want to declare =sunwait= to be in the "desktop-polybar" profile in the same section that has the polybar module definition and the bash script.
+
+So here's an approach I came up with. The relevant section of the config looks like this:
+#+begin_example
+,*** sun
+| Category        | Guix dependency |
+|-----------------+-----------------|
+| desktop-polybar | sunwait         |
+
+Prints out the time of sunrise/sunset. Uses [[https://github.com/risacher/sunwait][sunwait]]
+
+,#+begin_src bash :tangle ./bin/polybar/sun.sh :noweb yes
+...script...
+,#+end_src
+
+,#+begin_src conf-windows :noweb yes
+...polybar module definition...
+,#+end_src
+#+end_example
+
+So =sunwait= is declared in an Org table with =Guix dependency= in the header. Such tables are spread through my configuration files.
+
+Thus I made a function that extracts packages from all such tables from the current Org buffer. The rules are as follows:
+- If a column name matches =[G|g]uix.*dep=, its contents are added to the result.
+- If =CATEGORY= is passed, a column with name =[C|c]ategory= is used to filter results. That way, one Org file can be used to produce multiple manifests.
+- If =CATEGORY= is not passed, entries with the non-empty category are filtered out
+- If there is a =[D|d]isabled= column, entries that have a non-empty value in this column are filtered out.
+
+And here is the implementation:
 #+begin_src emacs-lisp :noweb-ref guix-tables
 (defun my/extract-guix-dependencies (&optional category)
   (let ((dependencies '()))
@@ -4927,7 +4965,7 @@ A function to extract Guix dependencies from the org file.
     dependencies))
 #+end_src
 
-Now, join the dependencies list to make it compatible with Scheme:
+To make it work in the configuration, it is necessary to format the list so that Scheme could read it:
 #+begin_src emacs-lisp :noweb-ref guix-tables
 (defun my/format-guix-dependencies (&optional category)
   (mapconcat
@@ -4936,8 +4974,34 @@ Now, join the dependencies list to make it compatible with Scheme:
    "\n"))
 #+end_src
 
+And we need an Org snippet such as this:
+#+begin_example
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no :var category=""
+(my/format-guix-dependencies category)
+#+end_src
+#+end_example
+
+Now, creating a manifest, for example, for the =desktop-polybar= profile is as simple as:
+#+begin_example
+#+begin_src scheme :tangle ~/.config/guix/manifests/desktop-polybar.scm :noweb yes
+(specifications->manifest
+ '(
+   <<packages("desktop-polybar")>>))
+#+end_src
+#+end_example
+
+There's a newline symbol between "(" and =<<packages("desktop-polybar")>>= because whenever a noweb expression expands into multiple lines, for each new line noweb duplicates contents between the start of the line and the start of the expression.
+
+One reason this is so is to support languages where indentation is a part of the syntax, for instance, Python:
+#+begin_src python
+class TestClass:
+    <<class-contents>>
+#+end_src
+
+So every line of =<<class-contents>>= will be indented appropriately. In our case though, it is a minor inconvenience to be aware of.
 *** Noweb evaluations
-Turn off eval confirmations for configuration files.
+One note is that by default running these commands will require the user to confirm evaluation of each code block. To avoid that, I set =org-confirm-babel-evaluate= to =nil=:
 
 #+begin_src emacs-lisp
 (setq my/org-config-files
@@ -4989,6 +5053,7 @@ To launch from CLI, run:
 #+begin_src bash :tangle no
 emacs -Q --batch -l run-tangle.el
 #+end_src
+
 
 I have added this line to yadm's =post_alt= hook, so tangle is run after =yadm alt=
 * Applications
