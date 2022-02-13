@@ -850,7 +850,10 @@ influence of C1 on the result."
    (auto-dim-other-buffers-face
     :background (color-darken-name (doom-color 'bg) 3))))
 
-(set-frame-font "JetBrainsMono Nerd Font 10" nil t)
+(when (display-graphic-p)
+  (if (x-list-fonts "JetBrainsMono Nerd Font")
+      (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
+    (message "Install JetBrainsMono Nerd Font!")))
 
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
@@ -2255,6 +2258,8 @@ Returns (<buffer> . <workspace-index>) or nil."
   :defer t
   :init
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
+  (unless (file-exists-p org-directory)
+    (mkdir org-directory t))
   :config
   (setq org-startup-indented t)
   (setq org-return-follows-link t)
@@ -2690,6 +2695,9 @@ Returns (<buffer> . <workspace-index>) or nil."
         ("n" "note" entry (file my/generate-inbox-note-name)
          ,(concat "* %?\n"
                   "/Entered on/ %U"))))
+
+(unless (file-exists-p (concat org-directory "/trello"))
+  (mkdir (concat org-directory "/trello") t))
 
 (setq org-trello-files
       (thread-last (concat org-directory "/trello")
@@ -3775,7 +3783,10 @@ Returns (<buffer> . <workspace-index>) or nil."
   "cf" '(my/open-yadm-file :wk "yadm file"))
 
 (unless (or my/is-termux my/remote-server)
-  (load-file (expand-file-name "mail.el" user-emacs-directory)))
+  (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
+    (if (file-exists-p mail-file)
+        (load-file mail-file)
+      (message "Can't load mail.el"))))
 
 (use-package elfeed
   :straight (:repo "SqrtMinusOne/elfeed" :host github)

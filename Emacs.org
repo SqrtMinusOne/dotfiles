@@ -1651,7 +1651,10 @@ References:
 - [[https://nerdfonts.com][nerd fonts homepage]]
 
 #+begin_src emacs-lisp
-(set-frame-font "JetBrainsMono Nerd Font 10" nil t)
+(when (display-graphic-p)
+  (if (x-list-fonts "JetBrainsMono Nerd Font")
+      (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
+    (message "Install JetBrainsMono Nerd Font!")))
 #+end_src
 
 To make the icons work (e.g. in the Doom Modeline), run =M-x all-the-icons-install-fonts=. The package definition is somewhere later in the config.
@@ -3357,6 +3360,8 @@ Use the built-in org mode.
   :defer t
   :init
   (setq org-directory (expand-file-name "~/Documents/org-mode"))
+  (unless (file-exists-p org-directory)
+    (mkdir org-directory t))
   :config
   (setq org-startup-indented t)
   (setq org-return-follows-link t)
@@ -3914,6 +3919,9 @@ Some of the projects I'm participating in are managed via Trello, so I use [[htt
 Also, trello files are huge and have a lot of information and tasks which do not concern me, so I don't add them to =org-agenda-files=.
 
 #+begin_src emacs-lisp
+(unless (file-exists-p (concat org-directory "/trello"))
+  (mkdir (concat org-directory "/trello") t))
+
 (setq org-trello-files
       (thread-last (concat org-directory "/trello")
         (directory-files)
@@ -5565,7 +5573,10 @@ My notmuch config now resides in [[file:Mail.org][Mail.org]].
 
 #+begin_src emacs-lisp
 (unless (or my/is-termux my/remote-server)
-  (load-file (expand-file-name "mail.el" user-emacs-directory)))
+  (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
+    (if (file-exists-p mail-file)
+        (load-file mail-file)
+      (message "Can't load mail.el"))))
 #+end_src
 *** Elfeed
 [[https://github.com/skeeto/elfeed][elfeed]] is an Emacs RSS client.
@@ -6578,7 +6589,8 @@ Also, a function to copy a URL to the video under cursor.
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
-(my/format-guix-dependencies)
+(when (fboundp #'my/format-guix-dependencies)
+  (my/format-guix-dependencies))
 #+end_src
 
 #+begin_src scheme :tangle .config/guix/manifests/emacs.scm :noweb yes
