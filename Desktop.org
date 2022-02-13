@@ -30,19 +30,36 @@ References:
     - [[#colors-in-xresources][Colors in Xresources]]
     - [[#fonts][Fonts]]
   - [[#themes][Themes]]
+  - [[#mime][MIME]]
   - [[#device-specific-settings][Device-specific settings]]
 - [[#exwm][EXWM]]
-  - [[#xsession][Xsession]]
-  - [[#startup-apps][Startup apps]]
-  - [[#moving-windows][Moving windows]]
-  - [[#resizing-windows][Resizing windows]]
-  - [[#app-shortcuts][App shortcuts]]
-  - [[#move-workspace-to-another-monitor][Move workspace to another monitor]]
-  - [[#switch-to-the-opposite-monitor][Switch to the opposite monitor]]
-  - [[#switching-buffers][Switching buffers]]
+  - [[#startup--ui][Startup & UI]]
+    - [[#xsession][Xsession]]
+    - [[#startup-apps][Startup apps]]
+    - [[#pinentry][Pinentry]]
+    - [[#modeline][Modeline]]
+  - [[#windows][Windows]]
+    - [[#moving-windows][Moving windows]]
+    - [[#resizing-windows][Resizing windows]]
+    - [[#improving-splitting-windows][Improving splitting windows]]
+  - [[#perspectives][Perspectives]]
+  - [[#workspaces-and-multi-monitor-setup][Workspaces and multi-monitor setup]]
+    - [[#tracking-recently-used-workspaces][Tracking recently used workspaces]]
+    - [[#the-monitor-list][The monitor list]]
+    - [[#switch-to-another-monitor][Switch to another monitor]]
+    - [[#move-the-workspace-to-another-monitor][Move the workspace to another monitor]]
+    - [[#windmove-between-monitors][Windmove between monitors]]
+  - [[#completions][Completions]]
+    - [[#ivy-posframe][ivy-posframe]]
+    - [[#linux-app][Linux app]]
+    - [[#ivy-pass][ivy-pass]]
   - [[#keybindings][Keybindings]]
-  - [[#pinentry][Pinentry]]
-  - [[#modeline][Modeline]]
+    - [[#exwm-keybindings][EXWM keybindings]]
+    - [[#app-shortcuts][App shortcuts]]
+    - [[#locking-up][Locking up]]
+  - [[#fixes][Fixes]]
+    - [[#catch-and-report-all-errors-raised-when-invoking-command-hooks][Catch and report all errors raised when invoking command hooks]]
+    - [[#improve-floating-windows-behavior][Improve floating windows behavior]]
   - [[#exwm-config][EXWM config]]
 - [[#i3wm][i3wm]]
   - [[#general-settings][General settings]]
@@ -66,28 +83,33 @@ References:
   - [[#keyboard-layout][Keyboard Layout]]
   - [[#autostart][Autostart]]
 - [[#polybar][Polybar]]
-  - [[#launching][Launching]]
   - [[#general-settings][General settings]]
     - [[#colors][Colors]]
-    - [[#bar-config][Bar config]]
-  - [[#modules][Modules]]
-    - [[#ipstack-vpn][ipstack-vpn]]
-    - [[#weather][weather]]
-    - [[#aw-afk][aw-afk]]
-    - [[#pomm][pomm]]
-    - [[#sun][sun]]
-    - [[#sep][SEP]]
-    - [[#tsep][TSEP]]
-    - [[#i3][i3]]
-    - [[#xkeyboard][xkeyboard]]
-    - [[#mpd][mpd]]
+    - [[#glyph-settings][Glyph settings]]
+    - [[#defining-modules][Defining modules]]
+    - [[#generating-glyphs][Generating glyphs]]
+    - [[#generating-set-of-modules][Generating set of modules]]
+    - [[#global-bar-config][Global bar config]]
+    - [[#launch-script][Launch script]]
+  - [[#individual-modules][Individual modules]]
     - [[#pulseaudio][pulseaudio]]
+    - [[#mpd][mpd]]
     - [[#cpu][cpu]]
     - [[#ram-memory][ram-memory]]
     - [[#swap-memory][swap-memory]]
     - [[#network][network]]
-    - [[#date][date]]
+    - [[#ipstack-vpn][ipstack-vpn]]
+    - [[#openvpn][openvpn]]
+    - [[#xkeyboard][xkeyboard]]
     - [[#battery][battery]]
+    - [[#weather][weather]]
+    - [[#sun][sun]]
+    - [[#aw-afk][aw-afk]]
+    - [[#date][date]]
+    - [[#pomm][pomm]]
+    - [[#sep][SEP]]
+    - [[#tsep][TSEP]]
+    - [[#i3][i3]]
 - [[#rofi][Rofi]]
   - [[#theme][Theme]]
   - [[#scripts][Scripts]]
@@ -126,6 +148,7 @@ References:
   - [[#xmodmap][Xmodmap]]
   - [[#vpn][VPN]]
   - [[#davmail][Davmail]]
+  - [[#sqrt-data][sqrt-data]]
   - [[#shepherd-config][Shepherd config]]
   - [[#sync][Sync]]
 - [[#guix-settings][Guix settings]]
@@ -789,12 +812,12 @@ Also, by default it tries to launch stuff with =gtk-launch=, which is in the =gt
 | Category     | Guix dependency |
 |--------------+-----------------|
 | desktop-misc | gtk+:bin        |
-*** ivy-pass
-[[https://github.com/SqrtMinusOne/ivy-pass][ivy-pass]] is another package of mine, inspired by [[https://github.com/carnager/rofi-pass][rofi-pass]].
+*** password-store-ivy
+[[https://github.com/SqrtMinusOne/password-store-ivy][password-store-ivy]] is another package of mine, inspired by [[https://github.com/carnager/rofi-pass][rofi-pass]].
 
 #+begin_src emacs-lisp
-(use-package ivy-pass
-  :straight (:host github :repo "SqrtMinusOne/ivy-pass")
+(use-package password-store-ivy
+  :straight (:host github :repo "SqrtMinusOne/password-store-ivy")
   :after (exwm))
 #+end_src
 ** Keybindings
@@ -890,7 +913,7 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "s-p") . counsel-linux-app)
         (,(kbd "s-P") . async-shell-command)
         (,(kbd "s-;") . my/exwm-apps-hydra/body)
-        (,(kbd "s--") . ivy-pass)
+        (,(kbd "s--") . password-store-ivy)
         (,(kbd "s-=") . ,(my/app-command "rofimoji"))
         (,(kbd "s-i") . ,(my/app-command "copyq menu"))
 

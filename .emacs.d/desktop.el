@@ -297,8 +297,8 @@ DIR is either 'left or 'right."
 
 (setq counsel-linux-app-format-function #'my/counsel-linux-app-format-function)
 
-(use-package ivy-pass
-  :straight (:host github :repo "SqrtMinusOne/ivy-pass")
+(use-package password-store-ivy
+  :straight (:host github :repo "SqrtMinusOne/password-store-ivy")
   :after (exwm))
 
 (defun my/exwm-quit ()
@@ -441,7 +441,7 @@ _d_: Discord
           (,(kbd "s-p") . counsel-linux-app)
           (,(kbd "s-P") . async-shell-command)
           (,(kbd "s-;") . my/exwm-apps-hydra/body)
-          (,(kbd "s--") . ivy-pass)
+          (,(kbd "s--") . password-store-ivy)
           (,(kbd "s-=") . ,(my/app-command "rofimoji"))
           (,(kbd "s-i") . ,(my/app-command "copyq menu"))
   

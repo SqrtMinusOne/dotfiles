@@ -12,7 +12,7 @@ export LEDGER_FILE=~/Documents/org-mode/ledger/ledger.journal
 # Environment:3 ends here
 
 # [[file:Console.org::*Environment][Environment:4]]
-if command -v termux-setup-storage; then
+if command -v termux-setup-storage > /dev/null; then
     export IS_ANDROID=true
     [[ -f ~/.android_profile ]] && . ~/.android_profile
 fi

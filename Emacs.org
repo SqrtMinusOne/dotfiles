@@ -6275,7 +6275,7 @@ Finally, there is also an Emacs plugin for [[https://devdocs.io][devdocs.io]].
 *** pass
 I use [[https://www.passwordstore.org/][pass]] as my password manager. Expectedly, there is Emacs frontend for it.
 
-Although I use [[https://github.com/carnager/rofi-pass][this rofi frontend]] for actually inserting passwords.
+This package is pretty good to manage the password database. I use [[https://github.com/SqrtMinusOne/password-store-ivy][password-store-ivy]] (another package of mine) to actually type passwords. [[https://github.com/carnager/rofi-pass][rofi-pass]] is another good option.
 
 #+begin_src emacs-lisp
 (use-package pass
