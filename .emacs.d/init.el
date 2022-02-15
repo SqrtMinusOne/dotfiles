@@ -20,12 +20,14 @@
       (or
        (string= (getenv "IS_TRAMP") "true")
        (string= (system-name) "dev-digital")
-       (string= (system-name) "violet")))
+       (string= (system-name) "violet")
+       (string= (system-name) "viridian")))
 
 (setq my/remote-server
       (or (string= (getenv "IS_REMOTE") "true")
           (string= (system-name) "dev-digital")
-          (string= (system-name) "violet")))
+          (string= (system-name) "violet")
+          (string= (system-name) "viridian")))
 
 (setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
 
@@ -373,7 +375,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (global-set-key (kbd "C-+") 'my/zoom-in)
 (global-set-key (kbd "C-=") 'my/zoom-out)
 
-(add-hook 'after-init-hook #'server-start)
+(unless my/remote-server
+  (add-hook 'after-init-hook #'server-start))
 
 (defmacro i3-msg (&rest args)
   `(start-process "emacs-i3-windmove" nil "i3-msg" ,@args))
@@ -2386,10 +2389,48 @@ Returns (<buffer> . <workspace-index>) or nil."
   (add-to-list 'org-global-properties
                '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00"))
   (setq org-log-done 'time)
-  (use-package org-ql
-    :straight (:fetcher github
-                        :repo "alphapapa/org-ql"
-                        :files (:defaults (:exclude "helm-org-ql.el")))))
+  (unless (file-exists-p (concat org-directory "/trello"))
+    (mkdir (concat org-directory "/trello") t))
+  
+  (setq org-trello-files
+        (thread-last (concat org-directory "/trello")
+          (directory-files)
+          (seq-filter
+           (lambda (f) (string-match-p (rx ".org" eos) f)))
+          (mapcar
+           (lambda (f) (concat org-directory "/trello/" f)))))
+  (defun my/org-scheduled-get-time ()
+    (let ((scheduled (org-get-scheduled-time (point))))
+      (if scheduled
+          (format-time-string "%Y-%m-%d" scheduled)
+        "")))
+  
+  (setq org-agenda-hide-tags-regexp (rx (or "org" "log" "log_here")))
+  
+  (setq org-agenda-custom-commands
+        `(("p" "My outline"
+           ((agenda "")
+            (todo "NEXT"
+                  ((org-agenda-prefix-format "  %i %-12:c [%e] ")
+                   (org-agenda-overriding-header "Next tasks")))
+            (org-ql-block
+             `(and
+               (regexp ,(rx ":orgtrello_users:" (* nonl) "sqrtminusone"))
+               (todo)
+               (deadline))
+             ((org-agenda-files ',org-trello-files)
+              (org-ql-block-header "Trello assigned")))
+            (tags-todo "inbox"
+                       ((org-agenda-overriding-header "Inbox")
+                        (org-agenda-prefix-format " %i %-12:c")
+                        (org-agenda-hide-tags-regexp ".")))
+            (tags-todo "+waitlist+SCHEDULED<=\"<+14d>\""
+                       ((org-agenda-overriding-header "Waitlist")
+                        (org-agenda-hide-tags-regexp "waitlist")
+                        (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))
+          ("tp" "Personal tasks"
+           ((tags-todo "personal"
+                       ((org-agenda-prefix-format "  %i %-12:c [%e] "))))))))
 
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
@@ -2696,20 +2737,10 @@ Returns (<buffer> . <workspace-index>) or nil."
          ,(concat "* %?\n"
                   "/Entered on/ %U"))))
 
-(unless (file-exists-p (concat org-directory "/trello"))
-  (mkdir (concat org-directory "/trello") t))
-
-(setq org-trello-files
-      (thread-last (concat org-directory "/trello")
-        (directory-files)
-        (seq-filter
-         (lambda (f) (string-match-p (rx ".org" eos) f)))
-        (mapcar
-         (lambda (f) (concat org-directory "/trello/" f)))))
-
 (use-package org-trello
   :straight (:build (:not native-compile))
   :commands (org-trello-mode)
+  :if (not my/remote-server)
   :init
   (setq org-trello-current-prefix-keybinding "C-c o")
   (setq org-trello-add-tags nil)
@@ -2728,42 +2759,22 @@ Returns (<buffer> . <workspace-index>) or nil."
          (lambda (b) (list (nth 1 b) (macroexp-quote (nth 0 b))))
          org-trello-interactive-command-binding-couples))))
 
-(defun my/org-scheduled-get-time ()
-  (let ((scheduled (org-get-scheduled-time (point))))
-    (if scheduled
-        (format-time-string "%Y-%m-%d" scheduled)
-      "")))
-
-(setq org-agenda-hide-tags-regexp (rx (or "org" "log" "log_here")))
-
-(setq org-agenda-custom-commands
-      `(("p" "My outline"
-         ((agenda "")
-          (todo "NEXT"
-                ((org-agenda-prefix-format "  %i %-12:c [%e] ")
-                 (org-agenda-overriding-header "Next tasks")))
-          (org-ql-block
-           `(and
-             (regexp ,(rx ":orgtrello_users:" (* nonl) "sqrtminusone"))
-             (todo)
-             (deadline))
-           ((org-agenda-files ',org-trello-files)
-            (org-ql-block-header "Trello assigned")))
-          (tags-todo "inbox"
-                     ((org-agenda-overriding-header "Inbox")
-                      (org-agenda-prefix-format " %i %-12:c")
-                      (org-agenda-hide-tags-regexp ".")))
-          (tags-todo "+waitlist+SCHEDULED<=\"<+14d>\""
-                     ((org-agenda-overriding-header "Waitlist")
-                      (org-agenda-hide-tags-regexp "waitlist")
-                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))
-        ("tp" "Personal tasks"
-         ((tags-todo "personal"
-                     ((org-agenda-prefix-format "  %i %-12:c [%e] ")))))))
+(use-package org-ql
+  :if (not my/remote-server)
+  :straight (:fetcher github
+                      :repo "alphapapa/org-ql"
+                      :files (:defaults (:exclude "helm-org-ql.el"))))
 
 (use-package org-journal
   :straight t
   :if (not my/remote-server)
+  :init
+  (my-leader-def
+    :infix "oj"
+    "" '(:which-key "org-journal")
+    "j" 'org-journal-new-entry
+    "o" 'org-journal-open-current-journal-file
+    "s" 'org-journal-tags-status)
   :after org
   :config
   (setq org-journal-dir (concat org-directory "/journal"))
@@ -2772,16 +2783,10 @@ Returns (<buffer> . <workspace-index>) or nil."
   (setq org-journal-date-format "%A, %Y-%m-%d")
   (setq org-journal-enable-encryption t))
 
-(my-leader-def
-  :infix "oj"
-  "" '(:which-key "org-journal")
-  "j" 'org-journal-new-entry
-  "o" 'org-journal-open-current-journal-file
-  "s" 'org-journal-tags-status)
-
 (use-package org-journal-tags
-  :straight (:fetcher git :repo "https://sqrtminusone.xyz/git/SqrtMinusOne/org-journal-tags.git")
+  :straight (:host github :repo "SqrtMinusOne/org-journal-tags")
   :after (org-journal)
+  :if (not my/remote-server)
   :config
   (org-journal-tags-autosync-mode)
   (general-define-key
@@ -2818,6 +2823,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package emacsql-sqlite
   :defer t
+  :if (not my/remote-server)
   :straight (:type built-in))
 
 (use-package org-roam
@@ -2963,6 +2969,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package org-roam-ui
   :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
+  :if (not my/remote-server)
   :after org-roam
   ;; :hook (org-roam . org-roam-ui-mode)
   :init

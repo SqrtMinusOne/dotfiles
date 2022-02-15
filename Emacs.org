@@ -334,19 +334,21 @@ The following variable is true when my machine is not powerful enough for some r
 
 The following is true if Emacs is meant to be used with TRAMP over slow ssh. Take a look at the [[*TRAMP][TRAMP]] section for more details.
 #+begin_src emacs-lisp
-(setq my/slow-ssh
-      (or
-       (string= (getenv "IS_TRAMP") "true")
-       (string= (system-name) "dev-digital")
-       (string= (system-name) "violet")))
+  (setq my/slow-ssh
+        (or
+         (string= (getenv "IS_TRAMP") "true")
+         (string= (system-name) "dev-digital")
+         (string= (system-name) "violet")
+         (string= (system-name) "viridian")))
 #+end_src
 
 The following is true is Emacs is run on a remote server where I don't need stuff like my org workflow
 #+begin_src emacs-lisp
-(setq my/remote-server
-      (or (string= (getenv "IS_REMOTE") "true")
-          (string= (system-name) "dev-digital")
-          (string= (system-name) "violet")))
+  (setq my/remote-server
+        (or (string= (getenv "IS_REMOTE") "true")
+            (string= (system-name) "dev-digital")
+            (string= (system-name) "violet")
+            (string= (system-name) "viridian")))
 #+end_src
 
 And the following is true if Emacs is run from termux on Android.
@@ -908,7 +910,8 @@ This script is being run from the [[file:Desktop.org::*i3wm][i3 configuration]].
 
 For this to work, we need to make sure that Emacs starts a server, so here is an expression to do just that:
 #+BEGIN_SRC emacs-lisp
-(add-hook 'after-init-hook #'server-start)
+(unless my/remote-server
+  (add-hook 'after-init-hook #'server-start))
 #+END_SRC
 
 And here is a simple macro to do the Emacs -> i3 part:
@@ -3918,7 +3921,7 @@ Some of the projects I'm participating in are managed via Trello, so I use [[htt
 
 Also, trello files are huge and have a lot of information and tasks which do not concern me, so I don't add them to =org-agenda-files=.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
 (unless (file-exists-p (concat org-directory "/trello"))
   (mkdir (concat org-directory "/trello") t))
 
@@ -3935,6 +3938,7 @@ Also, trello files are huge and have a lot of information and tasks which do not
 (use-package org-trello
   :straight (:build (:not native-compile))
   :commands (org-trello-mode)
+  :if (not my/remote-server)
   :init
   (setq org-trello-current-prefix-keybinding "C-c o")
   (setq org-trello-add-tags nil)
@@ -3956,8 +3960,9 @@ Also, trello files are huge and have a lot of information and tasks which do not
 *** org-ql
 [[https://github.com/alphapapa/org-ql][org-ql]] is a package to query the org files. I'm using it in my review workflow and for custom agenda views.
 
-#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+#+begin_src emacs-lisp
 (use-package org-ql
+  :if (not my/remote-server)
   :straight (:fetcher github
                       :repo "alphapapa/org-ql"
                       :files (:defaults (:exclude "helm-org-ql.el"))))
@@ -3967,7 +3972,7 @@ Some custom agendas to fit my workflow.
 
 Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I still want to see them in agenda, so I use =org-ql-block= from =org-ql=.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
 (defun my/org-scheduled-get-time ()
   (let ((scheduled (org-get-scheduled-time (point))))
     (if scheduled
@@ -4010,6 +4015,13 @@ I've tried switching to Org Roam Dailies, but in the end decided that org-journa
 (use-package org-journal
   :straight t
   :if (not my/remote-server)
+  :init
+  (my-leader-def
+    :infix "oj"
+    "" '(:which-key "org-journal")
+    "j" 'org-journal-new-entry
+    "o" 'org-journal-open-current-journal-file
+    "s" 'org-journal-tags-status)
   :after org
   :config
   (setq org-journal-dir (concat org-directory "/journal"))
@@ -4017,20 +4029,14 @@ I've tried switching to Org Roam Dailies, but in the end decided that org-journa
   (setq org-journal-file-format "%Y-%m-%d.org")
   (setq org-journal-date-format "%A, %Y-%m-%d")
   (setq org-journal-enable-encryption t))
-
-(my-leader-def
-  :infix "oj"
-  "" '(:which-key "org-journal")
-  "j" 'org-journal-new-entry
-  "o" 'org-journal-open-current-journal-file
-  "s" 'org-journal-tags-status)
 #+end_src
 
 [[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]] is my package that implements a tagging system for org-journal.
 #+begin_src emacs-lisp
 (use-package org-journal-tags
-  :straight (:fetcher git :repo "https://sqrtminusone.xyz/git/SqrtMinusOne/org-journal-tags.git")
+  :straight (:host github :repo "SqrtMinusOne/org-journal-tags")
   :after (org-journal)
+  :if (not my/remote-server)
   :config
   (org-journal-tags-autosync-mode)
   (general-define-key
@@ -4085,6 +4091,7 @@ References:
 #+begin_src emacs-lisp
 (use-package emacsql-sqlite
   :defer t
+  :if (not my/remote-server)
   :straight (:type built-in))
 
 (use-package org-roam
@@ -4273,6 +4280,7 @@ A browser frontend to visualize a Roam directory in a form of a graph.
 #+begin_src emacs-lisp
 (use-package org-roam-ui
   :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
+  :if (not my/remote-server)
   :after org-roam
   ;; :hook (org-roam . org-roam-ui-mode)
   :init
