@@ -107,12 +107,15 @@ I would use =password-store-get= from password-store.el, but I want this to be a
 
 #+NAME: mail-username
 #+begin_src bash
-pass show Job/Infrastructure/pvkorytov@etu.ru | sed -n 's/username: //;2p'
+pass show Job/Digital/Email/pvkorytov@etu.ru | sed -n 's/username: //;2p'
 #+end_src
+
+#+RESULTS: mail-username
+: pvkorytov
 
 #+NAME: mail-password
 #+begin_src bash
-pass show Job/Infrastructure/pvkorytov@etu.ru | head -n 1
+pass show Job/Digital/Email/pvkorytov@etu.ru | head -n 1
 #+end_src
 
 #+begin_src conf-unix :tangle ~/.offlineimaprc :noweb yes
@@ -380,7 +383,7 @@ host localhost
 port 1025
 from pvkorytov@etu.ru
 user pvkorytov
-passwordeval "pass show Job/Infrastructure/pvkorytov@etu.ru | head -n 1"
+passwordeval "pass show Job/Digital/Email/pvkorytov@etu.ru | head -n 1"
 #+end_src
 * Emacs
 :PROPERTIES:
