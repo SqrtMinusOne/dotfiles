@@ -752,9 +752,10 @@ Take a look at [[https://github.com/ch11ng/exwm/issues/550][this issue]] in the 
   :config
   (setq ivy-posframe-parameters '((left-fringe . 10)
                                   (right-fringe . 10)
-                                  (parent-frame . nil)))
+                                  (parent-frame . nil)
+                                  (max-width . 80)))
   (setq ivy-posframe-height-alist '((t . 20)))
-  (setq ivy-posframe-min-width 160)
+  (setq ivy-posframe-width 180)
   (setq ivy-posframe-min-height 5)
   (setq ivy-posframe-display-functions-alist
         '((swiper . ivy-display-function-fallback)
@@ -781,14 +782,26 @@ Take a look at [[https://github.com/ch11ng/exwm/issues/550][this issue]] in the 
 Not sure about that. The cursor occasionally changes focus when I'm exiting posframe, and this doesn't catch all the cases.
 
 #+begin_src emacs-lisp
-(defun my/setup-posframe (posframe)
-  (with-selected-frame posframe
-    (setq-local exwm-workspace-warp-cursor nil)
-    (setq-local mouse-autoselect-window nil)
-    (setq-local focus-follows-mouse nil))
-  posframe)
+(defun my/setup-posframe (&rest args)
+  (mapc
+   (lambda (var)
+     (kill-local-variable var)
+     (setf (symbol-value var) nil))
+   '(exwm-workspace-warp-cursor
+     mouse-autoselect-window
+     focus-follows-mouse)))
 
-(advice-add #'posframe--create-posframe :filter-return #'my/setup-posframe)
+(defun my/restore-posframe (&rest args)
+  (mapc
+   (lambda (var)
+     (kill-local-variable var)
+     (setf (symbol-value var) t))
+   '(exwm-workspace-warp-cursor
+     mouse-autoselect-window
+     focus-follows-mouse)))
+
+(advice-add #'posframe--create-posframe :after #'my/setup-posframe)
+(advice-add #'ivy-posframe-cleanup :after #'my/restore-posframe)
 #+end_src
 *** Linux app
 =counsel-linux-app= is a counsel interface to select a Linux desktop application.

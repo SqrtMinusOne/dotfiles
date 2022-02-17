@@ -256,9 +256,10 @@ DIR is either 'left or 'right."
   :config
   (setq ivy-posframe-parameters '((left-fringe . 10)
                                   (right-fringe . 10)
-                                  (parent-frame . nil)))
+                                  (parent-frame . nil)
+                                  (max-width . 80)))
   (setq ivy-posframe-height-alist '((t . 20)))
-  (setq ivy-posframe-min-width 160)
+  (setq ivy-posframe-width 180)
   (setq ivy-posframe-min-height 5)
   (setq ivy-posframe-display-functions-alist
         '((swiper . ivy-display-function-fallback)
@@ -277,14 +278,26 @@ DIR is either 'left or 'right."
 
 (advice-add #'ivy-posframe--read :around #'my/advise-fn-suspend-follow-mouse)
 
-(defun my/setup-posframe (posframe)
-  (with-selected-frame posframe
-    (setq-local exwm-workspace-warp-cursor nil)
-    (setq-local mouse-autoselect-window nil)
-    (setq-local focus-follows-mouse nil))
-  posframe)
+(defun my/setup-posframe (&rest args)
+  (mapc
+   (lambda (var)
+     (kill-local-variable var)
+     (setf (symbol-value var) nil))
+   '(exwm-workspace-warp-cursor
+     mouse-autoselect-window
+     focus-follows-mouse)))
 
-(advice-add #'posframe--create-posframe :filter-return #'my/setup-posframe)
+(defun my/restore-posframe (&rest args)
+  (mapc
+   (lambda (var)
+     (kill-local-variable var)
+     (setf (symbol-value var) t))
+   '(exwm-workspace-warp-cursor
+     mouse-autoselect-window
+     focus-follows-mouse)))
+
+(advice-add #'posframe--create-posframe :after #'my/setup-posframe)
+(advice-add #'ivy-posframe-cleanup :after #'my/restore-posframe)
 
 (defun my/counsel-linux-app-format-function (name comment _exec)
   (format "% -45s%s"
