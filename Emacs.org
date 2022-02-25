@@ -1255,6 +1255,16 @@ References:
                '(emmet-mode emmet-indentation)))
 #+end_src
 
+*** Editing files
+A minor mode to remember recently edited files.
+#+begin_src emacs-lisp
+(recentf-mode 1)
+#+end_src
+
+Save the last place visited in the file.
+#+begin_src emacs-lisp
+(save-place-mode 1)
+#+end_src
 ** Completion
 *** Ivy, counsel, swiper
 Minibuffer completion tools for Emacs.
@@ -1331,7 +1341,8 @@ References:
                proced-sort-interactive
                perspective-exwm-switch-perspective
                my/persp-ivy-switch-buffer-other-window
-               lsp-execute-code-action))
+               lsp-execute-code-action
+               dired-recent-open))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 #+end_src
@@ -1476,6 +1487,11 @@ Transparency. Not setting it now, as I'm using [[file:Desktop.org::*Picom][picom
 Prettify symbols. Also not setting it, ligatures seem to be enough for me.
 #+begin_src emacs-lisp
 ;; (global-prettify-symbols-mode)
+#+end_src
+
+Do not show GUI dialogs
+#+begin_src emacs-lisp
+(setq use-dialog-box nil)
 #+end_src
 
 No start screen
@@ -5113,8 +5129,7 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
   (dired (expand-file-name "~")))
 
 (my-leader-def
-  "ad" #'dired
-  "aD" (my/command-in-persp "dired $HOME" "dired" nil (dired (expand-file-name "~"))))
+  "ad" #'dired)
 #+end_src
 *** Addons
 I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provides a lot of extensions for dired functionality, but it also creates some new problems, so I opt out of it. Fortunately, the one feature I want from this package - adding more colors to dired buffers - is available as a separate package.
@@ -5156,6 +5171,21 @@ I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provi
    "h" 'dired-sidebar-up-directory
    "=" 'dired-narrow)
   (add-hook 'dired-sidebar-mode-hook #'my/dired-sidebar-setup))
+#+end_src
+
+[[https://github.com/vifon/dired-recent.el][dired-recent.el]] adds history to dired.
+#+begin_src emacs-lisp
+(use-package dired-recent
+  :straight t
+  :after dired
+  :commands (dired-recent-open)
+  :config
+  (dired-recent-mode)
+  (general-define-key
+   :keymaps 'dired-recent-mode-map
+   "C-x C-d" nil)
+  (my-leader-def
+    "aD" '(dired-recent-open :wk "dired history")))
 #+end_src
 
 +Reuse the current dired buffer instead of spamming new ones.+ Looks like not necessary with Emacs 28.1

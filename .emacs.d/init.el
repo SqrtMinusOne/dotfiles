@@ -596,6 +596,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-to-list 'editorconfig-indentation-alist
                '(emmet-mode emmet-indentation)))
 
+(recentf-mode 1)
+
+(save-place-mode 1)
+
 (use-package ivy
   :straight t
   :config
@@ -653,7 +657,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                proced-sort-interactive
                perspective-exwm-switch-perspective
                my/persp-ivy-switch-buffer-other-window
-               lsp-execute-code-action))
+               lsp-execute-code-action
+               dired-recent-open))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 
@@ -746,6 +751,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
 
 ;; (global-prettify-symbols-mode)
+
+(setq use-dialog-box nil)
 
 (setq inhibit-startup-screen t)
 
@@ -3452,8 +3459,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (dired (expand-file-name "~")))
 
 (my-leader-def
-  "ad" #'dired
-  "aD" (my/command-in-persp "dired $HOME" "dired" nil (dired (expand-file-name "~"))))
+  "ad" #'dired)
 
 (use-package diredfl
   :straight t
@@ -3485,6 +3491,18 @@ Returns (<buffer> . <workspace-index>) or nil."
    "h" 'dired-sidebar-up-directory
    "=" 'dired-narrow)
   (add-hook 'dired-sidebar-mode-hook #'my/dired-sidebar-setup))
+
+(use-package dired-recent
+  :straight t
+  :after dired
+  :commands (dired-recent-open)
+  :config
+  (dired-recent-mode)
+  (general-define-key
+   :keymaps 'dired-recent-mode-map
+   "C-x C-d" nil)
+  (my-leader-def
+    "aD" '(dired-recent-open :wk "dired history")))
 
 (use-package dired-single
   :after dired
