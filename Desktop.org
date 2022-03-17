@@ -833,6 +833,26 @@ Also, by default it tries to launch stuff with =gtk-launch=, which is in the =gt
   :straight (:host github :repo "SqrtMinusOne/password-store-ivy")
   :after (exwm))
 #+end_src
+*** emojis
+[[https://github.com/iqbalansari/emacs-emojify][emojify]] is an Emacs package that adds emoji display to Emacs. While its primary capacity is no longer necessary in Emacs 28, it a few functions to insert emojis are still handy.
+
+#+begin_src emacs-lisp
+(use-package emojify
+  :straight t)
+#+end_src
+
+Because I occasionally want to type emojis to other programs, I reuse a function from =password-store-ivy=:
+#+begin_src emacs-lisp
+(defun my/emojify-type ()
+  "Type an emoji."
+  (interactive)
+  (let ((emoji (emojify-completing-read "Type emoji: ")))
+    (kill-new emoji)
+    (password-store-ivy--async-commands
+     (list
+      (password-store-ivy--get-wait-command 10)
+      "xdotool key Shift+Insert"))))
+#+end_src
 ** Keybindings
 *** EXWM keybindings
 Setting keybindings for EXWM. This actually has to be in the =:config= block of the =use-package= form, that is it has to be run after EXWM is loaded, so I use noweb to put this block in the correct place.
@@ -927,7 +947,7 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "s-P") . async-shell-command)
         (,(kbd "s-;") . my/exwm-apps-hydra/body)
         (,(kbd "s--") . password-store-ivy)
-        (,(kbd "s-=") . ,(my/app-command "rofimoji"))
+        (,(kbd "s-=") . my/emojify-type)
         (,(kbd "s-i") . ,(my/app-command "copyq menu"))
 
         ;; Basic controls

@@ -314,6 +314,19 @@ DIR is either 'left or 'right."
   :straight (:host github :repo "SqrtMinusOne/password-store-ivy")
   :after (exwm))
 
+(use-package emojify
+  :straight t)
+
+(defun my/emojify-type ()
+  "Type an emoji."
+  (interactive)
+  (let ((emoji (emojify-completing-read "Type emoji: ")))
+    (kill-new emoji)
+    (password-store-ivy--async-commands
+     (list
+      (password-store-ivy--get-wait-command 10)
+      "xdotool key Shift+Insert"))))
+
 (defun my/exwm-quit ()
   (interactive)
   (when (or (not (eq (selected-window) (next-window)))
@@ -455,7 +468,7 @@ _d_: Discord
           (,(kbd "s-P") . async-shell-command)
           (,(kbd "s-;") . my/exwm-apps-hydra/body)
           (,(kbd "s--") . password-store-ivy)
-          (,(kbd "s-=") . ,(my/app-command "rofimoji"))
+          (,(kbd "s-=") . my/emojify-type)
           (,(kbd "s-i") . ,(my/app-command "copyq menu"))
   
           ;; Basic controls
