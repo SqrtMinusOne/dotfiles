@@ -184,6 +184,7 @@
 
 (use-package evil-matchit
   :straight t
+  :disabled
   :config
   (global-evil-matchit-mode 1))
 
@@ -241,6 +242,18 @@
      prodigy
      slime
      forge)))
+
+(use-package avy
+  :straight t
+  :config
+  (setq avy-timeout-seconds 0.5)
+  (setq avy-ignored-modes
+        '(image-mode doc-view-mode pdf-view-mode exwm-mode))
+  (general-define-key
+   :states '(normal motion)
+   "-" nil
+   "--" #'avy-goto-char-2
+   "-=" #'avy-goto-symbol-1))
 
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
@@ -3523,6 +3536,12 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package dired-open
   :straight t
   :commands (dired-open-xdg))
+
+(use-package dired-du
+  :straight t
+  :commands (dired-du-mode)
+  :config
+  (setq dired-du-size-format t))
 
 (use-package dired-narrow
   :straight t

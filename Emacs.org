@@ -582,7 +582,7 @@ Basic evil configuration.
   (global-evil-surround-mode 1))
 #+end_src
 
-[[https://github.com/linktohack/evil-commentary][evil-commentary]] emulates commentary.vim. It gives actions for quick insertion and deletion of comments.
+[[https://github.com/linktohack/evil-commentary][evil-commentary]] emulates commentary.vim. It provides actions for quick insertion and deletion of comments.
 
 #+begin_src emacs-lisp
 (use-package evil-commentary
@@ -592,7 +592,7 @@ Basic evil configuration.
   (evil-commentary-mode))
 #+end_src
 
-[[https://github.com/blorbx/evil-quickscope][evil-quickscope]] emulates quickscope.vim. It highlights the important target characters for f, F, t, T keys.
+[[https://github.com/blorbx/evil-quickscope][evil-quickscope]] emulates quickscope.vim. It highlights certain target characters for f, F, t, T keys.
 
 #+begin_src emacs-lisp
 (use-package evil-quickscope
@@ -604,7 +604,7 @@ Basic evil configuration.
          (org-mode . turn-on-evil-quickscope-mode)))
 #+end_src
 
-[[https://github.com/cofi/evil-numbers][evil-numbers]] allows incrementing and decrementing numbers at the point.
+[[https://github.com/cofi/evil-numbers][evil-numbers]] allows incrementing and decrementing numbers at point.
 #+begin_src emacs-lisp
 (use-package evil-numbers
   :straight t
@@ -625,10 +625,11 @@ Basic evil configuration.
   (evil-lion-mode))
 #+end_src
 
-[[https://github.com/redguardtoo/evil-matchit][evil-matchit]] makes "%" to match things like tags. It doesn't work perfectly, so I occasionally turn it off.
+[[https://github.com/redguardtoo/evil-matchit][evil-matchit]] makes "%" to match things like tags. It doesn't work perfectly, so I +occasionally+ turn it off.
 #+begin_src emacs-lisp
 (use-package evil-matchit
   :straight t
+  :disabled
   :config
   (global-evil-matchit-mode 1))
 #+end_src
@@ -695,6 +696,25 @@ Do ex search in other buffer. Like =*=, but switch to other buffer and search th
      slime
      forge)))
 #+end_src
+*** Avy
+[[https://github.com/abo-abo/avy][Avy]] is a package that helps navigate Emacs in a tree-like manner.
+
+References:
+- [[https://karthinks.com/software/avy-can-do-anything/][Avy can do anything]]
+
+#+begin_src emacs-lisp
+(use-package avy
+  :straight t
+  :config
+  (setq avy-timeout-seconds 0.5)
+  (setq avy-ignored-modes
+        '(image-mode doc-view-mode pdf-view-mode exwm-mode))
+  (general-define-key
+   :states '(normal motion)
+   "-" nil
+   "--" #'avy-goto-char-2
+   "-=" #'avy-goto-symbol-1))
+#+End_src
 *** My keybindings
 Various keybindings settings that I can't put anywhere else.
 
@@ -5220,6 +5240,15 @@ Provides stuff like =dired-open-xdg=
 (use-package dired-open
   :straight t
   :commands (dired-open-xdg))
+#+end_src
+
+[[https://elpa.gnu.org/packages/dired-du.html][dired-du]] is a package that shows directory sizes
+#+begin_src emacs-lisp
+(use-package dired-du
+  :straight t
+  :commands (dired-du-mode)
+  :config
+  (setq dired-du-size-format t))
 #+end_src
 
 vifm-like filter
