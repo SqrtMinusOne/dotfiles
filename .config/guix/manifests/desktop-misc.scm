@@ -7,7 +7,6 @@
    "qbittorrent"
    "gnome-font-viewer"
    "xdg-utils"
-   "telegram-desktop"
    "thunar"
    "copyq"
    "feh"

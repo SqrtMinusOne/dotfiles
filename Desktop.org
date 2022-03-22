@@ -574,7 +574,7 @@ For EXWM windows, the =perspective-exwm= package provides a function called =per
     ("Alacritty"
      (perspective-exwm-assign-window
       :persp-name "term"))
-    ((or "VK" "Slack" "Discord" "TelegramDesktop")
+    ((or "VK" "Slack" "discord" "TelegramDesktop")
      (perspective-exwm-assign-window
       :workspace-index 3
       :persp-name "comms"))
@@ -1008,12 +1008,14 @@ _t_: Terminal (Alacritty)
 _b_: Browser (Firefox)
 _v_: VK
 _s_: Slack
+_e_: Telegram
 _d_: Discord
 "
   ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
   ("b" (lambda () (interactive) (my/run-in-background "firefox")))
   ("v" (lambda () (interactive) (my/run-in-background "vk")))
   ("s" (lambda () (interactive) (my/run-in-background "slack-wrapper")))
+  ("e" (lambda () (interactive) (my/run-in-background "flatpak run org.telegram.desktop")))
   ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
 #+end_src
 *** Locking up
@@ -3740,7 +3742,6 @@ Other desktop programs I use are listed below.
 | desktop-misc | feh                    | Image viewer. Used to set background      |
 | desktop-misc | copyq                  | Clipboard manager                         |
 | desktop-misc | thunar                 | My preferred GUI file manager             |
-| desktop-misc | telegram-desktop       | telegram client                           |
 | desktop-misc | xdg-utils              | gives xdg-open and stuff                  |
 | desktop-misc | gnome-font-viewer      | view fonts                                |
 | desktop-misc | qbittorrent            | torrent client                            |
