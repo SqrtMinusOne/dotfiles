@@ -1504,11 +1504,12 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (add-hook 'web-mode-hook #'my/web-mode-lsp)
 
-(defun my/web-mode-vue-setup ()
+(defun my/web-mode-vue-setup (&rest _)
   (when (string-match-p (rx ".vue" eos) (buffer-name))
     (setq-local web-mode-script-padding 0)))
 
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
+(add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
 
 (add-hook 'scss-mode-hook #'smartparens-mode)
 (add-hook 'scss-mode-hook #'hs-minor-mode)
@@ -2530,11 +2531,18 @@ Returns (<buffer> . <workspace-index>) or nil."
           (f-write (plist-get (car (cdr elem)) :value) 'utf-8 temp-file-path)
           (start-process "org-html-preview" nil "xdg-open" temp-file-path))))))
 
+(use-package restclient
+  :straight t)
+
+(use-package ob-restclient
+  :after (org restclient)
+  :straight t)
+
 (use-package ob-async
   :straight t
   :after (org)
   :config
-  (setq ob-async-no-async-languages-alist '("python" "hy" "jupyter-python" "jupyter-octave")))
+  (setq ob-async-no-async-languages-alist '("python" "hy" "jupyter-python" "jupyter-octave" "restclient")))
 
 (setq my/jupyter-runtime-folder (expand-file-name "~/.local/share/jupyter/runtime"))
 

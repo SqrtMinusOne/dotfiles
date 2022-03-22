@@ -2521,11 +2521,12 @@ Hooking this up with lsp.
 
 Vue settings
 #+begin_src emacs-lisp
-(defun my/web-mode-vue-setup ()
+(defun my/web-mode-vue-setup (&rest _)
   (when (string-match-p (rx ".vue" eos) (buffer-name))
     (setq-local web-mode-script-padding 0)))
 
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
+(add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
 #+end_src
 *** SCSS
 #+begin_src emacs-lisp
@@ -3557,6 +3558,20 @@ Open HTML in the ~begin_export~ block with xdg-open.
 (setq org-plantuml-exec-mode 'plantuml)
 (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
 #+end_src
+*** Restclient
+[[https://github.com/pashky/restclient.el][restclient.el]] is an Emacs package to send HTTP requests. [[https://github.com/alf/ob-restclient.el][ob-restclient]] provides interaction with Org Babel.
+
+References:
+- [[https://joseph8th.github.io/posts/wow-writing-literate-api-documentation-in-emacs-org-mode/][WOW! Writing Literate API Documentation in Emacs Org Mode]]
+
+#+begin_src emacs-lisp
+(use-package restclient
+  :straight t)
+
+(use-package ob-restclient
+  :after (org restclient)
+  :straight t)
+#+end_src
 *** Setup
 Enable languages
 #+begin_src emacs-lisp :tangle no :noweb-ref org-lang-setup
@@ -3598,7 +3613,7 @@ Async code blocks evaluations. Jupyter blocks have a built-in async, so they are
   :straight t
   :after (org)
   :config
-  (setq ob-async-no-async-languages-alist '("python" "hy" "jupyter-python" "jupyter-octave")))
+  (setq ob-async-no-async-languages-alist '("python" "hy" "jupyter-python" "jupyter-octave" "restclient")))
 #+end_src
 *** Managing Jupyter kernels
 Functions for managing local Jupyter kernels.
