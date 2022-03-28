@@ -276,16 +276,17 @@ If however, by some twist of fate, this document is one of the first things you 
 * Some remarks
 I decided not to keep configs for features that I do not use anymore because this config is already huge. But here are the last commits that had these features presented.
 
-| Feature          | Last commit                              |
-|------------------+------------------------------------------|
-| org-roam dailies | d2648918fcc338bd5c1cd6d5c0aa60a65077ccf7 |
-| treemacs         | 3d87852745caacc0863c747f1fa9871d367240d2 |
-| tab-bar.el       | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
-| spaceline        | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
-| code compass     | 8594d6f53e42c70bbf903e168607841854818a38 |
-| vue-mode         | 8594d6f53e42c70bbf903e168607841854818a38 |
-| svelte-mode      | 8594d6f53e42c70bbf903e168607841854818a38 |
-| pomidor          | 8594d6f53e42c70bbf903e168607841854818a38 |
+| Feature           | Last commit                              |
+|-------------------+------------------------------------------|
+| org-roam dailies  | d2648918fcc338bd5c1cd6d5c0aa60a65077ccf7 |
+| org-roam projects | 025278a1e180e86f3aade20242e4ac1cdc1a2f13 |
+| treemacs          | 3d87852745caacc0863c747f1fa9871d367240d2 |
+| tab-bar.el        | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
+| spaceline         | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
+| code compass      | 8594d6f53e42c70bbf903e168607841854818a38 |
+| vue-mode          | 8594d6f53e42c70bbf903e168607841854818a38 |
+| svelte-mode       | 8594d6f53e42c70bbf903e168607841854818a38 |
+| pomidor           | 8594d6f53e42c70bbf903e168607841854818a38 |
 * Bootstrap
 Setting up the environment, performance tuning and a few basic settings.
 
@@ -1084,7 +1085,6 @@ Some default settings to manage tabs.
 (setq-default tab-width 4)
 (setq-default evil-indent-convert-tabs nil)
 (setq-default indent-tabs-mode nil)
-(setq-default tab-width 4)
 (setq-default evil-shift-round nil)
 #+end_src
 *** Settings
@@ -3876,7 +3876,7 @@ A nice package to make screenshots and insert them to the Org document.
   :straight t)
 #+end_src
 *** Transclusion
-A package that implements transclusions in Org Mode, that is rendering a part of one file inside of another file.
+A package that implements transclusions in Org Mode, that is rendering part of one file inside of another file.
 
 #+begin_src emacs-lisp
 (use-package org-transclusion
@@ -3909,7 +3909,9 @@ Some inspiration:
 Used files
 #+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
 (setq org-roam-directory (concat org-directory "/roam"))
-(setq org-agenda-files '("inbox.org"))
+(setq org-agenda-files '("inbox.org"
+                         "projects/comp-stuff.org"
+                         "projects/looking-forward.org"))
 ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
 #+end_src
 
@@ -3967,7 +3969,9 @@ Log DONE time
 #+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
 (setq org-log-done 'time)
 #+end_src
-*** Trello sync
+*** OFF (OFF) Trello sync
+UPD <2022-03-27 Sun>: disabling this for now.
+
 Some of the projects I'm participating in are managed via Trello, so I use [[http://org-trello.github.io/][org-trello]] to keep track of them. The package has a remarkably awkward keybindings setup, so my effort to call =my-leader-def= to set keybindings I like is no less awkward.
 
 Also, trello files are huge and have a lot of information and tasks which do not concern me, so I don't add them to =org-agenda-files=.
@@ -3989,6 +3993,7 @@ Also, trello files are huge and have a lot of information and tasks which do not
 (use-package org-trello
   :straight (:build (:not native-compile))
   :commands (org-trello-mode)
+  :disabled
   :if (not my/remote-server)
   :init
   (setq org-trello-current-prefix-keybinding "C-c o")
@@ -4038,13 +4043,6 @@ Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I sti
           (todo "NEXT"
                 ((org-agenda-prefix-format "  %i %-12:c [%e] ")
                  (org-agenda-overriding-header "Next tasks")))
-          (org-ql-block
-           `(and
-             (regexp ,(rx ":orgtrello_users:" (* nonl) "sqrtminusone"))
-             (todo)
-             (deadline))
-           ((org-agenda-files ',org-trello-files)
-            (org-ql-block-header "Trello assigned")))
           (tags-todo "inbox"
                      ((org-agenda-overriding-header "Inbox")
                       (org-agenda-prefix-format " %i %-12:c")
@@ -4052,10 +4050,7 @@ Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I sti
           (tags-todo "+waitlist+SCHEDULED<=\"<+14d>\""
                      ((org-agenda-overriding-header "Waitlist")
                       (org-agenda-hide-tags-regexp "waitlist")
-                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))
-        ("tp" "Personal tasks"
-         ((tags-todo "personal"
-                     ((org-agenda-prefix-format "  %i %-12:c [%e] ")))))))
+                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
 #+end_src
 *** Org Journal
 [[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining a journal in org mode. I want(ed) to have its entries separate from my knowledge base.
@@ -4130,6 +4125,8 @@ As of now, it stores Emacs version, hostname, location, and current EMMS track i
 *** Org Roam
 [[https://github.com/org-roam/org-roam][org-roam]] is a plain-text knowledge database.
 
+I tried to do various things with Org Roam, like [[https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/][managing projects]], but ended up prefferring plain Org for most of the stuff.
+
 **** Basic package configuration
 | Guix dependency       |
 |-----------------------|
@@ -4162,142 +4159,24 @@ References:
 Capture templates for =org-roam-capture=. As for now, nothing too complicated here.
 
 #+begin_src emacs-lisp
-(setq my/org-roam-project-template
-      `("p" "project" plain ,(string-join
-                              '("%?"
-                                "* Tasks"
-                                "** TODO Add initial tasks")
-                              "\n")
-        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-                           ,(string-join
-                             '("#+title: ${title}"
-                               "#+category: ${title}"
-                               "#+filetags: :org:"
-                               "#+TODO: TODO(t) NEXT(n) HOLD(h) | NO(q) DONE(d)"
-                               "#+TODO: FUTURE(f) | PASSED(p)"
-                               "#+STARTUP: logdone overview")
-                             "\n"))
-        :unnarrowed t))
-
 (setq org-roam-capture-templates
       `(("d" "default" plain "%?"
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
          :unnarrowed t)
         ("e" "encrypted" plain "%?"
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
-         :unnarrowed t)
-        ,my/org-roam-project-template))
-#+end_src
-**** Managing projects in Org Roam
-Org Roam is also pretty good for managing projects.
-
-- *CREDIT*: Thanks to David Wilson [[https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/][for ideas]]
-
-***** Integration with Org Agenda
-Because projects usually have various timestamps and deadlines, I want the project files to populate my =org-agenda-files=.
-
-So here I define a simple macro to filter the Roam notes list from unwanted entries.
-#+begin_src emacs-lisp
-(cl-defmacro my/org-roam-filter-by-tag (&optional &key (include nil) (exclude nil))
-  `(lambda (node)
-     (let ((tags (org-roam-node-tags node)))
-       (and
-        ,(if include
-             `(or
-               ,@(mapcar (lambda (tag)
-                           `(member ,tag tags))
-                         include))
-           t)
-        ,@(mapcar (lambda (tag)
-                    `(not (member ,tag tags)))
-                  exclude)))))
-
-(defun my/org-roam-list-notes-by-tag (tag-name)
-  (mapcar #'org-roam-node-file
-          (seq-filter
-           (my/org-roam-filter-by-tag :include (tag-name))
-           (org-roam-node-list))))
-#+end_src
-
-Now, let's integrate the found project notes to the rest of Org Mode. Besides =org-agenda-files=, I want them to serve as refile targets, so here is a function that updated both variables. That function is called on initialization after the initial values of both variables are set, but can also be called manually.
-#+begin_src emacs-lisp
-(defun my/org-roam-refresh-agenda-list ()
-  (interactive)
-  (let ((project-files (my/org-roam-list-notes-by-tag "org")))
-    (setq org-agenda-files
-          (seq-uniq
-           `(,@org-agenda-files
-             ,@project-files)))
-    (dolist (file project-files)
-      (add-to-list 'org-refile-targets
-                   `(,file :tag . "refile"))
-      (add-to-list 'org-refile-targets
-                   `(,file :regexp . ,(rx (or "Tasks" "Events")))))))
-
-(with-eval-after-load 'org-roam
-  (my/org-roam-refresh-agenda-list))
-#+end_src
-
-David Wilson has proposed a function to automatically update =org-agenda-buffers= after capturing a project, but that's a bit too complicated to pull off correctly.
-***** Capturing tasks and projects
-Find or capture a project.
-
-#+begin_src emacs-lisp
-(defun my/org-roam-find-project ()
-  (interactive)
-  (org-roam-node-find
-   nil
-   nil
-   (my/org-roam-filter-by-tag :include ("org"))
-   :templates
-   `(,my/org-roam-project-template)))
-#+end_src
-***** Targeting refile
-Because in the previous section I've added a lot of stuff to the =org-refile-targets=, the list given by =org-refile= becomes a bit too large. So let's make a function that performs a sort of two-step refile:
-
-#+begin_src emacs-lisp
-(defun my/org-target-refile (&optional arg)
-  (interactive "P")
-  (let* ((selected-file
-          (completing-read
-           "Refile to: "
-           (seq-uniq (mapcar #'car org-refile-targets))))
-         (org-refile-targets
-          (cl-loop for target in org-refile-targets
-                   if (string-equal (car target) selected-file)
-                   collect target)))
-    (org-refile-cache-clear)
-    (org-refile arg)))
-
-(general-define-key
- :keymaps 'org-mode-map
- "C-c C-w" #'my/org-target-refile)
+         :unnarrowed t)))
 #+end_src
 **** Keybindings
 A set of keybindings to quickly access things in Org Roam.
 
-As of now, I have 2 categories of nodes in Org Roam:
-- project notes (tag =org=)
-- Zettelkasten, which is everything else.
-
-So I want to have a separate fuzzy search for every category. =my/org-roam-find-project= for project nodes is already defined above, here is the rest:
-#+begin_src emacs-lisp
-(defun my/org-roam-find-zk ()
-  (interactive)
-  (org-roam-node-find
-   nil
-   nil
-   (my/org-roam-filter-by-tag :exclude ("org"))))
-#+end_src
-
-And here are keybindings.
+I used to have multiple categories of nodes in Org Roam (projects, dailies, etc), but as of now, only Zettelkasten remains.
 #+begin_src emacs-lisp
 (my-leader-def
   :infix "or"
   "" '(:which-key "org-roam")
   "i" 'org-roam-node-insert
-  "r" '(my/org-roam-find-zk :wk "ZK")
-  "p" '(my/org-roam-find-project :wk "Projects")
+  "r" 'org-roam-node-find
   "g" 'org-roam-graph
   "c" 'org-roam-capture
   "b" 'org-roam-buffer-toggle)
@@ -4355,6 +4234,8 @@ Don't forget to run the following after setup:
 xdg-mime default org-protocol.desktop x-scheme-handler/org-protocol
 #+end_src
 *** Review workflow
+UPD <2022-03-27 Sun>. Out of action for now
+
 My take on a review workflow. As a baseline, I want to have a template that lists the important changes since the last review and other basic information. I'm doing reviews regularly, but the time intervals still may vary, hence this flexibility.
 
 This section has seen some updates over time.
@@ -5673,7 +5554,7 @@ Using my own fork until the modifications are merged into master.
   :if (not my/remote-server)
   :commands (elfeed)
   :init
-  (my-leader-def "ae" (my/command-in-persp "elfeed" "elfeed" 0 (elfeed)))
+  (my-leader-def "ae" (my/command-in-persp "elfeed" "elfeed" 0 (elfeed-summary)))
   :config
   (setq elfeed-db-directory "~/.elfeed")
   (setq elfeed-enclosure-default-dir (expand-file-name "~/Downloads"))
@@ -5788,6 +5669,16 @@ Also, a function to automatically adjust these colors with the Doom theme.
 (advice-add 'load-theme :after #'my/update-my-theme-elfeed)
 (when (fboundp 'doom-color)
   (my/update-my-theme-elfeed))
+#+end_src
+**** elfeed-summary
+[[https://github.com/SqrtMinusOne/elfeed-summary][elfeed-summary]] is my package that provides a feed summary interface for elfeed.
+
+The default interface of elfeed is just a list of all entries, so it gets hard to navigate when there are a lot of sources with varying frequencies of posts. This is my attempt to address this issue.
+
+#+begin_src emacs-lisp
+(use-package elfeed-summary
+  :commands (elfeed-summary)
+  :straight t)
 #+end_src
 **** elfeed-score
 [[https://github.com/sp1ff/elfeed-score][elfeed-score]] is a package that implements scoring for the elfeed entries. Entries are scored by a set of rules for tags/title/content/etc and sorted by that score.

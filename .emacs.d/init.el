@@ -485,7 +485,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (setq-default tab-width 4)
 (setq-default evil-indent-convert-tabs nil)
 (setq-default indent-tabs-mode nil)
-(setq-default tab-width 4)
 (setq-default evil-shift-round nil)
 
 (setq scroll-conservatively scroll-margin)
@@ -2405,7 +2404,9 @@ Returns (<buffer> . <workspace-index>) or nil."
   (general-nmap :keymaps 'org-mode-map
       "C-x C-l" 'my/org-link-copy)
   (setq org-roam-directory (concat org-directory "/roam"))
-  (setq org-agenda-files '("inbox.org"))
+  (setq org-agenda-files '("inbox.org"
+                           "projects/comp-stuff.org"
+                           "projects/looking-forward.org"))
   ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
   (add-to-list 'org-global-properties
                '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00"))
@@ -2434,13 +2435,6 @@ Returns (<buffer> . <workspace-index>) or nil."
             (todo "NEXT"
                   ((org-agenda-prefix-format "  %i %-12:c [%e] ")
                    (org-agenda-overriding-header "Next tasks")))
-            (org-ql-block
-             `(and
-               (regexp ,(rx ":orgtrello_users:" (* nonl) "sqrtminusone"))
-               (todo)
-               (deadline))
-             ((org-agenda-files ',org-trello-files)
-              (org-ql-block-header "Trello assigned")))
             (tags-todo "inbox"
                        ((org-agenda-overriding-header "Inbox")
                         (org-agenda-prefix-format " %i %-12:c")
@@ -2448,10 +2442,7 @@ Returns (<buffer> . <workspace-index>) or nil."
             (tags-todo "+waitlist+SCHEDULED<=\"<+14d>\""
                        ((org-agenda-overriding-header "Waitlist")
                         (org-agenda-hide-tags-regexp "waitlist")
-                        (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))
-          ("tp" "Personal tasks"
-           ((tags-todo "personal"
-                       ((org-agenda-prefix-format "  %i %-12:c [%e] "))))))))
+                        (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)"))))))))
 
 (require 'org-crypt)
 (org-crypt-use-before-save-magic)
@@ -2768,6 +2759,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package org-trello
   :straight (:build (:not native-compile))
   :commands (org-trello-mode)
+  :disabled
   :if (not my/remote-server)
   :init
   (setq org-trello-current-prefix-keybinding "C-c o")
@@ -2867,107 +2859,19 @@ Returns (<buffer> . <workspace-index>) or nil."
   (org-roam-setup)
   (require 'org-roam-protocol))
 
-(setq my/org-roam-project-template
-      `("p" "project" plain ,(string-join
-                              '("%?"
-                                "* Tasks"
-                                "** TODO Add initial tasks")
-                              "\n")
-        :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-                           ,(string-join
-                             '("#+title: ${title}"
-                               "#+category: ${title}"
-                               "#+filetags: :org:"
-                               "#+TODO: TODO(t) NEXT(n) HOLD(h) | NO(q) DONE(d)"
-                               "#+TODO: FUTURE(f) | PASSED(p)"
-                               "#+STARTUP: logdone overview")
-                             "\n"))
-        :unnarrowed t))
-
 (setq org-roam-capture-templates
       `(("d" "default" plain "%?"
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
          :unnarrowed t)
         ("e" "encrypted" plain "%?"
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
-         :unnarrowed t)
-        ,my/org-roam-project-template))
-
-(cl-defmacro my/org-roam-filter-by-tag (&optional &key (include nil) (exclude nil))
-  `(lambda (node)
-     (let ((tags (org-roam-node-tags node)))
-       (and
-        ,(if include
-             `(or
-               ,@(mapcar (lambda (tag)
-                           `(member ,tag tags))
-                         include))
-           t)
-        ,@(mapcar (lambda (tag)
-                    `(not (member ,tag tags)))
-                  exclude)))))
-
-(defun my/org-roam-list-notes-by-tag (tag-name)
-  (mapcar #'org-roam-node-file
-          (seq-filter
-           (my/org-roam-filter-by-tag :include (tag-name))
-           (org-roam-node-list))))
-
-(defun my/org-roam-refresh-agenda-list ()
-  (interactive)
-  (let ((project-files (my/org-roam-list-notes-by-tag "org")))
-    (setq org-agenda-files
-          (seq-uniq
-           `(,@org-agenda-files
-             ,@project-files)))
-    (dolist (file project-files)
-      (add-to-list 'org-refile-targets
-                   `(,file :tag . "refile"))
-      (add-to-list 'org-refile-targets
-                   `(,file :regexp . ,(rx (or "Tasks" "Events")))))))
-
-(with-eval-after-load 'org-roam
-  (my/org-roam-refresh-agenda-list))
-
-(defun my/org-roam-find-project ()
-  (interactive)
-  (org-roam-node-find
-   nil
-   nil
-   (my/org-roam-filter-by-tag :include ("org"))
-   :templates
-   `(,my/org-roam-project-template)))
-
-(defun my/org-target-refile (&optional arg)
-  (interactive "P")
-  (let* ((selected-file
-          (completing-read
-           "Refile to: "
-           (seq-uniq (mapcar #'car org-refile-targets))))
-         (org-refile-targets
-          (cl-loop for target in org-refile-targets
-                   if (string-equal (car target) selected-file)
-                   collect target)))
-    (org-refile-cache-clear)
-    (org-refile arg)))
-
-(general-define-key
- :keymaps 'org-mode-map
- "C-c C-w" #'my/org-target-refile)
-
-(defun my/org-roam-find-zk ()
-  (interactive)
-  (org-roam-node-find
-   nil
-   nil
-   (my/org-roam-filter-by-tag :exclude ("org"))))
+         :unnarrowed t)))
 
 (my-leader-def
   :infix "or"
   "" '(:which-key "org-roam")
   "i" 'org-roam-node-insert
-  "r" '(my/org-roam-find-zk :wk "ZK")
-  "p" '(my/org-roam-find-project :wk "Projects")
+  "r" 'org-roam-node-find
   "g" 'org-roam-graph
   "c" 'org-roam-capture
   "b" 'org-roam-buffer-toggle)
@@ -3845,7 +3749,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :if (not my/remote-server)
   :commands (elfeed)
   :init
-  (my-leader-def "ae" (my/command-in-persp "elfeed" "elfeed" 0 (elfeed)))
+  (my-leader-def "ae" (my/command-in-persp "elfeed" "elfeed" 0 (elfeed-summary)))
   :config
   (setq elfeed-db-directory "~/.elfeed")
   (setq elfeed-enclosure-default-dir (expand-file-name "~/Downloads"))
@@ -3944,6 +3848,10 @@ Returns (<buffer> . <workspace-index>) or nil."
 (advice-add 'load-theme :after #'my/update-my-theme-elfeed)
 (when (fboundp 'doom-color)
   (my/update-my-theme-elfeed))
+
+(use-package elfeed-summary
+  :commands (elfeed-summary)
+  :straight t)
 
 (defun my/elfeed-toggle-score-sort ()
   (interactive)
