@@ -31,8 +31,14 @@ Table of contents and software:
 A few other repositories I may consider a part of my config:
 - [[https://github.com/SqrtMinusOne/channel-q][channel-q]] is my Guix channel
 - [[https://github.com/SqrtMinusOne/sqrt-data][sqrt-data]] is a home for my statistics gathering effort
-- Emacs packages that I wrote (so far, all of them originated in my Emacs config):
-  - [[https://github.com/SqrtMinusOne/lyrics-fetcher.el][lyrics-fetcher.el]], [[https://github.com/SqrtMinusOne/pomm.el][pomm.el]], [[https://github.com/SqrtMinusOne/perspective-exwm.el][perspective-exwm.el]], [[https://github.com/SqrtMinusOne/exwm-modeline][exwm-modeline.el]], [[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]]
+- Emacs packages that I wrote (some of them originated in my Emacs config):
+  - [[https://github.com/SqrtMinusOne/lyrics-fetcher.el][lyrics-fetcher.el]]
+  - [[https://github.com/SqrtMinusOne/pomm.el][pomm.el]]
+  - [[https://github.com/SqrtMinusOne/perspective-exwm.el][perspective-exwm.el]]
+  - [[https://github.com/SqrtMinusOne/exwm-modeline][exwm-modeline.el]]
+  - [[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]]
+  - [[https://github.com/SqrtMinusOne/elfeed-summary][elfeed-summary]]
+  - [[https://github.com/SqrtMinusOne/password-store-ivy][password-store-ivy]]
 
 Posts about my configuration:
 - [[https://sqrtminusone.xyz/posts/2022-01-03-exwm/][Using EXWM and perspective.el on a multi-monitor setup]]
