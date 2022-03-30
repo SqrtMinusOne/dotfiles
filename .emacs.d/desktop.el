@@ -288,13 +288,17 @@ DIR is either 'left or 'right."
      focus-follows-mouse)))
 
 (defun my/restore-posframe (&rest args)
-  (mapc
-   (lambda (var)
-     (kill-local-variable var)
-     (setf (symbol-value var) t))
-   '(exwm-workspace-warp-cursor
-     mouse-autoselect-window
-     focus-follows-mouse)))
+  (run-with-timer
+   0.25
+   nil
+   (lambda ()
+     (mapc
+      (lambda (var)
+        (kill-local-variable var)
+        (setf (symbol-value var) t))
+      '(exwm-workspace-warp-cursor
+        mouse-autoselect-window
+        focus-follows-mouse)))))
 
 (advice-add #'posframe--create-posframe :after #'my/setup-posframe)
 (advice-add #'ivy-posframe-cleanup :after #'my/restore-posframe)
@@ -402,7 +406,7 @@ _d_: Discord
   (setq mouse-autoselect-window t)
   (setq focus-follows-mouse t)
 
-  
+
   (setq exwm-input-prefix-keys
         `(?\C-x
           ?\C-w
@@ -410,7 +414,7 @@ _d_: Discord
           ?\M-u))
   (defmacro my/app-command (command)
     `(lambda () (interactive) (my/run-in-background ,command)))
-  
+
   (general-define-key
    :keymaps '(exwm-mode-map)
    "C-q" #'exwm-input-send-next-key
@@ -425,46 +429,46 @@ _d_: Discord
         `(
           ;; Reset to line-mode
           (,(kbd "s-R") . exwm-reset)
-  
+
           ;; Switch windows
           (,(kbd "s-<left>") . (lambda () (interactive) (my/exwm-windmove 'left)))
           (,(kbd "s-<right>") . (lambda () (interactive) (my/exwm-windmove 'right)))
           (,(kbd "s-<up>") . (lambda () (interactive) (my/exwm-windmove 'up)))
           (,(kbd "s-<down>") . (lambda () (interactive) (my/exwm-windmove 'down)))
-  
+
           (,(kbd "s-h"). (lambda () (interactive) (my/exwm-windmove 'left)))
           (,(kbd "s-l") . (lambda () (interactive) (my/exwm-windmove 'right)))
           (,(kbd "s-k") . (lambda () (interactive) (my/exwm-windmove 'up)))
           (,(kbd "s-j") . (lambda () (interactive) (my/exwm-windmove 'down)))
-  
+
           ;; Moving windows
           (,(kbd "s-H") . (lambda () (interactive) (my/exwm-move-window 'left)))
           (,(kbd "s-L") . (lambda () (interactive) (my/exwm-move-window 'right)))
           (,(kbd "s-K") . (lambda () (interactive) (my/exwm-move-window 'up)))
           (,(kbd "s-J") . (lambda () (interactive) (my/exwm-move-window 'down)))
-  
+
           ;; Fullscreen
           (,(kbd "s-f") . exwm-layout-toggle-fullscreen)
           (,(kbd "s-F") . exwm-floating-toggle-floating)
-  
+
           ;; Quit
           (,(kbd "s-Q") . my/exwm-quit)
-  
+
           ;; Split windows
           (,(kbd "s-s") . evil-window-vsplit)
           (,(kbd "s-v") . evil-window-hsplit)
-  
+
           ;; Switch perspectives
           (,(kbd "s-,") . persp-prev)
           (,(kbd "s-.") . persp-next)
-  
+
           ;; Switch buffers
           (,(kbd "s-e") . persp-ivy-switch-buffer)
           (,(kbd "s-E") . my/persp-ivy-switch-buffer-other-window)
-  
+
           ;; Resize windows
           (,(kbd "s-r") . my/exwm-resize-hydra/body)
-  
+
           ;; Apps & stuff
           (,(kbd "s-p") . counsel-linux-app)
           (,(kbd "s-P") . async-shell-command)
@@ -472,24 +476,24 @@ _d_: Discord
           (,(kbd "s--") . password-store-ivy)
           (,(kbd "s-=") . my/emojify-type)
           (,(kbd "s-i") . ,(my/app-command "copyq menu"))
-  
+
           ;; Basic controls
           (,(kbd "<XF86AudioRaiseVolume>") . ,(my/app-command "ponymix increase 5 --max-volume 150"))
           (,(kbd "<XF86AudioLowerVolume>") . ,(my/app-command "ponymix decrease 5 --max-volume 150"))
           (,(kbd "<XF86MonBrightnessUp>") . ,(my/app-command "light -A 5"))
           (,(kbd "<XF86MonBrightnessDown>") . ,(my/app-command "light -U 5"))
           (,(kbd "<XF86AudioMute>") . ,(my/app-command "ponymix toggle"))
-  
+
           (,(kbd "<XF86AudioPlay>") . ,(my/app-command "mpc toggle"))
           (,(kbd "<XF86AudioPause>") . ,(my/app-command "mpc pause"))
           (,(kbd "<print>") . ,(my/app-command "flameshot gui"))
-  
+
           ;; Switch workspace
           (,(kbd "s-q") . my/exwm-switch-to-other-monitor)
           (,(kbd "s-w") . exwm-workspace-switch)
           (,(kbd "s-W") . exwm-workspace-move-window)
           (,(kbd "s-<tab>") . my/exwm-workspace-switch-monitor)
-  
+
           ;; Perspectives
           (,(kbd "s-[") . perspective-exwm-cycle-exwm-buffers-backward)
           (,(kbd "s-]") . perspective-exwm-cycle-exwm-buffers-forward)
@@ -497,7 +501,7 @@ _d_: Discord
           (,(kbd "s-<mouse-5>") . perspective-exwm-cycle-exwm-buffers-forward)
           (,(kbd "s-`") . perspective-exwm-switch-perspective)
           (,(kbd "s-o") . ,(my/app-command "rofi -show window"))
-  
+
           ;; 's-N': Switch to certain workspace with Super (Win) plus a number key (0 - 9)
           ,@(mapcar (lambda (i)
                       `(,(kbd (format "s-%d" i)) .
@@ -505,7 +509,7 @@ _d_: Discord
                           (interactive)
                           (exwm-workspace-switch-create ,i))))
                     (number-sequence 0 9))))
-  
+
   (defun exwm-input--fake-last-command ()
     "Fool some packages into thinking there is a change in the buffer."
     (setq last-command #'exwm-input--noop)

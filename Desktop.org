@@ -792,13 +792,16 @@ Not sure about that. The cursor occasionally changes focus when I'm exiting posf
      focus-follows-mouse)))
 
 (defun my/restore-posframe (&rest args)
-  (mapc
-   (lambda (var)
-     (kill-local-variable var)
-     (setf (symbol-value var) t))
-   '(exwm-workspace-warp-cursor
-     mouse-autoselect-window
-     focus-follows-mouse)))
+  (run-with-timer
+   0.25
+   (lambda ()
+     (mapc
+      (lambda (var)
+        (kill-local-variable var)
+        (setf (symbol-value var) t))
+      '(exwm-workspace-warp-cursor
+        mouse-autoselect-window
+        focus-follows-mouse)))))
 
 (advice-add #'posframe--create-posframe :after #'my/setup-posframe)
 (advice-add #'ivy-posframe-cleanup :after #'my/restore-posframe)
