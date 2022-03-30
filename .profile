@@ -23,6 +23,10 @@ if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin:$PATH"
     export PATH="$HOME/bin/scripts:$PATH"
 fi
+
+if [ -d "$HOME/.local/bin" ] ; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
 # My paths:1 ends here
 
 # [[file:Console.org::*Guix settings][Guix settings:1]]
