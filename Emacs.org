@@ -1578,6 +1578,15 @@ Title format, which looks something like =emacs:project@hostname=.
                 ;;      (format "@%s" (system-name)))))
                 ))
 #+end_src
+*** Olivetti
+[[https://github.com/rnkn/olivetti][Olivetti]] is a package that limits the current text body width. It's pretty nice to use when writing texts.
+
+#+begin_src emacs-lisp
+(use-package olivetti
+  :straight t
+  :config
+  (setq-default olivetti-body-width 86))
+#+end_src
 ** Themes and colors
 *** Doom themes
 My colorscheme of choice.
@@ -3825,30 +3834,36 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
    :keymaps 'org-present-mode-keymap
    "<next>" 'my/present-next-with-latex
    "<prior>" 'my/present-prev-with-latex)
-  (add-hook 'org-present-mode-hook
-            (lambda ()
-              (blink-cursor-mode 0)
-              (org-present-big)
-              ;; (org-display-inline-images)
-              (org-present-hide-cursor)
-              (org-present-read-only)
-              (display-line-numbers-mode 0)
-              (hide-mode-line-mode +1)
-              (setq-local org-format-latex-options
-                          (plist-put org-format-latex-options
-                                     :scale (* org-present-text-scale my/org-latex-scale 0.5)))
-              (org-latex-preview '(16))))
-  (add-hook 'org-present-mode-quit-hook
-            (lambda ()
-              (blink-cursor-mode 1)
-              (org-present-small)
-              ;; (org-remove-inline-images)
-              (org-present-show-cursor)
-              (org-present-read-write)
-              (display-line-numbers-mode 1)
-              (hide-mode-line-mode 0)
-              (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
-              (org-latex-preview '(64)))))
+  (setq org-present-mode-hook
+        (list (lambda ()
+                (blink-cursor-mode 0)
+                (org-present-big)
+                (org-bars-mode -1)
+                ;; (org-display-inline-images)
+                (org-present-hide-cursor)
+                (org-present-read-only)
+                (display-line-numbers-mode 0)
+                (hide-mode-line-mode +1)
+                (setq-local org-format-latex-options
+                            (plist-put org-format-latex-options
+                                       :scale (* org-present-text-scale my/org-latex-scale 0.5)))
+                (org-latex-preview '(16))
+                (setq-local olivetti-body-width 20)
+                (olivetti-mode 1))))
+  (setq org-present-mode-quit-hook
+        (list (lambda ()
+                (blink-cursor-mode 1)
+                (org-present-small)
+                (org-bars-mode 1)
+                ;; (org-remove-inline-images)
+                (org-present-show-cursor)
+                (org-present-read-write)
+                (display-line-numbers-mode 1)
+                (hide-mode-line-mode 0)
+                (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
+                (org-latex-preview '(64))
+                (olivetti-mode -1)
+                (setq-local olivetti-body-width (default-value 'olivetti-body-width))))))
 #+end_src
 *** TOC
 Make a TOC inside the org file.
