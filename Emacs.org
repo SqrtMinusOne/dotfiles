@@ -1587,6 +1587,21 @@ Title format, which looks something like =emacs:project@hostname=.
   :config
   (setq-default olivetti-body-width 86))
 #+end_src
+*** Keycast
+Showing the last pressed key. Occasionally useful.
+
+#+begin_src emacs-lisp
+(use-package keycast
+  :config
+  (define-minor-mode keycast-mode
+    :global t
+    (if keycast-mode
+        (progn
+          (add-to-list 'global-mode-string '("" keycast-mode-line " "))
+          (add-hook 'pre-command-hook 'keycast--update t) )
+      (remove-hook 'pre-command-hook 'keycast--update)
+      (setq global-mode-string (delete '("" keycast-mode-line " ") global-mode-string)))))
+#+end_src
 ** Themes and colors
 *** Doom themes
 My colorscheme of choice.
@@ -3011,8 +3026,14 @@ An honorary Lisp
   (add-hook 'clips-mode 'lispy-mode))
 #+end_src
 ** Python
-Use [[https://github.com/Microsoft/python-language-server][Microsoft Language Server for Python]].
+*** ein
+[[https://github.com/millejoh/emacs-ipython-notebook][ein]] is a package that allows for running Jupyter notebooks in Emacs.
 
+#+begin_src emacs-lisp
+(use-package ein
+  :straight t)
+#+end_src
+*** pyright
 For some reason it doesn't use pipenv python executable, so here is a small workaround.
 #+begin_src emacs-lisp
 (setq my/pipenv-python-alist '())
@@ -3848,7 +3869,7 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
                             (plist-put org-format-latex-options
                                        :scale (* org-present-text-scale my/org-latex-scale 0.5)))
                 (org-latex-preview '(16))
-                (setq-local olivetti-body-width 20)
+                (setq-local olivetti-body-width 60)
                 (olivetti-mode 1))))
   (setq org-present-mode-quit-hook
         (list (lambda ()
@@ -5701,7 +5722,7 @@ Setting up custom faces for certain tags to make the feed look a bit nicer.
   "Face for the elfeed entries with tag \"blogs\"")
 
 (my/use-doom-colors
-(elfeed-search-tag-face :foreground (doom-color 'yellow))
+ (elfeed-search-tag-face :foreground (doom-color 'yellow))
  (elfeed-videos-entry :foreground (doom-color 'red))
  (elfeed-twitter-entry :foreground (doom-color 'blue))
  (elfeed-emacs-entry :foreground (doom-color 'magenta))
@@ -6321,6 +6342,59 @@ Finally, there is also an Emacs plugin for [[https://devdocs.io][devdocs.io]].
   (my-leader-def
     "he" #'devdocs-lookup
     "hE" #'devdocs-install))
+#+end_src
+*** StackExchange
+[[https://github.com/vermiculus/sx.el][sx.el]] is a StackExchange client for Emacs.
+
+#+begin_src emacs-lisp
+(use-package sx
+  :straight t
+  :config
+  (general-define-key
+   :states '(normal)
+   :keymaps '(sx-question-mode-map sx-question-list-mode-map)
+   "go" #'sx-visit-externally
+   "q" #'quit-window
+   "s*" #'sx-tab-starred
+   "sU" #'sx-tab-unanswered-my-tags
+   "sa" #'sx-ask
+   "sf" #'sx-tab-featured
+   "sh" #'sx-tab-frontpage
+   "si" #'sx-inbox
+   "sm" #'sx-tab-meta-or-main
+   "sn" #'sx-tab-newest
+   "su" #'sx-tab-unanswered
+   "sv" #'sx-tab-topvoted
+   "sw" #'sx-tab-week
+   "u" #'sx-upvote
+   "d" #'sx-downvote
+   "j" nil
+   "k" nil)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(sx-question-mode-map)
+   "gr" #'sx-question-mode-refresh
+   "j" #'sx-question-mode-next-section
+   "k" #'sx-question-mode-previous-section
+   "a" #'sx-answer
+   "e" #'sx-edit
+   "D" #'sx-delete
+   "c" #'sx-comment)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(sx-question-list-mode-map)
+   "RET" 'sx-display
+   "j" #'sx-question-list-next
+   "k" #'sx-question-list-previous
+   "S" #'sx-search
+   "m" #'sx-question-list-mark-read
+   "t" #'sx-tab-switch)
+  (my/use-doom-colors
+   (sx-question-mode-accepted :foreground (doom-color 'green)
+                              :weight 'bold)
+   (sx-question-mode-content :background nil))
+  (add-hook 'sx-question-mode-hook #'doom-modeline-mode)
+  (add-hook 'sx-question-list-mode-hook #'doom-modeline-mode))
 #+end_src
 ** Utilities
 *** pass

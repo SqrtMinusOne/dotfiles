@@ -796,6 +796,22 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                 ;;      (format "@%s" (system-name)))))
                 ))
 
+(use-package olivetti
+  :straight t
+  :config
+  (setq-default olivetti-body-width 86))
+
+(use-package keycast
+  :config
+  (define-minor-mode keycast-mode
+    :global t
+    (if keycast-mode
+        (progn
+          (add-to-list 'global-mode-string '("" keycast-mode-line " "))
+          (add-hook 'pre-command-hook 'keycast--update t) )
+      (remove-hook 'pre-command-hook 'keycast--update)
+      (setq global-mode-string (delete '("" keycast-mode-line " ") global-mode-string)))))
+
 (use-package doom-themes
   :straight t
   :if (not my/is-termux)
@@ -2019,6 +2035,9 @@ Returns (<buffer> . <workspace-index>) or nil."
   :config
   (add-hook 'clips-mode 'lispy-mode))
 
+(use-package ein
+  :straight t)
+
 (setq my/pipenv-python-alist '())
 
 (defun my/get-pipenv-python ()
@@ -2666,30 +2685,36 @@ Returns (<buffer> . <workspace-index>) or nil."
    :keymaps 'org-present-mode-keymap
    "<next>" 'my/present-next-with-latex
    "<prior>" 'my/present-prev-with-latex)
-  (add-hook 'org-present-mode-hook
-            (lambda ()
-              (blink-cursor-mode 0)
-              (org-present-big)
-              ;; (org-display-inline-images)
-              (org-present-hide-cursor)
-              (org-present-read-only)
-              (display-line-numbers-mode 0)
-              (hide-mode-line-mode +1)
-              (setq-local org-format-latex-options
-                          (plist-put org-format-latex-options
-                                     :scale (* org-present-text-scale my/org-latex-scale 0.5)))
-              (org-latex-preview '(16))))
-  (add-hook 'org-present-mode-quit-hook
-            (lambda ()
-              (blink-cursor-mode 1)
-              (org-present-small)
-              ;; (org-remove-inline-images)
-              (org-present-show-cursor)
-              (org-present-read-write)
-              (display-line-numbers-mode 1)
-              (hide-mode-line-mode 0)
-              (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
-              (org-latex-preview '(64)))))
+  (setq org-present-mode-hook
+        (list (lambda ()
+                (blink-cursor-mode 0)
+                (org-present-big)
+                (org-bars-mode -1)
+                ;; (org-display-inline-images)
+                (org-present-hide-cursor)
+                (org-present-read-only)
+                (display-line-numbers-mode 0)
+                (hide-mode-line-mode +1)
+                (setq-local org-format-latex-options
+                            (plist-put org-format-latex-options
+                                       :scale (* org-present-text-scale my/org-latex-scale 0.5)))
+                (org-latex-preview '(16))
+                (setq-local olivetti-body-width 60)
+                (olivetti-mode 1))))
+  (setq org-present-mode-quit-hook
+        (list (lambda ()
+                (blink-cursor-mode 1)
+                (org-present-small)
+                (org-bars-mode 1)
+                ;; (org-remove-inline-images)
+                (org-present-show-cursor)
+                (org-present-read-write)
+                (display-line-numbers-mode 1)
+                (hide-mode-line-mode 0)
+                (setq-local org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
+                (org-latex-preview '(64))
+                (olivetti-mode -1)
+                (setq-local olivetti-body-width (default-value 'olivetti-body-width))))))
 
 (use-package org-make-toc
   :after (org)
@@ -3513,6 +3538,53 @@ Returns (<buffer> . <workspace-index>) or nil."
         (append tramp-remote-path
                 '(tramp-own-remote-path))))
 
+(defun avy-dired-cands ()
+  (let (candidates
+        eol
+        (ws (window-start))
+        (we (window-end (selected-window) t)))
+    (save-excursion
+      (save-restriction
+        (narrow-to-region ws we)
+        (goto-char (point-min))
+        (while (< (point) (point-max))
+          (setq eol (line-end-position))
+          (let ((change (next-single-property-change (point) 'dired-filename nil eol)))
+            (cond
+             ((and change (< change eol))
+              (goto-char change)
+              (push (cons (point) (selected-window)) candidates))
+             ((re-search-forward directory-listing-before-filename-regexp eol t)
+              (goto-char (match-end 0))
+              (push (cons (point) (selected-window)) candidates))))
+          (forward-line 1))))
+    (nreverse candidates)))
+
+(defun avy-dired-goto-line ()
+  "Jump to a line in dired buffer"
+  (interactive)
+  (unless (derived-mode-p 'dired-mode)
+    (dired default-directory))
+  (avy-with avy-dired-goto-line
+    (let* ((avy-handler-old avy-handler-function)
+           (avy-handler-function
+            (lambda (char)
+              (pcase char
+                (?K (progn
+                      (scroll-up-command)
+                      (avy-dired-goto-line)))
+                (?J (progn
+                      (scroll-down-command)
+                      (avy-dired-goto-line)))
+                (_ (funcall avy-handler-old char)))))
+           (r (avy-process (avy-dired-cands))))
+      (when (not (memq r '(t nil)))
+        (avy-action-goto r)
+        (let ((file (dired-get-file-for-visit)))
+          (dired-open-file)
+          (when (file-directory-p file)
+            (avy-dired-goto-line)))))))
+
 (defun my/dired-bookmark-open ()
   (interactive)
   (let ((bookmarks
@@ -3816,7 +3888,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   "Face for the elfeed entries with tag \"blogs\"")
 
 (my/use-doom-colors
-(elfeed-search-tag-face :foreground (doom-color 'yellow))
+ (elfeed-search-tag-face :foreground (doom-color 'yellow))
  (elfeed-videos-entry :foreground (doom-color 'red))
  (elfeed-twitter-entry :foreground (doom-color 'blue))
  (elfeed-emacs-entry :foreground (doom-color 'magenta))
@@ -4241,6 +4313,55 @@ Returns (<buffer> . <workspace-index>) or nil."
   (my-leader-def
     "he" #'devdocs-lookup
     "hE" #'devdocs-install))
+
+(use-package sx
+  :straight t
+  :config
+  (general-define-key
+   :states '(normal)
+   :keymaps '(sx-question-mode-map sx-question-list-mode-map)
+   "go" #'sx-visit-externally
+   "q" #'quit-window
+   "s*" #'sx-tab-starred
+   "sU" #'sx-tab-unanswered-my-tags
+   "sa" #'sx-ask
+   "sf" #'sx-tab-featured
+   "sh" #'sx-tab-frontpage
+   "si" #'sx-inbox
+   "sm" #'sx-tab-meta-or-main
+   "sn" #'sx-tab-newest
+   "su" #'sx-tab-unanswered
+   "sv" #'sx-tab-topvoted
+   "sw" #'sx-tab-week
+   "u" #'sx-upvote
+   "d" #'sx-downvote
+   "j" nil
+   "k" nil)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(sx-question-mode-map)
+   "gr" #'sx-question-mode-refresh
+   "j" #'sx-question-mode-next-section
+   "k" #'sx-question-mode-previous-section
+   "a" #'sx-answer
+   "e" #'sx-edit
+   "D" #'sx-delete
+   "c" #'sx-comment)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(sx-question-list-mode-map)
+   "RET" 'sx-display
+   "j" #'sx-question-list-next
+   "k" #'sx-question-list-previous
+   "S" #'sx-search
+   "m" #'sx-question-list-mark-read
+   "t" #'sx-tab-switch)
+  (my/use-doom-colors
+   (sx-question-mode-accepted :foreground (doom-color 'green)
+                              :weight 'bold)
+   (sx-question-mode-content :background nil))
+  (add-hook 'sx-question-mode-hook #'doom-modeline-mode)
+  (add-hook 'sx-question-list-mode-hook #'doom-modeline-mode))
 
 (use-package pass
   :straight t
