@@ -563,7 +563,10 @@ I'm using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config (=openvpn.ov
   login
   password
   #+end_src
-- run [[https://github.com/alfredopalhares/openvpn-update-resolv-conf][openvpn-update-resolv-conf]] script to fix DNS. =openvpn-update-resolve-conf= originates in my [[https://github.com/SqrtMinusOne/channel-q][channel-q]].
+- Run [[https://github.com/alfredopalhares/openvpn-update-resolv-conf][openvpn-update-resolv-conf]] script to fix DNS. =openvpn-update-resolve-conf= originates in my [[https://github.com/SqrtMinusOne/channel-q][channel-q]].
+
+  Edit <2022-04-07 Thu>: Looks like this doesn't work on some connections. See the next option in that case
+
   #+begin_src conf-space :tangle no
   setenv PATH /home/pavel/.guix-extra-profiles/system/system/bin:/home/pavel/.guix-extra-profiles/system/system/sbin:/home/pavel/.guix-extra-profiles/console/console/bin:/run/current-system/profile/bin:/run/current-system/profile/sbin
 
@@ -572,6 +575,23 @@ I'm using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config (=openvpn.ov
   #+end_src
 
   =setenv PATH= is necessary because both =resolvconf= (openresolve) and =update-resolv-conf.sh= are shell scripts which need GNU coreutils and stuff, and OpenVPN clears PATH by default.
+- Fix =etc/resolv.conf=
+  #+begin_src sh :tangle ~/bin/scripts/fix-resolve-conf
+  cp /etc/resolv.conf /etc/resolv.conf-bak
+  echo "nameserver 8.8.8.8" > /etc/resolv.conf
+  #+end_src
+
+  Restore =resolv.conf=
+  #+begin_src sh :tangle ~/bin/scripts/restore-resolve-conf
+  cp /etc/resolv.conf-bak /etc/resolv.conf
+  rm /etc/resolv.conf-bak
+  #+end_src
+
+  #+begin_src conf-space :tangle no
+  up /home/pavel/bin/scripts/fix-resolve-conf
+  down /home/pavel/bin/scripts/restore-resolve-conf
+  #+end_src
+
 - run a script to fix Docker routes
   #+begin_src conf-space :tangle no
   route-up /home/pavel/bin/scripts/vpn-fix-routes
@@ -593,6 +613,8 @@ I'm using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config (=openvpn.ov
   $IP route del 128.0.0.0/1 via $route_vpn_gateway
   #+end_src
 
+  #+RESULTS:
+
 *** vpn-start
 As of now, CyberGhost doesn't provide ipv6, so we have to disable it.
 
@@ -606,11 +628,13 @@ if [ -z "$CONN" ]; then
     exit
 fi
 
-echo "Connection: $CONN"
-notify-send "VPN" "Initializing for connection: $CONN"
+if [[ "$CONN" != *"Wired"* ]]; then
+    echo "Connection: $CONN"
+    notify-send "VPN" "Initializing for connection: $CONN"
 
-pkexec nmcli con modify "$CONN" ipv6.method ignore
-nmcli connection up "$CONN"
+    pkexec nmcli con modify "$CONN" ipv6.method ignore
+    nmcli connection up "$CONN"
+fi
 pkexec openvpn --config ~/.vpn/openvpn.ovpn
 #+end_src
 
