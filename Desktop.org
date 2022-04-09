@@ -274,11 +274,11 @@ x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
 image/png=feh.desktop
 image/jpg=feh.desktop
 image/jpeg=feh.desktop
-application/pdf=zathura-wrapper.desktop
+application/pdf=org.pwmt.zathura.desktop
 
 [Added Associations]
 x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop;
-application/pdf=zathura-wrapper.desktop
+application/pdf=org.pwmt.zathura.desktop
 #+end_src
 ** Device-specific settings
 | Guix dependency | Description                                |
@@ -3310,24 +3310,6 @@ set notification-error-fg <<get-color(name="color-fg", quote=1)>>
 set notification-warning-bg <<get-color(name="yellow", quote=1)>>
 set notification-warning-fg <<get-color(name="color-fg", quote=1)>>
 #+end_src
-
-For some reason zathura doesn't pick up the plugin directory, so I make a wrapper that sets the directory up:
-#+begin_src bash :tangle ~/bin/zathura-wrapper
-zathura -p ~/.guix-extra-profiles/office/office/lib/zathura $@
-#+end_src
-
-#+begin_src conf-desktop
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=Zathura
-Exec=/home/pavel/bin/zathura-wrapper %U
-#+end_src
-
-Add the following line to the =mimeapps.list=
-#+begin_example
-application/pdf=zathura-wrapper.desktop
-#+end_example
 * Various software
 This section generates manifests for various desktop software that I'm using.
 

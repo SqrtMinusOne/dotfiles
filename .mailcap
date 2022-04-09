@@ -3,7 +3,7 @@ audio/*; mpc add %s
 image/*; feh %s
 
 application/msword; /usr/bin/xdg-open %s
-application/pdf; zathura-wrapper %s
-application/postscript ; zathura-wrapper %s
+application/pdf; zathura %s
+application/postscript ; zathura %s
 
 text/html; firefox %s
