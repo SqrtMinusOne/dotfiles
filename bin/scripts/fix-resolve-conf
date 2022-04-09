@@ -1,0 +1,5 @@
+#!/bin/sh
+# [[file:../../Guix.org::*VPN][VPN:5]]
+cp /etc/resolv.conf /etc/resolv.conf-bak
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+# VPN:5 ends here
