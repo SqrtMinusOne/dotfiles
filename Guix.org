@@ -628,13 +628,13 @@ if [ -z "$CONN" ]; then
     exit
 fi
 
-if [[ "$CONN" != *"Wired"* ]]; then
-    echo "Connection: $CONN"
-    notify-send "VPN" "Initializing for connection: $CONN"
+# if [[ "$CONN" != *"Wired"* ]]; then
+#     echo "Connection: $CONN"
+#     notify-send "VPN" "Initializing for connection: $CONN"
 
-    pkexec nmcli con modify "$CONN" ipv6.method ignore
-    nmcli connection up "$CONN"
-fi
+#     pkexec nmcli con modify "$CONN" ipv6.method ignore
+#     nmcli connection up "$CONN"
+# fi
 pkexec openvpn --config ~/.vpn/openvpn.ovpn
 #+end_src
 
