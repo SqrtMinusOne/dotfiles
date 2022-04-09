@@ -2,6 +2,7 @@
 (specifications->manifest
  '(
    "vpnc"
+   "openresolv"
    "openvpn-update-resolve-conf"
    "openvpn"
    "glibc"

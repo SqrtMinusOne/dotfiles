@@ -1,5 +1,5 @@
 #!/bin/sh
-# [[file:../../Guix.org::*VPN][VPN:6]]
+# [[file:../../Guix.org::*VPN][VPN:9]]
 echo "Adding default route to $route_vpn_gateway with /0 mask..."
 
 IP=/run/current-system/profile/sbin/ip
@@ -9,4 +9,4 @@ $IP route add default via $route_vpn_gateway
 echo "Removing /1 routes..."
 $IP route del 0.0.0.0/1 via $route_vpn_gateway
 $IP route del 128.0.0.0/1 via $route_vpn_gateway
-# VPN:6 ends here
+# VPN:9 ends here

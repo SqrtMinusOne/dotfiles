@@ -543,6 +543,7 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 |----------+-----------------------------|
 | system   | openvpn                     |
 | system   | openvpn-update-resolve-conf |
+| system   | openresolv                  |
 | system   | vpnc                        |
 
 I'm not sure how to properly spin up VPN on Guix, so here is what ended I'm doing after some trial and error.
@@ -583,8 +584,7 @@ I'm using CyberGhost VPN. =~/.vpn= folder stores its OpenVPN config (=openvpn.ov
 
   Restore =resolv.conf=
   #+begin_src sh :tangle ~/bin/scripts/restore-resolve-conf
-  cp /etc/resolv.conf-bak /etc/resolv.conf
-  rm /etc/resolv.conf-bak
+  resolveconf -u
   #+end_src
 
   #+begin_src conf-space :tangle no
