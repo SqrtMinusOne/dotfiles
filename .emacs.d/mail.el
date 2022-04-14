@@ -4,6 +4,18 @@
 (let ((default-directory  "/home/pavel/.guix-extra-profiles/mail/mail/share/emacs/site-lisp"))
   (normal-top-level-add-subdirs-to-load-path))
 
+(defun my/notmuch-toggle-trash ()
+  (interactive)
+  (evil-collection-notmuch-toggle-tag "trash" "search" #'ignore))
+
+(defun my/notmuch-toggle-inbox ()
+  (interactive)
+  (evil-collection-notmuch-toggle-tag "inbox" "search" #'ignore))
+
+(defun my/notmuch-toggle-unread ()
+  (interactive)
+  (evil-collection-notmuch-toggle-tag "unread" "search" #'ignore))
+
 (use-package notmuch
   ;; :ensure nil
   :commands (notmuch notmuch-search)
@@ -20,6 +32,12 @@
   (setq send-mail-function #'sendmail-send-it)
   (setq mml-secure-openpgp-sign-with-sender t)
   (setq notmuch-mua-user-agent-function 'notmuch-mua-user-agent-full)
+  (general-define-key
+   :keymaps 'notmuch-search-mode-map
+   :states '(normal)
+   "d" #'my/notmuch-toggle-trash
+   "i" #'my/notmuch-toggle-inbox
+   "u" #'my/notmuch-toggle-unread)
   ;; Use org-contacts for completion
   (require 'org-contacts)
   (setq notmuch-address-command 'as-is)
