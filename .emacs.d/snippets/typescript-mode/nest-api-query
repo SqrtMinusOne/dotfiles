@@ -1,0 +1,9 @@
+# key: apiq
+# name: nest-api-query
+# condition: (string-match-p (rx controller.ts eos) (buffer-file-name))
+# --
+@ApiQuery({
+  name: '$1',
+  required: ${2:$$(yas-choose-value "false" "true")},
+  description: '$3',
+})

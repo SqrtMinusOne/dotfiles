@@ -300,6 +300,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
+(my-leader-def
+  "SPC" '(:wk "second level")
+  "SPC x" '(:wk "ctl-x")
+  "SPC x" ctl-x-map)
 
 (my-leader-def
   "a" '(:which-key "apps"))
@@ -514,6 +518,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq undo-outer-limit 1006632960))
 
 (use-package yasnippet-snippets
+  :disabled
   :straight t)
 
 (use-package yasnippet
@@ -521,9 +526,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq yas-snippet-dirs
         `(,(concat (expand-file-name user-emacs-directory) "snippets")
-          yasnippet-snippets-dir))
+          ;; yasnippet-snippets-dir
+          ))
   (setq yas-triggers-in-field t)
-  (yas-global-mode 1))
+  (yas-global-mode 1)
+  (my-leader-def
+    :keymaps 'yas-minor-mode-map
+    :infix "es"
+    "" '(:wk "yasnippet")
+    "n" #'yas-new-snippet
+    "s" #'yas-insert-snippet
+    "v" #'yas-visit-snippet-file))
 
 (general-imap "M-TAB" 'company-yasnippet)
 
@@ -689,7 +702,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  :states '(insert normal)
  "C-y" 'counsel-yank-pop)
 
-(my-leader-def "SPC" 'ivy-resume)
+(my-leader-def "SPC SPC" 'ivy-resume)
 (my-leader-def "s" 'swiper-isearch
   "S" 'swiper-all)
 
@@ -728,6 +741,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def
   "h" '(:keymap help-map :which-key "help"))
+
+(my-leader-def
+  :infix "h"
+  "" '(:which-key "help")
+  "h" '(:keymap help-map :which-key "help-map")
+  "f" 'helpful-function
+  "k" 'helpful-key
+  "v" 'helpful-variable
+  "o" 'helpful-symbol)
 
 (general-define-key
  :keymaps 'help-map
@@ -1481,15 +1503,41 @@ Returns (<buffer> . <workspace-index>) or nil."
   (my-leader-def
     :keymaps 'jest-test-mode-map
     :infix "t"
-    "t" 'jest-test-run-at-point
-    "r" 'jest-test-run
-    "a" 'jest-test-run-all-tests))
+    "t" #'jest-test-run-at-point
+    "d" #'jest-test-debug-run-at-point
+    "r" #'jest-test-run
+    "a" #'jest-test-run-all-tests)
+  (defmacro my/jest-test-with-debug-flags (form)
+    "Execute FORM with debugger flags set."
+    (declare (indent 0))
+    `(let ((jest-test-options (seq-concatenate 'list jest-test-options (list "--runInBand") ))
+           (jest-test-npx-options (seq-concatenate 'list jest-test-npx-options (list "--node-options" "--inspect-brk"))))
+       ,form))
+  (defun my/jest-test-debug ()
+    "Run the test with an inline debugger attached."
+    (interactive)
+    (my/jest-test-with-debug-flags
+      (jest-test-run)))
+  (defun my/jest-test-debug-rerun-test ()
+    "Run the test with an inline debugger attached."
+    (interactive)
+    (my/jest-test-with-debug-flags
+      (jest-test-rerun-test)))
+  (defun my/jest-test-debug-run-at-point ()
+    "Run the test with an inline debugger attached."
+    (interactive)
+    (my/jest-test-with-debug-flags
+      (jest-test-run-at-point)))
+  (advice-add #'jest-test-debug :override #'my/jest-test-debug)
+  (advice-add #'jest-test-debug-rerun-test :override #'my/jest-test-debug-rerun-test)
+  (advice-add #'jest-test-debug-run-at-point
+              :override #'my/jest-test-debug-run-at-point))
 
 (defun my/jest-test-run-at-point-copy ()
   "Run the top level describe block of the current buffer's point."
   (interactive)
   (let ((filename (jest-test-find-file))
-        (example  (jest-test-example-at-point)))
+        (example  (jest-test-unit-at-point)))
     (if (and filename example)
         (jest-test-from-project-directory filename
           (let ((jest-test-options (seq-concatenate 'list jest-test-options (list "-t" example))))
@@ -2357,7 +2405,17 @@ Returns (<buffer> . <workspace-index>) or nil."
                 ;; (hs-minor-mode -1)
                 ;; (electric-indent-local-mode -1)
                 ;; (rainbow-delimiters-mode -1)
-                (highlight-indent-guides-mode -1))))
+                (highlight-indent-guides-mode -1)))
+    (with-eval-after-load 'org-babel
+      (general-define-key
+       :keymaps 'org-babel-map
+       "B" #'my/org-babel-execute-buffer-below
+       "A" #'my/org-babel-execute-buffer-above)
+    
+      (my-leader-def
+        :keymaps 'org-mode-map
+        "SPC b" '(:wk "org-babel")
+        "SPC b" org-babel-map)))
   (setq my/org-latex-scale 1.75)
   (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
   (setq my/latex-preview-header "\\documentclass{article}
@@ -2658,6 +2716,30 @@ Returns (<buffer> . <workspace-index>) or nil."
   (if org-babel-ansi-colors-mode
       (add-hook 'org-babel-after-execute-hook #'my/babel-ansi)
     (remove-hook 'org-babel-after-execute-hook #'my/babel-ansi)))
+
+(defun my/org-babel-execute-buffer-below (&optional arg)
+  (interactive "P")
+  (org-babel-eval-wipe-error-buffer)
+  (let ((point (point)))
+    (org-save-outline-visibility t
+      (org-babel-map-executables nil
+        (when (>= (point) point)
+          (if (memq (org-element-type (org-element-context))
+		            '(babel-call inline-babel-call))
+              (org-babel-lob-execute-maybe)
+            (org-babel-execute-src-block arg)))))))
+
+(defun my/org-babel-execute-buffer-above (&optional arg)
+  (interactive "P")
+  (org-babel-eval-wipe-error-buffer)
+  (let ((point (point)))
+    (org-save-outline-visibility t
+      (org-babel-map-executables nil
+        (when (<= (point) point)
+          (if (memq (org-element-type (org-element-context))
+		            '(babel-call inline-babel-call))
+              (org-babel-lob-execute-maybe)
+            (org-babel-execute-src-block arg)))))))
 
 (defun my/org-prj-dir (path)
   (expand-file-name path (org-entry-get nil "PRJ-DIR" t)))
@@ -3263,6 +3345,17 @@ Returns (<buffer> . <workspace-index>) or nil."
                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
                  ("\\paragraph{%s}" . "\\paragraph*{%s}")
                  ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+  (add-to-list 'org-latex-classes
+               '("org-plain-extreport"
+                 "\\documentclass{extreport}
+[NO-DEFAULT-PACKAGES]
+[PACKAGES]
+[EXTRA]"
+                 ("\\chapter{%s}" . "\\chapter*{%s}")
+                 ("\\section{%s}" . "\\section*{%s}")
+                 ("\\subsection{%s}" . "\\subsection*{%s}")
+                 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+                 ("\\paragraph{%s}" . "\\paragraph*{%s}")))
   ;; Use beamer without the default packages
   (add-to-list 'org-latex-classes
                '("org-latex-beamer"
@@ -4309,6 +4402,15 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package devdocs
   :straight t
   :commands (devdocs-install devdocs-lookup)
+  :config
+  (general-define-key
+   :keymaps 'devdocs-mode-map
+   :states '(normal)
+   "H" #'devdocs-go-back
+   "L" #'devdocs-go-forward
+   "o" #'devdocs-lookup
+   "[" #'devdocs-previous-page
+   "]" #'devdocs-next-page)
   :init
   (my-leader-def
     "he" #'devdocs-lookup
@@ -4341,8 +4443,8 @@ Returns (<buffer> . <workspace-index>) or nil."
    :states '(normal)
    :keymaps '(sx-question-mode-map)
    "gr" #'sx-question-mode-refresh
-   "j" #'sx-question-mode-next-section
-   "k" #'sx-question-mode-previous-section
+   "J" #'sx-question-mode-next-section
+   "K" #'sx-question-mode-previous-section
    "a" #'sx-answer
    "e" #'sx-edit
    "D" #'sx-delete
@@ -4355,7 +4457,11 @@ Returns (<buffer> . <workspace-index>) or nil."
    "k" #'sx-question-list-previous
    "S" #'sx-search
    "m" #'sx-question-list-mark-read
+   "O" #'sx-question-list-order-by
    "t" #'sx-tab-switch)
+  (my-leader-def
+   "hs" #'sx-search
+   "hS" #'sx-tab-frontpage)
   (my/use-doom-colors
    (sx-question-mode-accepted :foreground (doom-color 'green)
                               :weight 'bold)
