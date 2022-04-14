@@ -746,9 +746,12 @@ Setting up some completion interfaces that fit particularly well to use with EXW
 
 Take a look at [[https://github.com/ch11ng/exwm/issues/550][this issue]] in the EXWM repo about setting it up.
 
+Edit <2022-04-09 Sat>: This looks nice, but unfortunately too unstable. Disabling it.
+
 #+begin_src emacs-lisp
 (use-package ivy-posframe
   :straight t
+  :disabled
   :config
   (setq ivy-posframe-parameters '((left-fringe . 10)
                                   (right-fringe . 10)
@@ -775,8 +778,8 @@ Take a look at [[https://github.com/ch11ng/exwm/issues/550][this issue]] in the 
         (apply fn args)
       (x-set-mouse-absolute-pixel-position (car pos)
                                            (cdr pos)))))
-
-(advice-add #'ivy-posframe--read :around #'my/advise-fn-suspend-follow-mouse)
+(with-eval-after-load 'ivy-posframe
+  (advice-add #'ivy-posframe--read :around #'my/advise-fn-suspend-follow-mouse))
 #+end_src
 **** Disable changing focus
 Not sure about that. The cursor occasionally changes focus when I'm exiting posframe, and this doesn't catch all the cases.
@@ -803,8 +806,9 @@ Not sure about that. The cursor occasionally changes focus when I'm exiting posf
         mouse-autoselect-window
         focus-follows-mouse)))))
 
-(advice-add #'posframe--create-posframe :after #'my/setup-posframe)
-(advice-add #'ivy-posframe-cleanup :after #'my/restore-posframe)
+(with-eval-after-load 'ivy-posframe
+  (advice-add #'posframe--create-posframe :after #'my/setup-posframe)
+  (advice-add #'ivy-posframe-cleanup :after #'my/restore-posframe))
 #+end_src
 *** Linux app
 =counsel-linux-app= is a counsel interface to select a Linux desktop application.
