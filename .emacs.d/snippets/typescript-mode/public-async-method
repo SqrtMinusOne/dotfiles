@@ -2,6 +2,6 @@
 # name: public-async-method
 # key: pam
 # --
-public async $1 ($2)${3:$$(if (string-empty-p yas-text) "" (if (string-match-p (rx bos ":") yas-text) yas-text (format ": %s" yas-text)))} {
+public async $1($2)${3:$$(if (string-empty-p yas-text) "" (if (string-match-p (rx bos ":") yas-text) yas-text (format ": %s" yas-text)))} {
   $0
 }

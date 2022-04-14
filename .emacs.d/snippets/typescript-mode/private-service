@@ -1,0 +1,4 @@
+# key: prs
+# name: private-service
+# --
+private ${1:service}Service: ${1:$(capitalize yas-text)}Service$0

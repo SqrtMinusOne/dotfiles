@@ -1,6 +1,6 @@
 # key: apiq
 # name: nest-api-query
-# condition: (string-match-p (rx controller.ts eos) (buffer-file-name))
+# condition: (string-match-p (rx "controller.ts" eos) (buffer-file-name))
 # --
 @ApiQuery({
   name: '$1',
