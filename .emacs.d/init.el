@@ -3631,53 +3631,6 @@ Returns (<buffer> . <workspace-index>) or nil."
         (append tramp-remote-path
                 '(tramp-own-remote-path))))
 
-(defun avy-dired-cands ()
-  (let (candidates
-        eol
-        (ws (window-start))
-        (we (window-end (selected-window) t)))
-    (save-excursion
-      (save-restriction
-        (narrow-to-region ws we)
-        (goto-char (point-min))
-        (while (< (point) (point-max))
-          (setq eol (line-end-position))
-          (let ((change (next-single-property-change (point) 'dired-filename nil eol)))
-            (cond
-             ((and change (< change eol))
-              (goto-char change)
-              (push (cons (point) (selected-window)) candidates))
-             ((re-search-forward directory-listing-before-filename-regexp eol t)
-              (goto-char (match-end 0))
-              (push (cons (point) (selected-window)) candidates))))
-          (forward-line 1))))
-    (nreverse candidates)))
-
-(defun avy-dired-goto-line ()
-  "Jump to a line in dired buffer"
-  (interactive)
-  (unless (derived-mode-p 'dired-mode)
-    (dired default-directory))
-  (avy-with avy-dired-goto-line
-    (let* ((avy-handler-old avy-handler-function)
-           (avy-handler-function
-            (lambda (char)
-              (pcase char
-                (?K (progn
-                      (scroll-up-command)
-                      (avy-dired-goto-line)))
-                (?J (progn
-                      (scroll-down-command)
-                      (avy-dired-goto-line)))
-                (_ (funcall avy-handler-old char)))))
-           (r (avy-process (avy-dired-cands))))
-      (when (not (memq r '(t nil)))
-        (avy-action-goto r)
-        (let ((file (dired-get-file-for-visit)))
-          (dired-open-file)
-          (when (file-directory-p file)
-            (avy-dired-goto-line)))))))
-
 (defun my/dired-bookmark-open ()
   (interactive)
   (let ((bookmarks
