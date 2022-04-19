@@ -508,7 +508,9 @@ _d_: Discord
                       `(,(kbd (format "s-%d" i)) .
                         (lambda ()
                           (interactive)
-                          (exwm-workspace-switch-create ,i))))
+                          (when (or (< ,i (exwm-workspace--count))
+                                    (y-or-n-p (format "Create workspace %d" ,i)))
+                            (exwm-workspace-switch-create ,i) ))))
                     (number-sequence 0 9))))
   
   (defun exwm-input--fake-last-command ()

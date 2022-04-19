@@ -987,7 +987,9 @@ And keybindings that are available in both =char-mode= and =line-mode=:
                     `(,(kbd (format "s-%d" i)) .
                       (lambda ()
                         (interactive)
-                        (exwm-workspace-switch-create ,i))))
+                        (when (or (< ,i (exwm-workspace--count))
+                                  (y-or-n-p (format "Create workspace %d" ,i)))
+                          (exwm-workspace-switch-create ,i) ))))
                   (number-sequence 0 9))))
 #+end_src
 
