@@ -1616,8 +1616,10 @@ Showing the last pressed key. Occasionally useful.
 
 #+begin_src emacs-lisp
 (use-package keycast
+  :straight t
   :config
   (define-minor-mode keycast-mode
+    "Keycast mode"
     :global t
     (if keycast-mode
         (progn
@@ -1847,6 +1849,7 @@ References:
   (setq doom-modeline-persp-name nil)
   :config
   (setq doom-modeline-minor-modes nil)
+  (setq doom-modeline-irc nil)
   (setq doom-modeline-buffer-state-icon nil)
   (doom-modeline-mode 1))
 #+end_src
@@ -5310,6 +5313,15 @@ Display git info, such as the last commit for file and stuff. It's pretty useful
    :states '(normal emacs)
    ")" 'dired-git-info-mode))
 #+end_src
+
+[[https://github.com/SqrtMinusOne/avy-dired][avy-dired]] is my experimentation with Avy & Dired. It's somewhat unstable.
+#+begin_src emacs-lisp
+(use-package avy-dired
+  :straight (:host github :repo "SqrtMinusOne/avy-dired")
+  :after (dired)
+  :init
+  (my-leader-def "aa" #'avy-dired-goto-line))
+#+end_src
 *** Subdirectories
 Subdirectories are one of the interesting features of Dired. It allows displaying multiple folders on the same window.
 
@@ -6069,7 +6081,7 @@ My package for fetching EMMS lyrics and album covers.
     "asT" #'lyrics-fetcher-show-lyrics-query)
   :config
   (setq lyrics-fetcher-genius-access-token
-        (password-store-get "My_Online/APIs/genius.com"))
+        (my/password-store-get "My_Online/APIs/genius.com"))
   (general-define-key
    :states '(emacs normal)
    :keymaps 'emms-browser-mode-map
@@ -6247,10 +6259,14 @@ ERC is a built-it Emacs IRC client.
   (setq erc-log-channels-directory "~/.erc/logs")
   (setq erc-save-buffer-on-part t)
   (add-to-list 'erc-modules 'autojoin)
+  (add-to-list 'erc-modules 'notifications)
   (add-to-list 'erc-modules 'log)
   (erc-update-modules)
   (setq erc-autojoin-channels-alist
-        `((,(rx "libera.chat") "#systemcrafters")))
+        `((,(rx "libera.chat")
+           "#systemcrafters"
+           "#emacs"
+           "#guix")))
   (setq erc-kill-buffer-on-part t)
   (setq erc-track-shorten-start 8))
 #+end_src
@@ -6288,7 +6304,29 @@ ZNC support. Seems to provide a few nice features for ZNC.
   (setq znc-servers
         `(("sqrtminusone.xyz" 6697 t
            ((libera "sqrtminusone"
-                    ,(password-store-get "Selfhosted/ZNC")))))))
+                    ,(my/password-store-get "Selfhosted/ZNC")))))))
+#+end_src
+
+Send =/detach= to all servers. Kinda strange that there's no such function already
+#+begin_src emacs-lisp
+(defun my/erc-detach-all ()
+  (interactive)
+  (cl-loop for buf being the buffers
+           if (eq (buffer-local-value 'major-mode buf) 'erc-mode)
+           do (with-current-buffer buf
+                (when (erc-server-process-alive)
+                  (let ((tgt (erc-default-target)))
+                    (erc-server-send (format "DETACH %s" tgt) nil tgt))))))
+
+#+end_src
+*** ement.el
+#+begin_src emacs-lisp
+(use-package plz
+  :straight (:host github :repo "alphapapa/plz.el")
+  :defer t)
+
+(use-package ement
+  :straight (:host github :repo "alphapapa/ement.el"))
 #+end_src
 *** OFF (OFF) jabber
 #+begin_src emacs-lisp :tangle no
@@ -6475,6 +6513,14 @@ This package is pretty good to manage the password database. I use [[https://git
   (my-leader-def "ak" #'pass)
   :config
   (setq pass-show-keybindings nil))
+#+end_src
+
+Also I use =password-store-get= in a few places in my config, and by default it returns =nil= if I make an error in the password, which is not too convinient. So:
+#+begin_src emacs-lisp
+(defun my/password-store-get (entry)
+  (if-let ((res (password-store-get entry)))
+      res
+    (my/password-store-get entry)))
 #+end_src
 *** Docker
 A package to manage docker containers from Emacs.

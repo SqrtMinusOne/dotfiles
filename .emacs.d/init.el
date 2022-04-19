@@ -824,8 +824,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq-default olivetti-body-width 86))
 
 (use-package keycast
+  :straight t
   :config
   (define-minor-mode keycast-mode
+    "Keycast mode"
     :global t
     (if keycast-mode
         (progn
@@ -991,6 +993,7 @@ influence of C1 on the result."
   (setq doom-modeline-persp-name nil)
   :config
   (setq doom-modeline-minor-modes nil)
+  (setq doom-modeline-irc nil)
   (setq doom-modeline-buffer-state-icon nil)
   (doom-modeline-mode 1))
 
@@ -3591,6 +3594,12 @@ Returns (<buffer> . <workspace-index>) or nil."
    :states '(normal emacs)
    ")" 'dired-git-info-mode))
 
+(use-package avy-dired
+  :straight (:host github :repo "SqrtMinusOne/avy-dired")
+  :after (dired)
+  :init
+  (my-leader-def "aa" #'avy-dired-goto-line))
+
 (defun my/dired-open-this-subdir ()
   (interactive)
   (dired (dired-current-directory)))
@@ -4173,7 +4182,7 @@ Returns (<buffer> . <workspace-index>) or nil."
     "asT" #'lyrics-fetcher-show-lyrics-query)
   :config
   (setq lyrics-fetcher-genius-access-token
-        (password-store-get "My_Online/APIs/genius.com"))
+        (my/password-store-get "My_Online/APIs/genius.com"))
   (general-define-key
    :states '(emacs normal)
    :keymaps 'emms-browser-mode-map
@@ -4258,10 +4267,14 @@ Returns (<buffer> . <workspace-index>) or nil."
   (setq erc-log-channels-directory "~/.erc/logs")
   (setq erc-save-buffer-on-part t)
   (add-to-list 'erc-modules 'autojoin)
+  (add-to-list 'erc-modules 'notifications)
   (add-to-list 'erc-modules 'log)
   (erc-update-modules)
   (setq erc-autojoin-channels-alist
-        `((,(rx "libera.chat") "#systemcrafters")))
+        `((,(rx "libera.chat")
+           "#systemcrafters"
+           "#emacs"
+           "#guix")))
   (setq erc-kill-buffer-on-part t)
   (setq erc-track-shorten-start 8))
 
@@ -4290,7 +4303,23 @@ Returns (<buffer> . <workspace-index>) or nil."
   (setq znc-servers
         `(("sqrtminusone.xyz" 6697 t
            ((libera "sqrtminusone"
-                    ,(password-store-get "Selfhosted/ZNC")))))))
+                    ,(my/password-store-get "Selfhosted/ZNC")))))))
+
+(defun my/erc-detach-all ()
+  (interactive)
+  (cl-loop for buf being the buffers
+           if (eq (buffer-local-value 'major-mode buf) 'erc-mode)
+           do (with-current-buffer buf
+                (when (erc-server-process-alive)
+                  (let ((tgt (erc-default-target)))
+                    (erc-server-send (format "DETACH %s" tgt) nil tgt))))))
+
+(use-package plz
+  :straight (:host github :repo "alphapapa/plz.el")
+  :defer t)
+
+(use-package ement
+  :straight (:host github :repo "alphapapa/ement.el"))
 
 (use-package google-translate
   :straight t
@@ -4429,6 +4458,11 @@ Returns (<buffer> . <workspace-index>) or nil."
   (my-leader-def "ak" #'pass)
   :config
   (setq pass-show-keybindings nil))
+
+(defun my/password-store-get (entry)
+  (if-let ((res (password-store-get entry)))
+      res
+    (my/password-store-get entry)))
 
 (use-package docker
   :straight t
