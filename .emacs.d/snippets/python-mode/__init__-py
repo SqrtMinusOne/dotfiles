@@ -1,0 +1,8 @@
+# key: init
+# name: __init__-py
+# condition: (string-match-p "__init__.py" (buffer-file-name))
+# --
+${1:`(thread-last (directory-files default-directory)
+(seq-filter (lambda (s) (string-match-p (rx bos (not (or ?_ ?# ?.)) (* nonl) ".py" eos) s)))
+(mapcar (lambda (s) (format "from .%s import *" (substring s 0 (- (length s) 3)))))
+(funcall (lambda (ss) (string-join ss "\n"))))`}

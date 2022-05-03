@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: transaction
+# key: tran
+# --
+await this.sequelize.transaction(async (t) => {
+  $0
+});

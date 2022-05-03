@@ -1,4 +1,4 @@
 # key: prs
 # name: private-service
 # --
-private ${1:service}Service: ${1:$(capitalize yas-text)}Service$0
+private ${1:service}Service: ${1:$(format "%s%s" (capitalize (substring yas-text 0 1)) (substring yas-text 1))}Service$0
