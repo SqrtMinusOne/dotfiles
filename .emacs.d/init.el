@@ -2489,6 +2489,45 @@ Returns (<buffer> . <workspace-index>) or nil."
   
   (general-nmap :keymaps 'org-mode-map
       "C-x C-l" 'my/org-link-copy)
+  (defun my/org-babel-next-visible-src-block (arg)
+    "Move to the next visible source block.
+  
+  With ARG, repeats or can move backward if negative."
+    (interactive "p")
+    (let ((regexp org-babel-src-block-regexp))
+      (if (< arg 0)
+  	    (beginning-of-line)
+        (end-of-line))
+      (while (and (< arg 0) (re-search-backward regexp nil :move))
+        (unless (bobp)
+  	    (while (pcase (get-char-property-and-overlay (point) 'invisible)
+  		         (`(outline . ,o)
+  		          (goto-char (overlay-start o))
+  		          (re-search-backward regexp nil :move))
+  		         (_ nil))))
+        (cl-incf arg))
+      (while (and (> arg 0) (re-search-forward regexp nil t))
+        (while (pcase (get-char-property-and-overlay (point) 'invisible)
+  	           (`(outline . ,o)
+  		        (goto-char (overlay-end o))
+  		        (re-search-forward regexp nil :move))
+  	           (_ (end-of-line) nil)))
+        (re-search-backward regexp nil :move)
+        (cl-decf arg))
+      (if (> arg 0) (goto-char (point-max)) (beginning-of-line))))
+  
+  (defun my/org-babel-previous-visible-src-block (arg)
+    "Move to the prevous visible source block.
+  
+  With ARG, repeats or can move backward if negative."
+    (interactive "p")
+    (my/org-babel-next-visible-src-block (- arg)))
+  
+  (general-define-key
+   :keymaps 'org-mode-map
+   :states '(normal emacs)
+   "M-]" #'my/org-babel-next-visible-src-block
+   "M-[" #'my/org-babel-previous-visible-src-block)
   (setq org-roam-directory (concat org-directory "/roam"))
   (setq org-agenda-files '("inbox.org"
                            "projects/comp-stuff.org"
