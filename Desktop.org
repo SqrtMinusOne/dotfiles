@@ -3363,6 +3363,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | git-lfs         |
 | dev      | mysql           |
 | dev      | gource          |
+| dev      | php             |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""

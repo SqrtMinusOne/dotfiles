@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "php"
    "gource"
    "mysql"
    "git-lfs"
