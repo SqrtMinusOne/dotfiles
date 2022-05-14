@@ -5750,9 +5750,9 @@ My notmuch config now resides in [[file:Mail.org][Mail.org]].
       (message "Can't load mail.el"))))
 #+end_src
 *** Elfeed
-**** General settings
-[[https://github.com/skeeto/elfeed][elfeed]] is an Emacs RSS client.
+[[https://github.com/skeeto/elfeed][elfeed]] is one of the most popular Emacs packages, and it's also one in which I ended up investing a lot of effort.
 
+**** General settings
 The advice there sets =shr-use-fonts= to nil while rendering HTML, so the =elfeed-show= buffer will use monospace font.
 
 Using my own fork until the modifications are merged into master.
@@ -5972,6 +5972,439 @@ Now, a function to add a YouTube link with metadata from elfeed to EMMS.
    :keymaps 'elfeed-show-mode-map
    "gm" #'my/elfeed-add-emms))
 #+end_src
+**** rdrview
+[[https://github.com/eafer/rdrview][rdrview]] is a command-line tool to strip webpages from clutter, extracting only parts related to the actual content. It's a standalone port of the corresponding feature of Firefox, called [[https://support.mozilla.org/en-US/kb/firefox-reader-view-clutter-free-web-pages][Reader View]].
+
+It seems like the tool [[https://repology.org/project/rdrview/versions][isn't available]] in a whole lot of package repositories, but it's pretty easy to compile. I've put together a [[https://github.com/SqrtMinusOne/channel-q/blob/master/rdrview.scm][Guix definition]], which /one day/ I'll submit to upstream.
+
+***** Integrating rdrview with Emacs
+Let's start by integrating =rdrview= with Emacs. In the general case, we want to fetch both metadata and the actual content from the page.
+
+However, the interface of =rdrview= is a bit awkward in this part, so we have the following options:
+- call =rdrview= two times: with =-M= flag to fetch the metadata, and without the flag to fetch the HTML;
+- call =rdrview= with =-T= flag to append the metadata to the resulting HTML.
+
+I've decided to go with the second option. Here is a function that calls rdrview with the required flags:
+#+begin_src emacs-lisp
+(defun my/rdrview-get (url callback)
+  "Get the rdrview representation of URL.
+
+Call CALLBACK with the output."
+  (let* ((buffer (generate-new-buffer "rdrview"))
+         (proc (start-process "rdrview" buffer "rdrview"
+                              url "-T" "title,sitename,body"
+                              "-H")))
+    (set-process-sentinel
+     proc
+     (lambda (process _msg)
+       (let ((status (process-status process))
+             (code (process-exit-status process)))
+         (cond ((and (eq status 'exit) (= code 0))
+                (progn
+                  (funcall callback
+                           (with-current-buffer (process-buffer process)
+                             (buffer-string)))
+                  (kill-buffer (process-buffer process))) )
+               ((or (and (eq status 'exit) (> code 0))
+                    (eq status 'signal))
+                (let ((err (with-current-buffer (process-buffer process)
+                             (buffer-string))))
+                  (kill-buffer (process-buffer process))
+                  (user-error "Error in rdrview: %s" err)))))))
+    proc))
+#+end_src
+
+The function calls =callback= with the output of =rdrview=. This usually doesn't take long, but it's still nice to avoid freezing Emacs that way.
+
+Now we have to parse the output. The =-T= flag puts the title in the =<h1>= tag, the site name site in the =<h2>= tag, and the content in a =<div>=. What's more, headers of the content are often shifted, e.g. the top-level header may well end up being and =<h2>= or =<h3>=, which does not look great in LaTeX.
+
+With that said, here's a function that does the required changes:
+#+begin_src emacs-lisp
+(defun my/rdrview-parse (dom-string)
+  (let ((dom (with-temp-buffer
+               (insert dom-string)
+               (libxml-parse-html-region (point-min) (point-max)))))
+    (let (title sitename content (i 0))
+      (dolist (child (dom-children (car (dom-by-id dom "readability-page-1"))))
+        (when (listp child)
+          (cond
+           ((eq (car child) 'h1)
+            (setq title (dom-text child)))
+           ((eq (car child) 'h2)
+            (setq sitename (dom-text child)))
+           ((eq (car child) 'div)
+            (setq content child)))))
+      (while (and
+              (not (dom-by-tag content 'h1))
+              (dom-search
+               content
+               (lambda (el)
+                 (when (listp el)
+                   (pcase (car el)
+                     ('h2 (setf (car el) 'h1))
+                     ('h3 (setf (car el) 'h2))
+                     ('h4 (setf (car el) 'h3))
+                     ('h5 (setf (car el) 'h4))
+                     ('h6 (setf (car el) 'h5))))))))
+      `((title . ,title)
+        (sitename . ,sitename)
+        (content . ,(with-temp-buffer
+                      (dom-print content)
+                      (buffer-string)))))))
+#+end_src
+
+***** Using rdrview from elfeed
+Because I didn't find a smart way to advise the desired behavior into elfeed, here's a modification of the =elfeed-show-refresh--mail-style= function with two changes:
+- it uses =rdrview= to fetch the HTML;
+- it saves the resulting HTML into a buffer-local variable (we'll need that later).
+
+#+begin_src emacs-lisp
+(defvar-local my/elfeed-show-rdrview-html nil)
+
+(defun my/rdrview-elfeed-show ()
+  (interactive)
+  (unless elfeed-show-entry
+    (user-error "No elfeed entry in this buffer!"))
+  (my/rdrview-get
+   (elfeed-entry-link elfeed-show-entry)
+   (lambda (result)
+     (let* ((data (my/rdrview-parse result))
+            (inhibit-read-only t)
+            (title (elfeed-entry-title elfeed-show-entry))
+            (date (seconds-to-time (elfeed-entry-date elfeed-show-entry)))
+            (authors (elfeed-meta elfeed-show-entry :authors))
+            (link (elfeed-entry-link elfeed-show-entry))
+            (tags (elfeed-entry-tags elfeed-show-entry))
+            (tagsstr (mapconcat #'symbol-name tags ", "))
+            (nicedate (format-time-string "%a, %e %b %Y %T %Z" date))
+            (content (alist-get 'content data))
+            (feed (elfeed-entry-feed elfeed-show-entry))
+            (feed-title (elfeed-feed-title feed))
+            (base (and feed (elfeed-compute-base (elfeed-feed-url feed)))))
+       (erase-buffer)
+       (insert (format (propertize "Title: %s\n" 'face 'message-header-name)
+                       (propertize title 'face 'message-header-subject)))
+       (when elfeed-show-entry-author
+         (dolist (author authors)
+           (let ((formatted (elfeed--show-format-author author)))
+             (insert
+              (format (propertize "Author: %s\n" 'face 'message-header-name)
+                      (propertize formatted 'face 'message-header-to))))))
+       (insert (format (propertize "Date: %s\n" 'face 'message-header-name)
+                       (propertize nicedate 'face 'message-header-other)))
+       (insert (format (propertize "Feed: %s\n" 'face 'message-header-name)
+                       (propertize feed-title 'face 'message-header-other)))
+       (when tags
+         (insert (format (propertize "Tags: %s\n" 'face 'message-header-name)
+                         (propertize tagsstr 'face 'message-header-other))))
+       (insert (propertize "Link: " 'face 'message-header-name))
+       (elfeed-insert-link link link)
+       (insert "\n")
+       (cl-loop for enclosure in (elfeed-entry-enclosures elfeed-show-entry)
+                do (insert (propertize "Enclosure: " 'face 'message-header-name))
+                do (elfeed-insert-link (car enclosure))
+                do (insert "\n"))
+       (insert "\n")
+       (if content
+           (elfeed-insert-html content base)
+         (insert (propertize "(empty)\n" 'face 'italic)))
+       (setq-local my/elfeed-show-rdrview-html content)
+       (goto-char (point-min))))))
+#+end_src
+
+That way, calling =M-x my/rdrview-elfeed-show= replaces the original content with one from =rdrview=.
+
+***** How well does it work?
+Rather ironically, it works well with sites that already ship with proper RSS, like [[https://protesilaos.com/][Protesilaos Stavrou's]] or [[https://karthinks.com/software/simple-folding-with-hideshow/][Karthik Chikmagalur's]] blogs or [[https://www.theatlantic.com/world/][The Atlantic]] magazine.
+
+Of my other subscriptions, it does a pretty good job with [[https://www.theverge.com/][The Verge]], which by default sends entries truncated by the words "Read the full article". For [[https://arstechnica.com/][Ars Technica]], it works only if the story is not large enough, otherwise the site returns its HTML-based pagination interface.
+
+For paywalled sites such as [[https://www.nytimes.com/][New York Times]] or [[https://www.economist.com/][The Economist]], this usually doesn't work (by the way, what's the problem with providing individual RSS feeds for subscribers?). If you need this kind of thing, I'd suggest using the [[https://github.com/RSS-Bridge/rss-bridge][RSS-Bridge]] project. And if something is not available, contributing business logic there definitely makes more sense than implementing workarounds in Emacs Lisp.
+**** LaTeX and pandoc
+However, I also find that I'm not really a fan of reading articles from Emacs. Somehow what works for program code doesn't work that well for natural text. When I have to, I usually switch the Emacs theme to a light one.
+
+But the best solution I've found so far is to render the required articles as PDFs. I may even print out some large articles I want to read.
+
+***** Template
+So first, we need a LaTeX template. Pandoc already ships with one, but I don't like it too much, so I've put up a template from my LaTeX styles, targeting my preferred XeLaTeX engine.
+
+The code for the template is available [[file:.emacs.d/rdrview.tex][dotfiles repo]]. If you use LaTeX, you'll probably be better off using your own setup. Be sure to define the following variables:
+- =main-lang= and =other-lang= for polyglossia (or remove them if you have only one language)
+- =title=
+- =subtitle=
+- =author=
+- =date=
+
+***** Invoking pandoc
+Now that we have the template, let's save it somewhere and store the path to a variable:
+#+begin_src emacs-lisp
+(setq my/rdrview-template (expand-file-name
+                           (concat user-emacs-directory "rdrview.tex")))
+#+end_src
+
+And let's invoke pandoc. We need to pass the following flags:
+- =--pdf-engine=xelatex=, of course
+- =--template <path-to-template>=;
+- =-o <path-to-pdf>=;
+- =--variable key=value=.
+
+In fact, pandoc is a pretty awesome tool in the sense that it allows for feeding custom variables to rich-language templates.
+
+So, the rendering function is as follows:
+#+begin_src emacs-lisp
+(cl-defun my/rdrview-render (content type variables callback
+                                     &key file-name overwrite)
+  "Render CONTENT with pandoc.
+
+TYPE is a file extension as supported by pandoc, for instance,
+html or txt.  VARIABLES is an alist that is fed into the
+template.  After the rendering is complete successfully, CALLBACK
+is called with the resulting PDF.
+
+FILE-NAME is a path to the resulting PDF. If nil it's generated
+randomly.
+
+If a file with the given FILE-NAME already exists, the function will
+invoke CALLBACK straight away without doing the rendering, unless
+OVERWRITE is non-nil."
+  (unless file-name
+    (setq file-name (format "/tmp/%d.pdf" (random 100000000))))
+  (let (params
+        (temp-file-name (format "/tmp/%d.%s" (random 100000000) type)))
+    (cl-loop for (key . value) in variables
+             when value
+             do (progn
+                  (push "--variable" params)
+                  (push (format "%s=%s" key value) params)))
+    (setq params (nreverse params))
+    (if (and (file-exists-p file-name) (not overwrite))
+        (funcall callback file-name)
+      (with-temp-file temp-file-name
+        (insert content))
+      (let ((proc (apply #'start-process
+                         "pandoc" (get-buffer-create "*Pandoc*") "pandoc"
+                         temp-file-name "-o" file-name
+                         "--pdf-engine=xelatex" "--template" my/rdrview-template
+                         params)))
+        (set-process-sentinel
+         proc
+         (lambda (process _msg)
+           (let ((status (process-status process))
+                 (code (process-exit-status process)))
+             (cond ((and (eq status 'exit) (= code 0))
+                    (progn
+                      (message "Done!")
+                      (funcall callback file-name)))
+                   ((or (and (eq status 'exit) (> code 0))
+                        (eq status 'signal))
+                    (user-error "Error in pandoc. Check the *Pandoc* buffer")))))))))
+#+end_src
+
+***** Opening elfeed entries
+Now we have everything required to open elfeed entries.
+
+Also, in my case elfeed entries come in two languages, so I have to set =main-lang= and =other-lang= variables accordingly. Here's the main function:
+#+begin_src emacs-lisp
+(setq my/elfeed-pdf-dir (expand-file-name "~/.elfeed/pdf/"))
+
+(defun my/elfeed-open-pdf (entry overwrite)
+  "Open the current elfeed ENTRY with a pdf viewer.
+
+If OVERWRITE is non-nil, do the rendering even if the resulting
+PDF already exists."
+  (interactive (list elfeed-show-entry current-prefix-arg))
+  (let ((authors (mapcar (lambda (m) (plist-get m :name)) (elfeed-meta entry :authors)))
+        (feed-title (elfeed-feed-title (elfeed-entry-feed entry)))
+        (tags (mapconcat #'symbol-name (elfeed-entry-tags entry) ", "))
+        (date (format-time-string "%a, %e %b %Y"
+                                  (seconds-to-time (elfeed-entry-date entry))))
+        (content (elfeed-deref (elfeed-entry-content entry)))
+        (file-name (concat my/elfeed-pdf-dir
+                           (elfeed-ref-id (elfeed-entry-content entry))
+                           ".pdf"))
+        (main-language "english")
+        (other-language "russian"))
+    (unless content
+      (user-error "No content!"))
+    (setq subtitle
+          (cond
+           ((seq-empty-p authors) feed-title)
+           ((and (not (seq-empty-p (car authors)))
+                 (string-match-p (regexp-quote (car authors)) feed-title)) feed-title)
+           (t (concat (string-join authors ", ") "\\\\" feed-title))))
+    (when (member 'ru (elfeed-entry-tags entry))
+      (setq main-language "russian")
+      (setq other-language "english"))
+    (my/rdrview-render
+     (if (bound-and-true-p my/elfeed-show-rdrview-html)
+         my/elfeed-show-rdrview-html
+       content)
+     (elfeed-entry-content-type entry)
+     `((title . ,(elfeed-entry-title entry))
+       (subtitle . ,subtitle)
+       (date . ,date)
+       (tags . ,tags)
+       (main-lang . ,main-language)
+       (other-lang . ,other-language))
+     (lambda (file-name)
+       (start-process "xdg-open" nil "xdg-open" file-name))
+     :file-name file-name
+     :overwrite current-prefix-arg)))
+#+end_src
+
+If the =my/elfeed-show-rdrview-html= variable is bound and true, then the content in this buffer was retrieved via =rdrview=, so we'll use that instead of the output of =elfeed-deref=.
+
+Now we can open elfeed entries in a PDF viewer, which I find much nicer to read. Given that RSS feeds generally ship with simpler HTML than the regular websites, results usually look awesome.
+
+***** Opening arbitrary sites
+As you may have noticed, we also can display arbitrary web pages with this setup, so let's go ahead and implement that:
+
+#+begin_src emacs-lisp
+(defun my/get-languages (url)
+  (let ((main-lang "english")
+        (other-lang "russian"))
+    (when (string-match-p (rx ".ru") url)
+      (setq main-lang "russian"
+            other-lang "english"))
+    (list main-lang other-lang)))
+
+(defun my/rdrview-open (url overwrite)
+  (interactive
+   (let ((url (read-from-minibuffer
+               "URL: "
+               (if (bound-and-true-p elfeed-show-entry)
+                   (elfeed-entry-link elfeed-show-entry)))))
+     (when (string-empty-p url)
+       (user-error "URL is empty"))
+     (list url current-prefix-arg)))
+  (my/rdrview-get
+   url
+   (lambda (res)
+     (let ((data (my/rdrview-parse res))
+           (langs (my/get-languages url)))
+       (my/rdrview-render
+        (alist-get 'content data)
+        'html
+        `((title . ,(alist-get 'title data))
+          (subtitle . ,(alist-get 'sitename data))
+          (main-lang . ,(nth 0 langs))
+          (other-lang . ,(nth 1 langs)))
+        (lambda (file-name)
+          (start-process "xdg-open" nil "xdg-open" file-name)))))))
+#+end_src
+
+Unfortunately, this part doesn't work that well, so we can't just uninstall Firefox or Chromium and browse the web from a PDF viewer.
+
+The most common problem I've encountered is incorrectly formed pictures, such as =.png= files without the boundary info. I'm sure you've also come across this if you ever tried to insert a lot of Internet pictures into a LaTeX document.
+
+However, sans the pictures issue, for certain sites like Wikipedia this is usable.
+**** YouTube transcripts
+***** Getting subtitles
+Finally, let's get to transcripts.
+
+In principle, the YouTube API allows for downloading subtitles, but I've found [[https://github.com/jdepoix/youtube-transcript-api][this awesome Python script]] which does the same. You can install it from =pip=, or here's mine [[https://github.com/SqrtMinusOne/channel-q/blob/master/youtube-transcript-api.scm][Guix definition]] once again.
+
+Much like the previous cases, we need to invoke the program and save the output. The [[https://en.wikipedia.org/wiki/WebVTT][WebVTT]] format will work well enough for our purposes. Here comes the function:
+#+begin_src emacs-lisp
+(cl-defun my/youtube-subtitles-get (video-id callback &key file-name overwrite)
+  "Get subtitles for VIDEO-ID in WebVTT format.
+
+Call CALLBACK when done.
+
+FILE-NAME is a path to the resulting WebVTT file. If nil it's
+generated randomly.
+
+If a file with the given FILE-NAME already exists, the function will
+invoke CALLBACK straight away without doing the rendering, unless
+OVERWRITE is non-nil."
+  (unless file-name
+    (setq file-name (format "/tmp/%d.vtt" (random 100000000))))
+  (if (and (file-exists-p file-name) (not overwrite))
+      (funcall callback file-name)
+    (let* ((buffer (generate-new-buffer "youtube-transcripts"))
+           (proc (start-process "youtube_transcript_api" buffer
+                                "youtube_transcript_api" video-id
+                                "--languages" "en" "ru" "de"
+                                "--format" "webvtt")))
+      (set-process-sentinel
+       proc
+       (lambda (process _msg)
+         (let ((status (process-status process))
+               (code (process-exit-status process)))
+           (cond ((and (eq status 'exit) (= code 0))
+                  (progn
+                    (with-current-buffer (process-buffer process)
+                      (setq buffer-file-name file-name)
+                      (save-buffer))
+                    (kill-buffer (process-buffer process))
+                    (funcall callback file-name)))
+                 ((or (and (eq status 'exit) (> code 0))
+                      (eq status 'signal))
+                  (let ((err (with-current-buffer (process-buffer process)
+                               (buffer-string))))
+                    (kill-buffer (process-buffer process))
+                    (user-error "Error in youtube_transcript_api: %s" err)))))))
+      proc)))
+#+end_src
+***** elfeed and subed
+Now that we have a standalone function, let's invoke it with the current =elfeed-show-entry=:
+
+#+begin_src emacs-lisp
+(setq my/elfeed-srt-dir (expand-file-name "~/.elfeed/srt/"))
+
+(defun my/elfeed-youtube-subtitles (entry &optional arg)
+  "Get subtitles for the current elfeed ENTRY.
+
+Works only in the entry is a YouTube video.
+
+If ARG is non-nil, re-fetch the subtitles regardless of whether
+they were fetched before."
+  (interactive (list elfeed-show-entry current-prefix-arg))
+  (let ((video-id (cadr
+                   (assoc "watch?v"
+                          (url-parse-query-string
+                           (substring
+                            (url-filename
+                             (url-generic-parse-url (elfeed-entry-link entry)))
+                            1))))))
+    (unless video-id
+      (user-error "Can't get video ID from the entry"))
+    (my/youtube-subtitles-get
+     video-id
+     (lambda (file-name)
+       (with-current-buffer (find-file-other-window file-name)
+         (setq-local elfeed-show-entry entry)
+         (goto-char (point-min))))
+     :file-name (concat my/elfeed-srt-dir
+                        (elfeed-ref-id (elfeed-entry-content entry))
+                        ".vtt")
+     :overwrite arg)))
+#+end_src
+
+That opens up a =.vtt= buffer with the subtitles for the current video, which means now we can use the functionality of Sacha Chua's awesome package called [[https://github.com/sachac/subed][subed]].
+
+This package, besides syntax highlighting, allows for controlling the MPV playback, for instance by moving the cursor in the subtitles buffer. Using that requires having the URL of the video in this buffer, which necessitates the line with =setq-local= in the previous function.
+
+Also, the package launches its own instance of MPV to control it via JSON-IPC, so there seems to be no easy way to integrate it with EMMS. But at least I can reuse the =emms-player-mpv-parameters= variable, the method of setting which I've discussed above. The function is as follows:
+#+begin_src emacs-lisp
+(defun my/subed-elfeed (entry)
+  "Open the video file from elfeed ENTRY in MPV.
+
+This has to be launched from inside the subtitles buffer, opened
+by the `my/elfeed-youtube-subtitles' function."
+  (interactive (list elfeed-show-entry))
+  (unless entry
+    (user-error "No entry!"))
+  (unless (derived-mode-p 'subed-mode)
+    (user-error "Not subed mode!"))
+  (setq-local subed-mpv-arguments
+              (seq-uniq
+               (append subed-mpv-arguments emms-player-mpv-parameters)))
+  (setq-local subed-mpv-video-file (elfeed-entry-link entry))
+  (subed-mpv--play subed-mpv-video-file))
+#+end_src
+
+Keep in mind that this function has to be launched inside the buffer opened by the =my/elfeed-youtube-subtitles= function.
 *** EMMS
 EMMS is the Emacs Multi-Media System. I use it to control MPD & MPV.
 
@@ -6311,270 +6744,6 @@ I use it occasionally to open links in elfeed.
  :keymaps 'eww-mode-map
  "+" 'text-scale-increase
  "-" 'text-scale-decrease)
-#+end_src
-*** Reader View & PDFs
-**** rdrview
-[[https://github.com/eafer/rdrview][rdrview]] is a command-line tool that provides Firefox Reader view as a command-line tool. A Guix definition is available in [[https://github.com/SqrtMinusOne/channel-q][my Guix channel]].
-
-The basic idea here is to take an arbitrary web page and convert it to PDF via pandoc.
-
-So, first we need to get the =rdrview= representation of the URL:
-#+begin_src emacs-lisp
-(defun my/rdrview-get (url callback)
-  (let* ((buffer (generate-new-buffer "rdrview"))
-         (proc (start-process "rdrview" buffer "rdrview"
-                              url "-T" "title,sitename,body"
-                              "-H")))
-    (set-process-sentinel
-     proc
-     (lambda (process _msg)
-       (let ((status (process-status process))
-             (code (process-exit-status process)))
-         (cond ((and (eq status 'exit) (= code 0))
-                (progn
-                  (funcall callback
-                           (with-current-buffer (process-buffer process)
-                             (buffer-string)))
-                  (kill-buffer (process-buffer process))) )
-               ((or (and (eq status 'exit) (> code 0))
-                    (eq status 'signal))
-                (let ((err (with-current-buffer (process-buffer process)
-                             (buffer-string))))
-                  (kill-buffer (process-buffer process))
-                  (user-error "Error in rdrview: %s" err)))))))
-    proc))
-#+end_src
-
-After that, process the rdrview output. First, it outputs metadata to the resulting HTML, so this part parses the DOM and retrieves the header and the name of the site.
-
-Second, for some reason the header enumeration starts with =<h2>=, so this also shifts headers up by one.
-#+begin_src emacs-lisp
-(defun my/rdrview-parse (dom-string)
-  (let ((dom (with-temp-buffer
-               (insert dom-string)
-               (libxml-parse-html-region (point-min) (point-max)))))
-    (let (title sitename content (i 0))
-      (dolist (child (dom-children (car (dom-by-id dom "readability-page-1"))))
-        (when (listp child)
-          (cond
-           ((eq (car child) 'h1)
-            (setq title (dom-text child)))
-           ((eq (car child) 'h2)
-            (setq sitename (dom-text child)))
-           ((eq (car child) 'div)
-            (setq content child)))))
-      (while (and
-              (not (dom-by-tag content 'h1))
-              (dom-search
-               content
-               (lambda (el)
-                 (when (listp el)
-                   (pcase (car el)
-                     ('h2 (setf (car el) 'h1))
-                     ('h3 (setf (car el) 'h2))
-                     ('h4 (setf (car el) 'h3))
-                     ('h5 (setf (car el) 'h4))
-                     ('h6 (setf (car el) 'h5))))))))
-      `((title . ,title)
-        (sitename . ,sitename)
-        (content . ,(with-temp-buffer
-                      (dom-print content)
-                      (buffer-string)))))))
-#+end_src
-
-**** Opening stuff in PDF viewer
-Now, we need to render the resulting HTML to a pdf. To do that, we can use =pandoc= with a [[file:.emacs.d/rdrview.tex][custom template]].
-
-#+begin_src emacs-lisp
-(setq my/rdrview-template (expand-file-name
-                           (concat user-emacs-directory "rdrview.tex")))
-
-(cl-defun my/rdrview-render (content type variables callback
-                                     &key file-name overwrite)
-  (unless file-name
-    (setq file-name (format "/tmp/%d.pdf" (random 100000000))))
-  (let (params
-        (temp-file-name (format "/tmp/%d.%s" (random 100000000) type)))
-    (cl-loop for (key . value) in variables
-             when value
-             do (progn
-                  (push "--variable" params)
-                  (push (format "%s=%s" key value) params)))
-    (setq params (nreverse params))
-    (if (and (file-exists-p file-name) (not overwrite))
-        (funcall callback file-name)
-      (with-temp-file temp-file-name
-        (insert content))
-      (let ((proc (apply #'start-process
-                         "pandoc" (get-buffer-create "*Pandoc*") "pandoc"
-                         temp-file-name "-o" file-name
-                         "--pdf-engine=xelatex" "--template" my/rdrview-template
-                         params)))
-        (set-process-sentinel
-         proc
-         (lambda (process _msg)
-           (let ((status (process-status process))
-                 (code (process-exit-status process)))
-             (cond ((and (eq status 'exit) (= code 0))
-                    (progn
-                      (message "Done!")
-                      (funcall callback file-name)))
-                   ((or (and (eq status 'exit) (> code 0))
-                        (eq status 'signal))
-                    (user-error "Error in pandoc. Check the *Pandoc* buffer"))))))))))
-#+end_src
-
-And putting all of this together to get a PDF representation of an arbitrary URL.
-#+begin_src emacs-lisp
-(defun my/get-languages (url)
-  (let ((main-lang "english")
-        (other-lang "russian"))
-    (when (string-match-p (rx ".ru") url)
-      (setq main-lang "russian"
-            other-lang "english"))
-    (list main-lang other-lang)))
-
-(defun my/rdrview-open (url overwrite)
-  (interactive
-   (let ((url (read-from-minibuffer
-               "URL: "
-               (if (bound-and-true-p elfeed-show-entry)
-                   (elfeed-entry-link elfeed-show-entry)))))
-     (when (string-empty-p url)
-       (user-error "URL is empty"))
-     (list url current-prefix-arg)))
-  (my/rdrview-get
-   url
-   (lambda (res)
-     (let ((data (my/rdrview-parse res))
-           (langs (my/get-languages url)))
-       (my/rdrview-render
-        (alist-get 'content data)
-        'html
-        `((title . ,(alist-get 'title data))
-          (subtitle . ,(alist-get 'sitename data))
-          (main-lang . ,(nth 0 langs))
-          (other-lang . ,(nth 1 langs)))
-        (lambda (file-name)
-          (start-process "xdg-open" nil "xdg-open" file-name)))))))
-#+end_src
-
-**** Rendering elfeed entries as PDFs
-This also goes really well with elfeed, because for these RSS feeds that have a well-formed HTML part there's even no need to invoke =rdrview=, we can just feed the HTML to =pandoc=.
-
-#+begin_src emacs-lisp
-(setq my/elfeed-pdf-dir (expand-file-name "~/.elfeed/pdf/"))
-
-(defun my/elfeed-open-pdf (entry overwrite)
-  "Open the current elfeed ENTRY with a pdf viewer.
-
-If OVERWRITE is non-nil, do the rendering even if the resulting
-PDF already exists."
-  (interactive (list elfeed-show-entry current-prefix-arg))
-  (let ((authors (mapcar (lambda (m) (plist-get m :name)) (elfeed-meta entry :authors)))
-        (feed-title (elfeed-feed-title (elfeed-entry-feed entry)))
-        (tags (mapconcat #'symbol-name (elfeed-entry-tags entry) ", "))
-        (date (format-time-string "%a, %e %b %Y" (seconds-to-time (elfeed-entry-date entry))))
-        (content (elfeed-deref (elfeed-entry-content entry)))
-        (file-name (concat my/elfeed-pdf-dir
-                           (elfeed-ref-id (elfeed-entry-content entry))
-                           ".pdf"))
-        (main-language "english")
-        (other-language "russian"))
-    (unless content
-      (user-error "No content!"))
-    (setq subtitle
-          (cond
-           ((seq-empty-p authors) feed-title)
-           ((and (not (seq-empty-p (car authors)))
-                 (string-match-p (regexp-quote (car authors)) feed-title)) feed-title)
-           (t (concat (string-join authors ", ") "\\\\" feed-title))))
-    (when (member 'ru (elfeed-entry-tags entry))
-      (setq main-language "russian")
-      (setq other-language "english"))
-    (my/rdrview-render
-     (if (bound-and-true-p my/elfeed-show-rdrview-html)
-         my/elfeed-show-rdrview-html
-       content)
-     (elfeed-entry-content-type entry)
-     `((title . ,(elfeed-entry-title entry))
-       (subtitle . ,subtitle)
-       (date . ,date)
-       (tags . ,tags)
-       (main-lang . ,main-language)
-       (other-lang . ,other-language))
-     (lambda (file-name)
-       (start-process "xdg-open" nil "xdg-open" file-name))
-     :file-name file-name
-     :overwrite current-prefix-arg)))
-#+end_src
-
-**** Viewing elfeed entries view rdrview
-However, in some cases RSS feeds supply only a short description of the content instead of the actual content. If that's the case, we can use =rdrview= to replace the actual content.
-
-So, the following is the corresponding modification of =elfeed-show-refresh--mail-style= function:
-#+begin_src emacs-lisp
-(defvar-local my/elfeed-show-rdrview-html nil)
-
-(defun my/rdrview-elfeed-show ()
-  (interactive)
-  (unless elfeed-show-entry
-    (user-error "No elfeed entry in this buffer!"))
-  (my/rdrview-get
-   (elfeed-entry-link elfeed-show-entry)
-   (lambda (result)
-     (let* ((data (my/rdrview-parse result))
-            (inhibit-read-only t)
-            (title (elfeed-entry-title elfeed-show-entry))
-            (date (seconds-to-time (elfeed-entry-date elfeed-show-entry)))
-            (authors (elfeed-meta elfeed-show-entry :authors))
-            (link (elfeed-entry-link elfeed-show-entry))
-            (tags (elfeed-entry-tags elfeed-show-entry))
-            (tagsstr (mapconcat #'symbol-name tags ", "))
-            (nicedate (format-time-string "%a, %e %b %Y %T %Z" date))
-            (content (alist-get 'content data))
-            (feed (elfeed-entry-feed elfeed-show-entry))
-            (feed-title (elfeed-feed-title feed))
-            (base (and feed (elfeed-compute-base (elfeed-feed-url feed)))))
-       (erase-buffer)
-       (insert (format (propertize "Title: %s\n" 'face 'message-header-name)
-                       (propertize title 'face 'message-header-subject)))
-       (when elfeed-show-entry-author
-         (dolist (author authors)
-           (let ((formatted (elfeed--show-format-author author)))
-             (insert
-              (format (propertize "Author: %s\n" 'face 'message-header-name)
-                      (propertize formatted 'face 'message-header-to))))))
-       (insert (format (propertize "Date: %s\n" 'face 'message-header-name)
-                       (propertize nicedate 'face 'message-header-other)))
-       (insert (format (propertize "Feed: %s\n" 'face 'message-header-name)
-                       (propertize feed-title 'face 'message-header-other)))
-       (when tags
-         (insert (format (propertize "Tags: %s\n" 'face 'message-header-name)
-                         (propertize tagsstr 'face 'message-header-other))))
-       (insert (propertize "Link: " 'face 'message-header-name))
-       (elfeed-insert-link link link)
-       (insert "\n")
-       (cl-loop for enclosure in (elfeed-entry-enclosures elfeed-show-entry)
-                do (insert (propertize "Enclosure: " 'face 'message-header-name))
-                do (elfeed-insert-link (car enclosure))
-                do (insert "\n"))
-       (insert "\n")
-       (if content
-           (elfeed-insert-html content base)
-         (insert (propertize "(empty)\n" 'face 'italic)))
-       (setq-local my/elfeed-show-rdrview-html content)
-       (goto-char (point-min))))))
-#+end_src
-
-Setting keybindings for elfeed:
-#+begin_src emacs-lisp
-(with-eval-after-load 'elfeed
-  (general-define-key
-   :states '(normal)
-   :keymaps 'elfeed-show-mode-map
-   "gp" #'my/rdrview-elfeed-show
-   "gv" #'my/elfeed-open-pdf))
 #+end_src
 *** ERC
 ERC is a built-it Emacs IRC client.
