@@ -2000,14 +2000,19 @@ Returns (<buffer> . <workspace-index>) or nil."
   "RET" 'plantuml-preview)
 
 (use-package subed
-  :straight (:host github :repo "rndusr/subed" :files ("subed/*.el") :build (:not native-compile))
-  :mode (rx (| "srt" "vtt" "ass") eos))
+  :straight (:host github :repo "rndusr/subed" :files ("subed/*.el")
+                   :build (:not native-compile))
+  :config
+  (general-define-key
+   :keymaps '(subed-mode-map subed-vtt-mode-map)
+   :states '(normal)
+   "gp" #'subed-mpv-toggle-pause))
 
 (use-package langtool
   :straight t
   :commands (langtool-check)
   :config
-  (setq langtool-language-tool-server-jar "/home/pavel/bin/LanguageTool-5.4/languagetool-server.jar")
+  (setq langtool-language-tool-server-jar "/home/pavel/bin/LanguageTool-5.7/languagetool-server.jar")
   (setq langtool-mother-tongue "ru")
   (setq langtool-default-language "en-US"))
 
@@ -3267,9 +3272,8 @@ Returns (<buffer> . <workspace-index>) or nil."
   (general-define-key
    :keymaps 'bibtex-mode-map
    "M-RET" 'org-ref-bibtex-hydra/body)
-  ;; (add-to-list 'orhc-candidate-formats
-  ;;              '("online" . "  |${=key=}| ${title} ${url}"))
-  )
+   (setq bibtex-completion-display-formats
+     '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}"))))
 
 (defun my/org-ref-select-bibliograhy ()
   (interactive)
@@ -4341,7 +4345,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (let ((dom (with-temp-buffer
                (insert dom-string)
                (libxml-parse-html-region (point-min) (point-max)))))
-    (let (title sitename content)
+    (let (title sitename content (i 0))
       (dolist (child (dom-children (car (dom-by-id dom "readability-page-1"))))
         (when (listp child)
           (cond
@@ -4351,16 +4355,18 @@ Returns (<buffer> . <workspace-index>) or nil."
             (setq sitename (dom-text child)))
            ((eq (car child) 'div)
             (setq content child)))))
-      (dom-search
-       content
-       (lambda (el)
-         (when (listp el)
-           (pcase (car el)
-             ('h2 (setf (car el) 'h1))
-             ('h3 (setf (car el) 'h2))
-             ('h4 (setf (car el) 'h3))
-             ('h5 (setf (car el) 'h4))
-             ('h6 (setf (car el) 'h5))))))
+      (while (and
+              (not (dom-by-tag content 'h1))
+              (dom-search
+               content
+               (lambda (el)
+                 (when (listp el)
+                   (pcase (car el)
+                     ('h2 (setf (car el) 'h1))
+                     ('h3 (setf (car el) 'h2))
+                     ('h4 (setf (car el) 'h3))
+                     ('h5 (setf (car el) 'h4))
+                     ('h6 (setf (car el) 'h5))))))))
       `((title . ,title)
         (sitename . ,sitename)
         (content . ,(with-temp-buffer
@@ -4439,6 +4445,10 @@ Returns (<buffer> . <workspace-index>) or nil."
 (setq my/elfeed-pdf-dir (expand-file-name "~/.elfeed/pdf/"))
 
 (defun my/elfeed-open-pdf (entry overwrite)
+  "Open the current elfeed ENTRY with a pdf viewer.
+
+If OVERWRITE is non-nil, do the rendering even if the resulting
+PDF already exists."
   (interactive (list elfeed-show-entry current-prefix-arg))
   (let ((authors (mapcar (lambda (m) (plist-get m :name)) (elfeed-meta entry :authors)))
         (feed-title (elfeed-feed-title (elfeed-entry-feed entry)))
