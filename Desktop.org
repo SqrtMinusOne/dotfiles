@@ -3343,27 +3343,29 @@ This section generates manifests for various desktop software that I'm using.
 | latex    | python-pygments               |
 | latex    | font-microsoft-web-core-fonts |
 ** Dev
-| Category | Guix dependency |
-|----------+-----------------|
-| dev      | conda           |
-| dev      | pandoc          |
-| dev      | docker-compose  |
-| dev      | postgresql      |
-| dev      | virt-manager    |
-| dev      | git-filter-repo |
-| dev      | node            |
-| dev      | openjdk         |
-| dev      | go              |
-| dev      | gcc-toolchain   |
-| dev      | lua             |
-| dev      | libfaketime     |
-| dev      | hugo-extended   |
-| dev      | make            |
-| dev      | sbcl            |
-| dev      | git-lfs         |
-| dev      | mysql           |
-| dev      | gource          |
-| dev      | php             |
+| Category | Guix dependency   | Disabled |
+|----------+-------------------+----------|
+| dev      | conda             |          |
+| dev      | pandoc            |          |
+| dev      | docker-compose    |          |
+| dev      | postgresql        |          |
+| dev      | virt-manager      |          |
+| dev      | git-filter-repo   |          |
+| dev      | node              |          |
+| dev      | openjdk           |          |
+| dev      | go                |          |
+| dev      | gcc-toolchain     |          |
+| dev      | lua               |          |
+| dev      | libfaketime       |          |
+| dev      | hugo-extended     |          |
+| dev      | make              |          |
+| dev      | sbcl              | t        |
+| dev      | git-lfs           |          |
+| dev      | mysql             | t        |
+| dev      | gource            |          |
+| dev      | php               |          |
+| dev      | python            |          |
+| dev      | python-virtualenv |          |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""

@@ -1,10 +1,10 @@
 (specifications->manifest
  '(
+   "python-virtualenv"
+   "python"
    "php"
    "gource"
-   "mysql"
    "git-lfs"
-   "sbcl"
    "make"
    "hugo-extended"
    "libfaketime"
@@ -14,7 +14,6 @@
    "openjdk"
    "node"
    "git-filter-repo"
-   "virt-manager"
    "postgresql"
    "docker-compose"
    "pandoc"
