@@ -1206,6 +1206,7 @@ influence of C1 on the result."
   (dap-chrome-setup)
 
   (require 'dap-python)
+  (require 'dap-php)
 
   (dap-mode 1)
   (dap-ui-mode 1)
@@ -1443,6 +1444,31 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package reformatter
   :straight t)
+
+(defun my/copilot-tab ()
+  (interactive)
+  (or (copilot-accept-completion)
+      (indent-for-tab-command)))
+
+(defun my/setup-copilot ()
+  (use-local-map my/copilot-mode-map))
+
+(defvar my/copilot-mode-map
+  (let ((map (make-sparse-keymap)))
+    (evil-define-key* 'insert map
+      (kbd "<tab>") #'my/copilot-tab)
+    map))
+
+(define-minor-mode my/copilot-mode
+  "My keybings for copilot.el")
+
+(use-package copilot
+  :straight (:host github :repo "zerolfx/copilot.el" :files ("dist" "*.el"))
+  :commands (copilot-mode)
+  :init
+  (add-hook 'prog-mode-hook #'copilot-mode)
+  :config
+  (add-hook 'copilot-mode-hook #'my/copilot-mode))
 
 (defun my/set-smartparens-indent (mode)
   (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
@@ -4037,6 +4063,15 @@ Returns (<buffer> . <workspace-index>) or nil."
   :config
   (setq elfeed-summary-filter-by-title t))
 
+(use-package elfeed-sync
+  :straight (:host github :repo "SqrtMinusOne/elfeed-sync")
+  :after elfeed
+  :config
+  (elfeed-sync-mode)
+  (setq elfeed-sync-tt-rss-instance "https://sqrtminusone.xyz/tt-rss")
+  (setq elfeed-sync-tt-rss-login "sqrtminusone")
+  (setq elfeed-sync-tt-rss-password (my/password-store-get "Selfhosted/tt-rss")))
+
 (defun my/elfeed-toggle-score-sort ()
   (interactive)
   (setq elfeed-search-sort-function
@@ -4209,6 +4244,12 @@ Call CALLBACK with the output."
        (setq-local my/elfeed-show-rdrview-html content)
        (goto-char (point-min))))))
 
+(with-eval-after-load 'elfeed
+  (general-define-key
+   :states '(normal)
+   :keymaps 'elfeed-show-mode-map
+   "gp" #'my/rdrview-elfeed-show))
+
 (setq my/rdrview-template (expand-file-name
                            (concat user-emacs-directory "rdrview.tex")))
 
@@ -4257,7 +4298,7 @@ OVERWRITE is non-nil."
                       (funcall callback file-name)))
                    ((or (and (eq status 'exit) (> code 0))
                         (eq status 'signal))
-                    (user-error "Error in pandoc. Check the *Pandoc* buffer")))))))))
+                    (user-error "Error in pandoc. Check the *Pandoc* buffer"))))))))))
 
 (setq my/elfeed-pdf-dir (expand-file-name "~/.elfeed/pdf/"))
 
@@ -4304,6 +4345,12 @@ PDF already exists."
        (start-process "xdg-open" nil "xdg-open" file-name))
      :file-name file-name
      :overwrite current-prefix-arg)))
+
+(with-eval-after-load 'elfeed
+  (general-define-key
+   :keymaps '(elfeed-show-mode-map)
+   :states '(normal)
+   "gv" #'my/elfeed-open-pdf))
 
 (defun my/get-languages (url)
   (let ((main-lang "english")
@@ -4629,6 +4676,28 @@ by the `my/elfeed-youtube-subtitles' function."
 (defun my/ytel-add-emms ()
   (interactive)
   (emms-add-ytel (ytel-get-current-video)))
+
+(use-package wallabag
+  :straight (:host github :repo "chenyanming/wallabag.el" :files (:defaults "default.css" "emojis.alist"))
+  :commands (wallabag wallabag-add-entry)
+  :config
+  (setq wallabag-host "https://wallabag.sqrtminusone.xyz")
+  (setq wallabag-username "sqrtminusone")
+  (setq wallabag-password (my/password-store-get "Selfhosted/wallabag"))
+  (setq wallabag-clientid (password-store-get-field "Selfhosted/wallabag" "client_id"))
+  (setq wallabag-secret (password-store-get-field "Selfhosted/wallabag" "client_secret")))
+
+(defun my/elfeed-wallabag (entry)
+  (interactive (list elfeed-show-entry))
+  (wallabag-add-entry (elfeed-entry-link entry)
+                      (mapconcat #'symbol-name (elfeed-entry-tags entry) ","))
+  (elfeed-recommender--rate-current 2))
+
+(with-eval-after-load 'elfeed
+  (general-define-key
+   :states '(normal)
+   :keymaps '(elfeed-show-mode-map)
+   "gw" #'my/elfeed-wallabag))
 
 (defun my/toggle-shr-use-fonts ()
   "Toggle the shr-use-fonts variable in buffer"
