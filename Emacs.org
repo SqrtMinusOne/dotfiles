@@ -70,6 +70,7 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#generalel][general.el]]
     - [[#which-key][which-key]]
     - [[#evil][Evil]]
+    - [[#avy][Avy]]
     - [[#my-keybindings][My keybindings]]
   - [[#i3-integration][i3 integration]]
   - [[#editing-text][Editing text]]
@@ -82,6 +83,7 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#projectile][Projectile]]
     - [[#git--magit][Git & Magit]]
     - [[#editorconfig][Editorconfig]]
+    - [[#editing-files][Editing files]]
   - [[#completion][Completion]]
     - [[#ivy-counsel-swiper][Ivy, counsel, swiper]]
     - [[#ivy-rich][ivy-rich]]
@@ -98,6 +100,8 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#line-numbers][Line numbers]]
     - [[#word-wrapping][Word wrapping]]
     - [[#custom-frame-format][Custom frame format]]
+    - [[#olivetti][Olivetti]]
+    - [[#keycast][Keycast]]
   - [[#themes-and-colors][Themes and colors]]
     - [[#doom-themes][Doom themes]]
     - [[#custom-theme][Custom theme]]
@@ -119,6 +123,7 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#tree-sitter][Tree Sitter]]
     - [[#dap][DAP]]
     - [[#reformatter][Reformatter]]
+    - [[#copilot][copilot]]
     - [[#general-additional-config][General additional config]]
   - [[#web-development][Web development]]
     - [[#emmet][Emmet]]
@@ -148,6 +153,8 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#scheme][Scheme]]
     - [[#clips][CLIPS]]
   - [[#python][Python]]
+    - [[#ein][ein]]
+    - [[#pyright][pyright]]
     - [[#pipenv][pipenv]]
     - [[#yapf][yapf]]
     - [[#isort][isort]]
@@ -187,9 +194,11 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#hy][Hy]]
     - [[#view-html-in-browser][View HTML in browser]]
     - [[#plantuml][PlantUML]]
+    - [[#restclient][Restclient]]
     - [[#setup][Setup]]
     - [[#managing-jupyter-kernels][Managing Jupyter kernels]]
     - [[#output-post-processing][Output post-processing]]
+    - [[#executing-stuff][Executing stuff]]
     - [[#managing-a-literate-programming-project][Managing a literate programming project]]
   - [[#tools][Tools]]
     - [[#presentations][Presentations]]
@@ -198,7 +207,7 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#transclusion][Transclusion]]
   - [[#productivity--knowledge-management][Productivity & Knowledge management]]
     - [[#capture-templates--various-settings][Capture templates & various settings]]
-    - [[#trello-sync][Trello sync]]
+    - [[#off-trello-sync][(OFF) Trello sync]]
     - [[#org-ql][org-ql]]
     - [[#custom-agendas][Custom agendas]]
     - [[#org-journal][Org Journal]]
@@ -222,6 +231,7 @@ If however, by some twist of fate, this document is one of the first things you 
   - [[#keybindings--stuff][Keybindings & stuff]]
     - [[#general-keybindings][General keybindings]]
     - [[#copy-a-link][Copy a link]]
+    - [[#navigating-source-blocks][Navigating source blocks]]
     - [[#open-a-file-from-org-directory][Open a file from org-directory]]
   - [[#system-configuration][System configuration]]
     - [[#tables-for-guix-dependencies][Tables for Guix Dependencies]]
@@ -246,14 +256,17 @@ If however, by some twist of fate, this document is one of the first things you 
     - [[#elfeed][Elfeed]]
     - [[#emms][EMMS]]
     - [[#ytel][ytel]]
+    - [[#wallabag][wallabag]]
     - [[#eww][EWW]]
     - [[#erc][ERC]]
+    - [[#ementel][ement.el]]
     - [[#off-jabber][(OFF) jabber]]
     - [[#google-translate][Google Translate]]
   - [[#reading-documentation][Reading documentation]]
     - [[#tldr][tldr]]
     - [[#man--info][man & info]]
     - [[#devdocsio][devdocs.io]]
+    - [[#stackexchange][StackExchange]]
   - [[#utilities][Utilities]]
     - [[#pass][pass]]
     - [[#docker][Docker]]
@@ -287,6 +300,7 @@ I decided not to keep configs for features that I do not use anymore because thi
 | vue-mode          | 8594d6f53e42c70bbf903e168607841854818a38 |
 | svelte-mode       | 8594d6f53e42c70bbf903e168607841854818a38 |
 | pomidor           | 8594d6f53e42c70bbf903e168607841854818a38 |
+| elfeed-score      | 8e591e0d2afd909ae5be00caf17f9b17c6cd8b61 |
 * Bootstrap
 Setting up the environment, performance tuning and a few basic settings.
 
@@ -5937,35 +5951,6 @@ The default interface of elfeed is just a list of all entries, so it gets hard t
   (setq elfeed-sync-tt-rss-instance "https://sqrtminusone.xyz/tt-rss")
   (setq elfeed-sync-tt-rss-login "sqrtminusone")
   (setq elfeed-sync-tt-rss-password (my/password-store-get "Selfhosted/tt-rss")))
-#+end_src
-**** elfeed-score
-[[https://github.com/sp1ff/elfeed-score][elfeed-score]] is a package that implements scoring for the elfeed entries. Entries are scored by a set of rules for tags/title/content/etc and sorted by that score.
-
-#+begin_src emacs-lisp
-(defun my/elfeed-toggle-score-sort ()
-  (interactive)
-  (setq elfeed-search-sort-function
-        (if elfeed-search-sort-function
-            nil
-          #'elfeed-score-sort))
-  (message "Sorting by score: %S" (if elfeed-search-sort-function "ON" "OFF"))
-  (elfeed-search-update--force))
-
-(use-package elfeed-score
-  :straight t
-  :after (elfeed)
-  :init
-  (setq elfeed-score-serde-score-file "~/.emacs.d/elfeed.score")
-  :config
-  (elfeed-score-enable)
-  (setq elfeed-search-print-entry-function #'elfeed-score-print-entry)
-  (general-define-key
-   :states '(normal)
-   :keymaps '(elfeed-search-mode-map)
-   "=" elfeed-score-map)
-  (general-define-key
-   :keymaps '(elfeed-score-map)
-   "=" #'my/elfeed-toggle-score-sort))
 #+end_src
 **** YouTube, podcasts & EMMS
 Previously this block was opening MPV with =start-process=, but now I've managed to hook up MPV with EMMS. So there is the EMMS+elfeed "integration".

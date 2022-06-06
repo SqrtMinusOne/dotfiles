@@ -4072,31 +4072,6 @@ Returns (<buffer> . <workspace-index>) or nil."
   (setq elfeed-sync-tt-rss-login "sqrtminusone")
   (setq elfeed-sync-tt-rss-password (my/password-store-get "Selfhosted/tt-rss")))
 
-(defun my/elfeed-toggle-score-sort ()
-  (interactive)
-  (setq elfeed-search-sort-function
-        (if elfeed-search-sort-function
-            nil
-          #'elfeed-score-sort))
-  (message "Sorting by score: %S" (if elfeed-search-sort-function "ON" "OFF"))
-  (elfeed-search-update--force))
-
-(use-package elfeed-score
-  :straight t
-  :after (elfeed)
-  :init
-  (setq elfeed-score-serde-score-file "~/.emacs.d/elfeed.score")
-  :config
-  (elfeed-score-enable)
-  (setq elfeed-search-print-entry-function #'elfeed-score-print-entry)
-  (general-define-key
-   :states '(normal)
-   :keymaps '(elfeed-search-mode-map)
-   "=" elfeed-score-map)
-  (general-define-key
-   :keymaps '(elfeed-score-map)
-   "=" #'my/elfeed-toggle-score-sort))
-
 (defun my/get-youtube-url (entry)
   (let ((watch-id (cadr
                    (assoc "watch?v"
