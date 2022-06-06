@@ -39,8 +39,11 @@ A few other repositories I may consider a part of my config:
   - [[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]]
   - [[https://github.com/SqrtMinusOne/elfeed-summary][elfeed-summary]]
   - [[https://github.com/SqrtMinusOne/password-store-ivy][password-store-ivy]]
+  - [[https://github.com/SqrtMinusOne/elfeed-sync][elfeed-sync]]
 
 Posts about my configuration:
+- [[https://sqrtminusone.xyz/posts/2022-05-09-pdf/][Extending elfeed with PDF viewer and subtitles fetcher]]
+- [[https://sqrtminusone.xyz/posts/2022-02-12-literate/][A few cases of literate configuration]]
 - [[https://sqrtminusone.xyz/posts/2022-01-03-exwm/][Using EXWM and perspective.el on a multi-monitor setup]]
 - [[https://sqrtminusone.xyz/posts/2021-10-04-emacs-i3/][Getting a consistent set of keybindings between i3 and Emacs]]
 - [[https://sqrtminusone.xyz/posts/2021-09-07-emms/][My EMMS and elfeed setup]]
