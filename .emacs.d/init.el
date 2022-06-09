@@ -1392,34 +1392,33 @@ Returns (<buffer> . <workspace-index>) or nil."
                         return (cl-position frame exwm-workspace--list)))))
     (when target-workspace (cons buf target-workspace))))
 
-(defun my/dap--go-to-stack-frame-override (debug-session stack-frame)
-  "Make STACK-FRAME the active STACK-FRAME of DEBUG-SESSION."
-  (with-lsp-workspace (dap--debug-session-workspace debug-session)
-    (when stack-frame
-      (-let* (((&hash "line" line "column" column "name" name) stack-frame)
-              (path (dap--get-path-for-frame stack-frame)))
-        (setf (dap--debug-session-active-frame debug-session) stack-frame)
-        ;; If we have a source file with path attached, open it and
-        ;; position the point in the line/column referenced in the
-        ;; stack trace.
-        (if (and path (file-exists-p path))
-            (progn
-              (let ((exwm-target (my/exwm-perspective-find-buffer path)))
-                (if exwm-target
-                    (progn
-                      (unless (= (cdr exwm-target) exwm-workspace-current-index)
-                        (exwm-workspace-switch (cdr exwm-target)))
-                      (persp-switch-to-buffer (car exwm-target)))
-                  (select-window (get-mru-window (selected-frame) nil))
-                  (find-file path)))
-              (goto-char (point-min))
-              (forward-line (1- line))
-              (forward-char column))
-          (message "No source code for %s. Cursor at %s:%s." name line column))))
-    (run-hook-with-args 'dap-stack-frame-changed-hook debug-session)))
-
 (with-eval-after-load 'exwm
   (with-eval-after-load 'dap-mode
+    (defun my/dap--go-to-stack-frame-override (debug-session stack-frame)
+      "Make STACK-FRAME the active STACK-FRAME of DEBUG-SESSION."
+      (with-lsp-workspace (dap--debug-session-workspace debug-session)
+        (when stack-frame
+          (-let* (((&hash "line" line "column" column "name" name) stack-frame)
+                  (path (dap--get-path-for-frame stack-frame)))
+            (setf (dap--debug-session-active-frame debug-session) stack-frame)
+            ;; If we have a source file with path attached, open it and
+            ;; position the point in the line/column referenced in the
+            ;; stack trace.
+            (if (and path (file-exists-p path))
+                (progn
+                  (let ((exwm-target (my/exwm-perspective-find-buffer path)))
+                    (if exwm-target
+                        (progn
+                          (unless (= (cdr exwm-target) exwm-workspace-current-index)
+                            (exwm-workspace-switch (cdr exwm-target)))
+                          (persp-switch-to-buffer (car exwm-target)))
+                      (select-window (get-mru-window (selected-frame) nil))
+                      (find-file path)))
+                  (goto-char (point-min))
+                  (forward-line (1- line))
+                  (forward-char column))
+              (message "No source code for %s. Cursor at %s:%s." name line column))))
+        (run-hook-with-args 'dap-stack-frame-changed-hook debug-session)))
     (advice-add #'dap--go-to-stack-frame :override #'my/dap--go-to-stack-frame-override)))
 
 ;; (advice-remove #'dap--go-to-stack-frame #'my/dap--go-to-stack-frame-override)
@@ -1448,6 +1447,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (defun my/copilot-tab ()
   (interactive)
   (or (copilot-accept-completion)
+      (when (my/should-run-emmet-p) (my/emmet-or-tab))
       (indent-for-tab-command)))
 
 (defun my/setup-copilot ()
@@ -1456,7 +1456,9 @@ Returns (<buffer> . <workspace-index>) or nil."
 (defvar my/copilot-mode-map
   (let ((map (make-sparse-keymap)))
     (evil-define-key* 'insert map
-      (kbd "<tab>") #'my/copilot-tab)
+      (kbd "<tab>") #'my/copilot-tab
+      (kbd "M-j") #'copilot-accept-completion-by-line
+      (kbd "M-l") #'copilot-accept-completion-by-word)
     map))
 
 (define-minor-mode my/copilot-mode
@@ -1468,6 +1470,9 @@ Returns (<buffer> . <workspace-index>) or nil."
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
+  (general-define-key
+   :keymaps 'company-active-map
+   "<backtab>" #'my/copilot-tab)
   (add-hook 'copilot-mode-hook #'my/copilot-mode))
 
 (defun my/set-smartparens-indent (mode)
@@ -1480,6 +1485,12 @@ Returns (<buffer> . <workspace-index>) or nil."
   (setq-local lsp-diagnostic-package :none)
   (setq-local flycheck-checker 'javascript-eslint))
 
+(defun my/should-run-emmet-p ()
+  (and emmet-mode
+       (or (and (derived-mode-p 'web-mode)
+                (member (web-mode-language-at-pos) '("html" "css")))
+           (not (derived-mode-p 'web-mode)))))
+
 (use-package emmet-mode
   :straight t
   :hook ((vue-html-mode . emmet-mode)
@@ -1489,18 +1500,13 @@ Returns (<buffer> . <workspace-index>) or nil."
          (css-mode . emmet-mode)
          (scss-mode . emmet-mode))
   :config
-  ;; (setq emmet-indent-after-insert nil)
-  (setq my/emmet-mmm-submodes '(vue-html-mode css-mode))
   (defun my/emmet-or-tab (&optional arg)
     (interactive)
-    (if (and
-         (boundp 'mmm-current-submode)
-         mmm-current-submode
-         (not (member mmm-current-submode my/emmet-mmm-submodes)))
-        (indent-for-tab-command arg)
-      (or (emmet-expand-line arg)
-          (emmet-go-to-edit-point 1)
-          (indent-for-tab-command arg))))
+    (if (my/short-run-emmet-p)
+        (or (emmet-expand-line arg)
+            (emmet-go-to-edit-point 1)
+            (indent-for-tab-command arg))
+      (indent-for-tab-command arg)))
   (general-imap :keymaps 'emmet-mode-keymap
     "TAB" 'my/emmet-or-tab
     "<backtab>" 'emmet-prev-edit-point))
@@ -1600,7 +1606,9 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (defun my/web-mode-vue-setup (&rest _)
   (when (string-match-p (rx ".vue" eos) (buffer-name))
-    (setq-local web-mode-script-padding 0)))
+    (setq-local web-mode-script-padding 0)
+    (setq-local web-mode-style-padding 0)
+    (setq-local create-lockfiles nil)))
 
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 (add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
