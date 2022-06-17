@@ -302,6 +302,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (my-leader-def "?" 'which-key-show-top-level)
 (my-leader-def "E" 'eval-expression)
+
+(general-def :states '(insert)
+  "<f1> e" #'eval-expression)
+
 (my-leader-def
   "SPC" '(:wk "second level")
   "SPC x" '(:wk "ctl-x")
@@ -1450,22 +1454,8 @@ Returns (<buffer> . <workspace-index>) or nil."
       (when (my/should-run-emmet-p) (my/emmet-or-tab))
       (indent-for-tab-command)))
 
-(defun my/setup-copilot ()
-  (use-local-map my/copilot-mode-map))
-
-(defvar my/copilot-mode-map
-  (let ((map (make-sparse-keymap)))
-    (evil-define-key* 'insert map
-      (kbd "<tab>") #'my/copilot-tab
-      (kbd "M-j") #'copilot-accept-completion-by-line
-      (kbd "M-l") #'copilot-accept-completion-by-word)
-    map))
-
-(define-minor-mode my/copilot-mode
-  "My keybings for copilot.el")
-
 (use-package copilot
-  :straight (:host github :repo "zerolfx/copilot.el" :files ("dist" "*.el"))
+  :straight (:host github :repo "SqrtMinusOne/copilot.el" :files ("dist" "*.el"))
   :commands (copilot-mode)
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
@@ -1473,7 +1463,12 @@ Returns (<buffer> . <workspace-index>) or nil."
   (general-define-key
    :keymaps 'company-active-map
    "<backtab>" #'my/copilot-tab)
-  (add-hook 'copilot-mode-hook #'my/copilot-mode))
+  (general-define-key
+   :keymaps 'copilot-mode-map
+   "<tab>" #'my/copilot-tab
+   "M-j" #'copilot-accept-completion-by-line
+   "M-l" #'copilot-accept-completion-by-word)
+  (setq copilot-lispy-integration t))
 
 (defun my/set-smartparens-indent (mode)
   (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
@@ -1502,7 +1497,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :config
   (defun my/emmet-or-tab (&optional arg)
     (interactive)
-    (if (my/short-run-emmet-p)
+    (if (my/should-run-emmet-p)
         (or (emmet-expand-line arg)
             (emmet-go-to-edit-point 1)
             (indent-for-tab-command arg))
@@ -2101,7 +2096,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (add-hook 'clojure-mode-hook #'aggressive-indent-mode))
 
 (use-package cider
-  :mode "\\.clj[sc]?\\'"
+  :after clojure-mode
   :straight t)
 
 (use-package hy-mode
