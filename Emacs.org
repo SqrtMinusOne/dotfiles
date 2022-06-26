@@ -13,8 +13,8 @@ One day we won't hate one another, no young boy will march to war and I will cle
 My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an awesome +text editor+ program that can do almost anything.
 
 At the moment of this writing, this "almost anything" includes:
-- *Writing code*. With LSP & Co this functionality of Emacs may rival that of IDEs, and is at least on par with editors like VS Code.\\
-  One thing where Emacs is particularly good is writing Lisp code, e.g. Clojure, Common Lisp, and, of course, Emacs Lisp.
+- *Writing code*. With LSP & Co Emacs is as good as many IDEs, and is certainly on par with editors like VS Code.\\
+  Emacs is also particularly good at writing Lisp code, e.g. Clojure, Common Lisp, and, of course, Emacs Lisp.
 - *Literate programming* with Org Mode. That includes:
   - Configuring the entirety of my software (that can be configured with text files).
   - Interactive programming like one provided by Jupyter Notebook.
@@ -29,13 +29,13 @@ At the moment of this writing, this "almost anything" includes:
 - *X Window management*, with EXWM. So I could say I literally live in Emacs.
 - ...
 
-As I have hinted above, this file is a piece of literate configuration, which means that the actual code is interweaved with English-language commentary. One could argue that the commentary, not the code, is the primary entity of the file.
+As I have hinted above, this file is a piece of literate configuration, where the actual code is interweaved with English-language commentary. One could argue that the commentary, and not the code, is the primary entity of the file.
 
 But at the same time, the configuration is personal, so the primary benefactor of the literate structure is me. The commentary is primarily meant to capture my state of mind at the moment of writing the code, which is immensely helpful for maintaining the code in the future. So the quality and quantity of the commentary are... varying.
 
-Occasionally I save some promising experimentations from scratch buffers without much comment. Or I may not have enough time to describe things in substantial detail. Or, as it is at the moment when I'm writing this, I have the time to write down whatever I consider necessary. Or, when I'm writing a blog post about Emacs configuration, I usually incorporate some things back into this config.
+Occasionally I save some promising experimentations from scratch buffers without much comment. Or I may not have enough time to describe things in substantial detail. Or, as it is at the moment when I'm writing this, I have the time to write down whatever I consider necessary. Plus I usually incorporate my blog posts back into the config.
 
-And of course, human minds share many similarities, so if you are an avid Emacs user, you probably can extract something of value from here. Although in this case, your configuration has a decent chance to have everything I'm doing here. But who knows, because somehow mine is over 6000 LoC at the moment, despite being just a bit over a year old.
+Of course, human minds share many similarities, so if you are an avid Emacs user, you have a chance to extract something of value from this document.
 
 If however, by some twist of fate, this document is one of the first things you see about Emacs, it won't be a good resource for you. And you definitely shouldn't try to launch this config as it is. If I could suggest only one resource, I'd advise David Wilson's [[https://www.youtube.com/c/SystemCrafters][System Crafters]] YouTube channel.
 
