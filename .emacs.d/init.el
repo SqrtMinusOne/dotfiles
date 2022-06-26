@@ -16,14 +16,9 @@
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
 
-(setq my/lowpower (string= (system-name) "azure"))
-
 (setq my/slow-ssh
       (or
-       (string= (getenv "IS_TRAMP") "true")
-       (string= (system-name) "dev-digital")
-       (string= (system-name) "violet")
-       (string= (system-name) "viridian")))
+       (string= (getenv "IS_TRAMP") "true")))
 
 (setq my/remote-server
       (or (string= (getenv "IS_REMOTE") "true")
@@ -59,9 +54,6 @@
                                 (unless (frame-focus-state)
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
-
-(when my/lowpower
-  (setq comp-async-jobs-number 1))
 
 (use-package conda
   :straight t
@@ -103,7 +95,7 @@
 
 (use-package which-key
   :config
-  (setq which-key-idle-delay (if my/lowpower 1 0.3))
+  (setq which-key-idle-delay 0.3)
   (setq which-key-popup-type 'frame)
   (which-key-mode)
   (which-key-setup-side-window-bottom)
@@ -582,6 +574,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package magit
   :straight t
   :commands (magit-status magit-file-dispatch)
+  :init
+  (my-leader-def
+    "m" 'magit
+    "M" 'magit-file-dispatch)
   :config
   (setq magit-blame-styles
         '((margin
@@ -615,10 +611,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package git-timemachine
   :straight t
   :commands (git-timemachine))
-
-(my-leader-def
-  "m" 'magit
-  "M" 'magit-file-dispatch)
 
 (use-package editorconfig
   :straight t
@@ -724,7 +716,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (global-company-mode)
-  (setq company-idle-delay (if my/lowpower 0.5 0.125))
+  (setq company-idle-delay 0.125)
   (setq company-dabbrev-downcase nil)
   (setq company-show-numbers t))
 
@@ -732,7 +724,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package company-box
   :straight t
-  :if (and (display-graphic-p) (not my/lowpower))
+  :if (display-graphic-p)
   :after (company)
   :hook (company-mode . company-box-mode))
 
@@ -965,10 +957,8 @@ influence of C1 on the result."
 
 (use-package highlight-indent-guides
   :straight t
-  :if (not (or my/lowpower my/remote-server))
-  :hook (
-         (prog-mode . highlight-indent-guides-mode)
-         (vue-mode . highlight-indent-guides-mode)
+  :if (not (or my/remote-server))
+  :hook ((prog-mode . highlight-indent-guides-mode)
          (LaTeX-mode . highlight-indent-guides-mode))
   :config
   (setq highlight-indent-guides-method 'bitmap)
@@ -976,7 +966,6 @@ influence of C1 on the result."
 
 (use-package rainbow-delimiters
   :straight t
-  :if (not my/lowpower)
   :hook ((prog-mode . rainbow-delimiters-mode)))
 
 (use-package rainbow-mode
@@ -1396,33 +1385,34 @@ Returns (<buffer> . <workspace-index>) or nil."
                         return (cl-position frame exwm-workspace--list)))))
     (when target-workspace (cons buf target-workspace))))
 
+(defun my/dap--go-to-stack-frame-override (debug-session stack-frame)
+  "Make STACK-FRAME the active STACK-FRAME of DEBUG-SESSION."
+  (with-lsp-workspace (dap--debug-session-workspace debug-session)
+    (when stack-frame
+      (-let* (((&hash "line" line "column" column "name" name) stack-frame)
+              (path (dap--get-path-for-frame stack-frame)))
+        (setf (dap--debug-session-active-frame debug-session) stack-frame)
+        ;; If we have a source file with path attached, open it and
+        ;; position the point in the line/column referenced in the
+        ;; stack trace.
+        (if (and path (file-exists-p path))
+            (progn
+              (let ((exwm-target (my/exwm-perspective-find-buffer path)))
+                (if exwm-target
+                    (progn
+                      (unless (= (cdr exwm-target) exwm-workspace-current-index)
+                        (exwm-workspace-switch (cdr exwm-target)))
+                      (persp-switch-to-buffer (car exwm-target)))
+                  (select-window (get-mru-window (selected-frame) nil))
+                  (find-file path)))
+              (goto-char (point-min))
+              (forward-line (1- line))
+              (forward-char column))
+          (message "No source code for %s. Cursor at %s:%s." name line column))))
+    (run-hook-with-args 'dap-stack-frame-changed-hook debug-session)))
+
 (with-eval-after-load 'exwm
   (with-eval-after-load 'dap-mode
-    (defun my/dap--go-to-stack-frame-override (debug-session stack-frame)
-      "Make STACK-FRAME the active STACK-FRAME of DEBUG-SESSION."
-      (with-lsp-workspace (dap--debug-session-workspace debug-session)
-        (when stack-frame
-          (-let* (((&hash "line" line "column" column "name" name) stack-frame)
-                  (path (dap--get-path-for-frame stack-frame)))
-            (setf (dap--debug-session-active-frame debug-session) stack-frame)
-            ;; If we have a source file with path attached, open it and
-            ;; position the point in the line/column referenced in the
-            ;; stack trace.
-            (if (and path (file-exists-p path))
-                (progn
-                  (let ((exwm-target (my/exwm-perspective-find-buffer path)))
-                    (if exwm-target
-                        (progn
-                          (unless (= (cdr exwm-target) exwm-workspace-current-index)
-                            (exwm-workspace-switch (cdr exwm-target)))
-                          (persp-switch-to-buffer (car exwm-target)))
-                      (select-window (get-mru-window (selected-frame) nil))
-                      (find-file path)))
-                  (goto-char (point-min))
-                  (forward-line (1- line))
-                  (forward-char column))
-              (message "No source code for %s. Cursor at %s:%s." name line column))))
-        (run-hook-with-args 'dap-stack-frame-changed-hook debug-session)))
     (advice-add #'dap--go-to-stack-frame :override #'my/dap--go-to-stack-frame-override)))
 
 ;; (advice-remove #'dap--go-to-stack-frame #'my/dap--go-to-stack-frame-override)
@@ -1452,6 +1442,10 @@ Returns (<buffer> . <workspace-index>) or nil."
   (interactive)
   (or (copilot-accept-completion)
       (when (my/should-run-emmet-p) (my/emmet-or-tab))
+      (when (and (eq evil-state 'normal)
+                 (or hs-minor-mode outline-minor-mode))
+        (evil-toggle-fold)
+        t)
       (indent-for-tab-command)))
 
 (use-package copilot
@@ -1481,7 +1475,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (setq-local flycheck-checker 'javascript-eslint))
 
 (defun my/should-run-emmet-p ()
-  (and emmet-mode
+  (and (bound-and-true-p emmet-mode)
        (or (and (derived-mode-p 'web-mode)
                 (member (web-mode-language-at-pos) '("html" "css")))
            (not (derived-mode-p 'web-mode)))))
@@ -1607,6 +1601,14 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 (add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
+
+(defun my/fix-hyperbole-syntax ()
+  (modify-syntax-entry ?\< "<")
+  (modify-syntax-entry ?\> ">")
+  (modify-syntax-entry ?\{ "{")
+  (modify-syntax-entry ?\} "}"))
+
+(add-hook 'web-mode-hook #'my/fix-hyperbole-syntax t)
 
 (add-hook 'scss-mode-hook #'smartparens-mode)
 (add-hook 'scss-mode-hook #'hs-minor-mode)
@@ -2108,7 +2110,6 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package geiser
   :straight t
-  :if (not my/lowpower)
   :commands (geiser run-geiser)
   :config
   (setq geiser-default-implementation 'guile))
@@ -2383,6 +2384,9 @@ Returns (<buffer> . <workspace-index>) or nil."
   "rr" #'sqlformat-buffer)
 
 (use-package sparql-mode
+  :straight t)
+
+(use-package x509-mode
   :straight t)
 
 (use-package org
@@ -3636,7 +3640,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package all-the-icons-dired
   :straight t
-  :if (not (or my/lowpower my/slow-ssh (not (display-graphic-p))))
+  :if (not (or my/slow-ssh (not (display-graphic-p))))
   :hook (dired-mode . (lambda ()
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode))))

@@ -39,8 +39,6 @@ And of course, human minds share many similarities, so if you are an avid Emacs 
 
 If however, by some twist of fate, this document is one of the first things you see about Emacs, it won't be a good resource for you. And you definitely shouldn't try to launch this config as it is. If I could suggest only one resource, I'd advise David Wilson's [[https://www.youtube.com/c/SystemCrafters][System Crafters]] YouTube channel.
 
-#+TOC: headlines 6
-
 * Contents                                                         :noexport:
 :PROPERTIES:
 :TOC:      :include all :depth 4
@@ -335,7 +333,7 @@ References:
 *** use-package
 A macro to simplify package specification & configuration. Integrates with straight.el.
 
-Set ~use-package-verbose~ to ~t~ to print out individual package loading time.
+Set ~use-package-verbose~ to ~t~ to print out loading times for individual packages.
 
 References:
 - [[https://github.com/jwiegley/use-package][use-package repo]]
@@ -347,28 +345,20 @@ References:
 ** Variables & environment
 This section is about optioning the Emacs config.
 
-The following variable is true when my machine is not powerful enough for some resource-heavy packages.
-#+begin_src emacs-lisp
-(setq my/lowpower (string= (system-name) "azure"))
-#+end_src
-
 The following is true if Emacs is meant to be used with TRAMP over slow ssh. Take a look at the [[*TRAMP][TRAMP]] section for more details.
 #+begin_src emacs-lisp
-  (setq my/slow-ssh
-        (or
-         (string= (getenv "IS_TRAMP") "true")
-         (string= (system-name) "dev-digital")
-         (string= (system-name) "violet")
-         (string= (system-name) "viridian")))
+(setq my/slow-ssh
+      (or
+       (string= (getenv "IS_TRAMP") "true")))
 #+end_src
 
 The following is true is Emacs is run on a remote server where I don't need stuff like my org workflow
 #+begin_src emacs-lisp
-  (setq my/remote-server
-        (or (string= (getenv "IS_REMOTE") "true")
-            (string= (system-name) "dev-digital")
-            (string= (system-name) "violet")
-            (string= (system-name) "viridian")))
+(setq my/remote-server
+      (or (string= (getenv "IS_REMOTE") "true")
+          (string= (system-name) "dev-digital")
+          (string= (system-name) "violet")
+          (string= (system-name) "viridian")))
 #+end_src
 
 And the following is true if Emacs is run from termux on Android.
@@ -433,17 +423,10 @@ Some time has passed, and I still don't know if there is any quantifiable advant
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 #+end_src
-*** Native compilation
-Set the number of native compilation jobs to 1 on low-power machines.
-
-#+begin_src emacs-lisp
-(when my/lowpower
-  (setq comp-async-jobs-number 1))
-#+end_src
 ** Anaconda
 [[https://www.anaconda.com/][Anaconda]] is a free package and environment manager. I currently use it to manage multiple versions of Python and Node.js. Take a look at [[file:Guix.org::*conda][the corresponding entry]] in the Guix config for details about using it on Guix.
 
-The following code uses the conda package to activate the base environment on startup if Emacs is launched outside the environment.
+The following code uses the =conda= package to activate the base environment on startup if Emacs is launched outside the environment.
 
 Also, some strange things are happening if vterm is launched with conda activated from Emacs, so I advise =conda-env-activate= to set an auxiliary environment variable. This variable is used in the [[file:Console.org::*Anaconda][shell config]].
 
@@ -473,7 +456,7 @@ References:
 #+end_src
 ** Config files
 *** Custom file location
-By default, custom writes stuff to =init.el=, which is somewhat annoying. The following makes it write to a separate file =custom.el=
+By default, =custom= writes stuff to =init.el=, which is somewhat annoying. The following makes it write to a separate file =custom.el=
 
 #+begin_src emacs-lisp
 (setq custom-file (concat user-emacs-directory "custom.el"))
@@ -527,7 +510,7 @@ References:
 #+begin_src emacs-lisp
 (use-package which-key
   :config
-  (setq which-key-idle-delay (if my/lowpower 1 0.3))
+  (setq which-key-idle-delay 0.3)
   (setq which-key-popup-type 'frame)
   (which-key-mode)
   (which-key-setup-side-window-bottom)
@@ -613,7 +596,6 @@ Basic evil configuration.
 #+end_src
 
 [[https://github.com/blorbx/evil-quickscope][evil-quickscope]] emulates quickscope.vim. It highlights certain target characters for f, F, t, T keys.
-
 #+begin_src emacs-lisp
 (use-package evil-quickscope
   :straight t
@@ -736,10 +718,9 @@ References:
    "-=" #'avy-goto-symbol-1))
 #+End_src
 *** My keybindings
-Various keybindings settings that I can't put anywhere else.
+Various keybinding settings that I can't put anywhere else.
 
 **** Escape key
-
 Use the escape key instead of =C-g= whenever possible.
 
 I must have copied it from somewhere, but as I googled to find out the source, I discovered quite a number of variations of the following code over time. I wonder if Richard Dawkins was inspired by something like this a few decades ago.
@@ -900,9 +881,9 @@ Some keybindings for xref and go to definition.
 **** Folding
 There are multiple ways to fold text in Emacs.
 
-The most versatile is the built-in =hs-minor-mode=, which seems to work out of the box for Lisps, C-like languages, and Python. =outline-minor-mode= works for org-mode, LaTeX and the like. There is a 3rd-party solution [[https://github.com/elp-revive/origami.el][origami.el]], but I don't use it at the moment.
+The most versatile is the built-in =hs-minor-mode=, which seems to work out of the box for Lisps, C-like languages, and Python. =outline-minor-mode= works for org-mode, LaTeX and the like. There is a 3rd-party solution [[https://github.com/elp-revive/origami.el][origami.el]], which I found to be somewhat less stable.
 
-Evil does a pretty good job of abstracting the first two with a set of vim-like keybindings. I was using =SPC= in vim, but as now this isn't an option, I set =TAB= to toggle folding.
+Evil does a pretty good job of abstracting all these packages with a set of vim-like keybindings. I was using =SPC= in vim, but as now this isn't an option, I set =TAB= to toggle folding.
 
 #+begin_src emacs-lisp
 (general-nmap :keymaps '(hs-minor-mode-map outline-minor-mode-map)
@@ -1248,17 +1229,14 @@ Another important package that also touches this category is [[*Dired][dired]], 
 #+end_src
 *** Git & Magit
 [[https://magit.vc/][Magit]] is a git interface for Emacs. The closest non-Emacs alternative (sans actual clones) I know is [[https://github.com/jesseduffield/lazygit][lazygit]], which I used before Emacs.
-
-[[https://github.com/magit/forge][forge]] provides integration with forges, such as GitHub and GitLab.
-
-[[https://github.com/emacsorphanage/git-gutter][git-gutter]] is a package which shows git changes for each line (added/changed/deleted lines).
-
-[[https://github.com/emacsmirror/git-timemachine][git-timemachine]] allows visiting previous versions of a file.
-
 #+begin_src emacs-lisp
 (use-package magit
   :straight t
   :commands (magit-status magit-file-dispatch)
+  :init
+  (my-leader-def
+    "m" 'magit
+    "M" 'magit-file-dispatch)
   :config
   (setq magit-blame-styles
         '((margin
@@ -1273,7 +1251,10 @@ Another important package that also touches this category is [[*Dired][dired]], 
           (lines
            (show-lines       . t)
            (show-message     . t)))))
+#+end_src
 
+[[https://github.com/magit/forge][forge]] provides integration with forges, such as GitHub and GitLab.
+#+begin_src emacs-lisp
 (use-package forge
   :after magit
   :straight t
@@ -1282,20 +1263,22 @@ Another important package that also touches this category is [[*Dired][dired]], 
                               "gitlab.etu.ru/api/v4"
                               "gitlab.etu.ru"
                               forge-gitlab-repository)))
+#+end_src
 
+[[https://github.com/emacsorphanage/git-gutter][git-gutter]] is a package which shows git changes for each line (added/changed/deleted lines).
+#+begin_src emacs-lisp
 (use-package git-gutter
   :straight t
   :if (not my/slow-ssh)
   :config
   (global-git-gutter-mode +1))
+#+end_src
 
+[[https://github.com/emacsmirror/git-timemachine][git-timemachine]] allows visiting previous versions of a file.
+#+begin_src emacs-lisp
 (use-package git-timemachine
   :straight t
   :commands (git-timemachine))
-
-(my-leader-def
-  "m" 'magit
-  "M" 'magit-file-dispatch)
 #+end_src
 
 *** Editorconfig
@@ -1447,18 +1430,20 @@ References:
   :straight t
   :config
   (global-company-mode)
-  (setq company-idle-delay (if my/lowpower 0.5 0.125))
+  (setq company-idle-delay 0.125)
   (setq company-dabbrev-downcase nil)
   (setq company-show-numbers t))
 
 (general-imap "C-SPC" 'company-complete)
 #+end_src
 
-A company frontend with nice icons. Disabled since the base company got icons support and since company-box has some issues with spaceline.
+A company frontend with nice icons.
+
++Disabled since the base company got icons support and since company-box has some issues with spaceline.+ Enabled back because I didn't like spaceline.
 #+begin_src emacs-lisp
 (use-package company-box
   :straight t
-  :if (and (display-graphic-p) (not my/lowpower))
+  :if (display-graphic-p)
   :after (company)
   :hook (company-mode . company-box-mode))
 #+end_src
@@ -1475,7 +1460,6 @@ A company frontend with nice icons. Disabled since the base company got icons su
              helpful-macro
              helpful-function
              helpful-command))
-
 #+end_src
 
 As I use =C-h= to switch buffers, I moved the help to =SPC-h= with the code below.
@@ -1592,7 +1576,7 @@ Highlight the current line
 #+end_src
 *** Line numbers
 Line numbers. There seems to be a catch with the relative number setting:
-- =visual= doesn't take folding into account but also doesn't take wrapped lines into account (makes multiple numbers for a single wrapped line)
+- =visual= doesn't take folding into account but also doesn't take wrapped lines into account (i.e. there are multiple numbers for a single wrapped line)
 - =relative= makes a single number for a wrapped line, but counts folded lines.
 
 =visual= option seems to be less of a problem in most cases.
@@ -1607,7 +1591,7 @@ Word wrapping. These settings aren't too obvious compared to =:set wrap= from vi
 - =word-wrap= means just "don't split one word between two lines". So, if there isn't enough place to put a word at the end of the line, it will be put on a new one. Run =M-x toggle-word-wrap= to toggle that.
 - =visual-line-mode= seems to be a superset of =word-wrap=. It also enables some editing commands to work on visual lines instead of logical ones, hence the naming.
 - =auto-fill-mode= does the same as =word-wrap=, except it actually *edits the buffer* to make lines break in the appropriate places.
-- =truncate-lines= truncate long lines instted of continuing them. Run =M-x toggle-truncate-lines= to toggle that. I find that =truncate-lines= behaves strangely when =visual-line-mode= is on, so I use one or another.
+- =truncate-lines= truncates long lines instead of continuing them. Run =M-x toggle-truncate-lines= to toggle that. I find that =truncate-lines= behaves strangely when =visual-line-mode= is on, so I use one or another.
 #+begin_src emacs-lisp
 (setq word-wrap 1)
 (global-visual-line-mode 1)
@@ -1669,7 +1653,7 @@ My colorscheme of choice.
   (doom-themes-treemacs-config))
 #+end_src
 *** Custom theme
-Here I define a custom theme, dependent on Doom color.
+Here I define a custom theme, dependent on colors from =doom-themes=.
 
 A custom theme is necessary because if one calls =custom-set-faces= and =custom-set-variables= in code, whenever a variable is changed and saved in a customize buffer, data from all calls of these functions is saved as well.
 
@@ -1810,6 +1794,8 @@ Ligature setup for the JetBrainsMono font.
   (global-ligature-mode t))
 #+end_src
 *** Icons
+Run =M-x all-the-icons-install-fonts= at first setup.
+
 #+begin_src emacs-lisp
 (use-package all-the-icons
   :if (display-graphic-p)
@@ -1820,10 +1806,8 @@ Highlight indent guides.
 #+begin_src emacs-lisp
 (use-package highlight-indent-guides
   :straight t
-  :if (not (or my/lowpower my/remote-server))
-  :hook (
-         (prog-mode . highlight-indent-guides-mode)
-         (vue-mode . highlight-indent-guides-mode)
+  :if (not (or my/remote-server))
+  :hook ((prog-mode . highlight-indent-guides-mode)
          (LaTeX-mode . highlight-indent-guides-mode))
   :config
   (setq highlight-indent-guides-method 'bitmap)
@@ -1834,7 +1818,6 @@ Rainbow parentheses.
 #+begin_src emacs-lisp
 (use-package rainbow-delimiters
   :straight t
-  :if (not my/lowpower)
   :hook ((prog-mode . rainbow-delimiters-mode)))
 #+end_src
 
@@ -1877,7 +1860,7 @@ References:
   (doom-modeline-mode 1))
 #+end_src
 ** perspective.el
-[[https://github.com/nex3/perspective-el][perspective.el]] is a package which provides gives Emacs capacities to group buffers into "perspectives", which are like workspaces in tiling WMs.
+[[https://github.com/nex3/perspective-el][perspective.el]] is a package that provides gives Emacs capacities to group buffers into "perspectives", which are like workspaces in tiling WMs.
 
 An advantage over =tab-bar.el= is that =perspective.el= has better capacities for managing buffers, e.g. gives an ibuffer-like interface inside a perspective.
 
@@ -1968,7 +1951,7 @@ So, here is a macro to run something in a given perspective in a given workspace
 * Programming
 ** General setup
 *** Treemacs
-[[https://github.com/Alexander-Miller/treemacs][Treemacs]] is a quite large & powerful package, but as of now I've replaced it with dired. However, I still have a small configuration because lsp-mode and dap-mode depend on it.
+[[https://github.com/Alexander-Miller/treemacs][Treemacs]] is a quite large & powerful package, but as of now I've replaced it with dired. I still have a small configuration because lsp-mode and dap-mode depend on it.
 
 #+begin_src emacs-lisp
 (use-package treemacs
@@ -1996,7 +1979,7 @@ So, here is a macro to run something in a given perspective in a given workspace
   :straight t)
 #+end_src
 *** LSP
-LSP-mode provides an IDE-like experience for Emacs - real-time diagnostic, code actions, intelligent autocompletion, etc.
+LSP-mode provides an IDE-like experience for Emacs - real-time diagnostics, code actions, intelligent autocompletion, etc.
 
 References:
 - [[https://emacs-lsp.github.io/lsp-mode/][lsp-mode homepage]]
@@ -2390,33 +2373,34 @@ Returns (<buffer> . <workspace-index>) or nil."
 And override =dap--go-to-stack-frame= to take that into account. For some reason, evaluating this before =dap-mode= doesn't work.
 
 #+begin_src emacs-lisp
+(defun my/dap--go-to-stack-frame-override (debug-session stack-frame)
+  "Make STACK-FRAME the active STACK-FRAME of DEBUG-SESSION."
+  (with-lsp-workspace (dap--debug-session-workspace debug-session)
+    (when stack-frame
+      (-let* (((&hash "line" line "column" column "name" name) stack-frame)
+              (path (dap--get-path-for-frame stack-frame)))
+        (setf (dap--debug-session-active-frame debug-session) stack-frame)
+        ;; If we have a source file with path attached, open it and
+        ;; position the point in the line/column referenced in the
+        ;; stack trace.
+        (if (and path (file-exists-p path))
+            (progn
+              (let ((exwm-target (my/exwm-perspective-find-buffer path)))
+                (if exwm-target
+                    (progn
+                      (unless (= (cdr exwm-target) exwm-workspace-current-index)
+                        (exwm-workspace-switch (cdr exwm-target)))
+                      (persp-switch-to-buffer (car exwm-target)))
+                  (select-window (get-mru-window (selected-frame) nil))
+                  (find-file path)))
+              (goto-char (point-min))
+              (forward-line (1- line))
+              (forward-char column))
+          (message "No source code for %s. Cursor at %s:%s." name line column))))
+    (run-hook-with-args 'dap-stack-frame-changed-hook debug-session)))
+
 (with-eval-after-load 'exwm
   (with-eval-after-load 'dap-mode
-    (defun my/dap--go-to-stack-frame-override (debug-session stack-frame)
-      "Make STACK-FRAME the active STACK-FRAME of DEBUG-SESSION."
-      (with-lsp-workspace (dap--debug-session-workspace debug-session)
-        (when stack-frame
-          (-let* (((&hash "line" line "column" column "name" name) stack-frame)
-                  (path (dap--get-path-for-frame stack-frame)))
-            (setf (dap--debug-session-active-frame debug-session) stack-frame)
-            ;; If we have a source file with path attached, open it and
-            ;; position the point in the line/column referenced in the
-            ;; stack trace.
-            (if (and path (file-exists-p path))
-                (progn
-                  (let ((exwm-target (my/exwm-perspective-find-buffer path)))
-                    (if exwm-target
-                        (progn
-                          (unless (= (cdr exwm-target) exwm-workspace-current-index)
-                            (exwm-workspace-switch (cdr exwm-target)))
-                          (persp-switch-to-buffer (car exwm-target)))
-                      (select-window (get-mru-window (selected-frame) nil))
-                      (find-file path)))
-                  (goto-char (point-min))
-                  (forward-line (1- line))
-                  (forward-char column))
-              (message "No source code for %s. Cursor at %s:%s." name line column))))
-        (run-hook-with-args 'dap-stack-frame-changed-hook debug-session)))
     (advice-add #'dap--go-to-stack-frame :override #'my/dap--go-to-stack-frame-override)))
 
 ;; (advice-remove #'dap--go-to-stack-frame #'my/dap--go-to-stack-frame-override)
@@ -2458,6 +2442,10 @@ A general-purpose package to run formatters on files. While the most popular for
   (interactive)
   (or (copilot-accept-completion)
       (when (my/should-run-emmet-p) (my/emmet-or-tab))
+      (when (and (eq evil-state 'normal)
+                 (or hs-minor-mode outline-minor-mode))
+        (evil-toggle-fold)
+        t)
       (indent-for-tab-command)))
 
 (use-package copilot
@@ -2506,7 +2494,7 @@ My bit of config here:
 
 #+begin_src emacs-lisp
 (defun my/should-run-emmet-p ()
-  (and emmet-mode
+  (and (bound-and-true-p emmet-mode)
        (or (and (derived-mode-p 'web-mode)
                 (member (web-mode-language-at-pos) '("html" "css")))
            (not (derived-mode-p 'web-mode)))))
@@ -2655,22 +2643,6 @@ Vue settings
 
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 (add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
-#+end_src
-*** SCSS
-#+begin_src emacs-lisp
-(add-hook 'scss-mode-hook #'smartparens-mode)
-(add-hook 'scss-mode-hook #'hs-minor-mode)
-(my/set-smartparens-indent 'scss-mode)
-#+end_src
-*** PHP
-#+begin_src emacs-lisp
-(use-package php-mode
-  :straight t
-  :mode "\\.php\\'"
-  :config
-  (add-hook 'php-mode-hook #'smartparens-mode)
-  (add-hook 'php-mode-hook #'lsp)
-  (my/set-smartparens-indent 'php-mode))
 #+end_src
 ** LaTeX
 *** AUCTeX
@@ -3036,7 +3008,7 @@ References:
   "l" 'langtool-correct-buffer)
 #+end_src
 ** Lisp
-[[./dot-imgs/lisp_cycles.png]]
+[[file:dot-imgs/lisp_cycles.png]]
 
 *** Meta Lisp
 Some packages for editing various Lisps.
@@ -3116,7 +3088,6 @@ Python requirements:
 #+begin_src emacs-lisp
 (use-package geiser
   :straight t
-  :if (not my/lowpower)
   :commands (geiser run-geiser)
   :config
   (setq geiser-default-implementation 'guile))
@@ -3417,6 +3388,11 @@ A package to quickly create =.gitignore= files.
   :mode "\\.fish\\'"
   :config
  (add-hook 'fish-mode-hook #'smartparens-mode))
+#+end_src
+** x509
+#+begin_src emacs-lisp
+(use-package x509-mode
+  :straight t)
 #+end_src
 ** Java
 #+begin_src emacs-lisp
@@ -5366,7 +5342,7 @@ Display icons for files.
 #+begin_src emacs-lisp
 (use-package all-the-icons-dired
   :straight t
-  :if (not (or my/lowpower my/slow-ssh (not (display-graphic-p))))
+  :if (not (or my/slow-ssh (not (display-graphic-p))))
   :hook (dired-mode . (lambda ()
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode))))
@@ -6715,7 +6691,7 @@ This structure has to be converted to list of alists, which looks like:
 
 The original implementation creates a new alist whenever it encounters a tag it has already put in the current alist. Which doesn't work too well if some tags don't repeat, if the order is messed up, etc.
 
-Fortunately, according to the [[https://mpd.readthedocs.io/en/latest/protocol.html#command-lsinfo][protocol specification]], each new record has to start with =file=, =directory= or =playlist=. I've overridden the function with that in mind and it fixed the import, at least in my case.
+Fortunately, according to the [[https://mpd.readthedocs.io/en/latest/protocol.html#command-lsinfo][protocol specification]], each new record has to start with =file=, =directory= or =playlist=. I've overridden the function with that in mind and it fixed the import, at least for my case.
 
 #+begin_src emacs-lisp :tangle no :noweb-ref emms-fixes
 (defun emms-player-mpd-get-alists (info)
