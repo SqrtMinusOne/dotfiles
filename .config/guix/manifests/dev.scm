@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "leiningen"
    "python-virtualenv"
    "python"
    "php"
@@ -11,9 +12,10 @@
    "lua"
    "gcc-toolchain"
    "go"
-   "openjdk"
+   "openjdk:jdk"
    "node"
    "git-filter-repo"
+   "virt-manager"
    "postgresql"
    "docker-compose"
    "pandoc"

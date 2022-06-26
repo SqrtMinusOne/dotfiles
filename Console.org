@@ -7,8 +7,6 @@
 #+PROPERTY: header-args:bash         :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 #+OPTIONS: broken-links:auto h:6 toc:nil
 
-#+TOC headlines 6
-
 * Contents                                                         :noexport:
 :PROPERTIES:
 :TOC:      :include all :depth 3

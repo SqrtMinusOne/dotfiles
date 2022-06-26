@@ -17,8 +17,6 @@ Parts prefixed with (OFF) are not used, but kept for historic purposes. For some
 References:
 - [[https://sqrtminusone.xyz/posts/2022-02-12-literate/][A few cases of literate configuration]]. My blog post that explains some of techniques from this file.
 
-#+TOC: headlines 6
-
 * Contents                                                         :noexport:
 :PROPERTIES:
 :TOC:      :include all :depth 3
@@ -3333,7 +3331,7 @@ This section generates manifests for various desktop software that I'm using.
 | office   | ffmpeg          |
 | office   | kdenlive        |
 | office   | inkscape        |
-| office   | evince          |
+| office   | okular          |
 ** LaTeX
 | Category | Guix dependency               |
 |----------+-------------------------------|
@@ -3352,7 +3350,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | virt-manager      |          |
 | dev      | git-filter-repo   |          |
 | dev      | node              |          |
-| dev      | openjdk           |          |
+| dev      | openjdk:jdk       |          |
 | dev      | go                |          |
 | dev      | gcc-toolchain     |          |
 | dev      | lua               |          |
@@ -3366,6 +3364,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | php               |          |
 | dev      | python            |          |
 | dev      | python-virtualenv |          |
+| dev      | leiningen         |          |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
