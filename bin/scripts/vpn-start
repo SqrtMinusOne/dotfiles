@@ -16,5 +16,5 @@ fi
 #     pkexec nmcli con modify "$CONN" ipv6.method ignore
 #     nmcli connection up "$CONN"
 # fi
-pkexec openvpn --config ~/.vpn/openvpn.ovpn
+pkexec openvpn --config ~/.vpn/mullvad_openvpn_linux_lv_rix/mullvad_lv_rix.conf
 # vpn-start:1 ends here
