@@ -93,3 +93,41 @@
         (CMS
          (sign)
          (encrypt))))
+
+(setq my/message-signature-on-top '("@etu.ru"))
+
+(defun my/message-insert-signature-need-on-top ()
+  (let ((parts (split-string
+                (string-join
+                 (list
+                  (message-fetch-field "to")
+                  (message-fetch-field "cc")
+                  (message-fetch-field "bcc"))
+                 ", ")
+                ", ")))
+    (and
+     (seq-some
+      (lambda (rule)
+        (seq-some
+         (lambda (part)
+           (string-match-p rule part))
+         parts))
+      my/message-signature-on-top)
+     t)))
+
+(defun my/message-maybe-fix-signature (&rest _)
+  (when (my/message-insert-signature-need-on-top)
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward message-signature-separator nil t)
+        (move-beginning-of-line 0)
+        (kill-region (point) (point-max)))
+      (message-goto-body)
+      (when (re-search-forward (rx "sign=pgpmime") nil t)
+        (forward-line))
+      (insert (current-kill 0))
+      (insert "\n\n")
+      (set-buffer-modified-p nil))))
+
+(with-eval-after-load 'notmuch-mua
+  (advice-add #'notmuch-mua-reply :after #'my/message-maybe-fix-signature))
