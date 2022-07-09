@@ -25,7 +25,11 @@
 (use-package exwm-modeline
   :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
   :config
-  (add-hook 'exwm-init-hook #'exwm-modeline-mode))
+  (add-hook 'exwm-init-hook #'exwm-modeline-mode)
+  (my/use-doom-colors
+   (exwm-modeline-current-workspace
+    :foreground (doom-color 'yellow)
+    :weight 'bold)))
 
 (defun my/exwm-direction-exists-p (dir)
   "Check if there is space in the direction DIR.

@@ -396,7 +396,11 @@ Show the current workspace in the modeline.
 (use-package exwm-modeline
   :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
   :config
-  (add-hook 'exwm-init-hook #'exwm-modeline-mode))
+  (add-hook 'exwm-init-hook #'exwm-modeline-mode)
+  (my/use-doom-colors
+   (exwm-modeline-current-workspace
+    :foreground (doom-color 'yellow)
+    :weight 'bold)))
 #+end_src
 ** Windows
 A bunch of functions related to managing windows in EXWM.

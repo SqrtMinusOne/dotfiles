@@ -1,6 +1,6 @@
 (specifications->manifest
  '(
-   "evince"
+   "okular"
    "inkscape"
    "kdenlive"
    "ffmpeg"
