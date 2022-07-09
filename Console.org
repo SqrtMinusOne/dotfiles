@@ -437,7 +437,7 @@ fi
 #+end_src
 *** Starship
 #+begin_src bash
-if [[ -z "$SIMPLE" ]]; then
+if [[ -z "$SIMPLE" && "$TERM" != "dumb" ]]; then
     eval "$(starship init bash)"
 fi
 #+end_src
@@ -454,7 +454,9 @@ fi
 
 Launch starship
 #+begin_src fish
-starship init fish | source
+if [ "$TERM" != "dumb" ]
+    starship init fish | source
+end
 #+end_src
 
 Enable vi keybindings & aliases. The alias syntax is the same as in bash, so it's just a noweb reference to =.bashrc=.

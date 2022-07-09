@@ -1,5 +1,7 @@
 # [[file:../../Console.org::*Fish][Fish:1]]
-starship init fish | source
+if [ "$TERM" != "dumb" ]
+    starship init fish | source
+end
 # Fish:1 ends here
 
 # [[file:../../Console.org::*Fish][Fish:2]]

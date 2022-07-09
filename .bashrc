@@ -146,7 +146,7 @@ fi
 # Anaconda:1 ends here
 
 # [[file:Console.org::*Starship][Starship:1]]
-if [[ -z "$SIMPLE" ]]; then
+if [[ -z "$SIMPLE" && "$TERM" != "dumb" ]]; then
     eval "$(starship init bash)"
 fi
 # Starship:1 ends here
