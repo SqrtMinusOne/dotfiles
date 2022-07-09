@@ -1602,26 +1602,6 @@ Returns (<buffer> . <workspace-index>) or nil."
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 (add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
 
-(defun my/fix-hyperbole-syntax ()
-  (modify-syntax-entry ?\< "<")
-  (modify-syntax-entry ?\> ">")
-  (modify-syntax-entry ?\{ "{")
-  (modify-syntax-entry ?\} "}"))
-
-(add-hook 'web-mode-hook #'my/fix-hyperbole-syntax t)
-
-(add-hook 'scss-mode-hook #'smartparens-mode)
-(add-hook 'scss-mode-hook #'hs-minor-mode)
-(my/set-smartparens-indent 'scss-mode)
-
-(use-package php-mode
-  :straight t
-  :mode "\\.php\\'"
-  :config
-  (add-hook 'php-mode-hook #'smartparens-mode)
-  (add-hook 'php-mode-hook #'lsp)
-  (my/set-smartparens-indent 'php-mode))
-
 (use-package tex
   :straight auctex
   :defer t
@@ -2308,6 +2288,9 @@ Returns (<buffer> . <workspace-index>) or nil."
   :config
  (add-hook 'fish-mode-hook #'smartparens-mode))
 
+(use-package x509-mode
+  :straight t)
+
 (use-package lsp-java
   :straight t
   :after (lsp)
@@ -2384,9 +2367,6 @@ Returns (<buffer> . <workspace-index>) or nil."
   "rr" #'sqlformat-buffer)
 
 (use-package sparql-mode
-  :straight t)
-
-(use-package x509-mode
   :straight t)
 
 (use-package org
@@ -3948,12 +3928,6 @@ Returns (<buffer> . <workspace-index>) or nil."
 (my-leader-def
   "cf" '(my/open-yadm-file :wk "yadm file"))
 
-(unless (or my/is-termux my/remote-server)
-  (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
-    (if (file-exists-p mail-file)
-        (load-file mail-file)
-      (message "Can't load mail.el"))))
-
 (use-package elfeed
   :straight (:repo "SqrtMinusOne/elfeed" :host github)
   :if (not my/remote-server)
@@ -4451,6 +4425,12 @@ by the `my/elfeed-youtube-subtitles' function."
                (append subed-mpv-arguments emms-player-mpv-parameters)))
   (setq-local subed-mpv-video-file (elfeed-entry-link entry))
   (subed-mpv--play subed-mpv-video-file))
+
+(unless (or my/is-termux my/remote-server)
+  (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
+    (if (file-exists-p mail-file)
+        (load-file mail-file)
+      (message "Can't load mail.el"))))
 
 (use-package emms
   :straight t

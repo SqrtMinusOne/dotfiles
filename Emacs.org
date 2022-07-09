@@ -1737,6 +1737,18 @@ Dim inactive buffers.
    (auto-dim-other-buffers-face
     :background (color-darken-name (doom-color 'bg) 3))))
 #+end_src
+*** Toggle light/dark
+#+begin_src emacs-lisp
+(defun my/toggle-dark-light-theme ()
+  (interactive)
+  (let ((is-dark (member 'doom-palenight custom-enabled-themes)))
+    (if is-dark
+        (progn
+          (load-theme 'doom-one-light t)
+          (disable-theme 'doom-palenight))
+      (load-theme 'doom-palenight t)
+      (disable-theme 'doom-one-light))))
+#+end_src
 ** Fonts
 *** Frame font
 To install a font, download the font and unpack it into the =.local/share/fonts= directory. Create one if it doesn't exist.
@@ -5760,21 +5772,12 @@ Open a file managed by yadm.
 (my-leader-def
   "cf" '(my/open-yadm-file :wk "yadm file"))
 #+end_src
-** Internet & Multimedia
-*** Notmuch
-My notmuch config now resides in [[file:Mail.org][Mail.org]].
-
-#+begin_src emacs-lisp
-(unless (or my/is-termux my/remote-server)
-  (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
-    (if (file-exists-p mail-file)
-        (load-file mail-file)
-      (message "Can't load mail.el"))))
-#+end_src
-*** Elfeed
+** Elfeed
 [[https://github.com/skeeto/elfeed][elfeed]] is one of the most popular Emacs packages, and it's also one in which I ended up investing a lot of effort.
 
-**** General settings
+There's a lot of stuff in this section, so it's here and not in "Internet and Multimedia".
+
+*** General settings
 The advice there sets =shr-use-fonts= to nil while rendering HTML, so the =elfeed-show= buffer will use monospace font.
 
 Using my own fork until the modifications are merged into master.
@@ -5815,7 +5818,7 @@ Using my own fork until the modifications are merged into master.
   (setq rmh-elfeed-org-files '("~/.emacs.d/private.org"))
   (elfeed-org))
 #+end_src
-**** Some additions
+*** Some additions
 Filter elfeed search buffer by the feed under the cursor.
 #+begin_src emacs-lisp
 (defun my/elfeed-search-filter-source (entry)
@@ -5842,7 +5845,7 @@ Open a URL with eww.
     (when link
       (eww link))))
 #+end_src
-**** Custom faces
+*** Custom faces
 Setting up custom faces for certain tags to make the feed look a bit nicer.
 
 #+begin_src emacs-lisp
@@ -5906,7 +5909,7 @@ Also, a function to automatically adjust these colors with the Doom theme.
 (when (fboundp 'doom-color)
   (my/update-my-theme-elfeed))
 #+end_src
-**** elfeed-summary
+*** elfeed-summary
 [[https://github.com/SqrtMinusOne/elfeed-summary][elfeed-summary]] is my package that provides a feed summary interface for elfeed.
 
 The default interface of elfeed is just a list of all entries, so it gets hard to navigate when there are a lot of sources with varying frequencies of posts. This is my attempt to address this issue.
@@ -5918,7 +5921,7 @@ The default interface of elfeed is just a list of all entries, so it gets hard t
   :config
   (setq elfeed-summary-filter-by-title t))
 #+end_src
-**** elfeed-sync
+*** elfeed-sync
 [[https://github.com/SqrtMinusOne/elfeed-sync][elfeed-sync]] is my package to sync elfeed with [[https://tt-rss.org/][tt-rss]].
 
 #+begin_src emacs-lisp
@@ -5931,7 +5934,7 @@ The default interface of elfeed is just a list of all entries, so it gets hard t
   (setq elfeed-sync-tt-rss-login "sqrtminusone")
   (setq elfeed-sync-tt-rss-password (my/password-store-get "Selfhosted/tt-rss")))
 #+end_src
-**** YouTube, podcasts & EMMS
+*** YouTube, podcasts & EMMS
 Previously this block was opening MPV with =start-process=, but now I've managed to hook up MPV with EMMS. So there is the EMMS+elfeed "integration".
 
 There are multiple kinds of entries that I want to be opened by EMMS. First, a function that returns a YouTube URL:
@@ -5978,12 +5981,12 @@ Now, a function to add a YouTube link with metadata from elfeed to EMMS.
    :keymaps 'elfeed-show-mode-map
    "gm" #'my/elfeed-add-emms))
 #+end_src
-**** rdrview
+*** rdrview
 [[https://github.com/eafer/rdrview][rdrview]] is a command-line tool to strip webpages from clutter, extracting only parts related to the actual content. It's a standalone port of the corresponding feature of Firefox, called [[https://support.mozilla.org/en-US/kb/firefox-reader-view-clutter-free-web-pages][Reader View]].
 
 It seems like the tool [[https://repology.org/project/rdrview/versions][isn't available]] in a whole lot of package repositories, but it's pretty easy to compile. I've put together a [[https://github.com/SqrtMinusOne/channel-q/blob/master/rdrview.scm][Guix definition]], which /one day/ I'll submit to upstream.
 
-***** Integrating rdrview with Emacs
+**** Integrating rdrview with Emacs
 Let's start by integrating =rdrview= with Emacs. In the general case, we want to fetch both metadata and the actual content from the page.
 
 However, the interface of =rdrview= is a bit awkward in this part, so we have the following options:
@@ -6059,7 +6062,7 @@ With that said, here's a function that does the required changes:
                       (buffer-string)))))))
 #+end_src
 
-***** Using rdrview from elfeed
+**** Using rdrview from elfeed
 Because I didn't find a smart way to advise the desired behavior into elfeed, here's a modification of the =elfeed-show-refresh--mail-style= function with two changes:
 - it uses =rdrview= to fetch the HTML;
 - it saves the resulting HTML into a buffer-local variable (we'll need that later).
@@ -6128,18 +6131,18 @@ That way, calling =M-x my/rdrview-elfeed-show= replaces the original content wit
    "gp" #'my/rdrview-elfeed-show))
 #+end_src
 
-***** How well does it work?
+**** How well does it work?
 Rather ironically, it works well with sites that already ship with proper RSS, like [[https://protesilaos.com/][Protesilaos Stavrou's]] or [[https://karthinks.com/software/simple-folding-with-hideshow/][Karthik Chikmagalur's]] blogs or [[https://www.theatlantic.com/world/][The Atlantic]] magazine.
 
 Of my other subscriptions, it does a pretty good job with [[https://www.theverge.com/][The Verge]], which by default sends entries truncated by the words "Read the full article". For [[https://arstechnica.com/][Ars Technica]], it works only if the story is not large enough, otherwise the site returns its HTML-based pagination interface.
 
 For paywalled sites such as [[https://www.nytimes.com/][New York Times]] or [[https://www.economist.com/][The Economist]], this usually doesn't work (by the way, what's the problem with providing individual RSS feeds for subscribers?). If you need this kind of thing, I'd suggest using the [[https://github.com/RSS-Bridge/rss-bridge][RSS-Bridge]] project. And if something is not available, contributing business logic there definitely makes more sense than implementing workarounds in Emacs Lisp.
-**** LaTeX and pandoc
+*** LaTeX and pandoc
 However, I also find that I'm not really a fan of reading articles from Emacs. Somehow what works for program code doesn't work that well for natural text. When I have to, I usually switch the Emacs theme to a light one.
 
 But the best solution I've found so far is to render the required articles as PDFs. I may even print out some large articles I want to read.
 
-***** Template
+**** Template
 So first, we need a LaTeX template. Pandoc already ships with one, but I don't like it too much, so I've put up a template from my LaTeX styles, targeting my preferred XeLaTeX engine.
 
 The code for the template is available [[file:.emacs.d/rdrview.tex][dotfiles repo]]. If you use LaTeX, you'll probably be better off using your own setup. Be sure to define the following variables:
@@ -6149,7 +6152,7 @@ The code for the template is available [[file:.emacs.d/rdrview.tex][dotfiles rep
 - =author=
 - =date=
 
-***** Invoking pandoc
+**** Invoking pandoc
 Now that we have the template, let's save it somewhere and store the path to a variable:
 #+begin_src emacs-lisp
 (setq my/rdrview-template (expand-file-name
@@ -6214,7 +6217,7 @@ OVERWRITE is non-nil."
                     (user-error "Error in pandoc. Check the *Pandoc* buffer"))))))))))
 #+end_src
 
-***** Opening elfeed entries
+**** Opening elfeed entries
 Now we have everything required to open elfeed entries.
 
 Also, in my case elfeed entries come in two languages, so I have to set =main-lang= and =other-lang= variables accordingly. Here's the main function:
@@ -6278,7 +6281,7 @@ If the =my/elfeed-show-rdrview-html= variable is bound and true, then the conten
 
 Now we can open elfeed entries in a PDF viewer, which I find much nicer to read. Given that RSS feeds generally ship with simpler HTML than the regular websites, results usually look awesome.
 
-***** Opening arbitrary sites
+**** Opening arbitrary sites
 As you may have noticed, we also can display arbitrary web pages with this setup, so let's go ahead and implement that:
 
 #+begin_src emacs-lisp
@@ -6320,8 +6323,8 @@ Unfortunately, this part doesn't work that well, so we can't just uninstall Fire
 The most common problem I've encountered is incorrectly formed pictures, such as =.png= files without the boundary info. I'm sure you've also come across this if you ever tried to insert a lot of Internet pictures into a LaTeX document.
 
 However, sans the pictures issue, for certain sites like Wikipedia this is usable.
-**** YouTube transcripts
-***** Getting subtitles
+*** YouTube transcripts
+**** Getting subtitles
 Finally, let's get to transcripts.
 
 In principle, the YouTube API allows for downloading subtitles, but I've found [[https://github.com/jdepoix/youtube-transcript-api][this awesome Python script]] which does the same. You can install it from =pip=, or here's mine [[https://github.com/SqrtMinusOne/channel-q/blob/master/youtube-transcript-api.scm][Guix definition]] once again.
@@ -6368,7 +6371,7 @@ OVERWRITE is non-nil."
                     (user-error "Error in youtube_transcript_api: %s" err)))))))
       proc)))
 #+end_src
-***** elfeed and subed
+**** elfeed and subed
 Now that we have a standalone function, let's invoke it with the current =elfeed-show-entry=:
 
 #+begin_src emacs-lisp
@@ -6427,6 +6430,17 @@ by the `my/elfeed-youtube-subtitles' function."
 #+end_src
 
 Keep in mind that this function has to be launched inside the buffer opened by the =my/elfeed-youtube-subtitles= function.
+** Internet & Multimedia
+*** Notmuch
+My notmuch config now resides in [[file:Mail.org][Mail.org]].
+
+#+begin_src emacs-lisp
+(unless (or my/is-termux my/remote-server)
+  (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
+    (if (file-exists-p mail-file)
+        (load-file mail-file)
+      (message "Can't load mail.el"))))
+#+end_src
 *** EMMS
 EMMS is the Emacs Multi-Media System. I use it to control MPD & MPV.
 
