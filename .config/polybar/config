@@ -179,7 +179,7 @@ font-4 = JetBrains Mono Nerd Font:monospace:size=17;4
 ; Global bar config:3 ends here
 
 ; [[file:../../Desktop.org::*Global bar config][Global bar config:4]]
-; modules-left = i3
+modules-left = i3
 ; modules-center = test
 modules-right = ${env:RIGHT_BLOCKS}
 
@@ -475,18 +475,19 @@ wrapping-scroll = false
 pin-workspaces = true
 
 label-mode-padding = 1
-label-mode-foreground = #000
+label-mode-foreground = ${colors.white}
 label-mode-background = ${colors.blue}
 
 ; focused = Active workspace on focused monitor
 label-focused = %name%
-; label-focused-background = ${colors.background-alt}
+label-focused-background = ${colors.blue}
 label-focused-underline= ${colors.blue}
 label-focused-padding = 1
 
 ; unfocused = Inactive workspace on any monitor
 label-unfocused = %name%
 label-unfocused-padding = 1
+label-unfocused-foreground = ${colors.white}
 
 ; visible = Active workspace on unfocused monitor
 label-visible = %name%

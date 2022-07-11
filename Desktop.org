@@ -1124,7 +1124,7 @@ And the EXWM config itself.
 
 =i3lock= is disabled because the global one has to be used.
 
-[[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], +but i3 seems to fit my workflow best+ and decided to switch to EXWM. This section is kept just in case.
+[[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], +but i3 seems to fit my workflow best+ and decided to switch to EXWM. This section is kept for a few cases when I need to be extra sure that my WM doesn't fail.
 
 [[https://github.com/Airblader/i3][i3-gaps]] is an i3 fork with a few features like window gaps. I like to enable inner gaps when there is at least one container in a workspace.
 
@@ -1246,7 +1246,7 @@ bindsym $mod+Shift+A focus child
 
 Toggle sticky
 #+begin_src conf-space
-bindsym $mod+i sticky toggle
+bindsym $mod+Shift+i sticky toggle
 #+end_src
 
 Set windows as floating and sticky, move to the top right.
@@ -1499,7 +1499,7 @@ bindsym $mod+b exec --no-startup-id dmenu-buku
 ** Integration with rofi
 Keybindings to launch [[https://github.com/davatorium/rofi][rofi]]. For more detail, look the [[*Rofi]] section.
 #+begin_src conf-space
-bindsym $mod+d exec "rofi -modi 'drun,run' -show drun"
+bindsym $mod+p exec "rofi -modi 'drun,run' -show drun"
 bindsym $mod+b exec --no-startup-id rofi-buku-mine
 bindsym $mod+minus exec rofi-pass
 bindsym $mod+equal exec rofimoji
@@ -1522,7 +1522,7 @@ I prefer to use a separate mode to launch most of my apps, with some exceptions.
 # start a terminal at workspace 1
 bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec alacritty'"
 
-bindsym $mod+p exec "copyq menu"
+bindsym $mod+i exec "copyq menu"
 bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"
 
 bindsym $mod+semicolon mode "apps"
@@ -1968,7 +1968,7 @@ font-4 = JetBrains Mono Nerd Font:monospace:size=17;4
 
 Modules. Because I sometimes set up different blocks on different monitors, they are set via environment variables.
 #+begin_src conf-windows
-; modules-left = i3
+modules-left = i3
 ; modules-center = test
 modules-right = ${env:RIGHT_BLOCKS}
 
@@ -2495,18 +2495,19 @@ wrapping-scroll = false
 pin-workspaces = true
 
 label-mode-padding = 1
-label-mode-foreground = #000
+label-mode-foreground = ${colors.white}
 label-mode-background = ${colors.blue}
 
 ; focused = Active workspace on focused monitor
 label-focused = %name%
-; label-focused-background = ${colors.background-alt}
+label-focused-background = ${colors.blue}
 label-focused-underline= ${colors.blue}
 label-focused-padding = 1
 
 ; unfocused = Inactive workspace on any monitor
 label-unfocused = %name%
 label-unfocused-padding = 1
+label-unfocused-foreground = ${colors.white}
 
 ; visible = Active workspace on unfocused monitor
 label-visible = %name%

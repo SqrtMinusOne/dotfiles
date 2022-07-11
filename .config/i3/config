@@ -92,7 +92,7 @@ bindsym $mod+Shift+A focus child
 # Managing windows:10 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:11]]
-bindsym $mod+i sticky toggle
+bindsym $mod+Shift+i sticky toggle
 # Managing windows:11 ends here
 
 # [[file:../../Desktop.org::*Managing windows][Managing windows:12]]
@@ -283,7 +283,7 @@ bindsym $mod+m mode "move" focus floating
 # Move & resize windows:2 ends here
 
 # [[file:../../Desktop.org::*Integration with rofi][Integration with rofi:1]]
-bindsym $mod+d exec "rofi -modi 'drun,run' -show drun"
+bindsym $mod+p exec "rofi -modi 'drun,run' -show drun"
 bindsym $mod+b exec --no-startup-id rofi-buku-mine
 bindsym $mod+minus exec rofi-pass
 bindsym $mod+equal exec rofimoji
@@ -304,7 +304,7 @@ mode "rofi" {
 # start a terminal at workspace 1
 bindsym $mod+Return exec "i3-msg 'workspace 1 🚀; exec alacritty'"
 
-bindsym $mod+p exec "copyq menu"
+bindsym $mod+i exec "copyq menu"
 bindsym $mod+Shift+x exec "i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png"
 
 bindsym $mod+semicolon mode "apps"
