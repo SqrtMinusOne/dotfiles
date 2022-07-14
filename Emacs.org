@@ -423,6 +423,33 @@ Some time has passed, and I still don't know if there is any quantifiable advant
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 #+end_src
+*** Measure RAM usage
+I've noticed that Emacs occasionally eats a lot of RAM, especially when used with EXWM. This is my attempt to measure RAM usage.
+
+I have some concerns that =ps -o rss= may be unrepresentative because of [[https://stackoverflow.com/questions/131303/how-can-i-measure-the-actual-memory-usage-of-an-application-or-process][shared memory]], but I guess this shouldn't be a problem here because there's only one process of Emacs.
+
+#+begin_src emacs-lisp
+(defun my/get-ram-usage-async (callback)
+  (let* ((temp-buffer (generate-new-buffer "*ps*"))
+         (proc (start-process "ps" temp-buffer "ps"
+                              "-p" (number-to-string (emacs-pid)) "-o" "rss")))
+    (set-process-sentinel
+     proc
+     (lambda (process _msg)
+       (when (eq (process-status process) 'exit)
+         (let* ((output (with-current-buffer temp-buffer
+                          (buffer-string)))
+                (usage (string-to-number (nth 1 (split-string output "\n")))))
+           (ignore-errors
+             (funcall callback usage)))
+         (kill-buffer temp-buffer))))))
+
+(defun my/ram-usage ()
+  (interactive)
+  (my/get-ram-usage-async
+   (lambda (data)
+     (message "%f Gb" (/ (float data) 1024 1024)))))
+#+end_src
 ** Anaconda
 [[https://www.anaconda.com/][Anaconda]] is a free package and environment manager. I currently use it to manage multiple versions of Python and Node.js. Take a look at [[file:Guix.org::*conda][the corresponding entry]] in the Guix config for details about using it on Guix.
 
@@ -1748,6 +1775,47 @@ Dim inactive buffers.
           (disable-theme 'doom-palenight))
       (load-theme 'doom-palenight t)
       (disable-theme 'doom-one-light))))
+#+end_src
+*** ANSI colors
+=ansi-color.el= is a built-in Emacs package that translates ANSI color escape codes into faces.
+
+It is used by many other packages but doesn't seem to have an integration with =doom-themes=, so here is one.
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'ansi-color
+  (my/use-doom-colors
+   (ansi-color-black
+    :foreground (doom-color 'base2) :background (doom-color 'base0))
+   (ansi-color-red
+    :foreground (doom-color 'red) :background (doom-color 'red))
+   (ansi-color-green
+    :foreground (doom-color 'green) :background (doom-color 'green))
+   (ansi-color-yellow
+    :foreground (doom-color 'yellow) :background (doom-color 'yellow))
+   (ansi-color-blue
+    :foreground (doom-color 'dark-blue) :background (doom-color 'dark-blue))
+   (ansi-color-magenta
+    :foreground (doom-color 'violet) :background (doom-color 'violet))
+   (ansi-color-cyan
+    :foreground (doom-color 'dark-cyan) :background (doom-color 'dark-cyan))
+   (ansi-color-white
+    :foreground (doom-color 'base8) :background (doom-color 'base8))
+   (ansi-color-bright-black
+    :foreground (doom-color 'base5) :background (doom-color 'base5))
+   (ansi-color-bright-red
+    :foreground (doom-color 'orange) :background (doom-color 'orange))
+   (ansi-color-bright-green
+    :foreground (doom-color 'teal) :background (doom-color 'teal))
+   (ansi-color-bright-yellow
+    :foreground (doom-color 'yellow) :background (doom-color 'yellow))
+   (ansi-color-bright-blue
+    :foreground (doom-color 'blue) :background (doom-color 'blue))
+   (ansi-color-bright-magenta
+    :foreground (doom-color 'magenta) :background (doom-color 'magenta))
+   (ansi-color-bright-cyan
+    :foreground (doom-color 'cyan) :background (doom-color 'cyan))
+   (ansi-color-bright-white
+    :foreground (doom-color 'fg) :background (doom-color 'fg))))
 #+end_src
 ** Fonts
 *** Frame font
@@ -3382,6 +3450,14 @@ A package to quickly create =.gitignore= files.
   :straight t
   :config
   (add-hook 'dockerfile-mode 'smartparens-mode))
+#+end_src
+*** Jenkins
+#+begin_src emacs-lisp
+(use-package jenkinsfile-mode
+  :straight t
+  :config
+  (add-hook 'jenkinsfile-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'jenkinsfile-mode))
 #+end_src
 *** crontab
 #+begin_src emacs-lisp
@@ -7086,8 +7162,6 @@ Also I use =password-store-get= in a few places in my config, and by default it 
 *** Docker
 A package to manage docker containers from Emacs.
 
-The file =progidy-config.el= sets variable =my/docker-directories=, which allows to
-
 #+begin_src emacs-lisp
 (use-package docker
   :straight t
@@ -7096,59 +7170,21 @@ The file =progidy-config.el= sets variable =my/docker-directories=, which allows
   (my-leader-def "ao" 'docker))
 #+end_src
 
-By default, docker commands are run in =default-directory=. Even worse, transient doesn't allow to set =default-directory= temporarily, via =let=. But often I don't want to change =default-directory= of a buffer (e.g. via Dired) to run a command from there.
-
-So I decided to implement the following advice:
-#+begin_src emacs-lisp
-(setq my/selected-docker-directory nil)
-
-(defun my/docker-override-dir (fun &rest args)
-  (let ((default-directory (or my/selected-docker-directory default-directory)))
-    (setq my/selected-docker-directory nil)
-    (apply fun args)))
-#+end_src
-
-It overrides =default-directory= for the first launch of a function. Now, add the advice to the required functions from =docker.el=:
-#+begin_src emacs-lisp
-(with-eval-after-load 'docker
-  (advice-add #'docker-compose-run-docker-compose-async :around #'my/docker-override-dir)
-  (advice-add #'docker-compose-run-docker-compose :around #'my/docker-override-dir)
-  (advice-add #'docker-run-docker-async :around #'my/docker-override-dir)
-  (advice-add #'docker-run-docker :around #'my/docker-override-dir))
-#+end_src
-
-And here is a function which prompts the user for the directory. File =progidy-config.el= sets an alist of possible directories, look the section about [[*Progidy][progidy]].
-#+begin_src emacs-lisp
-(defun my/docker-from-dir ()
-  (interactive)
-  (when (not (boundp 'my/docker-directories))
-    (load (concat user-emacs-directory "prodigy-config")))
-  (let* ((directories
-          (mapcar
-           (lambda (el) (cons (format "%-30s %s" (car el) (cdr el)) (cdr el)))
-           my/docker-directories))
-         (selected-directory
-          (cdr (assoc (completing-read "Docker: " directories nil nil "^")
-                      directories))))
-    (setq my/selected-docker-directory selected-directory)
-    (docker)))
-
-(my-leader-def "aO" 'my/docker-from-dir)
-#+end_src
 *** Progidy
-[[https://github.com/rejeep/prodigy.el][prodigy.el]] is a package to run various services. I've previously used tmuxp + tmux, but want to try this as well.
+[[https://github.com/rejeep/prodigy.el][prodigy.el]] is a package to manage services. I've been using [[https://github.com/tmux/tmux][tmux]] + [[https://github.com/tmux-python/tmuxp][tmuxp]] for quite a long time, but want to try this package as well.
 
-The actual service definitions are in the =~/.emacs.d/prodigy.org=, which tangles to =prodigy-config.el=. Both files are encrypted in yadm, as they contain personal data.
+The actual service definitions are in my =~/.emacs.d/private.org=, which is encrypted by =yadm=.
 
 #+begin_src emacs-lisp
 (use-package prodigy
   :straight t
   :commands (prodigy)
   :init
-  (my-leader-def "aP" 'prodigy)
+  (my-leader-def "aP" (my/command-in-persp
+                       "deploy" "prodigy" nil
+                       (prodigy)
+                       (delete-other-windows)))
   :config
-  (when (not (boundp 'my/docker-directories))
-    (load (concat user-emacs-directory "prodigy-config")))
   (general-define-key
    :states '(normal)
    :keymaps 'prodigy-view-mode-map

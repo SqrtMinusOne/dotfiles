@@ -55,6 +55,27 @@
                                   (garbage-collect))))
               (add-hook 'after-focus-change-function 'garbage-collect))))
 
+(defun my/get-ram-usage-async (callback)
+  (let* ((temp-buffer (generate-new-buffer "*ps*"))
+         (proc (start-process "ps" temp-buffer "ps"
+                              "-p" (number-to-string (emacs-pid)) "-o" "rss")))
+    (set-process-sentinel
+     proc
+     (lambda (process _msg)
+       (when (eq (process-status process) 'exit)
+         (let* ((output (with-current-buffer temp-buffer
+                          (buffer-string)))
+                (usage (string-to-number (nth 1 (split-string output "\n")))))
+           (ignore-errors
+             (funcall callback usage)))
+         (kill-buffer temp-buffer))))))
+
+(defun my/ram-usage ()
+  (interactive)
+  (my/get-ram-usage-async
+   (lambda (data)
+     (message "%f Gb" (/ (float data) 1024 1024)))))
+
 (use-package conda
   :straight t
   :if (executable-find "conda")
@@ -909,6 +930,51 @@ influence of C1 on the result."
   (my/use-doom-colors
    (auto-dim-other-buffers-face
     :background (color-darken-name (doom-color 'bg) 3))))
+
+(defun my/toggle-dark-light-theme ()
+  (interactive)
+  (let ((is-dark (member 'doom-palenight custom-enabled-themes)))
+    (if is-dark
+        (progn
+          (load-theme 'doom-one-light t)
+          (disable-theme 'doom-palenight))
+      (load-theme 'doom-palenight t)
+      (disable-theme 'doom-one-light))))
+
+(with-eval-after-load 'ansi-color
+  (my/use-doom-colors
+   (ansi-color-black
+    :foreground (doom-color 'base2) :background (doom-color 'base0))
+   (ansi-color-red
+    :foreground (doom-color 'red) :background (doom-color 'red))
+   (ansi-color-green
+    :foreground (doom-color 'green) :background (doom-color 'green))
+   (ansi-color-yellow
+    :foreground (doom-color 'yellow) :background (doom-color 'yellow))
+   (ansi-color-blue
+    :foreground (doom-color 'dark-blue) :background (doom-color 'dark-blue))
+   (ansi-color-magenta
+    :foreground (doom-color 'violet) :background (doom-color 'violet))
+   (ansi-color-cyan
+    :foreground (doom-color 'dark-cyan) :background (doom-color 'dark-cyan))
+   (ansi-color-white
+    :foreground (doom-color 'base8) :background (doom-color 'base8))
+   (ansi-color-bright-black
+    :foreground (doom-color 'base5) :background (doom-color 'base5))
+   (ansi-color-bright-red
+    :foreground (doom-color 'orange) :background (doom-color 'orange))
+   (ansi-color-bright-green
+    :foreground (doom-color 'teal) :background (doom-color 'teal))
+   (ansi-color-bright-yellow
+    :foreground (doom-color 'yellow) :background (doom-color 'yellow))
+   (ansi-color-bright-blue
+    :foreground (doom-color 'blue) :background (doom-color 'blue))
+   (ansi-color-bright-magenta
+    :foreground (doom-color 'magenta) :background (doom-color 'magenta))
+   (ansi-color-bright-cyan
+    :foreground (doom-color 'cyan) :background (doom-color 'cyan))
+   (ansi-color-bright-white
+    :foreground (doom-color 'fg) :background (doom-color 'fg))))
 
 (when (display-graphic-p)
   (if (x-list-fonts "JetBrainsMono Nerd Font")
@@ -2276,6 +2342,12 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight t
   :config
   (add-hook 'dockerfile-mode 'smartparens-mode))
+
+(use-package jenkinsfile-mode
+  :straight t
+  :config
+  (add-hook 'jenkinsfile-mode-hook #'smartparens-mode)
+  (my/set-smartparens-indent 'jenkinsfile-mode))
 
 (use-package crontab-mode
   :straight t)
@@ -4883,43 +4955,15 @@ by the `my/elfeed-youtube-subtitles' function."
   :init
   (my-leader-def "ao" 'docker))
 
-(setq my/selected-docker-directory nil)
-
-(defun my/docker-override-dir (fun &rest args)
-  (let ((default-directory (or my/selected-docker-directory default-directory)))
-    (setq my/selected-docker-directory nil)
-    (apply fun args)))
-
-(with-eval-after-load 'docker
-  (advice-add #'docker-compose-run-docker-compose-async :around #'my/docker-override-dir)
-  (advice-add #'docker-compose-run-docker-compose :around #'my/docker-override-dir)
-  (advice-add #'docker-run-docker-async :around #'my/docker-override-dir)
-  (advice-add #'docker-run-docker :around #'my/docker-override-dir))
-
-(defun my/docker-from-dir ()
-  (interactive)
-  (when (not (boundp 'my/docker-directories))
-    (load (concat user-emacs-directory "prodigy-config")))
-  (let* ((directories
-          (mapcar
-           (lambda (el) (cons (format "%-30s %s" (car el) (cdr el)) (cdr el)))
-           my/docker-directories))
-         (selected-directory
-          (cdr (assoc (completing-read "Docker: " directories nil nil "^")
-                      directories))))
-    (setq my/selected-docker-directory selected-directory)
-    (docker)))
-
-(my-leader-def "aO" 'my/docker-from-dir)
-
 (use-package prodigy
   :straight t
   :commands (prodigy)
   :init
-  (my-leader-def "aP" 'prodigy)
+  (my-leader-def "aP" (my/command-in-persp
+                       "deploy" "prodigy" nil
+                       (prodigy)
+                       (delete-other-windows)))
   :config
-  (when (not (boundp 'my/docker-directories))
-    (load (concat user-emacs-directory "prodigy-config")))
   (general-define-key
    :states '(normal)
    :keymaps 'prodigy-view-mode-map
