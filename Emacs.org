@@ -380,6 +380,15 @@ To launch Emacs with this config, run
 #+begin_src bash :eval no :tangle no
 emacs -q -l ~/.emacs.d/init-minimal.el
 #+end_src
+
+A convinience macro:
+#+begin_src emacs-lisp
+(defmacro with-eval-after-load-norem (file &rest body)
+  (declare (indent 1) (debug (form def-body)))
+  `(unless my/remote-server
+     (with-eval-after-load ,file
+       ,@body)))
+#+end_src
 ** Performance
 *** Measure startup speed
 A small function to print out the loading time and number of GCs during the loading. Can be useful as a point of data for optimizing Emacs startup time.
@@ -3591,7 +3600,7 @@ So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL que
   :straight t)
 #+end_src
 * Org Mode
-*Org mode* is a tool that leverages plain-text files for various tasks, like making notes, literate programming, task management, etc.
+*Org mode* is a tool that leverages plain-text files for various tasks like making notes, literate programming, task management, etc.
 
 References:
 - [[https://orgmode.org/][Org Mode homepage]]
@@ -3621,27 +3630,18 @@ Use the built-in org mode.
               (display-line-numbers-mode 0)))
   (add-hook 'org-mode-hook
             (lambda ()
-              (rainbow-delimiters-mode -1)))
-  (require 'org-tempo)
-  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
-  (add-to-list 'org-structure-template-alist '("py" . "src python"))
-  (add-to-list 'org-structure-template-alist '("sq" . "src sql"))
-  <<org-crypt-setup>>
-  (unless my/is-termux
-    <<org-lang-setup>>)
-  <<org-ui-setup>>
-  <<org-keys-setup>>
-  <<org-productivity-setup>>)
+              (rainbow-delimiters-mode -1))))
 #+end_src
 
 *** Encryption
 Setting up =org-crypt= to encrypt a part of a file.
 
-#+begin_src emacs-lisp :noweb-ref org-crypt-setup
-(require 'org-crypt)
-(org-crypt-use-before-save-magic)
-(setq org-tags-exclude-from-inheritance (quote ("crypt")))
-(setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205")
+#+begin_src emacs-lisp :noweb-ref
+(with-eval-after-load-norem 'org
+  (require 'org-crypt)
+  (org-crypt-use-before-save-magic)
+  (setq org-tags-exclude-from-inheritance (quote ("crypt")))
+  (setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205"))
 #+end_src
 
 This enables encryption for Org segments which are tagged =:crypt:=.
@@ -3678,8 +3678,18 @@ Excluding =org-contacts= from here because byte compilation breaks it for some r
   (require 'ol-notmuch)
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
 #+end_src
-** Integration with evil
-A package to add more evil-mode keybindings to org-mode.
+*** org-tempo
+=org-tempo= is a convinient package that provides snippets for various org blocks.
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'org
+  (require 'org-tempo)
+  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+  (add-to-list 'org-structure-template-alist '("py" . "src python"))
+  (add-to-list 'org-structure-template-alist '("sq" . "src sql")))
+#+end_src
+*** evil-org
+Better integration with evil-mode.
 
 #+begin_src emacs-lisp
 (use-package evil-org
@@ -3701,11 +3711,11 @@ References:
 - [[https://github.com/nnicandro/emacs-jupyter][emacs-jupyter repo]]
 - [[https://github.com/jkitchin/scimax/blob/master/scimax.org][SCIMAX manual]]
 
-#+begin_src emacs-lisp :noweb-ref org-lang-setup
+#+begin_src emacs-lisp
 (use-package jupyter
   :straight t
   :after (org)
-  :if (not my/is-termux)
+  :if (not my/remote-server)
   :init
   (my-leader-def "ar" 'jupyter-run-repl))
 #+end_src
@@ -3731,9 +3741,10 @@ Fortunately, =emacs-jupyter= provides a function for that problem as well.
   (org-babel-jupyter-aliases-from-kernelspecs t))
 #+end_src
 *** Hy
-#+begin_src emacs-lisp :noweb-ref org-lang-setup
+#+begin_src emacs-lisp
 (use-package ob-hy
   :after (org)
+  :if (not my/remote-server)
   :straight t)
 #+end_src
 *** View HTML in browser
@@ -3760,10 +3771,11 @@ Open HTML in the ~begin_export~ block with xdg-open.
           (start-process "org-html-preview" nil "xdg-open" temp-file-path))))))
 #+end_src
 *** PlantUML
-#+begin_src emacs-lisp :tangle no :noweb-ref org-lang-setup
-(setq org-plantuml-executable-path "/home/pavel/.guix-extra-profiles/emacs/emacs/bin/plantuml")
-(setq org-plantuml-exec-mode 'plantuml)
-(add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
+#+begin_src emacs-lisp
+(with-eval-after-load 'org
+  (setq org-plantuml-executable-path "/home/pavel/.guix-extra-profiles/emacs/emacs/bin/plantuml")
+  (setq org-plantuml-exec-mode 'plantuml)
+  (add-to-list 'org-src-lang-modes '("plantuml" . plantuml)))
 #+end_src
 *** Restclient
 [[https://github.com/pashky/restclient.el][restclient.el]] is an Emacs package to send HTTP requests. [[https://github.com/alf/ob-restclient.el][ob-restclient]] provides interaction with Org Babel.
@@ -3773,39 +3785,43 @@ References:
 
 #+begin_src emacs-lisp
 (use-package restclient
+  :if (not my/remote-server)
   :straight t)
 
 (use-package ob-restclient
   :after (org restclient)
+  :if (not my/remote-server)
   :straight t)
 #+end_src
 *** Setup
 Enable languages
-#+begin_src emacs-lisp :tangle no :noweb-ref org-lang-setup
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '((emacs-lisp . t)
-   (python . t)
-   (sql . t)
-   ;; (typescript .t)
-   (hy . t)
-   (shell . t)
-   (plantuml . t)
-   (octave . t)
-   (jupyter . t)
-   (sparql . t)))
+#+begin_src emacs-lisp
+(with-eval-after-load-norem 'org
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (python . t)
+     (sql . t)
+     ;; (typescript .t)
+     (hy . t)
+     (shell . t)
+     (plantuml . t)
+     (octave . t)
+     (jupyter . t)
+     (sparql . t)))
 
-(add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
+  (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images))
 #+end_src
 
 Use Jupyter block instead of built-in Python.
-#+begin_src emacs-lisp :tangle no :noweb-ref org-lang-setup
-(org-babel-jupyter-override-src-block "python")
-(org-babel-jupyter-override-src-block "hy")
+#+begin_src emacs-lisp
+(with-eval-after-load 'ob-jupyter
+  (org-babel-jupyter-override-src-block "python")
+  (org-babel-jupyter-override-src-block "hy"))
 #+end_src
 
 Turn of some minor modes in source blocks.
-#+begin_src emacs-lisp :tangle no :noweb-ref org-lang-setup
+#+begin_src emacs-lisp
 (add-hook 'org-src-mode-hook
           (lambda ()
             ;; (hs-minor-mode -1)
@@ -3912,7 +3928,8 @@ So there we have a minor mode that overrides this behavior.
       (my/jupyter-org-scalar value)
     (funcall fun value)))
 
-(advice-add 'jupyter-org-scalar :around #'my/jupyter-org-scalar-around)
+(with-eval-after-load 'jupyter
+  (advice-add 'jupyter-org-scalar :around #'my/jupyter-org-scalar-around))
 #+end_src
 **** Wrap source code output
 A function to remove the :RESULTS: drawer from results. Once again, it's necessary because emacs-jupyter doesn't seem to respect =:results raw=.
@@ -4012,8 +4029,8 @@ First, execute things above and below the point:
 #+end_src
 
 Some keybindings:
-#+begin_src emacs-lisp :tangle no :noweb-ref org-lang-setup
-(with-eval-after-load 'org-babel
+#+begin_src emacs-lisp
+(with-eval-after-load 'org
   (general-define-key
    :keymaps 'org-babel-map
    "B" #'my/org-babel-execute-buffer-below
@@ -4132,7 +4149,7 @@ A nice package to make screenshots and insert them to the Org document.
   :straight t)
 #+end_src
 *** Transclusion
-A package that implements transclusions in Org Mode, that is rendering part of one file inside of another file.
+A package that implements transclusions in Org Mode, i.e. rendering part of one file inside another file.
 
 #+begin_src emacs-lisp
 (use-package org-transclusion
@@ -4163,11 +4180,9 @@ Some inspiration:
 - [[https://rgoswami.me/posts/org-note-workflow/][Rohit Goswami: An Orgmode Note Workflow]]
 
 Used files
-#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+#+begin_src emacs-lisp
 (setq org-roam-directory (concat org-directory "/roam"))
-(setq org-agenda-files '("inbox.org"
-                         "projects/comp-stuff.org"
-                         "projects/looking-forward.org"))
+(setq org-agenda-files '("inbox.org"))
 ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
 #+end_src
 
@@ -4216,13 +4231,14 @@ Settings for Org capture mode. The goal here is to have a non-disruptive process
 #+end_src
 
 Effort estimation
-#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
-(add-to-list 'org-global-properties
-             '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00"))
+#+begin_src emacs-lisp
+(with-eval-after-load-norem 'org
+  (add-to-list 'org-global-properties
+               '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00")))
 #+end_src
 
 Log DONE time
-#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+#+begin_src emacs-lisp
 (setq org-log-done 'time)
 #+end_src
 *** OFF (OFF) Trello sync
@@ -4232,7 +4248,7 @@ Some of the projects I'm participating in are managed via Trello, so I use [[htt
 
 Also, trello files are huge and have a lot of information and tasks which do not concern me, so I don't add them to =org-agenda-files=.
 
-#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+#+begin_src emacs-lisp
 (unless (file-exists-p (concat org-directory "/trello"))
   (mkdir (concat org-directory "/trello") t))
 
@@ -4274,6 +4290,7 @@ Also, trello files are huge and have a lot of information and tasks which do not
 
 #+begin_src emacs-lisp
 (use-package org-ql
+  :after (org)
   :if (not my/remote-server)
   :straight (:fetcher github
                       :repo "alphapapa/org-ql"
@@ -4284,7 +4301,7 @@ Some custom agendas to fit my workflow.
 
 Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I still want to see them in agenda, so I use =org-ql-block= from =org-ql=.
 
-#+begin_src emacs-lisp :tangle no :noweb-ref org-productivity-setup
+#+begin_src emacs-lisp
 (defun my/org-scheduled-get-time ()
   (let ((scheduled (org-get-scheduled-time (point))))
     (if scheduled
@@ -4389,6 +4406,14 @@ I tried to do various things with Org Roam, like [[https://systemcrafters.net/bu
 | emacs-emacsql-sqlite3 |
 | graphviz              |
 
+About installing the package on Guix (*CREDIT*: thanks @Ashraz on the SystemCrafters discord)
+
+#+begin_quote
+So, for all those interested: unfortunately, org-roam (or rather emacsql-sqlite) cannot compile the sqlite.c and emacsql.c due to missing headers (linux/falloc.h) on Guix. You would have to properly set all the include paths on Guix, and also adjust the PATH to have gcc actually find as later on in the compilation process.
+
+Instead, you should remove all Org-Roam related packages from your Emacs installation (via M-x package-delete org-roam RET and  M-x package-autoremove RET y RET) and then use the Guix package called emacs-org-roam.
+#+end_quote
+
 References:
 - [[https://github.com/org-roam/org-roam/wiki/Hitchhiker%27s-Rough-Guide-to-Org-roam-V2][Hitchhiker's Rough Guide to Org roam V2]]
 
@@ -4428,16 +4453,16 @@ A set of keybindings to quickly access things in Org Roam.
 
 I used to have multiple categories of nodes in Org Roam (projects, dailies, etc), but as of now, only Zettelkasten remains.
 #+begin_src emacs-lisp
-(my-leader-def
-  :infix "or"
-  "" '(:which-key "org-roam")
-  "i" 'org-roam-node-insert
-  "r" 'org-roam-node-find
-  "g" 'org-roam-graph
-  "c" 'org-roam-capture
-  "b" 'org-roam-buffer-toggle)
 
 (with-eval-after-load 'org-roam
+  (my-leader-def
+    :infix "or"
+    "" '(:which-key "org-roam")
+    "i" 'org-roam-node-insert
+    "r" 'org-roam-node-find
+    "g" 'org-roam-graph
+    "c" 'org-roam-capture
+    "b" 'org-roam-buffer-toggle)
   (general-define-key
    :keymaps 'org-roam-mode-map
    :states '(normal)
@@ -4786,9 +4811,9 @@ There are some problems with org roam v2, so I disabled it as of now. I will pro
   (org-roam-bibtex-mode))
 #+end_src
 *** org-contacts
-=org-contacts= is an =org-contrib= package to store contacts in an org file. The package is somewhat outdated, for instance it uses =lexical-let=, so I have to =(require 'cl)=.
+=org-contacts= is the =org-contrib= package to store contacts in an org file. The package is somewhat outdated, for instance it uses =lexical-let= so I have to =(require 'cl)=.
 
-I think it will take some more work to tune the package exactly to my liking, but it seems to perform the original function just fine.
+I think it will take a little more work to tune the package exactly to my liking, but it seems to serve the original function just fine.
 
 #+begin_src emacs-lisp
 (use-package org-contacts
@@ -4797,6 +4822,7 @@ I think it will take some more work to tune the package exactly to my liking, bu
                    :files ("lisp/org-contacts.el")
                    :build (:not compile))
   :after (notmuch)
+  :if (not my/remote-server)
   :commands (org-contacts)
   :config
   (require 'cl)
@@ -4866,14 +4892,16 @@ A function to enable LaTeX native highlighting. Not setting this as default, bec
 Call the function before opening an org file or reopen a buffer after calling the function.
 
 Scale latex fragments preview.
-#+begin_src emacs-lisp :noweb-ref org-ui-setup :tangle no
-(setq my/org-latex-scale 1.75)
-(setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
+#+begin_src emacs-lisp
+(with-eval-after-load-norem 'org
+  (setq my/org-latex-scale 1.75)
+  (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale)))
 #+end_src
 
 Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HEADER= entries. To circumvent this, I add a custom header and modify the ~org-preview-latex-process-alist~ variable
-#+begin_src emacs-lisp :noweb-ref org-ui-setup :tangle no
-(setq my/latex-preview-header "\\documentclass{article}
+#+begin_src emacs-lisp
+(with-eval-after-load-norem 'org
+  (setq my/latex-preview-header "\\documentclass{article}
 \\usepackage[usenames]{color}
 \\usepackage{graphicx}
 \\usepackage{grffile}
@@ -4888,13 +4916,13 @@ Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HE
 \\usepackage{hyperref}
 \\pagestyle{empty}")
 
-(setq org-preview-latex-process-alist
-      (mapcar
-       (lambda (item)
-         (cons
-          (car item)
-          (plist-put (cdr item) :latex-header my/latex-preview-header)))
-       org-preview-latex-process-alist))
+  (setq org-preview-latex-process-alist
+        (mapcar
+         (lambda (item)
+           (cons
+            (car item)
+            (plist-put (cdr item) :latex-header my/latex-preview-header)))
+         org-preview-latex-process-alist)))
 #+end_src
 *** Better headers
 [[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]] is a package that makes Org heading lines look a bit prettier.
@@ -4916,13 +4944,16 @@ Disabled it for now because of overlapping functionality with org-bars.
   :hook (org-mode . org-bars-mode))
 #+end_src
 
-Remove the ellipsis at the end of folded headlines. The ellipsis seems unnecessary with org-bars.
+Remove the ellipsis at the end of folded headlines, as it seems unnecessary with =org-bars=.
 #+begin_src emacs-lisp
 (defun my/org-no-ellipsis-in-headlines ()
   (remove-from-invisibility-spec '(outline . t))
   (add-to-invisibility-spec 'outline))
 
-(add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
+(with-eval-after-load 'org-bars
+  (add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
+  (when (eq major-mode 'org-mode)
+    (my/org-no-ellipsis-in-headlines)))
 #+end_src
 *** Override colors
 #+begin_src emacs-lisp
@@ -4932,20 +4963,24 @@ Remove the ellipsis at the end of folded headlines. The ellipsis seems unnecessa
                        :foreground (doom-color 'grey)))
 #+end_src
 ** Export
-*** General settings
-#+begin_src emacs-lisp
-;; (setq org-export-backends '(md html latex beamer org))
-#+end_src
 *** Hugo
+A package for exporting Org to Hugo. That's how I manage my [[https://sqrtminusone.xyz][sqrtminusone.xyz]].
+
+References:
+- [[https://ox-hugo.scripter.co/][ox-hugo homepage]]
+- [[https://github.com/SqrtMinusOne/sqrtminusone.github.io][Source code for sqrtminusone.xyz]]
+
 #+begin_src emacs-lisp
 (use-package ox-hugo
   :straight t
+  :if (not my/remote-server)
   :after ox)
 #+end_src
 *** Jupyter Notebook
 #+begin_src emacs-lisp
 (use-package ox-ipynb
   :straight (:host github :repo "jkitchin/ox-ipynb")
+  :if (not my/remote-server)
   :after ox)
 #+end_src
 *** Html export
@@ -4953,6 +4988,7 @@ Remove the ellipsis at the end of folded headlines. The ellipsis seems unnecessa
 (use-package htmlize
   :straight t
   :after ox
+  :if (not my/remote-server)
   :config
   (setq org-html-htmlize-output-type 'css))
 #+end_src
@@ -5008,58 +5044,61 @@ Add a custom LaTeX template without default packages. Packages are indented to b
                   ("\\subsubsection{%s}" . "\\subsubsection*{%s}")))))
 
 ;; Make sure to eval the function when org-latex-classes list already exists
-(with-eval-after-load 'ox-latex
+(with-eval-after-load-norem 'ox-latex
   (my/setup-org-latex))
 #+end_src
 ** Keybindings & stuff
 *** General keybindings
-#+begin_src emacs-lisp :tangle no :noweb-ref org-keys-setup
-(general-define-key
- :keymaps 'org-mode-map
- "C-c d" 'org-decrypt-entry
- "C-c e" 'org-encrypt-entry
- "M-p" 'org-latex-preview
- "M-o" 'org-redisplay-inline-images)
+#+begin_src emacs-lisp
+(with-eval-after-load-norem 'org
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c d" 'org-decrypt-entry
+   "C-c e" 'org-encrypt-entry
+   "M-p" 'org-latex-preview
+   "M-o" 'org-redisplay-inline-images)
 
-(general-define-key
- :keymaps 'org-mode-map
- :states '(normal emacs)
- "L" 'org-shiftright
- "H" 'org-shiftleft
- "S-<next>" 'org-next-visible-heading
- "S-<prior>" 'org-previous-visible-heading
- "M-0" 'org-next-visible-heading
- "M-9" 'org-previous-visible-heading
- "M-]" 'org-babel-next-src-block
- "M-[" 'org-babel-previous-src-block)
+  (general-define-key
+   :keymaps 'org-mode-map
+   :states '(normal emacs)
+   "L" 'org-shiftright
+   "H" 'org-shiftleft
+   "S-<next>" 'org-next-visible-heading
+   "S-<prior>" 'org-previous-visible-heading
+   "M-0" 'org-next-visible-heading
+   "M-9" 'org-previous-visible-heading
+   "M-]" 'org-babel-next-src-block
+   "M-[" 'org-babel-previous-src-block)
 
-(general-define-key
- :keymaps 'org-agenda-mode-map
- "M-]" 'org-agenda-later
- "M-[" 'org-agenda-earlier)
+  (general-define-key
+   :keymaps 'org-agenda-mode-map
+   "M-]" 'org-agenda-later
+   "M-[" 'org-agenda-earlier)
 
-;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
-(general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
-
-;; (my-leader-def "aa" 'org-agenda)
+  (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c))
 #+end_src
 *** Copy a link
-#+begin_src emacs-lisp :noweb-ref org-keys-setup
+#+begin_src emacs-lisp
 (defun my/org-link-copy (&optional arg)
   "Extract URL from org-mode link and add it to kill ring."
   (interactive "P")
   (let* ((link (org-element-lineage (org-element-context) '(link) t))
-          (type (org-element-property :type link))
-          (url (org-element-property :path link))
-          (url (concat type ":" url)))
+         (type (org-element-property :type link))
+         (url (org-element-property :path link))
+         (url (concat type ":" url)))
     (kill-new url)
     (message (concat "Copied URL: " url))))
 
-(general-nmap :keymaps 'org-mode-map
-    "C-x C-l" 'my/org-link-copy)
+(with-eval-after-load-norem 'org
+  (general-nmap :keymaps 'org-mode-map
+    "C-x C-l" 'my/org-link-copy))
 #+end_src
 *** Navigating source blocks
-#+begin_src emacs-lisp :tangle no :noweb-ref org-keys-setup
+An idea born from discussing Org Mode navigation with @Infu.
+
+Modifying =org-babel-next-src-block= and =org-babel-previous-src-block= to ignore hidden source blocks.
+
+#+begin_src emacs-lisp
 (defun my/org-babel-next-visible-src-block (arg)
   "Move to the next visible source block.
 
@@ -5094,11 +5133,12 @@ With ARG, repeats or can move backward if negative."
   (interactive "p")
   (my/org-babel-next-visible-src-block (- arg)))
 
-(general-define-key
- :keymaps 'org-mode-map
- :states '(normal emacs)
- "M-]" #'my/org-babel-next-visible-src-block
- "M-[" #'my/org-babel-previous-visible-src-block)
+(with-eval-after-load 'org
+  (general-define-key
+   :keymaps 'org-mode-map
+   :states '(normal emacs)
+   "M-]" #'my/org-babel-next-visible-src-block
+   "M-[" #'my/org-babel-previous-visible-src-block))
 #+end_src
 *** Open a file from =org-directory=
 A function to open a file from =org-directory=, excluding a few directories like =roam= and =journal=.
@@ -5112,7 +5152,7 @@ A function to open a file from =org-directory=, excluding a few directories like
            (lambda (f)
              (and
               (string-match-p (rx (* nonl) ".org" eos) f)
-              (not (string-match-p (rx (| "journal" "roam" "review" "archive")) f))))
+              (not (string-match-p (rx (| "journal" "roam" "review" "archive" "figured-out")) f))))
            (projectile-current-project-files))))
     (find-file
      (concat org-directory "/" (completing-read "Org file: " project-files)))))

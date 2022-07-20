@@ -30,6 +30,12 @@
 
 (setenv "IS_EMACS" "true")
 
+(defmacro with-eval-after-load-norem (file &rest body)
+  (declare (indent 1) (debug (form def-body)))
+  `(unless my/remote-server
+     (with-eval-after-load ,file
+       ,@body)))
+
 (setq my/emacs-started nil)
 
 (add-hook 'emacs-startup-hook
@@ -2461,208 +2467,13 @@ Returns (<buffer> . <workspace-index>) or nil."
               (display-line-numbers-mode 0)))
   (add-hook 'org-mode-hook
             (lambda ()
-              (rainbow-delimiters-mode -1)))
-  (require 'org-tempo)
-  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
-  (add-to-list 'org-structure-template-alist '("py" . "src python"))
-  (add-to-list 'org-structure-template-alist '("sq" . "src sql"))
+              (rainbow-delimiters-mode -1))))
+
+(with-eval-after-load-norem 'org
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
   (setq org-tags-exclude-from-inheritance (quote ("crypt")))
-  (setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205")
-  (unless my/is-termux
-    (use-package jupyter
-      :straight t
-      :after (org)
-      :if (not my/is-termux)
-      :init
-      (my-leader-def "ar" 'jupyter-run-repl))
-    (use-package ob-hy
-      :after (org)
-      :straight t)
-    (setq org-plantuml-executable-path "/home/pavel/.guix-extra-profiles/emacs/emacs/bin/plantuml")
-    (setq org-plantuml-exec-mode 'plantuml)
-    (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
-    (org-babel-do-load-languages
-     'org-babel-load-languages
-     '((emacs-lisp . t)
-       (python . t)
-       (sql . t)
-       ;; (typescript .t)
-       (hy . t)
-       (shell . t)
-       (plantuml . t)
-       (octave . t)
-       (jupyter . t)
-       (sparql . t)))
-    
-    (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images)
-    (org-babel-jupyter-override-src-block "python")
-    (org-babel-jupyter-override-src-block "hy")
-    (add-hook 'org-src-mode-hook
-              (lambda ()
-                ;; (hs-minor-mode -1)
-                ;; (electric-indent-local-mode -1)
-                ;; (rainbow-delimiters-mode -1)
-                (highlight-indent-guides-mode -1)))
-    (with-eval-after-load 'org-babel
-      (general-define-key
-       :keymaps 'org-babel-map
-       "B" #'my/org-babel-execute-buffer-below
-       "A" #'my/org-babel-execute-buffer-above)
-    
-      (my-leader-def
-        :keymaps 'org-mode-map
-        "SPC b" '(:wk "org-babel")
-        "SPC b" org-babel-map)))
-  (setq my/org-latex-scale 1.75)
-  (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale))
-  (setq my/latex-preview-header "\\documentclass{article}
-  \\usepackage[usenames]{color}
-  \\usepackage{graphicx}
-  \\usepackage{grffile}
-  \\usepackage{longtable}
-  \\usepackage{wrapfig}
-  \\usepackage{rotating}
-  \\usepackage[normalem]{ulem}
-  \\usepackage{amsmath}
-  \\usepackage{textcomp}
-  \\usepackage{amssymb}
-  \\usepackage{capt-of}
-  \\usepackage{hyperref}
-  \\pagestyle{empty}")
-  
-  (setq org-preview-latex-process-alist
-        (mapcar
-         (lambda (item)
-           (cons
-            (car item)
-            (plist-put (cdr item) :latex-header my/latex-preview-header)))
-         org-preview-latex-process-alist))
-  (general-define-key
-   :keymaps 'org-mode-map
-   "C-c d" 'org-decrypt-entry
-   "C-c e" 'org-encrypt-entry
-   "M-p" 'org-latex-preview
-   "M-o" 'org-redisplay-inline-images)
-  
-  (general-define-key
-   :keymaps 'org-mode-map
-   :states '(normal emacs)
-   "L" 'org-shiftright
-   "H" 'org-shiftleft
-   "S-<next>" 'org-next-visible-heading
-   "S-<prior>" 'org-previous-visible-heading
-   "M-0" 'org-next-visible-heading
-   "M-9" 'org-previous-visible-heading
-   "M-]" 'org-babel-next-src-block
-   "M-[" 'org-babel-previous-src-block)
-  
-  (general-define-key
-   :keymaps 'org-agenda-mode-map
-   "M-]" 'org-agenda-later
-   "M-[" 'org-agenda-earlier)
-  
-  ;; (general-imap :keymaps 'org-mode-map "RET" 'evil-org-return)
-  (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c)
-  
-  ;; (my-leader-def "aa" 'org-agenda)
-  (defun my/org-link-copy (&optional arg)
-    "Extract URL from org-mode link and add it to kill ring."
-    (interactive "P")
-    (let* ((link (org-element-lineage (org-element-context) '(link) t))
-            (type (org-element-property :type link))
-            (url (org-element-property :path link))
-            (url (concat type ":" url)))
-      (kill-new url)
-      (message (concat "Copied URL: " url))))
-  
-  (general-nmap :keymaps 'org-mode-map
-      "C-x C-l" 'my/org-link-copy)
-  (defun my/org-babel-next-visible-src-block (arg)
-    "Move to the next visible source block.
-  
-  With ARG, repeats or can move backward if negative."
-    (interactive "p")
-    (let ((regexp org-babel-src-block-regexp))
-      (if (< arg 0)
-  	    (beginning-of-line)
-        (end-of-line))
-      (while (and (< arg 0) (re-search-backward regexp nil :move))
-        (unless (bobp)
-  	    (while (pcase (get-char-property-and-overlay (point) 'invisible)
-  		         (`(outline . ,o)
-  		          (goto-char (overlay-start o))
-  		          (re-search-backward regexp nil :move))
-  		         (_ nil))))
-        (cl-incf arg))
-      (while (and (> arg 0) (re-search-forward regexp nil t))
-        (while (pcase (get-char-property-and-overlay (point) 'invisible)
-  	           (`(outline . ,o)
-  		        (goto-char (overlay-end o))
-  		        (re-search-forward regexp nil :move))
-  	           (_ (end-of-line) nil)))
-        (re-search-backward regexp nil :move)
-        (cl-decf arg))
-      (if (> arg 0) (goto-char (point-max)) (beginning-of-line))))
-  
-  (defun my/org-babel-previous-visible-src-block (arg)
-    "Move to the prevous visible source block.
-  
-  With ARG, repeats or can move backward if negative."
-    (interactive "p")
-    (my/org-babel-next-visible-src-block (- arg)))
-  
-  (general-define-key
-   :keymaps 'org-mode-map
-   :states '(normal emacs)
-   "M-]" #'my/org-babel-next-visible-src-block
-   "M-[" #'my/org-babel-previous-visible-src-block)
-  (setq org-roam-directory (concat org-directory "/roam"))
-  (setq org-agenda-files '("inbox.org"
-                           "projects/comp-stuff.org"
-                           "projects/looking-forward.org"))
-  ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
-  (add-to-list 'org-global-properties
-               '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00"))
-  (setq org-log-done 'time)
-  (unless (file-exists-p (concat org-directory "/trello"))
-    (mkdir (concat org-directory "/trello") t))
-  
-  (setq org-trello-files
-        (thread-last (concat org-directory "/trello")
-          (directory-files)
-          (seq-filter
-           (lambda (f) (string-match-p (rx ".org" eos) f)))
-          (mapcar
-           (lambda (f) (concat org-directory "/trello/" f)))))
-  (defun my/org-scheduled-get-time ()
-    (let ((scheduled (org-get-scheduled-time (point))))
-      (if scheduled
-          (format-time-string "%Y-%m-%d" scheduled)
-        "")))
-  
-  (setq org-agenda-hide-tags-regexp (rx (or "org" "log" "log_here")))
-  
-  (setq org-agenda-custom-commands
-        `(("p" "My outline"
-           ((agenda "")
-            (todo "NEXT"
-                  ((org-agenda-prefix-format "  %i %-12:c [%e] ")
-                   (org-agenda-overriding-header "Next tasks")))
-            (tags-todo "inbox"
-                       ((org-agenda-overriding-header "Inbox")
-                        (org-agenda-prefix-format " %i %-12:c")
-                        (org-agenda-hide-tags-regexp ".")))
-            (tags-todo "+waitlist+SCHEDULED<=\"<+14d>\""
-                       ((org-agenda-overriding-header "Waitlist")
-                        (org-agenda-hide-tags-regexp "waitlist")
-                        (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)"))))))))
-
-(require 'org-crypt)
-(org-crypt-use-before-save-magic)
-(setq org-tags-exclude-from-inheritance (quote ("crypt")))
-(setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205")
+  (setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205"))
 
 (defun my/epa--select-keys-around (fun prompt keys)
   (if (= (seq-length keys) 1)
@@ -2686,6 +2497,12 @@ Returns (<buffer> . <workspace-index>) or nil."
   (require 'ol-notmuch)
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
 
+(with-eval-after-load 'org
+  (require 'org-tempo)
+  (add-to-list 'org-structure-template-alist '("el" . "src emacs-lisp"))
+  (add-to-list 'org-structure-template-alist '("py" . "src python"))
+  (add-to-list 'org-structure-template-alist '("sq" . "src sql")))
+
 (use-package evil-org
   :straight t
   :hook (org-mode . evil-org-mode)
@@ -2700,7 +2517,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package jupyter
   :straight t
   :after (org)
-  :if (not my/is-termux)
+  :if (not my/remote-server)
   :init
   (my-leader-def "ar" 'jupyter-run-repl))
 
@@ -2716,6 +2533,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package ob-hy
   :after (org)
+  :if (not my/remote-server)
   :straight t)
 
 (setq my/org-view-html-tmp-dir "/tmp/org-html-preview/")
@@ -2737,12 +2555,46 @@ Returns (<buffer> . <workspace-index>) or nil."
           (f-write (plist-get (car (cdr elem)) :value) 'utf-8 temp-file-path)
           (start-process "org-html-preview" nil "xdg-open" temp-file-path))))))
 
+(with-eval-after-load 'org
+  (setq org-plantuml-executable-path "/home/pavel/.guix-extra-profiles/emacs/emacs/bin/plantuml")
+  (setq org-plantuml-exec-mode 'plantuml)
+  (add-to-list 'org-src-lang-modes '("plantuml" . plantuml)))
+
 (use-package restclient
+  :if (not my/remote-server)
   :straight t)
 
 (use-package ob-restclient
   :after (org restclient)
+  :if (not my/remote-server)
   :straight t)
+
+(with-eval-after-load-norem 'org
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)
+     (python . t)
+     (sql . t)
+     ;; (typescript .t)
+     (hy . t)
+     (shell . t)
+     (plantuml . t)
+     (octave . t)
+     (jupyter . t)
+     (sparql . t)))
+
+  (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images))
+
+(with-eval-after-load 'ob-jupyter
+  (org-babel-jupyter-override-src-block "python")
+  (org-babel-jupyter-override-src-block "hy"))
+
+(add-hook 'org-src-mode-hook
+          (lambda ()
+            ;; (hs-minor-mode -1)
+            ;; (electric-indent-local-mode -1)
+            ;; (rainbow-delimiters-mode -1)
+            (highlight-indent-guides-mode -1)))
 
 (use-package ob-async
   :straight t
@@ -2816,7 +2668,8 @@ Returns (<buffer> . <workspace-index>) or nil."
       (my/jupyter-org-scalar value)
     (funcall fun value)))
 
-(advice-add 'jupyter-org-scalar :around #'my/jupyter-org-scalar-around)
+(with-eval-after-load 'jupyter
+  (advice-add 'jupyter-org-scalar :around #'my/jupyter-org-scalar-around))
 
 (defun my/org-strip-results (data)
   (replace-regexp-in-string ":\\(RESULTS\\|END\\):\n" "" data))
@@ -2878,6 +2731,17 @@ Returns (<buffer> . <workspace-index>) or nil."
 		            '(babel-call inline-babel-call))
               (org-babel-lob-execute-maybe)
             (org-babel-execute-src-block arg)))))))
+
+(with-eval-after-load 'org
+  (general-define-key
+   :keymaps 'org-babel-map
+   "B" #'my/org-babel-execute-buffer-below
+   "A" #'my/org-babel-execute-buffer-above)
+
+  (my-leader-def
+    :keymaps 'org-mode-map
+    "SPC b" '(:wk "org-babel")
+    "SPC b" org-babel-map))
 
 (defun my/org-prj-dir (path)
   (expand-file-name path (org-entry-get nil "PRJ-DIR" t)))
@@ -2968,6 +2832,10 @@ Returns (<buffer> . <workspace-index>) or nil."
    "C-c t A" #'org-transclusion-add-all
    "C-c t t" #'org-transclusion-mode))
 
+(setq org-roam-directory (concat org-directory "/roam"))
+(setq org-agenda-files '("inbox.org"))
+;; (setq org-default-notes-file (concat org-directory "/notes.org"))
+
 (my-leader-def
   :infix "o"
   "" '(:which-key "org-mode")
@@ -3001,6 +2869,23 @@ Returns (<buffer> . <workspace-index>) or nil."
          ,(concat "* %?\n"
                   "/Entered on/ %U"))))
 
+(with-eval-after-load-norem 'org
+  (add-to-list 'org-global-properties
+               '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00")))
+
+(setq org-log-done 'time)
+
+(unless (file-exists-p (concat org-directory "/trello"))
+  (mkdir (concat org-directory "/trello") t))
+
+(setq org-trello-files
+      (thread-last (concat org-directory "/trello")
+        (directory-files)
+        (seq-filter
+         (lambda (f) (string-match-p (rx ".org" eos) f)))
+        (mapcar
+         (lambda (f) (concat org-directory "/trello/" f)))))
+
 (use-package org-trello
   :straight (:build (:not native-compile))
   :commands (org-trello-mode)
@@ -3025,10 +2910,34 @@ Returns (<buffer> . <workspace-index>) or nil."
          org-trello-interactive-command-binding-couples))))
 
 (use-package org-ql
+  :after (org)
   :if (not my/remote-server)
   :straight (:fetcher github
                       :repo "alphapapa/org-ql"
                       :files (:defaults (:exclude "helm-org-ql.el"))))
+
+(defun my/org-scheduled-get-time ()
+  (let ((scheduled (org-get-scheduled-time (point))))
+    (if scheduled
+        (format-time-string "%Y-%m-%d" scheduled)
+      "")))
+
+(setq org-agenda-hide-tags-regexp (rx (or "org" "log" "log_here")))
+
+(setq org-agenda-custom-commands
+      `(("p" "My outline"
+         ((agenda "")
+          (todo "NEXT"
+                ((org-agenda-prefix-format "  %i %-12:c [%e] ")
+                 (org-agenda-overriding-header "Next tasks")))
+          (tags-todo "inbox"
+                     ((org-agenda-overriding-header "Inbox")
+                      (org-agenda-prefix-format " %i %-12:c")
+                      (org-agenda-hide-tags-regexp ".")))
+          (tags-todo "+waitlist+SCHEDULED<=\"<+14d>\""
+                     ((org-agenda-overriding-header "Waitlist")
+                      (org-agenda-hide-tags-regexp "waitlist")
+                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
 
 (use-package org-journal
   :straight t
@@ -3112,16 +3021,15 @@ Returns (<buffer> . <workspace-index>) or nil."
          :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
          :unnarrowed t)))
 
-(my-leader-def
-  :infix "or"
-  "" '(:which-key "org-roam")
-  "i" 'org-roam-node-insert
-  "r" 'org-roam-node-find
-  "g" 'org-roam-graph
-  "c" 'org-roam-capture
-  "b" 'org-roam-buffer-toggle)
-
 (with-eval-after-load 'org-roam
+  (my-leader-def
+    :infix "or"
+    "" '(:which-key "org-roam")
+    "i" 'org-roam-node-insert
+    "r" 'org-roam-node-find
+    "g" 'org-roam-graph
+    "c" 'org-roam-capture
+    "b" 'org-roam-buffer-toggle)
   (general-define-key
    :keymaps 'org-roam-mode-map
    :states '(normal)
@@ -3380,6 +3288,7 @@ Returns (<buffer> . <workspace-index>) or nil."
                    :files ("lisp/org-contacts.el")
                    :build (:not compile))
   :after (notmuch)
+  :if (not my/remote-server)
   :commands (org-contacts)
   :config
   (require 'cl)
@@ -3420,6 +3329,34 @@ Returns (<buffer> . <workspace-index>) or nil."
   (sp-local-pair 'org-mode "$" "$")
   (sp--remove-local-pair "'"))
 
+(with-eval-after-load-norem 'org
+  (setq my/org-latex-scale 1.75)
+  (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale)))
+
+(with-eval-after-load-norem 'org
+  (setq my/latex-preview-header "\\documentclass{article}
+\\usepackage[usenames]{color}
+\\usepackage{graphicx}
+\\usepackage{grffile}
+\\usepackage{longtable}
+\\usepackage{wrapfig}
+\\usepackage{rotating}
+\\usepackage[normalem]{ulem}
+\\usepackage{amsmath}
+\\usepackage{textcomp}
+\\usepackage{amssymb}
+\\usepackage{capt-of}
+\\usepackage{hyperref}
+\\pagestyle{empty}")
+
+  (setq org-preview-latex-process-alist
+        (mapcar
+         (lambda (item)
+           (cons
+            (car item)
+            (plist-put (cdr item) :latex-header my/latex-preview-header)))
+         org-preview-latex-process-alist)))
+
 (use-package org-superstar
   :straight t
   :disabled
@@ -3434,26 +3371,30 @@ Returns (<buffer> . <workspace-index>) or nil."
   (remove-from-invisibility-spec '(outline . t))
   (add-to-invisibility-spec 'outline))
 
-(add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
+(with-eval-after-load 'org-bars
+  (add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
+  (when (eq major-mode 'org-mode)
+    (my/org-no-ellipsis-in-headlines)))
 
 (my/use-doom-colors
  (org-block :background (color-darken-name (doom-color 'bg) 3))
  (org-block-begin-line :background (color-darken-name (doom-color 'bg) 3)
                        :foreground (doom-color 'grey)))
 
-;; (setq org-export-backends '(md html latex beamer org))
-
 (use-package ox-hugo
   :straight t
+  :if (not my/remote-server)
   :after ox)
 
 (use-package ox-ipynb
   :straight (:host github :repo "jkitchin/ox-ipynb")
+  :if (not my/remote-server)
   :after ox)
 
 (use-package htmlize
   :straight t
   :after ox
+  :if (not my/remote-server)
   :config
   (setq org-html-htmlize-output-type 'css))
 
@@ -3506,21 +3447,90 @@ Returns (<buffer> . <workspace-index>) or nil."
                   ("\\subsubsection{%s}" . "\\subsubsection*{%s}")))))
 
 ;; Make sure to eval the function when org-latex-classes list already exists
-(with-eval-after-load 'ox-latex
+(with-eval-after-load-norem 'ox-latex
   (my/setup-org-latex))
+
+(with-eval-after-load-norem 'org
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c d" 'org-decrypt-entry
+   "C-c e" 'org-encrypt-entry
+   "M-p" 'org-latex-preview
+   "M-o" 'org-redisplay-inline-images)
+
+  (general-define-key
+   :keymaps 'org-mode-map
+   :states '(normal emacs)
+   "L" 'org-shiftright
+   "H" 'org-shiftleft
+   "S-<next>" 'org-next-visible-heading
+   "S-<prior>" 'org-previous-visible-heading
+   "M-0" 'org-next-visible-heading
+   "M-9" 'org-previous-visible-heading
+   "M-]" 'org-babel-next-src-block
+   "M-[" 'org-babel-previous-src-block)
+
+  (general-define-key
+   :keymaps 'org-agenda-mode-map
+   "M-]" 'org-agenda-later
+   "M-[" 'org-agenda-earlier)
+
+  (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c))
 
 (defun my/org-link-copy (&optional arg)
   "Extract URL from org-mode link and add it to kill ring."
   (interactive "P")
   (let* ((link (org-element-lineage (org-element-context) '(link) t))
-          (type (org-element-property :type link))
-          (url (org-element-property :path link))
-          (url (concat type ":" url)))
+         (type (org-element-property :type link))
+         (url (org-element-property :path link))
+         (url (concat type ":" url)))
     (kill-new url)
     (message (concat "Copied URL: " url))))
 
-(general-nmap :keymaps 'org-mode-map
-    "C-x C-l" 'my/org-link-copy)
+(with-eval-after-load-norem 'org
+  (general-nmap :keymaps 'org-mode-map
+    "C-x C-l" 'my/org-link-copy))
+
+(defun my/org-babel-next-visible-src-block (arg)
+  "Move to the next visible source block.
+
+With ARG, repeats or can move backward if negative."
+  (interactive "p")
+  (let ((regexp org-babel-src-block-regexp))
+    (if (< arg 0)
+	    (beginning-of-line)
+      (end-of-line))
+    (while (and (< arg 0) (re-search-backward regexp nil :move))
+      (unless (bobp)
+	    (while (pcase (get-char-property-and-overlay (point) 'invisible)
+		         (`(outline . ,o)
+		          (goto-char (overlay-start o))
+		          (re-search-backward regexp nil :move))
+		         (_ nil))))
+      (cl-incf arg))
+    (while (and (> arg 0) (re-search-forward regexp nil t))
+      (while (pcase (get-char-property-and-overlay (point) 'invisible)
+	           (`(outline . ,o)
+		        (goto-char (overlay-end o))
+		        (re-search-forward regexp nil :move))
+	           (_ (end-of-line) nil)))
+      (re-search-backward regexp nil :move)
+      (cl-decf arg))
+    (if (> arg 0) (goto-char (point-max)) (beginning-of-line))))
+
+(defun my/org-babel-previous-visible-src-block (arg)
+  "Move to the prevous visible source block.
+
+With ARG, repeats or can move backward if negative."
+  (interactive "p")
+  (my/org-babel-next-visible-src-block (- arg)))
+
+(with-eval-after-load 'org
+  (general-define-key
+   :keymaps 'org-mode-map
+   :states '(normal emacs)
+   "M-]" #'my/org-babel-next-visible-src-block
+   "M-[" #'my/org-babel-previous-visible-src-block))
 
 (defun my/org-file-open ()
   (interactive)
@@ -3530,7 +3540,7 @@ Returns (<buffer> . <workspace-index>) or nil."
            (lambda (f)
              (and
               (string-match-p (rx (* nonl) ".org" eos) f)
-              (not (string-match-p (rx (| "journal" "roam" "review" "archive")) f))))
+              (not (string-match-p (rx (| "journal" "roam" "review" "archive" "figured-out")) f))))
            (projectile-current-project-files))))
     (find-file
      (concat org-directory "/" (completing-read "Org file: " project-files)))))
