@@ -1961,6 +1961,7 @@ However, I don't like that list of workspaces is displayed inside the modeline r
   :init
   ;; (setq persp-show-modestring 'header)
   (setq persp-sort 'created)
+  (setq persp-suppress-no-prefix-key-warning t)
   :config
   (persp-mode)
   (my-leader-def "x" '(:keymap perspective-map :which-key "perspective"))
@@ -2540,6 +2541,7 @@ A general-purpose package to run formatters on files. While the most popular for
 (use-package copilot
   :straight (:host github :repo "SqrtMinusOne/copilot.el" :files ("dist" "*.el"))
   :commands (copilot-mode)
+  :if (not my/remote-server)
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
@@ -3653,10 +3655,11 @@ Another way to encrypt org files is to save them with extension =.org.gpg=. That
       keys
     (funcall fun prompt keys)))
 
-(with-eval-after-load 'epa
+(with-eval-after-load-norem 'epa
   (advice-add #'epa--select-keys :around #'my/epa--select-keys-around))
 
-(setq epa-file-encrypt-to '("DE004F32AFA00205"))
+(unless my/remote-server
+  (setq epa-file-encrypt-to '("DE004F32AFA00205")))
 #+end_src
 *** org-contrib
 =org-contrib= is a package with various additions to Org. I use the following:
@@ -3673,6 +3676,7 @@ Excluding =org-contacts= from here because byte compilation breaks it for some r
              :files (:defaults (:exclude "lisp/org-contacts.el"))
              :build t)
   :after (org)
+  :if (not my/remote-server)
   :config
   (require 'ox-extra)
   (require 'ol-notmuch)
@@ -4181,9 +4185,11 @@ Some inspiration:
 
 Used files
 #+begin_src emacs-lisp
-(setq org-roam-directory (concat org-directory "/roam"))
-(setq org-agenda-files '("inbox.org"))
-;; (setq org-default-notes-file (concat org-directory "/notes.org"))
+(with-eval-after-load-norem 'org
+  (setq org-roam-directory (concat org-directory "/roam"))
+  (setq org-agenda-files '("inbox.org"))
+  ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
+  )
 #+end_src
 
 Hotkeys
@@ -4248,7 +4254,7 @@ Some of the projects I'm participating in are managed via Trello, so I use [[htt
 
 Also, trello files are huge and have a lot of information and tasks which do not concern me, so I don't add them to =org-agenda-files=.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (unless (file-exists-p (concat org-directory "/trello"))
   (mkdir (concat org-directory "/trello") t))
 
@@ -4261,7 +4267,7 @@ Also, trello files are huge and have a lot of information and tasks which do not
          (lambda (f) (concat org-directory "/trello/" f)))))
 #+end_src
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (use-package org-trello
   :straight (:build (:not native-compile))
   :commands (org-trello-mode)
@@ -7031,6 +7037,7 @@ References:
 #+begin_src emacs-lisp
 (use-package google-translate
   :straight t
+  :if (not my/remote-server)
   :functions (my-google-translate-at-point google-translate--search-tkk)
   :custom
   (google-translate-backend-method 'curl)

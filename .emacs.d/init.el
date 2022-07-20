@@ -1069,6 +1069,7 @@ influence of C1 on the result."
   :init
   ;; (setq persp-show-modestring 'header)
   (setq persp-sort 'created)
+  (setq persp-suppress-no-prefix-key-warning t)
   :config
   (persp-mode)
   (my-leader-def "x" '(:keymap perspective-map :which-key "perspective"))
@@ -1523,6 +1524,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package copilot
   :straight (:host github :repo "SqrtMinusOne/copilot.el" :files ("dist" "*.el"))
   :commands (copilot-mode)
+  :if (not my/remote-server)
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
@@ -2480,10 +2482,11 @@ Returns (<buffer> . <workspace-index>) or nil."
       keys
     (funcall fun prompt keys)))
 
-(with-eval-after-load 'epa
+(with-eval-after-load-norem 'epa
   (advice-add #'epa--select-keys :around #'my/epa--select-keys-around))
 
-(setq epa-file-encrypt-to '("DE004F32AFA00205"))
+(unless my/remote-server
+  (setq epa-file-encrypt-to '("DE004F32AFA00205")))
 
 (use-package org-contrib
   :straight (org-contrib
@@ -2492,6 +2495,7 @@ Returns (<buffer> . <workspace-index>) or nil."
              :files (:defaults (:exclude "lisp/org-contacts.el"))
              :build t)
   :after (org)
+  :if (not my/remote-server)
   :config
   (require 'ox-extra)
   (require 'ol-notmuch)
@@ -2832,9 +2836,11 @@ Returns (<buffer> . <workspace-index>) or nil."
    "C-c t A" #'org-transclusion-add-all
    "C-c t t" #'org-transclusion-mode))
 
-(setq org-roam-directory (concat org-directory "/roam"))
-(setq org-agenda-files '("inbox.org"))
-;; (setq org-default-notes-file (concat org-directory "/notes.org"))
+(with-eval-after-load-norem 'org
+  (setq org-roam-directory (concat org-directory "/roam"))
+  (setq org-agenda-files '("inbox.org"))
+  ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
+  )
 
 (my-leader-def
   :infix "o"
@@ -2874,40 +2880,6 @@ Returns (<buffer> . <workspace-index>) or nil."
                '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00")))
 
 (setq org-log-done 'time)
-
-(unless (file-exists-p (concat org-directory "/trello"))
-  (mkdir (concat org-directory "/trello") t))
-
-(setq org-trello-files
-      (thread-last (concat org-directory "/trello")
-        (directory-files)
-        (seq-filter
-         (lambda (f) (string-match-p (rx ".org" eos) f)))
-        (mapcar
-         (lambda (f) (concat org-directory "/trello/" f)))))
-
-(use-package org-trello
-  :straight (:build (:not native-compile))
-  :commands (org-trello-mode)
-  :disabled
-  :if (not my/remote-server)
-  :init
-  (setq org-trello-current-prefix-keybinding "C-c o")
-  (setq org-trello-add-tags nil)
-
-  (add-hook 'org-mode-hook
-            (lambda ()
-              (when (string-match-p (rx "trello") (or (buffer-file-name) ""))
-                (org-trello-mode))))
-  :config
-  (eval
-   `(my-leader-def
-      :infix "o t"
-      :keymaps '(org-trello-mode-map)
-      "" '(:which-key "trello")
-      ,@(mapcan
-         (lambda (b) (list (nth 1 b) (macroexp-quote (nth 0 b))))
-         org-trello-interactive-command-binding-couples))))
 
 (use-package org-ql
   :after (org)
@@ -4818,6 +4790,7 @@ by the `my/elfeed-youtube-subtitles' function."
 
 (use-package google-translate
   :straight t
+  :if (not my/remote-server)
   :functions (my-google-translate-at-point google-translate--search-tkk)
   :custom
   (google-translate-backend-method 'curl)
