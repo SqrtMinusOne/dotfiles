@@ -2943,7 +2943,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight t
   :defer t)
 
-(defvar my/weather-last-time nil)
+(defvar my/weather-last-time 0)
 (defvar my/weather-value nil)
 
 (defun my/weather-get ()
@@ -3631,15 +3631,15 @@ With ARG, repeats or can move backward if negative."
   (general-define-key
    :states '(normal)
    :keymaps 'dired-mode-map
-   "h" 'dired-up-directory
-   "l" 'dired-find-file
-   "=" 'dired-narrow
-   "-" 'dired-create-empty-file
-   "~" 'vterm
-   "M-r" 'wdired-change-to-wdired-mode
-   "<left>" 'dired-up-directory
-   "<right>" 'dired-find-file
-   "M-<return>" 'dired-open-xdg))
+   "h" #'dired-up-directory
+   "l" #'dired-find-file
+   "=" #'dired-narrow
+   "-" #'my/dired-create-empty-file-subtree
+   "~" #'vterm
+   "M-r" #'wdired-change-to-wdired-mode
+   "<left>" #'dired-up-directory
+   "<right>" #'dired-find-file
+   "M-<return>" #'dired-open-xdg))
 
 (defun my/dired-home ()
   "Open dired at $HOME"
@@ -3659,6 +3659,12 @@ With ARG, repeats or can move backward if negative."
   :after (dired)
   :straight t)
 
+(defun my/dired-create-empty-file-subtree ()
+  (interactive)
+  (let ((default-directory (dired-current-directory)))
+    (dired-create-empty-file
+     (read-file-name "Create empty file: "))))
+
 (use-package dired-sidebar
   :straight t
   :after (dired)
@@ -3666,19 +3672,29 @@ With ARG, repeats or can move backward if negative."
   :init
   (general-define-key
    :keymaps '(normal override global)
-   "C-n" 'dired-sidebar-toggle-sidebar)
+   "C-n" `(,(lambda ()
+              (interactive)
+              (let ((dired-sidebar-follow-file-at-point-on-toggle-open
+                     current-prefix-arg)
+                    (current-prefix-arg nil))
+                (dired-sidebar-toggle-sidebar)))
+           :wk "dired-sidebar"))
   :config
+  (setq dired-sidebar-width 45)
+  (setq dired-sidebar-follow-file-at-point-on-toggle-open nil)
   (defun my/dired-sidebar-setup ()
     (toggle-truncate-lines 1)
     (display-line-numbers-mode -1)
-    (setq-local dired-subtree-use-backgrounds nil))
+    (setq-local dired-subtree-use-backgrounds nil)
+    (setq-local window-size-fixed nil))
   (general-define-key
    :keymaps 'dired-sidebar-mode-map
    :states '(normal emacs)
-   "l" 'dired-sidebar-find-file
-   "h" 'dired-sidebar-up-directory
-   "=" 'dired-narrow)
-  (add-hook 'dired-sidebar-mode-hook #'my/dired-sidebar-setup))
+   "l" #'dired-sidebar-find-file
+   "h" #'dired-sidebar-up-directory
+   "=" #'dired-narrow)
+  (add-hook 'dired-sidebar-mode-hook #'my/dired-sidebar-setup)
+  (advice-add #'dired-create-empty-file :after 'dired-sidebar-refresh-buffer))
 
 (use-package dired-recent
   :straight t
