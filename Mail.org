@@ -18,29 +18,6 @@ But I also have an Exchange account, with which I communicate via IMAP/SMTP adap
 References:
 - [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][My post]] about email configuration. I wrote it some time ago, but the general idea remains.
 
-* Contents                                                         :noexport:
-:PROPERTIES:
-:TOC:      :include all
-:END:
-:CONTENTS:
-- [[#contents][Contents]]
-- [[#lieer][Lieer]]
-- [[#davmail][DavMail]]
-- [[#offlineimap][OfflineIMAP]]
-- [[#notmuch][Notmuch]]
-  - [[#config][Config]]
-  - [[#hooks][Hooks]]
-    - [[#pre_new][pre_new]]
-    - [[#post_new][post_new]]
-- [[#sync-script][Sync script]]
-- [[#msmtp][MSMTP]]
-- [[#emacs][Emacs]]
-  - [[#saved-filters-and-keybindings][Saved filters and keybindings]]
-  - [[#signing-messages][Signing messages]]
-- [[#mailcap][mailcap]]
-- [[#guix-settings][Guix settings]]
-:END:
-
 * Lieer
 | Guix dependency |
 |-----------------|

@@ -16,37 +16,6 @@ References:
 - [[https://gitlab.com/pjotrp/guix-notes][Pjotr Prins' Guix notes]]
 - [[https://www.youtube.com/watch?v=iBaqOK75cho&list=PLEoMzSkcN8oNxnj7jm5V2ZcGc52002pQU][Davil Wilson's YouTube series]]
 
-* Contents                                                         :noexport:
-:PROPERTIES:
-:TOC:      :include all :depth 3
-:END:
-:CONTENTS:
-- [[#contents][Contents]]
-- [[#profiles][Profiles]]
-  - [[#activate-profiles][Activate profiles]]
-  - [[#update-profiles][Update profiles]]
-- [[#channels][Channels]]
-- [[#systems][Systems]]
-  - [[#base-configuration][Base configuration]]
-  - [[#indigo][indigo]]
-  - [[#eminence][eminence]]
-  - [[#azure][azure]]
-- [[#system-installation][System installation]]
-  - [[#preparation][Preparation]]
-  - [[#installation][Installation]]
-  - [[#after-installation][After installation]]
-- [[#misc-software--notes][Misc software & notes]]
-  - [[#vpn][VPN]]
-    - [[#vpn-start][vpn-start]]
-    - [[#vpn-stop][vpn-stop]]
-  - [[#flatpak][flatpak]]
-  - [[#conda][conda]]
-  - [[#slack][Slack]]
-  - [[#virt-manager][virt-manager]]
-  - [[#wakatime-cli][wakatime-cli]]
-  - [[#manifest][Manifest]]
-:END:
-
 * Profiles
 A profile is a way to group Guix packages. Amongst its advantages, profiles can be defined by manifests, which in turn can be stored in VCS.
 
