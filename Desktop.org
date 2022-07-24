@@ -1618,7 +1618,7 @@ As we want to interweave polybar modules with these glyphs in the right order an
 |     3 | cpu         | cyan          | +     |
 |     4 | ram-memory  | light-green   | +     |
 |     5 | swap-memory | green         | +     |
-|     6 | network     | light-red     | +     |
+|     6 | bandwidth   | light-red     | +     |
 |     7 | openvpn     | light-red     |       |
 |     8 | xkeyboard   | red           | +     |
 |    10 | weather     | light-yellow  | +     |
@@ -1875,16 +1875,12 @@ The script below allows me to:
 #+begin_src bash :tangle ./bin/polybar.sh :noweb yes
 hostname=$(hostname)
 # Settings varying on the hostname
-export WLAN_INTERFACE=$(nmcli -f DEVICE con show | grep -Ev "(.*docker.*|DEVICE|br.*|tun.*|veth.*|--)" | xargs)
 if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
-    # export WLAN_INTERFACE="wlp3s0"
 elif [ "$hostname" = "eminence" ]; then
     TRAY_MONITOR="eDP"
-    # export WLAN_INTERFACE="wlo1"
 else
     TRAY_MONITOR="HDMI-A-0"
-    # export WLAN_INTERFACE="wlp35s0f3u2"
 fi
 
 # Setting varying on the monitor
@@ -2069,6 +2065,9 @@ format-background = <<get-polybar-bg(module="swap-memory")>>
 
 *** network
 Upload/download speed
+
+UPD <2022-07-24 Sun>: Somehow it doesn't work with my current internet setup.
+
 #+begin_src conf-windows :noweb yes
 [module/network]
 type = internal/network
@@ -2092,6 +2091,122 @@ ramp-signal-2 = 2
 ramp-signal-3 = 3
 ramp-signal-4 = 4
 ramp-signal-5 = 5
+#+end_src
+
+*** bandwidth
+[[file:bin/polybar/bandwidth3.sh][My adaption]] of an i3blocks script called "[[https://github.com/vivien/i3blocks-contrib/tree/master/bandwidth3][bandwidth3]]". I've only changed some defaults that are awkward to set with polybar.
+
+#+begin_src conf-windows :noweb yes
+[module/bandwidth]
+type = custom/script
+exec = /home/pavel/bin/polybar/bandwidth3.sh
+interval = 0
+tail = true
+
+format-background = <<get-polybar-bg(module="bandwidth")>>
+#+end_src
+
+#+begin_src bash :tangle ./bin/polybar/bandwidth3.sh
+# Copyright (C) 2015 James Murphy
+# Copyright (C) 2022 Pavel Korytov
+# Licensed under the terms of the GNU GPL v2 only.
+
+iface="${BLOCK_INSTANCE}"
+iface="${IFACE:-$iface}"
+dt="${DT:-1}"
+unit="${UNIT:-Kb}"
+printf_command="${PRINTF_COMMAND:-"printf \"↓ %-2.1f ↑ %2.1f [%s/s]\\n\", rx, wx, unit;"}"
+
+function default_interface {
+    ip route | awk '/^default via/ {print $5; exit}'
+}
+
+function check_proc_net_dev {
+    if [ ! -f "/proc/net/dev" ]; then
+        echo "/proc/net/dev not found"
+        exit 1
+    fi
+}
+
+function list_interfaces {
+    check_proc_net_dev
+    echo "Interfaces in /proc/net/dev:"
+    grep -o "^[^:]\\+:" /proc/net/dev | tr -d " :"
+}
+
+while getopts i:t:u:p:lh opt; do
+    case "$opt" in
+        i) iface="$OPTARG" ;;
+        t) dt="$OPTARG" ;;
+        u) unit="$OPTARG" ;;
+        p) printf_command="$OPTARG" ;;
+        l) list_interfaces && exit 0 ;;
+        h) printf \
+"Usage: bandwidth3 [-i interface] [-t time] [-u unit] [-p printf_command] [-l] [-h]
+Options:
+-i\tNetwork interface to measure. Default determined using \`ip route\`.
+-t\tTime interval in seconds between measurements. Default: 3
+-u\tUnits to measure bytes in. Default: Mb
+\tAllowed units: Kb, KB, Mb, MB, Gb, GB, Tb, TB
+\tUnits may have optional it/its/yte/ytes on the end, e.g. Mbits, KByte
+-p\tAwk command to be called after a measurement is made.
+\tDefault: printf \"<span font='FontAwesome'>  </span>%%-5.1f/%%5.1f %%s/s\\\\n\", rx, wx, unit;
+\tExposed variables: rx, wx, tx, unit, iface
+-l\tList available interfaces in /proc/net/dev
+-h\tShow this help text
+" && exit 0;;
+    esac
+done
+
+check_proc_net_dev
+
+iface="${iface:-$(default_interface)}"
+while [ -z "$iface" ]; do
+    echo No default interface
+    sleep "$dt"
+    iface=$(default_interface)
+done
+
+case "$unit" in
+    Kb|Kbit|Kbits)   bytes_per_unit=$((1024 / 8));;
+    KB|KByte|KBytes) bytes_per_unit=$((1024));;
+    Mb|Mbit|Mbits)   bytes_per_unit=$((1024 * 1024 / 8));;
+    MB|MByte|MBytes) bytes_per_unit=$((1024 * 1024));;
+    Gb|Gbit|Gbits)   bytes_per_unit=$((1024 * 1024 * 1024 / 8));;
+    GB|GByte|GBytes) bytes_per_unit=$((1024 * 1024 * 1024));;
+    Tb|Tbit|Tbits)   bytes_per_unit=$((1024 * 1024 * 1024 * 1024 / 8));;
+    TB|TByte|TBytes) bytes_per_unit=$((1024 * 1024 * 1024 * 1024));;
+    *) echo Bad unit "$unit" && exit 1;;
+esac
+
+scalar=$((bytes_per_unit * dt))
+init_line=$(cat /proc/net/dev | grep "^[ ]*$iface:")
+if [ -z "$init_line" ]; then
+    echo Interface not found in /proc/net/dev: "$iface"
+    exit 1
+fi
+
+init_received=$(awk '{print $2}' <<< $init_line)
+init_sent=$(awk '{print $10}' <<< $init_line)
+
+(while true; do cat /proc/net/dev; sleep "$dt"; done) |\
+    stdbuf -oL grep "^[ ]*$iface:"|\
+    awk -v scalar="$scalar" -v unit="$unit" -v iface="$iface" '
+BEGIN{old_received='"$init_received"';old_sent='"$init_sent"'}
+{
+    received=$2
+    sent=$10
+    rx=(received-old_received)/scalar;
+    wx=(sent-old_sent)/scalar;
+    tx=rx+wr;
+    old_received=received;
+    old_sent=sent;
+    if(rx >= 0 && wx >= 0){
+        '"$printf_command"';
+        fflush(stdout);
+    }
+}
+'
 #+end_src
 
 *** ipstack-vpn

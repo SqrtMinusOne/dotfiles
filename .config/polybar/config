@@ -339,8 +339,8 @@ label-disconnected = X
 
 ; format-connected-underline = ${colors.green}
 ; format-disconnected-underline = ${colors.red}
-format-connected-background = ${colors.light-red}
-format-disconnected-background = ${colors.light-red}
+format-connected-background = ${colors.nil}
+format-disconnected-background = ${colors.nil}
 
 ramp-signal-0 = 0
 ramp-signal-1 = 1
@@ -349,6 +349,16 @@ ramp-signal-3 = 3
 ramp-signal-4 = 4
 ramp-signal-5 = 5
 ; network:1 ends here
+
+; [[file:../../Desktop.org::*bandwidth][bandwidth:1]]
+[module/bandwidth]
+type = custom/script
+exec = /home/pavel/bin/polybar/bandwidth3.sh
+interval = 0
+tail = true
+
+format-background = ${colors.light-red}
+; bandwidth:1 ends here
 
 ; [[file:../../Desktop.org::*ipstack-vpn][ipstack-vpn:2]]
 [module/ipstack-vpn]

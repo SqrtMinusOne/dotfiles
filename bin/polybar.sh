@@ -2,16 +2,12 @@
 # [[file:../Desktop.org::*Launch script][Launch script:1]]
 hostname=$(hostname)
 # Settings varying on the hostname
-export WLAN_INTERFACE=$(nmcli -f DEVICE con show | grep -Ev "(.*docker.*|DEVICE|br.*|tun.*|veth.*|--)" | xargs)
 if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
-    # export WLAN_INTERFACE="wlp3s0"
 elif [ "$hostname" = "eminence" ]; then
     TRAY_MONITOR="eDP"
-    # export WLAN_INTERFACE="wlo1"
 else
     TRAY_MONITOR="HDMI-A-0"
-    # export WLAN_INTERFACE="wlp35s0f3u2"
 fi
 
 # Setting varying on the monitor
@@ -34,10 +30,10 @@ declare -A BAR_HEIGHT=(
     ["HDMI-A-0"]="29"
 )
 declare -A BLOCKS=(
-    ["eDP"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan battery glyph-light-cyan--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red network openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["eDP-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan battery glyph-light-cyan--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red network openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["DVI-D-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red network openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["HDMI-A-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red network openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["eDP"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan battery glyph-light-cyan--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["eDP-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan battery glyph-light-cyan--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["DVI-D-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["HDMI-A-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
 )
 
 # Geolocation for some modules
