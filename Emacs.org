@@ -5777,6 +5777,7 @@ That is, with the help of [[file:Console.org::Functions][this function]], I can 
 #+end_src
 *** Eshell
 A shell written in Emacs lisp. I don't use it as of now, but keep the config just in case.
+
 #+begin_src emacs-lisp
 (defun my/configure-eshell ()
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
@@ -5821,7 +5822,8 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
    (aweshell-alert-buffer-face  :background (color-darken-name (doom-color 'bg) 3))
    (aweshell-alert-command-face :foreground (doom-color 'red) :weight 'bold))
   :config
-  (setq eshell-highlight-prompt nil)
+  (setq eshell-prompt-regexp "^[^#\nλ]* λ[#]* ")
+  (setq eshell-highlight-prompt t)
   (setq eshell-prompt-function 'epe-theme-pipeline))
 
 (use-package eshell-info-banner
@@ -5829,12 +5831,25 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
   :if (not my/slow-ssh)
   :straight (eshell-info-banner :type git
                                 :host github
-                                :repo "phundrak/eshell-info-banner.el")
-  :hook (eshell-banner-load . eshell-info-banner-update-banner))
+                                :repo "SqrtMinusOne/eshell-info-banner.el")
+  :hook (eshell-banner-load . eshell-info-banner-update-banner)
+  :config
+  (setq eshell-info-banner-filter-duplicate-partitions t)
+  (setq eshell-info-banner-exclude-partitions '("b/efi")))
 
-(when my/slow-ssh
+(when (or my/slow-ssh my/remote-server)
   (general-nmap "`" 'aweshell-dedicated-toggle)
   (general-nmap "~" 'eshell))
+#+end_src
+*** Shell
+Interactive subshell (=M-x shell=) is a way to run commands with input and output through an Emacs buffer.
+
+#+begin_src emacs-lisp
+(defun my/setup-shell ()
+  (setq-local comint-use-prompt-regexp t)
+  (setq-local comint-prompt-read-only t))
+
+(add-hook 'shell-mode-hook #'my/setup-shell)
 #+end_src
 ** Managing dotfiles
 A bunch of functions for managing dotfiles with yadm.

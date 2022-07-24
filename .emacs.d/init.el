@@ -3924,6 +3924,7 @@ With ARG, repeats or can move backward if negative."
    (aweshell-alert-buffer-face  :background (color-darken-name (doom-color 'bg) 3))
    (aweshell-alert-command-face :foreground (doom-color 'red) :weight 'bold))
   :config
+  (setq eshell-prompt-regexp "^[^#\nλ]* λ[#]* ")
   (setq eshell-highlight-prompt nil)
   (setq eshell-prompt-function 'epe-theme-pipeline))
 
@@ -3932,12 +3933,21 @@ With ARG, repeats or can move backward if negative."
   :if (not my/slow-ssh)
   :straight (eshell-info-banner :type git
                                 :host github
-                                :repo "phundrak/eshell-info-banner.el")
-  :hook (eshell-banner-load . eshell-info-banner-update-banner))
+                                :repo "SqrtMinusOne/eshell-info-banner.el")
+  :hook (eshell-banner-load . eshell-info-banner-update-banner)
+  :config
+  (setq eshell-info-banner-filter-duplicate-partitions t)
+  (setq eshell-info-banner-exclude-partitions '("b/efi")))
 
-(when my/slow-ssh
+(when (or my/slow-ssh my/remote-server)
   (general-nmap "`" 'aweshell-dedicated-toggle)
   (general-nmap "~" 'eshell))
+
+(defun my/setup-shell ()
+  (setq-local comint-use-prompt-regexp t)
+  (setq-local comint-prompt-read-only t))
+
+(add-hook 'shell-mode-hook #'my/setup-shell)
 
 (general-define-key
  ;; "C-c c" (my/command-in-persp "Emacs.org" "conf" 1 (find-file "~/Emacs.org"))
