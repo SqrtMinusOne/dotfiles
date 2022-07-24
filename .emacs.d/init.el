@@ -2939,12 +2939,37 @@ Returns (<buffer> . <workspace-index>) or nil."
    :keymaps 'org-journal-mode-map
    "C-c t" #'org-journal-tags-insert-tag))
 
+(use-package request
+  :straight t
+  :defer t)
+
+(defvar my/weather-last-time nil)
+(defvar my/weather-value nil)
+
+(defun my/weather-get ()
+  (when (> (- (time-convert nil 'integer) my/weather-last-time)
+           (* 60 5))
+    (request (format "https://wttr.in/%s" my/location)
+      :params '(("format" . "%l:%20%C%20%t%20%w%20%p"))
+      :sync t
+      :parser (lambda () (url-unhex-string (buffer-string)))
+      :success (cl-function
+                (lambda (&key data &allow-other-keys)
+                  (setq my/weather-value data)
+                  (setq my/weather-last-time (time-convert nil 'integer))))
+      :error
+      (cl-function (lambda (&rest args &key error-thrown &allow-other-keys)
+                     (message "Got error: %S" error-thrown)))))
+  my/weather-value)
+
 (defun my/set-journal-header ()
   (org-set-property "Emacs" emacs-version)
   (org-set-property "Hostname" system-name)
   (org-journal-tags-prop-apply-delta :add (list (format "host.%s" (system-name))))
   (when (boundp 'my/location)
-    (org-set-property "Location" my/location))
+    (org-set-property "Location" my/location)
+    (when-let ((weather (my/weather-get)))
+      (org-set-property "Weather" weather)))
   (when (boundp 'my/loc-tag)
     (org-journal-tags-prop-apply-delta :add (list my/loc-tag)))
   (when (fboundp 'emms-playlist-current-selected-track)
@@ -3925,7 +3950,7 @@ With ARG, repeats or can move backward if negative."
    (aweshell-alert-command-face :foreground (doom-color 'red) :weight 'bold))
   :config
   (setq eshell-prompt-regexp "^[^#\nλ]* λ[#]* ")
-  (setq eshell-highlight-prompt nil)
+  (setq eshell-highlight-prompt t)
   (setq eshell-prompt-function 'epe-theme-pipeline))
 
 (use-package eshell-info-banner

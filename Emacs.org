@@ -4124,16 +4124,48 @@ I've tried switching to Org Roam Dailies, but in the end decided that org-journa
    "C-c t" #'org-journal-tags-insert-tag))
 #+end_src
 
-I also want to store some information in the journal as properties of the record. So below is a function that does just that.
+Also, I want to add some extra information to the journal. Here's a functionality to get the current weather from wttr.in:
+#+begin_src emacs-lisp
+(use-package request
+  :straight t
+  :defer t)
 
-As of now, it stores Emacs version, hostname, location, and current EMMS track if there is one.
+(defvar my/weather-last-time nil)
+(defvar my/weather-value nil)
+
+(defun my/weather-get ()
+  (when (> (- (time-convert nil 'integer) my/weather-last-time)
+           (* 60 5))
+    (request (format "https://wttr.in/%s" my/location)
+      :params '(("format" . "%l:%20%C%20%t%20%w%20%p"))
+      :sync t
+      :parser (lambda () (url-unhex-string (buffer-string)))
+      :success (cl-function
+                (lambda (&key data &allow-other-keys)
+                  (setq my/weather-value data)
+                  (setq my/weather-last-time (time-convert nil 'integer))))
+      :error
+      (cl-function (lambda (&rest args &key error-thrown &allow-other-keys)
+                     (message "Got error: %S" error-thrown)))))
+  my/weather-value)
+#+end_src
+
+And here's a function that creates a drawer with such information. At the moment, it's:
+- Emacs version
+- Hostname
+- Location
+- Weather
+- Current EMMS track
+
 #+begin_src emacs-lisp
 (defun my/set-journal-header ()
   (org-set-property "Emacs" emacs-version)
   (org-set-property "Hostname" system-name)
   (org-journal-tags-prop-apply-delta :add (list (format "host.%s" (system-name))))
   (when (boundp 'my/location)
-    (org-set-property "Location" my/location))
+    (org-set-property "Location" my/location)
+    (when-let ((weather (my/weather-get)))
+      (org-set-property "Weather" weather)))
   (when (boundp 'my/loc-tag)
     (org-journal-tags-prop-apply-delta :add (list my/loc-tag)))
   (when (fboundp 'emms-playlist-current-selected-track)
