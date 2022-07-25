@@ -3665,23 +3665,27 @@ With ARG, repeats or can move backward if negative."
     (dired-create-empty-file
      (read-file-name "Create empty file: "))))
 
+(defun my/dired-sidebar-toggle ()
+  (interactive)
+  (if (not current-prefix-arg)
+      (dired-sidebar-toggle-sidebar)
+    (let ((dired-sidebar-follow-file-at-point-on-toggle-open
+           current-prefix-arg)
+          (current-prefix-arg nil))
+      (dired-sidebar-toggle-sidebar))))
+
 (use-package dired-sidebar
   :straight t
   :after (dired)
   :commands (dired-sidebar-toggle-sidebar)
   :init
+  (setq dired-sidebar-follow-file-at-point-on-toggle-open nil)
   (general-define-key
    :keymaps '(normal override global)
-   "C-n" `(,(lambda ()
-              (interactive)
-              (let ((dired-sidebar-follow-file-at-point-on-toggle-open
-                     current-prefix-arg)
-                    (current-prefix-arg nil))
-                (dired-sidebar-toggle-sidebar)))
+   "C-n" `(my/dired-sidebar-toggle
            :wk "dired-sidebar"))
   :config
   (setq dired-sidebar-width 45)
-  (setq dired-sidebar-follow-file-at-point-on-toggle-open nil)
   (defun my/dired-sidebar-setup ()
     (toggle-truncate-lines 1)
     (display-line-numbers-mode -1)
