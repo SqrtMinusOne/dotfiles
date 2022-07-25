@@ -7,7 +7,7 @@
 iface="${BLOCK_INSTANCE}"
 iface="${IFACE:-$iface}"
 dt="${DT:-1}"
-unit="${UNIT:-Kb}"
+unit="${UNIT:-KB}"
 printf_command="${PRINTF_COMMAND:-"printf \"↓ %-2.1f ↑ %2.1f [%s/s]\\n\", rx, wx, unit;"}"
 
 function default_interface {
