@@ -1676,6 +1676,18 @@ Returns (<buffer> . <workspace-index>) or nil."
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 (add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
 
+(add-hook 'scss-mode-hook #'smartparens-mode)
+(add-hook 'scss-mode-hook #'hs-minor-mode)
+(my/set-smartparens-indent 'scss-mode)
+
+(use-package php-mode
+  :straight t
+  :mode "\\.php\\'"
+  :config
+  (add-hook 'php-mode-hook #'smartparens-mode)
+  (add-hook 'php-mode-hook #'lsp)
+  (my/set-smartparens-indent 'php-mode))
+
 (use-package tex
   :straight auctex
   :defer t
@@ -4043,6 +4055,7 @@ With ARG, repeats or can move backward if negative."
   :commands (elfeed)
   :init
   (my-leader-def "ae" (my/command-in-persp "elfeed" "elfeed" 0 (elfeed-summary)))
+  (setq shr-max-image-proportion 0.5)
   :config
   (setq elfeed-db-directory "~/.elfeed")
   (setq elfeed-enclosure-default-dir (expand-file-name "~/Downloads"))

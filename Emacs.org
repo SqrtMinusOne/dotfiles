@@ -2490,6 +2490,22 @@ Vue settings
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 (add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
 #+end_src
+*** SCSS
+#+begin_src emacs-lisp
+(add-hook 'scss-mode-hook #'smartparens-mode)
+(add-hook 'scss-mode-hook #'hs-minor-mode)
+(my/set-smartparens-indent 'scss-mode)
+#+end_src
+*** PHP
+#+begin_src emacs-lisp
+(use-package php-mode
+  :straight t
+  :mode "\\.php\\'"
+  :config
+  (add-hook 'php-mode-hook #'smartparens-mode)
+  (add-hook 'php-mode-hook #'lsp)
+  (my/set-smartparens-indent 'php-mode))
+#+end_src
 ** LaTeX
 *** AUCTeX
 The best LaTeX editing environment I've found so far.
@@ -5733,6 +5749,7 @@ Using my own fork until the modifications are merged into master.
   :commands (elfeed)
   :init
   (my-leader-def "ae" (my/command-in-persp "elfeed" "elfeed" 0 (elfeed-summary)))
+  (setq shr-max-image-proportion 0.5)
   :config
   (setq elfeed-db-directory "~/.elfeed")
   (setq elfeed-enclosure-default-dir (expand-file-name "~/Downloads"))
