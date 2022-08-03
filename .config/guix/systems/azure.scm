@@ -36,6 +36,7 @@
              (unix-sock-group "libvirt")
              (tls-port "16555")))
    (service virtlog-service-type)
+   (bluetooth-service #:auto-enable? #f)
    (modify-services %desktop-services
                     (network-manager-service-type
                      config =>

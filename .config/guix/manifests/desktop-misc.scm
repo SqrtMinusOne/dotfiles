@@ -1,8 +1,10 @@
 (specifications->manifest
  '(
+   "bluez"
    "xev"
    "gparted"
    "gnome-disk-utility"
+   "vinagre"
    "anydesk"
    "qbittorrent"
    "gnome-font-viewer"

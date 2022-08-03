@@ -3725,9 +3725,11 @@ Other desktop programs I use are listed below.
 | desktop-misc | gnome-font-viewer      | view fonts                                |
 | desktop-misc | qbittorrent            | torrent client                            |
 | desktop-misc | anydesk                | Remote desktop software                   |
+| desktop-misc | vinagre                | My VNC client of choice                   |
 | desktop-misc | gnome-disk-utility     | Manage disks                              |
 | desktop-misc | gparted                | Manage partitions                         |
 | desktop-misc | xev                    | Test input                                |
+| desktop-misc | bluez                  | Provides bluetoothctl                     |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
