@@ -150,3 +150,13 @@ if [[ -z "$SIMPLE" && "$TERM" != "dumb" ]]; then
     eval "$(starship init bash)"
 fi
 # Starship:1 ends here
+
+# [[file:Console.org::*Yandex Cloud][Yandex Cloud:1]]
+init_yc () {
+    # The next line updates PATH for Yandex Cloud CLI.
+    if [ -f '/home/pavel/yandex-cloud/path.bash.inc' ]; then source '/home/pavel/yandex-cloud/path.bash.inc'; fi
+
+    # The next line enables shell command completion for yc.
+    if [ -f '/home/pavel/yandex-cloud/completion.bash.inc' ]; then source '/home/pavel/yandex-cloud/completion.bash.inc'; fi
+}
+# Yandex Cloud:1 ends here
