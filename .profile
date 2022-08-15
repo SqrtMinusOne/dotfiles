@@ -18,6 +18,10 @@ if command -v termux-setup-storage > /dev/null; then
 fi
 # Environment:4 ends here
 
+# [[file:Console.org::*Environment][Environment:5]]
+TZ='Asia/Karachi'; export TZ
+# Environment:5 ends here
+
 # [[file:Console.org::*My paths][My paths:1]]
 if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin:$PATH"

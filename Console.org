@@ -35,6 +35,11 @@ if command -v termux-setup-storage > /dev/null; then
     [[ -f ~/.android_profile ]] && . ~/.android_profile
 fi
 #+end_src
+
+Timezone
+#+begin_src sh
+TZ='Asia/Karachi'; export TZ
+#+end_src
 ** My paths
 My script folders
 #+begin_src sh
