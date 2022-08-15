@@ -1869,14 +1869,6 @@ Returns (<buffer> . <workspace-index>) or nil."
    'latex-mode
    my/latex-section-snippets))
 
-(use-package ivy-bibtex
-  :commands (ivy-bibtex)
-  :straight t
-  :init
-  (my-leader-def "fB" 'ivy-bibtex))
-
-(add-hook 'bibtex-mode 'smartparens-mode)
-
 (defun my/list-sty ()
   (reverse
    (sort
@@ -2462,7 +2454,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight t)
 
 (use-package org
-  :straight t
+  :straight (:type built-in)
   :if (not my/remote-server)
   :defer t
   :init
@@ -2504,14 +2496,16 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight (org-contrib
              :type git
              :repo "https://git.sr.ht/~bzg/org-contrib"
-             :files (:defaults (:exclude "lisp/org-contacts.el"))
              :build t)
   :after (org)
   :if (not my/remote-server)
   :config
   (require 'ox-extra)
-  (require 'ol-notmuch)
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
+
+(use-package ol-notmuch
+  :straight t
+  :after (org))
 
 (with-eval-after-load 'org
   (require 'org-tempo)
@@ -2848,9 +2842,29 @@ Returns (<buffer> . <workspace-index>) or nil."
    "C-c t A" #'org-transclusion-add-all
    "C-c t t" #'org-transclusion-mode))
 
+(defun my/update-org-agenda ()
+  (interactive)
+  (let ((project-files
+         (mapcar
+          (lambda (f) (format "projects/%s" f))
+          (seq-filter
+           (lambda (f) (not (member f '("." ".."))))
+           (directory-files
+            (concat org-directory "/projects"))))))
+    (setq org-agenda-files
+          `("inbox.org"
+            ,@project-files))
+    (setq org-refile-targets
+          `(,@(mapcar
+               (lambda (f) `(,f . (:level . 2)))
+               project-files)
+            ,@(mapcar
+               (lambda (f) `(,f . (:tag . "refile")))
+               project-files)))))
+
 (with-eval-after-load-norem 'org
   (setq org-roam-directory (concat org-directory "/roam"))
-  (setq org-agenda-files '("inbox.org"))
+  (my/update-org-agenda)
   ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
   )
 
@@ -2860,7 +2874,6 @@ Returns (<buffer> . <workspace-index>) or nil."
   "c" 'org-capture
   "a" 'org-agenda)
 
-(setq org-refile-targets '())
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 
@@ -2922,6 +2935,38 @@ Returns (<buffer> . <workspace-index>) or nil."
                      ((org-agenda-overriding-header "Waitlist")
                       (org-agenda-hide-tags-regexp "waitlist")
                       (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
+
+(use-package org-ref
+  :straight (:files (:defaults (:exclude "*helm*")))
+  :if (not my/remote-server)
+  :init
+  (setq bibtex-dialect 'biblatex)
+  (setq bibtex-completion-bibliography '("~/Documents/org-mode/library.bib"))
+  (setq bibtex-completion-library-path '("~/Documents/library"))
+  (setq bibtex-completion-notes-path "~/Documents/org-mode/literature-notes")
+  (setq bibtex-completion-display-formats
+        '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}")))
+  (setq bibtex-completion-pdf-open-function
+        (lambda (file)
+          (start-process "dired-open" nil
+                         "xdg-open" (file-truename file))))
+  :after (org)
+  :config
+  (require 'org-ref-ivy)
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c l" #'org-ref-insert-link-hydra/body)
+  (general-define-key
+   :keymaps 'bibtex-mode-map
+   "M-RET" 'org-ref-bibtex-hydra/body))
+
+(use-package ivy-bibtex
+  :commands (ivy-bibtex)
+  :straight t
+  :init
+  (my-leader-def "fB" 'ivy-bibtex))
+
+(add-hook 'bibtex-mode 'smartparens-mode)
 
 (use-package org-journal
   :straight t
@@ -3018,6 +3063,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (setq org-roam-file-extensions '("org"))
   (setq org-roam-v2-ack t)
   (setq orb-insert-interface 'ivy-bibtex)
+  (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
   :config
   (org-roam-setup)
   (require 'org-roam-protocol))
@@ -3054,7 +3100,7 @@ Returns (<buffer> . <workspace-index>) or nil."
     :keymap 'org-mode-map
     :infix "or"
     "t" 'org-roam-tag-add
-    "T" 'org-toam-tag-remove
+    "T" 'org-roam-tag-remove
     "s" 'org-roam-db-autosync-mode)
   (general-define-key
    :keymap 'org-mode-map
@@ -3068,6 +3114,57 @@ Returns (<buffer> . <workspace-index>) or nil."
   ;; :hook (org-roam . org-roam-ui-mode)
   :init
   (my-leader-def "oru" #'org-roam-ui-mode))
+
+(use-package deft
+  :straight t
+  :if (not my/remote-server)
+  :commands (deft)
+  :after (org)
+  :init
+  (my-leader-def "ord" #'deft)
+  :config
+  (setq deft-directory org-roam-directory)
+  (setq deft-recursive t)
+  (setq deft-use-filter-string-for-filename t)
+  (add-hook 'deft-mode-hook
+            (lambda () (display-line-numbers-mode -1)))
+  (general-define-key
+   :keymaps 'deft-mode-map
+   :states '(normal motion)
+   "q" #'quit-window
+   "r" #'deft-refresh
+   "s" #'deft-filter
+   "d" #'deft-filter-clear
+   "y" #'deft-filter-yank
+   "t" #'deft-toggle-incremental-search
+   "o" #'deft-toggle-sort-method))
+
+(setq deft-strip-summary-regexp
+      (rx (or
+           (: ":PROPERTIES:" (* anything) ":END:")
+           (: "#+" (+ alnum) ":" (* nonl))
+           (regexp "[\n\t]"))))
+
+(defun my/deft-parse-summary-around (fun contents title)
+  (funcall fun (org-link-display-format contents) title))
+
+(with-eval-after-load 'deft
+  (advice-add #'deft-parse-summary :around #'my/deft-parse-summary-around))
+
+(defun my/deft-parse-title (file contents)
+  (with-temp-buffer
+    (insert contents)
+    (goto-char (point-min))
+    (if (search-forward-regexp (rx (| "#+title:" "#+TITLE:")) nil t)
+        (string-trim (buffer-substring-no-properties (point) (line-end-position)))
+      file)))
+
+(defun my/deft-parse-title-around (fun file contents)
+  (or (my/deft-parse-title file contents)
+      (funcall fun file contents)))
+
+(with-eval-after-load 'deft
+  (advice-add #'deft-parse-title :around #'my/deft-parse-title-around))
 
 (setq my/git-diff-status
       '(("A" . added)
@@ -3257,50 +3354,11 @@ Returns (<buffer> . <workspace-index>) or nil."
   (org-roam-capture- :node (org-roam-node-create)
                      :templates `(,my/org-review-capture-template)))
 
-(use-package org-ref
-  :straight (:files (:defaults (:exclude "*helm*")))
-  :if (not my/remote-server)
-  :init
-  (setq org-ref-completion-library 'org-ref-ivy-cite)
-  (setq bibtex-dialect 'biblatex)
-  (setq org-ref-default-bibliography '("~/Documents/org-mode/bibliography.bib"))
-  (setq reftex-default-bibliography org-ref-default-bibliography)
-  (setq bibtex-completion-bibliography org-ref-default-bibliography)
-  :after (org)
-  :config
-  (general-define-key
-   :keymaps 'org-mode-map
-   "C-c l" #'org-ref-insert-link-hydra/body)
-  (general-define-key
-   :keymaps 'bibtex-mode-map
-   "M-RET" 'org-ref-bibtex-hydra/body)
-   (setq bibtex-completion-display-formats
-     '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}"))))
-
-(defun my/org-ref-select-bibliograhy ()
-  (interactive)
-  (setq-local org-ref-default-bibliography
-              `(,(read-file-name "Bibliograhy: " nil nil t)))
-  (setq-local reftex-default-bibliography org-ref-default-bibliography)
-  (setq-local bibtex-completion-bibliography org-ref-default-bibliography))
-
-(use-package org-roam-bibtex
-  :straight (:host github :repo "org-roam/org-roam-bibtex")
-  :after (org-roam org-ref)
-  :disabled
-  :config
-  (org-roam-bibtex-mode))
-
 (use-package org-contacts
-  :straight (:type git
-                   :repo "https://git.sr.ht/~bzg/org-contrib"
-                   :files ("lisp/org-contacts.el")
-                   :build (:not compile))
-  :after (notmuch)
+  :straight (:type git :repo "https://repo.or.cz/org-contacts.git")
   :if (not my/remote-server)
-  :commands (org-contacts)
+  :commands (org-contacts org-contacts-db)
   :config
-  (require 'cl)
   (setq org-contacts-files (list
                             (concat org-directory "/contacts.org"))))
 

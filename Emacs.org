@@ -2570,16 +2570,6 @@ References:
   <<init-math-latex-snippets>>
   <<init-section-latex-snippets>>)
 #+end_src
-*** BibTeX
-#+begin_src emacs-lisp
-(use-package ivy-bibtex
-  :commands (ivy-bibtex)
-  :straight t
-  :init
-  (my-leader-def "fB" 'ivy-bibtex))
-
-(add-hook 'bibtex-mode 'smartparens-mode)
-#+end_src
 *** Import *.sty
 A function to import =.sty= files to the LaTeX document.
 
@@ -3380,11 +3370,11 @@ References:
 - [[https://orgmode.org/manual/][Manual]]
 
 ** Installation & basic settings
-Use the built-in org mode.
+Use the built-in org mode (=:type built-in=).
 
 #+begin_src emacs-lisp :noweb yes
 (use-package org
-  :straight t
+  :straight (:type built-in)
   :if (not my/remote-server)
   :defer t
   :init
@@ -3435,23 +3425,28 @@ Another way to encrypt org files is to save them with extension =.org.gpg=. That
 *** org-contrib
 =org-contrib= is a package with various additions to Org. I use the following:
 - =ox-extra= - extensions for org export
-- =ol-notmuch= - integration with notmuch
 
-Excluding =org-contacts= from here because byte compilation breaks it for some reason.
+This used to have =org-contacts= and =ol-notmuch= at some point, but they've been migrated to separate repos since.
 
 #+begin_src emacs-lisp
 (use-package org-contrib
   :straight (org-contrib
              :type git
              :repo "https://git.sr.ht/~bzg/org-contrib"
-             :files (:defaults (:exclude "lisp/org-contacts.el"))
              :build t)
   :after (org)
   :if (not my/remote-server)
   :config
   (require 'ox-extra)
-  (require 'ol-notmuch)
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
+#+end_src
+*** ol-notmuch
+[[https://git.sr.ht/~tarsius/ol-notmuch][ol-notmuch]] is a package that adds Org links to notmuch messages.
+
+#+begin_src emacs-lisp
+(use-package ol-notmuch
+  :straight t
+  :after (org))
 #+end_src
 *** org-tempo
 =org-tempo= is a convinient package that provides snippets for various org blocks.
@@ -3954,11 +3949,31 @@ Some inspiration:
 - [[https://www.alexeyshmalko.com/how-i-note/][Alexey Shmalko: How I note]]
 - [[https://rgoswami.me/posts/org-note-workflow/][Rohit Goswami: An Orgmode Note Workflow]]
 
-Used files
+Used files:
 #+begin_src emacs-lisp
+(defun my/update-org-agenda ()
+  (interactive)
+  (let ((project-files
+         (mapcar
+          (lambda (f) (format "projects/%s" f))
+          (seq-filter
+           (lambda (f) (not (member f '("." ".."))))
+           (directory-files
+            (concat org-directory "/projects"))))))
+    (setq org-agenda-files
+          `("inbox.org"
+            ,@project-files))
+    (setq org-refile-targets
+          `(,@(mapcar
+               (lambda (f) `(,f . (:level . 2)))
+               project-files)
+            ,@(mapcar
+               (lambda (f) `(,f . (:tag . "refile")))
+               project-files)))))
+
 (with-eval-after-load-norem 'org
   (setq org-roam-directory (concat org-directory "/roam"))
-  (setq org-agenda-files '("inbox.org"))
+  (my/update-org-agenda)
   ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
   )
 #+end_src
@@ -3974,7 +3989,6 @@ Hotkeys
 
 Refile targets
 #+begin_src emacs-lisp
-(setq org-refile-targets '())
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 #+end_src
@@ -4076,7 +4090,7 @@ Also, trello files are huge and have a lot of information and tasks which do not
 *** Custom agendas
 Some custom agendas to fit my workflow.
 
-Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I still want to see them in agenda, so I use =org-ql-block= from =org-ql=.
++Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I still want to see them in agenda, so I use =org-ql-block= from =org-ql=.+
 
 #+begin_src emacs-lisp
 (defun my/org-scheduled-get-time ()
@@ -4101,6 +4115,59 @@ Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I sti
                      ((org-agenda-overriding-header "Waitlist")
                       (org-agenda-hide-tags-regexp "waitlist")
                       (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
+#+end_src
+*** Bibliography
+I'm currently trying to use [[https://www.zotero.org/][Zotero]] to manage my bibliograhy.
+
+There is a Zotero extension called [[https://retorque.re/zotero-better-bibtex/][better bibtex]], which allows for having one bibtex file that is always syncronized with the library. That comes quite handy for Emacs integration.
+
+**** org-ref
+
+[[https://github.com/jkitchin/org-ref][org-ref]] is an excellent package by John Kitchin that provides support for managing citations and references in Org Mode.
+
+It may have become less relevant since =org-cite= was merged into plain Org, but =org-ref= is still just as usable.
+
+As of now, this package loads Helm on start. To avoid this, I have to exclude Helm from the =Package-requires= in the [[file:.emacs.d/straight/repos/org-ref/org-ref.el][org-ref.el]] file. I haven't found a way to do this without modifying the package source yet.
+
+There's a package called [[https://github.com/org-roam/org-roam-bibtex][org-roam-bibtex]] that allows to keep literature notes in [[https://github.com/org-roam/org-roam][org-roam]] and access them from =org-ref=, but as for now I store literature notes separately, as advised by Ahrens Sönke in his excellent book "How to take smart notes".
+
+#+begin_src emacs-lisp
+(use-package org-ref
+  :straight (:files (:defaults (:exclude "*helm*")))
+  :if (not my/remote-server)
+  :init
+  (setq bibtex-dialect 'biblatex)
+  (setq bibtex-completion-bibliography '("~/Documents/org-mode/library.bib"))
+  (setq bibtex-completion-library-path '("~/Documents/library"))
+  (setq bibtex-completion-notes-path "~/Documents/org-mode/literature-notes")
+  (setq bibtex-completion-display-formats
+        '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}")))
+  (setq bibtex-completion-pdf-open-function
+        (lambda (file)
+          (start-process "dired-open" nil
+                         "xdg-open" (file-truename file))))
+  :after (org)
+  :config
+  (require 'org-ref-ivy)
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c l" #'org-ref-insert-link-hydra/body)
+  (general-define-key
+   :keymaps 'bibtex-mode-map
+   "M-RET" 'org-ref-bibtex-hydra/body))
+#+end_src
+
+**** ivy-bibtex
+[[https://github.com/tmalsburg/helm-bibtex][ivy-bibtex]] is an Ivy interface to bibtex. It uses the same configuration variables as =org-ref=, or rather, both packages use variables from the built-in =bibtex.el=
+
+#+begin_src emacs-lisp
+(use-package ivy-bibtex
+  :commands (ivy-bibtex)
+  :straight t
+  :init
+  (my-leader-def "fB" 'ivy-bibtex))
+
+(add-hook 'bibtex-mode 'smartparens-mode)
 #+end_src
 *** Org Journal
 [[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining a journal in org mode. I want(ed) to have its entries separate from my knowledge base.
@@ -4207,7 +4274,9 @@ And here's a function that creates a drawer with such information. At the moment
 *** Org Roam
 [[https://github.com/org-roam/org-roam][org-roam]] is a plain-text knowledge database.
 
-I tried to do various things with Org Roam, like [[https://systemcrafters.net/build-a-second-brain-in-emacs/5-org-roam-hacks/][managing projects]], but ended up prefferring plain Org for most of the stuff.
+Things I tried with Org Roam:
+- Managing projects. Ended up preferring plain Org.
+- Writing journal. =org-journal= and =org-journal-tags= seem to be a better fit for my workflow.
 
 **** Basic package configuration
 | Guix dependency       |
@@ -4241,6 +4310,7 @@ References:
   (setq org-roam-file-extensions '("org"))
   (setq org-roam-v2-ack t)
   (setq orb-insert-interface 'ivy-bibtex)
+  (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
   :config
   (org-roam-setup)
   (require 'org-roam-protocol))
@@ -4287,7 +4357,7 @@ I used to have multiple categories of nodes in Org Roam (projects, dailies, etc)
     :keymap 'org-mode-map
     :infix "or"
     "t" 'org-roam-tag-add
-    "T" 'org-toam-tag-remove
+    "T" 'org-roam-tag-remove
     "s" 'org-roam-db-autosync-mode)
   (general-define-key
    :keymap 'org-mode-map
@@ -4323,6 +4393,71 @@ Don't forget to run the following after setup:
 #+begin_src bash :tangle no
 xdg-mime default org-protocol.desktop x-scheme-handler/org-protocol
 #+end_src
+**** Deft
+[[https://github.com/jrblevin/deft][Deft]] is an Emacs package to quickly find notes. It seems quite useful to look for =org-roam= notes based on their contents.
+
+#+begin_src emacs-lisp
+(use-package deft
+  :straight t
+  :if (not my/remote-server)
+  :commands (deft)
+  :after (org)
+  :init
+  (my-leader-def "ord" #'deft)
+  :config
+  (setq deft-directory org-roam-directory)
+  (setq deft-recursive t)
+  (setq deft-use-filter-string-for-filename t)
+  (add-hook 'deft-mode-hook
+            (lambda () (display-line-numbers-mode -1)))
+  (general-define-key
+   :keymaps 'deft-mode-map
+   :states '(normal motion)
+   "q" #'quit-window
+   "r" #'deft-refresh
+   "s" #'deft-filter
+   "d" #'deft-filter-clear
+   "y" #'deft-filter-yank
+   "t" #'deft-toggle-incremental-search
+   "o" #'deft-toggle-sort-method))
+#+end_src
+
+The default deft view does not look that great because of various Roam metadata. To improve that, we can tweak =deft-strip-summary-regexp=:
+#+begin_src emacs-lisp
+(setq deft-strip-summary-regexp
+      (rx (or
+           (: ":PROPERTIES:" (* anything) ":END:")
+           (: "#+" (+ alnum) ":" (* nonl))
+           (regexp "[\n\t]"))))
+#+end_src
+
+And advise =deft-parse-summary= to filter out Org links:
+#+begin_src emacs-lisp
+(defun my/deft-parse-summary-around (fun contents title)
+  (funcall fun (org-link-display-format contents) title))
+
+(with-eval-after-load 'deft
+  (advice-add #'deft-parse-summary :around #'my/deft-parse-summary-around))
+#+end_src
+
+Advise =deft-parse-title= to be able to extract title from the Org property:
+#+begin_src emacs-lisp
+(defun my/deft-parse-title (file contents)
+  (with-temp-buffer
+    (insert contents)
+    (goto-char (point-min))
+    (if (search-forward-regexp (rx (| "#+title:" "#+TITLE:")) nil t)
+        (string-trim (buffer-substring-no-properties (point) (line-end-position)))
+      file)))
+
+(defun my/deft-parse-title-around (fun file contents)
+  (or (my/deft-parse-title file contents)
+      (funcall fun file contents)))
+
+(with-eval-after-load 'deft
+  (advice-add #'deft-parse-title :around #'my/deft-parse-title-around))
+#+end_src
+
 *** Review workflow
 UPD <2022-03-27 Sun>. Out of action for now
 
@@ -4567,74 +4702,17 @@ A template looks like this:
   (org-roam-capture- :node (org-roam-node-create)
                      :templates `(,my/org-review-capture-template)))
 #+end_src
-*** org-ref
-| Type | Description                     |
-|------+---------------------------------|
-| TODO | Figure out how not to load Helm |
-
-[[https://github.com/jkitchin/org-ref][org-ref]] is a package that provides support for various citations & references in Org mode.
-
-Useful to use BibTeX citations in LaTeX export.
-
-As of now, this package loads Helm on start. To avoid this, I have to exclude Helm from the =Package-requires= in the [[file:.emacs.d/straight/repos/org-ref/org-ref.el][org-ref.el]] file. I haven't found a way to do this without modifying the package source yet.
-#+begin_src emacs-lisp
-(use-package org-ref
-  :straight (:files (:defaults (:exclude "*helm*")))
-  :if (not my/remote-server)
-  :init
-  (setq org-ref-completion-library 'org-ref-ivy-cite)
-  (setq bibtex-dialect 'biblatex)
-  (setq org-ref-default-bibliography '("~/Documents/org-mode/bibliography.bib"))
-  (setq reftex-default-bibliography org-ref-default-bibliography)
-  (setq bibtex-completion-bibliography org-ref-default-bibliography)
-  :after (org)
-  :config
-  (general-define-key
-   :keymaps 'org-mode-map
-   "C-c l" #'org-ref-insert-link-hydra/body)
-  (general-define-key
-   :keymaps 'bibtex-mode-map
-   "M-RET" 'org-ref-bibtex-hydra/body)
-   (setq bibtex-completion-display-formats
-     '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}"))))
-
-(defun my/org-ref-select-bibliograhy ()
-  (interactive)
-  (setq-local org-ref-default-bibliography
-              `(,(read-file-name "Bibliograhy: " nil nil t)))
-  (setq-local reftex-default-bibliography org-ref-default-bibliography)
-  (setq-local bibtex-completion-bibliography org-ref-default-bibliography))
-#+end_src
-
-*** org-roam-bibtex
-Integration with bibtex and org-ref.
-
-There are some problems with org roam v2, so I disabled it as of now. I will probably use another way of managing bibliography notes anyway.
-
-#+begin_src emacs-lisp
-(use-package org-roam-bibtex
-  :straight (:host github :repo "org-roam/org-roam-bibtex")
-  :after (org-roam org-ref)
-  :disabled
-  :config
-  (org-roam-bibtex-mode))
-#+end_src
 *** org-contacts
-=org-contacts= is the =org-contrib= package to store contacts in an org file. The package is somewhat outdated, for instance it uses =lexical-let= so I have to =(require 'cl)=.
+=org-contacts= is a package to store contacts in an org file.
 
-I think it will take a little more work to tune the package exactly to my liking, but it seems to serve the original function just fine.
+It seems like the package has been somewhat revived in the recent months. It used things like =lexical-let= when I first found it.
 
 #+begin_src emacs-lisp
 (use-package org-contacts
-  :straight (:type git
-                   :repo "https://git.sr.ht/~bzg/org-contrib"
-                   :files ("lisp/org-contacts.el")
-                   :build (:not compile))
-  :after (notmuch)
+  :straight (:type git :repo "https://repo.or.cz/org-contacts.git")
   :if (not my/remote-server)
-  :commands (org-contacts)
+  :commands (org-contacts org-contacts-db)
   :config
-  (require 'cl)
   (setq org-contacts-files (list
                             (concat org-directory "/contacts.org"))))
 #+end_src
