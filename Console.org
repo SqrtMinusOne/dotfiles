@@ -38,7 +38,7 @@ fi
 
 Timezone
 #+begin_src sh
-TZ='Asia/Karachi'; export TZ
+# TZ='Asia/Karachi'; export TZ
 #+end_src
 ** My paths
 My script folders
