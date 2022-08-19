@@ -5134,15 +5134,14 @@ by the `my/elfeed-youtube-subtitles' function."
   (my-leader-def "ag" 'guix))
 
 (use-package pomm
-  :straight (:host github :repo "SqrtMinusOne/pomm.el" :files (:defaults "resources"))
+  :straight t
   ;; :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
-  :commands (pomm)
+  :commands (pomm pomm-third-time)
   :init
-  (my-leader-def "ap" #'pomm)
+  (my-leader-def "ap" #'pomm-third-time)
   :config
   (setq alert-default-style 'libnotify)
-  (add-hook 'pomm-on-tick-hook 'pomm-update-mode-line-string)
-  (add-hook 'pomm-on-status-changed-hook 'pomm-update-mode-line-string))
+  (pomm-mode-line-mode))
 
 (use-package hledger-mode
   :straight t
