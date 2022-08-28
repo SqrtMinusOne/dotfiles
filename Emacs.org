@@ -314,27 +314,30 @@ References:
 A function to dump keybindings starting with a prefix to a buffer in a tree-like form.
 
 #+begin_src emacs-lisp
-(defun my/dump-bindings-recursive (prefix &optional level)
+(defun my/dump-bindings-recursive (prefix &optional level buffer)
   (dolist (key (which-key--get-bindings (kbd prefix)))
-    (when level
-      (insert (make-string level ? )))
-    (insert (apply #'format "%s%s%s\n" key))
+    (with-current-buffer buffer
+      (when level
+        (insert (make-string level ? )))
+      (insert (apply #'format "%s%s%s\n" key)))
     (when (string-match-p
            (rx bos "+" (* nonl))
            (substring-no-properties (elt key 2)))
       (my/dump-bindings-recursive
        (concat prefix " " (substring-no-properties (car key)))
-       (+ 2 (or level 0))))))
+       (+ 2 (or level 0))
+       buffer))))
 
 (defun my/dump-bindings (prefix)
   "Dump keybindings starting with PREFIX in a tree-like form."
   (interactive "sPrefix: ")
-  (with-current-buffer (get-buffer-create "bindings")
-    (point-max)
-    (erase-buffer)
-    (save-excursion
-      (my/dump-bindings-recursive prefix)))
-  (switch-to-buffer-other-window "bindings"))
+  (let ((buffer (get-buffer-create "bindings")))
+    (with-current-buffer buffer
+      (erase-buffer))
+    (my/dump-bindings-recursive prefix 0 buffer)
+    (with-current-buffer buffer
+      (goto-char (point-min)))
+    (switch-to-buffer-other-window buffer)))
 #+end_src
 *** Evil
 An entire ecosystem of packages that emulates the main features of Vim. Probably the best vim emulator out there.
@@ -1697,6 +1700,7 @@ References:
   (setq doom-modeline-hud t)
   (setq doom-modeline-persp-icon nil)
   (setq doom-modeline-persp-name nil)
+  (setq doom-modeline-display-misc-in-all-mode-lines nil)
   :config
   (setq doom-modeline-minor-modes nil)
   (setq doom-modeline-irc nil)
@@ -3485,9 +3489,7 @@ References:
 (use-package jupyter
   :straight t
   :after (org)
-  :if (not my/remote-server)
-  :init
-  (my-leader-def "ar" 'jupyter-run-repl))
+  :if (not my/remote-server))
 #+end_src
 
 Refresh kernelspecs.
@@ -3955,7 +3957,9 @@ Used files:
   (interactive)
   (let ((project-files
          (mapcar
-          (lambda (f) (format "projects/%s" f))
+          (lambda (f) (concat
+                       org-directory "/projects/"
+                       f))
           (seq-filter
            (lambda (f) (not (member f '("." ".."))))
            (directory-files
@@ -3965,7 +3969,7 @@ Used files:
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
-               (lambda (f) `(,f . (:level . 2)))
+               (lambda (f) `(,f . (:level . 1)))
                project-files)
             ,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
@@ -4361,8 +4365,7 @@ I used to have multiple categories of nodes in Org Roam (projects, dailies, etc)
     "s" 'org-roam-db-autosync-mode)
   (general-define-key
    :keymap 'org-mode-map
-   "C-c i" 'org-id-get-create
-   "C-c l o" 'org-roam-node-insert))
+   "C-c i" 'org-roam-node-insert))
 #+end_src
 **** Org Roam UI
 A browser frontend to visualize a Roam directory in a form of a graph.
@@ -5033,16 +5036,18 @@ A function to open a file from =org-directory=, excluding a few directories like
 #+begin_src emacs-lisp
 (defun my/org-file-open ()
   (interactive)
-  (let* ((default-directory org-directory)
-         (project-files
-          (seq-filter
-           (lambda (f)
-             (and
-              (string-match-p (rx (* nonl) ".org" eos) f)
-              (not (string-match-p (rx (| "journal" "roam" "review" "archive" "figured-out")) f))))
-           (projectile-current-project-files))))
+  (let* ((files
+          (append
+           '("inbox.org" "contacts.org")
+           (mapcar (lambda (f)
+                     (concat "projects/" f))
+                   (seq-filter
+                    (lambda (f) (not (member f '("." ".."))))
+                    (directory-files
+                     (concat org-directory "/projects")))))))
     (find-file
-     (concat org-directory "/" (completing-read "Org file: " project-files)))))
+     (concat org-directory "/"
+             (completing-read "Org file: " files)))))
 
 (my-leader-def
   "o o" 'my/org-file-open)
@@ -5382,9 +5387,10 @@ Display icons for files.
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode))))
   :config
-  (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
-  (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice)
-  (advice-add 'dired-kill-subdir :around #'all-the-icons-dired--refresh-advice))
+  ;; (advice-add 'dired-add-entry :around #'all-the-icons-dired--propertize)
+  ;; (advice-add 'dired-remove-entry :around #'all-the-icons-dired--propertize)
+  ;; (advice-add 'dired-kill-subdir :around #'all-the-icons-dired--propertize)
+  )
 #+end_src
 
 Provides stuff like =dired-open-xdg=
@@ -5732,7 +5738,7 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
   :if (not my/slow-ssh)
   :straight (eshell-info-banner :type git
                                 :host github
-                                :repo "SqrtMinusOne/eshell-info-banner.el")
+                                :repo "phundrak/eshell-info-banner.el")
   :hook (eshell-banner-load . eshell-info-banner-update-banner)
   :config
   (setq eshell-info-banner-filter-duplicate-partitions t)
@@ -6469,6 +6475,94 @@ by the `my/elfeed-youtube-subtitles' function."
 #+end_src
 
 Keep in mind that this function has to be launched inside the buffer opened by the =my/elfeed-youtube-subtitles= function.
+*** Podcast transcripts
+Occasionally I want to have a text version of a podcast, for instance to take some notes.
+
+In order do do that, I've made a [[https://github.com/SqrtMinusOne/podcasts-vosk][small script]] that uses the [[https://alphacephei.com/vosk/][Vosk speech recognition toolkit]] to extract subtitles from an audio file. Here's a function to invoke that script.
+
+#+begin_src emacs-lisp
+(defun my/invoke-vosk (input output)
+  (interactive
+   (list
+    (read-file-name "Input file: " nil nil t)
+    (read-file-name "SRT file: ")))
+  (let* ((buffer (generate-new-buffer "vosk"))
+         (default-directory "/home/pavel/Code/system-crafting/podcasts-vosk/")
+         (proc (start-process
+                "vosk_api" buffer
+                "/home/pavel/Code/system-crafting/podcasts-vosk/venv/bin/python"
+                "main.py" "--file-path" input "--model-path" "./model-small"
+                "--save-path" output "--words-per-line" "14")))
+    (set-process-sentinel
+     proc
+     (lambda (process _msg)
+       (let ((status (process-status process))
+             (code (process-exit-status process)))
+         (cond ((and (eq status 'exit) (= code 0))
+                (message "SRT conversion completed"))
+               ((or (and (eq status 'exit) (> code 0))
+                    (eq status 'signal))
+                (let ((err (with-current-buffer (process-buffer process)
+                             (buffer-string))))
+                  (kill-buffer (process-buffer process))
+                  (user-error "Error in Vosk API: %s" err)))))))))
+#+end_src
+
+In order to use that, we need to download the file first. So here's a function that extracts the file name from the URL:
+#+begin_src emacs-lisp
+(defun my/get-file-name-from-url (url)
+  (string-match (rx "/" (+ (not "/")) (? "/") eos) url)
+  (let ((match (match-string 0 url)))
+    (unless match
+      (user-error "No file name found. Somehow"))
+    ;; Remove the first /
+    (setq match (substring match 1))
+    ;; Remove the trailing /
+    (when (string-match-p (rx "/" eos) match)
+      (setq match (substring match 0 (1- (length match)))))
+    match))
+#+end_src
+
+Now can use that to save the file and invoke the =my/invoke-vosk= function.
+#+begin_src emacs-lisp
+(defun my/elfeed-vosk-get-transcript-new (url srt-path)
+  (let* ((file-name (my/get-file-name-from-url url))
+         (file-path (format "/tmp/%s" file-name)))
+    (message "Download started")
+    (request url
+      :type "GET"
+      :encoding 'binary
+      :complete
+      (cl-function
+       (lambda (&key data &allow-other-keys)
+         (let ((coding-system-for-write 'binary)
+               (write-region-annotate-functions nil)
+               (write-region-post-annotation-function nil))
+           (write-region data nil file-name nil :silent))
+         (message "Conversion started")
+         (my/invoke-vosk file-path srt-path)))
+      :error
+      (cl-function
+       (lambda (&key error-thrown &allow-other-keys)
+         (message "Error!: %S" error-thrown))))))
+#+end_src
+
+And the final entrypoint, that opens up the SRT file is it's available, and queues the download if it's not.
+
+#+begin_src emacs-lisp
+(defun my/elfeed-vosk-get-transcript (entry)
+  (interactive (list elfeed-show-entry))
+  (let ((enclosure (caar (elfeed-entry-enclosures entry))))
+    (unless enclosure
+      (user-error "No enclosure found!"))
+    (let ((srt-path (concat my/elfeed-srt-dir
+                            (elfeed-ref-id (elfeed-entry-content entry))
+                            ".srt")))
+      (if (file-exists-p srt-path)
+          (find-file-other-window srt-path)
+        (my/elfeed-vosk-get-transcript-new enclosure srt-path)))))
+#+end_src
+
 ** Internet & Multimedia
 *** Notmuch
 My notmuch config now resides in [[file:Mail.org][Mail.org]].
@@ -6802,6 +6896,16 @@ And here is the same kind of integration with EMMS as in the elfeed setup:
   (interactive)
   (emms-add-ytel (ytel-get-current-video)))
 #+end_src
+
+Also, a function to copy a URL to the video under cursor.
+#+begin_src emacs-lisp
+(defun my/ytel-kill-url ()
+  (interactive)
+  (kill-new
+   (concat
+    "https://www.youtube.com/watch?v="
+    (ytel-video-id (ytel-get-current-video)))))
+#+end_src
 *** wallabag
 [[https://github.com/wallabag/wallabag][Wallabag]] is a self-hosted read-it-later project. I'm not yet sold on integrating it in my workflow, but let's keep it here for now.
 
@@ -6981,6 +7085,15 @@ References:
   "q" 'google-translate-query-translate
   "Q" 'google-translate-query-translate-reverse
   "t" 'google-translate-smooth-translate)
+#+end_src
+*** Reverso
+#+begin_src emacs-lisp
+(use-package reverso
+  :straight (:host github :repo "SqrtMinusOne/reverso.el")
+  :init
+  (my-leader-def "ar" #'reverso)
+  :config
+  (setq reverso-languages '(russian english german)))
 #+end_src
 ** Reading documentation
 *** tldr
@@ -7356,15 +7469,6 @@ Watch out if you are using EXWM.
                       (zone))))
 #+end_src
 
-Also, a function to copy a URL to the video under cursor.
-#+begin_src emacs-lisp
-(defun my/ytel-kill-url ()
-  (interactive)
-  (kill-new
-   (concat
-    "https://www.youtube.com/watch?v="
-    (ytel-video-id (ytel-get-current-video)))))
-#+end_src
 * Guix settings
 | Guix dependency     | Description                   |
 |---------------------+-------------------------------|
@@ -7380,6 +7484,6 @@ Also, a function to copy a URL to the video under cursor.
 
 #+begin_src scheme :tangle .config/guix/manifests/emacs.scm :noweb yes
 (specifications->manifest
- '("emacs-native-comp"
+ '("emacs"
    <<packages()>>))
 #+end_src

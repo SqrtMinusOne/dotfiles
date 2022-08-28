@@ -130,27 +130,30 @@
                       :weight 'bold)
   :straight t)
 
-(defun my/dump-bindings-recursive (prefix &optional level)
+(defun my/dump-bindings-recursive (prefix &optional level buffer)
   (dolist (key (which-key--get-bindings (kbd prefix)))
-    (when level
-      (insert (make-string level ? )))
-    (insert (apply #'format "%s%s%s\n" key))
+    (with-current-buffer buffer
+      (when level
+        (insert (make-string level ? )))
+      (insert (apply #'format "%s%s%s\n" key)))
     (when (string-match-p
            (rx bos "+" (* nonl))
            (substring-no-properties (elt key 2)))
       (my/dump-bindings-recursive
        (concat prefix " " (substring-no-properties (car key)))
-       (+ 2 (or level 0))))))
+       (+ 2 (or level 0))
+       buffer))))
 
 (defun my/dump-bindings (prefix)
   "Dump keybindings starting with PREFIX in a tree-like form."
   (interactive "sPrefix: ")
-  (with-current-buffer (get-buffer-create "bindings")
-    (point-max)
-    (erase-buffer)
-    (save-excursion
-      (my/dump-bindings-recursive prefix)))
-  (switch-to-buffer-other-window "bindings"))
+  (let ((buffer (get-buffer-create "bindings")))
+    (with-current-buffer buffer
+      (erase-buffer))
+    (my/dump-bindings-recursive prefix 0 buffer)
+    (with-current-buffer buffer
+      (goto-char (point-min)))
+    (switch-to-buffer-other-window buffer)))
 
 (use-package evil
   :straight t
@@ -1058,6 +1061,7 @@ influence of C1 on the result."
   (setq doom-modeline-hud t)
   (setq doom-modeline-persp-icon nil)
   (setq doom-modeline-persp-name nil)
+  (setq doom-modeline-display-misc-in-all-mode-lines nil)
   :config
   (setq doom-modeline-minor-modes nil)
   (setq doom-modeline-irc nil)
@@ -2527,9 +2531,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package jupyter
   :straight t
   :after (org)
-  :if (not my/remote-server)
-  :init
-  (my-leader-def "ar" 'jupyter-run-repl))
+  :if (not my/remote-server))
 
 (defun my/jupyter-refresh-kernelspecs ()
   "Refresh Jupyter kernelspecs"
@@ -2846,7 +2848,9 @@ Returns (<buffer> . <workspace-index>) or nil."
   (interactive)
   (let ((project-files
          (mapcar
-          (lambda (f) (format "projects/%s" f))
+          (lambda (f) (concat
+                       org-directory "/projects/"
+                       f))
           (seq-filter
            (lambda (f) (not (member f '("." ".."))))
            (directory-files
@@ -2856,7 +2860,7 @@ Returns (<buffer> . <workspace-index>) or nil."
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
-               (lambda (f) `(,f . (:level . 2)))
+               (lambda (f) `(,f . (:level . 1)))
                project-files)
             ,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
@@ -3104,8 +3108,7 @@ Returns (<buffer> . <workspace-index>) or nil."
     "s" 'org-roam-db-autosync-mode)
   (general-define-key
    :keymap 'org-mode-map
-   "C-c i" 'org-id-get-create
-   "C-c l o" 'org-roam-node-insert))
+   "C-c i" 'org-roam-node-insert))
 
 (use-package org-roam-ui
   :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
@@ -3601,16 +3604,18 @@ With ARG, repeats or can move backward if negative."
 
 (defun my/org-file-open ()
   (interactive)
-  (let* ((default-directory org-directory)
-         (project-files
-          (seq-filter
-           (lambda (f)
-             (and
-              (string-match-p (rx (* nonl) ".org" eos) f)
-              (not (string-match-p (rx (| "journal" "roam" "review" "archive" "figured-out")) f))))
-           (projectile-current-project-files))))
+  (let* ((files
+          (append
+           '("inbox.org" "contacts.org")
+           (mapcar (lambda (f)
+                     (concat "projects/" f))
+                   (seq-filter
+                    (lambda (f) (not (member f '("." ".."))))
+                    (directory-files
+                     (concat org-directory "/projects")))))))
     (find-file
-     (concat org-directory "/" (completing-read "Org file: " project-files)))))
+     (concat org-directory "/"
+             (completing-read "Org file: " files)))))
 
 (my-leader-def
   "o o" 'my/org-file-open)
@@ -3794,9 +3799,10 @@ With ARG, repeats or can move backward if negative."
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode))))
   :config
-  (advice-add 'dired-add-entry :around #'all-the-icons-dired--refresh-advice)
-  (advice-add 'dired-remove-entry :around #'all-the-icons-dired--refresh-advice)
-  (advice-add 'dired-kill-subdir :around #'all-the-icons-dired--refresh-advice))
+  ;; (advice-add 'dired-add-entry :around #'all-the-icons-dired--propertize)
+  ;; (advice-add 'dired-remove-entry :around #'all-the-icons-dired--propertize)
+  ;; (advice-add 'dired-kill-subdir :around #'all-the-icons-dired--propertize)
+  )
 
 (use-package dired-open
   :straight t
@@ -4048,7 +4054,7 @@ With ARG, repeats or can move backward if negative."
   :if (not my/slow-ssh)
   :straight (eshell-info-banner :type git
                                 :host github
-                                :repo "SqrtMinusOne/eshell-info-banner.el")
+                                :repo "phundrak/eshell-info-banner.el")
   :hook (eshell-banner-load . eshell-info-banner-update-banner)
   :config
   (setq eshell-info-banner-filter-duplicate-partitions t)
@@ -4606,6 +4612,77 @@ by the `my/elfeed-youtube-subtitles' function."
   (setq-local subed-mpv-video-file (elfeed-entry-link entry))
   (subed-mpv--play subed-mpv-video-file))
 
+(defun my/invoke-vosk (input output)
+  (interactive
+   (list
+    (read-file-name "Input file: " nil nil t)
+    (read-file-name "SRT file: ")))
+  (let* ((buffer (generate-new-buffer "vosk"))
+         (default-directory "/home/pavel/Code/system-crafting/podcasts-vosk/")
+         (proc (start-process
+                "vosk_api" buffer
+                "/home/pavel/Code/system-crafting/podcasts-vosk/venv/bin/python"
+                "main.py" "--file-path" input "--model-path" "./model-small"
+                "--save-path" output "--words-per-line" "14")))
+    (set-process-sentinel
+     proc
+     (lambda (process _msg)
+       (let ((status (process-status process))
+             (code (process-exit-status process)))
+         (cond ((and (eq status 'exit) (= code 0))
+                (message "SRT conversion completed"))
+               ((or (and (eq status 'exit) (> code 0))
+                    (eq status 'signal))
+                (let ((err (with-current-buffer (process-buffer process)
+                             (buffer-string))))
+                  (kill-buffer (process-buffer process))
+                  (user-error "Error in Vosk API: %s" err)))))))))
+
+(defun my/get-file-name-from-url (url)
+  (string-match (rx "/" (+ (not "/")) (? "/") eos) url)
+  (let ((match (match-string 0 url)))
+    (unless match
+      (user-error "No file name found. Somehow"))
+    ;; Remove the first /
+    (setq match (substring match 1))
+    ;; Remove the trailing /
+    (when (string-match-p (rx "/" eos) match)
+      (setq match (substring match 0 (1- (length match)))))
+    match))
+
+(defun my/elfeed-vosk-get-transcript-new (url srt-path)
+  (let* ((file-name (my/get-file-name-from-url url))
+         (file-path (format "/tmp/%s" file-name)))
+    (message "Download started")
+    (request url
+      :type "GET"
+      :encoding 'binary
+      :complete
+      (cl-function
+       (lambda (&key data &allow-other-keys)
+         (let ((coding-system-for-write 'binary)
+               (write-region-annotate-functions nil)
+               (write-region-post-annotation-function nil))
+           (write-region data nil file-name nil :silent))
+         (message "Conversion started")
+         (my/invoke-vosk file-path srt-path)))
+      :error
+      (cl-function
+       (lambda (&key error-thrown &allow-other-keys)
+         (message "Error!: %S" error-thrown))))))
+
+(defun my/elfeed-vosk-get-transcript (entry)
+  (interactive (list elfeed-show-entry))
+  (let ((enclosure (caar (elfeed-entry-enclosures entry))))
+    (unless enclosure
+      (user-error "No enclosure found!"))
+    (let ((srt-path (concat my/elfeed-srt-dir
+                            (elfeed-ref-id (elfeed-entry-content entry))
+                            ".srt")))
+      (if (file-exists-p srt-path)
+          (find-file-other-window srt-path)
+        (my/elfeed-vosk-get-transcript-new enclosure srt-path)))))
+
 (unless (or my/is-termux my/remote-server)
   (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
     (if (file-exists-p mail-file)
@@ -4819,6 +4896,13 @@ by the `my/elfeed-youtube-subtitles' function."
   (interactive)
   (emms-add-ytel (ytel-get-current-video)))
 
+(defun my/ytel-kill-url ()
+  (interactive)
+  (kill-new
+   (concat
+    "https://www.youtube.com/watch?v="
+    (ytel-video-id (ytel-get-current-video)))))
+
 (use-package wallabag
   :straight (:host github :repo "chenyanming/wallabag.el" :files (:defaults "default.css" "emojis.alist"))
   :commands (wallabag wallabag-add-entry)
@@ -4943,6 +5027,13 @@ by the `my/elfeed-youtube-subtitles' function."
   "q" 'google-translate-query-translate
   "Q" 'google-translate-query-translate-reverse
   "t" 'google-translate-smooth-translate)
+
+(use-package reverso
+  :straight (:host github :repo "SqrtMinusOne/reverso.el")
+  :init
+  (my-leader-def "ar" #'reverso)
+  :config
+  (setq reverso-languages '(russian english german)))
 
 (use-package tldr
   :straight t
@@ -5219,10 +5310,3 @@ by the `my/elfeed-youtube-subtitles' function."
             :action (lambda (elem)
                       (setq zone-programs (vector (cdr elem)))
                       (zone))))
-
-(defun my/ytel-kill-url ()
-  (interactive)
-  (kill-new
-   (concat
-    "https://www.youtube.com/watch?v="
-    (ytel-video-id (ytel-get-current-video)))))
