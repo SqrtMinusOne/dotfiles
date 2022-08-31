@@ -6538,7 +6538,7 @@ Now can use that to save the file and invoke the =my/invoke-vosk= function.
          (let ((coding-system-for-write 'binary)
                (write-region-annotate-functions nil)
                (write-region-post-annotation-function nil))
-           (write-region data nil file-name nil :silent))
+           (write-region data nil file-path nil :silent))
          (message "Conversion started")
          (my/invoke-vosk file-path srt-path)))
       :error
@@ -7339,7 +7339,11 @@ An Emacs package to help managing GNU Guix.
   :straight t
   :commands (guix)
   :init
-  (my-leader-def "ag" 'guix))
+  (my-leader-def "ag" 'guix)
+  (defun geiser-company--setup (&rest args)
+    "A dummy function.")
+  (defvar geiser-repl-company-p nil
+    "A dummy variable."))
 #+end_src
 ** Productivity
 *** pomm

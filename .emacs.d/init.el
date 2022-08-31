@@ -4663,7 +4663,7 @@ by the `my/elfeed-youtube-subtitles' function."
          (let ((coding-system-for-write 'binary)
                (write-region-annotate-functions nil)
                (write-region-post-annotation-function nil))
-           (write-region data nil file-name nil :silent))
+           (write-region data nil file-path nil :silent))
          (message "Conversion started")
          (my/invoke-vosk file-path srt-path)))
       :error
@@ -5222,7 +5222,11 @@ by the `my/elfeed-youtube-subtitles' function."
   :straight t
   :commands (guix)
   :init
-  (my-leader-def "ag" 'guix))
+  (my-leader-def "ag" 'guix)
+  (defun geiser-company--setup (&rest args)
+    "A dummy function.")
+  (defvar geiser-repl-company-p nil
+    "A dummy variable."))
 
 (use-package pomm
   :straight t
