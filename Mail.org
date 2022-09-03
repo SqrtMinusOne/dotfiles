@@ -440,6 +440,14 @@ Root keybindings:
   "m" (my/command-in-persp "notmuch" "mail" 0 (notmuch)))
 #+end_src
 
+#+begin_src emacs-lisp
+(my/persp-add-rule
+  notmuch-hello-mode 0 "mail"
+  notmuch-search-mode 0 "mail"
+  notmuch-tree-mode 0 "mail"
+  notmuch-message-mode 0 "mail")
+#+end_src
+
 #+NAME: root_tags
 | Root tag  | Prefix | Keybinding description |
 |-----------+--------+------------------------|

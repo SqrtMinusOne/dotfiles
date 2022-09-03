@@ -49,6 +49,12 @@
   "" '(:which-key "notmuch")
   "m" (my/command-in-persp "notmuch" "mail" 0 (notmuch)))
 
+(my/persp-add-rule
+  notmuch-hello-mode 0 "mail"
+  notmuch-search-mode 0 "mail"
+  notmuch-tree-mode 0 "mail"
+  notmuch-message-mode 0 "mail")
+
 (setq notmuch-saved-searches
       '((:name "drafts" :query "tag:draft")
         (:name "main (inbox)" :query "tag:main AND tag:inbox")

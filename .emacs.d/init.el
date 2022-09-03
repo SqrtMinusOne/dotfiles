@@ -1123,6 +1123,44 @@ influence of C1 on the result."
    "m" #'my/persp-move-window-and-switch
    "f" #'my/persp-copy-window-and-switch))
 
+(setq my/perspective-assign-alist '())
+
+(defun my/perspective-assign ()
+  (when-let* ((rule (alist-get major-mode my/perspective-assign-alist)))
+    (let ((workspace-index (car rule))
+          (persp-name (cadr rule))
+          (buffer (current-buffer)))
+      (if (fboundp #'perspective-exwm-assign-window)
+          (progn
+            (perspective-exwm-assign-window
+             :workspace-index workspace-index
+             :persp-name persp-name)
+            (when workspace-index
+              (exwm-workspace-switch workspace-index))
+            (when persp-name
+              (persp-switch persp-name)))
+        (with-perspective persp-name
+          (persp-set-buffer buffer))
+        (persp-switch-to-buffer buffer)))))
+
+(add-hook 'after-change-major-mode-hook #'my/perspective-assign)
+
+(defmacro my/persp-add-rule (&rest body)
+  (declare (indent 0))
+  (unless (= (% (length body) 3) 0)
+    (error "Malformed body in my/persp-add-rule"))
+  (let (result)
+    (while body
+      (let ((major-mode (pop body))
+            (workspace-index (pop body))
+            (persp-name (pop body)))
+        (push
+         `(add-to-list 'my/perspective-assign-alist
+                       '(,major-mode . (,workspace-index ,persp-name)))
+         result)))
+    `(progn
+       ,@result)))
+
 (defmacro my/command-in-persp (command-name persp-name workspace-index &rest args)
   `'((lambda ()
        (interactive)
@@ -4118,7 +4156,11 @@ With ARG, repeats or can move backward if negative."
   :if (not my/remote-server)
   :commands (elfeed)
   :init
-  (my-leader-def "ae" (my/command-in-persp "elfeed" "elfeed" 0 (elfeed-summary)))
+  (my-leader-def "ae" #'elfeed-summary)
+  (my/persp-add-rule
+    elfeed-summary-mode 0 "elfeed"
+    elfeed-search-mode 0 "elfeed"
+    elfeed-show-mode 0 "elfeed")
   (setq shr-max-image-proportion 0.5)
   :config
   (setq elfeed-db-directory "~/.elfeed")
@@ -4702,16 +4744,19 @@ by the `my/elfeed-youtube-subtitles' function."
   (my-leader-def
     :infix "as"
     "" '(:which-key "emms")
-    "s" (my/command-in-persp "emms" "EMMS" 0 (emms-smart-browse))
-    "b" 'emms-browser
-    "p" 'emms-pause
-    "q" 'emms-stop
-    "h" 'emms-previous
-    "l" 'emms-next
-    "u" 'emms-player-mpd-connect
-    "ww" 'emms-lyrics
-    "wb" 'emms-lyrics-toggle-display-on-minibuffer
-    "wm" 'emms-lyrics-toggle-display-on-modeline)
+    "s" #'emms-smart-browse
+    "b" #'emms-browser
+    "p" #'emms-pause
+    "q" #'emms-stop
+    "h" #'emms-previous
+    "l" #'emms-next
+    "u" #'emms-player-mpd-connect
+    "ww" #'emms-lyrics
+    "wb" #'emms-lyrics-toggle-display-on-minibuffer
+    "wm" #'emms-lyrics-toggle-display-on-modeline)
+  (my/persp-add-rule
+    emms-browser-mode 0 "EMMS"
+    emms-playlist-mode 0 "EMMS")
   (setq emms-mode-line-icon-enabled-p nil)
   :config
   (require 'emms-setup)
@@ -4975,7 +5020,9 @@ by the `my/elfeed-youtube-subtitles' function."
   :straight t
   :commands (znc-erc)
   :init
-  (my-leader-def "ai" (my/command-in-persp "erc" "ERC" 0 (znc-erc)))
+  (my-leader-def "ai" #'znc-erc)
+  (my/persp-add-rule
+    erc-mode 0 "ERC")
   :config
   (setq znc-servers
         `(("sqrtminusone.xyz" 6697 t
@@ -5159,10 +5206,7 @@ by the `my/elfeed-youtube-subtitles' function."
   :straight t
   :commands (prodigy)
   :init
-  (my-leader-def "aP" (my/command-in-persp
-                       "deploy" "prodigy" nil
-                       (prodigy)
-                       (delete-other-windows)))
+  (my-leader-def "aP" #'prodigy)
   :config
   (general-define-key
    :states '(normal)

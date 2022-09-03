@@ -1783,9 +1783,67 @@ Add keybindings to the default map.
    "f" #'my/persp-copy-window-and-switch))
 #+end_src
 *** Automating perspectives
-I'd like to have various Emacs apps open up in their designated perspectives (also in their designated workspaces when I'm using EXWM).
+One thing I don't like about =perspective.el= is that it doesn't feature much (or any) capacity for automation. So out-of-the-box we're supposed to manually assign buffers to perspectives we want.
 
-So, here is a macro to run something in a given perspective in a given workspace. This is meant to be used in general.el keybindings.
+But we can cook some automation ourselves. First, let's define a variable with "rules":
+#+begin_src emacs-lisp
+(setq my/perspective-assign-alist '())
+#+end_src
+
+One rule looks as follows:
+#+begin_example
+(major-mode workspace-index persp-name)
+#+end_example
+
+And a function to act on these rules.
+#+begin_src emacs-lisp
+(defun my/perspective-assign ()
+  (when-let* ((rule (alist-get major-mode my/perspective-assign-alist)))
+    (let ((workspace-index (car rule))
+          (persp-name (cadr rule))
+          (buffer (current-buffer)))
+      (if (fboundp #'perspective-exwm-assign-window)
+          (progn
+            (perspective-exwm-assign-window
+             :workspace-index workspace-index
+             :persp-name persp-name)
+            (when workspace-index
+              (exwm-workspace-switch workspace-index))
+            (when persp-name
+              (persp-switch persp-name)))
+        (with-perspective persp-name
+          (persp-set-buffer buffer))
+        (persp-switch-to-buffer buffer)))))
+#+end_src
+
+If EXWM is available, then so is mine =perspective-exwm= package that features a convenient procedure called =perspective-exwm-assign-window=. If not, we just work with perspectives.
+
+Now, we have to put this function somewhere, and =after-change-major-mode-hook= seems like a perfect place for it.
+#+begin_src emacs-lisp
+(add-hook 'after-change-major-mode-hook #'my/perspective-assign)
+#+end_src
+
+And here is a simple macro to add rules to the list.
+#+begin_src emacs-lisp
+(defmacro my/persp-add-rule (&rest body)
+  (declare (indent 0))
+  (unless (= (% (length body) 3) 0)
+    (error "Malformed body in my/persp-add-rule"))
+  (let (result)
+    (while body
+      (let ((major-mode (pop body))
+            (workspace-index (pop body))
+            (persp-name (pop body)))
+        (push
+         `(add-to-list 'my/perspective-assign-alist
+                       '(,major-mode . (,workspace-index ,persp-name)))
+         result)))
+    `(progn
+       ,@result)))
+#+end_src
+
+Also, the logic above works only for cases when the buffer is created. Occasionally, the packages themselves run =switch-to-buffer=, which screws both EXWM workspaces and perspectives; to work around that, I define a macro that runs a command in a given perspective and workspace.
+
 #+begin_src emacs-lisp
 (defmacro my/command-in-persp (command-name persp-name workspace-index &rest args)
   `'((lambda ()
@@ -1797,6 +1855,8 @@ So, here is a macro to run something in a given perspective in a given workspace
        ,@args)
      :wk ,command-name))
 #+end_src
+
+This is meant to be used in the definitions of =general.el=.
 * Programming
 ** General setup
 *** Treemacs
@@ -5832,7 +5892,11 @@ Using my own fork until the modifications are merged into master.
   :if (not my/remote-server)
   :commands (elfeed)
   :init
-  (my-leader-def "ae" (my/command-in-persp "elfeed" "elfeed" 0 (elfeed-summary)))
+  (my-leader-def "ae" #'elfeed-summary)
+  (my/persp-add-rule
+    elfeed-summary-mode 0 "elfeed"
+    elfeed-search-mode 0 "elfeed"
+    elfeed-show-mode 0 "elfeed")
   (setq shr-max-image-proportion 0.5)
   :config
   (setq elfeed-db-directory "~/.elfeed")
@@ -6595,16 +6659,19 @@ References:
   (my-leader-def
     :infix "as"
     "" '(:which-key "emms")
-    "s" (my/command-in-persp "emms" "EMMS" 0 (emms-smart-browse))
-    "b" 'emms-browser
-    "p" 'emms-pause
-    "q" 'emms-stop
-    "h" 'emms-previous
-    "l" 'emms-next
-    "u" 'emms-player-mpd-connect
-    "ww" 'emms-lyrics
-    "wb" 'emms-lyrics-toggle-display-on-minibuffer
-    "wm" 'emms-lyrics-toggle-display-on-modeline)
+    "s" #'emms-smart-browse
+    "b" #'emms-browser
+    "p" #'emms-pause
+    "q" #'emms-stop
+    "h" #'emms-previous
+    "l" #'emms-next
+    "u" #'emms-player-mpd-connect
+    "ww" #'emms-lyrics
+    "wb" #'emms-lyrics-toggle-display-on-minibuffer
+    "wm" #'emms-lyrics-toggle-display-on-modeline)
+  (my/persp-add-rule
+    emms-browser-mode 0 "EMMS"
+    emms-playlist-mode 0 "EMMS")
   (setq emms-mode-line-icon-enabled-p nil)
   :config
   (require 'emms-setup)
@@ -7003,7 +7070,9 @@ ZNC support. Seems to provide a few nice features for ZNC.
   :straight t
   :commands (znc-erc)
   :init
-  (my-leader-def "ai" (my/command-in-persp "erc" "ERC" 0 (znc-erc)))
+  (my-leader-def "ai" #'znc-erc)
+  (my/persp-add-rule
+    erc-mode 0 "ERC")
   :config
   (setq znc-servers
         `(("sqrtminusone.xyz" 6697 t
@@ -7257,10 +7326,7 @@ The actual service definitions are in my =~/.emacs.d/private.org=, which is encr
   :straight t
   :commands (prodigy)
   :init
-  (my-leader-def "aP" (my/command-in-persp
-                       "deploy" "prodigy" nil
-                       (prodigy)
-                       (delete-other-windows)))
+  (my-leader-def "aP" #'prodigy)
   :config
   (general-define-key
    :states '(normal)
