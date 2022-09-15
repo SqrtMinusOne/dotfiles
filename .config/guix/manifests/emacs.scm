@@ -7,6 +7,7 @@
    "imagemagick"
    "yt-dlp"
    "mpv"
+   "rdrview"
    "graphviz"
    "emacs-emacsql-sqlite3"
    "python-isort"

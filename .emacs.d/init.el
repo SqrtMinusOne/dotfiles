@@ -1567,6 +1567,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight (:host github :repo "SqrtMinusOne/copilot.el" :files ("dist" "*.el"))
   :commands (copilot-mode)
   :if (not my/remote-server)
+  :disabled
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
@@ -2832,7 +2833,8 @@ Returns (<buffer> . <workspace-index>) or nil."
                 (setq-local org-format-latex-options
                             (plist-put org-format-latex-options
                                        :scale (* org-present-text-scale my/org-latex-scale 0.5)))
-                (org-latex-preview '(16))
+                ;; (org-latex-preview '(16))
+                ;; TODO ^somehow this stucks at running LaTeX^
                 (setq-local olivetti-body-width 60)
                 (olivetti-mode 1))))
   (setq org-present-mode-quit-hook
@@ -4654,16 +4656,23 @@ by the `my/elfeed-youtube-subtitles' function."
   (setq-local subed-mpv-video-file (elfeed-entry-link entry))
   (subed-mpv--play subed-mpv-video-file))
 
+(defvar my/vosk-script-path
+  "/home/pavel/Code/system-crafting/podcasts-vosk/"
+  "Path to the `podcasts-vosk' script folder.")
+
 (defun my/invoke-vosk (input output)
+  "Extract subtitles from audio file.
+
+INPUT is the audio file, OUTPUT is the part to the resulting SRT file."
   (interactive
    (list
     (read-file-name "Input file: " nil nil t)
     (read-file-name "SRT file: ")))
   (let* ((buffer (generate-new-buffer "vosk"))
-         (default-directory "/home/pavel/Code/system-crafting/podcasts-vosk/")
+         (default-directory my/vosk-script-path)
          (proc (start-process
                 "vosk_api" buffer
-                "/home/pavel/Code/system-crafting/podcasts-vosk/venv/bin/python"
+                (concat my/vosk-script-path "venv/bin/python")
                 "main.py" "--file-path" input "--model-path" "./model-small"
                 "--save-path" output "--words-per-line" "14")))
     (set-process-sentinel
@@ -4672,7 +4681,8 @@ by the `my/elfeed-youtube-subtitles' function."
        (let ((status (process-status process))
              (code (process-exit-status process)))
          (cond ((and (eq status 'exit) (= code 0))
-                (message "SRT conversion completed"))
+                (notifications-notify :body "SRT conversion completed"
+                                      :title "Vosk API"))
                ((or (and (eq status 'exit) (> code 0))
                     (eq status 'signal))
                 (let ((err (with-current-buffer (process-buffer process)
@@ -4681,10 +4691,11 @@ by the `my/elfeed-youtube-subtitles' function."
                   (user-error "Error in Vosk API: %s" err)))))))))
 
 (defun my/get-file-name-from-url (url)
+  "Extract file name from the URL."
   (string-match (rx "/" (+ (not "/")) (? "/") eos) url)
   (let ((match (match-string 0 url)))
     (unless match
-      (user-error "No file name found. Somehow"))
+      (user-error "No file name found.  Somehow"))
     ;; Remove the first /
     (setq match (substring match 1))
     ;; Remove the trailing /
@@ -4692,9 +4703,16 @@ by the `my/elfeed-youtube-subtitles' function."
       (setq match (substring match 0 (1- (length match)))))
     match))
 
+(with-eval-after-load 'elfeed
+  (defvar my/elfeed-vosk-podcast-files-directory
+    (concat elfeed-db-directory "/podcast-files/")))
+
 (defun my/elfeed-vosk-get-transcript-new (url srt-path)
   (let* ((file-name (my/get-file-name-from-url url))
-         (file-path (format "/tmp/%s" file-name)))
+         (file-path (expand-file-name
+                     (concat
+                      my/elfeed-vosk-podcast-files-directory
+                      file-name))))
     (message "Download started")
     (request url
       :type "GET"
@@ -4714,6 +4732,7 @@ by the `my/elfeed-youtube-subtitles' function."
          (message "Error!: %S" error-thrown))))))
 
 (defun my/elfeed-vosk-get-transcript (entry)
+  "Retrieve transcript from the current elfeed ENTRY."
   (interactive (list elfeed-show-entry))
   (let ((enclosure (caar (elfeed-entry-enclosures entry))))
     (unless enclosure
@@ -4722,8 +4741,23 @@ by the `my/elfeed-youtube-subtitles' function."
                             (elfeed-ref-id (elfeed-entry-content entry))
                             ".srt")))
       (if (file-exists-p srt-path)
-          (find-file-other-window srt-path)
+          (let ((buffer (find-file-other-window srt-path)))
+            (with-current-buffer buffer
+              (setq-local elfeed-show-entry entry)))
         (my/elfeed-vosk-get-transcript-new enclosure srt-path)))))
+
+(defun my/elfeed-vosk-subed (entry)
+  (interactive (list elfeed-show-entry))
+  (unless entry
+    (user-error "No entry!"))
+  (unless (derived-mode-p 'subed-mode)
+    (user-error "Not subed mode!"))
+  (setq-local subed-mpv-video-file
+              (expand-file-name
+               (concat my/elfeed-vosk-podcast-files-directory
+                       (my/get-file-name-from-url
+                        (caar (elfeed-entry-enclosures entry))))))
+  (subed-mpv--play subed-mpv-video-file))
 
 (unless (or my/is-termux my/remote-server)
   (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
@@ -5278,8 +5312,8 @@ by the `my/elfeed-youtube-subtitles' function."
   :commands (pomm pomm-third-time)
   :init
   (my-leader-def "ap" #'pomm-third-time)
-  :config
   (setq alert-default-style 'libnotify)
+  :config
   (pomm-mode-line-mode))
 
 (use-package hledger-mode

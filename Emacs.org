@@ -2361,6 +2361,7 @@ A general-purpose package to run formatters on files. While the most popular for
   :straight (:host github :repo "SqrtMinusOne/copilot.el" :files ("dist" "*.el"))
   :commands (copilot-mode)
   :if (not my/remote-server)
+  :disabled
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
@@ -3937,7 +3938,8 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
                 (setq-local org-format-latex-options
                             (plist-put org-format-latex-options
                                        :scale (* org-present-text-scale my/org-latex-scale 0.5)))
-                (org-latex-preview '(16))
+                ;; (org-latex-preview '(16))
+                ;; TODO ^somehow this stucks at running LaTeX^
                 (setq-local olivetti-body-width 60)
                 (olivetti-mode 1))))
   (setq org-present-mode-quit-hook
@@ -6093,6 +6095,10 @@ Now, a function to add a YouTube link with metadata from elfeed to EMMS.
 *** rdrview
 [[https://github.com/eafer/rdrview][rdrview]] is a command-line tool to strip webpages from clutter, extracting only parts related to the actual content. It's a standalone port of the corresponding feature of Firefox, called [[https://support.mozilla.org/en-US/kb/firefox-reader-view-clutter-free-web-pages][Reader View]].
 
+| Guix dependency |
+|-----------------|
+| rdrview         |
+
 It seems like the tool [[https://repology.org/project/rdrview/versions][isn't available]] in a whole lot of package repositories, but it's pretty easy to compile. I've put together a [[https://github.com/SqrtMinusOne/channel-q/blob/master/rdrview.scm][Guix definition]], which /one day/ I'll submit to upstream.
 
 **** Integrating rdrview with Emacs
@@ -6545,16 +6551,23 @@ Occasionally I want to have a text version of a podcast, for instance to take so
 In order do do that, I've made a [[https://github.com/SqrtMinusOne/podcasts-vosk][small script]] that uses the [[https://alphacephei.com/vosk/][Vosk speech recognition toolkit]] to extract subtitles from an audio file. Here's a function to invoke that script.
 
 #+begin_src emacs-lisp
+(defvar my/vosk-script-path
+  "/home/pavel/Code/system-crafting/podcasts-vosk/"
+  "Path to the `podcasts-vosk' script folder.")
+
 (defun my/invoke-vosk (input output)
+  "Extract subtitles from audio file.
+
+INPUT is the audio file, OUTPUT is the part to the resulting SRT file."
   (interactive
    (list
     (read-file-name "Input file: " nil nil t)
     (read-file-name "SRT file: ")))
   (let* ((buffer (generate-new-buffer "vosk"))
-         (default-directory "/home/pavel/Code/system-crafting/podcasts-vosk/")
+         (default-directory my/vosk-script-path)
          (proc (start-process
                 "vosk_api" buffer
-                "/home/pavel/Code/system-crafting/podcasts-vosk/venv/bin/python"
+                (concat my/vosk-script-path "venv/bin/python")
                 "main.py" "--file-path" input "--model-path" "./model-small"
                 "--save-path" output "--words-per-line" "14")))
     (set-process-sentinel
@@ -6563,7 +6576,8 @@ In order do do that, I've made a [[https://github.com/SqrtMinusOne/podcasts-vosk
        (let ((status (process-status process))
              (code (process-exit-status process)))
          (cond ((and (eq status 'exit) (= code 0))
-                (message "SRT conversion completed"))
+                (notifications-notify :body "SRT conversion completed"
+                                      :title "Vosk API"))
                ((or (and (eq status 'exit) (> code 0))
                     (eq status 'signal))
                 (let ((err (with-current-buffer (process-buffer process)
@@ -6575,10 +6589,11 @@ In order do do that, I've made a [[https://github.com/SqrtMinusOne/podcasts-vosk
 In order to use that, we need to download the file first. So here's a function that extracts the file name from the URL:
 #+begin_src emacs-lisp
 (defun my/get-file-name-from-url (url)
+  "Extract file name from the URL."
   (string-match (rx "/" (+ (not "/")) (? "/") eos) url)
   (let ((match (match-string 0 url)))
     (unless match
-      (user-error "No file name found. Somehow"))
+      (user-error "No file name found.  Somehow"))
     ;; Remove the first /
     (setq match (substring match 1))
     ;; Remove the trailing /
@@ -6589,9 +6604,16 @@ In order to use that, we need to download the file first. So here's a function t
 
 Now can use that to save the file and invoke the =my/invoke-vosk= function.
 #+begin_src emacs-lisp
+(with-eval-after-load 'elfeed
+  (defvar my/elfeed-vosk-podcast-files-directory
+    (concat elfeed-db-directory "/podcast-files/")))
+
 (defun my/elfeed-vosk-get-transcript-new (url srt-path)
   (let* ((file-name (my/get-file-name-from-url url))
-         (file-path (format "/tmp/%s" file-name)))
+         (file-path (expand-file-name
+                     (concat
+                      my/elfeed-vosk-podcast-files-directory
+                      file-name))))
     (message "Download started")
     (request url
       :type "GET"
@@ -6615,6 +6637,7 @@ And the final entrypoint, that opens up the SRT file is it's available, and queu
 
 #+begin_src emacs-lisp
 (defun my/elfeed-vosk-get-transcript (entry)
+  "Retrieve transcript from the current elfeed ENTRY."
   (interactive (list elfeed-show-entry))
   (let ((enclosure (caar (elfeed-entry-enclosures entry))))
     (unless enclosure
@@ -6623,8 +6646,25 @@ And the final entrypoint, that opens up the SRT file is it's available, and queu
                             (elfeed-ref-id (elfeed-entry-content entry))
                             ".srt")))
       (if (file-exists-p srt-path)
-          (find-file-other-window srt-path)
+          (let ((buffer (find-file-other-window srt-path)))
+            (with-current-buffer buffer
+              (setq-local elfeed-show-entry entry)))
         (my/elfeed-vosk-get-transcript-new enclosure srt-path)))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/elfeed-vosk-subed (entry)
+  (interactive (list elfeed-show-entry))
+  (unless entry
+    (user-error "No entry!"))
+  (unless (derived-mode-p 'subed-mode)
+    (user-error "Not subed mode!"))
+  (setq-local subed-mpv-video-file
+              (expand-file-name
+               (concat my/elfeed-vosk-podcast-files-directory
+                       (my/get-file-name-from-url
+                        (caar (elfeed-entry-enclosures entry))))))
+  (subed-mpv--play subed-mpv-video-file))
 #+end_src
 
 ** Internet & Multimedia
@@ -7422,8 +7462,8 @@ My package for doing Pomodoro timer.
   :commands (pomm pomm-third-time)
   :init
   (my-leader-def "ap" #'pomm-third-time)
-  :config
   (setq alert-default-style 'libnotify)
+  :config
   (pomm-mode-line-mode))
 #+end_src
 *** hledger
@@ -7542,7 +7582,7 @@ Watch out if you are using EXWM.
 * Guix settings
 | Guix dependency     | Description                   |
 |---------------------+-------------------------------|
-| emacs-vterm         | A vterm package               |
+| emacs-vterm         | The vterm package            |
 | ripgrep             | A recursive search tool       |
 | the-silver-searcher | Another recursive search tool |
 
