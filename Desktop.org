@@ -3351,6 +3351,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | python            |          |
 | dev      | python-virtualenv |          |
 | dev      | leiningen         |          |
+| dev      | socat             |          |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""

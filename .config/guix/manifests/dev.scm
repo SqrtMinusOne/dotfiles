@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "socat"
    "leiningen"
    "python-virtualenv"
    "python"
