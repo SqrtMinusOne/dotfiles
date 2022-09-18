@@ -2900,7 +2900,7 @@ Returns (<buffer> . <workspace-index>) or nil."
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
-               (lambda (f) `(,f . (:level . 1)))
+               (lambda (f) `(,f . (:level . 2)))
                project-files)
             ,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
@@ -2963,7 +2963,7 @@ Returns (<buffer> . <workspace-index>) or nil."
         (format-time-string "%Y-%m-%d" scheduled)
       "")))
 
-(setq org-agenda-hide-tags-regexp (rx (or "org" "log" "log_here")))
+(setq org-agenda-hide-tags-regexp (rx (or "org" "log" "log_here" "refile")))
 
 (setq org-agenda-custom-commands
       `(("p" "My outline"
@@ -4661,9 +4661,9 @@ by the `my/elfeed-youtube-subtitles' function."
   "Path to the `podcasts-vosk' script folder.")
 
 (defun my/invoke-vosk (input output)
-  "Extract subtitles from audio file.
+  "Extract subtitles from the audio file.
 
-INPUT is the audio file, OUTPUT is the part to the resulting SRT file."
+INPUT is the audio file, OUTPUT is the path to the resulting SRT file."
   (interactive
    (list
     (read-file-name "Input file: " nil nil t)
@@ -4714,6 +4714,8 @@ INPUT is the audio file, OUTPUT is the part to the resulting SRT file."
                       my/elfeed-vosk-podcast-files-directory
                       file-name))))
     (message "Download started")
+    (unless (file-exists-p my/elfeed-vosk-podcast-files-directory)
+      (mkdir my/elfeed-vosk-podcast-files-directory))
     (request url
       :type "GET"
       :encoding 'binary
@@ -4732,7 +4734,7 @@ INPUT is the audio file, OUTPUT is the part to the resulting SRT file."
          (message "Error!: %S" error-thrown))))))
 
 (defun my/elfeed-vosk-get-transcript (entry)
-  "Retrieve transcript from the current elfeed ENTRY."
+  "Retrieve transcript for the enclosure of the current elfeed ENTRY."
   (interactive (list elfeed-show-entry))
   (let ((enclosure (caar (elfeed-entry-enclosures entry))))
     (unless enclosure
@@ -4747,6 +4749,9 @@ INPUT is the audio file, OUTPUT is the part to the resulting SRT file."
         (my/elfeed-vosk-get-transcript-new enclosure srt-path)))))
 
 (defun my/elfeed-vosk-subed (entry)
+  "Run MPV for the current Vosk-generated subtitles file.
+
+ENTRY is an instance of `elfeed-entry'."
   (interactive (list elfeed-show-entry))
   (unless entry
     (user-error "No entry!"))
