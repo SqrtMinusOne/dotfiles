@@ -265,7 +265,8 @@
      magit
      prodigy
      slime
-     forge)))
+     forge
+     deadgrep)))
 
 (use-package avy
   :straight t
@@ -653,6 +654,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (save-place-mode 1)
 
+(defun my/deadgrep-fix-buffer-advice (fun &rest args)
+  (let ((buf (apply fun args)))
+    (with-current-buffer buf
+      (toggle-truncate-lines 1))
+    buf))
+
+(use-package deadgrep
+  :straight t
+  :commands (deadgrep)
+  :config
+  (advice-add #'deadgrep--buffer :around #'my/deadgrep-fix-buffer-advice))
+
 (use-package ivy
   :straight t
   :config
@@ -724,6 +737,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "f" 'project-find-file
   "c" 'counsel-yank-pop
   "a" 'counsel-rg
+  "d" 'deadgrep
   "A" 'counsel-ag)
 
 (general-define-key

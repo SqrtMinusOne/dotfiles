@@ -490,7 +490,8 @@ Do ex search in other buffer. Like =*=, but switch to other buffer and search th
      magit
      prodigy
      slime
-     forge)))
+     forge
+     deadgrep)))
 #+end_src
 *** Avy
 [[https://github.com/abo-abo/avy][Avy]] is a package that helps navigate Emacs in a tree-like manner.
@@ -1100,6 +1101,25 @@ Save the last place visited in the file.
 #+begin_src emacs-lisp
 (save-place-mode 1)
 #+end_src
+*** Deadgrep
+[[https://github.com/Wilfred/deadgrep][deadgrep]] is a nice Emacs for [[https://github.com/BurntSushi/ripgrep][ripgrep]]. Running =ivy-occur= in =counsel-rg= does something a bit similar, but the deadgrep is much more full-featured.
+
+Somehow I couldn't hook =toogle-truncate-lines= into the existing hooks, so I add advice.
+
+#+begin_src emacs-lisp
+(defun my/deadgrep-fix-buffer-advice (fun &rest args)
+  (let ((buf (apply fun args)))
+    (with-current-buffer buf
+      (toggle-truncate-lines 1))
+    buf))
+
+(use-package deadgrep
+  :straight t
+  :commands (deadgrep)
+  :config
+  (advice-add #'deadgrep--buffer :around #'my/deadgrep-fix-buffer-advice))
+#+end_src
+
 ** Completion
 *** Ivy, counsel, swiper
 Minibuffer completion tools for Emacs.
@@ -1194,6 +1214,7 @@ Setting up quick access to various completions.
   "f" 'project-find-file
   "c" 'counsel-yank-pop
   "a" 'counsel-rg
+  "d" 'deadgrep
   "A" 'counsel-ag)
 
 (general-define-key
