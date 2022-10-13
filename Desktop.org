@@ -3318,6 +3318,7 @@ This section generates manifests for various desktop software that I'm using.
 | office   | kdenlive        |
 | office   | inkscape        |
 | office   | okular          |
+| office   | obs             |
 ** LaTeX
 | Category | Guix dependency               |
 |----------+-------------------------------|

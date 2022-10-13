@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "obs"
    "okular"
    "inkscape"
    "kdenlive"
