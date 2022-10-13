@@ -673,6 +673,12 @@ Some keybindings for xref and go to definition.
 (my-leader-def
   "fx" 'xref-find-apropos)
 #+end_src
+
+#+begin_src emacs-lisp
+(use-package xref
+  :straight (:type built-in))
+#+end_src
+
 **** Folding
 There are multiple ways to fold text in Emacs.
 
@@ -4052,7 +4058,7 @@ Used files:
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
-               (lambda (f) `(,f . (:level . 2)))
+               (lambda (f) `(,f . (:maxlevel . 2)))
                project-files)
             ,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
@@ -4830,6 +4836,8 @@ I use Org to manage some small tables which I want to process further. So here i
          name ".csv")
         "orgtbl-to-csv")))))
 #+end_src
+*** Copying records
+
 ** UI
 *** OFF (OFF) Instant equations preview
 Instant math previews for org mode.
@@ -6573,66 +6581,64 @@ And I have no reasonable way to get there because audio files in themselves don'
 
 For obvious reasons, podcasts rarely ship with transcripts. So in this post, I'll be using a speech recognition engine to make up for that. A generated transcript is not quite as good as a manually written one, but for the purpose of finding a fragment of a known podcast, it works well enough.
 
-The general idea is to get the podcast info from [[https://github.com/skeeto/elfeed][elfeed]], process it with [[https://github.com/alphacep/vosk-api][vosk-api]] and feed it to [[https://github.com/sachac/subed][subed]] to control the playback in [[https://mpv.io/][MPV]].
+The general idea is to get the podcast info from [[https://github.com/skeeto/elfeed][elfeed]], process it with [[https://github.com/openai/whisper][OpenAI Whisper]] and feed it to [[https://github.com/sachac/subed][subed]] to control the playback in [[https://mpv.io/][MPV]].
 
-**** Vosk API
-After some search, I found [[https://github.com/alphacep/vosk-api][Vosk API]], an offline speech recognition toolkit.
+Edit <2022-10-08 Sat>: Changed [[https://github.com/alphacep/vosk-api][vosk-api]] to OpenAI Whisper.
 
-I want to make a program that receives an audio file and outputs an [[https://en.wikipedia.org/wiki/SubRip][SRT]] file. Vosk provides bindings to different languages, of which I choose Python because... reasons.
+**** Whisper
+[[https://github.com/openai/whisper][OpenAI Whisper]] is an amazing speech recognition toolkit. It's pretty slow on my PC (compared to [[https://github.com/alphacep/vosk-api][vosk-api]] which I've been using before), but the quality is so much better so I think it's completely worth it.
 
-So, with the help of kindly provided [[https://github.com/alphacep/vosk-api/tree/master/python/example][examples]] of how to use the Python API, the resulting script is [[https://github.com/SqrtMinusOne/podcasts-vosk][available here]]. Except Vosk, the script uses [[https://click.palletsprojects.com/en/8.1.x/][click]] to make a simple CLI, a library aptly called [[https://github.com/cdown/srt][srt]] to make srt files, and [[https://ffmpeg.org/][ffmpeg]].
-
-Another piece we need is a speech recognition model, some of which you can download [[https://alphacephei.com/vosk/models][on their website]]. I chose a small English model called =vosk-model-small-en-us-0.15= because all my podcasts are in English and also because larger models are much slower.
-
-Now that we have the script and the model, we need to create a virtual environment. Somehow I couldn't install the =vosk= package with [[https://docs.conda.io/en/latest/][conda]], but the Guix version of Python with =virtualenv= worked just fine:
-#+begin_src bash :eval no
-python3 -m virtualenv venv
+All we need to do is install Whisper in a virtual environment:
+#+begin_src bash
+python -m virtualenv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install whisper
 #+end_src
 
-After which the script can be used as follows:
+After which the program can be used as follows:
 #+begin_src bash
-python main.py --file-path <path-to-file> --model-path ./model-small --save-path <path-to-subtitles-file>.srt
+whisper <path-to-file> --output-dir <path-to-output-dir>
 #+end_src
 
 **** Running it from Emacs
-The next step is to run the script from Emacs. This is rather straightforward to do with [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Asynchronous-Processes.html][asyncronous processes]].
+Running the program from Emacs is rather straightforward with [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Asynchronous-Processes.html][asyncronous processes]].
+
+I'm using an English-language-only model because that's the only language I need at the moment.
 
 #+begin_src emacs-lisp
-(defvar my/vosk-script-path
-  "/home/pavel/Code/system-crafting/podcasts-vosk/"
-  "Path to the `podcasts-vosk' script folder.")
+(defvar my/whisper-env-path
+  "/home/pavel/Code/system-crafting/whisper-test/"
+  "Path to the folder with `whisper' environment.")
 
-(defun my/invoke-vosk (input output)
+(defun my/invoke-whisper (input output-dir)
   "Extract subtitles from the audio file.
 
-INPUT is the audio file, OUTPUT is the path to the resulting SRT file."
+INPUT is the audio file, OUTPUT-DIR is the path to the directory with
+resulting files."
   (interactive
    (list
     (read-file-name "Input file: " nil nil t)
-    (read-file-name "SRT file: ")))
-  (let* ((buffer (generate-new-buffer "vosk"))
-         (default-directory my/vosk-script-path)
+    (read-directory-name "Output directory: ")))
+  (let* ((buffer (generate-new-buffer "whisper"))
+         (default-directory my/whisper-env-path)
          (proc (start-process
-                "vosk_api" buffer
-                (concat my/vosk-script-path "venv/bin/python")
-                "main.py" "--file-path" input "--model-path" "./model-small"
-                "--save-path" output "--words-per-line" "14")))
+                "whisper" buffer
+                (concat my/whisper-env-path "venv/bin/whisper")
+                "--output_dir" output-dir "--model" "tiny.en" input)))
     (set-process-sentinel
      proc
      (lambda (process _msg)
        (let ((status (process-status process))
              (code (process-exit-status process)))
          (cond ((and (eq status 'exit) (= code 0))
-                (notifications-notify :body "SRT conversion completed"
-                                      :title "Vosk API"))
+                (notifications-notify :body "Audio conversion completed"
+                                      :title "Whisper")
+                (kill-buffer (process-buffer process)))
                ((or (and (eq status 'exit) (> code 0))
                     (eq status 'signal))
                 (let ((err (with-current-buffer (process-buffer process)
                              (buffer-string))))
-                  (kill-buffer (process-buffer process))
-                  (user-error "Error in Vosk API: %s" err)))))))))
+                  (user-error "Error in Whisper: %s" err)))))))))
 #+end_src
 
 If run interactively, the defined function prompts for paths to both files.
@@ -6642,21 +6648,7 @@ The process sentinel sends a [[https://www.gnu.org/software/emacs/manual/html_no
 **** Integrating with elfeed
 To actually run the function from the section above, we need to download the file in question.
 
-So first, let's extract the file name from the URL:
-#+begin_src emacs-lisp
-(defun my/get-file-name-from-url (url)
-  "Extract file name from the URL."
-  (string-match (rx "/" (+ (not "/")) (? "/") eos) url)
-  (let ((match (match-string 0 url)))
-    (unless match
-      (user-error "No file name found.  Somehow"))
-    ;; Remove the first /
-    (setq match (substring match 1))
-    ;; Remove the trailing /
-    (when (string-match-p (rx "/" eos) match)
-      (setq match (substring match 0 (1- (length match)))))
-    match))
-#+end_src
+The =whisper= executable, given the file =<file>.<extension>=, creates files named =<file>.vtt=, =<file>.srt=, =<file>.txt=. So first we need to save the file under the correct name.
 
 I use a library called [[https://github.com/tkf/emacs-request][request.el]] to download files elsewhere, so I'll re-use it here. You can just as well invoke =curl= or =wget= via a asynchronous process.
 
@@ -6664,18 +6656,23 @@ This function downloads the file to a non-temporary folder, which is =~/.elfeed/
 
 #+begin_src emacs-lisp
 (with-eval-after-load 'elfeed
-  (defvar my/elfeed-vosk-podcast-files-directory
+  (defvar my/elfeed-whisper-podcast-files-directory
     (concat elfeed-db-directory "/podcast-files/")))
 
-(defun my/elfeed-vosk-get-transcript-new (url srt-path)
-  (let* ((file-name (my/get-file-name-from-url url))
+(defun my/elfeed-whisper-get-transcript-new (entry)
+  (interactive (list elfeed-show-entry))
+  (let* ((url (caar (elfeed-entry-enclosures entry)))
+         (file-name (concat
+                     (elfeed-ref-id (elfeed-entry-content entry))
+                     "."
+                     (file-name-extension url)))
          (file-path (expand-file-name
                      (concat
-                      my/elfeed-vosk-podcast-files-directory
+                      my/elfeed-whisper-podcast-files-directory
                       file-name))))
     (message "Download started")
-    (unless (file-exists-p my/elfeed-vosk-podcast-files-directory)
-      (mkdir my/elfeed-vosk-podcast-files-directory))
+    (unless (file-exists-p my/elfeed-whisper-podcast-files-directory)
+      (mkdir my/elfeed-whisper-podcast-files-directory))
     (request url
       :type "GET"
       :encoding 'binary
@@ -6687,7 +6684,7 @@ This function downloads the file to a non-temporary folder, which is =~/.elfeed/
                (write-region-post-annotation-function nil))
            (write-region data nil file-path nil :silent))
          (message "Conversion started")
-         (my/invoke-vosk file-path srt-path)))
+         (my/invoke-whisper file-path my/elfeed-srt-dir)))
       :error
       (cl-function
        (lambda (&key error-thrown &allow-other-keys)
@@ -6696,10 +6693,34 @@ This function downloads the file to a non-temporary folder, which is =~/.elfeed/
 
 I also experimented with a bunch of options to write binary data in Emacs, of which the way with =write-region= (as implemented in [[https://github.com/rejeep/f.el][f.el]]) seems to be the fastest. [[https://emacs.stackexchange.com/questions/59449/how-do-i-save-raw-bytes-into-a-file][This thread on StackExchange]] suggests that it may screw some bytes towards the end, but whether or not this is the case, mp3 files survive the procedure. The proposed solution with =seq-doseq= takes at least a few seconds.
 
-Finally, we need a function to show the transcript if it exists or invoke =my/elfeed-vosk-get-transcript-new= if it doesn't. And this is the function that we'll call from an =elfeed-entry= buffer.
+As =my/invoke-whisper= creates multiple files, here's a function to select related files:
+#+begin_src emacs-lisp
+(defun my/elfeed-show-related-files (entry)
+  (interactive (list elfeed-show-entry))
+  (let* ((files
+          (mapcar
+           (lambda (file) (cons (file-name-extension file) file))
+           (seq-filter
+            (lambda (file)
+              (string-match-p
+               (rx bos (literal (elfeed-ref-id (elfeed-entry-content entry))) ".")
+               file))
+            (directory-files my/elfeed-srt-dir))))
+         (buffer
+          (find-file-other-window
+           (concat
+            my/elfeed-srt-dir
+            (alist-get
+             (completing-read "File: " files)
+             files nil nil #'equal)))))
+    (with-current-buffer buffer
+      (setq-local elfeed-show-entry entry))))
+#+end_src
+
+Finally, we need a function to show the transcript if it exists or invoke =my/elfeed-whisper-get-transcript-new= if it doesn't. And this is the function that we'll call from an =elfeed-entry= buffer.
 
 #+begin_src emacs-lisp
-(defun my/elfeed-vosk-get-transcript (entry)
+(defun my/elfeed-whisper-get-transcript (entry)
   "Retrieve transcript for the enclosure of the current elfeed ENTRY."
   (interactive (list elfeed-show-entry))
   (let ((enclosure (caar (elfeed-entry-enclosures entry))))
@@ -6712,18 +6733,18 @@ Finally, we need a function to show the transcript if it exists or invoke =my/el
           (let ((buffer (find-file-other-window srt-path)))
             (with-current-buffer buffer
               (setq-local elfeed-show-entry entry)))
-        (my/elfeed-vosk-get-transcript-new enclosure srt-path)))))
+        (my/elfeed-whisper-get-transcript-new entry)))))
 #+end_src
 
 **** Integrating with subed
-Now that we've produced a =.srt= file, we can use a package called [[https://github.com/sachac/subed][subed]] to control the playback, like I had done in the previous post.
+Now that we've produced a =.srt= file, we can use a package called [[https://github.com/sachac/subed][subed]] to control the playback, as I had done in the previous post.
 
 By the way, this wasn't the most straightforward thing to figure out, because the MPV window doesn't show up for an audio file, and the player itself starts in the paused state. So I thought nothing was happening until I enabled the debug log.
 
-With that in mind, here's a function to launch MPV from the buffer generated by =my/elfeed-vosk-get-transcript=:
+With that in mind, here's a function to launch MPV from the buffer generated by =my/elfeed-whisper-get-transcript=:
 #+begin_src emacs-lisp
-(defun my/elfeed-vosk-subed (entry)
-  "Run MPV for the current Vosk-generated subtitles file.
+(defun my/elfeed-whisper-subed (entry)
+  "Run MPV for the current Whisper-generated subtitles file.
 
 ENTRY is an instance of `elfeed-entry'."
   (interactive (list elfeed-show-entry))
@@ -6733,13 +6754,13 @@ ENTRY is an instance of `elfeed-entry'."
     (user-error "Not subed mode!"))
   (setq-local subed-mpv-video-file
               (expand-file-name
-               (concat my/elfeed-vosk-podcast-files-directory
+               (concat my/elfeed-whisper-podcast-files-directory
                        (my/get-file-name-from-url
                         (caar (elfeed-entry-enclosures entry))))))
   (subed-mpv--play subed-mpv-video-file))
 #+end_src
 
-After running =M-x my/elfeed-vosk-subed=, run =M-x subed-toggle-loop-over-current-subtitle= (=C-c C-l=), because somehow it's turned on by default, and =M-x subed-toggle-pause-while-typing= (=C-c C-p=), because sometimes this made my instance of MPV lag.
+After running =M-x my/elfeed-whisper-subed=, run =M-x subed-toggle-loop-over-current-subtitle= (=C-c C-l=), because somehow it's turned on by default, and =M-x subed-toggle-pause-while-typing= (=C-c C-p=), because sometimes this made my instance of MPV lag.
 
 After that, =M-x subed-mpv-toggle-pause= should start the playback, which you can control by moving the cursor in the buffer.
 
@@ -6750,9 +6771,9 @@ Running =M-x subed-toggle-sync-player-to-point= (=C-c ,=) does the opposite, i.e
 **** Some observations
 So, the functions above work for my purposes.
 
-I think it should be possible to get transcripts of better quality by using a better speech recognition model, adding a speaker detection model and a model to restore case & punctuation. But it seems to be harder to implement, and this would take more time and resources. On my PC, the smallest Vosk model runs maybe 10 times faster than the playback time, which is still a few minutes for an hour-long podcast. Waiting longer is probably not worth it.
+Vosk API works much faster than Whisper. The smallest Vosk model requires ~10 times less than the playback time, and even the =tiny.en= Whisper model on my PC requires maybe 1.2x playback time.
 
-Also, technically MPV can stream files without downloading them, and it's even possible to feed stream data into Vosk. But MPV isn't particularly good at seeking in streamed files, at least not with my Internet connection.
+However, the quality of the output for Whisper is just so much better so I consider it to be worth the wait. Even with the =tiny= model, the transcript is almost perfect, provided that the audio is of reasonable quality.
 ** Internet & Multimedia
 *** Notmuch
 My notmuch config now resides in [[file:Mail.org][Mail.org]].

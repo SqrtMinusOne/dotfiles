@@ -399,6 +399,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (my-leader-def
   "fx" 'xref-find-apropos)
 
+(use-package xref
+  :straight (:type built-in))
+
 (general-nmap :keymaps '(hs-minor-mode-map outline-minor-mode-map)
   "ze" 'hs-hide-level
   "TAB" 'evil-toggle-fold)
@@ -2914,7 +2917,7 @@ Returns (<buffer> . <workspace-index>) or nil."
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
-               (lambda (f) `(,f . (:level . 2)))
+               (lambda (f) `(,f . (:maxlevel . 2)))
                project-files)
             ,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
@@ -4670,66 +4673,58 @@ by the `my/elfeed-youtube-subtitles' function."
   (setq-local subed-mpv-video-file (elfeed-entry-link entry))
   (subed-mpv--play subed-mpv-video-file))
 
-(defvar my/vosk-script-path
-  "/home/pavel/Code/system-crafting/podcasts-vosk/"
-  "Path to the `podcasts-vosk' script folder.")
+(defvar my/whisper-env-path
+  "/home/pavel/Code/system-crafting/whisper-test/"
+  "Path to the folder with `whisper' environment.")
 
-(defun my/invoke-vosk (input output)
+(defun my/invoke-whisper (input output-dir)
   "Extract subtitles from the audio file.
 
-INPUT is the audio file, OUTPUT is the path to the resulting SRT file."
+INPUT is the audio file, OUTPUT-DIR is the path to the directory with
+resulting files."
   (interactive
    (list
     (read-file-name "Input file: " nil nil t)
-    (read-file-name "SRT file: ")))
-  (let* ((buffer (generate-new-buffer "vosk"))
-         (default-directory my/vosk-script-path)
+    (read-directory-name "Output directory: ")))
+  (let* ((buffer (generate-new-buffer "whisper"))
+         (default-directory my/whisper-env-path)
          (proc (start-process
-                "vosk_api" buffer
-                (concat my/vosk-script-path "venv/bin/python")
-                "main.py" "--file-path" input "--model-path" "./model-small"
-                "--save-path" output "--words-per-line" "14")))
+                "whisper" buffer
+                (concat my/whisper-env-path "venv/bin/whisper")
+                "--output_dir" output-dir "--model" "tiny.en" input)))
     (set-process-sentinel
      proc
      (lambda (process _msg)
        (let ((status (process-status process))
              (code (process-exit-status process)))
          (cond ((and (eq status 'exit) (= code 0))
-                (notifications-notify :body "SRT conversion completed"
-                                      :title "Vosk API"))
+                (notifications-notify :body "Audio conversion completed"
+                                      :title "Whisper")
+                (kill-buffer (process-buffer process)))
                ((or (and (eq status 'exit) (> code 0))
                     (eq status 'signal))
                 (let ((err (with-current-buffer (process-buffer process)
                              (buffer-string))))
-                  (kill-buffer (process-buffer process))
-                  (user-error "Error in Vosk API: %s" err)))))))))
-
-(defun my/get-file-name-from-url (url)
-  "Extract file name from the URL."
-  (string-match (rx "/" (+ (not "/")) (? "/") eos) url)
-  (let ((match (match-string 0 url)))
-    (unless match
-      (user-error "No file name found.  Somehow"))
-    ;; Remove the first /
-    (setq match (substring match 1))
-    ;; Remove the trailing /
-    (when (string-match-p (rx "/" eos) match)
-      (setq match (substring match 0 (1- (length match)))))
-    match))
+                  (user-error "Error in Whisper: %s" err)))))))))
 
 (with-eval-after-load 'elfeed
-  (defvar my/elfeed-vosk-podcast-files-directory
+  (defvar my/elfeed-whisper-podcast-files-directory
     (concat elfeed-db-directory "/podcast-files/")))
 
-(defun my/elfeed-vosk-get-transcript-new (url srt-path)
-  (let* ((file-name (my/get-file-name-from-url url))
+(defun my/elfeed-whisper-get-transcript-new (entry)
+  (interactive (list elfeed-show-entry))
+  (let* ((url (caar (elfeed-entry-enclosures entry)))
+         (file-name (concat
+                     (elfeed-ref-id (elfeed-entry-content entry))
+                     "."
+                     (file-name-extension url)))
          (file-path (expand-file-name
                      (concat
-                      my/elfeed-vosk-podcast-files-directory
+                      my/elfeed-whisper-podcast-files-directory
                       file-name))))
     (message "Download started")
-    (unless (file-exists-p my/elfeed-vosk-podcast-files-directory)
-      (mkdir my/elfeed-vosk-podcast-files-directory))
+    (unless (file-exists-p my/elfeed-whisper-podcast-files-directory)
+      (mkdir my/elfeed-whisper-podcast-files-directory))
     (request url
       :type "GET"
       :encoding 'binary
@@ -4741,13 +4736,34 @@ INPUT is the audio file, OUTPUT is the path to the resulting SRT file."
                (write-region-post-annotation-function nil))
            (write-region data nil file-path nil :silent))
          (message "Conversion started")
-         (my/invoke-vosk file-path srt-path)))
+         (my/invoke-whisper file-path my/elfeed-srt-dir)))
       :error
       (cl-function
        (lambda (&key error-thrown &allow-other-keys)
          (message "Error!: %S" error-thrown))))))
 
-(defun my/elfeed-vosk-get-transcript (entry)
+(defun my/elfeed-show-related-files (entry)
+  (interactive (list elfeed-show-entry))
+  (let* ((files
+          (mapcar
+           (lambda (file) (cons (file-name-extension file) file))
+           (seq-filter
+            (lambda (file)
+              (string-match-p
+               (rx bos (literal (elfeed-ref-id (elfeed-entry-content entry))) ".")
+               file))
+            (directory-files my/elfeed-srt-dir))))
+         (buffer
+          (find-file-other-window
+           (concat
+            my/elfeed-srt-dir
+            (alist-get
+             (completing-read "File: " files)
+             files nil nil #'equal)))))
+    (with-current-buffer buffer
+      (setq-local elfeed-show-entry entry))))
+
+(defun my/elfeed-whisper-get-transcript (entry)
   "Retrieve transcript for the enclosure of the current elfeed ENTRY."
   (interactive (list elfeed-show-entry))
   (let ((enclosure (caar (elfeed-entry-enclosures entry))))
@@ -4760,10 +4776,10 @@ INPUT is the audio file, OUTPUT is the path to the resulting SRT file."
           (let ((buffer (find-file-other-window srt-path)))
             (with-current-buffer buffer
               (setq-local elfeed-show-entry entry)))
-        (my/elfeed-vosk-get-transcript-new enclosure srt-path)))))
+        (my/elfeed-whisper-get-transcript-new entry)))))
 
-(defun my/elfeed-vosk-subed (entry)
-  "Run MPV for the current Vosk-generated subtitles file.
+(defun my/elfeed-whisper-subed (entry)
+  "Run MPV for the current Whisper-generated subtitles file.
 
 ENTRY is an instance of `elfeed-entry'."
   (interactive (list elfeed-show-entry))
@@ -4773,7 +4789,7 @@ ENTRY is an instance of `elfeed-entry'."
     (user-error "Not subed mode!"))
   (setq-local subed-mpv-video-file
               (expand-file-name
-               (concat my/elfeed-vosk-podcast-files-directory
+               (concat my/elfeed-whisper-podcast-files-directory
                        (my/get-file-name-from-url
                         (caar (elfeed-entry-enclosures entry))))))
   (subed-mpv--play subed-mpv-video-file))
