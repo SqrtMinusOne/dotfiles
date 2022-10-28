@@ -2504,7 +2504,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (reformatter-define sqlformat
   :program (executable-find "sql-formatter")
-  :args `("-l" ,my/sqlformatter-dialect, "-u"))
+  :args `("-l" ,my/sqlformatter-dialect))
 
 (my-leader-def
   :keymaps '(sql-mode-map)
