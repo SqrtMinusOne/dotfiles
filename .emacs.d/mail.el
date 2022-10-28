@@ -100,26 +100,8 @@
          (sign)
          (encrypt))))
 
-(setq my/message-signature-on-top '("@etu.ru"))
-
 (defun my/message-insert-signature-need-on-top ()
-  (let ((parts (split-string
-                (string-join
-                 (list
-                  (message-fetch-field "to")
-                  (message-fetch-field "cc")
-                  (message-fetch-field "bcc"))
-                 ", ")
-                ", ")))
-    (and
-     (seq-some
-      (lambda (rule)
-        (seq-some
-         (lambda (part)
-           (string-match-p rule part))
-         parts))
-      my/message-signature-on-top)
-     t)))
+  t)
 
 (defun my/message-maybe-fix-signature (&rest _)
   (when (my/message-insert-signature-need-on-top)

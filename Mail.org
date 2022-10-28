@@ -396,7 +396,7 @@ Some functions to toggle tags:
   (evil-collection-notmuch-toggle-tag "unread" "search" #'ignore))
 #+end_src
 
-Finally the proper notmuch settings:
+And notmuch settings:
 #+begin_src emacs-lisp
 (use-package notmuch
   ;; :ensure nil
@@ -560,30 +560,13 @@ Person <person@mail.org> writes:
 > Stuff
 #+end_example
 
-So here I modifiy the citation function to insert the signature like in the second example for certain cases.
+So here I modifiy the citation function to insert the signature like in the second example for +certain cases+.
 
-FIrst, determine whether it is necessary to do so:
+Edit <2022-10-27 Thu>: for consistency's sake, I'll make the signature on the top for all cases.
+
 #+begin_src emacs-lisp
-(setq my/message-signature-on-top '("@etu.ru"))
-
 (defun my/message-insert-signature-need-on-top ()
-  (let ((parts (split-string
-                (string-join
-                 (list
-                  (message-fetch-field "to")
-                  (message-fetch-field "cc")
-                  (message-fetch-field "bcc"))
-                 ", ")
-                ", ")))
-    (and
-     (seq-some
-      (lambda (rule)
-        (seq-some
-         (lambda (part)
-           (string-match-p rule part))
-         parts))
-      my/message-signature-on-top)
-     t)))
+  t)
 #+end_src
 
 Then advice the =notmuch-mua-reply= function:
