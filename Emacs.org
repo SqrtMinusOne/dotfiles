@@ -2371,7 +2371,7 @@ A general-purpose package to run formatters on files. While the most popular for
   :straight t)
 #+end_src
 *** copilot
-[[https://copilot.github.com/][GitHub Copilot]] is a project of GitHub and OpenAI that provides code completions. It's somewhat controversial in the Emacs community but I opt in using it for now.
+[[https://copilot.github.com/][GitHub Copilot]] is a project of GitHub and OpenAI that provides code completions. It's somewhat controversial in the Emacs community +but I opt in+ so I opt out of using it for now.
 
 #+begin_src emacs-lisp
 (defun my/copilot-tab ()
@@ -2543,6 +2543,8 @@ My bit of config here:
 
 Trying this one out instead of vue-mode and svelte-mode, because this one seems to have better support for tree-sitter and generally less problems.
 
+Set =web-mode-auto-pairs= not =nil= because smartparens already fulfills that role.
+
 #+begin_src emacs-lisp
 (use-package web-mode
   :straight t
@@ -2553,7 +2555,8 @@ Trying this one out instead of vue-mode and svelte-mode, because this one seems 
   :config
   (add-hook 'web-mode-hook 'smartparens-mode)
   (add-hook 'web-mode-hook 'hs-minor-mode)
-  (my/set-smartparens-indent 'web-mode))
+  (my/set-smartparens-indent 'web-mode)
+  (setq web-mode-auto-pairs nil))
 #+end_src
 
 Hooking this up with lsp.
@@ -4837,6 +4840,106 @@ I use Org to manage some small tables which I want to process further. So here i
         "orgtbl-to-csv")))))
 #+end_src
 *** Copying records
+I like to add numbers to repeating events, like meetings. E.g.
+
+#+begin_example
+,* Job meeting 62
+SCHEDULED: <2022-11-13 16:00>
+,* Job meeting 63
+SCHEDULED: <2022-11-13 16:00>
+...
+#+end_example
+
+Naturally, I want a way to copy such records. Org Mode already has a function called =org-clone-subtree-with-time-shift=, that does everything I want except for updating the numbers.
+
+Unfortunately, I see no way to advise the original function, so here's my version that makes use of =evil-numbers=:
+
+#+begin_src emacs-lisp
+(defun my/org-clone-subtree-with-time-shift (n &optional shift)
+  (interactive "nNumber of clones to produce: ")
+  (unless (wholenump n) (user-error "Invalid number of replications %s" n))
+  (when (org-before-first-heading-p) (user-error "No subtree to clone"))
+  (let* ((beg (save-excursion (org-back-to-heading t) (point)))
+	     (end-of-tree (save-excursion (org-end-of-subtree t t) (point)))
+	     (shift
+	      (or shift
+	          (if (and (not (equal current-prefix-arg '(4)))
+		               (save-excursion
+			             (goto-char beg)
+			             (re-search-forward org-ts-regexp-both end-of-tree t)))
+		          (read-from-minibuffer
+		           "Date shift per clone (e.g. +1w, empty to copy unchanged): ")
+		        "")))                   ;No time shift
+	     (doshift
+	      (and (org-string-nw-p shift)
+	           (or (string-match "\\`[ \t]*\\([+-]?[0-9]+\\)\\([hdwmy]\\)[ \t]*\\'"
+				                 shift)
+		           (user-error "Invalid shift specification %s" shift)))))
+    (goto-char end-of-tree)
+    (unless (bolp) (insert "\n"))
+    (let* ((end (point))
+	       (template (buffer-substring beg end))
+	       (shift-n (and doshift (string-to-number (match-string 1 shift))))
+	       (shift-what (pcase (and doshift (match-string 2 shift))
+			             (`nil nil)
+			             ("h" 'hour)
+			             ("d" 'day)
+			             ("w" (setq shift-n (* 7 shift-n)) 'day)
+			             ("m" 'month)
+			             ("y" 'year)
+			             (_ (error "Unsupported time unit"))))
+	       (nmin 1)
+	       (nmax n)
+	       (n-no-remove -1)
+	       (org-id-overriding-file-name (buffer-file-name (buffer-base-buffer)))
+	       (idprop (org-entry-get beg "ID")))
+      (when (and doshift
+		         (string-match-p "<[^<>\n]+ [.+]?\\+[0-9]+[hdwmy][^<>\n]*>"
+				                 template))
+	    (delete-region beg end)
+	    (setq end beg)
+	    (setq nmin 0)
+	    (setq nmax (1+ nmax))
+	    (setq n-no-remove nmax))
+      (goto-char end)
+      (cl-loop for n from nmin to nmax do
+	           (insert
+		        ;; Prepare clone.
+		        (with-temp-buffer
+		          (insert template)
+		          (org-mode)
+		          (goto-char (point-min))
+		          (org-show-subtree)
+		          (and idprop (if org-clone-delete-id
+				                  (org-entry-delete nil "ID")
+				                (org-id-get-create t)))
+		          (unless (= n 0)
+		            (while (re-search-forward org-clock-line-re nil t)
+		              (delete-region (line-beginning-position)
+				                     (line-beginning-position 2)))
+		            (goto-char (point-min))
+		            (while (re-search-forward org-drawer-regexp nil t)
+		              (org-remove-empty-drawer-at (point))))
+		          (goto-char (point-min))
+
+		          (when doshift
+		            (while (re-search-forward org-ts-regexp-both nil t)
+		              (org-timestamp-change (* n shift-n) shift-what))
+                    (save-excursion
+                      (goto-char (point-min))
+                      (evil-numbers/inc-at-pt (* n shift-n) (point-min)))
+		            (unless (= n n-no-remove)
+		              (goto-char (point-min))
+		              (while (re-search-forward org-ts-regexp nil t)
+			            (save-excursion
+			              (goto-char (match-beginning 0))
+			              (when (looking-at "<[^<>\n]+\\( +[.+]?\\+[0-9]+[hdwmy]\\)")
+			                (delete-region (match-beginning 1) (match-end 1)))))))
+		          (buffer-string)))))
+    (goto-char beg)))
+#+end_src
+
+My addition to that is the form with =evil-numbers/inc-at-pt=.
 
 ** UI
 *** OFF (OFF) Instant equations preview
@@ -6470,6 +6573,10 @@ However, sans the pictures issue, for certain sites like Wikipedia this is usabl
 *** YouTube transcripts
 **** Getting subtitles
 Finally, let's get to transcripts.
+
+| Guix package                  |
+|-------------------------------|
+| python-youtube-transcript-api |
 
 In principle, the YouTube API allows for downloading subtitles, but I've found [[https://github.com/jdepoix/youtube-transcript-api][this awesome Python script]] which does the same. You can install it from =pip=, or here's mine [[https://github.com/SqrtMinusOne/channel-q/blob/master/youtube-transcript-api.scm][Guix definition]] once again.
 
