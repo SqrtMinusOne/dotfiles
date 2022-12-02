@@ -1,0 +1,22 @@
+dynaconf_merge = true
+
+[general]
+root = '@format {env[HOME]}/logs-sync'
+
+[mpd]
+log_folder = '@format {this.general.root}/mpd/logs'
+library_csv = '@format {this.general.root}/mpd/mpd_library.csv'
+exception_timeout = 5
+exception_count = 10
+listened_threshold = 0.5
+custom_attrs = ['musicbrainz_albumid', 'musicbrainz_artistid', 'musicbrainz_trackid']
+
+[aw]
+last_updated = '@format {this.general.root}/aw_last_updated.json'
+logs_folder = '@format {this.general.root}/aw'
+types = ['afkstatus', 'currentwindow', 'web.tab.current', 'app.editor.activity']
+api = 'http://localhost:5600/api'
+
+[sync]
+log_file = '@format {this.general.root}/sync.log'
+target = 'ssh://pavel@sqrtminusone.xyz//home/pavel/logs-sync'
