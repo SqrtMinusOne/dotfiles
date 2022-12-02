@@ -4897,7 +4897,7 @@ ENTRY is an instance of `elfeed-entry'."
   (my-leader-def
     :infix "as"
     "" '(:which-key "emms")
-    "s" #'emms-smart-browse
+    "s" (my/command-in-persp "EMMS" "EMMS" 0 (emms-smart-browse))
     "b" #'emms-browser
     "p" #'emms-pause
     "q" #'emms-stop
