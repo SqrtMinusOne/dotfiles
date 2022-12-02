@@ -1,0 +1,1 @@
+(job "0 * * * * " "sqrt_data_agent_sync")

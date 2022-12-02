@@ -3490,7 +3490,6 @@ I previously used supervisor, but shepherd also seems pretty capable.
 | music    | mpd             |
 | music    | ncmpcpp         |
 | music    | picard          |
-| music    | mpd-watcher     |
 | music    | mpd-mpc         |
 | music    | shntool         |
 | music    | cuetools        |
@@ -3508,11 +3507,11 @@ Music player daemon
 
 MPD watcher
 #+begin_src scheme
-(define mpd-watcher
+(define sqrt-data-agent-mpd
   (make <service>
-    #:provides '(mpd-watcher)
+    #:provides '(sqrt-data-agent-mpd)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("mpd_watcher"))
+    #:start (make-forkexec-constructor '("sqrt_data_agent_mpd"))
     #:stop (make-kill-destructor)
     #:requires '(mpd)))
 #+end_src
@@ -3650,21 +3649,12 @@ Run my [[file:Guix.org::*VPN][OpenVPN setup]]. Not lauching this automatially, a
     #:start (make-forkexec-constructor '("/home/pavel/bin/davmail"))
     #:stop (make-kill-destructor)))
 #+end_src
-** sqrt-data
-#+begin_src scheme
-(define sqrt-data
-  (make <service>
-    #:provides '(sqrt-data)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("sqrt_data" "cron" "run-client-cron"))
-    #:stop (make-kill-destructor)))
-#+end_src
 ** Shepherd config
 Register services
 #+begin_src scheme
 (register-services
  mpd
- mpd-watcher
+ sqrt-data-agent-mpd
  mcron
  aw-server
  aw-watcher-afk
@@ -3676,8 +3666,7 @@ Register services
  vpn
  davmail
  xmodmap
- nm-applet
- sqrt-data)
+ nm-applet)
 #+end_src
 
 Daemonize shepherd
@@ -3702,10 +3691,6 @@ Run services
                   nm-applet
                   sqrt-data))
 #+end_src
-** Sync
-| Guix dependency |
-|-----------------|
-| megacmd-1.4     |
 * Guix settings
 Other desktop programs I use are listed below.
 

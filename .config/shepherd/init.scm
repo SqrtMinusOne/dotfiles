@@ -5,11 +5,11 @@
     #:start (make-forkexec-constructor '("mpd" "--no-daemon"))
     #:stop (make-kill-destructor)))
 
-(define mpd-watcher
+(define sqrt-data-agent-mpd
   (make <service>
-    #:provides '(mpd-watcher)
+    #:provides '(sqrt-data-agent-mpd)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("mpd_watcher"))
+    #:start (make-forkexec-constructor '("sqrt_data_agent_mpd"))
     #:stop (make-kill-destructor)
     #:requires '(mpd)))
 
@@ -97,16 +97,9 @@
     #:start (make-forkexec-constructor '("/home/pavel/bin/davmail"))
     #:stop (make-kill-destructor)))
 
-(define sqrt-data
-  (make <service>
-    #:provides '(sqrt-data)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("sqrt_data" "cron" "run-client-cron"))
-    #:stop (make-kill-destructor)))
-
 (register-services
  mpd
- mpd-watcher
+ sqrt-data-agent-mpd
  mcron
  aw-server
  aw-watcher-afk
@@ -118,8 +111,7 @@
  vpn
  davmail
  xmodmap
- nm-applet
- sqrt-data)
+ nm-applet)
 
 (action 'shepherd 'daemonize)
 

@@ -4,7 +4,6 @@
    "cuetools"
    "shntool"
    "mpd-mpc"
-   "mpd-watcher"
    "picard"
    "ncmpcpp"
    "mpd"))

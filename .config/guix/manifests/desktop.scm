@@ -1,6 +1,5 @@
 (specifications->manifest
  '(
-   "megacmd-1.4"
    "activitywatch-bin"
    "xdg-desktop-portal"
    "flatpak"
