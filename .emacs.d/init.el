@@ -4878,6 +4878,31 @@ ENTRY is an instance of `elfeed-entry'."
                         (caar (elfeed-entry-enclosures entry))))))
   (subed-mpv--play subed-mpv-video-file))
 
+(defun my/whisper-url (url file-name output-dir)
+  (interactive
+   (list (read-from-minibuffer "URL: ")
+         (read-from-minibuffer "File name: ")
+         (read-directory-name "Output directory: ")))
+  (let ((file-path
+         (concat output-dir file-name "." (file-name-extension url))))
+    (message "Download started")
+    (request url
+      :type "GET"
+      :encoding 'binary
+      :complete
+      (cl-function
+       (lambda (&key data &allow-other-keys)
+         (let ((coding-system-for-write 'binary)
+               (write-region-annotate-functions nil)
+               (write-region-post-annotation-function nil))
+           (write-region data nil file-path nil :silent))
+         (message "Conversion started")
+         (my/invoke-whisper file-path output-dir)))
+      :error
+      (cl-function
+       (lambda (&key error-thrown &allow-other-keys)
+         (message "Error!: %S" error-thrown))))))
+
 (unless (or my/is-termux my/remote-server)
   (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
     (if (file-exists-p mail-file)

@@ -8,6 +8,7 @@
 #+begin_quote
 One day we won't hate one another, no young boy will march to war and I will clean up my Emacs config. But that day isn't today.
 #+end_quote
+- Me, <2021-05-27 Thu 17:35> in commit 93a0573 T_T
 
 * Introduction
 My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an awesome +text editor+ program that can do almost anything.
@@ -6875,6 +6876,35 @@ You can also run =M-x subed-toggle-sync-point-to-player= (=C-c .=) to toggle syn
 
 Running =M-x subed-toggle-sync-player-to-point= (=C-c ,=) does the opposite, i.e. sets the player position to the subtitle under point. These two functions are useful since the MPV window controls aren't available.
 
+**** Running it for random files
+Apparently I also need to run whisper for random files from the Internet.
+
+#+begin_src emacs-lisp
+(defun my/whisper-url (url file-name output-dir)
+  (interactive
+   (list (read-from-minibuffer "URL: ")
+         (read-from-minibuffer "File name: ")
+         (read-directory-name "Output directory: ")))
+  (let ((file-path
+         (concat output-dir file-name "." (file-name-extension url))))
+    (message "Download started")
+    (request url
+      :type "GET"
+      :encoding 'binary
+      :complete
+      (cl-function
+       (lambda (&key data &allow-other-keys)
+         (let ((coding-system-for-write 'binary)
+               (write-region-annotate-functions nil)
+               (write-region-post-annotation-function nil))
+           (write-region data nil file-path nil :silent))
+         (message "Conversion started")
+         (my/invoke-whisper file-path output-dir)))
+      :error
+      (cl-function
+       (lambda (&key error-thrown &allow-other-keys)
+         (message "Error!: %S" error-thrown))))))
+#+end_src
 **** Some observations
 So, the functions above work for my purposes.
 
