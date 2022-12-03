@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "telegram-desktop"
    "bluez"
    "xev"
    "gparted"

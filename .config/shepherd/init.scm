@@ -116,7 +116,7 @@
 (action 'shepherd 'daemonize)
 
 (for-each start '(mpd
-                  mpd-watcher
+                  sqrt-data-agent-mpd
                   mcron
                   aw-server
                   aw-watcher-afk
@@ -127,5 +127,4 @@
                   polkit-gnome
                   davmail
                   xmodmap
-                  nm-applet
-                  sqrt-data))
+                  nm-applet))
