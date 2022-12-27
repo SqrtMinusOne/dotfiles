@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# [[file:../../Guix.org::*vpn-stop][vpn-stop:1]]
+# [[file:../../Guix.org::*+vpn-stop+][+vpn-stop+:1]]
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*)" | sed 's/ *$//g')
 echo "Connection: $CONN"
 
 pkexec nmcli con modify "$CONN" ipv6.method auto
 nmcli connection up "$CONN"
-# vpn-stop:1 ends here
+# +vpn-stop+:1 ends here

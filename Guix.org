@@ -546,7 +546,7 @@ I'm using Mullvad VPN. The =~/.vpn= folder stores its OpenVPN config (=openvpn.o
   =setenv PATH= is necessary because both =resolvconf= (openresolve) and =update-resolv-conf.sh= are shell scripts which need GNU coreutils and stuff, and OpenVPN clears PATH by default.
 - Manually fix =etc/resolv.conf= to prevent DNS leaks
   #+begin_src sh :tangle ~/bin/scripts/fix-resolve-conf
-  cp /etc/resolv.conf /etc/resolv.conf-bak
+  /home/pavel/.guix-extra-profiles/console/console/bin/cp /etc/resolv.conf /etc/resolv.conf-bak
   echo "nameserver 8.8.8.8" > /etc/resolv.conf
   #+end_src
 
@@ -605,7 +605,7 @@ fi
 #     pkexec nmcli con modify "$CONN" ipv6.method ignore
 #     nmcli connection up "$CONN"
 # fi
-pkexec openvpn --config ~/.vpn/mullvad_openvpn_linux_lv_rix/mullvad_lv_rix.conf
+pkexec openvpn --config ~/.vpn/mullvad_openvpn_linux_fi_hel/mullvad_fi_hel.conf
 #+end_src
 
 *** +vpn-stop+
