@@ -22,7 +22,7 @@
    "xclip"
    "python-tmuxp"
    "tmux"
-   "rust-starship"
+   "starship-bin"
    "nushell-bin"
    "dt-colorscripts"
    "fish"
