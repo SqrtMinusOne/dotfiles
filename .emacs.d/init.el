@@ -4959,7 +4959,7 @@ ENTRY is an instance of `elfeed-entry'."
                               (regexp (eval (emms-player-simple-regexp
                                              "m3u" "ogg" "flac" "mp3" "wav" "mod" "au" "aiff" "m4a")))))))
   ;; MPV setup
-  (add-to-list 'emms-player-list 'emms-player-mpv)
+  (add-to-list 'emms-player-list 'emms-player-mpv t)
   (emms-player-set emms-player-mpv
                    'regex
                    (rx (or (: "https://" (* nonl) "youtube.com" (* nonl))
@@ -5451,6 +5451,11 @@ ENTRY is an instance of `elfeed-entry'."
     "A dummy function.")
   (defvar geiser-repl-company-p nil
     "A dummy variable."))
+
+(use-package atomic-chrome
+  :if (not my/remote-server)
+  :commands (atomic-chrome-start-server)
+  :straight t)
 
 (use-package pomm
   :straight t

@@ -7037,7 +7037,7 @@ script-opts=ytdl_hook-ytdl_path=yt-dlp
 It seems a bit strange to keep the MPV config in this file, but I don't use the program outside Emacs.
 
 #+begin_src emacs-lisp
-(add-to-list 'emms-player-list 'emms-player-mpv)
+(add-to-list 'emms-player-list 'emms-player-mpv t)
 #+end_src
 
 Also a custom regex. My demands for MPV include running =yt-dlp=, so there is a regex that matches youtube.com or some of the video formats.
@@ -7699,6 +7699,16 @@ An Emacs package to help managing GNU Guix.
   (defvar geiser-repl-company-p nil
     "A dummy variable."))
 #+end_src
+*** Atomic Chrome
+[[https://github.com/alpha22jp/atomic-chrome][Atomic Chrome]] is an extension that allows to edit browser text fields in Emacs. Despite its name, it also works for Firefox with [[https://ghosttext.fregante.com/welcome/][GhostText]], which is what I use.
+
+#+begin_src emacs-lisp
+(use-package atomic-chrome
+  :if (not my/remote-server)
+  :commands (atomic-chrome-start-server)
+  :straight t)
+#+end_src
+
 ** Productivity
 *** pomm
 My package for doing Pomodoro timer.
