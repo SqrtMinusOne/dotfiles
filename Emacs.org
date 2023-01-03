@@ -7852,16 +7852,23 @@ Watch out if you are using EXWM.
 #+end_src
 
 *** Gource
-[[https://gource.io/][Gource]] is a nice repository visualization tool.
+[[https://gource.io/][Gource]] is a program that draws an animated graph of users changing the repository over time.
 
-The goal of the functions below is to run the tool for multiple repos from Dired. Maybe I'll extract it into a separate package at some point, but I'm fine with letting it live here for now.
+Although it can work without extra effort (just run =gource= in a [[https://git-scm.com/][git]] repo), there are some tweaks that can be done:
+- Gource supports using custom pictures for users. [[https://en.gravatar.com/][Gravatar]] is an obvious place to get these.
+- Occasionally, the same people have different names and/or emails in history.\\
+  It may happen when people use forges like [[https://gitlab.com/][GitLab]] or just have different settings on different machines. It would be nice to merge these names.
+- Visualizing the history of multiple repositories (e.g. frontend and backend) requires combining multiple gource logs.
+
+So, why not try doing that with Emacs?
 
 **** Gravatars
-Gource can use pictures to visualize users, so I want to use gravatars. It's quite amazing that Emacs has a built-in gravatar package.
+Much to my surprise, Emacs turned out to have a built-in package called [[https://github.com/emacs-mirror/emacs/blob/master/lisp/image/gravatar.el][gravatar.el]].
 
-First, retrieve a particular gravatar, with a fallback to identicon if necessary:
+So, let's make a function to retrieve a gravatar and save it:
 #+begin_src emacs-lisp
 (defun my/gravatar-retrieve-sync (email file-name)
+  "Get gravatar for EMAIL and save it to FILE-NAME."
   (let ((gravatar-default-image "identicon")
         (gravatar-size nil)
         (coding-system-for-write 'binary)
@@ -7872,24 +7879,55 @@ First, retrieve a particular gravatar, with a fallback to identicon if necessary
      nil file-name nil :silent)))
 #+end_src
 
-These images have to be saved to a folder, with the name corresponding to the git username.
+To use these images, we need to save them to some folder and use usernames as file names. The folder:
 #+begin_src emacs-lisp
 (setq my/gravatar-folder "/home/pavel/.cache/gravatars/")
+#+end_src
 
+And the function that downloads a gravatar if necessary:
+#+begin_src emacs-lisp
 (defun my/gravatar-save (email author)
+  "Download gravatar for EMAIL.
+
+AUTHOR is the username."
   (let ((file-name (concat my/gravatar-folder author ".png")))
     (mkdir my/gravatar-folder t)
     (unless (file-exists-p file-name)
       (message "Fetching gravatar for %s (%s)" author email)
       (my/gravatar-retrieve-sync email file-name))))
 #+end_src
-**** Author names
-That's a hell of a function...
 
-The problem it tries to solve is that, at least in the repos I'm working with, one person can have different commits signed by different emails with the same username, or by same username with different emails. So this function tries to extract and match all such users.
+**** Merging authors
+Now to merging authors.
 
+Gource itself uses only usernames (without emails), but we can use =git log= to get both. The required information can be extracted like that:
+#+begin_src bash
+git log --pretty=format:"%ae|%an" | sort | uniq -c | sed "s/^[ \t]*//;s/ /|/"
+#+end_src
+
+The output is a list of pipe-separated strings, where the values are:
+- Number of occurrences for this combination of username and email
+- Email
+- Username
+
+Of course, that part would have to be changed appropriately for other version control systems if you happen to use one.
+
+So, below is one hell of a function that wraps this command and tries to merge emails and usernames belonging to one author:
 #+begin_src emacs-lisp
 (defun my/git-get-authors (repo &optional authors-init)
+  "Extract and merge all combinations of authors & emails from REPO.
+
+REPO is the path to a git repository.
+
+AUTHORS-INIT is the previous output of `my/git-get-authors'.  It can
+be used to extract that information from multiple repositories.
+
+The output is a list of alists with following keys:
+- emails: list of (<email> . <count>)
+- authors: list of (<username> . <count>)
+- email: the most popular email
+- author: the most popular username
+I.e. one alist is all emails and usernames of one author."
   (let* ((default-directory repo)
          (data (shell-command-to-string
                 "git log --pretty=format:\"%ae|%an\" | sort | uniq -c | sed \"s/^[ \t]*//;s/ /|/\""))
@@ -7958,9 +7996,46 @@ The problem it tries to solve is that, at least in the repos I'm working with, o
       authors
       :initial-value authors-init))))
 #+end_src
-**** Get Gource Log
+
+Despite the probable we-enjoy-typing-ness of the implementation, it's actually pretty simple:
+- The output of =git log= is parsed into a list of alists with =count=, =email= and =author= as keys.
+- This list is reduced by =cl-reduce= into a list of alists with =emails= and =authors= as keys and the respective counts as values, e.g. =((<email-1> . 1) (<email-2> . 3))=.\\
+  I've seen a couple of cases where people would swap their username and email (lol), so =seq-find= also looks for an email in the list of authors and vice versa.
+- The =mapcar= call determines the most popular email and username for each authors.
+
+The output is another list of alists, now with the following keys:
+- =emails= - list of elements like =(<email> . <count>)=
+- =authors= - list of elements like =(<author-name> . <count>)=
+- =email= - the most popular email
+- =author= - the most popular username.
+
+**** Running for multiple repos
+This section was mostly informed by [[https://github.com/acaudwell/Gource/wiki/Visualizing-Multiple-Repositories][this page]] in the [[https://github.com/acaudwell/Gource/wiki][gource wiki]].
+
+As I said above, by default =gource= just creates a visualization for the current repo. To change something in it, we need to invoke the program like that: =gource --output-custom-log PATH=, where =PATH= is either the path to the log file or =-= for stdout.
+
+The log consists of lines of pipe-separated strings, e.g.:
+#+begin_example
+1600769568|dsofronov|A|/studentor/.dockerignore
+1600769568|dsofronov|A|/studentor/.editorconfig
+1600769568|dsofronov|A|/studentor/.flake8
+1600769568|dsofronov|A|/studentor/.gitignore
+#+end_example
+
+where the values of one line are:
+- UNIX timestamp
+- Author name
+- =A= for add, =M= for modify, and =D= for delete
+- Path to file
+
+The file has to be sorted by the timestamp in ascending order.
+
+So, the function that prepares the log for one repository:
 #+begin_src emacs-lisp
 (defun my/gource-prepare-log (repo authors)
+  "Create gource log string for REPO.
+
+AUTHORS is the output of `my/git-get-authors'."
   (let ((log (shell-command-to-string
               (concat
                "gource --output-custom-log - "
@@ -7986,37 +8061,67 @@ The problem it tries to solve is that, at least in the repos I'm working with, o
              concat "\n")))
 #+end_src
 
+This function:
+- Downloads a gravatar for each author
+- Replaces all usernames of one author with the most frequent one
+- Prepends the file path with the repository name.
+
+The output is a string in the gource log format as described above.
+
+Finally, as we need to invoke all of this for multiple repositories, why not do that with [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Dired.html][dired]]:
 #+begin_src emacs-lisp
 (defun my/gource-dired-create-logs (repos log-name)
+  "Create combined gource log for REPOS.
+
+REPOS is a list of strings, where a string is a path to a git repo.
+LOG-NAME is the path to the resulting log file.
+
+This function is meant to be invoked from `dired', where the required
+repositories are marked."
   (interactive (list (or (dired-get-marked-files nil nil #'file-directory-p)
                          (user-error "Select at least one directory"))
                      (read-file-name "Log file name: " nil "combined.log")))
-  (let* ((authors
-          (cl-reduce
-           (lambda (acc repo)
-             (my/git-get-authors repo acc))
-           repos
-           :initial-value nil))
-         (logs (string-join
-                (seq-filter
-                 (lambda (line)
-                   (not (string-empty-p line)))
-                 (seq-sort-by
-                  (lambda (line)
-                    (if-let (time (car (split-string line "|")))
-                        (string-to-number time)
-                      0))
-                  #'<
-                  (split-string
-                   (mapconcat
-                    (lambda (repo)
-                      (my/gource-prepare-log repo authors))
-                    repos "\n")
-                   "\n")))
-                "\n")))
+  (let ((authors
+         (cl-reduce
+          (lambda (acc repo)
+            (my/git-get-authors repo acc))
+          repos
+          :initial-value nil)))
     (with-temp-file log-name
-      (insert logs))))
+      (insert
+       (string-join
+        (seq-filter
+         (lambda (line)
+           (not (string-empty-p line)))
+         (seq-sort-by
+          (lambda (line)
+            (if-let (time (car (split-string line "|")))
+                (string-to-number time)
+              0))
+          #'<
+          (split-string
+           (mapconcat
+            (lambda (repo)
+              (my/gource-prepare-log repo authors))
+            repos "\n")
+           "\n")))
+        "\n")))))
 #+end_src
+
+This function extracts authors from each repository and merges the logs as required by gource, that is sorting the result by time in ascending order.
+
+**** Using the function
+To use the function above, mark the required repos in a dired buffer and run =M-x my/gource-dired-create-logs=. This also works nicely with [[https://github.com/Fuco1/dired-hacks][dired-subtree]], in case your repos are located in different folders.
+
+The function will create a combined log file (by default =combined.log=). To visualize the log, run:
+#+begin_src bash
+gource <log-file> --user-image-dir <path-to-gravatars>
+#+end_src
+
+Check the [[https://github.com/acaudwell/Gource][README]] for possible parameters, such as the speed of visualization, different elements, etc. That's it!
+
+I thought about making something like a [[https://github.com/magit/transient][transient.el]] wrapper around the =gource= command but figured it wasn't worth the effort for something that I run just a handful of times in a year.
+
 * Guix settings
 | Guix dependency     | Description                   |
 |---------------------+-------------------------------|

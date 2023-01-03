@@ -5545,6 +5545,7 @@ ENTRY is an instance of `elfeed-entry'."
                       (zone))))
 
 (defun my/gravatar-retrieve-sync (email file-name)
+  "Get gravatar for EMAIL and save it to FILE-NAME."
   (let ((gravatar-default-image "identicon")
         (gravatar-size nil)
         (coding-system-for-write 'binary)
@@ -5557,6 +5558,9 @@ ENTRY is an instance of `elfeed-entry'."
 (setq my/gravatar-folder "/home/pavel/.cache/gravatars/")
 
 (defun my/gravatar-save (email author)
+  "Download gravatar for EMAIL.
+
+AUTHOR is the username."
   (let ((file-name (concat my/gravatar-folder author ".png")))
     (mkdir my/gravatar-folder t)
     (unless (file-exists-p file-name)
@@ -5564,6 +5568,19 @@ ENTRY is an instance of `elfeed-entry'."
       (my/gravatar-retrieve-sync email file-name))))
 
 (defun my/git-get-authors (repo &optional authors-init)
+  "Extract and merge all combinations of authors & emails from REPO.
+
+REPO is the path to a git repository.
+
+AUTHORS-INIT is the previous output of `my/git-get-authors'.  It can
+be used to extract that information from multiple repositories.
+
+The output is a list of alists with following keys:
+- emails: list of (<email> . <count>)
+- authors: list of (<username> . <count>)
+- email: the most popular email
+- author: the most popular username
+I.e. one alist is all emails and usernames of one author."
   (let* ((default-directory repo)
          (data (shell-command-to-string
                 "git log --pretty=format:\"%ae|%an\" | sort | uniq -c | sed \"s/^[ \t]*//;s/ /|/\""))
@@ -5633,6 +5650,9 @@ ENTRY is an instance of `elfeed-entry'."
       :initial-value authors-init))))
 
 (defun my/gource-prepare-log (repo authors)
+  "Create gource log string for REPO.
+
+AUTHORS is the output of `my/git-get-authors'."
   (let ((log (shell-command-to-string
               (concat
                "gource --output-custom-log - "
@@ -5658,31 +5678,38 @@ ENTRY is an instance of `elfeed-entry'."
              concat "\n")))
 
 (defun my/gource-dired-create-logs (repos log-name)
+  "Create combined gource log for REPOS.
+
+REPOS is a list of strings, where a string is a path to a git repo.
+LOG-NAME is the path to the resulting log file.
+
+This function is meant to be invoked from `dired', where the required
+repositories are marked."
   (interactive (list (or (dired-get-marked-files nil nil #'file-directory-p)
                          (user-error "Select at least one directory"))
                      (read-file-name "Log file name: " nil "combined.log")))
-  (let* ((authors
-          (cl-reduce
-           (lambda (acc repo)
-             (my/git-get-authors repo acc))
-           repos
-           :initial-value nil))
-         (logs (string-join
-                (seq-filter
-                 (lambda (line)
-                   (not (string-empty-p line)))
-                 (seq-sort-by
-                  (lambda (line)
-                    (if-let (time (car (split-string line "|")))
-                        (string-to-number time)
-                      0))
-                  #'<
-                  (split-string
-                   (mapconcat
-                    (lambda (repo)
-                      (my/gource-prepare-log repo authors))
-                    repos "\n")
-                   "\n")))
-                "\n")))
+  (let ((authors
+         (cl-reduce
+          (lambda (acc repo)
+            (my/git-get-authors repo acc))
+          repos
+          :initial-value nil)))
     (with-temp-file log-name
-      (insert logs))))
+      (insert
+       (string-join
+        (seq-filter
+         (lambda (line)
+           (not (string-empty-p line)))
+         (seq-sort-by
+          (lambda (line)
+            (if-let (time (car (split-string line "|")))
+                (string-to-number time)
+              0))
+          #'<
+          (split-string
+           (mapconcat
+            (lambda (repo)
+              (my/gource-prepare-log repo authors))
+            repos "\n")
+           "\n")))
+        "\n")))))
