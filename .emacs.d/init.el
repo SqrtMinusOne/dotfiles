@@ -2172,6 +2172,13 @@ Returns (<buffer> . <workspace-index>) or nil."
   "p" 'langtool-goto-previous-error
   "l" 'langtool-correct-buffer)
 
+(use-package reverso
+  :straight (:host github :repo "SqrtMinusOne/reverso.el")
+  :init
+  (my-leader-def "ar" #'reverso)
+  :config
+  (setq reverso-languages '(russian english german)))
+
 (use-package lispy
   :commands (lispy-mode)
   :straight t)
@@ -2239,6 +2246,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package clips-mode
   :straight t
   :mode "\\.cl\\'"
+  :disabled t
   :config
   (add-hook 'clips-mode 'lispy-mode))
 
@@ -2434,6 +2442,31 @@ Returns (<buffer> . <workspace-index>) or nil."
   :config
  (add-hook 'fish-mode-hook #'smartparens-mode))
 
+(setq my/sqlformatter-dialect-choice
+      '("db2" "mariadb" "mysql" "n1ql" "plsql" "postgresql" "redshift" "spark" "sql" "tsql"))
+
+(setq my/sqlformatter-dialect "postgresql")
+
+(defun my/sqlformatter-set-dialect ()
+  "Set dialect for sql-formatter"
+  (interactive)
+  (setq my/sqlformatter-dialect
+        (completing-read "Dialect: " my/sqlformatter-dialect-choice)))
+
+(reformatter-define sqlformat
+  :program (executable-find "sql-formatter")
+  :args `("-l" ,my/sqlformatter-dialect))
+
+(my-leader-def
+  :keymaps '(sql-mode-map)
+  "rr" #'sqlformat-buffer)
+
+(use-package sparql-mode
+  :straight t)
+
+(use-package graphql-mode
+  :straight t)
+
 (use-package x509-mode
   :straight t)
 
@@ -2492,28 +2525,6 @@ Returns (<buffer> . <workspace-index>) or nil."
   :hook (lua-mode . smartparens-mode))
 
 (my/set-smartparens-indent 'lua-mode)
-
-(setq my/sqlformatter-dialect-choice
-      '("db2" "mariadb" "mysql" "n1ql" "plsql" "postgresql" "redshift" "spark" "sql" "tsql"))
-
-(setq my/sqlformatter-dialect "postgresql")
-
-(defun my/sqlformatter-set-dialect ()
-  "Set dialect for sql-formatter"
-  (interactive)
-  (setq my/sqlformatter-dialect
-        (completing-read "Dialect: " my/sqlformatter-dialect-choice)))
-
-(reformatter-define sqlformat
-  :program (executable-find "sql-formatter")
-  :args `("-l" ,my/sqlformatter-dialect))
-
-(my-leader-def
-  :keymaps '(sql-mode-map)
-  "rr" #'sqlformat-buffer)
-
-(use-package sparql-mode
-  :straight t)
 
 (use-package org
   :straight (:type built-in)
@@ -2903,6 +2914,20 @@ Returns (<buffer> . <workspace-index>) or nil."
    "C-c t A" #'org-transclusion-add-all
    "C-c t t" #'org-transclusion-mode))
 
+(defun my/export-org-tables-to-csv ()
+  (interactive)
+  (org-table-map-tables
+   (lambda ()
+     (when-let
+         (name
+          (plist-get (cadr (org-element-at-point)) :name))
+       (org-table-export
+        (concat
+         (file-name-directory
+          (buffer-file-name))
+         name ".csv")
+        "orgtbl-to-csv")))))
+
 (defun my/update-org-agenda ()
   (interactive)
   (let ((project-files
@@ -2919,23 +2944,17 @@ Returns (<buffer> . <workspace-index>) or nil."
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
-               (lambda (f) `(,f . (:maxlevel . 2)))
-               project-files)
-            ,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
-               project-files)))))
+               project-files)))
+    (when (file-exists-p (concat org-directory "/scripts/refile.el"))
+      (load-file (concat org-directory "/scripts/refile.el"))
+      (run-hooks 'my/org-refile-hooks))))
 
 (with-eval-after-load-norem 'org
   (setq org-roam-directory (concat org-directory "/roam"))
   (my/update-org-agenda)
   ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
   )
-
-(my-leader-def
-  :infix "o"
-  "" '(:which-key "org-mode")
-  "c" 'org-capture
-  "a" 'org-agenda)
 
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
@@ -2963,12 +2982,6 @@ Returns (<buffer> . <workspace-index>) or nil."
          ,(concat "* %?\n"
                   "/Entered on/ %U"))))
 
-(with-eval-after-load-norem 'org
-  (add-to-list 'org-global-properties
-               '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00")))
-
-(setq org-log-done 'time)
-
 (use-package org-ql
   :after (org)
   :if (not my/remote-server)
@@ -2982,14 +2995,11 @@ Returns (<buffer> . <workspace-index>) or nil."
         (format-time-string "%Y-%m-%d" scheduled)
       "")))
 
-(setq org-agenda-hide-tags-regexp (rx (or "org" "log" "log_here" "refile")))
+(setq org-agenda-hide-tags-regexp (rx (or "org" "refile")))
 
 (setq org-agenda-custom-commands
       `(("p" "My outline"
          ((agenda "")
-          (todo "NEXT"
-                ((org-agenda-prefix-format "  %i %-12:c [%e] ")
-                 (org-agenda-overriding-header "Next tasks")))
           (tags-todo "inbox"
                      ((org-agenda-overriding-header "Inbox")
                       (org-agenda-prefix-format " %i %-12:c")
@@ -2999,37 +3009,100 @@ Returns (<buffer> . <workspace-index>) or nil."
                       (org-agenda-hide-tags-regexp "waitlist")
                       (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
 
-(use-package org-ref
-  :straight (:files (:defaults (:exclude "*helm*")))
-  :if (not my/remote-server)
-  :init
-  (setq bibtex-dialect 'biblatex)
-  (setq bibtex-completion-bibliography '("~/Documents/org-mode/library.bib"))
-  (setq bibtex-completion-library-path '("~/Documents/library"))
-  (setq bibtex-completion-notes-path "~/Documents/org-mode/literature-notes")
-  (setq bibtex-completion-display-formats
-        '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}")))
-  (setq bibtex-completion-pdf-open-function
-        (lambda (file)
-          (start-process "dired-open" nil
-                         "xdg-open" (file-truename file))))
-  :after (org)
-  :config
-  (require 'org-ref-ivy)
-  (general-define-key
-   :keymaps 'org-mode-map
-   "C-c l" #'org-ref-insert-link-hydra/body)
-  (general-define-key
-   :keymaps 'bibtex-mode-map
-   "M-RET" 'org-ref-bibtex-hydra/body))
+(my-leader-def
+  :infix "o"
+  "" '(:which-key "org-mode")
+  "c" 'org-capture
+  "a" 'org-agenda)
 
-(use-package ivy-bibtex
-  :commands (ivy-bibtex)
-  :straight t
-  :init
-  (my-leader-def "fB" 'ivy-bibtex))
+(with-eval-after-load-norem 'org
+  (add-to-list 'org-global-properties
+               '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00")))
 
-(add-hook 'bibtex-mode 'smartparens-mode)
+(setq org-log-done 'time)
+
+(defun my/org-clone-subtree-with-time-shift (n &optional shift)
+  (interactive "nNumber of clones to produce: ")
+  (unless (wholenump n) (user-error "Invalid number of replications %s" n))
+  (when (org-before-first-heading-p) (user-error "No subtree to clone"))
+  (let* ((beg (save-excursion (org-back-to-heading t) (point)))
+	     (end-of-tree (save-excursion (org-end-of-subtree t t) (point)))
+	     (shift
+	      (or shift
+	          (if (and (not (equal current-prefix-arg '(4)))
+		               (save-excursion
+			             (goto-char beg)
+			             (re-search-forward org-ts-regexp-both end-of-tree t)))
+		          (read-from-minibuffer
+		           "Date shift per clone (e.g. +1w, empty to copy unchanged): ")
+		        "")))                   ;No time shift
+	     (doshift
+	      (and (org-string-nw-p shift)
+	           (or (string-match "\\`[ \t]*\\([+-]?[0-9]+\\)\\([hdwmy]\\)[ \t]*\\'"
+				                 shift)
+		           (user-error "Invalid shift specification %s" shift)))))
+    (goto-char end-of-tree)
+    (unless (bolp) (insert "\n"))
+    (let* ((end (point))
+	       (template (buffer-substring beg end))
+	       (shift-n (and doshift (string-to-number (match-string 1 shift))))
+	       (shift-what (pcase (and doshift (match-string 2 shift))
+			             (`nil nil)
+			             ("h" 'hour)
+			             ("d" 'day)
+			             ("w" (setq shift-n (* 7 shift-n)) 'day)
+			             ("m" 'month)
+			             ("y" 'year)
+			             (_ (error "Unsupported time unit"))))
+	       (nmin 1)
+	       (nmax n)
+	       (n-no-remove -1)
+	       (org-id-overriding-file-name (buffer-file-name (buffer-base-buffer)))
+	       (idprop (org-entry-get beg "ID")))
+      (when (and doshift
+		         (string-match-p "<[^<>\n]+ [.+]?\\+[0-9]+[hdwmy][^<>\n]*>"
+				                 template))
+	    (delete-region beg end)
+	    (setq end beg)
+	    (setq nmin 0)
+	    (setq nmax (1+ nmax))
+	    (setq n-no-remove nmax))
+      (goto-char end)
+      (cl-loop for n from nmin to nmax do
+	           (insert
+		        ;; Prepare clone.
+		        (with-temp-buffer
+		          (insert template)
+		          (org-mode)
+		          (goto-char (point-min))
+		          (org-show-subtree)
+		          (and idprop (if org-clone-delete-id
+				                  (org-entry-delete nil "ID")
+				                (org-id-get-create t)))
+		          (unless (= n 0)
+		            (while (re-search-forward org-clock-line-re nil t)
+		              (delete-region (line-beginning-position)
+				                     (line-beginning-position 2)))
+		            (goto-char (point-min))
+		            (while (re-search-forward org-drawer-regexp nil t)
+		              (org-remove-empty-drawer-at (point))))
+		          (goto-char (point-min))
+
+		          (when doshift
+		            (while (re-search-forward org-ts-regexp-both nil t)
+		              (org-timestamp-change (* n shift-n) shift-what))
+                    (save-excursion
+                      (goto-char (point-min))
+                      (evil-numbers/inc-at-pt (* n shift-n) (point-min)))
+		            (unless (= n n-no-remove)
+		              (goto-char (point-min))
+		              (while (re-search-forward org-ts-regexp nil t)
+			            (save-excursion
+			              (goto-char (match-beginning 0))
+			              (when (looking-at "<[^<>\n]+\\( +[.+]?\\+[0-9]+[hdwmy]\\)")
+			                (delete-region (match-beginning 1) (match-end 1)))))))
+		          (buffer-string)))))
+    (goto-char beg)))
 
 (use-package org-journal
   :straight t
@@ -3111,6 +3184,38 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (add-hook 'org-journal-after-entry-create-hook
           #'my/set-journal-header)
+
+(use-package org-ref
+  :straight (:files (:defaults (:exclude "*helm*")))
+  :if (not my/remote-server)
+  :init
+  (setq bibtex-dialect 'biblatex)
+  (setq bibtex-completion-bibliography '("~/Documents/org-mode/library.bib"))
+  (setq bibtex-completion-library-path '("~/Documents/library"))
+  (setq bibtex-completion-notes-path "~/Documents/org-mode/literature-notes")
+  (setq bibtex-completion-display-formats
+        '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}")))
+  (setq bibtex-completion-pdf-open-function
+        (lambda (file)
+          (start-process "dired-open" nil
+                         "xdg-open" (file-truename file))))
+  :after (org)
+  :config
+  (require 'org-ref-ivy)
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c l" #'org-ref-insert-link-hydra/body)
+  (general-define-key
+   :keymaps 'bibtex-mode-map
+   "M-RET" 'org-ref-bibtex-hydra/body))
+
+(use-package ivy-bibtex
+  :commands (ivy-bibtex)
+  :straight t
+  :init
+  (my-leader-def "fB" 'ivy-bibtex))
+
+(add-hook 'bibtex-mode 'smartparens-mode)
 
 (use-package emacsql-sqlite
   :defer t
@@ -3423,103 +3528,6 @@ Returns (<buffer> . <workspace-index>) or nil."
   :config
   (setq org-contacts-files (list
                             (concat org-directory "/contacts.org"))))
-
-(defun my/export-org-tables-to-csv ()
-  (interactive)
-  (org-table-map-tables
-   (lambda ()
-     (when-let
-         (name
-          (plist-get (cadr (org-element-at-point)) :name))
-       (org-table-export
-        (concat
-         (file-name-directory
-          (buffer-file-name))
-         name ".csv")
-        "orgtbl-to-csv")))))
-
-(defun my/org-clone-subtree-with-time-shift (n &optional shift)
-  (interactive "nNumber of clones to produce: ")
-  (unless (wholenump n) (user-error "Invalid number of replications %s" n))
-  (when (org-before-first-heading-p) (user-error "No subtree to clone"))
-  (let* ((beg (save-excursion (org-back-to-heading t) (point)))
-	     (end-of-tree (save-excursion (org-end-of-subtree t t) (point)))
-	     (shift
-	      (or shift
-	          (if (and (not (equal current-prefix-arg '(4)))
-		               (save-excursion
-			             (goto-char beg)
-			             (re-search-forward org-ts-regexp-both end-of-tree t)))
-		          (read-from-minibuffer
-		           "Date shift per clone (e.g. +1w, empty to copy unchanged): ")
-		        "")))                   ;No time shift
-	     (doshift
-	      (and (org-string-nw-p shift)
-	           (or (string-match "\\`[ \t]*\\([+-]?[0-9]+\\)\\([hdwmy]\\)[ \t]*\\'"
-				                 shift)
-		           (user-error "Invalid shift specification %s" shift)))))
-    (goto-char end-of-tree)
-    (unless (bolp) (insert "\n"))
-    (let* ((end (point))
-	       (template (buffer-substring beg end))
-	       (shift-n (and doshift (string-to-number (match-string 1 shift))))
-	       (shift-what (pcase (and doshift (match-string 2 shift))
-			             (`nil nil)
-			             ("h" 'hour)
-			             ("d" 'day)
-			             ("w" (setq shift-n (* 7 shift-n)) 'day)
-			             ("m" 'month)
-			             ("y" 'year)
-			             (_ (error "Unsupported time unit"))))
-	       (nmin 1)
-	       (nmax n)
-	       (n-no-remove -1)
-	       (org-id-overriding-file-name (buffer-file-name (buffer-base-buffer)))
-	       (idprop (org-entry-get beg "ID")))
-      (when (and doshift
-		         (string-match-p "<[^<>\n]+ [.+]?\\+[0-9]+[hdwmy][^<>\n]*>"
-				                 template))
-	    (delete-region beg end)
-	    (setq end beg)
-	    (setq nmin 0)
-	    (setq nmax (1+ nmax))
-	    (setq n-no-remove nmax))
-      (goto-char end)
-      (cl-loop for n from nmin to nmax do
-	           (insert
-		        ;; Prepare clone.
-		        (with-temp-buffer
-		          (insert template)
-		          (org-mode)
-		          (goto-char (point-min))
-		          (org-show-subtree)
-		          (and idprop (if org-clone-delete-id
-				                  (org-entry-delete nil "ID")
-				                (org-id-get-create t)))
-		          (unless (= n 0)
-		            (while (re-search-forward org-clock-line-re nil t)
-		              (delete-region (line-beginning-position)
-				                     (line-beginning-position 2)))
-		            (goto-char (point-min))
-		            (while (re-search-forward org-drawer-regexp nil t)
-		              (org-remove-empty-drawer-at (point))))
-		          (goto-char (point-min))
-
-		          (when doshift
-		            (while (re-search-forward org-ts-regexp-both nil t)
-		              (org-timestamp-change (* n shift-n) shift-what))
-                    (save-excursion
-                      (goto-char (point-min))
-                      (evil-numbers/inc-at-pt (* n shift-n) (point-min)))
-		            (unless (= n n-no-remove)
-		              (goto-char (point-min))
-		              (while (re-search-forward org-ts-regexp nil t)
-			            (save-excursion
-			              (goto-char (match-beginning 0))
-			              (when (looking-at "<[^<>\n]+\\( +[.+]?\\+[0-9]+[hdwmy]\\)")
-			                (delete-region (match-beginning 1) (match-end 1)))))))
-		          (buffer-string)))))
-    (goto-char beg)))
 
 (use-package org-latex-impatient
   :straight (:repo "yangsheng6810/org-latex-impatient"
@@ -5254,13 +5262,6 @@ ENTRY is an instance of `elfeed-entry'."
   "q" 'google-translate-query-translate
   "Q" 'google-translate-query-translate-reverse
   "t" 'google-translate-smooth-translate)
-
-(use-package reverso
-  :straight (:host github :repo "SqrtMinusOne/reverso.el")
-  :init
-  (my-leader-def "ar" #'reverso)
-  :config
-  (setq reverso-languages '(russian english german)))
 
 (use-package tldr
   :straight t

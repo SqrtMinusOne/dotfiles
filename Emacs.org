@@ -8,7 +8,7 @@
 #+begin_quote
 One day we won't hate one another, no young boy will march to war and I will clean up my Emacs config. But that day isn't today.
 #+end_quote
-- Me, <2021-05-27 Thu 17:35> in commit 93a0573 T_T
+- Me, <2021-05-27 Thu 17:35> in commit 93a0573. Adapted from [[https://www.youtube.com/watch?v=pIdBinlW40E][The Dark Element - "The Pallbearer Walks Alone"]]. T_T
 
 * Introduction
 My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an awesome +text editor+ program that can do almost anything.
@@ -55,7 +55,8 @@ I decided not to keep configs for features that I do not use anymore because thi
 | svelte-mode       | 8594d6f53e42c70bbf903e168607841854818a38 |
 | pomidor           | 8594d6f53e42c70bbf903e168607841854818a38 |
 | elfeed-score      | 8e591e0d2afd909ae5be00caf17f9b17c6cd8b61 |
-* Bootstrap
+| org-trello        | 3f5967a5f63928ea9c8567d8d9f31e84cdbbc21f |
+* Initial setup
 Setting up the environment, performance tuning and a few basic settings.
 
 First things first, lexical binding.
@@ -2951,6 +2952,17 @@ References:
   "p" 'langtool-goto-previous-error
   "l" 'langtool-correct-buffer)
 #+end_src
+*** Reverso
+[[https://github.com/SqrtMinusOne/reverso.el][reverso.el]] is a package of mine that provides Emacs interface for [[https://reverso.net]].
+
+#+begin_src emacs-lisp
+(use-package reverso
+  :straight (:host github :repo "SqrtMinusOne/reverso.el")
+  :init
+  (my-leader-def "ar" #'reverso)
+  :config
+  (setq reverso-languages '(russian english german)))
+#+end_src
 ** Lisp
 [[file:dot-imgs/lisp_cycles.png]]
 
@@ -3044,12 +3056,13 @@ Python requirements:
 (add-hook 'scheme-mode-hook #'lispy-mode)
 #+end_src
 *** CLIPS
-An honorary Lisp
+An honorary Lisp.
 
 #+begin_src emacs-lisp
 (use-package clips-mode
   :straight t
   :mode "\\.cl\\'"
+  :disabled t
   :config
   (add-hook 'clips-mode 'lispy-mode))
 #+end_src
@@ -3348,6 +3361,44 @@ A package to quickly create =.gitignore= files.
   :config
  (add-hook 'fish-mode-hook #'smartparens-mode))
 #+end_src
+** Query languages
+*** SQL
+[[https://github.com/zeroturnaround/sql-formatter][sql-formatter]] is a nice JavaScript package for pretty-printing SQL queries. It is not packaged for Emacs, so the easiest way to use it seems to be to define a custom formatter via [[https://github.com/purcell/emacs-reformatter][reformatter]].
+
+Also, I've made a simple function to switch dialects because I often alternate between them.
+
+So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL queries in Org Mode, so this quite package is handy.
+
+#+begin_src emacs-lisp
+(setq my/sqlformatter-dialect-choice
+      '("db2" "mariadb" "mysql" "n1ql" "plsql" "postgresql" "redshift" "spark" "sql" "tsql"))
+
+(setq my/sqlformatter-dialect "postgresql")
+
+(defun my/sqlformatter-set-dialect ()
+  "Set dialect for sql-formatter"
+  (interactive)
+  (setq my/sqlformatter-dialect
+        (completing-read "Dialect: " my/sqlformatter-dialect-choice)))
+
+(reformatter-define sqlformat
+  :program (executable-find "sql-formatter")
+  :args `("-l" ,my/sqlformatter-dialect))
+
+(my-leader-def
+  :keymaps '(sql-mode-map)
+  "rr" #'sqlformat-buffer)
+#+end_src
+*** SPARQL
+#+begin_src emacs-lisp
+(use-package sparql-mode
+  :straight t)
+#+end_src
+*** GraphQL
+#+begin_src emacs-lisp
+(use-package graphql-mode
+  :straight t)
+#+end_src
 ** x509
 #+begin_src emacs-lisp
 (use-package x509-mode
@@ -3429,40 +3480,8 @@ A package to quickly create =.gitignore= files.
 
 (my/set-smartparens-indent 'lua-mode)
 #+end_src
-** SQL
-[[https://github.com/zeroturnaround/sql-formatter][sql-formatter]] is a nice JavaScript package for pretty-printing SQL queries. It is not packaged for Emacs, so the easiest way to use it seems to be to define a custom formatter via [[https://github.com/purcell/emacs-reformatter][reformatter]].
-
-Also, I've made a simple function to switch dialects because I often alternate between them.
-
-So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL queries in Org Mode, so this quite package is handy.
-
-#+begin_src emacs-lisp
-(setq my/sqlformatter-dialect-choice
-      '("db2" "mariadb" "mysql" "n1ql" "plsql" "postgresql" "redshift" "spark" "sql" "tsql"))
-
-(setq my/sqlformatter-dialect "postgresql")
-
-(defun my/sqlformatter-set-dialect ()
-  "Set dialect for sql-formatter"
-  (interactive)
-  (setq my/sqlformatter-dialect
-        (completing-read "Dialect: " my/sqlformatter-dialect-choice)))
-
-(reformatter-define sqlformat
-  :program (executable-find "sql-formatter")
-  :args `("-l" ,my/sqlformatter-dialect))
-
-(my-leader-def
-  :keymaps '(sql-mode-map)
-  "rr" #'sqlformat-buffer)
-#+end_src
-** SPARQL
-#+begin_src emacs-lisp
-(use-package sparql-mode
-  :straight t)
-#+end_src
 * Org Mode
-*Org mode* is a tool that leverages plain-text files for various tasks like making notes, literate programming, task management, etc.
+*Org mode* is a tool that leverages plain-text files for tasks like making notes, literate programming, task management, etc.
 
 References:
 - [[https://orgmode.org/][Org Mode homepage]]
@@ -3496,7 +3515,7 @@ Use the built-in org mode (=:type built-in=).
 #+end_src
 
 *** Encryption
-Setting up =org-crypt= to encrypt a part of a file.
+Setting up =org-crypt= to encrypt parts of file.
 
 #+begin_src emacs-lisp :noweb-ref
 (with-eval-after-load-norem 'org
@@ -3506,9 +3525,9 @@ Setting up =org-crypt= to encrypt a part of a file.
   (setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205"))
 #+end_src
 
-This enables encryption for Org segments which are tagged =:crypt:=.
+This enables encryption for Org segments tagged =:crypt:=.
 
-Another way to encrypt org files is to save them with extension =.org.gpg=. That way by default epa always prompts for a key, which is not what I want when there is in fact only one key to select. So I make the following advice:
+Another way to encrypt Org files is to save them with the extension =.org.gpg=. However, by default [[https://www.gnu.org/software/emacs/manual/html_mono/epa.html][EPA]] always prompts for the key, which is not what I want when there is only one key to select. Hence the following advice:
 #+begin_src emacs-lisp
 (defun my/epa--select-keys-around (fun prompt keys)
   (if (= (seq-length keys) 1)
@@ -3525,7 +3544,7 @@ Another way to encrypt org files is to save them with extension =.org.gpg=. That
 =org-contrib= is a package with various additions to Org. I use the following:
 - =ox-extra= - extensions for org export
 
-This used to have =org-contacts= and =ol-notmuch= at some point, but they've been migrated to separate repos since.
+This used to have =org-contacts= and =ol-notmuch= at some point, but they have since been migrated to separate repos.
 
 #+begin_src emacs-lisp
 (use-package org-contrib
@@ -3910,9 +3929,9 @@ Some keybindings:
 #+end_src
 
 *** Managing a literate programming project
-A few tricks to do literate programming.
+A few tricks to do literate programming. I actually have only one ([[https://github.com/SqrtMinusOne/sqrt-data][sqrt-data]]), and I'm not convinced in the benefits of the approach...
 
-I prefer to put the org files to a separate directory (e.g. =org=). So I've come up with the following solution to avoid manually prefixing the =:tangle= arguments.
+Anyway, Org files are better off in a separated directory (e.g. =org=). So I've come up with the following solution to avoid manually prefixing the =:tangle= arguments.
 
 Set up the following argument with the path to the project root:
 #+begin_example
@@ -4038,16 +4057,56 @@ A package that implements transclusions in Org Mode, i.e. rendering part of one 
    "C-c t A" #'org-transclusion-add-all
    "C-c t t" #'org-transclusion-mode))
 #+end_src
-** Productivity & Knowledge management
-My ongoing effort to get a productivity setup in Org.
+*** Managing tables
+I use Org to manage some small tables which I want to process further. So here is a function that saves each table to a CSV file.
 
-Some inspiration:
+#+begin_src emacs-lisp
+(defun my/export-org-tables-to-csv ()
+  (interactive)
+  (org-table-map-tables
+   (lambda ()
+     (when-let
+         (name
+          (plist-get (cadr (org-element-at-point)) :name))
+       (org-table-export
+        (concat
+         (file-name-directory
+          (buffer-file-name))
+         name ".csv")
+        "orgtbl-to-csv")))))
+#+end_src
+** Productivity & Knowledge management
+My ongoing effort to +get a productivity setup+ manage something in my life in Org.
+
+Initial inspirations (<2021-06-30 Wed>):
 - [[https://www.labri.fr/perso/nrougier/GTD/index.html][Nicolas P. Rougier. Get Things Done with Emacs]]
 - [[https://blog.jethro.dev/posts/org_mode_workflow_preview/][Jetro Kuan. Org-mode Workflow]]
 - [[https://www.alexeyshmalko.com/how-i-note/][Alexey Shmalko: How I note]]
 - [[https://rgoswami.me/posts/org-note-workflow/][Rohit Goswami: An Orgmode Note Workflow]]
 
-Used files:
+Some later reflections (<2023-01-04 Wed>): so, it's been one year and a half... I've tried some things since writing the initial inspiration list.
+
+[[*Org Journal][Org Journal]] and [[*Org Roam][Org Roam]] are probably the most relevant packages in my workflow now.
+
+For [[*Org Agenda][project management]] I've ended up doing more or less plain Org files & Org Agenda. I don't feel I'd extract much benefit from a more "advanced" system, with effort estimation, atomic tasks, etc. Less is more, I guess. Besided, I'm not particularly excited about the part of my life that may require such management.
+
+Neither I felt I was doing anything meaningful with my attempts at regular [[*Review workflow][review workflow]]. I'll think what to do with the section a bit latet.
+
+*** Org Agenda & Project Management
+I tried some things for generic project management, including:
+- Managing projects in Org Roam
+- Syncing with Trello
+- Effort estimation & more atomic tasks
+- Writing down progress on projects with =org-journal-tags=
+- ...
+
+But for now stopped on one =.org= file for one large project / a few smaller related projects and rather high-level tasks. Don't feel the need to do more yet.
+
+**** Agenda & refile files
+All my project files live in the =/projects= directory, so here's a function to set up =org-agenda-files= and =org-refile-targets= accordingly.
+
+Also, my project structure is somewhat chaotic, so I have an =.el= file in the org directory that defines some of the refile targets.
+
 #+begin_src emacs-lisp
 (defun my/update-org-agenda ()
   (interactive)
@@ -4065,11 +4124,11 @@ Used files:
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
-               (lambda (f) `(,f . (:maxlevel . 2)))
-               project-files)
-            ,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
-               project-files)))))
+               project-files)))
+    (when (file-exists-p (concat org-directory "/scripts/refile.el"))
+      (load-file (concat org-directory "/scripts/refile.el"))
+      (run-hooks 'my/org-refile-hooks))))
 
 (with-eval-after-load-norem 'org
   (setq org-roam-directory (concat org-directory "/roam"))
@@ -4078,22 +4137,14 @@ Used files:
   )
 #+end_src
 
-Hotkeys
-#+begin_src emacs-lisp
-(my-leader-def
-  :infix "o"
-  "" '(:which-key "org-mode")
-  "c" 'org-capture
-  "a" 'org-agenda)
-#+end_src
 
-Refile targets
+Refile settings
 #+begin_src emacs-lisp
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 #+end_src
 
-*** Capture templates & various settings
+**** Capture templates & various settings
 Settings for Org capture mode. The goal here is to have a non-disruptive process to capture various ideas.
 
 #+begin_src emacs-lisp
@@ -4121,6 +4172,55 @@ Settings for Org capture mode. The goal here is to have a non-disruptive process
                   "/Entered on/ %U"))))
 #+end_src
 
+**** org-ql
+[[https://github.com/alphapapa/org-ql][org-ql]] is a package to query the org files. I've tried using it for:
+- Grabbing done tasks / meetings / etc for review workflow
+- Adding Trello tasks into Agenga
+
+None of that worked out, but I'll keep the package here in case I have some more ideas.
+
+#+begin_src emacs-lisp
+(use-package org-ql
+  :after (org)
+  :if (not my/remote-server)
+  :straight (:fetcher github
+                      :repo "alphapapa/org-ql"
+                      :files (:defaults (:exclude "helm-org-ql.el"))))
+#+end_src
+**** Custom agendas
+Some custom agendas to fit my workflow.
+
+#+begin_src emacs-lisp
+(defun my/org-scheduled-get-time ()
+  (let ((scheduled (org-get-scheduled-time (point))))
+    (if scheduled
+        (format-time-string "%Y-%m-%d" scheduled)
+      "")))
+
+(setq org-agenda-hide-tags-regexp (rx (or "org" "refile")))
+
+(setq org-agenda-custom-commands
+      `(("p" "My outline"
+         ((agenda "")
+          (tags-todo "inbox"
+                     ((org-agenda-overriding-header "Inbox")
+                      (org-agenda-prefix-format " %i %-12:c")
+                      (org-agenda-hide-tags-regexp ".")))
+          (tags-todo "+waitlist+SCHEDULED<=\"<+14d>\""
+                     ((org-agenda-overriding-header "Waitlist")
+                      (org-agenda-hide-tags-regexp "waitlist")
+                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
+#+end_src
+**** Other settings
+Hotkeys
+#+begin_src emacs-lisp
+(my-leader-def
+  :infix "o"
+  "" '(:which-key "org-mode")
+  "c" 'org-capture
+  "a" 'org-agenda)
+#+end_src
+
 Effort estimation
 #+begin_src emacs-lisp
 (with-eval-after-load-norem 'org
@@ -4132,147 +4232,119 @@ Log DONE time
 #+begin_src emacs-lisp
 (setq org-log-done 'time)
 #+end_src
-*** OFF (OFF) Trello sync
-UPD <2022-03-27 Sun>: disabling this for now.
+**** Copying records
+I like to add numbers to repeating events, like meetings. E.g.
 
-Some of the projects I'm participating in are managed via Trello, so I use [[http://org-trello.github.io/][org-trello]] to keep track of them. The package has a remarkably awkward keybindings setup, so my effort to call =my-leader-def= to set keybindings I like is no less awkward.
+#+begin_example
+,* Job meeting 62
+SCHEDULED: <2022-11-13 16:00>
+,* Job meeting 63
+SCHEDULED: <2022-11-13 16:00>
+...
+#+end_example
 
-Also, trello files are huge and have a lot of information and tasks which do not concern me, so I don't add them to =org-agenda-files=.
+Naturally, I want a way to copy such records. Org Mode already has a function called =org-clone-subtree-with-time-shift=, that does everything I want except for updating the numbers.
 
-#+begin_src emacs-lisp :tangle no
-(unless (file-exists-p (concat org-directory "/trello"))
-  (mkdir (concat org-directory "/trello") t))
-
-(setq org-trello-files
-      (thread-last (concat org-directory "/trello")
-        (directory-files)
-        (seq-filter
-         (lambda (f) (string-match-p (rx ".org" eos) f)))
-        (mapcar
-         (lambda (f) (concat org-directory "/trello/" f)))))
-#+end_src
-
-#+begin_src emacs-lisp :tangle no
-(use-package org-trello
-  :straight (:build (:not native-compile))
-  :commands (org-trello-mode)
-  :disabled
-  :if (not my/remote-server)
-  :init
-  (setq org-trello-current-prefix-keybinding "C-c o")
-  (setq org-trello-add-tags nil)
-
-  (add-hook 'org-mode-hook
-            (lambda ()
-              (when (string-match-p (rx "trello") (or (buffer-file-name) ""))
-                (org-trello-mode))))
-  :config
-  (eval
-   `(my-leader-def
-      :infix "o t"
-      :keymaps '(org-trello-mode-map)
-      "" '(:which-key "trello")
-      ,@(mapcan
-         (lambda (b) (list (nth 1 b) (macroexp-quote (nth 0 b))))
-         org-trello-interactive-command-binding-couples))))
-#+end_src
-*** org-ql
-[[https://github.com/alphapapa/org-ql][org-ql]] is a package to query the org files. I'm using it in my review workflow and for custom agenda views.
+Unfortunately, I see no way to advise the original function, so here's my version that makes use of =evil-numbers=:
 
 #+begin_src emacs-lisp
-(use-package org-ql
-  :after (org)
-  :if (not my/remote-server)
-  :straight (:fetcher github
-                      :repo "alphapapa/org-ql"
-                      :files (:defaults (:exclude "helm-org-ql.el"))))
+(defun my/org-clone-subtree-with-time-shift (n &optional shift)
+  (interactive "nNumber of clones to produce: ")
+  (unless (wholenump n) (user-error "Invalid number of replications %s" n))
+  (when (org-before-first-heading-p) (user-error "No subtree to clone"))
+  (let* ((beg (save-excursion (org-back-to-heading t) (point)))
+	     (end-of-tree (save-excursion (org-end-of-subtree t t) (point)))
+	     (shift
+	      (or shift
+	          (if (and (not (equal current-prefix-arg '(4)))
+		               (save-excursion
+			             (goto-char beg)
+			             (re-search-forward org-ts-regexp-both end-of-tree t)))
+		          (read-from-minibuffer
+		           "Date shift per clone (e.g. +1w, empty to copy unchanged): ")
+		        "")))                   ;No time shift
+	     (doshift
+	      (and (org-string-nw-p shift)
+	           (or (string-match "\\`[ \t]*\\([+-]?[0-9]+\\)\\([hdwmy]\\)[ \t]*\\'"
+				                 shift)
+		           (user-error "Invalid shift specification %s" shift)))))
+    (goto-char end-of-tree)
+    (unless (bolp) (insert "\n"))
+    (let* ((end (point))
+	       (template (buffer-substring beg end))
+	       (shift-n (and doshift (string-to-number (match-string 1 shift))))
+	       (shift-what (pcase (and doshift (match-string 2 shift))
+			             (`nil nil)
+			             ("h" 'hour)
+			             ("d" 'day)
+			             ("w" (setq shift-n (* 7 shift-n)) 'day)
+			             ("m" 'month)
+			             ("y" 'year)
+			             (_ (error "Unsupported time unit"))))
+	       (nmin 1)
+	       (nmax n)
+	       (n-no-remove -1)
+	       (org-id-overriding-file-name (buffer-file-name (buffer-base-buffer)))
+	       (idprop (org-entry-get beg "ID")))
+      (when (and doshift
+		         (string-match-p "<[^<>\n]+ [.+]?\\+[0-9]+[hdwmy][^<>\n]*>"
+				                 template))
+	    (delete-region beg end)
+	    (setq end beg)
+	    (setq nmin 0)
+	    (setq nmax (1+ nmax))
+	    (setq n-no-remove nmax))
+      (goto-char end)
+      (cl-loop for n from nmin to nmax do
+	           (insert
+		        ;; Prepare clone.
+		        (with-temp-buffer
+		          (insert template)
+		          (org-mode)
+		          (goto-char (point-min))
+		          (org-show-subtree)
+		          (and idprop (if org-clone-delete-id
+				                  (org-entry-delete nil "ID")
+				                (org-id-get-create t)))
+		          (unless (= n 0)
+		            (while (re-search-forward org-clock-line-re nil t)
+		              (delete-region (line-beginning-position)
+				                     (line-beginning-position 2)))
+		            (goto-char (point-min))
+		            (while (re-search-forward org-drawer-regexp nil t)
+		              (org-remove-empty-drawer-at (point))))
+		          (goto-char (point-min))
+
+		          (when doshift
+		            (while (re-search-forward org-ts-regexp-both nil t)
+		              (org-timestamp-change (* n shift-n) shift-what))
+                    (save-excursion
+                      (goto-char (point-min))
+                      (evil-numbers/inc-at-pt (* n shift-n) (point-min)))
+		            (unless (= n n-no-remove)
+		              (goto-char (point-min))
+		              (while (re-search-forward org-ts-regexp nil t)
+			            (save-excursion
+			              (goto-char (match-beginning 0))
+			              (when (looking-at "<[^<>\n]+\\( +[.+]?\\+[0-9]+[hdwmy]\\)")
+			                (delete-region (match-beginning 1) (match-end 1)))))))
+		          (buffer-string)))))
+    (goto-char beg)))
 #+end_src
-*** Custom agendas
-Some custom agendas to fit my workflow.
 
-+Despite the fact that I don't add =org-trello-files= to =org-agenda-files= I still want to see them in agenda, so I use =org-ql-block= from =org-ql=.+
-
-#+begin_src emacs-lisp
-(defun my/org-scheduled-get-time ()
-  (let ((scheduled (org-get-scheduled-time (point))))
-    (if scheduled
-        (format-time-string "%Y-%m-%d" scheduled)
-      "")))
-
-(setq org-agenda-hide-tags-regexp (rx (or "org" "log" "log_here" "refile")))
-
-(setq org-agenda-custom-commands
-      `(("p" "My outline"
-         ((agenda "")
-          (todo "NEXT"
-                ((org-agenda-prefix-format "  %i %-12:c [%e] ")
-                 (org-agenda-overriding-header "Next tasks")))
-          (tags-todo "inbox"
-                     ((org-agenda-overriding-header "Inbox")
-                      (org-agenda-prefix-format " %i %-12:c")
-                      (org-agenda-hide-tags-regexp ".")))
-          (tags-todo "+waitlist+SCHEDULED<=\"<+14d>\""
-                     ((org-agenda-overriding-header "Waitlist")
-                      (org-agenda-hide-tags-regexp "waitlist")
-                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
-#+end_src
-*** Bibliography
-I'm currently trying to use [[https://www.zotero.org/][Zotero]] to manage my bibliograhy.
-
-There is a Zotero extension called [[https://retorque.re/zotero-better-bibtex/][better bibtex]], which allows for having one bibtex file that is always syncronized with the library. That comes quite handy for Emacs integration.
-
-**** org-ref
-
-[[https://github.com/jkitchin/org-ref][org-ref]] is an excellent package by John Kitchin that provides support for managing citations and references in Org Mode.
-
-It may have become less relevant since =org-cite= was merged into plain Org, but =org-ref= is still just as usable.
-
-As of now, this package loads Helm on start. To avoid this, I have to exclude Helm from the =Package-requires= in the [[file:.emacs.d/straight/repos/org-ref/org-ref.el][org-ref.el]] file. I haven't found a way to do this without modifying the package source yet.
-
-There's a package called [[https://github.com/org-roam/org-roam-bibtex][org-roam-bibtex]] that allows to keep literature notes in [[https://github.com/org-roam/org-roam][org-roam]] and access them from =org-ref=, but as for now I store literature notes separately, as advised by Ahrens Sönke in his excellent book "How to take smart notes".
-
-#+begin_src emacs-lisp
-(use-package org-ref
-  :straight (:files (:defaults (:exclude "*helm*")))
-  :if (not my/remote-server)
-  :init
-  (setq bibtex-dialect 'biblatex)
-  (setq bibtex-completion-bibliography '("~/Documents/org-mode/library.bib"))
-  (setq bibtex-completion-library-path '("~/Documents/library"))
-  (setq bibtex-completion-notes-path "~/Documents/org-mode/literature-notes")
-  (setq bibtex-completion-display-formats
-        '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}")))
-  (setq bibtex-completion-pdf-open-function
-        (lambda (file)
-          (start-process "dired-open" nil
-                         "xdg-open" (file-truename file))))
-  :after (org)
-  :config
-  (require 'org-ref-ivy)
-  (general-define-key
-   :keymaps 'org-mode-map
-   "C-c l" #'org-ref-insert-link-hydra/body)
-  (general-define-key
-   :keymaps 'bibtex-mode-map
-   "M-RET" 'org-ref-bibtex-hydra/body))
-#+end_src
-
-**** ivy-bibtex
-[[https://github.com/tmalsburg/helm-bibtex][ivy-bibtex]] is an Ivy interface to bibtex. It uses the same configuration variables as =org-ref=, or rather, both packages use variables from the built-in =bibtex.el=
-
-#+begin_src emacs-lisp
-(use-package ivy-bibtex
-  :commands (ivy-bibtex)
-  :straight t
-  :init
-  (my-leader-def "fB" 'ivy-bibtex))
-
-(add-hook 'bibtex-mode 'smartparens-mode)
-#+end_src
+My addition to that is the form with =evil-numbers/inc-at-pt=.
 *** Org Journal
-[[https://github.com/bastibe/org-journal][org-journal]] is a plugin for maintaining a journal in org mode. I want(ed) to have its entries separate from my knowledge base.
+[[https://github.com/bastibe/org-journal][org-journal]] is a package for maintaining a journal in org mode.
 
-I've tried switching to Org Roam Dailies, but in the end decided that org-journal fits my workflow better.
+This part turned out to be great. I even consulted the journal a few times to check if something actually happened, which makes me uneasy now that I think about it...
+
+One issue I found is that it's kinda hard to find anything in the journal, and I'm not eager to open the journal for a random date anyway. So I've made a package called [[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]].
+
+My initial desire was to be able to query the journal for my thoughts on a particular subject or theme, for progress on some project, or for records related to some person... Which is kinda useful, although not quite as much as I expected it to be. Relatively fast querying of the journal is also nice.
+
+The section I named "on this day" turned out to be particularly interesting, as it kinda allowed me to connect with past versions of myself.
+
+And it was interesting to find the reinforcement effect of checked dates on the calendar.
 
 #+begin_src emacs-lisp
 (use-package org-journal
@@ -4294,7 +4366,7 @@ I've tried switching to Org Roam Dailies, but in the end decided that org-journa
   (setq org-journal-enable-encryption t))
 #+end_src
 
-[[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]] is my package that implements a tagging system for org-journal.
+So, [[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]] is my package that implements a tagging system for org-journal.
 #+begin_src emacs-lisp
 (use-package org-journal-tags
   :straight (:host github :repo "SqrtMinusOne/org-journal-tags")
@@ -4371,12 +4443,72 @@ And here's a function that creates a drawer with such information. At the moment
 (add-hook 'org-journal-after-entry-create-hook
           #'my/set-journal-header)
 #+end_src
+*** Bibliography
+I use [[https://www.zotero.org/][Zotero]] to manage my bibliograhy.
+
+There is a Zotero extension called [[https://retorque.re/zotero-better-bibtex/][better bibtex]], which allows for having one bibtex file that is always syncronized with the library. That comes quite handy for Emacs integration.
+
+**** org-ref
+[[https://github.com/jkitchin/org-ref][org-ref]] is an excellent package by John Kitchin that provides support for managing citations and references in Org Mode.
+
+It may have become less relevant since =org-cite= was merged into plain Org, but =org-ref= is still just as usable.
+
+As of now, this package loads Helm on start. To avoid this, I have to exclude Helm from the =Package-requires= in the [[file:.emacs.d/straight/repos/org-ref/org-ref.el][org-ref.el]] file. I haven't found a way to do this without modifying the package source yet.
+
+There's a package called [[https://github.com/org-roam/org-roam-bibtex][org-roam-bibtex]] that allows to keep literature notes in [[https://github.com/org-roam/org-roam][org-roam]] and access them from =org-ref=, but as for now I store literature notes separately.
+
+#+begin_src emacs-lisp
+(use-package org-ref
+  :straight (:files (:defaults (:exclude "*helm*")))
+  :if (not my/remote-server)
+  :init
+  (setq bibtex-dialect 'biblatex)
+  (setq bibtex-completion-bibliography '("~/Documents/org-mode/library.bib"))
+  (setq bibtex-completion-library-path '("~/Documents/library"))
+  (setq bibtex-completion-notes-path "~/Documents/org-mode/literature-notes")
+  (setq bibtex-completion-display-formats
+        '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}")))
+  (setq bibtex-completion-pdf-open-function
+        (lambda (file)
+          (start-process "dired-open" nil
+                         "xdg-open" (file-truename file))))
+  :after (org)
+  :config
+  (require 'org-ref-ivy)
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c l" #'org-ref-insert-link-hydra/body)
+  (general-define-key
+   :keymaps 'bibtex-mode-map
+   "M-RET" 'org-ref-bibtex-hydra/body))
+#+end_src
+
+**** ivy-bibtex
+[[https://github.com/tmalsburg/helm-bibtex][ivy-bibtex]] is an Ivy interface to bibtex. It uses the same configuration variables as =org-ref=, or rather, both packages use variables from the built-in =bibtex.el=
+
+#+begin_src emacs-lisp
+(use-package ivy-bibtex
+  :commands (ivy-bibtex)
+  :straight t
+  :init
+  (my-leader-def "fB" 'ivy-bibtex))
+
+(add-hook 'bibtex-mode 'smartparens-mode)
+#+end_src
 *** Org Roam
 [[https://github.com/org-roam/org-roam][org-roam]] is a plain-text knowledge database.
 
 Things I tried with Org Roam:
 - Managing projects. Ended up preferring plain Org.
-- Writing journal. =org-journal= and =org-journal-tags= seem to be a better fit for my workflow.
+- Writing a journal with =org-roam-dailies=.
+  Didn't work out as I expected, so I've made =org-journal-tags= after I understood better what I want.
+
+Regardless, it turned out to be great for managing Zettelkasten, which is the original purpose of the package anyway. I didn't expect to ever get into something like this, but I guess I was wrong.
+
+Some resources that helped me along the way (and still help):
+- Sönke Ahrens' book "How to take smart notes"
+- https://zettelkasten.de/ - a lot of useful stuff here, especially in the "Getting Started" section.
+- [[https://www.youtube.com/watch?v=-TpWahIzueg][System Crafters Live! - Can You Apply Zettelkasten in Emacs?]]
 
 **** Basic package configuration
 | Guix dependency       |
@@ -4430,9 +4562,7 @@ Capture templates for =org-roam-capture=. As for now, nothing too complicated he
 **** Keybindings
 A set of keybindings to quickly access things in Org Roam.
 
-I used to have multiple categories of nodes in Org Roam (projects, dailies, etc), but as of now, only Zettelkasten remains.
 #+begin_src emacs-lisp
-
 (with-eval-after-load 'org-roam
   (my-leader-def
     :infix "or"
@@ -4464,7 +4594,9 @@ I used to have multiple categories of nodes in Org Roam (projects, dailies, etc)
    "C-c i" 'org-roam-node-insert))
 #+end_src
 **** Org Roam UI
-A browser frontend to visualize a Roam directory in a form of a graph.
+A browser frontend to visualize the Roam database as a graph.
+
+Actually, I don't find this quite as useful as structure nodes, because over time my graph grew somewhat convoluted. But it looks impressive.
 
 #+begin_src emacs-lisp
 (use-package org-roam-ui
@@ -4493,7 +4625,7 @@ Don't forget to run the following after setup:
 xdg-mime default org-protocol.desktop x-scheme-handler/org-protocol
 #+end_src
 **** Deft
-[[https://github.com/jrblevin/deft][Deft]] is an Emacs package to quickly find notes. It seems quite useful to look for =org-roam= notes based on their contents.
+[[https://github.com/jrblevin/deft][Deft]] is an Emacs package to quickly find notes. I use it as a full-text search engine for =org-roam=.
 
 #+begin_src emacs-lisp
 (use-package deft
@@ -4826,125 +4958,6 @@ An example contact entry can look like this:
 :BIRTHDAY: [1998-08-14]
 :END:
 #+end_example
-*** Managing tables
-I use Org to manage some small tables which I want to process further. So here is a function that saves each table to a CSV file.
-#+begin_src emacs-lisp
-(defun my/export-org-tables-to-csv ()
-  (interactive)
-  (org-table-map-tables
-   (lambda ()
-     (when-let
-         (name
-          (plist-get (cadr (org-element-at-point)) :name))
-       (org-table-export
-        (concat
-         (file-name-directory
-          (buffer-file-name))
-         name ".csv")
-        "orgtbl-to-csv")))))
-#+end_src
-*** Copying records
-I like to add numbers to repeating events, like meetings. E.g.
-
-#+begin_example
-,* Job meeting 62
-SCHEDULED: <2022-11-13 16:00>
-,* Job meeting 63
-SCHEDULED: <2022-11-13 16:00>
-...
-#+end_example
-
-Naturally, I want a way to copy such records. Org Mode already has a function called =org-clone-subtree-with-time-shift=, that does everything I want except for updating the numbers.
-
-Unfortunately, I see no way to advise the original function, so here's my version that makes use of =evil-numbers=:
-
-#+begin_src emacs-lisp
-(defun my/org-clone-subtree-with-time-shift (n &optional shift)
-  (interactive "nNumber of clones to produce: ")
-  (unless (wholenump n) (user-error "Invalid number of replications %s" n))
-  (when (org-before-first-heading-p) (user-error "No subtree to clone"))
-  (let* ((beg (save-excursion (org-back-to-heading t) (point)))
-	     (end-of-tree (save-excursion (org-end-of-subtree t t) (point)))
-	     (shift
-	      (or shift
-	          (if (and (not (equal current-prefix-arg '(4)))
-		               (save-excursion
-			             (goto-char beg)
-			             (re-search-forward org-ts-regexp-both end-of-tree t)))
-		          (read-from-minibuffer
-		           "Date shift per clone (e.g. +1w, empty to copy unchanged): ")
-		        "")))                   ;No time shift
-	     (doshift
-	      (and (org-string-nw-p shift)
-	           (or (string-match "\\`[ \t]*\\([+-]?[0-9]+\\)\\([hdwmy]\\)[ \t]*\\'"
-				                 shift)
-		           (user-error "Invalid shift specification %s" shift)))))
-    (goto-char end-of-tree)
-    (unless (bolp) (insert "\n"))
-    (let* ((end (point))
-	       (template (buffer-substring beg end))
-	       (shift-n (and doshift (string-to-number (match-string 1 shift))))
-	       (shift-what (pcase (and doshift (match-string 2 shift))
-			             (`nil nil)
-			             ("h" 'hour)
-			             ("d" 'day)
-			             ("w" (setq shift-n (* 7 shift-n)) 'day)
-			             ("m" 'month)
-			             ("y" 'year)
-			             (_ (error "Unsupported time unit"))))
-	       (nmin 1)
-	       (nmax n)
-	       (n-no-remove -1)
-	       (org-id-overriding-file-name (buffer-file-name (buffer-base-buffer)))
-	       (idprop (org-entry-get beg "ID")))
-      (when (and doshift
-		         (string-match-p "<[^<>\n]+ [.+]?\\+[0-9]+[hdwmy][^<>\n]*>"
-				                 template))
-	    (delete-region beg end)
-	    (setq end beg)
-	    (setq nmin 0)
-	    (setq nmax (1+ nmax))
-	    (setq n-no-remove nmax))
-      (goto-char end)
-      (cl-loop for n from nmin to nmax do
-	           (insert
-		        ;; Prepare clone.
-		        (with-temp-buffer
-		          (insert template)
-		          (org-mode)
-		          (goto-char (point-min))
-		          (org-show-subtree)
-		          (and idprop (if org-clone-delete-id
-				                  (org-entry-delete nil "ID")
-				                (org-id-get-create t)))
-		          (unless (= n 0)
-		            (while (re-search-forward org-clock-line-re nil t)
-		              (delete-region (line-beginning-position)
-				                     (line-beginning-position 2)))
-		            (goto-char (point-min))
-		            (while (re-search-forward org-drawer-regexp nil t)
-		              (org-remove-empty-drawer-at (point))))
-		          (goto-char (point-min))
-
-		          (when doshift
-		            (while (re-search-forward org-ts-regexp-both nil t)
-		              (org-timestamp-change (* n shift-n) shift-what))
-                    (save-excursion
-                      (goto-char (point-min))
-                      (evil-numbers/inc-at-pt (* n shift-n) (point-min)))
-		            (unless (= n n-no-remove)
-		              (goto-char (point-min))
-		              (while (re-search-forward org-ts-regexp nil t)
-			            (save-excursion
-			              (goto-char (match-beginning 0))
-			              (when (looking-at "<[^<>\n]+\\( +[.+]?\\+[0-9]+[hdwmy]\\)")
-			                (delete-region (match-beginning 1) (match-end 1)))))))
-		          (buffer-string)))))
-    (goto-char beg)))
-#+end_src
-
-My addition to that is the form with =evil-numbers/inc-at-pt=.
-
 ** UI
 *** OFF (OFF) Instant equations preview
 Instant math previews for org mode.
@@ -7442,15 +7455,6 @@ References:
   "q" 'google-translate-query-translate
   "Q" 'google-translate-query-translate-reverse
   "t" 'google-translate-smooth-translate)
-#+end_src
-*** Reverso
-#+begin_src emacs-lisp
-(use-package reverso
-  :straight (:host github :repo "SqrtMinusOne/reverso.el")
-  :init
-  (my-leader-def "ar" #'reverso)
-  :config
-  (setq reverso-languages '(russian english german)))
 #+end_src
 ** Reading documentation
 *** tldr
