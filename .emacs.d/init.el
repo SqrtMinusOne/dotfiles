@@ -267,7 +267,8 @@
      slime
      forge
      deadgrep
-     vc-annonate)))
+     vc-annonate
+     telega)))
 
 (use-package avy
   :straight t
@@ -2941,6 +2942,7 @@ Returns (<buffer> . <workspace-index>) or nil."
             (concat org-directory "/projects"))))))
     (setq org-agenda-files
           `("inbox.org"
+            "misc/habit.org"
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
@@ -2978,8 +2980,10 @@ Returns (<buffer> . <workspace-index>) or nil."
          ,(concat "* TODO %:elfeed-entry-title\n"
                   "/Entered on/ %U\n"
                   "%a\n"))
-        ("n" "note" entry (file my/generate-inbox-note-name)
-         ,(concat "* %?\n"
+        ("n" "note" plain (file my/generate-inbox-note-name)
+         ,(concat "#+TODO: PROCESSED(p)\n"
+                  "\n"
+                  "* %?\n"
                   "/Entered on/ %U"))))
 
 (use-package org-ql
@@ -2989,17 +2993,59 @@ Returns (<buffer> . <workspace-index>) or nil."
                       :repo "alphapapa/org-ql"
                       :files (:defaults (:exclude "helm-org-ql.el"))))
 
+(use-package org-habit-stats
+  :straight (:host github :repo "ml729/org-habit-stats")
+  :after (org)
+  :config
+  (general-define-key
+   :keymaps '(org-habit-stats-mode-map)
+   :states '(normal emacs)
+   "q" #'org-habit-stats-exit
+   "<" #'org-habit-stats-calendar-scroll-left
+   ">" #'org-habit-stats-calendar-scroll-right
+   "[" #'org-habit-stats-scroll-graph-left
+   "]" #'org-habit-stats-scroll-graph-right
+   "{" #'org-habit-stats-scroll-graph-left-big
+   "}" #'org-habit-stats-scroll-graph-right-big
+   "." #'org-habit-stats-view-next-habit
+   "," #'org-habit-stats-view-previous-habit))
+
+(defun my/org-match-at-point-p (match)
+  "Return non-nil if headline at point matches MATCH.
+Here MATCH is a match string of the same format used by
+`org-tags-view'."
+  (funcall (cdr (org-make-tags-matcher match))
+           (org-get-todo-state)
+           (org-get-tags-at)
+           (org-reduced-level (org-current-level))))
+
+(defun my/org-agenda-skip-without-match (match)
+  "Skip current headline unless it matches MATCH.
+
+Return nil if headline containing point matches MATCH (which
+should be a match string of the same format used by
+`org-tags-view').  If headline does not match, return the
+position of the next headline in current buffer.
+
+Intended for use with `org-agenda-skip-function', where this will
+skip exactly those headlines that do not match."
+  (save-excursion
+    (unless (org-at-heading-p) (org-back-to-heading))
+    (let ((next-headline (save-excursion
+                           (or (outline-next-heading) (point-max)))))
+      (if (my/org-match-at-point-p match) nil next-headline))))
+
 (defun my/org-scheduled-get-time ()
   (let ((scheduled (org-get-scheduled-time (point))))
     (if scheduled
         (format-time-string "%Y-%m-%d" scheduled)
       "")))
 
-(setq org-agenda-hide-tags-regexp (rx (or "org" "refile")))
+(setq org-agenda-hide-tags-regexp (rx (or "org" "refile" "habit")))
 
 (setq org-agenda-custom-commands
       `(("p" "My outline"
-         ((agenda "")
+         ((agenda "" ((org-agenda-skip-function '(my/org-agenda-skip-without-match "-habit"))))
           (tags-todo "inbox"
                      ((org-agenda-overriding-header "Inbox")
                       (org-agenda-prefix-format " %i %-12:c")
@@ -3007,7 +3053,11 @@ Returns (<buffer> . <workspace-index>) or nil."
           (tags-todo "+waitlist+SCHEDULED<=\"<+14d>\""
                      ((org-agenda-overriding-header "Waitlist")
                       (org-agenda-hide-tags-regexp "waitlist")
-                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))))))
+                      (org-agenda-prefix-format " %i %-12:c %-12(my/org-scheduled-get-time)")))
+          (tags-todo "habit+SCHEDULED<=\"<+0d>\""
+                     ((org-agenda-overriding-header "Habits")
+                      (org-agenda-prefix-format " %i %-12:c")
+                      (org-agenda-hide-tags-regexp ".")))))))
 
 (my-leader-def
   :infix "o"
@@ -3755,14 +3805,15 @@ With ARG, repeats or can move backward if negative."
 (defun my/org-file-open ()
   (interactive)
   (let* ((files
-          (append
-           '("inbox.org" "contacts.org")
-           (mapcar (lambda (f)
-                     (concat "projects/" f))
-                   (seq-filter
-                    (lambda (f) (not (member f '("." ".."))))
-                    (directory-files
-                     (concat org-directory "/projects")))))))
+          (thread-last
+            '("projects" "misc")
+            (mapcar (lambda (f)
+                      (directory-files (concat org-directory "/" f) t (rx ".org" eos))))
+            (apply #'append)
+            (mapcar (lambda (file)
+                      (string-replace (concat org-directory "/") "" file)))
+            (append
+             '("inbox.org" "contacts.org")))))
     (find-file
      (concat org-directory "/"
              (completing-read "Org file: " files)))))
@@ -5067,6 +5118,7 @@ ENTRY is an instance of `elfeed-entry'."
   (general-define-key
    :states '(emacs normal)
    :keymaps 'emms-browser-mode-map
+   "gr" #'emms-browse-by-artist
    "gl" 'lyrics-fetcher-emms-browser-show-at-point
    "gC" 'lyrics-fetcher-emms-browser-fetch-covers-at-point
    "go" 'lyrics-fetcher-emms-browser-open-large-cover-at-point)
@@ -5232,6 +5284,71 @@ ENTRY is an instance of `elfeed-entry'."
 
 (use-package ement
   :straight (:host github :repo "alphapapa/ement.el"))
+
+(use-package telega
+  :straight t
+  :commands (telega)
+  :init
+  (my-leader-def "a l" (my/command-in-persp "telega" "telega" 3 (telega)))
+  (my/use-doom-colors
+   (telega-button-active :foreground (doom-color 'base0)
+                         :background (doom-color 'cyan))
+   (telega-webpage-chat-link :foreground (doom-color 'base0)
+                             :background (doom-color 'fg)))
+  :config
+  (general-define-key
+   :keymaps '(telega-root-mode-map telega-chat-mode-map)
+   :states '(normal)
+   "gp" telega-prefix-map)
+  (general-define-key
+   :keymaps '(telega-msg-button-map)
+   "<SPC>" nil)
+  (general-define-key
+   :keymaps '(telega-chat-mode-map)
+   "C-<return>" #'newline)
+  (my/persp-add-rule
+    telega-root-mode 3 "telega"
+    telega-chat-mode 3 "telega"
+    telega-image-mode 3 "telega"
+    telega-webpage-mode 3 "telega"))
+
+(defun my/telega-server-build ()
+  (interactive)
+  (setq telega-server-libs-prefix
+        (string-trim
+         (shell-command-to-string "guix build tdlib-1.8.10")))
+  (telega-server-build "CC=gcc"))
+
+(add-hook 'telega-load-hook #'telega-mode-line-mode)
+(setq telega-mode-line-string-format
+      '("["
+        (:eval
+         (telega-mode-line-online-status))
+        (:eval
+         (when telega-use-tracking-for
+           (telega-mode-line-tracking)))
+        (:eval
+         (telega-mode-line-unread-unmuted))
+        (:eval
+         (telega-mode-line-mentions 'messages))
+        "]"))
+
+(defun my/telega-chat-setup ()
+  (set (make-local-variable 'company-backends)
+       (append (list telega-emoji-company-backend
+                     'telega-company-username
+                     'telega-company-hashtag
+                     'telega-company-markdown-precode)
+               (when (telega-chat-bot-p telega-chatbuf--chat)
+                 '(telega-company-botcmd))))
+  (company-mode 1))
+(add-hook 'telega-chat-mode-hook #'my/telega-chat-setup)
+
+(defun my/telega-online-status ()
+  (derived-mode-p 'telega-root-mode 'telega-chat-mode
+                  'telega-image-mode 'telega-webpage-mode))
+
+(setq telega-online-status-function #'my/telega-online-status)
 
 (use-package google-translate
   :straight t
@@ -5497,6 +5614,11 @@ ENTRY is an instance of `elfeed-entry'."
     "<ORG-JOURNAL>")
    ((string-match-p (rx bos "EXWM") name)
     "<EXWM>")
+   ((string-match-p (rx bos "*Org-Habit") name)
+    "<ORG>")
+   ((with-current-buffer (get-buffer name)
+      (derived-mode-p 'telega-root-mode 'telega-chat-mode))
+    "<TELEGA>")
    (t name)))
 
 (defun my/elcord-buffer-details-format-functions ()
@@ -5515,6 +5637,8 @@ ENTRY is an instance of `elfeed-entry'."
   :config
   (setq elcord-buffer-details-format-function #'my/elcord-buffer-details-format-functions)
   (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)
+  (add-to-list 'elcord-mode-text-alist '(telega-chat-mode . "Telega Chat"))
+  (add-to-list 'elcord-mode-text-alist '(telega-root-mode . "Telega Root"))
   (elcord-mode))
 
 (use-package snow
