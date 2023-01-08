@@ -495,7 +495,8 @@ Do ex search in other buffer. Like =*=, but switch to other buffer and search th
      forge
      deadgrep
      vc-annonate
-     telega)))
+     telega
+     doc-view)))
 #+end_src
 *** Avy
 [[https://github.com/abo-abo/avy][Avy]] is a package that helps navigate Emacs in a tree-like manner.
@@ -3399,6 +3400,28 @@ So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL que
 #+begin_src emacs-lisp
 (use-package graphql-mode
   :straight t)
+#+end_src
+** Documents
+*** DocView
+Don't know about this.
+
+=doc-view= doesn't look great with the default =doc-view-resolution= of 100. 300 is fine, but then it becomes slow.
+
+#+begin_src emacs-lisp
+(defun my/doc-view-setup ()
+  (display-line-numbers-mode -1)
+  (undo-tree-mode -1))
+
+(use-package doc-view
+  :straight (:type built-in)
+  :config
+  (setq doc-view-resolution 300)
+  (add-hook 'doc-view-mode-hook #'my/doc-view-setup)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(doc-view-mode-map)
+   "j" #'doc-view-next-line-or-next-page
+   "k" #'doc-view-previous-line-or-previous-page))
 #+end_src
 ** x509
 #+begin_src emacs-lisp

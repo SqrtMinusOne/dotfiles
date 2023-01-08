@@ -268,7 +268,8 @@
      forge
      deadgrep
      vc-annonate
-     telega)))
+     telega
+     doc-view)))
 
 (use-package avy
   :straight t
@@ -2467,6 +2468,21 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package graphql-mode
   :straight t)
+
+(defun my/doc-view-setup ()
+  (display-line-numbers-mode -1)
+  (undo-tree-mode -1))
+
+(use-package doc-view
+  :straight (:type built-in)
+  :config
+  (setq doc-view-resolution 300)
+  (add-hook 'doc-view-mode-hook #'my/doc-view-setup)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(doc-view-mode-map)
+   "j" #'doc-view-next-line-or-next-page
+   "k" #'doc-view-previous-line-or-previous-page))
 
 (use-package x509-mode
   :straight t)
