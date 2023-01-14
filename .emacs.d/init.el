@@ -745,9 +745,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  :states '(insert normal)
  "C-y" 'counsel-yank-pop)
 
+(defun my/swiper-isearch ()
+  (interactive)
+  (if current-prefix-arg
+      (swiper-all)
+    (swiper-isearch)))
+
 (my-leader-def "SPC SPC" 'ivy-resume)
-(my-leader-def "s" 'swiper-isearch
-  "S" 'swiper-all)
+(my-leader-def "s" 'my/swiper-isearch)
 
 (general-define-key
  :keymaps '(ivy-minibuffer-map swiper-map)
@@ -3221,6 +3226,21 @@ skip exactly those headlines that do not match."
                      (message "Got error: %S" error-thrown)))))
   my/weather-value)
 
+(defun my/get-mood ()
+  (let* ((crm-separator " ")
+         (crm-local-completion-map
+	      (let ((map (make-sparse-keymap)))
+	        (set-keymap-parent map crm-local-completion-map)
+	        (define-key map " " 'self-insert-command)
+	        map))
+         (ivy-prescient-sort-commands nil))
+    (mapconcat
+     #'identity
+     (completing-read-multiple
+      "How do you feel: "
+      my/mood-list)
+     " ")))
+
 (defun my/set-journal-header ()
   (org-set-property "Emacs" emacs-version)
   (org-set-property "Hostname" system-name)
@@ -3246,7 +3266,9 @@ skip exactly those headlines that do not match."
           (when title
             (setq string (concat string title)))
           (when (> (length string) 0)
-            (org-set-property "EMMS_Track" string)))))))
+            (org-set-property "EMMS_Track" string))))))
+  (when-let (mood (my/get-mood))
+    (org-set-property "Mood" mood)))
 
 (add-hook 'org-journal-after-entry-create-hook
           #'my/set-journal-header)

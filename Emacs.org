@@ -1227,9 +1227,14 @@ Setting up quick access to various completions.
  :states '(insert normal)
  "C-y" 'counsel-yank-pop)
 
+(defun my/swiper-isearch ()
+  (interactive)
+  (if current-prefix-arg
+      (swiper-all)
+    (swiper-isearch)))
+
 (my-leader-def "SPC SPC" 'ivy-resume)
-(my-leader-def "s" 'swiper-isearch
-  "S" 'swiper-all)
+(my-leader-def "s" 'my/swiper-isearch)
 
 (general-define-key
  :keymaps '(ivy-minibuffer-map swiper-map)
@@ -4491,12 +4496,31 @@ Also, I want to add some extra information to the journal. Here's a functionalit
   my/weather-value)
 #+end_src
 
+Let's also try to log the current mood:
+#+begin_src emacs-lisp
+(defun my/get-mood ()
+  (let* ((crm-separator " ")
+         (crm-local-completion-map
+	      (let ((map (make-sparse-keymap)))
+	        (set-keymap-parent map crm-local-completion-map)
+	        (define-key map " " 'self-insert-command)
+	        map))
+         (ivy-prescient-sort-commands nil))
+    (mapconcat
+     #'identity
+     (completing-read-multiple
+      "How do you feel: "
+      my/mood-list)
+     " ")))
+#+end_src
+
 And here's a function that creates a drawer with such information. At the moment, it's:
 - Emacs version
 - Hostname
 - Location
 - Weather
 - Current EMMS track
+- Current mood
 
 #+begin_src emacs-lisp
 (defun my/set-journal-header ()
@@ -4524,7 +4548,9 @@ And here's a function that creates a drawer with such information. At the moment
           (when title
             (setq string (concat string title)))
           (when (> (length string) 0)
-            (org-set-property "EMMS_Track" string)))))))
+            (org-set-property "EMMS_Track" string))))))
+  (when-let (mood (my/get-mood))
+    (org-set-property "Mood" mood)))
 
 (add-hook 'org-journal-after-entry-create-hook
           #'my/set-journal-header)
