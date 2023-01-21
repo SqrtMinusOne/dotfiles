@@ -2376,13 +2376,13 @@ A general-purpose package to run formatters on files. While the most popular for
   :straight t)
 #+end_src
 *** copilot
-[[https://copilot.github.com/][GitHub Copilot]] is a project of GitHub and OpenAI that provides code completions. It's somewhat controversial in the Emacs community +but I opt in+ so I opt out of using it for now.
+[[https://copilot.github.com/][GitHub Copilot]] is a project of GitHub and OpenAI that provides code completions. It's somewhat controversial in the Emacs community but I opt in for now.
 
 #+begin_src emacs-lisp
 (defun my/copilot-tab ()
   (interactive)
-  (or (copilot-accept-completion)
-      (when (my/should-run-emmet-p) (my/emmet-or-tab))
+  (or (when (my/should-run-emmet-p) (my/emmet-or-tab))
+      (copilot-accept-completion)
       (when (and (eq evil-state 'normal)
                  (or hs-minor-mode outline-minor-mode))
         (evil-toggle-fold)
@@ -2393,10 +2393,10 @@ A general-purpose package to run formatters on files. While the most popular for
   :straight (:host github :repo "SqrtMinusOne/copilot.el" :files ("dist" "*.el"))
   :commands (copilot-mode)
   :if (not my/remote-server)
-  :disabled
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
+  (setq copilot-node-executable "/home/pavel/.conda/envs/general/bin/node")
   (general-define-key
    :keymaps 'company-active-map
    "<backtab>" #'my/copilot-tab)
@@ -2585,7 +2585,8 @@ Vue settings
   (when (string-match-p (rx ".vue" eos) (buffer-name))
     (setq-local web-mode-script-padding 0)
     (setq-local web-mode-style-padding 0)
-    (setq-local create-lockfiles nil)))
+    (setq-local create-lockfiles nil)
+    (setq-local web-mode-enable-auto-pairing nil)))
 
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 (add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
@@ -3128,7 +3129,7 @@ Automatically creates & manages virtualenvs and stores data in =Pipfile= and =Pi
    pipenv-projectile-after-switch-function
    #'pipenv-projectile-after-switch-extended))
 #+end_src
-*** yapf
+*** OFF (OFF) yapf
 [[https://github.com/google/yapf][yapf]] is a formatter for Python files.
 
 | Guix dependency |
@@ -3141,6 +3142,7 @@ References:
 #+begin_src emacs-lisp
 (use-package yapfify
   :straight (:repo "JorisE/yapfify" :host github)
+  :disabled
   :commands (yapfify-region
              yapfify-buffer
              yapfify-region-or-buffer
@@ -3153,6 +3155,21 @@ Global config:
 based_on_style = facebook
 column_limit = 80
 #+end_src
+*** black
+[[https://github.com/psf/black][black]] is a formatter for Python files.
+
+| Guix dependency |
+|-----------------|
+| python-black    |
+
+#+begin_src emacs-lisp
+(use-package python-black
+  :straight t
+  :commands (python-black-buffer)
+  :config
+  (setq python-black-command "black"))
+#+end_src
+
 *** isort
 [[https://github.com/PyCQA/isort][isort]] is a Python package to sort Python imports.
 
@@ -3176,9 +3193,10 @@ The following binding calls yapf & isort on the buffer
   :keymaps 'python-mode-map
   "rr" (lambda ()
          (interactive)
-         (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
-           (py-isort-buffer))
-         (yapfify-buffer)))
+         (save-excursion
+           (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
+             (py-isort-buffer))
+           (python-black-buffer))))
 #+end_src
 *** sphinx-doc
 A package to generate sphinx-compatible docstrings.
@@ -3262,10 +3280,14 @@ To fix that, I've modified the following function in the =python-pytest= package
 *** code-cells
 Support for text with magic comments.
 
+| Guix dependency |
+|-----------------|
+| python-jupytext |
+
 #+begin_src emacs-lisp
 (use-package code-cells
   :straight t
-  :commands (code-cells-mode))
+  :commands (code-cells-mode code-cells-convert-ipynb))
 #+end_src
 *** tensorboard
 A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].

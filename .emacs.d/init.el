@@ -1587,10 +1587,10 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight (:host github :repo "SqrtMinusOne/copilot.el" :files ("dist" "*.el"))
   :commands (copilot-mode)
   :if (not my/remote-server)
-  :disabled
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
+  (setq copilot-node-executable "/home/pavel/.conda/envs/general/bin/node")
   (general-define-key
    :keymaps 'company-active-map
    "<backtab>" #'my/copilot-tab)
@@ -2300,10 +2300,17 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package yapfify
   :straight (:repo "JorisE/yapfify" :host github)
+  :disabled
   :commands (yapfify-region
              yapfify-buffer
              yapfify-region-or-buffer
              yapf-mode))
+
+(use-package python-black
+  :straight t
+  :commands (python-black-buffer)
+  :config
+  (setq python-black-command "black"))
 
 (use-package py-isort
   :straight t
@@ -2315,7 +2322,7 @@ Returns (<buffer> . <workspace-index>) or nil."
          (interactive)
          (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
            (py-isort-buffer))
-         (yapfify-buffer)))
+         (python-black-buffer)))
 
 (use-package sphinx-doc
   :straight t
@@ -2377,7 +2384,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package code-cells
   :straight t
-  :commands (code-cells-mode))
+  :commands (code-cells-mode code-cells-convert-ipynb))
 
 (setq my/tensorboard-buffer "TensorBoard-out")
 
