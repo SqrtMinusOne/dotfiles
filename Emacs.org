@@ -7373,7 +7373,7 @@ The package doesn't provide evil bindings, so I define my own.
   :straight t
   :commands (ytel)
   :config
-  (setq ytel-invidious-api-url "https://invidio.xamh.de/")
+  (setq ytel-invidious-api-url "https://watch.thekitty.zone/")
   (general-define-key
    :states '(normal)
    :keymaps 'ytel-mode-map
