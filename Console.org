@@ -823,6 +823,7 @@ key_bindings:
 | git-lfs         |                                             |
 | glibc-locales   |                                             |
 | direnv          |                                             |
+| jless           | JSON viewer                                 |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.
