@@ -1575,8 +1575,8 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (defun my/copilot-tab ()
   (interactive)
-  (or (when (my/should-run-emmet-p) (my/emmet-or-tab))
-      (copilot-accept-completion)
+  (or (copilot-accept-completion)
+      (when (my/should-run-emmet-p) (my/emmet-or-tab))
       (when (and (eq evil-state 'normal)
                  (or hs-minor-mode outline-minor-mode))
         (evil-toggle-fold)
@@ -3173,7 +3173,7 @@ skip exactly those headlines that do not match."
 		              (org-timestamp-change (* n shift-n) shift-what))
                     (save-excursion
                       (goto-char (point-min))
-                      (evil-numbers/inc-at-pt (* n shift-n) (point-min)))
+                      (evil-numbers/inc-at-pt n (point-min)))
 		            (unless (= n n-no-remove)
 		              (goto-char (point-min))
 		              (while (re-search-forward org-ts-regexp nil t)
