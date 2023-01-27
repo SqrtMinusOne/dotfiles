@@ -4173,6 +4173,7 @@ Also, my project structure is somewhat chaotic, so I have an =.el= file in the o
     (setq org-agenda-files
           `("inbox.org"
             "misc/habit.org"
+            "contacts.org"
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
@@ -5066,7 +5067,7 @@ A template looks like this:
   (org-roam-capture- :node (org-roam-node-create)
                      :templates `(,my/org-review-capture-template)))
 #+end_src
-*** org-contacts
+*** Contacts
 =org-contacts= is a package to store contacts in an org file.
 
 It seems the package has been somewhat revived in the recent months. It used things like =lexical-let= when I first found it.

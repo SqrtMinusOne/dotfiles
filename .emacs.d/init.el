@@ -2973,6 +2973,7 @@ Returns (<buffer> . <workspace-index>) or nil."
     (setq org-agenda-files
           `("inbox.org"
             "misc/habit.org"
+            "contacts.org"
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
