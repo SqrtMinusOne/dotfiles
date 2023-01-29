@@ -2978,6 +2978,7 @@ Returns (<buffer> . <workspace-index>) or nil."
     (setq org-agenda-files
           `("inbox.org"
             "misc/habit.org"
+            "contacts.org"
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
@@ -3178,7 +3179,7 @@ skip exactly those headlines that do not match."
 		              (org-timestamp-change (* n shift-n) shift-what))
                     (save-excursion
                       (goto-char (point-min))
-                      (evil-numbers/inc-at-pt (* n shift-n) (point-min)))
+                      (evil-numbers/inc-at-pt n (point-min)))
 		            (unless (= n n-no-remove)
 		              (goto-char (point-min))
 		              (while (re-search-forward org-ts-regexp nil t)
@@ -5235,6 +5236,75 @@ ENTRY is an instance of `elfeed-entry'."
   (interactive)
   (emms-add-ytel (ytel-get-current-video)))
 
+(setq my/invidious-instances-url
+      "https://api.invidious.io/instances.json?pretty=1&sort_by=health")
+
+(defun my/ytel-instances-fetch-json ()
+  "Fetch list of invidious instances as json, sorted by health."
+  (let
+      ((url-request-method "GET")
+       (url-request-extra-headers
+        '(("Accept" . "application/json"))))
+    (with-current-buffer
+        (url-retrieve-synchronously invidious-instances-url)
+      (goto-char (point-min))
+      (re-search-forward "^$")
+      (let* ((json-object-type 'alist)
+             (json-array-type 'list)
+             (json-key-type 'string))
+        (json-read)))))
+
+(defun my/ytel-instances-alist-from-json ()
+  "Make the json of invidious instances into an alist."
+  (let ((jsonlist (my/ytel-instances-fetch-json))
+        (inst ()))
+    (while jsonlist
+      (push (concat "https://" (caar jsonlist)) inst)
+      (setq jsonlist (cdr jsonlist)))
+    (nreverse inst)))
+
+(defun my/ytel-choose-instance ()
+  "Prompt user to choose an invidious instance to use."
+  (interactive)
+  (setq ytel-invidious-api-url
+        (or (condition-case nil
+                (completing-read "Using instance: "
+                                 (cl-subseq (my/ytel-instances-alist-from-json) 0 11) nil "confirm" "https://")
+              (error nil))
+            "https://invidious.synopyta.org")))
+
+(defun my/ytel-draw--buffer-nil-videos-fix ()
+  (let ((inhibit-read-only t)
+	    (current-line      (line-number-at-pos)))
+    (erase-buffer)
+    (setf header-line-format
+          (concat "Search results for "
+				  (propertize ytel-search-term 'face 'ytel-video-published-face)
+				  ", page "
+				  (number-to-string ytel-current-page)))
+    (seq-do
+     (lambda (v)
+	   (ytel--insert-video v)
+	   (insert "\n"))
+     (seq-filter
+      (lambda (v)
+        (ytel-video-title v))
+      ytel-videos))
+    (goto-char (point-min))))
+
+(with-eval-after-load 'ytel
+  (advice-add #'ytel--draw-buffer :override #'my/ytel-draw--buffer-nil-videos-fix))
+
+(defun my/ytel--format-unknown-fix (fun &rest args)
+  (if (car args)
+      (apply fun args)
+    "unknown   "))
+
+(with-eval-after-load 'ytel
+  (advice-add #'ytel--format-video-length :around #'my/ytel--format-unknown-fix)
+  (advice-add #'ytel--format-video-published :around #'my/ytel--format-unknown-fix)
+  (advice-add #'ytel--format-video-views :around #'my/ytel--format-unknown-fix))
+
 (defun my/ytel-kill-url ()
   (interactive)
   (kill-new
@@ -5244,6 +5314,7 @@ ENTRY is an instance of `elfeed-entry'."
 
 (use-package wallabag
   :straight (:host github :repo "chenyanming/wallabag.el" :files (:defaults "default.css" "emojis.alist"))
+  :disabled
   :commands (wallabag wallabag-add-entry)
   :config
   (setq wallabag-host "https://wallabag.sqrtminusone.xyz")

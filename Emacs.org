@@ -2385,8 +2385,8 @@ A general-purpose package to run formatters on files. While the most popular for
 #+begin_src emacs-lisp
 (defun my/copilot-tab ()
   (interactive)
-  (or (when (my/should-run-emmet-p) (my/emmet-or-tab))
-      (copilot-accept-completion)
+  (or (copilot-accept-completion)
+      (when (my/should-run-emmet-p) (my/emmet-or-tab))
       (when (and (eq evil-state 'normal)
                  (or hs-minor-mode outline-minor-mode))
         (evil-toggle-fold)
@@ -4178,6 +4178,7 @@ Also, my project structure is somewhat chaotic, so I have an =.el= file in the o
     (setq org-agenda-files
           `("inbox.org"
             "misc/habit.org"
+            "contacts.org"
             ,@project-files))
     (setq org-refile-targets
           `(,@(mapcar
@@ -4438,7 +4439,7 @@ Unfortunately, I see no way to advise the original function, so here's my versio
 		              (org-timestamp-change (* n shift-n) shift-what))
                     (save-excursion
                       (goto-char (point-min))
-                      (evil-numbers/inc-at-pt (* n shift-n) (point-min)))
+                      (evil-numbers/inc-at-pt n (point-min)))
 		            (unless (= n n-no-remove)
 		              (goto-char (point-min))
 		              (while (re-search-forward org-ts-regexp nil t)
@@ -5071,7 +5072,7 @@ A template looks like this:
   (org-roam-capture- :node (org-roam-node-create)
                      :templates `(,my/org-review-capture-template)))
 #+end_src
-*** org-contacts
+*** Contacts
 =org-contacts= is a package to store contacts in an org file.
 
 It seems the package has been somewhat revived in the recent months. It used things like =lexical-let= when I first found it.
@@ -5596,7 +5597,9 @@ emacs -Q --batch -l run-tangle.el
 I have added this line to yadm's =post_alt= hook, so tangle is run after =yadm alt=
 * Applications
 ** Dired
-Dired is a built-in file manager. I currently use it as my primary file manager.
+Dired is a built-in file manager. It's so good that it's strange that, to my knowledge, no one tried to replicate it outside of Emacs.
+
+I currently use it as my primary file manager.
 
 *** Basic config & keybindings
 My config mostly follows ranger's and vifm's keybindings which I'm used to.
@@ -5894,6 +5897,7 @@ My terminal emulator of choice.
 
 References:
 - [[https://github.com/akermu/emacs-libvterm][emacs-libvterm repo]]
+
 **** Configuration
 On Guix it makes more sense to use the Guix package to avoid building the vterm module, but obviously not an option on termux, hence this:
 
@@ -5959,6 +5963,8 @@ The actual config:
 **** Subterminal
 Open a terminal in the lower third of the frame with the =`= key.
 
+I guess that's the first Emacs function I wrote!
+
 #+begin_src emacs-lisp
 (add-to-list 'display-buffer-alist
              `(,"vterm-subterminal.*"
@@ -5990,7 +5996,7 @@ Open a terminal in the lower third of the frame with the =`= key.
   (general-nmap "~" 'vterm))
 #+end_src
 **** Dired integration
-A function to get pwd for vterm. Couldn't find a built-in function for some reason, but this seems to be working fine:
+A function to get pwd for vterm. Couldn't find a built-in function for some reason, but this seems work fine:
 
 #+begin_src emacs-lisp
 (defun my/vterm-get-pwd ()
@@ -6037,7 +6043,7 @@ That is, with the help of [[file:Console.org::Functions][this function]], I can 
   :config
   (add-hook 'vterm-mode-hook 'with-editor-export-editor))
 #+end_src
-*** Eshell
+*** eshell
 A shell written in Emacs lisp. I don't use it as of now, but keep the config just in case.
 
 #+begin_src emacs-lisp
@@ -6103,7 +6109,7 @@ A shell written in Emacs lisp. I don't use it as of now, but keep the config jus
   (general-nmap "`" 'aweshell-dedicated-toggle)
   (general-nmap "~" 'eshell))
 #+end_src
-*** Shell
+*** shell
 Interactive subshell (=M-x shell=) is a way to run commands with input and output through an Emacs buffer.
 
 #+begin_src emacs-lisp
@@ -6393,7 +6399,7 @@ Now, a function to add a YouTube link with metadata from elfeed to EMMS.
 |-----------------|
 | rdrview         |
 
-It seems like the tool [[https://repology.org/project/rdrview/versions][isn't available]] in a whole lot of package repositories, but it's pretty easy to compile. I've put together a [[https://github.com/SqrtMinusOne/channel-q/blob/master/rdrview.scm][Guix definition]], which /one day/ I'll submit to upstream.
+It seems like the tool [[https://repology.org/project/rdrview/versions][isn't available]] in a whole lot of package repositories, but it's pretty easy to compile. I've put together a [[https://github.com/SqrtMinusOne/channel-q/blob/master/rdrview.scm][Guix definition]], which /one day/ I'll submit to the upstream.
 
 **** Integrating rdrview with Emacs
 Let's start by integrating =rdrview= with Emacs. In the general case, we want to fetch both metadata and the actual content from the page.
@@ -7377,6 +7383,7 @@ The list will be in reverse order."
 *** ytel
 [[https://github.com/gRastello/ytel][ytel]] is a YouTube (actually Invidious) frontend, which lets one search YouTube (whereas the setup with elfeed just lets one view the pre-defined subscriptions).
 
+**** Package config
 The package doesn't provide evil bindings, so I define my own.
 #+begin_src emacs-lisp
 (use-package ytel
@@ -7394,6 +7401,7 @@ The package doesn't provide evil bindings, so I define my own.
    "RET" #'my/ytel-add-emms))
 #+end_src
 
+**** EMMS integration
 And here is the same kind of integration with EMMS as in the elfeed setup:
 #+begin_src emacs-lisp
 (with-eval-after-load 'emms
@@ -7410,6 +7418,94 @@ And here is the same kind of integration with EMMS as in the elfeed setup:
   (emms-add-ytel (ytel-get-current-video)))
 #+end_src
 
+**** Choosing instances
+Invidious instances aren't particularly reliable, but there plenty of them, and there's an API at =invidious.io= that returns the available instances and their health, so we can use that.
+
+Inspired by [[https://github.com/grastello/ytel/issues/17#issuecomment-801745429][this comment]].
+#+begin_src emacs-lisp
+(setq my/invidious-instances-url
+      "https://api.invidious.io/instances.json?pretty=1&sort_by=health")
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/ytel-instances-fetch-json ()
+  "Fetch list of invidious instances as json, sorted by health."
+  (let
+      ((url-request-method "GET")
+       (url-request-extra-headers
+        '(("Accept" . "application/json"))))
+    (with-current-buffer
+        (url-retrieve-synchronously invidious-instances-url)
+      (goto-char (point-min))
+      (re-search-forward "^$")
+      (let* ((json-object-type 'alist)
+             (json-array-type 'list)
+             (json-key-type 'string))
+        (json-read)))))
+
+(defun my/ytel-instances-alist-from-json ()
+  "Make the json of invidious instances into an alist."
+  (let ((jsonlist (my/ytel-instances-fetch-json))
+        (inst ()))
+    (while jsonlist
+      (push (concat "https://" (caar jsonlist)) inst)
+      (setq jsonlist (cdr jsonlist)))
+    (nreverse inst)))
+
+(defun my/ytel-choose-instance ()
+  "Prompt user to choose an invidious instance to use."
+  (interactive)
+  (setq ytel-invidious-api-url
+        (or (condition-case nil
+                (completing-read "Using instance: "
+                                 (cl-subseq (my/ytel-instances-alist-from-json) 0 11) nil "confirm" "https://")
+              (error nil))
+            "https://invidious.synopyta.org")))
+#+end_src
+
+**** Some fixes
+At some point in the last 2 years, Invidious started to return videos with =null= fields. I have no idea what causes that, but I suspect it's related to YouTube Music.
+
+=ytel= hasn't been updated in these two years, so it doesn't account for that change.
+
+So, let's skip videos with null titles.
+#+begin_src emacs-lisp
+(defun my/ytel-draw--buffer-nil-videos-fix ()
+  (let ((inhibit-read-only t)
+	    (current-line      (line-number-at-pos)))
+    (erase-buffer)
+    (setf header-line-format
+          (concat "Search results for "
+				  (propertize ytel-search-term 'face 'ytel-video-published-face)
+				  ", page "
+				  (number-to-string ytel-current-page)))
+    (seq-do
+     (lambda (v)
+	   (ytel--insert-video v)
+	   (insert "\n"))
+     (seq-filter
+      (lambda (v)
+        (ytel-video-title v))
+      ytel-videos))
+    (goto-char (point-min))))
+
+(with-eval-after-load 'ytel
+  (advice-add #'ytel--draw-buffer :override #'my/ytel-draw--buffer-nil-videos-fix))
+#+end_src
+
+And render other potentially =null= fields as "unknown".
+#+begin_src emacs-lisp
+(defun my/ytel--format-unknown-fix (fun &rest args)
+  (if (car args)
+      (apply fun args)
+    "unknown   "))
+
+(with-eval-after-load 'ytel
+  (advice-add #'ytel--format-video-length :around #'my/ytel--format-unknown-fix)
+  (advice-add #'ytel--format-video-published :around #'my/ytel--format-unknown-fix)
+  (advice-add #'ytel--format-video-views :around #'my/ytel--format-unknown-fix))
+#+end_src
+**** Some functions
 Also, a function to copy a URL to the video under cursor.
 #+begin_src emacs-lisp
 (defun my/ytel-kill-url ()
@@ -7419,12 +7515,16 @@ Also, a function to copy a URL to the video under cursor.
     "https://www.youtube.com/watch?v="
     (ytel-video-id (ytel-get-current-video)))))
 #+end_src
-*** wallabag
+
+*** OFF wallabag
 [[https://github.com/wallabag/wallabag][Wallabag]] is a self-hosted read-it-later project. I'm not yet sold on integrating it in my workflow, but let's keep it here for now.
+
+Edit <2023-01-24 Tue>: well, that didn't work out. Running Tiny Tiny RSS & syncing it with elfeed seems to cover most of my read-it-later use cases.
 
 #+begin_src emacs-lisp
 (use-package wallabag
   :straight (:host github :repo "chenyanming/wallabag.el" :files (:defaults "default.css" "emojis.alist"))
+  :disabled
   :commands (wallabag wallabag-add-entry)
   :config
   (setq wallabag-host "https://wallabag.sqrtminusone.xyz")

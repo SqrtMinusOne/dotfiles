@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "jless"
    "direnv"
    "glibc-locales"
    "git-lfs"
