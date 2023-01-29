@@ -829,6 +829,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (menu-bar-mode -1)
   (scroll-bar-mode -1))
 
+(when my/is-termux
+  (menu-bar-mode -1))
+
 ;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
 ;; (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
 
@@ -868,6 +871,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package olivetti
   :straight t
+  :if (display-graphic-p)
   :config
   (setq-default olivetti-body-width 86))
 
@@ -886,7 +890,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package doom-themes
   :straight t
-  :if (not my/is-termux)
   :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
@@ -1307,7 +1310,7 @@ influence of C1 on the result."
 
 (use-package tree-sitter
   :straight t
-  :if (not my/remote-server)
+  :if (not (or my/remote-server my/is-termux))
   :hook ((typescript-mode . my/tree-sitter-if-not-mmm)
          (js-mode . my/tree-sitter-if-not-mmm)
          (python-mode . tree-sitter-mode)
@@ -1320,6 +1323,7 @@ influence of C1 on the result."
 
 (use-package dap-mode
   :straight t
+  :if (not (or my/remote-server my/is-termux))
   :commands (dap-debug)
   :init
   (setq lsp-enable-dap-auto-configure nil)
@@ -1575,8 +1579,8 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (defun my/copilot-tab ()
   (interactive)
-  (or (copilot-accept-completion)
-      (when (my/should-run-emmet-p) (my/emmet-or-tab))
+  (or (when (my/should-run-emmet-p) (my/emmet-or-tab))
+      (copilot-accept-completion)
       (when (and (eq evil-state 'normal)
                  (or hs-minor-mode outline-minor-mode))
         (evil-toggle-fold)
@@ -1586,7 +1590,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package copilot
   :straight (:host github :repo "SqrtMinusOne/copilot.el" :files ("dist" "*.el"))
   :commands (copilot-mode)
-  :if (not my/remote-server)
+  :if (not (or my/remote-server my/is-termux))
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
@@ -1735,7 +1739,8 @@ Returns (<buffer> . <workspace-index>) or nil."
   (when (string-match-p (rx ".vue" eos) (buffer-name))
     (setq-local web-mode-script-padding 0)
     (setq-local web-mode-style-padding 0)
-    (setq-local create-lockfiles nil)))
+    (setq-local create-lockfiles nil)
+    (setq-local web-mode-enable-auto-pairing nil)))
 
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 (add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
@@ -2320,9 +2325,10 @@ Returns (<buffer> . <workspace-index>) or nil."
   :keymaps 'python-mode-map
   "rr" (lambda ()
          (interactive)
-         (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
-           (py-isort-buffer))
-         (python-black-buffer)))
+         (save-excursion
+           (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
+             (py-isort-buffer))
+           (python-black-buffer))))
 
 (use-package sphinx-doc
   :straight t
@@ -2564,7 +2570,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (unless (file-exists-p org-directory)
     (mkdir org-directory t))
   :config
-  (setq org-startup-indented t)
+  (setq org-startup-indented (not my/is-termux))
   (setq org-return-follows-link t)
   (setq org-src-tab-acts-natively nil)
   (add-hook 'org-mode-hook 'smartparens-mode)
@@ -2605,9 +2611,10 @@ Returns (<buffer> . <workspace-index>) or nil."
   (require 'ox-extra)
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
 
-(use-package ol-notmuch
-  :straight t
-  :after (org))
+(unless (or my/remote-server my/is-termux)
+  (use-package ol-notmuch
+    :straight t
+    :after (org notmuch)))
 
 (with-eval-after-load 'org
   (require 'org-tempo)
@@ -2629,7 +2636,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package jupyter
   :straight t
   :after (org)
-  :if (not my/remote-server))
+  :if (not (or my/remote-server my/is-termux)))
 
 (defun my/jupyter-refresh-kernelspecs ()
   "Refresh Jupyter kernelspecs"
@@ -2682,7 +2689,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (with-eval-after-load-norem 'org
   (org-babel-do-load-languages
    'org-babel-load-languages
-   '((emacs-lisp . t)
+   `((emacs-lisp . t)
      (python . t)
      (sql . t)
      ;; (typescript .t)
@@ -2690,7 +2697,7 @@ Returns (<buffer> . <workspace-index>) or nil."
      (shell . t)
      (plantuml . t)
      (octave . t)
-     (jupyter . t)
+     ,@(unless my/is-termux '((jupyter . t)))
      (sparql . t)))
 
   (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images))
@@ -4136,8 +4143,10 @@ With ARG, repeats or can move backward if negative."
        (completing-read "Dired: " bookmarks nil nil "^")
        bookmarks)))))
 
+(when my/is-termux
+  (straight-use-package 'vterm))
+
 (use-package vterm
-  ;; :straight t
   :commands (vterm vterm-other-window)
   :config
   (setq vterm-kill-buffer-on-exit t)
@@ -4361,7 +4370,7 @@ With ARG, repeats or can move backward if negative."
 
 (use-package elfeed
   :straight (:repo "SqrtMinusOne/elfeed" :host github)
-  :if (not my/remote-server)
+  :if (not (or my/is-termux my/remote-server))
   :commands (elfeed)
   :init
   (my-leader-def "ae" #'elfeed-summary)
@@ -4482,6 +4491,7 @@ With ARG, repeats or can move backward if negative."
 
 (use-package elfeed-sync
   :straight (:host github :repo "SqrtMinusOne/elfeed-sync")
+  :if (not my/remote-server)
   :after elfeed
   :config
   (elfeed-sync-mode)
@@ -5016,13 +5026,12 @@ ENTRY is an instance of `elfeed-entry'."
 
 (use-package emms
   :straight t
-  :if (not my/remote-server)
+  :if (not (or my/remote-server my/is-termux))
   :commands (emms-smart-browse
              emms-browser
              emms-add-url
              emms-add-file
              emms-add-find)
-  :if (not my/is-termux)
   :init
   (my-leader-def
     :infix "as"
@@ -5332,6 +5341,7 @@ ENTRY is an instance of `elfeed-entry'."
 
 (use-package telega
   :straight t
+  :if (not (or my/remote-server my/is-termux))
   :commands (telega)
   :init
   (my-leader-def "a l" (my/command-in-persp "telega" "telega" 3 (telega)))
@@ -5541,6 +5551,7 @@ ENTRY is an instance of `elfeed-entry'."
 
 (use-package docker
   :straight t
+  :if (not (or my/remote-server my/is-termux))
   :commands (docker)
   :init
   (my-leader-def "ao" 'docker))
@@ -5607,6 +5618,7 @@ ENTRY is an instance of `elfeed-entry'."
 
 (use-package guix
   :straight t
+  :if (not (or my/remote-server my/is-termux))
   :commands (guix)
   :init
   (my-leader-def "ag" 'guix)
@@ -5616,7 +5628,7 @@ ENTRY is an instance of `elfeed-entry'."
     "A dummy variable."))
 
 (use-package atomic-chrome
-  :if (not my/remote-server)
+  :if (not (or my/remote-server my/is-termux))
   :commands (atomic-chrome-start-server)
   :straight t)
 

@@ -1353,6 +1353,9 @@ Disable GUI elements
   (tool-bar-mode -1)
   (menu-bar-mode -1)
   (scroll-bar-mode -1))
+
+(when my/is-termux
+  (menu-bar-mode -1))
 #+end_src
 
 Transparency. Not setting it now, as I'm using [[file:Desktop.org::*Picom][picom]].
@@ -1441,6 +1444,7 @@ Title format, which looks something like =emacs:project@hostname=.
 #+begin_src emacs-lisp
 (use-package olivetti
   :straight t
+  :if (display-graphic-p)
   :config
   (setq-default olivetti-body-width 86))
 #+end_src
@@ -1467,7 +1471,6 @@ My colorscheme of choice.
 #+begin_src emacs-lisp
 (use-package doom-themes
   :straight t
-  :if (not my/is-termux)
   :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
@@ -2044,7 +2047,7 @@ References:
 
 (use-package tree-sitter
   :straight t
-  :if (not my/remote-server)
+  :if (not (or my/remote-server my/is-termux))
   :hook ((typescript-mode . my/tree-sitter-if-not-mmm)
          (js-mode . my/tree-sitter-if-not-mmm)
          (python-mode . tree-sitter-mode)
@@ -2065,6 +2068,7 @@ References:
 #+begin_src emacs-lisp
 (use-package dap-mode
   :straight t
+  :if (not (or my/remote-server my/is-termux))
   :commands (dap-debug)
   :init
   (setq lsp-enable-dap-auto-configure nil)
@@ -2392,7 +2396,7 @@ A general-purpose package to run formatters on files. While the most popular for
 (use-package copilot
   :straight (:host github :repo "SqrtMinusOne/copilot.el" :files ("dist" "*.el"))
   :commands (copilot-mode)
-  :if (not my/remote-server)
+  :if (not (or my/remote-server my/is-termux))
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
@@ -3551,7 +3555,7 @@ Use the built-in org mode (=:type built-in=).
   (unless (file-exists-p org-directory)
     (mkdir org-directory t))
   :config
-  (setq org-startup-indented t)
+  (setq org-startup-indented (not my/is-termux))
   (setq org-return-follows-link t)
   (setq org-src-tab-acts-natively nil)
   (add-hook 'org-mode-hook 'smartparens-mode)
@@ -3613,9 +3617,10 @@ This used to have =org-contacts= and =ol-notmuch= at some point, but they have s
 [[https://git.sr.ht/~tarsius/ol-notmuch][ol-notmuch]] is a package that adds Org links to notmuch messages.
 
 #+begin_src emacs-lisp
-(use-package ol-notmuch
-  :straight t
-  :after (org))
+(unless (or my/remote-server my/is-termux)
+  (use-package ol-notmuch
+    :straight t
+    :after (org notmuch)))
 #+end_src
 *** org-tempo
 =org-tempo= is a convinient package that provides snippets for various org blocks.
@@ -3654,7 +3659,7 @@ References:
 (use-package jupyter
   :straight t
   :after (org)
-  :if (not my/remote-server))
+  :if (not (or my/remote-server my/is-termux)))
 #+end_src
 
 Refresh kernelspecs.
@@ -3736,7 +3741,7 @@ Enable languages
 (with-eval-after-load-norem 'org
   (org-babel-do-load-languages
    'org-babel-load-languages
-   '((emacs-lisp . t)
+   `((emacs-lisp . t)
      (python . t)
      (sql . t)
      ;; (typescript .t)
@@ -3744,7 +3749,7 @@ Enable languages
      (shell . t)
      (plantuml . t)
      (octave . t)
-     (jupyter . t)
+     ,@(unless my/is-termux '((jupyter . t)))
      (sparql . t)))
 
   (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images))
@@ -5890,11 +5895,16 @@ My terminal emulator of choice.
 References:
 - [[https://github.com/akermu/emacs-libvterm][emacs-libvterm repo]]
 **** Configuration
-I use the package from the Guix repository to avoid building libvterm.
+On Guix it makes more sense to use the Guix package to avoid building the vterm module, but obviously not an option on termux, hence this:
 
 #+begin_src emacs-lisp
+(when my/is-termux
+  (straight-use-package 'vterm))
+#+end_src
+
+The actual config:
+#+begin_src emacs-lisp
 (use-package vterm
-  ;; :straight t
   :commands (vterm vterm-other-window)
   :config
   (setq vterm-kill-buffer-on-exit t)
@@ -6174,7 +6184,7 @@ Using my own fork until the modifications are merged into master.
 #+begin_src emacs-lisp
 (use-package elfeed
   :straight (:repo "SqrtMinusOne/elfeed" :host github)
-  :if (not my/remote-server)
+  :if (not (or my/is-termux my/remote-server))
   :commands (elfeed)
   :init
   (my-leader-def "ae" #'elfeed-summary)
@@ -6321,6 +6331,7 @@ The default interface of elfeed is just a list of all entries, so it gets hard t
 #+begin_src emacs-lisp
 (use-package elfeed-sync
   :straight (:host github :repo "SqrtMinusOne/elfeed-sync")
+  :if (not my/remote-server)
   :after elfeed
   :config
   (elfeed-sync-mode)
@@ -7082,13 +7093,12 @@ References:
 #+begin_src emacs-lisp :noweb yes
 (use-package emms
   :straight t
-  :if (not my/remote-server)
+  :if (not (or my/remote-server my/is-termux))
   :commands (emms-smart-browse
              emms-browser
              emms-add-url
              emms-add-file
              emms-add-find)
-  :if (not my/is-termux)
   :init
   (my-leader-def
     :infix "as"
@@ -7549,6 +7559,7 @@ Send =/detach= to all servers. Kinda strange that there's no such function alrea
 #+begin_src emacs-lisp
 (use-package telega
   :straight t
+  :if (not (or my/remote-server my/is-termux))
   :commands (telega)
   :init
   (my-leader-def "a l" (my/command-in-persp "telega" "telega" 3 (telega)))
@@ -7825,6 +7836,7 @@ A package to manage docker containers from Emacs.
 #+begin_src emacs-lisp
 (use-package docker
   :straight t
+  :if (not (or my/remote-server my/is-termux))
   :commands (docker)
   :init
   (my-leader-def "ao" 'docker))
@@ -7917,6 +7929,7 @@ An Emacs package to help managing GNU Guix.
 #+begin_src emacs-lisp
 (use-package guix
   :straight t
+  :if (not (or my/remote-server my/is-termux))
   :commands (guix)
   :init
   (my-leader-def "ag" 'guix)
@@ -7930,7 +7943,7 @@ An Emacs package to help managing GNU Guix.
 
 #+begin_src emacs-lisp
 (use-package atomic-chrome
-  :if (not my/remote-server)
+  :if (not (or my/remote-server my/is-termux))
   :commands (atomic-chrome-start-server)
   :straight t)
 #+end_src
