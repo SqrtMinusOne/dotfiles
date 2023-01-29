@@ -1579,8 +1579,8 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (defun my/copilot-tab ()
   (interactive)
-  (or (when (my/should-run-emmet-p) (my/emmet-or-tab))
-      (copilot-accept-completion)
+  (or (copilot-accept-completion)
+      (when (my/should-run-emmet-p) (my/emmet-or-tab))
       (when (and (eq evil-state 'normal)
                  (or hs-minor-mode outline-minor-mode))
         (evil-toggle-fold)
@@ -3957,6 +3957,9 @@ With ARG, repeats or can move backward if negative."
             (lambda ()
               (setq truncate-lines t)
               (visual-line-mode nil)))
+
+  (when my/is-termux
+    (add-hook 'dired-mode-hook #'dired-hide-details-mode))
   (general-define-key
    :states '(normal)
    :keymaps 'dired-mode-map
@@ -5702,6 +5705,20 @@ ENTRY is an instance of `elfeed-entry'."
   :if (not (or my/remote-server my/is-termux))
   :commands (atomic-chrome-start-server)
   :straight t)
+
+(use-package pinentry
+  :straight t
+  :if my/is-termux
+  :config
+  (setenv "GPG_AGENT_INFO" nil) ;; use emacs pinentry
+  (setq auth-source-debug t)
+
+  (setq epg-gpg-program "gpg2") ;; not necessary
+  (require 'epa-file)
+  (epa-file-enable)
+  (setq epa-pinentry-mode 'loopback)
+  (setq epg-pinentry-mode 'loopback)
+  (pinentry-start))
 
 (use-package pomm
   :straight t

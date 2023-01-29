@@ -5620,6 +5620,9 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
             (lambda ()
               (setq truncate-lines t)
               (visual-line-mode nil)))
+
+  (when my/is-termux
+    (add-hook 'dired-mode-hook #'dired-hide-details-mode))
   (general-define-key
    :states '(normal)
    :keymaps 'dired-mode-map
@@ -8048,6 +8051,24 @@ An Emacs package to help managing GNU Guix.
   :straight t)
 #+end_src
 
+*** Pinentry
+Emacs-based pinentry works great on Termux.
+
+#+begin_src emacs-lisp
+(use-package pinentry
+  :straight t
+  :if my/is-termux
+  :config
+  (setenv "GPG_AGENT_INFO" nil) ;; use emacs pinentry
+  (setq auth-source-debug t)
+
+  (setq epg-gpg-program "gpg2") ;; not necessary
+  (require 'epa-file)
+  (epa-file-enable)
+  (setq epa-pinentry-mode 'loopback)
+  (setq epg-pinentry-mode 'loopback)
+  (pinentry-start))
+#+end_src
 ** Productivity
 *** pomm
 My package for doing Pomodoro timer.
