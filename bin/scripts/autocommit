@@ -14,9 +14,16 @@ PUSHED="No"
 FETCHED="No"
 MERGED="No"
 
+notify () {
+    if command -v notify-send; then
+        notify-send -u ${LEVEL:-normal} "$1" "$2"
+    else
+        echo "$1" "$2"
+    fi
+}
+
 if [[ $(git ls-files -u | wc -l) -gt 0 ]]; then
-    notify-send -u critical "Autocommit $(pwd)" "Merge conflict!"
-    exit
+    LEVEL=critical notify "Autocommit $(pwd)" "Merge conflict!"
 fi
 
 if [[ ($RECENTLY_CHANGED_NUM -eq 0 || $2 = "-F") && $CHANGED_NUM -gt 0 ]]; then
@@ -52,10 +59,10 @@ Fetched: $FETCHED
 Merged: $MERGED
 Pushed: $PUSHED
 EOM
-    notify-send "Autocommit $(pwd)" "$NOTIFICATION"
+    notify "Autocommit $(pwd)" "$NOTIFICATION"
 fi
 
 if [[ $(git ls-files -u | wc -l) -gt 0 ]]; then
-    notify-send -u critical "Autocommit $(pwd)" "Merge conflict!"
+    LEVEL=critical notify "Autocommit $(pwd)" "Merge conflict!"
 fi
 # =autocommit=:1 ends here

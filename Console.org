@@ -432,7 +432,7 @@ init_yc () {
 
 Launch starship
 #+begin_src fish
-if [ "$TERM" != "dumb" ]
+if [ "$TERM" != "dumb" ]; and type -q starship
     starship init fish | source
 end
 #+end_src
@@ -452,7 +452,7 @@ alias cad="conda activate (basename (pwd))"
 
 Launch a random [[https://gitlab.com/dwt1/shell-color-scripts][DT's colorscript]] unless ran inside tmux or Emacs.
 #+begin_src fish
-if ! test -n "$TMUX"; and ! test -n "$IS_EMACS";
+if ! test -n "$TMUX"; and ! test -n "$IS_EMACS"; and type -q colorscript
     colorscript random
 end
 #+end_src
@@ -894,9 +894,16 @@ PUSHED="No"
 FETCHED="No"
 MERGED="No"
 
+notify () {
+    if command -v notify-send; then
+        notify-send -u ${LEVEL:-normal} "$1" "$2"
+    else
+        echo "$1" "$2"
+    fi
+}
+
 if [[ $(git ls-files -u | wc -l) -gt 0 ]]; then
-    notify-send -u critical "Autocommit $(pwd)" "Merge conflict!"
-    exit
+    LEVEL=critical notify "Autocommit $(pwd)" "Merge conflict!"
 fi
 
 if [[ ($RECENTLY_CHANGED_NUM -eq 0 || $2 = "-F") && $CHANGED_NUM -gt 0 ]]; then
@@ -932,11 +939,11 @@ Fetched: $FETCHED
 Merged: $MERGED
 Pushed: $PUSHED
 EOM
-    notify-send "Autocommit $(pwd)" "$NOTIFICATION"
+    notify "Autocommit $(pwd)" "$NOTIFICATION"
 fi
 
 if [[ $(git ls-files -u | wc -l) -gt 0 ]]; then
-    notify-send -u critical "Autocommit $(pwd)" "Merge conflict!"
+    LEVEL=critical notify "Autocommit $(pwd)" "Merge conflict!"
 fi
 #+end_src
 

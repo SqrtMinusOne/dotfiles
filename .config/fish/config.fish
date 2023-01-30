@@ -1,5 +1,5 @@
 # [[file:../../Console.org::*Fish][Fish:1]]
-if [ "$TERM" != "dumb" ]
+if [ "$TERM" != "dumb" ]; and type -q starship
     starship init fish | source
 end
 # Fish:1 ends here
@@ -20,7 +20,7 @@ alias cad="conda activate (basename (pwd))"
 # Fish:2 ends here
 
 # [[file:../../Console.org::*Fish][Fish:3]]
-if ! test -n "$TMUX"; and ! test -n "$IS_EMACS";
+if ! test -n "$TMUX"; and ! test -n "$IS_EMACS"; and type -q colorscript
     colorscript random
 end
 # Fish:3 ends here
