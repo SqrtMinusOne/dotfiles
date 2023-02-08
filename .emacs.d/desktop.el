@@ -143,6 +143,10 @@ _=_: Balance          "
      (perspective-exwm-assign-window
       :workspace-index 2
       :persp-name "browser"))
+    ("Nyxt"
+     (perspective-exwm-assign-window
+      :workspace-index 2
+      :persp-name "browser"))
     ("Alacritty"
      (perspective-exwm-assign-window
       :persp-name "term"))
@@ -379,6 +383,10 @@ _d_: Discord
   (setq-local focus-follows-mouse nil))
 
 (add-hook 'exwm-floating-setup-hook #'my/fix-exwm-floating-windows)
+
+(setq exwm-manage-configurations
+   '(((member exwm-class-name '("Nyxt"))
+	   char-mode t)))
 
 (defun my/exwm-init ()
   (exwm-workspace-switch 1)
