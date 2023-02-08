@@ -934,6 +934,7 @@ References:
   (global-undo-tree-mode)
   (setq undo-tree-visualizer-diff t)
   (setq undo-tree-visualizer-timestamps t)
+  (setq undo-tree-auto-save-history nil)
 
   (my-leader-def "u" 'undo-tree-visualize)
   (fset 'undo-auto-amalgamate 'ignore)
@@ -5081,7 +5082,7 @@ It seems the package has been somewhat revived in the recent months. It used thi
 (use-package org-contacts
   :straight (:type git :repo "https://repo.or.cz/org-contacts.git")
   :if (not my/remote-server)
-  :commands (org-contacts org-contacts-db)
+  :after (org)
   :config
   (setq org-contacts-files (list
                             (concat org-directory "/contacts.org"))))
@@ -5097,6 +5098,22 @@ An example contact entry can look like this:
 :BIRTHDAY: [1998-08-14]
 :END:
 #+end_example
+*** Calendar view
+[[https://github.com/kiwanami/emacs-calfw][calfw]] is a nice package that displays calendars in Emacs.
+
+#+begin_src emacs-lisp
+(defun my/calfw-setup-buffer ()
+  (display-line-numbers-mode -1))
+
+(use-package calfw
+  :straight t
+  :config
+  (add-hook 'cfw:calendar-mode-hook #'my/calfw-setup-buffer))
+
+(use-package calfw-org
+  :after (calfw org)
+  :straight t)
+#+end_src
 ** UI
 *** OFF (OFF) Instant equations preview
 Instant math previews for org mode.
