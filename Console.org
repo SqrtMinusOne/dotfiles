@@ -7,6 +7,11 @@
 #+PROPERTY: header-args:bash         :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 #+OPTIONS: broken-links:auto h:6 toc:nil
 
+#+begin_quote
+No matter from which side you approach penguins, more of them always come from behind
+#+end_quote
+- A friend of mine
+
 * =.profile=
 :PROPERTIES:
 :header-args+: :tangle ./.profile
