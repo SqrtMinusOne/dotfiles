@@ -808,10 +808,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package wakatime-mode
   :straight (:host github :repo "SqrtMinusOne/wakatime-mode")
-  :if (not (or my/is-termux my/remote-server))
+  :if (not (or my/remote-server))
   :config
   (setq wakatime-ignore-exit-codes '(0 1 102))
-  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path "/home/pavel/bin/wakatime-cli")))
+  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path (expand-file-name "~/bin/wakatime-cli"))))
   ;; (setq wakatime-cli-path (executable-find "wakatime"))
   (global-wakatime-mode))
 
