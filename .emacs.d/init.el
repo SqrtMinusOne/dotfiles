@@ -545,6 +545,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (global-undo-tree-mode)
   (setq undo-tree-visualizer-diff t)
   (setq undo-tree-visualizer-timestamps t)
+  (setq undo-tree-auto-save-history nil)
 
   (my-leader-def "u" 'undo-tree-visualize)
   (fset 'undo-auto-amalgamate 'ignore)
@@ -1832,9 +1833,9 @@ Returns (<buffer> . <workspace-index>) or nil."
           ("c" . "\\chi")
           ("v" . "\\psi")
           ("g" . "\\omega")))
-  
+
   (setq my/latex-greek-prefix "'")
-  
+
   ;; The same for capitalized letters
   (dolist (elem my/greek-alphabet)
     (let ((key (car elem))
@@ -1847,7 +1848,7 @@ Returns (<buffer> . <workspace-index>) or nil."
                        (substring value 0 1)
                        (capitalize (substring value 1 2))
                        (substring value 2)))))))
-  
+
   (yas-define-snippets
    'latex-mode
    (mapcar
@@ -1856,13 +1857,13 @@ Returns (<buffer> . <workspace-index>) or nil."
     my/greek-alphabet))
   (setq my/english-alphabet
         '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
-  
+
   (dolist (elem my/english-alphabet)
     (when (string-equal elem (downcase elem))
       (add-to-list 'my/english-alphabet (upcase elem))))
-  
+
   (setq my/latex-mathbb-prefix "`")
-  
+
   (yas-define-snippets
    'latex-mode
    (mapcar
@@ -1886,9 +1887,9 @@ Returns (<buffer> . <workspace-index>) or nil."
           ("~" . "\\sim")
           ("|" . "\\mid")
           ("_|" . "\\perp")))
-  
+
   (setq my/latex-math-prefix ";")
-  
+
   (yas-define-snippets
    'latex-mode
    (mapcar
@@ -1903,7 +1904,7 @@ Returns (<buffer> . <workspace-index>) or nil."
           ("ssec" . "\\subsection{$1}")
           ("sssec" . "\\subsubsection{$1}")
           ("par" . "\\paragraph{$1}}")))
-  
+
   (setq my/latex-section-snippets
         (mapcar
          (lambda (elem)
@@ -1913,7 +1914,7 @@ Returns (<buffer> . <workspace-index>) or nil."
                 (string-match "[a-z]+" (cdr elem))
                 (match-string 0 (cdr elem)))))
          my/latex-section-snippets))
-  
+
   (dolist (elem my/latex-section-snippets)
     (let* ((key (nth 0 elem))
            (value (nth 1 elem))
@@ -1930,10 +1931,10 @@ Returns (<buffer> . <workspace-index>) or nil."
                    `(,(concat key "l")
                      ,(concat value "%\n\\label{sec:$2}")
                      ,(concat desc " with label")))))
-  
+
   (dolist (elem my/latex-section-snippets)
     (setf (nth 1 elem) (concat (nth 1 elem) "\n$0")))
-  
+
   (yas-define-snippets
    'latex-mode
    my/latex-section-snippets))
@@ -3627,10 +3628,22 @@ skip exactly those headlines that do not match."
 (use-package org-contacts
   :straight (:type git :repo "https://repo.or.cz/org-contacts.git")
   :if (not my/remote-server)
-  :commands (org-contacts org-contacts-db)
+  :after (org)
   :config
   (setq org-contacts-files (list
                             (concat org-directory "/contacts.org"))))
+
+(defun my/calfw-setup-buffer ()
+  (display-line-numbers-mode -1))
+
+(use-package calfw
+  :straight t
+  :config
+  (add-hook 'cfw:calendar-mode-hook #'my/calfw-setup-buffer))
+
+(use-package calfw-org
+  :after (calfw org)
+  :straight t)
 
 (use-package org-latex-impatient
   :straight (:repo "yangsheng6810/org-latex-impatient"
@@ -5088,17 +5101,17 @@ ENTRY is an instance of `elfeed-entry'."
         '("bestvideo[height<=720]+bestaudio/best[height<=720]"
           "bestvideo[height<=480]+bestaudio/best[height<=480]"
           "bestvideo[height<=1080]+bestaudio/best[height<=1080]"))
-  
+
   (setq my/default-emms-player-mpv-parameters
         '("--quiet" "--really-quiet" "--no-audio-display"))
-  
+
   (defun my/set-emms-mpd-youtube-quality (quality)
     (interactive "P")
     (unless quality
       (setq quality (completing-read "Quality: " my/youtube-dl-quality-list nil t)))
     (setq emms-player-mpv-parameters
           `(,@my/default-emms-player-mpv-parameters ,(format "--ytdl-format=%s" quality))))
-  
+
   (my/set-emms-mpd-youtube-quality (car my/youtube-dl-quality-list))
   ;; evil-lion and evil-commentary shadow some gX bindings
   ;; (add-hook 'emms-browser-mode-hook
@@ -5132,7 +5145,7 @@ ENTRY is an instance of `elfeed-entry'."
           (emms-track-set track name value)))))
   (defun emms-player-mpd-get-alists (info)
     "Turn the given parsed INFO from MusicPD into an list of alists.
-  
+
   The list will be in reverse order."
     (when (and info
                (null (car info))          ; no error has occurred

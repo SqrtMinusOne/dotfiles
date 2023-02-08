@@ -439,6 +439,10 @@ For EXWM windows, the =perspective-exwm= package provides a function called =per
      (perspective-exwm-assign-window
       :workspace-index 2
       :persp-name "browser"))
+    ("Nyxt"
+     (perspective-exwm-assign-window
+      :workspace-index 2
+      :persp-name "browser"))
     ("Alacritty"
      (perspective-exwm-assign-window
       :persp-name "term"))
@@ -931,6 +935,14 @@ These 3 settings seem to cause particular trouble with floating windows. Setting
   (setq-local focus-follows-mouse nil))
 
 (add-hook 'exwm-floating-setup-hook #'my/fix-exwm-floating-windows)
+#+end_src
+** Application-specific settings
+Start Nyxt in =char-mode=.
+
+#+begin_src emacs-lisp
+(setq exwm-manage-configurations
+   '(((member exwm-class-name '("Nyxt"))
+	   char-mode t)))
 #+end_src
 ** EXWM config
 And the EXWM config itself.
