@@ -1945,7 +1945,7 @@ References:
          (haskell-literate-mode . lsp)
          (java-mode . lsp)
          ;; (csharp-mode . lsp)
-         )
+         (text-mode . lsp))
   :commands lsp
   :init
   (setq lsp-keymap-prefix nil)
@@ -2939,6 +2939,30 @@ A major mode to work with subtitles.
    :keymaps '(subed-mode-map subed-vtt-mode-map)
    :states '(normal)
    "gp" #'subed-mpv-toggle-pause))
+#+end_src
+*** LTeX
+[[https://github.com/valentjn/ltex-ls][ltex-ls]] is a tool that wraps LanguageTool into a language server.
+
+It takes maybe 10 seconds to run on my Master's thesis file (=M-x count words=: 13453 words and 117566 characters), but it's totally worth it. And it's much faster on smaller files. The good thing is that it supports markup syntaxes like Org and Markdown, whereas LanguageTool by itself produces a lot of false positives on these files.
+
+It shouldn't be too hard to package that for guix, but I've installed the nix version for now.
+#+begin_src emacs-lisp
+(use-package lsp-ltex
+  :straight t
+  :after (lsp)
+  :init
+  (setq lsp-ltex-version "15.2.0")
+  (setq lsp-ltex-check-frequency "save"))
+#+end_src
+
+A function to switch the current language.
+#+begin_src emacs-lisp
+(defun my/ltex-lang ()
+  (interactive)
+  (setq lsp-ltex-language (completing-read
+                           "Language: "
+                           '("en-US" "ru-RU" "de-DE")))
+  (lsp-workspace-restart (lsp--read-workspace)))
 #+end_src
 *** LanguageTool
 LanguageTool is a great offline spell checker. For some reason, the download link is nowhere to be found on the home page, so it is listed in the references as well.
@@ -4733,6 +4757,92 @@ A set of keybindings to quickly access things in Org Roam.
   (general-define-key
    :keymap 'org-mode-map
    "C-c i" 'org-roam-node-insert))
+#+end_src
+**** Backlinks count display
+Occasionally I want to see how much backlinks does a particular page have.
+
+This idea came to my mind because I occasionally write a note in the following form:
+#+begin_example
+According to <This Person>, <some opinion>
+#+end_example
+
+And I have a note called =#Personalities=, which looks like that:
+#+begin_example
+Philosophers:
+- <This Person>
+- <That Person>
+- <Another Person>
+...
+#+end_example
+
+So I'm curious to see how many notes do I have linked to each:
+#+begin_example
+Philosophers:
+- <This Person> [30]
+- <That Person> [40]
+- <Another Person> [20]
+...
+#+end_example
+
+The obvious way to implement that is via [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Overlays.html][overlays]]:
+#+begin_src emacs-lisp
+(defface my/org-roam-count-overlay-face
+  '((t :inherit tooltip))
+  "Face for Org Roam count overlay.")
+
+(defun my/org-roam--count-overlay-make (pos count)
+  (let* ((overlay-value (concat
+                         " "
+                         (propertize
+                          (format "%d" count)
+                          'face 'my/org-roam-count-overlay-face)
+                         " "))
+         (ov (make-overlay pos pos (current-buffer) nil t)))
+    (overlay-put ov 'roam-backlinks-count count)
+    (overlay-put ov 'priority 1)
+    (overlay-put ov 'after-string overlay-value)))
+#+end_src
+
+Also a function to remove them:
+#+begin_src emacs-lisp
+(defun my/org-roam--count-overlay-remove-all ()
+  (dolist (ov (overlays-in (point-min) (point-max)))
+    (when (overlay-get ov 'roam-backlinks-count)
+      (delete-overlay ov))))
+#+end_src
+
+Now we can iterate over all roam links in the buffer, count the number of backlinks via =org-roam-db-query= and invoke =my/org-roam--count-overlay-make= if that number is greater than zero:
+#+begin_src emacs-lisp
+(defun my/org-roam--count-overlay-make-all ()
+  (my/org-roam--count-overlay-remove-all)
+  (org-element-map (org-element-parse-buffer) 'link
+    (lambda (elem)
+      (when (string-equal (org-element-property :type elem) "id")
+        (let* ((id (org-element-property :path elem))
+               (count (caar
+                       (org-roam-db-query
+                        [:select (funcall count source)
+                         :from links
+                         :where (= dest $s1)
+                         :and (= type "id")]
+                        id))))
+          (when (< 0 count)
+            (my/org-roam--count-overlay-make
+             (org-element-property :end elem)
+             count)))))))
+#+end_src
+
+And a minor mode to toggle the display in a particular =org-roam= buffer.
+#+begin_src emacs-lisp
+(define-minor-mode my/org-roam-count-overlay-mode
+  "Display backlink count for org-roam links."
+  :after-hook
+  (if my/org-roam-count-overlay-mode
+      (progn
+        (my/org-roam--count-overlay-make-all)
+        (add-hook 'after-save-hook #'my/org-roam--count-overlay-make-all nil t))
+    (my/org-roam--count-overlay-remove-all)
+    (remove-hook 'after-save-hook #'my/org-roam--count-overlay-remove-all t)))
 #+end_src
 **** Org Roam UI
 A browser frontend to visualize the Roam database as a graph.

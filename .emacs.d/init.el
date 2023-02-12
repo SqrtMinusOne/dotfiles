@@ -1234,7 +1234,7 @@ influence of C1 on the result."
          (haskell-literate-mode . lsp)
          (java-mode . lsp)
          ;; (csharp-mode . lsp)
-         )
+         (text-mode . lsp))
   :commands lsp
   :init
   (setq lsp-keymap-prefix nil)
@@ -1833,9 +1833,9 @@ Returns (<buffer> . <workspace-index>) or nil."
           ("c" . "\\chi")
           ("v" . "\\psi")
           ("g" . "\\omega")))
-
+  
   (setq my/latex-greek-prefix "'")
-
+  
   ;; The same for capitalized letters
   (dolist (elem my/greek-alphabet)
     (let ((key (car elem))
@@ -1848,7 +1848,7 @@ Returns (<buffer> . <workspace-index>) or nil."
                        (substring value 0 1)
                        (capitalize (substring value 1 2))
                        (substring value 2)))))))
-
+  
   (yas-define-snippets
    'latex-mode
    (mapcar
@@ -1857,13 +1857,13 @@ Returns (<buffer> . <workspace-index>) or nil."
     my/greek-alphabet))
   (setq my/english-alphabet
         '("a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
-
+  
   (dolist (elem my/english-alphabet)
     (when (string-equal elem (downcase elem))
       (add-to-list 'my/english-alphabet (upcase elem))))
-
+  
   (setq my/latex-mathbb-prefix "`")
-
+  
   (yas-define-snippets
    'latex-mode
    (mapcar
@@ -1887,9 +1887,9 @@ Returns (<buffer> . <workspace-index>) or nil."
           ("~" . "\\sim")
           ("|" . "\\mid")
           ("_|" . "\\perp")))
-
+  
   (setq my/latex-math-prefix ";")
-
+  
   (yas-define-snippets
    'latex-mode
    (mapcar
@@ -1904,7 +1904,7 @@ Returns (<buffer> . <workspace-index>) or nil."
           ("ssec" . "\\subsection{$1}")
           ("sssec" . "\\subsubsection{$1}")
           ("par" . "\\paragraph{$1}}")))
-
+  
   (setq my/latex-section-snippets
         (mapcar
          (lambda (elem)
@@ -1914,7 +1914,7 @@ Returns (<buffer> . <workspace-index>) or nil."
                 (string-match "[a-z]+" (cdr elem))
                 (match-string 0 (cdr elem)))))
          my/latex-section-snippets))
-
+  
   (dolist (elem my/latex-section-snippets)
     (let* ((key (nth 0 elem))
            (value (nth 1 elem))
@@ -1931,10 +1931,10 @@ Returns (<buffer> . <workspace-index>) or nil."
                    `(,(concat key "l")
                      ,(concat value "%\n\\label{sec:$2}")
                      ,(concat desc " with label")))))
-
+  
   (dolist (elem my/latex-section-snippets)
     (setf (nth 1 elem) (concat (nth 1 elem) "\n$0")))
-
+  
   (yas-define-snippets
    'latex-mode
    my/latex-section-snippets))
@@ -2166,6 +2166,20 @@ Returns (<buffer> . <workspace-index>) or nil."
    :keymaps '(subed-mode-map subed-vtt-mode-map)
    :states '(normal)
    "gp" #'subed-mpv-toggle-pause))
+
+(use-package lsp-ltex
+  :straight t
+  :after (lsp)
+  :init
+  (setq lsp-ltex-version "15.2.0")
+  (setq lsp-ltex-check-frequency "save"))
+
+(defun my/ltex-lang ()
+  (interactive)
+  (setq lsp-ltex-language (completing-read
+                           "Language: "
+                           '("en-US" "ru-RU" "de-DE")))
+  (lsp-workspace-restart (lsp--read-workspace)))
 
 (use-package langtool
   :straight t
@@ -3377,6 +3391,55 @@ skip exactly those headlines that do not match."
   (general-define-key
    :keymap 'org-mode-map
    "C-c i" 'org-roam-node-insert))
+
+(defface my/org-roam-count-overlay-face
+  '((t :inherit tooltip))
+  "Face for Org Roam count overlay.")
+
+(defun my/org-roam--count-overlay-make (pos count)
+  (let* ((overlay-value (concat
+                         " "
+                         (propertize
+                          (format "%d" count)
+                          'face 'my/org-roam-count-overlay-face)
+                         " "))
+         (ov (make-overlay pos pos (current-buffer) nil t)))
+    (overlay-put ov 'roam-backlinks-count count)
+    (overlay-put ov 'priority 1)
+    (overlay-put ov 'after-string overlay-value)))
+
+(defun my/org-roam--count-overlay-remove-all ()
+  (dolist (ov (overlays-in (point-min) (point-max)))
+    (when (overlay-get ov 'roam-backlinks-count)
+      (delete-overlay ov))))
+
+(defun my/org-roam--count-overlay-make-all ()
+  (my/org-roam--count-overlay-remove-all)
+  (org-element-map (org-element-parse-buffer) 'link
+    (lambda (elem)
+      (when (string-equal (org-element-property :type elem) "id")
+        (let* ((id (org-element-property :path elem))
+               (count (caar
+                       (org-roam-db-query
+                        [:select (funcall count source)
+                         :from links
+                         :where (= dest $s1)
+                         :and (= type "id")]
+                        id))))
+          (when (< 0 count)
+            (my/org-roam--count-overlay-make
+             (org-element-property :end elem)
+             count)))))))
+
+(define-minor-mode my/org-roam-count-overlay-mode
+  "Display backlink count for org-roam links."
+  :after-hook
+  (if my/org-roam-count-overlay-mode
+      (progn
+        (my/org-roam--count-overlay-make-all)
+        (add-hook 'after-save-hook #'my/org-roam--count-overlay-make-all nil t))
+    (my/org-roam--count-overlay-remove-all)
+    (remove-hook 'after-save-hook #'my/org-roam--count-overlay-remove-all t)))
 
 (use-package org-roam-ui
   :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
@@ -5101,17 +5164,17 @@ ENTRY is an instance of `elfeed-entry'."
         '("bestvideo[height<=720]+bestaudio/best[height<=720]"
           "bestvideo[height<=480]+bestaudio/best[height<=480]"
           "bestvideo[height<=1080]+bestaudio/best[height<=1080]"))
-
+  
   (setq my/default-emms-player-mpv-parameters
         '("--quiet" "--really-quiet" "--no-audio-display"))
-
+  
   (defun my/set-emms-mpd-youtube-quality (quality)
     (interactive "P")
     (unless quality
       (setq quality (completing-read "Quality: " my/youtube-dl-quality-list nil t)))
     (setq emms-player-mpv-parameters
           `(,@my/default-emms-player-mpv-parameters ,(format "--ytdl-format=%s" quality))))
-
+  
   (my/set-emms-mpd-youtube-quality (car my/youtube-dl-quality-list))
   ;; evil-lion and evil-commentary shadow some gX bindings
   ;; (add-hook 'emms-browser-mode-hook
@@ -5145,7 +5208,7 @@ ENTRY is an instance of `elfeed-entry'."
           (emms-track-set track name value)))))
   (defun emms-player-mpd-get-alists (info)
     "Turn the given parsed INFO from MusicPD into an list of alists.
-
+  
   The list will be in reverse order."
     (when (and info
                (null (car info))          ; no error has occurred
