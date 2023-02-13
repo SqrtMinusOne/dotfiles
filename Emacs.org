@@ -4780,14 +4780,14 @@ A set of keybindings to quickly access things in Org Roam.
    "C-c i" 'org-roam-node-insert))
 #+end_src
 **** Backlinks count display
-Occasionally I want to see how much backlinks does a particular page have.
+Occasionally I want to see how many backlinks a particular page has.
 
-This idea came to my mind because I occasionally write a note in the following form:
+This idea came to my mind because I often write a note in the following form:
 #+begin_example
 According to <This Person>, <some opinion>
 #+end_example
 
-And I have a note called =#Personalities=, which looks like that:
+And I have a note called =#Personalities= that looks like that:
 #+begin_example
 Philosophers:
 - <This Person>
@@ -4796,7 +4796,7 @@ Philosophers:
 ...
 #+end_example
 
-So I'm curious to see how many notes do I have linked to each:
+So I'm curious to see how many notes I have linked to each:
 #+begin_example
 Philosophers:
 - <This Person> [30]
