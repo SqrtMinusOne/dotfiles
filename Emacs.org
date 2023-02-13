@@ -1945,7 +1945,7 @@ References:
          (haskell-literate-mode . lsp)
          (java-mode . lsp)
          ;; (csharp-mode . lsp)
-         (text-mode . lsp))
+         )
   :commands lsp
   :init
   (setq lsp-keymap-prefix nil)
@@ -2964,6 +2964,27 @@ A function to switch the current language.
                            '("en-US" "ru-RU" "de-DE")))
   (lsp-workspace-restart (lsp--read-workspace)))
 #+end_src
+
+Check whether it's necessary to run LTeX:
+#+begin_src emacs-lisp
+(defun my/ltex-need-p ()
+  (let ((file-name (buffer-file-name)))
+    (cond
+     ((null file-name) nil)
+     ((string-match-p (rx "/home/pavel/" (+ alnum) ".org" eos) file-name) nil)
+     ((string-match-p (rx (literal org-directory) "/" (or "roam" "inbox-notes" "literature-notes" "journal")) file-name) t)
+     ((string-match-p (rx (literal org-directory)) file-name) nil)
+     (t t))))
+#+end_src
+
+To use it in =text-mode-hook=
+#+begin_src emacs-lisp
+(defun my/text-mode-lsp-maybe ()
+  (when (my/ltex-need-p)
+    (lsp)))
+
+(add-hook 'text-mode-hook #'my/text-mode-lsp-maybe)
+#+end_src
 *** LanguageTool
 LanguageTool is a great offline spell checker. For some reason, the download link is nowhere to be found on the home page, so it is listed in the references as well.
 
@@ -3601,7 +3622,7 @@ Setting up =org-crypt= to encrypt parts of file.
 (with-eval-after-load-norem 'org
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
-  (setq org-tags-exclude-from-inheritance (quote ("crypt")))
+  (setq org-tags-exclude-from-inheritance '("crypt"))
   (setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205"))
 #+end_src
 

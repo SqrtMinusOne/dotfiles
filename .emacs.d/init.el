@@ -1234,7 +1234,7 @@ influence of C1 on the result."
          (haskell-literate-mode . lsp)
          (java-mode . lsp)
          ;; (csharp-mode . lsp)
-         (text-mode . lsp))
+         )
   :commands lsp
   :init
   (setq lsp-keymap-prefix nil)
@@ -2180,6 +2180,21 @@ Returns (<buffer> . <workspace-index>) or nil."
                            "Language: "
                            '("en-US" "ru-RU" "de-DE")))
   (lsp-workspace-restart (lsp--read-workspace)))
+
+(defun my/ltex-need-p ()
+  (let ((file-name (buffer-file-name)))
+    (cond
+     ((null file-name) nil)
+     ((string-match-p (rx "/home/pavel/" (+ alnum) ".org" eos) file-name) nil)
+     ((string-match-p (rx (literal org-directory) "/" (or "roam" "inbox-notes" "literature-notes" "journal")) file-name) t)
+     ((string-match-p (rx (literal org-directory)) file-name) nil)
+     (t t))))
+
+(defun my/text-mode-lsp-maybe ()
+  (when (my/ltex-need-p)
+    (lsp)))
+
+(add-hook 'text-mode-hook #'my/text-mode-lsp-maybe)
 
 (use-package langtool
   :straight t
