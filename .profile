@@ -42,6 +42,9 @@ if [ -z "$IS_ANDROID" ]; then
             GUIX_PROFILE="$profile"
             . "$GUIX_PROFILE"/etc/profile
         fi
+        if [ -d "$profile"/share/man ]; then
+            export MANPATH="${MANPATH:-$(manpath)}:$profile/share/man"
+        fi
         export XDG_DATA_DIRS="$XDG_DATA_DIRS:$profile/share"
         unset profile
     done
@@ -98,7 +101,7 @@ export NPM_CONFIG_USERCONFIG=$HOME/._npmrc
 NPM_PACKAGES="${HOME}/.npm-packages"
 
 export PATH="$PATH:$NPM_PACKAGES/bin"
-export MANPATH="${MANPATH-$(manpath)}:$NPM_PACKAGES/share/man"
+export MANPATH="${MANPATH:-$(manpath)}:$NPM_PACKAGES/share/man"
 # npm:3 ends here
 
 # [[file:Console.org::*XResources][XResources:1]]
