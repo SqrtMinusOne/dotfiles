@@ -1632,7 +1632,7 @@ References:
 #+begin_src emacs-lisp
 (when (display-graphic-p)
   (if (x-list-fonts "JetBrainsMono Nerd Font")
-      (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
+      (set-frame-font "JetBrainsMono Nerd Font 13" nil t)
     (message "Install JetBrainsMono Nerd Font!")))
 #+end_src
 
@@ -7269,7 +7269,9 @@ References:
     "u" #'emms-player-mpd-connect
     "ww" #'emms-lyrics
     "wb" #'emms-lyrics-toggle-display-on-minibuffer
-    "wm" #'emms-lyrics-toggle-display-on-modeline)
+    "wm" #'emms-lyrics-toggle-display-on-modeline
+    "k" #'emms-volume-raise
+    "l" #'emms-volume-lower)
   (my/persp-add-rule
     emms-browser-mode 0 "EMMS"
     emms-playlist-mode 0 "EMMS")
@@ -7460,6 +7462,17 @@ Also advice to change the location of the lyrics in the mode line.
    :states '(normal)
    :keymaps 'emms-playlist-mode-map
    "q" 'quit-window))
+#+end_src
+**** Setting volume
+#+begin_src emacs-lisp
+(defun my/set-volume (value)
+  (start-process "ponymix" nil "ponymix"
+                 (if (< 0 value) "increase" "decrease")
+                 (number-to-string (abs value))
+                 "--max-volume" "150"))
+
+(setq emms-volume-change-function #'my/set-volume)
+(setq emms-volume-change-amount 5)
 #+end_src
 **** EMMS & mpd Fixes
 +Some fixes until I submit a patch.+ I've submitted a patch for with these fixes, so I'll remove this section eventually.

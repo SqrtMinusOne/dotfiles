@@ -1011,7 +1011,7 @@ influence of C1 on the result."
 
 (when (display-graphic-p)
   (if (x-list-fonts "JetBrainsMono Nerd Font")
-      (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
+      (set-frame-font "JetBrainsMono Nerd Font 13" nil t)
     (message "Install JetBrainsMono Nerd Font!")))
 
 (use-package ligature
@@ -2616,7 +2616,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (with-eval-after-load-norem 'org
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
-  (setq org-tags-exclude-from-inheritance (quote ("crypt")))
+  (setq org-tags-exclude-from-inheritance '("crypt"))
   (setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205"))
 
 (defun my/epa--select-keys-around (fun prompt keys)
@@ -5140,7 +5140,9 @@ ENTRY is an instance of `elfeed-entry'."
     "u" #'emms-player-mpd-connect
     "ww" #'emms-lyrics
     "wb" #'emms-lyrics-toggle-display-on-minibuffer
-    "wm" #'emms-lyrics-toggle-display-on-modeline)
+    "wm" #'emms-lyrics-toggle-display-on-modeline
+    "k" #'emms-volume-raise
+    "l" #'emms-volume-lower)
   (my/persp-add-rule
     emms-browser-mode 0 "EMMS"
     emms-playlist-mode 0 "EMMS")
@@ -5302,6 +5304,15 @@ ENTRY is an instance of `elfeed-entry'."
    :states '(normal)
    :keymaps 'emms-playlist-mode-map
    "q" 'quit-window))
+
+(defun my/set-volume (value)
+  (start-process "ponymix" nil "ponymix"
+                 (if (< 0 value) "increase" "decrease")
+                 (number-to-string (abs value))
+                 "--max-volume" "150"))
+
+(setq emms-volume-change-function #'my/set-volume)
+(setq emms-volume-change-amount 5)
 
 (use-package ytel
   :straight t
