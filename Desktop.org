@@ -86,8 +86,7 @@ However, I'd rather use the =Xresources= file wherever possible. Here is the cod
 #+end_src
 
 So, whenever a program is capable of reading =.Xresources=, it will get colors from there, otherwise, it will get colors from noweb expressions in the literate config. Thus, in both cases, the color is set in a single Org Mode table.
-*** OFF Fonts
-CLOSED: [2023-02-17 Fri 20:36]
+*** Fonts
 Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting has to be unique for each machine, which means I cannot commit =Xresources= to the repo.
 
 #+NAME: get-dpi
@@ -100,7 +99,7 @@ Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting 
 #+end_src
 
 #+begin_src conf-xdefaults :noweb yes :tangle ~/.Xresources
-! Xft.dpi: <<get-dpi()>>
+Xft.dpi: <<get-dpi()>>
 #+end_src
 ** Themes
 A few programs I use to customize the apperance are listed below.
@@ -119,38 +118,12 @@ A few programs I use to customize the apperance are listed below.
 Net/ThemeName "Matcha-dark-azul"
 Net/IconThemeName "Papirus-Dark"
 Gtk/DecorationLayout "menu:minimize,maximize,close"
-Gtk/FontName "Sans 14"
+Gtk/FontName "Sans 10"
 Gtk/MonospaceFontName "JetBrainsMono Nerd Mono 12"
 Gtk/CursorThemeName "Adwaita"
 Xft/Antialias 1
 Xft/Hinting 0
 Xft/HintStyle "hintnone"
-#+end_src
-** Fontconfig
-#+begin_src xml ~/.config/fontconfig/fonts.conf
-<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <match>
-    <edit name="pixelsize"><double>16</double></edit>
-  </match>
-  <match target="pattern">
-    <test qual="any" name="family">
-      <string>monospace</string>
-    </test>
-    <edit binding="strong" name="family" mode="assign">
-      <string>DejaVu Sans Mono</string>
-    </edit>
-  </match>
-  <match target="pattern">
-    <test qual="any" name="family">
-      <string>sans-serif</string>
-    </test>
-    <edit binding="strong" name="family" mode="assign">
-      <string>DejaVu Sans</string>
-    </edit>
-  </match>
-</fontconfig>
 #+end_src
 ** MIME
 Setting the default MIME types

@@ -1011,7 +1011,7 @@ influence of C1 on the result."
 
 (when (display-graphic-p)
   (if (x-list-fonts "JetBrainsMono Nerd Font")
-      (set-frame-font "JetBrainsMono Nerd Font 13" nil t)
+      (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
     (message "Install JetBrainsMono Nerd Font!")))
 
 (use-package ligature

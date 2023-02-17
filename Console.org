@@ -748,7 +748,7 @@ font:
     family: JetBrainsMono Nerd Font
     style: Regular
 
-  size: 8
+  size: 10
 
 env:
   TERM: xterm-256color
