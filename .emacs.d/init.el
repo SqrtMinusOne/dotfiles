@@ -2172,6 +2172,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :after (lsp)
   :init
   (setq lsp-ltex-version "15.2.0")
+  :config
   (setq lsp-ltex-check-frequency "save"))
 
 (defun my/ltex-lang ()
@@ -2188,6 +2189,7 @@ Returns (<buffer> . <workspace-index>) or nil."
      ((string-match-p (rx "/home/pavel/" (+ alnum) ".org" eos) file-name) nil)
      ((string-match-p (rx (literal org-directory) "/" (or "roam" "inbox-notes" "literature-notes" "journal")) file-name) t)
      ((string-match-p (rx (literal org-directory)) file-name) nil)
+     ((string-match-p (rx (literal (expand-file-name user-emacs-directory))) file-name) nil)
      (t t))))
 
 (defun my/text-mode-lsp-maybe ()
@@ -3057,7 +3059,12 @@ Returns (<buffer> . <workspace-index>) or nil."
   :if (not my/remote-server)
   :straight (:fetcher github
                       :repo "alphapapa/org-ql"
-                      :files (:defaults (:exclude "helm-org-ql.el"))))
+                      :files (:defaults (:exclude "helm-org-ql.el")))
+  :init
+  ;; See https://github.com/alphapapa/org-ql/pull/237
+  (setq org-ql-regexp-part-ts-time
+        (rx " " (repeat 1 2 digit) ":" (repeat 2 digit)
+            (optional "-" (repeat 1 2 digit) ":" (repeat 2 digit)))))
 
 (use-package org-habit-stats
   :straight (:host github :repo "ml729/org-habit-stats")
@@ -3124,6 +3131,90 @@ skip exactly those headlines that do not match."
                      ((org-agenda-overriding-header "Habits")
                       (org-agenda-prefix-format " %i %-12:c")
                       (org-agenda-hide-tags-regexp ".")))))))
+
+(setq my/org-alert-notify-times '(600 60))
+
+(setq my/org-alert--alerts (make-hash-table :test #'equal))
+
+(defun my/org-alert--is-scheduled (label time)
+  "Check if LABEL is scheduled to be shown an TIME."
+  (gethash (cons label time)
+           my/org-alert--alerts nil))
+
+(defun my/org-alert--schedule (label time)
+  "Schedule LABEL to be shown at TIME, unless it's already scheduled."
+  (unless (my/org-alert--is-scheduled label time)
+    (puthash (cons label time)
+             (run-at-time time
+                          nil
+                          (lambda ()
+                            (alert label
+                                   :title "PROXIMITY ALERT")))
+             my/org-alert--alerts)))
+
+(defun my/org-alert-cleanup (&optional keys)
+  "Unschedule items that do not appear in KEYS.
+
+KEYS is a list of cons cells like (<label> . <time>)."
+  (let ((existing-hash (make-hash-table :test #'equal)))
+    (cl-loop for key in keys
+             do (puthash key t existing-hash))
+    (cl-loop for key being the hash-keys of my/org-alert--alerts
+             unless (gethash key existing-hash)
+             do (progn
+                  (cancel-timer (gethash key my/org-alert--alerts))
+                  (remhash key my/org-alert--alerts)))))
+
+(defun my/org-alert--update-today-alerts ()
+  (let ((items
+         (org-ql-query
+           :select 'element
+           :from (org-agenda-files)
+           :where `(and
+                    (todo "FUTURE")
+                    (ts-active :from ,(format-time-string "%Y-%m-%d %H:%M")
+                               :to ,(format-time-string
+                                     "%Y-%m-%d"
+                                     (time-add
+                                      (current-time)
+                                      (* 60 60 24)))
+                               :with-time t))
+           :order-by 'date))
+        scheduled-keys)
+    (cl-loop
+     for item in items
+     for scheduled = (org-timestamp-to-time (org-element-property :scheduled item))
+     do (cl-loop
+         for before-time in my/org-alert-notify-times
+         for label = (format "%s at %s [%s min. remaining]"
+                             (org-element-property :raw-value item)
+                             (format-time-string "%H:%M" scheduled)
+                             (number-to-string (/ before-time 60)))
+         for time = (time-convert
+                     (+ (time-convert scheduled 'integer) (- before-time)))
+         do (progn
+              (my/org-alert--schedule label time)
+              (push (cons label time) scheduled-keys))))
+    (my/org-alert-cleanup scheduled-keys)))
+
+(setq my/org-alert--timer nil)
+
+(define-minor-mode my/org-alert-mode ()
+  :global t
+  :after-hook
+  (if my/org-alert-mode
+      (progn
+        (my/org-alert--update-today-alerts)
+        (when (timerp my/org-alert--timer)
+          (cancel-timer my/org-alert--timer))
+        (setq my/org-alert--timer
+              (run-at-time 600 t #'my/org-alert--update-today-alerts)))
+    (when (timerp my/org-alert--timer)
+      (cancel-timer my/org-alert--timer))
+    (my/org-alert-cleanup)))
+
+(with-eval-after-load 'org
+  (my/org-alert-mode))
 
 (my-leader-def
   :infix "o"
