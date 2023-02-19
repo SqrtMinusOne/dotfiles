@@ -131,6 +131,7 @@ _=_: Balance          "
           (2 . "browser")
           (3 . "comms")
           (4 . "dev")))
+  (setq perspective-exwm-cycle-max-message-length 180)
   (general-define-key
    :keymaps 'perspective-map
    "e" #'perspective-exwm-move-to-workspace
@@ -430,8 +431,8 @@ _d_: Discord
    :keymaps '(exwm-mode-map)
    "C-q" #'exwm-input-send-next-key
    "<print>" (my/app-command "flameshot gui")
-   "<mode-line> s-<mouse-4>" #'perspective-exwm-cycle-exwm-buffers-backward
-   "<mode-line> s-<mouse-5>" #'perspective-exwm-cycle-exwm-buffers-forward
+   "<mode-line> s-<mouse-4>" #'perspective-exwm-cycle-all-buffers-backward
+   "<mode-line> s-<mouse-5>" #'perspective-exwm-cycle-all-buffers-forward
    "M-x" #'counsel-M-x
    "M-SPC" (general-key "SPC"))
   (setq exwm-input-simulation-keys `((,(kbd "M-w") . ,(kbd "C-w"))
@@ -506,8 +507,8 @@ _d_: Discord
           (,(kbd "s-<tab>") . my/exwm-workspace-switch-monitor)
   
           ;; Perspectives
-          (,(kbd "s-[") . perspective-exwm-cycle-exwm-buffers-backward)
-          (,(kbd "s-]") . perspective-exwm-cycle-exwm-buffers-forward)
+          (,(kbd "s-[") . perspective-exwm-cycle-all-buffers-backward)
+          (,(kbd "s-]") . perspective-exwm-cycle-all-buffers-forward)
           (,(kbd "s-<mouse-4>") . perspective-exwm-cycle-exwm-buffers-backward)
           (,(kbd "s-<mouse-5>") . perspective-exwm-cycle-exwm-buffers-forward)
           (,(kbd "s-`") . perspective-exwm-switch-perspective)

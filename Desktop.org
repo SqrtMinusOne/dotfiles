@@ -422,6 +422,7 @@ References:
           (2 . "browser")
           (3 . "comms")
           (4 . "dev")))
+  (setq perspective-exwm-cycle-max-message-length 180)
   (general-define-key
    :keymaps 'perspective-map
    "e" #'perspective-exwm-move-to-workspace
