@@ -517,11 +517,18 @@ References:
    "--" #'avy-goto-char-2
    "-=" #'avy-goto-symbol-1))
 #+End_src
+
+[[https://github.com/abo-abo/ace-link][ace-link]] is a package to jump to links with avy.
+#+begin_src emacs-lisp
+(use-package ace-link
+  :straight t
+  :commands (ace-link-info ace-link-help ace-link-woman ace-link-eww))
+#+end_src
 *** My keybindings
 Various keybinding settings that I can't put anywhere else.
 
 **** Escape key
-Use the escape key instead of =C-g= whenever possible.
++Use the escape key instead of =C-g= whenever possible+ No, not really after 2 years... But I'll keep this fragment.
 
 I must have copied it from somewhere, but as I googled to find out the source, I discovered quite a number of variations of the following code over time. I wonder if Richard Dawkins was inspired by something like this a few decades ago.
 
@@ -1106,12 +1113,12 @@ A minor mode to remember recently edited files.
 
 Save the last place visited in the file.
 #+begin_src emacs-lisp
-(save-place-mode 1)
+(save-place-mode nil)
 #+end_src
 *** Deadgrep
-[[https://github.com/Wilfred/deadgrep][deadgrep]] is a nice Emacs for [[https://github.com/BurntSushi/ripgrep][ripgrep]]. Running =ivy-occur= in =counsel-rg= does something a bit similar, but the deadgrep is much more full-featured.
+[[https://github.com/Wilfred/deadgrep][deadgrep]] is a nice Emacs interface for [[https://github.com/BurntSushi/ripgrep][ripgrep]]. Running =ivy-occur= in =counsel-rg= does something a bit similar, but the deadgrep is more full-featured.
 
-Somehow I couldn't hook =toogle-truncate-lines= into the existing hooks, so I add advice.
+Somehow I couldn't hook =toogle-truncate-lines= into the existing hooks, so here goes advice.
 
 #+begin_src emacs-lisp
 (defun my/deadgrep-fix-buffer-advice (fun &rest args)
@@ -1427,7 +1434,7 @@ Word wrapping. These settings aren't too obvious compared to =:set wrap= from vi
 (global-visual-line-mode 1)
 #+end_src
 *** Custom frame format
-Title format, which looks something like =emacs:project@hostname=.
+Title format, which used to look something like =emacs:project@hostname=. Now it's just =emacs=.
 #+begin_src emacs-lisp
 (setq-default frame-title-format
               '(""
@@ -1637,6 +1644,11 @@ References:
 #+end_src
 
 To make the icons work (e.g. in the Doom Modeline), run =M-x all-the-icons-install-fonts=. The package definition is somewhere later in the config.
+*** Other fonts
+#+begin_src emacs-lisp
+(when (display-graphic-p)
+  (set-face-attribute 'variable-pitch nil :family "Cantarell" :height 120))
+#+end_src
 *** Ligatures
 Ligature setup for the JetBrainsMono font.
 #+begin_src emacs-lisp
@@ -1744,11 +1756,11 @@ References:
   (doom-modeline-mode 1))
 #+end_src
 ** perspective.el
-[[https://github.com/nex3/perspective-el][perspective.el]] is a package that provides gives Emacs capacities to group buffers into "perspectives", which are like workspaces in tiling WMs.
+[[https://github.com/nex3/perspective-el][perspective.el]] is a package that groups buffers in "perspectives".
 
-An advantage over =tab-bar.el= is that =perspective.el= has better capacities for managing buffers, e.g. gives an ibuffer-like interface inside a perspective.
+=tab-bar.el= can be configured to behave in a similar way, but I'm too invested in this package already.
 
-However, I don't like that list of workspaces is displayed inside the modeline rather than in an actual bar on the top of the frame. I may look into that later.
+One thing I don't like is that the list perspectives is displayed in the modeline, but I'll probably look how to move them to the bar at the top of the frame at some point.
 
 #+begin_src emacs-lisp
 (use-package perspective
@@ -1819,9 +1831,9 @@ Add keybindings to the default map.
    "f" #'my/persp-copy-window-and-switch))
 #+end_src
 *** Automating perspectives
-One thing I don't like about =perspective.el= is that it doesn't feature much (or any) capacity for automation. So out-of-the-box we're supposed to manually assign buffers to perspectives we want.
+Out-of-the-box, =perspective.el= doesn't feature much (or any) capacity for automation. We're supposed to manually assign buffers to perspectives, which kinda makes sense... But I still want automation.
 
-But we can cook some automation ourselves. First, let's define a variable with "rules":
+First, let's define a variable with "rules":
 #+begin_src emacs-lisp
 (setq my/perspective-assign-alist '())
 #+end_src
@@ -1852,7 +1864,7 @@ And a function to act on these rules.
         (persp-switch-to-buffer buffer)))))
 #+end_src
 
-If EXWM is available, then so is mine =perspective-exwm= package that features a convenient procedure called =perspective-exwm-assign-window=. If not, we just work with perspectives.
+If EXWM is available, then so is mine =perspective-exwm= package, which features a convenient procedure called =perspective-exwm-assign-window=. Otherwise, we just work with perspectives.
 
 Now, we have to put this function somewhere, and =after-change-major-mode-hook= seems like a perfect place for it.
 #+begin_src emacs-lisp
@@ -1878,8 +1890,7 @@ And here is a simple macro to add rules to the list.
        ,@result)))
 #+end_src
 
-Also, the logic above works only for cases when the buffer is created. Occasionally, the packages themselves run =switch-to-buffer=, which screws both EXWM workspaces and perspectives; to work around that, I define a macro that runs a command in a given perspective and workspace.
-
+Also, the logic above works only for cases when the buffer is created. Occasionally, packages run =switch-to-buffer=, which screws both EXWM workspaces and perspectives; to work around that, I define a macro that runs a command in the context of a given perspective and workspace.
 #+begin_src emacs-lisp
 (defmacro my/command-in-persp (command-name persp-name workspace-index &rest args)
   `'((lambda ()
@@ -2871,7 +2882,7 @@ Section snippets. The code turned out to be more complicated than just writing t
  'latex-mode
  my/latex-section-snippets)
 #+end_src
-** Other markup & natural languages
+** Markup & natural languages
 *** Markdown
 #+begin_src emacs-lisp
 (use-package markdown-mode
@@ -2952,7 +2963,6 @@ It shouldn't be too hard to package that for guix, but I've installed the nix ve
   :after (lsp)
   :init
   (setq lsp-ltex-version "15.2.0")
-  :config
   (setq lsp-ltex-check-frequency "save"))
 #+end_src
 
@@ -3056,6 +3066,15 @@ A package that checks for the metadata in Emacs Lisp packages.
 (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
 (add-hook 'emacs-lisp-mode-hook #'lispy-mode)
+#+end_src
+**** Helper functions
+Remove all advice from function. Source: https://emacs.stackexchange.com/questions/24657/unadvise-a-function-remove-all-advice-from-it
+
+#+begin_src emacs-lisp
+(defun advice-unadvice (sym)
+  "Remove all advices from symbol SYM."
+  (interactive "aFunction symbol: ")
+  (advice-mapc (lambda (advice _props) (advice-remove sym advice)) sym))
 #+end_src
 *** Common lisp
 **** SLIME
@@ -5863,7 +5882,7 @@ emacs -Q --batch -l run-tangle.el
 I have added this line to yadm's =post_alt= hook, so tangle is run after =yadm alt=
 * Applications
 ** Dired
-Dired is a built-in file manager. It's so good that it's strange that, to my knowledge, no one tried to replicate it outside of Emacs.
+Dired is the built-in Emacs file manager. It's so good that it's strange that, to my knowledge, no one tried to replicate it outside of Emacs.
 
 I currently use it as my primary file manager.
 
@@ -6471,11 +6490,11 @@ Using my own fork until the modifications are merged into master.
   :config
   (setq elfeed-db-directory "~/.elfeed")
   (setq elfeed-enclosure-default-dir (expand-file-name "~/Downloads"))
-  (advice-add #'elfeed-insert-html
-              :around
-              (lambda (fun &rest r)
-                (let ((shr-use-fonts nil))
-                  (apply fun r))))
+  ;; (advice-add #'elfeed-insert-html
+  ;;             :around
+  ;;             (lambda (fun &rest r)
+  ;;               (let ((shr-use-fonts nil))
+  ;;                 (apply fun r))))
   (general-define-key
    :states '(normal)
    :keymaps 'elfeed-search-mode-map
@@ -7841,11 +7860,16 @@ I use it occasionally to open links in elfeed.
   (setq-local shr-use-fonts (not shr-use-fonts)))
 
 (my-leader-def "aw" 'eww)
+(my/persp-add-rule
+  eww-mode 2 "browser")
 
-(general-define-key
- :keymaps 'eww-mode-map
- "+" 'text-scale-increase
- "-" 'text-scale-decrease)
+(with-eval-after-load 'eww
+  (general-define-key
+   :keymaps '(eww-mode-map)
+   :states '(normal emacs)
+   "f" #'ace-link-eww
+   "+" 'text-scale-increase
+   "-" 'text-scale-decrease))
 #+end_src
 *** ERC
 ERC is a built-it Emacs IRC client.
@@ -8099,7 +8123,8 @@ Of course, Emacs can also display man and info pages.
 
 #+begin_src emacs-lisp
 (setq Man-width-max 180)
-(my-leader-def "hM" 'man)
+(my-leader-def "hM" 'woman)
+(setq woman-fill-column 90)
 
 (general-define-key
  :states '(normal)
@@ -8205,7 +8230,7 @@ This package is pretty good to manage the password database. I use [[https://git
   (setq pass-show-keybindings nil))
 #+end_src
 
-Also I use =password-store-get= in a few places in my config, and by default it returns =nil= if I make an error in the password, which is not too convinient. So:
+Also I use =password-store-get= in a few places in my config, and by default it returns =nil= if I make an error in the password, which inconvinient if I want to run the command in =setq=. So:
 #+begin_src emacs-lisp
 (defun my/password-store-get (entry)
   (if-let ((res (password-store-get entry)))

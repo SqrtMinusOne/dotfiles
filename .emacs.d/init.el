@@ -283,6 +283,10 @@
    "--" #'avy-goto-char-2
    "-=" #'avy-goto-symbol-1))
 
+(use-package ace-link
+  :straight t
+  :commands (ace-link-info ace-link-help ace-link-woman ace-link-eww))
+
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
 In Delete Selection mode, if the mark is active, just deactivate it;
@@ -654,7 +658,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (recentf-mode 1)
 
-(save-place-mode 1)
+(save-place-mode nil)
 
 (defun my/deadgrep-fix-buffer-advice (fun &rest args)
   (let ((buf (apply fun args)))
@@ -1013,6 +1017,9 @@ influence of C1 on the result."
   (if (x-list-fonts "JetBrainsMono Nerd Font")
       (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
     (message "Install JetBrainsMono Nerd Font!")))
+
+(when (display-graphic-p)
+  (set-face-attribute 'variable-pitch nil :family "Cantarell" :height 120))
 
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
@@ -2243,6 +2250,11 @@ Returns (<buffer> . <workspace-index>) or nil."
 (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
 (add-hook 'emacs-lisp-mode-hook #'lispy-mode)
+
+(defun advice-unadvice (sym)
+  "Remove all advices from symbol SYM."
+  (interactive "aFunction symbol: ")
+  (advice-mapc (lambda (advice _props) (advice-remove sym advice)) sym))
 
 (use-package slime
   :straight t
@@ -4568,11 +4580,11 @@ With ARG, repeats or can move backward if negative."
   :config
   (setq elfeed-db-directory "~/.elfeed")
   (setq elfeed-enclosure-default-dir (expand-file-name "~/Downloads"))
-  (advice-add #'elfeed-insert-html
-              :around
-              (lambda (fun &rest r)
-                (let ((shr-use-fonts nil))
-                  (apply fun r))))
+  ;; (advice-add #'elfeed-insert-html
+  ;;             :around
+  ;;             (lambda (fun &rest r)
+  ;;               (let ((shr-use-fonts nil))
+  ;;                 (apply fun r))))
   (general-define-key
    :states '(normal)
    :keymaps 'elfeed-search-mode-map
@@ -5537,11 +5549,16 @@ ENTRY is an instance of `elfeed-entry'."
   (setq-local shr-use-fonts (not shr-use-fonts)))
 
 (my-leader-def "aw" 'eww)
+(my/persp-add-rule
+  eww-mode 2 "browser")
 
-(general-define-key
- :keymaps 'eww-mode-map
- "+" 'text-scale-increase
- "-" 'text-scale-decrease)
+(with-eval-after-load 'eww
+  (general-define-key
+   :keymaps '(eww-mode-map)
+   :states '(normal emacs)
+   "f" #'ace-link-eww
+   "+" 'text-scale-increase
+   "-" 'text-scale-decrease))
 
 (use-package erc
   :commands (erc erc-tls)
@@ -5721,7 +5738,8 @@ ENTRY is an instance of `elfeed-entry'."
 (my-leader-def "hT" 'tldr)
 
 (setq Man-width-max 180)
-(my-leader-def "hM" 'man)
+(my-leader-def "hM" 'woman)
+(setq woman-fill-column 90)
 
 (general-define-key
  :states '(normal)
