@@ -2179,7 +2179,6 @@ Returns (<buffer> . <workspace-index>) or nil."
   :after (lsp)
   :init
   (setq lsp-ltex-version "15.2.0")
-  :config
   (setq lsp-ltex-check-frequency "save"))
 
 (defun my/ltex-lang ()
@@ -5744,7 +5743,8 @@ ENTRY is an instance of `elfeed-entry'."
 (general-define-key
  :states '(normal)
  :keymaps 'Info-mode-map
- (kbd "RET") 'Info-follow-nearest-node)
+ (kbd "RET") 'Info-follow-nearest-node
+ "f" #'ace-link-info)
 
 (defun my/man-fix-width (&rest _)
   (setq-local Man-width (- (window-width) 4)))
