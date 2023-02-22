@@ -802,7 +802,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "f" 'helpful-function
   "k" 'helpful-key
   "v" 'helpful-variable
-  "o" 'helpful-symbol)
+  "o" 'helpful-symbol
+  "i" 'info)
 
 (general-define-key
  :keymaps 'help-map
@@ -1019,7 +1020,7 @@ influence of C1 on the result."
     (message "Install JetBrainsMono Nerd Font!")))
 
 (when (display-graphic-p)
-  (set-face-attribute 'variable-pitch nil :family "Cantarell" :height 120))
+  (set-face-attribute 'variable-pitch nil :family "Cantarell" :height 1.0))
 
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
@@ -1602,7 +1603,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
-  (setq copilot-node-executable "/home/pavel/.conda/envs/general/bin/node")
+  (setq copilot-node-executable "/home/pavel/.conda/envs/traject/bin/node")
   (general-define-key
    :keymaps 'company-active-map
    "<backtab>" #'my/copilot-tab)
@@ -5547,6 +5548,18 @@ ENTRY is an instance of `elfeed-entry'."
   (interactive)
   (setq-local shr-use-fonts (not shr-use-fonts)))
 
+(defface my/shr-face
+  `((t :inherit variable-pitch
+       :foreground ,(doom-color 'dark-blue)))
+  "Default face for shr rendering.")
+
+(defun my/shr-insert-around (fun &rest args)
+  (let ((shr-current-font (or shr-current-font 'my/shr-face)))
+    (apply fun args)))
+
+(with-eval-after-load 'shr
+  (advice-add #'shr-insert :around #'my/shr-insert-around))
+
 (my-leader-def "aw" 'eww)
 (my/persp-add-rule
   eww-mode 2 "browser")
@@ -5751,22 +5764,20 @@ ENTRY is an instance of `elfeed-entry'."
 
 (advice-add #'Man-update-manpage :before #'my/man-fix-width)
 
-(use-package devdocs
+(use-package devdocs-browser
   :straight t
-  :commands (devdocs-install devdocs-lookup)
-  :config
-  (general-define-key
-   :keymaps 'devdocs-mode-map
-   :states '(normal)
-   "H" #'devdocs-go-back
-   "L" #'devdocs-go-forward
-   "o" #'devdocs-lookup
-   "[" #'devdocs-previous-page
-   "]" #'devdocs-next-page)
   :init
   (my-leader-def
-    "he" #'devdocs-lookup
-    "hE" #'devdocs-install))
+    :infix "hd"
+    "" '(:wk "devdocs")
+    "d" #'devdocs-browser-open
+    "o" #'devdocs-browser-open-in
+    "i" #'devdocs-browser-install-doc
+    "n" #'devdocs-browser-uninstall-doc
+    "o" #'devdocs-browser-download-offline-data
+    "O" #'devdocs-browser-remove-offline-data
+    "u" #'devdocs-browser-upgrade-all-docs
+    "r" #'devdocs-browser-update-docs))
 
 (use-package sx
   :straight t
