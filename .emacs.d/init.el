@@ -3043,9 +3043,13 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (defun my/generate-inbox-note-name ()
   (format
-   "%s/inbox-notes/%s.org"
+   "%s/inbox-notes/%s%s.org"
    org-directory
-   (format-time-string "%Y%m%d%H%M%S")))
+   (format-time-string "%Y%m%d%H%M%S")
+   (let ((note-name (read-string "Note name: ")))
+     (if (not (string-empty-p note-name))
+         (string-replace " " "-" (concat "-" (downcase note-name)))
+       ""))))
 
 (setq org-capture-templates
       `(("i" "Inbox" entry  (file "inbox.org")
@@ -5238,14 +5242,14 @@ ENTRY is an instance of `elfeed-entry'."
     "b" #'emms-browser
     "p" #'emms-pause
     "q" #'emms-stop
-    "h" #'emms-previous
-    "l" #'emms-next
+    ;; "h" #'emms-previous
+    ;; "l" #'emms-next
     "u" #'emms-player-mpd-connect
     "ww" #'emms-lyrics
     "wb" #'emms-lyrics-toggle-display-on-minibuffer
     "wm" #'emms-lyrics-toggle-display-on-modeline
     "k" #'emms-volume-raise
-    "l" #'emms-volume-lower)
+    "j" #'emms-volume-lower)
   (my/persp-add-rule
     emms-browser-mode 0 "EMMS"
     emms-playlist-mode 0 "EMMS")
