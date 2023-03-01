@@ -5,7 +5,11 @@ hostname=$(hostname)
 if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
 elif [ "$hostname" = "eminence" ]; then
-    TRAY_MONITOR="eDP"
+    if xrandr --query | grep " connected" | cut -d" " -f1 | grep -q "HDMI-A-0"; then
+        TRAY_MONITOR="HDMI-A-0"
+    else
+        TRAY_MONITOR="eDP"
+    fi
 else
     TRAY_MONITOR="HDMI-A-0"
 fi
