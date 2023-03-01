@@ -15,7 +15,7 @@ My general desktop environment configuration.
 Parts prefixed with (OFF) are not used, but kept for historic purposes. For some reason GitHub's org renderer ignores TODO status, hence such a prefix. Round brackets instead of square ones to prevent GitHub's org renderer from screwing up.
 
 References:
-- [[https://sqrtminusone.xyz/posts/2022-02-12-literate/][A few cases of literate configuration]]. My blog post that explains some of techniques from this file.
+- [[https://sqrtminusone.xyz/posts/2022-02-12-literate/][A few cases of literate configuration]]. A few interesting ways in which literate configuration is used in this file.
 
 * Global customization
 ** Colors
@@ -848,8 +848,10 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "s-<tab>") . my/exwm-workspace-switch-monitor)
 
         ;; Perspectives
-        (,(kbd "s-[") . perspective-exwm-cycle-all-buffers-backward)
-        (,(kbd "s-]") . perspective-exwm-cycle-all-buffers-forward)
+        (,(kbd "s-{") . perspective-exwm-cycle-all-buffers-backward)
+        (,(kbd "s-}") . perspective-exwm-cycle-all-buffers-forward)
+        (,(kbd "s-[") . perspective-exwm-cycle-exwm-buffers-backward)
+        (,(kbd "s-]") . perspective-exwm-cycle-exwm-buffers-forward)
         (,(kbd "s-<mouse-4>") . perspective-exwm-cycle-exwm-buffers-backward)
         (,(kbd "s-<mouse-5>") . perspective-exwm-cycle-exwm-buffers-forward)
         (,(kbd "s-`") . perspective-exwm-switch-perspective)

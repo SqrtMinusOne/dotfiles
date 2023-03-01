@@ -507,8 +507,10 @@ _d_: Discord
           (,(kbd "s-<tab>") . my/exwm-workspace-switch-monitor)
   
           ;; Perspectives
-          (,(kbd "s-[") . perspective-exwm-cycle-all-buffers-backward)
-          (,(kbd "s-]") . perspective-exwm-cycle-all-buffers-forward)
+          (,(kbd "s-{") . perspective-exwm-cycle-all-buffers-backward)
+          (,(kbd "s-}") . perspective-exwm-cycle-all-buffers-forward)
+          (,(kbd "s-[") . perspective-exwm-cycle-exwm-buffers-backward)
+          (,(kbd "s-]") . perspective-exwm-cycle-exwm-buffers-forward)
           (,(kbd "s-<mouse-4>") . perspective-exwm-cycle-exwm-buffers-backward)
           (,(kbd "s-<mouse-5>") . perspective-exwm-cycle-exwm-buffers-forward)
           (,(kbd "s-`") . perspective-exwm-switch-perspective)
