@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "megacmd"
    "jless"
    "direnv"
    "glibc-locales"
