@@ -5553,16 +5553,32 @@ ENTRY is an instance of `elfeed-entry'."
   (setq-local shr-use-fonts (not shr-use-fonts)))
 
 (defface my/shr-face
-  `((t :inherit variable-pitch
-       :foreground ,(doom-color 'dark-blue)))
+  `((t :inherit variable-pitch))
   "Default face for shr rendering.")
+
+(my/use-doom-colors
+  (my/shr-face :foreground (doom-color 'blue)))
 
 (defun my/shr-insert-around (fun &rest args)
   (let ((shr-current-font (or shr-current-font 'my/shr-face)))
     (apply fun args)))
 
+(defun my/shr-urlify-around (fun start url &optional title)
+  (funcall fun start url title)
+  (let ((faces (get-text-property start 'face)))
+    (put-text-property
+     start (point)
+     'face
+     (mapcar
+      (lambda (face)
+        (if (eq face 'my/shr-face)
+            'variable-pitch
+          face))
+      (if (sequencep faces) faces (list faces))))))
+
 (with-eval-after-load 'shr
-  (advice-add #'shr-insert :around #'my/shr-insert-around))
+  (advice-add #'shr-insert :around #'my/shr-insert-around)
+  (advice-add #'shr-urlify :around #'my/shr-urlify-around))
 
 (my-leader-def "aw" 'eww)
 (my/persp-add-rule

@@ -1970,7 +1970,8 @@ References:
   (setq lsp-headerline-breadcrumb-enable nil)
   (setq lsp-modeline-code-actions-enable nil)
   (setq lsp-modeline-diagnostics-enable nil)
-  (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
+  (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte"))
+  (setq lsp-javascript-display-inlay-hints t))
 
 (use-package lsp-ui
   :straight t
@@ -1979,6 +1980,10 @@ References:
   (setq lsp-ui-doc-delay 2)
   (setq lsp-ui-sideline-show-hover nil))
 #+end_src
+
+#+RESULTS:
+: t
+
 **** Integrations
 The only integration left now is treemacs.
 
@@ -7869,16 +7874,32 @@ Toggle using fonts in buffer:
 Setting the default font.
 #+begin_src emacs-lisp
 (defface my/shr-face
-  `((t :inherit variable-pitch
-       :foreground ,(doom-color 'dark-blue)))
+  `((t :inherit variable-pitch))
   "Default face for shr rendering.")
+
+(my/use-doom-colors
+  (my/shr-face :foreground (doom-color 'blue)))
 
 (defun my/shr-insert-around (fun &rest args)
   (let ((shr-current-font (or shr-current-font 'my/shr-face)))
     (apply fun args)))
 
+(defun my/shr-urlify-around (fun start url &optional title)
+  (funcall fun start url title)
+  (let ((faces (get-text-property start 'face)))
+    (put-text-property
+     start (point)
+     'face
+     (mapcar
+      (lambda (face)
+        (if (eq face 'my/shr-face)
+            'variable-pitch
+          face))
+      (if (sequencep faces) faces (list faces))))))
+
 (with-eval-after-load 'shr
-  (advice-add #'shr-insert :around #'my/shr-insert-around))
+  (advice-add #'shr-insert :around #'my/shr-insert-around)
+  (advice-add #'shr-urlify :around #'my/shr-urlify-around))
 #+end_src
 
 #+begin_src emacs-lisp
