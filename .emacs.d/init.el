@@ -5572,7 +5572,7 @@ ENTRY is an instance of `elfeed-entry'."
      (mapcar
       (lambda (face)
         (if (eq face 'my/shr-face)
-            'variable-pitch
+            'link
           face))
       (if (sequencep faces) faces (list faces))))))
 

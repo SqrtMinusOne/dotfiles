@@ -1970,8 +1970,7 @@ References:
   (setq lsp-headerline-breadcrumb-enable nil)
   (setq lsp-modeline-code-actions-enable nil)
   (setq lsp-modeline-diagnostics-enable nil)
-  (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte"))
-  (setq lsp-javascript-display-inlay-hints t))
+  (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
 
 (use-package lsp-ui
   :straight t
@@ -7893,7 +7892,7 @@ Setting the default font.
      (mapcar
       (lambda (face)
         (if (eq face 'my/shr-face)
-            'variable-pitch
+            'link
           face))
       (if (sequencep faces) faces (list faces))))))
 
