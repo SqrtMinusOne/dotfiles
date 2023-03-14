@@ -15,9 +15,9 @@ My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an aweso
 
 At the moment of this writing, this "almost anything" includes:
 - *Writing code*. With LSP & Co Emacs is as good as many IDEs, and is certainly on par with editors like VS Code.\\
-  Emacs is also particularly good at writing Lisp code, e.g. Clojure, Common Lisp, and, of course, Emacs Lisp.
+  Emacs is also particularly great at writing Lisp code, e.g. Clojure, Common Lisp, and, of course, Emacs Lisp.
 - *Literate programming* with Org Mode. That includes:
-  - Configuring the entirety of my software (that can be configured with text files).
+  - Configuring the entirety of my software, that can be configured with text files.
   - Interactive programming like one provided by Jupyter Notebook.
 - *File management*. Dired is my primary file manager.
 - *Email*, with notmuch.
@@ -26,11 +26,11 @@ At the moment of this writing, this "almost anything" includes:
 - *Task management*, with Org Mode.
 - *Managing passwords*, with pass.
 - *IRC*, with ERC.
-- *Formatting documents*, also with Org Mode. When the document is too complex, I prefer to write plain LaTeX, but I've come to the conclusion that in most cases Org Mode covers my needs there.
-- *X Window management*, with EXWM. So I could say I literally live in Emacs.
+- *Formatting documents*, also with Org Mode. I've written my Master's Thesis in Org Mode.
+- *X Window management*, with EXWM. I literally live in Emacs.
 - ...
 
-As I have hinted above, this file is a piece of literate configuration, where the actual code is interweaved with English-language commentary. One could argue that the commentary, and not the code, is the primary entity of the file.
+As I have hinted above, this file is a piece of literate configuration, where the actual code is interweaved with (occasionally semi-broken) English-language commentary. One could argue that the commentary, and not the code, is the primary citizen of the file.
 
 But at the same time, the configuration is personal, so the primary benefactor of the literate structure is me. The commentary is primarily meant to capture my state of mind at the moment of writing the code, which is immensely helpful for maintaining the code in the future. So the quality and quantity of the commentary are... varying.
 
@@ -1908,7 +1908,7 @@ This is meant to be used in the definitions of =general.el=.
 * Programming
 ** General setup
 *** Treemacs
-[[https://github.com/Alexander-Miller/treemacs][Treemacs]] is a quite large & powerful package, but as of now I've replaced it with dired. I still have a small configuration because lsp-mode and dap-mode depend on it.
+[[https://github.com/Alexander-Miller/treemacs][Treemacs]] is a rather large & powerful package, but as of now I've replaced it with dired. I still have a small configuration because lsp-mode and dap-mode depend on it.
 
 #+begin_src emacs-lisp
 (use-package treemacs
@@ -2078,7 +2078,7 @@ References:
 *** DAP
 An Emacs client for Debugger Adapter Protocol.
 
-As of the time of this writing, I mostly debug TypeScript, so the main competitor is Chrome Inspector for node.js.
+Okay, so, I tried to use it many times... Chrome DevTools and ipdb / pudb are just better for me. Maybe I'll check out RealGUD instead... Will see.
 
 References:
 - [[https://emacs-lsp.github.io/dap-mode/][dap-mode homepage]]
@@ -4184,6 +4184,17 @@ A package that implements transclusions in Org Mode, i.e. rendering part of one 
    "C-c t a" #'org-transclusion-add
    "C-c t A" #'org-transclusion-add-all
    "C-c t t" #'org-transclusion-mode))
+#+end_src
+*** Drawing
+This package is unbelievably good. I would have never thought it's even possible to have this in Emacs.
+
+#+begin_src emacs-lisp
+(use-package edraw-org
+  :straight (:host github :repo "misohena/el-easydraw")
+  :if (and (not my/is-termux) (not my/remote-server))
+  :after (org)
+  :config
+  (edraw-org-setup-default))
 #+end_src
 *** Managing tables
 I use Org to manage some small tables which I want to process further. So here is a function that saves each table to a CSV file.

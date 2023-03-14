@@ -2994,6 +2994,13 @@ Returns (<buffer> . <workspace-index>) or nil."
    "C-c t A" #'org-transclusion-add-all
    "C-c t t" #'org-transclusion-mode))
 
+(use-package edraw-org
+  :straight (:host github :repo "misohena/el-easydraw")
+  :if (and (not my/is-termux) (not my/remote-server))
+  :after (org)
+  :config
+  (edraw-org-setup-default))
+
 (defun my/export-org-tables-to-csv ()
   (interactive)
   (org-table-map-tables
