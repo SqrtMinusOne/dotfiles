@@ -883,7 +883,7 @@ Here's more or less what the script is doing:
 - If there is a merge conflict, notify
 - If there are changed files in the last =TIMEOUT_MIN= minutes, commit
 - Fetch
-- If there are were changes in the last =TTMEOUT_MIN=, merge (usually the merge has to be fast-forwarded)
+- If there were changes in the last =TTMEOUT_MIN=, merge (usually the merge has to be fast-forwarded)
 - If the fetch was successful & the merge was either successful or delayed because of changes in the last =TIMEOUT_MIN=, push
 - Send a notification about the events above
 - Send a separate notification if there is a merge conflict
