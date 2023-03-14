@@ -230,7 +230,7 @@ fi
 :header-args+: :tangle ./.bashrc
 :END:
 
-My =.bashrc=, which has pieces from the default ones in Guix & Manjaro, as well some mine settings.
+My =.bashrc=, which has pieces from the default one in Guix & Manjaro, as well some mine settings.
 
 *** Startup & environment
 Export 'SHELL' to child processes.  Programs such as 'screen' honor it and otherwise use /bin/sh.
@@ -238,7 +238,7 @@ Export 'SHELL' to child processes.  Programs such as 'screen' honor it and other
 export SHELL
 #+end_src
 
-We are being invoked from a non-interactive shell.  If this is an SSH session (as in "ssh host command"), source /etc/profile so we get PATH and other essential variables.
+We are being invoked from a non-interactive shell.  If this is an SSH session (as in "ssh host command"), source /etc/profile, so we get PATH and other essential variables.
 #+begin_src bash
 if [[ $- != *i* ]]
 then
@@ -488,7 +488,7 @@ if test -n "$EMACS_CONDA_ENV";
 end
 #+end_src
 ** Colors
-Fish seems to have hardcoded colorcodes in some color settings. I set these to base16 colors so they would match Xresources.
+Fish seems to have hardcoded colorcodes in some color settings. I set these to base16 colors, so they would match Xresources.
 
 #+begin_src fish
 set fish_color_command cyan
@@ -630,7 +630,7 @@ symbol = " "
 
 It provides pretty sane defaults, so the config is not too large. I rebind the prefix to =C-a= though.
 ** Term settings
-I have no idea how and why these two work.
+I have no idea how and why these statements work.
 #+begin_src conf-space
 set -g default-terminal "screen-256color"
 set -ga terminal-overrides ",*256col*:Tc"
@@ -680,7 +680,7 @@ bind r source-file ~/.tmux.conf
 |-----------------|
 | xclip           |
 
-Make tmux copying copy to clipboard as well
+Make tmux copy to clipboard as well
 #+begin_src conf-space
 bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel "xclip -selection clipboard -i"
 bind-key -T copy-mode-vi y send-keys -X copy-pipe-and-cancel "xclip -selection clipboard -i"
@@ -724,7 +724,7 @@ source ~/.tmux.line.conf
 |-----------------|
 | alacritty       |
 
-[[https://github.com/alacritty/alacritty][Alacritty]] is a GPU-accelerated terminal emulator. I haven't found it to be an inch faster than st, but configuration the in yml format is way more convinient than patches.
+[[https://github.com/alacritty/alacritty][Alacritty]] is a GPU-accelerated terminal emulator. I haven't found it to be an inch faster than st, but configuration the in yml format is way more convenient than patches.
 
 Once again, we have an application which doesn't support reading Xresources, so here goes noweb.
 
@@ -840,12 +840,12 @@ Occasionally I can't exclude certain files from ripgrep via the VCS settings, so
 --ignore-file=/home/pavel/.config/ripgrep/ripgrepignore
 #+end_src
 
-The corresponding ignore file:
+The ignore file:
 #+begin_src text :tangle ~/.config/ripgrep/ripgrepignore
 *.ts.snap
 #+end_src
 
-By default ripgrep doesn't read any configs, so it is necessary to set the =RIPGREP_CONFIG_PATH= variable in the [[*Environment][.profile.]]
+By default, ripgrep doesn't read any configs, so it is necessary to set the =RIPGREP_CONFIG_PATH= variable in the [[*Environment][.profile.]]
 * Misc scripts
 ** =nt= - exec command with a finished notification
 Usage:
@@ -883,8 +883,8 @@ Here's more or less what the script is doing:
 - If there is a merge conflict, notify
 - If there are changed files in the last =TIMEOUT_MIN= minutes, commit
 - Fetch
-- If there are were changes in the last =TTMEOUT_MIN=, merge (usually the merge has to be fast-forward)
-- If fetch was successful & merge was successful or delayed because of changes in the last =TIMEOUT_MIN=, push
+- If there are were changes in the last =TTMEOUT_MIN=, merge (usually the merge has to be fast-forwarded)
+- If the fetch was successful & the merge was either successful or delayed because of changes in the last =TIMEOUT_MIN=, push
 - Send a notification about the events above
 - Send a separate notification if there is a merge conflict
 
