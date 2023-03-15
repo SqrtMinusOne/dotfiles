@@ -364,13 +364,13 @@ DIR is either 'left or 'right."
 ^Apps^
 _t_: Terminal (Alacritty)
 _b_: Browser (Firefox)
-_s_: Slack
+_s_: Rocket.Chat
 _e_: Telegram
 _d_: Discord
 "
   ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
   ("b" (lambda () (interactive) (my/run-in-background "firefox")))
-  ("s" (lambda () (interactive) (my/run-in-background "slack-wrapper")))
+  ("s" (lambda () (interactive) (my/run-in-background "flatpak run chat.rocket.RocketChat")))
   ("e" (lambda () (interactive) (my/run-in-background "telegram-desktop")))
   ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
 
