@@ -3376,6 +3376,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
       :params '(("format" . "%l:%20%C%20%t%20%w%20%p"))
       :sync t
       :parser (lambda () (url-unhex-string (buffer-string)))
+      :timeout 10
       :success (cl-function
                 (lambda (&key data &allow-other-keys)
                   (setq my/weather-value data)
