@@ -11,34 +11,33 @@ One day we won't hate one another, no young boy will march to war and I will cle
 - Me, <2021-05-27 Thu 17:35> in commit 93a0573. Adapted from [[https://www.youtube.com/watch?v=pIdBinlW40E][The Dark Element - "The Pallbearer Walks Alone"]]. T_T
 
 * Introduction
-My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an awesome +text editor+ program that can do almost anything.
+My configuration of [[https://www.gnu.org/software/emacs/][GNU Emacs]], an awesome +text editor+ piece of software that can do almost anything.
 
-At the moment of this writing, this "almost anything" includes:
-- *Writing code*. With LSP & Co Emacs is as good as many IDEs, and is certainly on par with editors like VS Code.\\
-  Emacs is also particularly great at writing Lisp code, e.g. Clojure, Common Lisp, and, of course, Emacs Lisp.
-- *Literate programming* with Org Mode. That includes:
-  - Configuring the entirety of my software, that can be configured with text files.
-  - Interactive programming like one provided by Jupyter Notebook.
+At the moment of writing this, that "almost anything" includes:
+- *Programming environment*. With LSP & Co, Emacs is as good as many IDEs and is certainly on par with editors like VS Code.\\
+  Emacs is also particularly great at writing Lisp code, e.g. Clojure, Common Lisp, and of course, Emacs Lisp.
+- *Org Mode* is useful for a lot of things. My use cases include:
+  - *[[https://leanpub.com/lit-config/read][Literate configuration]]*
+  - *Interactive programming* à la Jupyter Notebook
+  - *Task / project management*
+  - *Formatting documents*. I've written my Master's Thesis in Org Mode.
+  - *Notetaking*, mostly with org-roam and org-journal
 - *File management*. Dired is my primary file manager.
 - *Email*, with notmuch.
 - *Multimedia management*, with EMMS.
 - *RSS feed reader*, with elfeed.
-- *Task management*, with Org Mode.
 - *Managing passwords*, with pass.
-- *IRC*, with ERC.
-- *Formatting documents*, also with Org Mode. I've written my Master's Thesis in Org Mode.
+- *Messengers*:
+  - *IRC*, with ERC.
+  - *Telegram*, with telega.el
 - *X Window management*, with EXWM. I literally live in Emacs.
 - ...
 
-As I have hinted above, this file is a piece of literate configuration, where the actual code is interweaved with (occasionally semi-broken) English-language commentary. One could argue that the commentary, and not the code, is the primary citizen of the file.
+As I mentioned above, this document is a piece of literate configuration, i.e. program code interwoven with (occasionally semi-broken) English-language commentary.
 
-But at the same time, the configuration is personal, so the primary benefactor of the literate structure is me. The commentary is primarily meant to capture my state of mind at the moment of writing the code, which is immensely helpful for maintaining the code in the future. So the quality and quantity of the commentary are... varying.
+I find that approach helpful for maintaining the configuration, but the quality and quantity of comments may vary. I also usually incorporate my Emacs-related blog posts back into this config.
 
-Occasionally I save some promising experimentations from scratch buffers without much comment. Or I may not have enough time to describe things in substantial detail. Or, as it is at the moment when I'm writing this, I have the time to write down whatever I consider necessary. Plus I usually incorporate my blog posts back into the config.
-
-Of course, human minds share many similarities, so if you are an avid Emacs user, you have a chance to extract something of value from this document.
-
-If however, by some twist of fate, this document is one of the first things you see about Emacs, it won't be a good resource for you. And you definitely shouldn't try to launch this config as it is. If I could suggest only one resource, I'd advise David Wilson's [[https://www.youtube.com/c/SystemCrafters][System Crafters]] YouTube channel.
+So, you might extract something of value from here if you're an avid Emacs user, but probably not if you're a newcomer to the Elisp wonderland. If the latter applies to you, I'd advise checking out David Wilson's [[https://www.youtube.com/c/SystemCrafters][System Crafters]] YouTube channel.
 
 * Some remarks
 I decided not to keep configs for features that I do not use anymore because this config is already huge. But here are the last commits that had these features presented.
@@ -6286,8 +6285,7 @@ I guess that's the first Emacs function I wrote!
 (defun my/toggle-vterm-subteminal ()
   "Toogle subteminal."
   (interactive)
-  (let
-      ((vterm-window
+  (let ((vterm-window
         (seq-find
          (lambda (window)
            (string-match
