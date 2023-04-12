@@ -5695,7 +5695,7 @@ ENTRY is an instance of `elfeed-entry'."
   (interactive)
   (setq telega-server-libs-prefix
         (string-trim
-         (shell-command-to-string "guix build tdlib-1.8.10")))
+         (shell-command-to-string "guix build tdlib-1.8.13")))
   (telega-server-build "CC=gcc"))
 
 (add-hook 'telega-load-hook #'telega-mode-line-mode)

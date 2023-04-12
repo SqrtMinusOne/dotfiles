@@ -10,6 +10,8 @@ elif [ "$hostname" = "eminence" ]; then
     else
         TRAY_MONITOR="eDP"
     fi
+elif [ "$hostname" = "iris"]; then
+    TRAY_MONITOR="HDMI-1"
 else
     TRAY_MONITOR="HDMI-A-0"
 fi
@@ -20,24 +22,28 @@ declare -A FONT_SIZES=(
     ["eDP-1"]="13"
     ["DVI-D-0"]="13"
     ["HDMI-A-0"]="13"
+    ["HDMI-1"]="13"
 )
 declare -A EMOJI_SCALE=(
     ["eDP"]="9"
     ["eDP-1"]="9"
     ["DVI-D-0"]="10"
     ["HDMI-A-0"]="10"
+    ["HDMI-1"]="10"
 )
 declare -A BAR_HEIGHT=(
     ["eDP"]="29"
     ["eDP-1"]="29"
     ["DVI-D-0"]="29"
     ["HDMI-A-0"]="29"
+    ["HDMI-1"]="29"
 )
 declare -A BLOCKS=(
     ["eDP"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan battery glyph-light-cyan--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
     ["eDP-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan battery glyph-light-cyan--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
     ["DVI-D-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
     ["HDMI-A-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["HDMI-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan battery glyph-light-cyan--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
 )
 
 # Geolocation for some modules

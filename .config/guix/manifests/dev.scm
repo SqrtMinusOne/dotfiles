@@ -12,6 +12,7 @@
    "libfaketime"
    "lua"
    "gcc-toolchain"
+   "pkg-config"
    "go"
    "openjdk:jdk"
    "node"

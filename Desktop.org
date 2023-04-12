@@ -95,6 +95,7 @@ Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting 
   (cond ((string-equal hostname "azure") 120)
         ((string-equal hostname "eminence") 120)
         ((string-equal hostname "indigo") 120)
+        ((string-equal hostname "iris") 120)
         (t 96)))
 #+end_src
 
@@ -1896,6 +1897,8 @@ elif [ "$hostname" = "eminence" ]; then
     else
         TRAY_MONITOR="eDP"
     fi
+elif [ "$hostname" = "iris"]; then
+    TRAY_MONITOR="HDMI-1"
 else
     TRAY_MONITOR="HDMI-A-0"
 fi
@@ -1906,24 +1909,28 @@ declare -A FONT_SIZES=(
     ["eDP-1"]="13"
     ["DVI-D-0"]="13"
     ["HDMI-A-0"]="13"
+    ["HDMI-1"]="13"
 )
 declare -A EMOJI_SCALE=(
     ["eDP"]="9"
     ["eDP-1"]="9"
     ["DVI-D-0"]="10"
     ["HDMI-A-0"]="10"
+    ["HDMI-1"]="10"
 )
 declare -A BAR_HEIGHT=(
     ["eDP"]="29"
     ["eDP-1"]="29"
     ["DVI-D-0"]="29"
     ["HDMI-A-0"]="29"
+    ["HDMI-1"]="29"
 )
 declare -A BLOCKS=(
     ["eDP"]="<<polybar-generate-modules(monitor="eDP")>>"
     ["eDP-1"]="<<polybar-generate-modules(monitor="eDP-1")>>"
     ["DVI-D-0"]="<<polybar-generate-modules(monitor="DVI-D-0")>>"
     ["HDMI-A-0"]="<<polybar-generate-modules(monitor="HDMI-A-0")>>"
+    ["HDMI-1"]="<<polybar-generate-modules(monitor="HDMI-1")>>"
 )
 
 # Geolocation for some modules
@@ -1953,6 +1960,7 @@ for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     polybar mybar &
 done
 #+end_src
+
 ** Individual modules
 Some of the custom modules below use Org mode noweb to evaluate colors, because it's faster than querying =xrdb= at runtime. I wish I could reference polybar values there, but [[https://github.com/polybar/polybar/issues/615][it looks like this is impossible]].
 
@@ -3356,6 +3364,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | node              |          |
 | dev      | openjdk:jdk       |          |
 | dev      | go                |          |
+| dev      | pkg-config        |          |
 | dev      | gcc-toolchain     |          |
 | dev      | lua               |          |
 | dev      | libfaketime       |          |

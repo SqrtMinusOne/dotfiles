@@ -1,4 +1,4 @@
-;; [[file:../../../Guix.org::*eminence][eminence:1]]
+;; [[file:../../../Guix.org::*iris][iris:1]]
 (use-modules (gnu))
 (use-modules (gnu system nss))
 (use-modules (gnu packages bash))
@@ -54,15 +54,6 @@
                        (append (list (local-file "./signing-key.pub"))
                                %default-authorized-guix-keys)))))))
 
-(define %backlight-udev-rule
-  (udev-rule
-   "90-backlight.rules"
-   (string-append "ACTION==\"add\", SUBSYSTEM==\"backlight\", "
-                  "RUN+=\"/run/current-system/profile/bin/chgrp video /sys/class/backlight/%k/brightness\""
-                  "\n"
-                  "ACTION==\"add\", SUBSYSTEM==\"backlight\", "
-                  "RUN+=\"/run/current-system/profile/bin/chmod g+w /sys/class/backlight/%k/brightness\"")))
-
 (operating-system
  (kernel
    (let*
@@ -113,43 +104,34 @@
  	    vim)
    %base-packages))
 
- (host-name "eminence")
+ (host-name "iris")
  (services (cons*
             (set-xorg-configuration
              (xorg-configuration
               (keyboard-layout keyboard-layout)))
-            (modify-services %my-base-services
-                             (elogind-service-type
-                              config =>
-                              (elogind-configuration
-                               (inherit config)
-                               (handle-lid-switch-external-power 'suspend)))
-                             (udev-service-type
-                              config =>
-                              (udev-configuration
-                               (inherit config)
-                               (rules (cons %backlight-udev-rule
-                                            (udev-configuration-rules config))))))))
+            %my-base-services))
 
- (bootloader
-  (bootloader-configuration
-   (bootloader grub-efi-bootloader)
-   (target "/boot/efi")
-   (keyboard-layout keyboard-layout)))
+ (bootloader (bootloader-configuration
+              (bootloader grub-bootloader)
+              (targets (list "/dev/sdb"))
+              (keyboard-layout keyboard-layout)))
+ (swap-devices (list (swap-space
+                      (target (uuid
+                               "bc284384-ff00-4fbc-abda-1c46f69c0505")))))
+ (mapped-devices (list (mapped-device
+                        (source (uuid
+                                 "21876acb-e05a-4731-8df0-ba5761910ca8"))
+                        (target "cryptroot")
+                        (type luks-device-mapping))))
 
- (swap-devices
-  (list (uuid "f93cf3f6-7ee7-42ec-8ee2-f3d896fdf9b5")))
-
- (file-systems
-  (cons* (file-system
-          (mount-point "/")
-          (device
-           (uuid "1d937704-bbeb-43b5-bc63-453886c426af"
-                 'ext4))
-          (type "ext4"))
-         (file-system
-          (mount-point "/boot/efi")
-          (device (uuid "0031-3784" 'fat32))
-          (type "vfat"))
-         %base-file-systems)))
-;; eminence:1 ends here
+ (file-systems (cons* (file-system
+                       (mount-point "/")
+                       (device "/dev/mapper/cryptroot")
+                       (type "ext4")
+                       (dependencies mapped-devices))
+                      (file-system
+                       (mount-point "/boot/efi")
+                       (device (uuid "782E-F6D3"
+                                     'fat32))
+                       (type "vfat")) %base-file-systems)))
+;; iris:1 ends here

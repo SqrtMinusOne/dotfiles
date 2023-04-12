@@ -7,7 +7,7 @@
    "imagemagick"
    "font-gnu-freefont"
    "font-gnu-unifont"
-   "tdlib-1.8.10"
+   "tdlib-1.8.13"
    "yt-dlp"
    "mpv"
    "rdrview"
