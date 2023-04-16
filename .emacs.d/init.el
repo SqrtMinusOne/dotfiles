@@ -4419,8 +4419,7 @@ With ARG, repeats or can move backward if negative."
 (defun my/toggle-vterm-subteminal ()
   "Toogle subteminal."
   (interactive)
-  (let
-      ((vterm-window
+  (let ((vterm-window
         (seq-find
          (lambda (window)
            (string-match
@@ -5655,6 +5654,102 @@ ENTRY is an instance of `elfeed-entry'."
                 (when (erc-server-process-alive)
                   (let ((tgt (erc-default-target)))
                     (erc-server-send (format "DETACH %s" tgt) nil tgt))))))
+
+(use-package mastodon
+  :straight t
+  :config
+  (setq mastodon-instance-url "https://emacs.ch")
+  (setq mastodon-active-user "sqrtminusone")
+  (my-leader-def "an" #'my/mastodon)
+  (my/persp-add-rule mastodon-mode 0 "mastodon")
+  (setq mastodon-tl--symbols
+        '((reply "" . "R")
+          (boost "" . "B")
+          (favourite "" . "F")
+          (bookmark "" . "K")
+          (media "" . "[media]")
+          (verified "" . "V")
+          (locked "" . "[locked]")
+          (private "" . "[followers]")
+          (direct "" . "[direct]")
+          (edited "" . "[edited]"))))
+
+(use-package mastodon-alt
+  :straight (:host github :repo "rougier/mastodon-alt")
+  :after (mastodon)
+  :config
+  (mastodon-alt-tl-activate))
+
+(use-package transient
+  :straight t
+  :defer t)
+
+(defun my/mastodon-configure ()
+  (display-line-numbers-mode -1))
+
+(add-hook 'mastodon-mode-hook #'my/mastodon-configure)
+
+(with-eval-after-load 'mastodon
+
+
+  (general-define-key
+   :states '(normal motion)
+   :keymaps '(mastodon-mode-map)
+   "J" #'mastodon-tl--goto-next-toot
+   "K" #'mastodon-tl--goto-prev-toot
+   "M-j" #'mastodon-tl--next-tab-item
+   "M-k" #'mastodon-tl--prev-tab-item
+   "<tab>" #'mastodon-tl--next-tab-item
+   "<backtab>" #'mastodon-tl--previous-tab-item
+   "o" #'my/mastodon-toot
+   "r" '(mastodon-tl--update)
+   "c" #'mastodon-tl--toggle-spoiler-text-in-toot
+   "q" #'kill-current-buffer))
+
+(with-eval-after-load 'mastodon
+  (require 'transient)
+  (transient-define-prefix my/mastodon ()
+    "Mastodon."
+    ["Various views"
+     :class transient-row
+     ("m" "Mastodon" mastodon)
+     ("n" "Notifications" mastodon-notifications-get)
+     (":" "Followed tags" mastodon-tl--list-followed-tags)
+     ("s" "Search query" mastodon-search--search-query)]
+    ["Timelines"
+     :class transient-row
+     ("tt" "Home" mastodon-tl--get-home-timeline)
+     ("tl" "Local" mastodon-tl--get-local-timeline)
+     ("tf" "Federated" mastodon-tl--get-federated-timeline)
+     ("tg" "One tag" mastodon-tl--get-tag-timeline)
+     ("ta" "Followed tags" mastodon-tl--followed-tags-timeline)]
+    ["Own profile"
+     :class transient-row
+     ("o" "My profile" mastodon-profile--my-profile)
+     ("u" "Update profile note" mastodon-profile--update-user-profile-note)
+     ("f" "Favourites" mastodon-profile--view-favourites)
+     ("b" "Bookmarks" mastodon-profile--view-bookmarks)]
+    ["Minor views"
+     :class transient-row
+     ("F" "Follow requests" mastodon-views--view-follow-requests)
+     ("S" "Scheduled toots" mastodon-views--view-scheduled-toots)
+     ("I" "Filters" mastodon-views--view-filters)
+     ("G" "Follow suggestions" mastodon-views--view-follow-suggestions)
+     ("L" "Lists" mastodon-views--view-lists)]
+    ["Misc"
+     :class transient-row
+     ("/" "Switch to buffer" mastodon-switch-to-buffer)
+     ("Q" "Kill all buffers" mastodon-kill-all-buffers)
+     ("q" "Quit" transient-quit-one)])
+
+  (transient-define-prefix my/mastodon-toot ()
+    "Mastodon toot actions."
+    ["View"
+     :class transient-row
+     ("p" "Profile" mastodon-profile--show-user)]
+    ["Misc"
+     :class transient-row
+     ("q" "Quit" transient-quit-one)]))
 
 (use-package plz
   :straight (:host github :repo "alphapapa/plz.el")
