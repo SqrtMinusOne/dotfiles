@@ -42,24 +42,33 @@
                      config =>
                      (network-manager-configuration
                       (inherit config)
-                      (vpn-plugins (list network-manager-openvpn)))))))
-
+                      (vpn-plugins (list network-manager-openvpn))))
+                    (guix-service-type
+                     config =>
+                     (guix-configuration
+                      (inherit config)
+                      (substitute-urls
+                       (append (list "https://substitutes.nonguix.org")
+                               %default-substitute-urls))
+                      (authorized-keys
+                       (append (list (local-file "./signing-key.pub"))
+                               %default-authorized-guix-keys)))))))
 
 (operating-system
  (kernel
-  (let*
-      ((channels
-        (list (channel
-               (name 'nonguix)
-               (url "https://gitlab.com/nonguix/nonguix")
-               (commit "393b8e0405f44835c498d7735a8ae9ff4682b07f"))
-              (channel
-               (name 'guix)
-               (url "https://git.savannah.gnu.org/git/guix.git")
-               (commit "4c812db049d5c9f2c438748e180f9486ad221b0a"))))
-       (inferior
-        (inferior-for-channels channels)))
-    (first (lookup-inferior-packages inferior "linux" "5.15.12"))))
+   (let*
+       ((channels
+         (list (channel
+                (name 'nonguix)
+                (url "https://gitlab.com/nonguix/nonguix")
+                (commit "213be7ee6676fc4a3db0e3ac9ce5cd79e2ed209e"))
+               (channel
+                (name 'guix)
+                (url "https://git.savannah.gnu.org/git/guix.git")
+                (commit "6311493d7a6271bfbc51f4693857f9a12fe9965d"))))
+        (inferior
+         (inferior-for-channels channels)))
+     (first (lookup-inferior-packages inferior "linux" "6.2.9"))))
  ;; (kernel linux)
  (initrd microcode-initrd)
  (firmware (list linux-firmware))
