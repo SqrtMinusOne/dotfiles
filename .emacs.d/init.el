@@ -5662,6 +5662,7 @@ ENTRY is an instance of `elfeed-entry'."
   (setq mastodon-active-user "sqrtminusone")
   (my-leader-def "an" #'my/mastodon)
   (my/persp-add-rule mastodon-mode 0 "mastodon")
+  (setq-default mastodon-toot--content-warning t)
   (setq mastodon-tl--symbols
         '((reply "" . "R")
           (boost "" . "B")
@@ -5690,8 +5691,6 @@ ENTRY is an instance of `elfeed-entry'."
 (add-hook 'mastodon-mode-hook #'my/mastodon-configure)
 
 (with-eval-after-load 'mastodon
-
-
   (general-define-key
    :states '(normal motion)
    :keymaps '(mastodon-mode-map)
@@ -5702,7 +5701,7 @@ ENTRY is an instance of `elfeed-entry'."
    "<tab>" #'mastodon-tl--next-tab-item
    "<backtab>" #'mastodon-tl--previous-tab-item
    "o" #'my/mastodon-toot
-   "r" '(mastodon-tl--update)
+   "r" 'mastodon-tl--update
    "c" #'mastodon-tl--toggle-spoiler-text-in-toot
    "q" #'kill-current-buffer))
 
@@ -5740,13 +5739,69 @@ ENTRY is an instance of `elfeed-entry'."
      :class transient-row
      ("/" "Switch to buffer" mastodon-switch-to-buffer)
      ("Q" "Kill all buffers" mastodon-kill-all-buffers)
-     ("q" "Quit" transient-quit-one)])
+     ("q" "Quit" transient-quit-one)]))
+
+(defmacro my/def-confirmer (func text)
+  `(defun ,(intern (concat "my/" (symbol-name func) "-confirm")) ()
+     (interactive)
+     (when (y-or-n-p ,text)
+       (call-interactively #',func))))
+
+(defun my/mastodon-toot--browse ()
+  "Copy URL of toot at point.
+If the toot is a fave/boost notification, copy the URLof the
+base toot."
+  (interactive)
+  (let* ((toot (or (mastodon-tl--property 'base-toot)
+                   (mastodon-tl--property 'toot-json)))
+         (url (if (mastodon-tl--field 'reblog toot)
+                  (alist-get 'url (alist-get 'reblog toot))
+                (alist-get 'url toot))))
+    (browse-url url)))
+
+(with-eval-after-load 'mastodon
+  (my/def-confirmer mastodon-toot--toggle-boost "Toggle boost for this post? ")
+  (my/def-confirmer mastodon-toot--toggle-favourite "Toggle favourite this post? ")
+  (my/def-confirmer mastodon-toot--toggle-bookmark "Toggle bookmark this post? ")
+  (my/def-confirmer mastodon-tl--follow-user "Follow this user? ")
+  (my/def-confirmer mastodon-tl--unfollow-user "Unfollow this user? ")
+  (my/def-confirmer mastodon-tl--block-user "Block this user? ")
+  (my/def-confirmer mastodon-tl--unblock-user "Unblock this user? ")
+  (my/def-confirmer mastodon-tl--mute-user "Mute this user? ")
+  (my/def-confirmer mastodon-tl--unmute-user "Unmute this user? ")
+  (my/def-confirmer mastodon-tl--unmute-user "Unmute this user? ")
 
   (transient-define-prefix my/mastodon-toot ()
     "Mastodon toot actions."
     ["View"
      :class transient-row
-     ("p" "Profile" mastodon-profile--show-user)]
+     ("p" "Profile" mastodon-profile--show-user)
+     ("o" "Browser" my/mastodon-toot--browse)
+     ("t" "Thread" mastodon-tl--thread)
+     ("le" "List edits" mastodon-toot--view-toot-edits)
+     ("lf" "List favouriters" mastodon-toot--list-toot-favouriters)
+     ("lb" "List boosters" mastodon-toot--list-toot-boosters)]
+    ["Toot Actions"
+     :class transient-row
+     ("r" "Reply" mastodon-toot--reply)
+     ("v" "Vote" mastodon-tl--poll-vote)
+     ("b" "Boost" my/mastodon-toot--toggle-boost-confirm)
+     ("f" "Favourite" my/mastodon-toot--toggle-favourite-confirm)
+     ("k" "Bookmark" my/mastodon-toot--toggle-bookmark-confirm)]
+    ["My Toot Actions"
+     :class transient-row
+     ("md" "Delete" mastodon-toot--delete-toot)
+     ("mD" "Delete and redraft" mastodon-toot--delete-and-redraft-toot)
+     ("mp" "Pin" mastodon-toot--pin-toot-toggle)
+     ("me" "Edit" mastodon-toot--edit-toot-at-point)]
+    ["User Actions"
+     :class transient-row
+     ("uf" "Follow user" my/mastodon-tl--follow-user-confirm)
+     ("uF" "Unfollow user" my/mastodon-tl--unfollow-user-confirm)
+     ("ub" "Block user" my/mastodon-tl--block-user-confirm)
+     ("uB" "Unblock user" my/mastodon-tl--unblock-user-confirm)
+     ("um" "Mute user" my/mastodon-tl--mute-user-confirm)
+     ("uB" "Unmute user" my/mastodon-tl--unmute-user-confirm)]
     ["Misc"
      :class transient-row
      ("q" "Quit" transient-quit-one)]))
