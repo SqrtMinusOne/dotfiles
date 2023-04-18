@@ -7998,6 +7998,13 @@ Send =/detach= to all servers. Kinda strange that there's no such function alrea
 
 #+end_src
 *** Mastodon
+Mastodon is a decentralized social media network. I use an instance called [[https://emacs.ch/][emacs.ch]]
+
+**** Package configuration
+[[https://codeberg.org/martianh/mastodon.el][mastodon.el]] is an Emacs client for Mastodon.
+
+The default UI is a bit rough, but Nicolas Rougier's [[https://github.com/rougier/mastodon-alt][mastodon-alt]] package makes things a bit more how I would like to see them.
+
 #+begin_src emacs-lisp
 (use-package mastodon
   :straight t
@@ -8006,7 +8013,11 @@ Send =/detach= to all servers. Kinda strange that there's no such function alrea
   (setq mastodon-active-user "sqrtminusone")
   (my-leader-def "an" #'my/mastodon)
   (my/persp-add-rule mastodon-mode 0 "mastodon")
+  ;; Hide spoilers by default
   (setq-default mastodon-toot--content-warning t)
+  (setq mastodon-media--avatar-height 40)
+  (setq mastodon-tl--show-avatars t)
+  ;; The default emojis take two characters for me
   (setq mastodon-tl--symbols
         '((reply "" . "R")
           (boost "" . "B")
@@ -8020,7 +8031,7 @@ Send =/detach= to all servers. Kinda strange that there's no such function alrea
           (edited "" . "[edited]"))))
 
 (use-package mastodon-alt
-  :straight (:host github :repo "rougier/mastodon-alt")
+  :straight (:host github :repo "SqrtMinusOne/mastodon-alt")
   :after (mastodon)
   :config
   (mastodon-alt-tl-activate))
@@ -8029,6 +8040,8 @@ Send =/detach= to all servers. Kinda strange that there's no such function alrea
   :straight t
   :defer t)
 #+end_src
+**** UI and keymaps
+=display-line-numbers-mode= screws the UI for some reason.
 
 #+begin_src emacs-lisp
 (defun my/mastodon-configure ()
@@ -8037,6 +8050,7 @@ Send =/detach= to all servers. Kinda strange that there's no such function alrea
 (add-hook 'mastodon-mode-hook #'my/mastodon-configure)
 #+end_src
 
+The package also doesn't have evil bindings. I implement a few basic bindings here:
 #+begin_src emacs-lisp
 (with-eval-after-load 'mastodon
   (general-define-key
@@ -8054,6 +8068,11 @@ Send =/detach= to all servers. Kinda strange that there's no such function alrea
    "q" #'kill-current-buffer))
 #+end_src
 
+**** Main Transient
+Also, there are so many commands that it's hard to remember all of them. So I define two transient prefixes.
+
+The first dispatches "general" actions:
+
 #+begin_src emacs-lisp
 (with-eval-after-load 'mastodon
   (require 'transient)
@@ -8068,12 +8087,22 @@ Send =/detach= to all servers. Kinda strange that there's no such function alrea
     ["Timelines"
      :class transient-row
      ("tt" "Home" mastodon-tl--get-home-timeline)
+     ("tT" "Home (no replies)" (lambda () (interactive)
+                                 (mastodon-tl--get-home-timeline 4)))
      ("tl" "Local" mastodon-tl--get-local-timeline)
      ("tf" "Federated" mastodon-tl--get-federated-timeline)
      ("tg" "One tag" mastodon-tl--get-tag-timeline)
      ("ta" "Followed tags" mastodon-tl--followed-tags-timeline)]
     ["Own profile"
      :class transient-row
+     ("c" "Toot" mastodon-toot)
+     ("o" "My profile" mastodon-profile--my-profile)
+     ("u" "Update profile note" mastodon-profile--update-user-profile-note)
+     ("f" "Favourites" mastodon-profile--view-favourites)
+     ("b" "Bookmarks" mastodon-profile--view-bookmarks)]
+    ["Own profile"
+     :class transient-row
+     ("c" "Toot" mastodon-toot)
      ("o" "My profile" mastodon-profile--my-profile)
      ("u" "Update profile note" mastodon-profile--update-user-profile-note)
      ("f" "Favourites" mastodon-profile--view-favourites)
@@ -8091,15 +8120,20 @@ Send =/detach= to all servers. Kinda strange that there's no such function alrea
      ("Q" "Kill all buffers" mastodon-kill-all-buffers)
      ("q" "Quit" transient-quit-one)]))
 #+end_src
+**** Toot Transient
+And the second one dispatches actions related to particular toot / profile.
 
-
+Also, some actions don't have any confirmations, so here's a macro that wraps a function with =y-or-n-p=:
 #+begin_src emacs-lisp
 (defmacro my/def-confirmer (func text)
   `(defun ,(intern (concat "my/" (symbol-name func) "-confirm")) ()
      (interactive)
      (when (y-or-n-p ,text)
        (call-interactively #',func))))
+#+end_src
 
+A function to open the toot in browser:
+#+begin_src emacs-lisp
 (defun my/mastodon-toot--browse ()
   "Copy URL of toot at point.
 If the toot is a fave/boost notification, copy the URLof the
@@ -8111,7 +8145,10 @@ base toot."
                   (alist-get 'url (alist-get 'reblog toot))
                 (alist-get 'url toot))))
     (browse-url url)))
+#+end_src
 
+And the prefix itself:
+#+begin_src emacs-lisp
 (with-eval-after-load 'mastodon
   (my/def-confirmer mastodon-toot--toggle-boost "Toggle boost for this post? ")
   (my/def-confirmer mastodon-toot--toggle-favourite "Toggle favourite this post? ")
@@ -8128,9 +8165,8 @@ base toot."
     "Mastodon toot actions."
     ["View"
      :class transient-row
-     ("p" "Profile" mastodon-profile--show-user)
-     ("o" "Browser" my/mastodon-toot--browse)
-     ("t" "Thread" mastodon-tl--thread)
+     ("o" "Thread" mastodon-tl--thread)
+     ("w" "Browser" my/mastodon-toot--browse)
      ("le" "List edits" mastodon-toot--view-toot-edits)
      ("lf" "List favouriters" mastodon-toot--list-toot-favouriters)
      ("lb" "List boosters" mastodon-toot--list-toot-boosters)]
@@ -8147,6 +8183,12 @@ base toot."
      ("mD" "Delete and redraft" mastodon-toot--delete-and-redraft-toot)
      ("mp" "Pin" mastodon-toot--pin-toot-toggle)
      ("me" "Edit" mastodon-toot--edit-toot-at-point)]
+    ["Profile Actions"
+     :class transient-row
+     ("pp" "Profile" mastodon-profile--show-user)
+     ("pf" "List followers" mastodon-profile--open-followers)
+     ("pF" "List following" mastodon-profile--open-following)
+     ("ps" "List statues (no reblogs)" mastodon-profile--open-statuses-no-reblogs)]
     ["User Actions"
      :class transient-row
      ("uf" "Follow user" my/mastodon-tl--follow-user-confirm)

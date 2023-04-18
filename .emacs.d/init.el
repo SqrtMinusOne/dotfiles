@@ -5663,6 +5663,8 @@ ENTRY is an instance of `elfeed-entry'."
   (my-leader-def "an" #'my/mastodon)
   (my/persp-add-rule mastodon-mode 0 "mastodon")
   (setq-default mastodon-toot--content-warning t)
+  (setq mastodon-media--avatar-height 40)
+  (setq mastodon-tl--show-avatars t)
   (setq mastodon-tl--symbols
         '((reply "" . "R")
           (boost "" . "B")
@@ -5676,7 +5678,7 @@ ENTRY is an instance of `elfeed-entry'."
           (edited "" . "[edited]"))))
 
 (use-package mastodon-alt
-  :straight (:host github :repo "rougier/mastodon-alt")
+  :straight (:host github :repo "SqrtMinusOne/mastodon-alt")
   :after (mastodon)
   :config
   (mastodon-alt-tl-activate))
@@ -5718,6 +5720,8 @@ ENTRY is an instance of `elfeed-entry'."
     ["Timelines"
      :class transient-row
      ("tt" "Home" mastodon-tl--get-home-timeline)
+     ("tT" "Home (no replies)" (lambda () (interactive)
+                                 (mastodon-tl--get-home-timeline 4)))
      ("tl" "Local" mastodon-tl--get-local-timeline)
      ("tf" "Federated" mastodon-tl--get-federated-timeline)
      ("tg" "One tag" mastodon-tl--get-tag-timeline)
@@ -5776,8 +5780,8 @@ base toot."
     ["View"
      :class transient-row
      ("p" "Profile" mastodon-profile--show-user)
-     ("o" "Browser" my/mastodon-toot--browse)
-     ("t" "Thread" mastodon-tl--thread)
+     ("o" "Thread" mastodon-tl--thread)
+     ("w" "Browser" my/mastodon-toot--browse)
      ("le" "List edits" mastodon-toot--view-toot-edits)
      ("lf" "List favouriters" mastodon-toot--list-toot-favouriters)
      ("lb" "List boosters" mastodon-toot--list-toot-boosters)]
