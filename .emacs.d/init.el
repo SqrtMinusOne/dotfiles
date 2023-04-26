@@ -5657,14 +5657,18 @@ ENTRY is an instance of `elfeed-entry'."
 
 (use-package mastodon
   :straight t
+  :commands (my/mastodon)
+  :init
+  (my-leader-def "an" #'my/mastodon)
   :config
   (setq mastodon-instance-url "https://emacs.ch")
   (setq mastodon-active-user "sqrtminusone")
-  (my-leader-def "an" #'my/mastodon)
   (my/persp-add-rule mastodon-mode 0 "mastodon")
+  ;; Hide spoilers by default
   (setq-default mastodon-toot--content-warning t)
   (setq mastodon-media--avatar-height 40)
   (setq mastodon-tl--show-avatars t)
+  ;; The default emojis take two characters for me
   (setq mastodon-tl--symbols
         '((reply "" . "R")
           (boost "" . "B")
@@ -5678,7 +5682,7 @@ ENTRY is an instance of `elfeed-entry'."
           (edited "" . "[edited]"))))
 
 (use-package mastodon-alt
-  :straight (:host github :repo "SqrtMinusOne/mastodon-alt")
+  :straight (:host github :repo "rougier/mastodon-alt")
   :after (mastodon)
   :config
   (mastodon-alt-tl-activate))
@@ -5707,6 +5711,148 @@ ENTRY is an instance of `elfeed-entry'."
    "c" #'mastodon-tl--toggle-spoiler-text-in-toot
    "q" #'kill-current-buffer))
 
+(defvar my/mastodon-mode-string "")
+
+(defvar my/mastodon-mode-line-unread-ids nil)
+
+(defvar my/mastodon-mode-line-saved-ids nil)
+
+(defvar my/mastodon-mode-line-timer nil)
+
+(defvar my/mastodon-mode-line-file
+  (concat no-littering-var-directory "mastodon/notif-ids"))
+
+(defun my/mastodon-mode-line-load-meta ()
+  (when (file-exists-p my/mastodon-mode-line-file)
+    (ignore-errors
+      (with-temp-buffer
+        (insert-file-contents my/mastodon-mode-line-file)
+        (setq my/mastodon-mode-line-saved-ids
+              (read (current-buffer)))))))
+
+(defun my/mastodon-mode-line-persist-meta ()
+  (mkdir (file-name-directory my/mastodon-mode-line-file) t)
+  (let ((coding-system-for-write 'utf-8))
+    (ignore-errors
+      (with-temp-file my/mastodon-mode-line-file
+        (let ((standard-output (current-buffer))
+              (print-level nil)
+              (print-length nil)
+              (print-circle nil))
+          (princ ";;; Mastodon Saved Notifications\n\n")
+          (prin1 my/mastodon-mode-line-saved-ids))))))
+
+(defun my/mastodon-mode-line-update ()
+  (if my/mastodon-mode-line-unread-ids
+      (setq my/mastodon-mode-string
+            (concat "["
+                    (propertize (number-to-string
+                                 (length my/mastodon-mode-line-unread-ids))
+                                'face 'success)
+                    "]"))
+    (setq my/mastodon-mode-string "")))
+
+(defun my/mastodon-mode-line-update-fetch ()
+  (mastodon-http--get-json-async
+   (mastodon-http--api "notifications") nil
+   (lambda (data)
+     (let ((fetched-ids
+            (cl-loop for datum in data collect (alist-get 'id datum))))
+       (setq my/mastodon-mode-line-unread-ids
+             (seq-difference fetched-ids my/mastodon-mode-line-saved-ids))
+       (setq my/mastodon-mode-line-saved-ids
+             (seq-intersection my/mastodon-mode-line-saved-ids fetched-ids)))
+     (my/mastodon-mode-line-update))))
+
+(defun my/mastodon-notifications--timeline-before (toots)
+  (let* ((all-ids (seq-uniq
+                   (append
+                    my/mastodon-mode-line-saved-ids
+                    (cl-loop for datum in toots
+                             collect (alist-get 'id datum))))))
+    (setq my/mastodon-mode-line-unread-ids
+          (seq-difference my/mastodon-mode-line-unread-ids all-ids))
+    (setq my/mastodon-mode-line-saved-ids all-ids))
+  (my/mastodon-mode-line-update))
+
+(with-eval-after-load 'mastodon
+  (define-minor-mode my/mastodon-mode-line
+    "Display mastodon notification count in mode line."
+    :require 'mastodon
+    :global t
+    :group 'mastodon
+    :after-hook
+    (progn
+      (when (timerp my/mastodon-mode-line-timer)
+        (cancel-timer my/mastodon-mode-line-timer))
+      (if my/mastodon-mode-line
+          (progn
+            (add-to-list 'mode-line-misc-info '(:eval my/mastodon-mode-string) t)
+            (my/mastodon-mode-line-load-meta)
+            (setq my/mastodon-mode-line-timer
+                  (run-with-timer 0 150 #'my/mastodon-mode-line-update-fetch))
+            (advice-add #'mastodon-notifications--timeline :before
+                        #'my/mastodon-notifications--timeline-before)
+            (add-hook 'kill-emacs-hook #'my/mastodon-mode-line-persist-meta))
+        (setq mode-line-misc-info (delete '(:eval my/mastodon-mode-string)
+                                          mode-line-misc-info))
+        (advice-remove #'mastodon-notifications--timeline
+                       #'my/mastodon-notifications--timeline-before)
+        (remove-hook 'kill-emacs-hook #'my/mastodon-mode-line-persist-meta)
+        (my/mastodon-mode-line-persist-meta)))))
+
+(defun my/mastodon-get-update-funciton (hide-boosts hide-replies)
+  (lambda (toots)
+    (let* ((is-profile (eq (mastodon-tl--get-buffer-type) 'profile-statuses))
+           (hide-replies (and (not is-profile) hide-replies))
+           (hide-boosts (and (not is-profile) hide-boosts))
+           (toots (seq-filter
+                   (lambda (toot)
+                     (and
+                      (or (not hide-replies)
+                          ;; Why is the original function inverted??
+                          (mastodon-tl--is-reply toot))
+                      (or (not hide-boosts)
+                          (not (alist-get 'reblog toot)))))
+                   toots)))
+      (message "Hide replies: %s" hide-replies)
+      (message "Hide boosts: %s" hide-boosts)
+      (message "Buffer: %s" (buffer-name))
+      (mapc #'mastodon-tl--toot toots))))
+
+(defun my/mastodon-tl--get-home (hide-replies hide-boosts)
+  (mastodon-tl--init
+   "home"
+   "timelines/home"
+   (my/mastodon-get-update-funciton hide-replies hide-boosts)
+   nil
+   `(("limit" . ,mastodon-tl--timeline-posts-count))
+   nil))
+
+(with-eval-after-load 'mastodon
+  (require 'transient)
+  (transient-define-prefix my/mastodon-tl ()
+    ["Home timeline params"
+     ("-r" "--hide-replies" "--hide-replies" :init-value
+      (lambda (obj) (oset obj value "--hide-replies")))
+     ("-b" "--hide-boosts" "--hide-boosts" :init-value
+      (lambda (obj) (oset obj value "--hide-boosts")))]
+    ["Timelines"
+     :class transient-row
+     ("t" "Home" (lambda (args)
+                   (interactive (list (transient-args transient-current-command)))
+                   (my/mastodon-tl--get-home
+                    (seq-contains-p args "--hide-replies")
+                    (seq-contains-p args "--hide-boosts"))))
+     ("l" "Local" mastodon-tl--get-local-timeline)
+     ("f" "Federated" mastodon-tl--get-federated-timeline)
+     ("g" "One tag" mastodon-tl--get-tag-timeline)
+     ("a" "Followed tags" mastodon-tl--followed-tags-timeline)
+     ("s" "Some followed tags" mastodon-tl--some-followed-tags-timeline)]
+    ["Misc"
+     :class transient-row
+     ("q" "Quit" transient-quit-one)]))
+
 (with-eval-after-load 'mastodon
   (require 'transient)
   (transient-define-prefix my/mastodon ()
@@ -5714,20 +5860,17 @@ ENTRY is an instance of `elfeed-entry'."
     ["Various views"
      :class transient-row
      ("m" "Mastodon" mastodon)
+     ("t" "Timelines" my/mastodon-tl)
      ("n" "Notifications" mastodon-notifications-get)
-     (":" "Followed tags" mastodon-tl--list-followed-tags)
      ("s" "Search query" mastodon-search--search-query)]
-    ["Timelines"
+    ["Tags"
      :class transient-row
-     ("tt" "Home" mastodon-tl--get-home-timeline)
-     ("tT" "Home (no replies)" (lambda () (interactive)
-                                 (mastodon-tl--get-home-timeline 4)))
-     ("tl" "Local" mastodon-tl--get-local-timeline)
-     ("tf" "Federated" mastodon-tl--get-federated-timeline)
-     ("tg" "One tag" mastodon-tl--get-tag-timeline)
-     ("ta" "Followed tags" mastodon-tl--followed-tags-timeline)]
+     ("aa" "Followed tags" mastodon-tl--list-followed-tags)
+     ("af" "Follow tag" mastodon-tl--follow-tag)
+     ("aF" "Unfollow tag" mastodon-tl--unfollow-tag)]
     ["Own profile"
      :class transient-row
+     ("c" "Toot" mastodon-toot)
      ("o" "My profile" mastodon-profile--my-profile)
      ("u" "Update profile note" mastodon-profile--update-user-profile-note)
      ("f" "Favourites" mastodon-profile--view-favourites)
@@ -5779,7 +5922,6 @@ base toot."
     "Mastodon toot actions."
     ["View"
      :class transient-row
-     ("p" "Profile" mastodon-profile--show-user)
      ("o" "Thread" mastodon-tl--thread)
      ("w" "Browser" my/mastodon-toot--browse)
      ("le" "List edits" mastodon-toot--view-toot-edits)
@@ -5798,6 +5940,12 @@ base toot."
      ("mD" "Delete and redraft" mastodon-toot--delete-and-redraft-toot)
      ("mp" "Pin" mastodon-toot--pin-toot-toggle)
      ("me" "Edit" mastodon-toot--edit-toot-at-point)]
+    ["Profile Actions"
+     :class transient-row
+     ("pp" "Profile" mastodon-profile--show-user)
+     ("pf" "List followers" mastodon-profile--open-followers)
+     ("pF" "List following" mastodon-profile--open-following)
+     ("ps" "List statues (no reblogs)" mastodon-profile--open-statuses-no-reblogs)]
     ["User Actions"
      :class transient-row
      ("uf" "Follow user" my/mastodon-tl--follow-user-confirm)
