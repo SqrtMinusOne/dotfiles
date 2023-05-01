@@ -6031,6 +6031,9 @@ base toot."
 
 (setq telega-online-status-function #'my/telega-online-status)
 
+(use-package reddigg
+  :straight t)
+
 (use-package google-translate
   :straight t
   :if (not my/remote-server)

@@ -7157,13 +7157,9 @@ by the `my/elfeed-youtube-subtitles' function."
 
 Keep in mind that this function has to be launched inside the buffer opened by the =my/elfeed-youtube-subtitles= function.
 *** Podcast transcripts
-In my experience, finding something in a podcast is particularly troublesome. For example, occasionally I want to refer to some line in the podcast to make an [[https://github.com/org-roam/org-roam][org-roam]] node, e.g. I want to check that I got that part right.
+In my experience, finding something in a podcast can be particularly troublesome. For instance, at times, I want to refer to a specific line in the podcast to make an [[https://github.com/org-roam/org-roam][org-roam]] node, and I need to check if I got that part right. And I have no reasonable way to get there because audio files, in themselves, don't allow for [[https://en.wikipedia.org/wiki/Random_access][random access]], i.e. there are no "landmarks" that point to a particular portion of the file. At least if nothing like a transcript is available.
 
-And I have no reasonable way to get there because audio files in themselves don't allow for [[https://en.wikipedia.org/wiki/Random_access][random access]], i.e. there are no "landmarks" that point to this or that portion of the file. At least if nothing like a transcript is available.
-
-For obvious reasons, podcasts rarely ship with transcripts. So in this post, I'll be using a speech recognition engine to make up for that. A generated transcript is not quite as good as a manually written one, but for the purpose of finding a fragment of a known podcast, it works well enough.
-
-The general idea is to get the podcast info from [[https://github.com/skeeto/elfeed][elfeed]], process it with [[https://github.com/openai/whisper][OpenAI Whisper]] and feed it to [[https://github.com/sachac/subed][subed]] to control the playback in [[https://mpv.io/][MPV]].
+For obvious reasons, podcasts rarely ship with transcripts. So in this +post+ section I'll be using a speech recognition engine to make up for that. The general idea is to obtain the podcast information from [[https://github.com/skeeto/elfeed][elfeed]], process it with [[https://github.com/openai/whisper][OpenAI Whisper]] and feed it to [[https://github.com/sachac/subed][subed]] to control the playback in [[https://mpv.io/][MPV]].
 
 Edit <2022-10-08 Sat>: Changed [[https://github.com/alphacep/vosk-api][vosk-api]] to OpenAI Whisper.
 
@@ -8070,6 +8066,8 @@ The package also doesn't have evil bindings. I implement a few basic bindings he
    "q" #'kill-current-buffer))
 #+end_src
 **** Modeline segment
+This is my attempt to make a modeline indicator for new mastodon notifications.
+
 #+begin_src emacs-lisp
 (defvar my/mastodon-mode-string "")
 
@@ -8439,19 +8437,12 @@ And custom online status. By default it marks you online when the Emacs frame is
 
 (setq telega-online-status-function #'my/telega-online-status)
 #+end_src
-*** OFF (OFF) jabber
-#+begin_src emacs-lisp :tangle no
-(use-package srv
-  :straight t
-  :defer t)
+*** Reddit
+[[https://github.com/thanhvg/emacs-reddigg][reddigg]] allows to view reddit in org-mode.
 
-(use-package fsm
-  :straight t
-  :defer t)
-
-(use-package emacs-jabber
-  :straight (jabber :host nil :repo
-                    "https://tildegit.org/wgreenhouse/emacs-jabber"))
+#+begin_src emacs-lisp
+(use-package reddigg
+  :straight t)
 #+end_src
 *** Google Translate
 Emacs interface to Google Translate.
@@ -8492,6 +8483,20 @@ References:
   "q" 'google-translate-query-translate
   "Q" 'google-translate-query-translate-reverse
   "t" 'google-translate-smooth-translate)
+#+end_src
+*** OFF (OFF) jabber
+#+begin_src emacs-lisp :tangle no
+(use-package srv
+  :straight t
+  :defer t)
+
+(use-package fsm
+  :straight t
+  :defer t)
+
+(use-package emacs-jabber
+  :straight (jabber :host nil :repo
+                    "https://tildegit.org/wgreenhouse/emacs-jabber"))
 #+end_src
 ** Reading documentation
 *** tldr
