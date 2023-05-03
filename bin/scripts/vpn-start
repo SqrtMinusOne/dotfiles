@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [[file:../../Guix.org::*vpn-start][vpn-start:1]]
+# [[file:/yadm:iris:/home/pavel/Guix.org::*vpn-start][vpn-start:1]]
 export DISPLAY=:0
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*|vnet.*|virbr.*)" | sed 's/ *$//g')
 
@@ -16,5 +16,10 @@ fi
 #     pkexec nmcli con modify "$CONN" ipv6.method ignore
 #     nmcli connection up "$CONN"
 # fi
-pkexec openvpn --config ~/.vpn/sqrtminusone-$(hostname).ovpn
+VPN_FILE=~/.vpn/sqrtminusone-$(hostname).ovpn
+if [[ $(hostname) == 'iris' ]]; then
+    VPN_FILE=~/.vpn/mullvad_openvpn_linux_se_all/mullvad_se_all.conf
+fi
+echo $VPN_FILE
+pkexec openvpn --config $VPN_FILE
 # vpn-start:1 ends here
