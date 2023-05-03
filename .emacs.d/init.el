@@ -6331,7 +6331,8 @@ base toot."
   :straight t
   :if (and (or
             (string= (system-name) "indigo")
-            (string= (system-name) "eminence"))
+            (string= (system-name) "eminence")
+            (string= (system-name) "iris"))
            (not my/slow-ssh)
            (not my/remote-server))
   :config
