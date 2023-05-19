@@ -5611,9 +5611,7 @@ ENTRY is an instance of `elfeed-entry'."
   (erc-update-modules)
   (setq erc-autojoin-channels-alist
         `((,(rx "libera.chat")
-           "#systemcrafters"
-           "#emacs"
-           "#guix")))
+           "#systemcrafters")))
   (setq erc-kill-buffer-on-part t)
   (setq erc-track-shorten-start 8))
 
@@ -5639,7 +5637,7 @@ ENTRY is an instance of `elfeed-entry'."
   :init
   (my-leader-def "ai" #'znc-erc)
   (my/persp-add-rule
-    erc-mode 0 "ERC")
+    erc-mode 3 "ERC")
   :config
   (setq znc-servers
         `(("sqrtminusone.xyz" 6697 t
