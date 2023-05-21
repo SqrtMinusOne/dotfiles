@@ -6028,6 +6028,38 @@ base toot."
    "gr" #'revert-buffer
    "RET" #'ement-room-list-RET))
 
+(with-eval-after-load 'ement-room-mode
+  (general-define-key
+   :states '(normal visual)
+   :keymaps '(ement-room-mode-map)
+   "q" #'quit-window
+   "?" #'ement-room-transient
+   "C-u" #'ement-room-scroll-down-command
+   "C-d" #'ement-room-scroll-up-mark-read
+   "M-<RET>" #'ement-room-compose-message
+   "<RET>" #'ement-room-send-message
+   "S-<RET>" #'ement-room-write-reply
+   "K" #'ement-room-goto-prev
+   "J" #'ement-room-goto-next
+   "gr" #'ement-room-sync
+   "rT" #'ement-tag-room
+   "rd" #'ement-describe-room
+   "rm" #'ement-list-members
+   "rn" #'ement-room-set-notification-state
+   "rt" #'ement-room-set-topic
+   "se" #'ement-room-send-emote
+   "sf" #'ement-room-send-file
+   "sr" #'ement-room-send-reaction
+   "sd" #'ement-room-view-event
+   "uI" #'ement-ignore-user
+   "U <RET>" #'ement-send-direct-message
+   "ui" #'ement-invite-user)
+  (general-define-key
+   :states '(motion)
+   :keymaps '(ement-room-mode-map)
+   "C-u" #'ement-room-scroll-down-command
+   "C-d" #'ement-room-scroll-up-mark-read))
+
 (use-package telega
   :straight t
   :if (not (or my/remote-server my/is-termux))
