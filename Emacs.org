@@ -1845,8 +1845,12 @@ One rule looks as follows:
 
 And a function to act on these rules.
 #+begin_src emacs-lisp
+(defvar my/perspective-assign-ignore nil
+  "If non-nil, ignore `my/perspective-assign'")
+
 (defun my/perspective-assign ()
-  (when-let* ((rule (alist-get major-mode my/perspective-assign-alist)))
+  (when-let* ((_ (not my/perspective-assign-ignore))
+              (rule (alist-get major-mode my/perspective-assign-alist)))
     (let ((workspace-index (car rule))
           (persp-name (cadr rule))
           (buffer (current-buffer)))
@@ -1862,6 +1866,13 @@ And a function to act on these rules.
         (with-perspective persp-name
           (persp-set-buffer buffer))
         (persp-switch-to-buffer buffer)))))
+#+end_src
+
+Also advise to ignore the assignment:
+#+begin_src emacs-lisp
+(defun my/perspective-assign-ignore-advice (fun &rest args)
+  (let ((my/perspective-assign-ignore t))
+    (apply fun args)))
 #+end_src
 
 If EXWM is available, then so is mine =perspective-exwm= package, which features a convenient procedure called =perspective-exwm-assign-window=. Otherwise, we just work with perspectives.
@@ -7936,7 +7947,7 @@ ERC is a built-it Emacs IRC client.
   (erc-update-modules)
   (setq erc-autojoin-channels-alist
         `((,(rx "libera.chat")
-           "#systemcrafters")))
+           "#systemcrafters" "#systemcrafters-emacs")))
   (setq erc-kill-buffer-on-part t)
   (setq erc-track-shorten-start 8))
 #+end_src
@@ -7969,7 +7980,7 @@ ZNC support. Seems to provide a few nice features for ZNC.
   :straight t
   :commands (znc-erc)
   :init
-  (my-leader-def "ai" #'znc-erc)
+  ;; (my-leader-def "ai" #'znc-erc)
   (my/persp-add-rule
     erc-mode 3 "ERC")
   :config
@@ -8044,6 +8055,16 @@ The default UI is a bit rough, but Nicolas Rougier's [[https://github.com/rougie
   (display-line-numbers-mode -1))
 
 (add-hook 'mastodon-mode-hook #'my/mastodon-configure)
+#+end_src
+
+Kill processes. Useful when the package stops working due to unstable connection.
+
+#+begin_src emacs-lisp
+(defun my/mastodon-reset ()
+  (interactive)
+  (cl-loop for process in (process-list)
+           if (string-match-p "emacs.ch" (process-name process))
+           do (delete-process process)))
 #+end_src
 
 The package also doesn't have evil bindings. I implement a few basic bindings here:
@@ -8344,8 +8365,62 @@ And the prefix itself:
   :straight (:host github :repo "alphapapa/plz.el")
   :defer t)
 
+(defun my/ement ()
+  (interactive)
+  (ement-connect
+   :user-id "@sqrtminusone:matrix.org"
+   :password (my/password-store-get "My_Online/Accounts/matrix")))
+
+(defun my/ement-room-setup ()
+  (display-line-numbers-mode 1))
+
 (use-package ement
-  :straight (:host github :repo "alphapapa/ement.el"))
+  :straight (:host github :repo "alphapapa/ement.el")
+  :init
+  (my-leader-def "ai" #'my/ement)
+  :config
+  (setq ement-room-list-auto-update t)
+  (setq ement-room-mark-rooms-read 'send)
+  (setq ement-room-message-format-spec "%S> %W%B%r%R[%t]")
+  (setq ement-room-left-margin-width 0)
+  (setq ement-room-right-margin-width 10)
+  (setq ement-room-sender-in-left-margin nil)
+  (setq ement-room-sender-headers nil)
+  (setq ement-room-sender-in-headers nil)
+  (set-face-attribute 'ement-room-reactions nil :height 'unspecified)
+  (set-face-attribute 'ement-room-reactions-key nil :height 'unspecified)
+  (set-face-attribute 'ement-room-timestamp nil :inherit 'font-lock-function-name-face)
+  (set-face-attribute 'ement-room-membership nil :height 0.9
+                      :inherit 'font-lock-warning-face)
+  (set-face-attribute 'ement-room-wrap-prefix nil :inherit 'unspecified)
+  (set-face-attribute 'ement-room-timestamp-header nil :height 'unspecified)
+  (set-face-attribute 'ement-room-wrap-prefix nil :inherit 'unspecified)
+  (setq ement-room-wrap-prefix "-> ")
+  (setq ement-notify-notification-predicates
+        '(ement-notify--event-mentions-session-user-p
+          ement-notify--event-mentions-room-p
+          ement-notify--room-unread-p))
+  (advice-add #'ement-room-list-revert :around #'my/perspective-assign-ignore-advice)
+  (add-hook 'ement-room-mode-hook #'my/ement-room-setup)
+  (my/persp-add-rule
+    ement-room-mode 3 "ement"
+    ement-describe-room-mode 3 "ement"
+    ement-room-occur-mode 3 "ement"
+    ement-room-list-mode 3 "ement"))
+#+end_src
+
+Some custom keymaps:
+#+begin_src emacs-lisp
+(with-eval-after-load 'ement-room-list
+  (general-define-key
+   :states '(normal visual)
+   :keymaps '(ement-room-list-mode-map)
+   "<tab>" #'magit-section-toggle
+   "C-j" #'magit-section-forward
+   "C-k" #'magit-section-backward
+   "q" #'quit-window
+   "gr" #'revert-buffer
+   "RET" #'ement-room-list-RET))
 #+end_src
 *** Telega
 [[https://github.com/zevlg/telega.el/][telega.el]] is a Telegam client for Emacs.
@@ -8435,13 +8510,14 @@ And custom online status. By default it marks you online when the Emacs frame is
 
 (setq telega-online-status-function #'my/telega-online-status)
 #+end_src
-*** Reddit
+*** OFF Reddit
 [[https://github.com/thanhvg/emacs-reddigg][reddigg]] allows to view reddit in org-mode.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (use-package reddigg
   :straight t)
 #+end_src
+
 *** Google Translate
 Emacs interface to Google Translate.
 

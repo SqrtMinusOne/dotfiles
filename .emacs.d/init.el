@@ -1157,8 +1157,12 @@ influence of C1 on the result."
 
 (setq my/perspective-assign-alist '())
 
+(defvar my/perspective-assign-ignore nil
+  "If non-nil, ignore `my/perspective-assign'")
+
 (defun my/perspective-assign ()
-  (when-let* ((rule (alist-get major-mode my/perspective-assign-alist)))
+  (when-let* ((_ (not my/perspective-assign-ignore))
+              (rule (alist-get major-mode my/perspective-assign-alist)))
     (let ((workspace-index (car rule))
           (persp-name (cadr rule))
           (buffer (current-buffer)))
@@ -1174,6 +1178,10 @@ influence of C1 on the result."
         (with-perspective persp-name
           (persp-set-buffer buffer))
         (persp-switch-to-buffer buffer)))))
+
+(defun my/perspective-assign-ignore-advice (fun &rest args)
+  (let ((my/perspective-assign-ignore t))
+    (apply fun args)))
 
 (add-hook 'after-change-major-mode-hook #'my/perspective-assign)
 
@@ -5611,7 +5619,7 @@ ENTRY is an instance of `elfeed-entry'."
   (erc-update-modules)
   (setq erc-autojoin-channels-alist
         `((,(rx "libera.chat")
-           "#systemcrafters")))
+           "#systemcrafters" "#systemcrafters-emacs")))
   (setq erc-kill-buffer-on-part t)
   (setq erc-track-shorten-start 8))
 
@@ -5635,7 +5643,7 @@ ENTRY is an instance of `elfeed-entry'."
   :straight t
   :commands (znc-erc)
   :init
-  (my-leader-def "ai" #'znc-erc)
+  ;; (my-leader-def "ai" #'znc-erc)
   (my/persp-add-rule
     erc-mode 3 "ERC")
   :config
@@ -5693,6 +5701,12 @@ ENTRY is an instance of `elfeed-entry'."
   (display-line-numbers-mode -1))
 
 (add-hook 'mastodon-mode-hook #'my/mastodon-configure)
+
+(defun my/mastodon-reset ()
+  (interactive)
+  (cl-loop for process in (process-list)
+           if (string-match-p "emacs.ch" (process-name process))
+           do (delete-process process)))
 
 (with-eval-after-load 'mastodon
   (general-define-key
@@ -5960,8 +5974,59 @@ base toot."
   :straight (:host github :repo "alphapapa/plz.el")
   :defer t)
 
+(defun my/ement ()
+  (interactive)
+  (ement-connect
+   :user-id "@sqrtminusone:matrix.org"
+   :password (my/password-store-get "My_Online/Accounts/matrix")))
+
+(defun my/ement-room-setup ()
+  (display-line-numbers-mode 1))
+
 (use-package ement
-  :straight (:host github :repo "alphapapa/ement.el"))
+  :straight (:host github :repo "alphapapa/ement.el")
+  :init
+  (my-leader-def "ai" #'my/ement)
+  :config
+  (setq ement-room-list-auto-update t)
+  (setq ement-room-mark-rooms-read 'send)
+  (setq ement-room-message-format-spec "%S> %W%B%r%R[%t]")
+  (setq ement-room-left-margin-width 0)
+  (setq ement-room-right-margin-width 10)
+  (setq ement-room-sender-in-left-margin nil)
+  (setq ement-room-sender-headers nil)
+  (setq ement-room-sender-in-headers nil)
+  (set-face-attribute 'ement-room-reactions nil :height 'unspecified)
+  (set-face-attribute 'ement-room-reactions-key nil :height 'unspecified)
+  (set-face-attribute 'ement-room-timestamp nil :inherit 'font-lock-function-name-face)
+  (set-face-attribute 'ement-room-membership nil :height 0.9
+                      :inherit 'font-lock-warning-face)
+  (set-face-attribute 'ement-room-wrap-prefix nil :inherit 'unspecified)
+  (set-face-attribute 'ement-room-timestamp-header nil :height 'unspecified)
+  (set-face-attribute 'ement-room-wrap-prefix nil :inherit 'unspecified)
+  (setq ement-room-wrap-prefix "-> ")
+  (setq ement-notify-notification-predicates
+        '(ement-notify--event-mentions-session-user-p
+          ement-notify--event-mentions-room-p
+          ement-notify--room-unread-p))
+  (advice-add #'ement-room-list-revert :around #'my/perspective-assign-ignore-advice)
+  (add-hook 'ement-room-mode-hook #'my/ement-room-setup)
+  (my/persp-add-rule
+    ement-room-mode 3 "ement"
+    ement-describe-room-mode 3 "ement"
+    ement-room-occur-mode 3 "ement"
+    ement-room-list-mode 3 "ement"))
+
+(with-eval-after-load 'ement-room-list
+  (general-define-key
+   :states '(normal visual)
+   :keymaps '(ement-room-list-mode-map)
+   "<tab>" #'magit-section-toggle
+   "C-j" #'magit-section-forward
+   "C-k" #'magit-section-backward
+   "q" #'quit-window
+   "gr" #'revert-buffer
+   "RET" #'ement-room-list-RET))
 
 (use-package telega
   :straight t
@@ -6028,9 +6093,6 @@ base toot."
                   'telega-image-mode 'telega-webpage-mode))
 
 (setq telega-online-status-function #'my/telega-online-status)
-
-(use-package reddigg
-  :straight t)
 
 (use-package google-translate
   :straight t
