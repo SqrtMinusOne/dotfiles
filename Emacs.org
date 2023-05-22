@@ -55,6 +55,8 @@ I decided not to keep configs for features that I do not use anymore because thi
 | pomidor           | 8594d6f53e42c70bbf903e168607841854818a38 |
 | elfeed-score      | 8e591e0d2afd909ae5be00caf17f9b17c6cd8b61 |
 | org-trello        | 3f5967a5f63928ea9c8567d8d9f31e84cdbbc21f |
+| jabber            | 9b0e73a4703ff35a2d30fd704200052888191217 |
+| wallabag          | 9b0e73a4703ff35a2d30fd704200052888191217 |
 * Initial setup
 Setting up the environment, performance tuning and a few basic settings.
 
@@ -7843,37 +7845,6 @@ Also, a function to copy a URL to the video under cursor.
     (ytel-video-id (ytel-get-current-video)))))
 #+end_src
 
-*** OFF wallabag
-[[https://github.com/wallabag/wallabag][Wallabag]] is a self-hosted read-it-later project. I'm not yet sold on integrating it in my workflow, but let's keep it here for now.
-
-Edit <2023-01-24 Tue>: well, that didn't work out. Running Tiny Tiny RSS & syncing it with elfeed seems to cover most of my read-it-later use cases.
-
-#+begin_src emacs-lisp
-(use-package wallabag
-  :straight (:host github :repo "chenyanming/wallabag.el" :files (:defaults "default.css" "emojis.alist"))
-  :disabled
-  :commands (wallabag wallabag-add-entry)
-  :config
-  (setq wallabag-host "https://wallabag.sqrtminusone.xyz")
-  (setq wallabag-username "sqrtminusone")
-  (setq wallabag-password (my/password-store-get "Selfhosted/wallabag"))
-  (setq wallabag-clientid (password-store-get-field "Selfhosted/wallabag" "client_id"))
-  (setq wallabag-secret (password-store-get-field "Selfhosted/wallabag" "client_secret")))
-#+end_src
-
-#+begin_src emacs-lisp
-(defun my/elfeed-wallabag (entry)
-  (interactive (list elfeed-show-entry))
-  (wallabag-add-entry (elfeed-entry-link entry)
-                      (mapconcat #'symbol-name (elfeed-entry-tags entry) ","))
-  (elfeed-recommender--rate-current 2))
-
-(with-eval-after-load 'elfeed
-  (general-define-key
-   :states '(normal)
-   :keymaps '(elfeed-show-mode-map)
-   "gw" #'my/elfeed-wallabag))
-#+end_src
 *** EWW
 Emacs built-in web browser. +I wonder if anyone actually uses it.+
 
@@ -8360,6 +8331,8 @@ And the prefix itself:
 #+end_src
 
 *** ement.el
+[[https://github.com/alphapapa/ement.el][ement.el]] is a Matrix client for Emacs. This package turned out to be somewhat complicated to setup.
+
 #+begin_src emacs-lisp
 (use-package plz
   :straight (:host github :repo "alphapapa/plz.el")
@@ -8371,22 +8344,28 @@ And the prefix itself:
    :user-id "@sqrtminusone:matrix.org"
    :password (my/password-store-get "My_Online/Accounts/matrix")))
 
-(defun my/ement-room-setup ()
-  (display-line-numbers-mode 1))
-
 (use-package ement
   :straight (:host github :repo "alphapapa/ement.el")
+  :commands (ement-connect)
   :init
   (my-leader-def "ai" #'my/ement)
   :config
   (setq ement-room-list-auto-update t)
   (setq ement-room-mark-rooms-read 'send)
+  (my/persp-add-rule
+    ement-room-mode 3 "ement"
+    ement-describe-room-mode 3 "ement"
+    ement-room-occur-mode 3 "ement"
+    ement-room-list-mode 3 "ement")
+  ;; Room UI
   (setq ement-room-message-format-spec "%S> %W%B%r%R[%t]")
   (setq ement-room-left-margin-width 0)
   (setq ement-room-right-margin-width 10)
   (setq ement-room-sender-in-left-margin nil)
   (setq ement-room-sender-headers nil)
   (setq ement-room-sender-in-headers nil)
+  (setq ement-room-wrap-prefix "-> ")
+  ;; Changing some default faces
   (set-face-attribute 'ement-room-reactions nil :height 'unspecified)
   (set-face-attribute 'ement-room-reactions-key nil :height 'unspecified)
   (set-face-attribute 'ement-room-timestamp nil :inherit 'font-lock-function-name-face)
@@ -8395,21 +8374,17 @@ And the prefix itself:
   (set-face-attribute 'ement-room-wrap-prefix nil :inherit 'unspecified)
   (set-face-attribute 'ement-room-timestamp-header nil :height 'unspecified)
   (set-face-attribute 'ement-room-wrap-prefix nil :inherit 'unspecified)
-  (setq ement-room-wrap-prefix "-> ")
+  ;; Notify only on mentions
   (setq ement-notify-notification-predicates
         '(ement-notify--event-mentions-session-user-p
           ement-notify--event-mentions-room-p
           ement-notify--room-unread-p))
-  (advice-add #'ement-room-list-revert :around #'my/perspective-assign-ignore-advice)
-  (add-hook 'ement-room-mode-hook #'my/ement-room-setup)
-  (my/persp-add-rule
-    ement-room-mode 3 "ement"
-    ement-describe-room-mode 3 "ement"
-    ement-room-occur-mode 3 "ement"
-    ement-room-list-mode 3 "ement"))
+  ;; Fix the anti-synergy with major mode re-activation in `ement-room-list-revert'
+  (advice-add #'ement-room-list-revert
+              :around #'my/perspective-assign-ignore-advice))
 #+end_src
 
-Some custom keymaps:
+Some custom keymaps for room lists:
 #+begin_src emacs-lisp
 (with-eval-after-load 'ement-room-list
   (general-define-key
@@ -8421,11 +8396,17 @@ Some custom keymaps:
    "q" #'quit-window
    "gr" #'revert-buffer
    "RET" #'ement-room-list-RET))
+
+(with-eval-after-load 'ement-tabulated-room-list
+  (general-define-key
+   :states '(normal visual)
+   :keymaps '(ement-tabulated-room-list-mode-map)
+   "q" #'quit-window))
 #+end_src
 
 Also a keymap for room mode:
 #+begin_src emacs-lisp
-(with-eval-after-load 'ement-room-mode
+(with-eval-after-load 'ement
   (general-define-key
    :states '(normal visual)
    :keymaps '(ement-room-mode-map)
@@ -8592,20 +8573,6 @@ References:
   "q" 'google-translate-query-translate
   "Q" 'google-translate-query-translate-reverse
   "t" 'google-translate-smooth-translate)
-#+end_src
-*** OFF (OFF) jabber
-#+begin_src emacs-lisp :tangle no
-(use-package srv
-  :straight t
-  :defer t)
-
-(use-package fsm
-  :straight t
-  :defer t)
-
-(use-package emacs-jabber
-  :straight (jabber :host nil :repo
-                    "https://tildegit.org/wgreenhouse/emacs-jabber"))
 #+end_src
 ** Reading documentation
 *** tldr

@@ -5539,29 +5539,6 @@ ENTRY is an instance of `elfeed-entry'."
     "https://www.youtube.com/watch?v="
     (ytel-video-id (ytel-get-current-video)))))
 
-(use-package wallabag
-  :straight (:host github :repo "chenyanming/wallabag.el" :files (:defaults "default.css" "emojis.alist"))
-  :disabled
-  :commands (wallabag wallabag-add-entry)
-  :config
-  (setq wallabag-host "https://wallabag.sqrtminusone.xyz")
-  (setq wallabag-username "sqrtminusone")
-  (setq wallabag-password (my/password-store-get "Selfhosted/wallabag"))
-  (setq wallabag-clientid (password-store-get-field "Selfhosted/wallabag" "client_id"))
-  (setq wallabag-secret (password-store-get-field "Selfhosted/wallabag" "client_secret")))
-
-(defun my/elfeed-wallabag (entry)
-  (interactive (list elfeed-show-entry))
-  (wallabag-add-entry (elfeed-entry-link entry)
-                      (mapconcat #'symbol-name (elfeed-entry-tags entry) ","))
-  (elfeed-recommender--rate-current 2))
-
-(with-eval-after-load 'elfeed
-  (general-define-key
-   :states '(normal)
-   :keymaps '(elfeed-show-mode-map)
-   "gw" #'my/elfeed-wallabag))
-
 (defun my/toggle-shr-use-fonts ()
   "Toggle the shr-use-fonts variable in buffer"
   (interactive)
@@ -5980,22 +5957,28 @@ base toot."
    :user-id "@sqrtminusone:matrix.org"
    :password (my/password-store-get "My_Online/Accounts/matrix")))
 
-(defun my/ement-room-setup ()
-  (display-line-numbers-mode 1))
-
 (use-package ement
   :straight (:host github :repo "alphapapa/ement.el")
+  :commands (ement-connect)
   :init
   (my-leader-def "ai" #'my/ement)
   :config
   (setq ement-room-list-auto-update t)
   (setq ement-room-mark-rooms-read 'send)
+  (my/persp-add-rule
+    ement-room-mode 3 "ement"
+    ement-describe-room-mode 3 "ement"
+    ement-room-occur-mode 3 "ement"
+    ement-room-list-mode 3 "ement")
+  ;; Room UI
   (setq ement-room-message-format-spec "%S> %W%B%r%R[%t]")
   (setq ement-room-left-margin-width 0)
   (setq ement-room-right-margin-width 10)
   (setq ement-room-sender-in-left-margin nil)
   (setq ement-room-sender-headers nil)
   (setq ement-room-sender-in-headers nil)
+  (setq ement-room-wrap-prefix "-> ")
+  ;; Changing some default faces
   (set-face-attribute 'ement-room-reactions nil :height 'unspecified)
   (set-face-attribute 'ement-room-reactions-key nil :height 'unspecified)
   (set-face-attribute 'ement-room-timestamp nil :inherit 'font-lock-function-name-face)
@@ -6004,18 +5987,14 @@ base toot."
   (set-face-attribute 'ement-room-wrap-prefix nil :inherit 'unspecified)
   (set-face-attribute 'ement-room-timestamp-header nil :height 'unspecified)
   (set-face-attribute 'ement-room-wrap-prefix nil :inherit 'unspecified)
-  (setq ement-room-wrap-prefix "-> ")
+  ;; Notify only on mentions
   (setq ement-notify-notification-predicates
         '(ement-notify--event-mentions-session-user-p
           ement-notify--event-mentions-room-p
           ement-notify--room-unread-p))
-  (advice-add #'ement-room-list-revert :around #'my/perspective-assign-ignore-advice)
-  (add-hook 'ement-room-mode-hook #'my/ement-room-setup)
-  (my/persp-add-rule
-    ement-room-mode 3 "ement"
-    ement-describe-room-mode 3 "ement"
-    ement-room-occur-mode 3 "ement"
-    ement-room-list-mode 3 "ement"))
+  ;; Fix the anti-synergy with major mode re-activation in `ement-room-list-revert'
+  (advice-add #'ement-room-list-revert
+              :around #'my/perspective-assign-ignore-advice))
 
 (with-eval-after-load 'ement-room-list
   (general-define-key
@@ -6028,7 +6007,13 @@ base toot."
    "gr" #'revert-buffer
    "RET" #'ement-room-list-RET))
 
-(with-eval-after-load 'ement-room-mode
+(with-eval-after-load 'ement-tabulated-room-list
+  (general-define-key
+   :states '(normal visual)
+   :keymaps '(ement-tabulated-room-list-mode-map)
+   "q" #'quit-window))
+
+(with-eval-after-load 'ement
   (general-define-key
    :states '(normal visual)
    :keymaps '(ement-room-mode-map)
