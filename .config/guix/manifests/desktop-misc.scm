@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "font-google-noto-emoji"
    "telegram-desktop"
    "bluez"
    "xev"
