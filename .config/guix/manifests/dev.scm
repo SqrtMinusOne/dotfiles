@@ -21,4 +21,4 @@
    "postgresql"
    "docker-compose"
    "pandoc"
-   "conda"))
+   "micromamba-bin"))

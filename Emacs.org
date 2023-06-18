@@ -217,7 +217,7 @@ I have some concerns that =ps -o rss= may be unrepresentative because of [[https
    (lambda (data)
      (message "%f Gb" (/ (float data) 1024 1024)))))
 #+end_src
-** Anaconda
+** OFF Anaconda
 [[https://www.anaconda.com/][Anaconda]] is a free package and environment manager. I currently use it to manage multiple versions of Python and Node.js. Take a look at [[file:Guix.org::*conda][the corresponding entry]] in the Guix config for details about using it on Guix.
 
 The following code uses the =conda= package to activate the base environment on startup if Emacs is launched outside the environment.
@@ -228,12 +228,13 @@ References:
 - [[https://docs.anaconda.com/][Anaconda docs]]
 - [[https://github.com/necaris/conda.el][conda.el repo]]
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (use-package conda
   :straight t
   :if (executable-find "conda")
   :config
   (setq conda-anaconda-home (string-replace "/bin/conda" "" (executable-find "conda")))
+  (setq conda--executable-path (executable-find "micromamba"))
   (setq conda-env-home-directory (expand-file-name "~/.conda/"))
   (setq conda-env-subdirectory "envs")
 
@@ -247,6 +248,18 @@ References:
                 (setenv "INIT_CONDA" nil)))
   (unless (getenv "CONDA_DEFAULT_ENV")
     (conda-env-activate "general")))
+#+end_src
+** Micromamba
+[[https://github.com/mamba-org/mamba][mamba]] is a faster alternative to [[https://www.anaconda.com/][Anaconda]], a package and environment manager. =micromamba= is a tiny version that provides a subset of mamba commands.
+
+=micromamba.el= is my package to interact with the latter.
+
+#+begin_src emacs-lisp
+(use-package micromamba
+  :straight (:local-repo "~/10-19 Code/12 My Emacs Packages/12.12 micromamba.el")
+  :if (executable-find "micromamba")
+  :config
+  (micromamba-activate "general"))
 #+end_src
 ** Config files
 *** Custom file location
@@ -1225,7 +1238,7 @@ Setting up quick access to various completions.
   "" '(:which-key "various completions")'
   ;; "b" 'counsel-switch-buffer
   "b" 'persp-ivy-switch-buffer
-  "e" 'conda-env-activate
+  "e" 'micromamba-activate
   "f" 'project-find-file
   "c" 'counsel-yank-pop
   "a" 'counsel-rg

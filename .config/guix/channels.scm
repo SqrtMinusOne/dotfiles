@@ -2,7 +2,7 @@
 (cons*
  (channel
   (name 'channel-q)
-  (url "file:///home/pavel/Code/channel-q"))
+  (url "file:///home/pavel/_channel-q"))
  (channel
   (name 'flat)
   (url "https://github.com/flatwhatson/guix-channel.git")

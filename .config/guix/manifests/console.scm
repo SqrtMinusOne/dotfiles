@@ -1,7 +1,8 @@
 (specifications->manifest
  '(
+   "ncdu"
    "megacmd"
-   "jless"
+   "jless-bin"
    "direnv"
    "glibc-locales"
    "git-lfs"

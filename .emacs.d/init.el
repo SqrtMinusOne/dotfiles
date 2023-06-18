@@ -82,24 +82,11 @@
    (lambda (data)
      (message "%f Gb" (/ (float data) 1024 1024)))))
 
-(use-package conda
-  :straight t
-  :if (executable-find "conda")
+(use-package micromamba
+  :straight (:local-repo "~/10-19 Code/12 My Emacs Packages/12.12 micromamba.el")
+  :if (executable-find "micromamba")
   :config
-  (setq conda-anaconda-home (string-replace "/bin/conda" "" (executable-find "conda")))
-  (setq conda-env-home-directory (expand-file-name "~/.conda/"))
-  (setq conda-env-subdirectory "envs")
-
-  (advice-add 'conda-env-activate :after
-              (lambda (&rest _)
-                (setenv "EMACS_CONDA_ENV" conda-env-current-name)
-                (setenv "INIT_CONDA" "true")))
-  (advice-add 'conda-env-deactivate :after
-              (lambda (&rest _)
-                (setenv "EMACS_CONDA_ENV" nil)
-                (setenv "INIT_CONDA" nil)))
-  (unless (getenv "CONDA_DEFAULT_ENV")
-    (conda-env-activate "general")))
+  (micromamba-activate "general"))
 
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
@@ -6019,7 +6006,7 @@ base toot."
 
 (defun my/ement-room-send-reaction (key position)
   (interactive (list
-                (completing-read "Add reaction: " telega-emoji-reaction-list)
+                (completing-read "Add reaction: " (append telega-emoji-reaction-list '("👋")))
                 (point)))
   (ement-room-send-reaction key position))
 

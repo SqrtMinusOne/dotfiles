@@ -34,13 +34,12 @@ colors:
     Cyan: '#a3f7ff'
     White: '#ffffff'
 
-background_opacity: 0.80
-
 window:
   padding:
     x: 0
     y: 0
   dynamic_padding: true
+  opacity: 0.80
 
 key_bindings:
   - { key: Paste,                                       action: Paste          }

@@ -112,9 +112,9 @@ alias ls="exa --icons"
 alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
-alias ci="init_conda"
-alias ca="conda activate"
-alias cii="export INIT_CONDA=true && init_conda"
+alias ci="init_mamba"
+alias ca="micromamba activate"
+alias cii="export INIT_MAMBA=true && init_mamba"
 # Aliases:1 ends here
 
 # [[file:Console.org::*Aliases][Aliases:2]]
@@ -124,26 +124,27 @@ if [[ ! -z "$SIMPLE" ]]; then
 fi
 # Aliases:2 ends here
 
-# [[file:Console.org::*Anaconda][Anaconda:1]]
-init_conda () {
-    __conda_setup="$('/home/pavel/.guix-extra-profiles/dev/dev/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+# [[file:Console.org::*Micromamba][Micromamba:1]]
+init_mamba () {
+    export MAMBA_EXE="/gnu/store/w0rrglxs2247nr4wawrh5dylisjra1q4-micromamba-bin-1.4.4-0/bin/micromamba";
+    export MAMBA_ROOT_PREFIX="/home/pavel/micromamba";
+    __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
     if [ $? -eq 0 ]; then
-        eval "$__conda_setup"
+        eval "$__mamba_setup"
     else
-        if [ -f "/home/pavel/.guix-extra-profiles/dev/dev/etc/profile.d/conda.sh" ]; then
-            . "/home/pavel/.guix-extra-profiles/dev/dev/etc/profile.d/conda.sh"
+        if [ -f "/home/pavel/micromamba/etc/profile.d/micromamba.sh" ]; then
+            . "/home/pavel/micromamba/etc/profile.d/micromamba.sh"
         else
-            # export PATH="/home/pavel/Programs/miniconda3/bin:$PATH"
-            echo "what"
+            export  PATH="/home/pavel/micromamba/bin:$PATH"  # extra space after export prevents interference from conda init
         fi
     fi
-    unset __conda_setup
+    unset __mamba_setup
 }
 
-if [[ ! -z "$INIT_CONDA" ]]; then
-    init_conda
+if [[ ! -z "$INIT_MAMBA" ]]; then
+    init_mamba
 fi
-# Anaconda:1 ends here
+# Micromamba:1 ends here
 
 # [[file:Console.org::*Starship][Starship:1]]
 if [[ -z "$SIMPLE" && "$TERM" != "dumb" ]]; then

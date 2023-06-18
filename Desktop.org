@@ -3355,7 +3355,7 @@ This section generates manifests for various desktop software that I'm using.
 ** Dev
 | Category | Guix dependency   | Disabled |
 |----------+-------------------+----------|
-| dev      | conda             |          |
+| dev      | micromamba-bin    |          |
 | dev      | pandoc            |          |
 | dev      | docker-compose    |          |
 | dev      | postgresql        |          |

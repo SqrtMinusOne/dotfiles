@@ -13,10 +13,9 @@ alias ls="exa --icons"
 alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
-alias ci="init_conda"
-alias ca="conda activate"
-alias cii="export INIT_CONDA=true && init_conda"
-alias cad="conda activate (basename (pwd))"
+alias ci="init_mamba"
+alias ca="micromamba activate"
+alias cii="export INIT_MAMBA=true && init_mamba"
 # Fish:2 ends here
 
 # [[file:../../Console.org::*Fish][Fish:3]]
@@ -29,21 +28,23 @@ end
 set fish_greeting
 # Fish:4 ends here
 
-# [[file:../../Console.org::*Anaconda][Anaconda:1]]
-function init_conda
-    eval /home/pavel/.guix-extra-profiles/dev/dev/bin/conda "shell.fish" "hook" $argv | source
+# [[file:../../Console.org::*Micromamba][Micromamba:1]]
+function init_mamba
+    set -gx MAMBA_EXE "/gnu/store/w0rrglxs2247nr4wawrh5dylisjra1q4-micromamba-bin-1.4.4-0/bin/micromamba"
+    set -gx MAMBA_ROOT_PREFIX "/home/pavel/micromamba"
+    $MAMBA_EXE shell hook --shell fish --prefix $MAMBA_ROOT_PREFIX | source
 end
 
-if test -n "$INIT_CONDA";
-    init_conda
+if test -n "$INIT_MAMBA";
+    init_mamba
 end
-# Anaconda:1 ends here
+# Micromamba:1 ends here
 
-# [[file:../../Console.org::*Anaconda][Anaconda:2]]
-if test -n "$EMACS_CONDA_ENV";
-    conda activate $EMACS_CONDA_ENV
-end
-# Anaconda:2 ends here
+# [[file:../../Console.org::*Micromamba][Micromamba:2]]
+# if test -n "$EMACS_CONDA_ENV";
+    # conda activate $EMACS_CONDA_ENV
+# end
+# Micromamba:2 ends here
 
 # [[file:../../Console.org::*Colors][Colors:1]]
 set fish_color_command cyan
