@@ -5913,6 +5913,12 @@ emacs -Q --batch -l run-tangle.el
 
 
 I have added this line to yadm's =post_alt= hook, so to run tangle after =yadm alt=
+*** Folders
+#+begin_src emacs-lisp
+(let ((folders-file (expand-file-name "folders.el" user-emacs-directory)))
+  (when (file-exists-p folders-file)
+    (load-file folders-file)))
+#+end_src
 * Applications
 ** Dired
 Dired is the built-in Emacs file manager. It's so good that it's strange that, to my knowledge, no one tried to replicate it outside of Emacs.
@@ -7183,7 +7189,7 @@ All we need to do is install Whisper in a virtual environment:
 #+begin_src bash
 python -m virtualenv venv
 source venv/bin/activate
-pip install whisper
+pip install openai-whisper
 #+end_src
 
 After which the program can be used as follows:
@@ -7198,7 +7204,7 @@ I'm using an English-language-only model because that's the only language I need
 
 #+begin_src emacs-lisp
 (defvar my/whisper-env-path
-  "/home/pavel/Code/system-crafting/whisper-test/"
+  "/home/pavel/10-19 Code/13 Other Projects/13.01 whisper-test/"
   "Path to the folder with `whisper' environment.")
 
 (defun my/invoke-whisper (input output-dir)
@@ -7764,7 +7770,7 @@ Inspired by [[https://github.com/grastello/ytel/issues/17#issuecomment-801745429
        (url-request-extra-headers
         '(("Accept" . "application/json"))))
     (with-current-buffer
-        (url-retrieve-synchronously invidious-instances-url)
+        (url-retrieve-synchronously my/invidious-instances-url)
       (goto-char (point-min))
       (re-search-forward "^$")
       (let* ((json-object-type 'alist)
@@ -8404,6 +8410,32 @@ Some custom keymaps for room lists:
    "q" #'quit-window))
 #+end_src
 
+#+begin_src emacs-lisp
+(defun my/ement-room-send-reaction (key position)
+  (interactive (list
+                (completing-read "Add reaction: " (append telega-emoji-reaction-list '("👋")))
+                (point)))
+  (ement-room-send-reaction key position))
+
+(defun my/ement-room-compose-quit ()
+  (interactive)
+  (when (or (string-empty-p (buffer-string))
+            (y-or-n-p "Quit compose? "))
+    (quit-window t)))
+
+(defun my/ement-room-compose-setup ()
+  (ement-room-compose-org)
+  (setq company-backends '(telega-company-emoji company-capf))
+  (general-define-key
+   :states '(normal visual)
+   :keymaps 'local
+   "Q" #'my/ement-room-compose-quit
+   "C-c C-k" (lambda () (interactive) (quit-window t))
+   "C-c C-c" #'ement-room-compose-send))
+
+(add-hook 'ement-room-compose-hook #'my/ement-room-compose-setup)
+#+end_src
+
 Also a keymap for room mode:
 #+begin_src emacs-lisp
 (with-eval-after-load 'ement
@@ -8414,24 +8446,27 @@ Also a keymap for room mode:
    "?" #'ement-room-transient
    "C-u" #'ement-room-scroll-down-command
    "C-d" #'ement-room-scroll-up-mark-read
+   "r" #'ement-room-write-reply
+   "a" #'ement-room-send-message
+   "i" #'ement-room-send-message
    "M-<RET>" #'ement-room-compose-message
    "<RET>" #'ement-room-send-message
-   "S-<RET>" #'ement-room-write-reply
    "K" #'ement-room-goto-prev
    "J" #'ement-room-goto-next
    "gr" #'ement-room-sync
-   "rT" #'ement-tag-room
-   "rd" #'ement-describe-room
-   "rm" #'ement-list-members
-   "rn" #'ement-room-set-notification-state
-   "rt" #'ement-room-set-topic
-   "se" #'ement-room-send-emote
-   "sf" #'ement-room-send-file
-   "sr" #'ement-room-send-reaction
-   "sd" #'ement-room-view-event
-   "uI" #'ement-ignore-user
-   "U <RET>" #'ement-send-direct-message
+   "g?" #'ement-describe-room
+   "R?" #'ement-describe-room
+   "Rm" #'ement-list-members
+   "Rn" #'ement-room-set-notification-state
+   "Rt" #'ement-room-set-topic
+   "!" #'my/ement-room-send-reaction
+   "m?" #'ement-room-view-event
+   "Zf" #'ement-room-send-file
    "ui" #'ement-invite-user)
+  (general-define-key
+   :states '(normal visual)
+   :keymaps '(ement-describe-room-mode-map)
+   "q" #'quit-window)
   (general-define-key
    :states '(motion)
    :keymaps '(ement-room-mode-map)

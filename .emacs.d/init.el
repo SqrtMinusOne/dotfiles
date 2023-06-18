@@ -4156,6 +4156,10 @@ With ARG, repeats or can move backward if negative."
             (when (member (buffer-file-name) my/org-config-files)
               (setq-local org-confirm-babel-evaluate nil))))
 
+(let ((folders-file (expand-file-name "folders.el" user-emacs-directory)))
+  (when (file-exists-p folders-file)
+    (load-file folders-file)))
+
 (use-package dired
   :ensure nil
   :custom ((dired-listing-switches "-alh --group-directories-first"))
@@ -5090,7 +5094,7 @@ by the `my/elfeed-youtube-subtitles' function."
   (subed-mpv--play subed-mpv-video-file))
 
 (defvar my/whisper-env-path
-  "/home/pavel/Code/system-crafting/whisper-test/"
+  "/home/pavel/10-19 Code/13 Other Projects/13.01 whisper-test/"
   "Path to the folder with `whisper' environment.")
 
 (defun my/invoke-whisper (input output-dir)
@@ -5473,7 +5477,7 @@ ENTRY is an instance of `elfeed-entry'."
        (url-request-extra-headers
         '(("Accept" . "application/json"))))
     (with-current-buffer
-        (url-retrieve-synchronously invidious-instances-url)
+        (url-retrieve-synchronously my/invidious-instances-url)
       (goto-char (point-min))
       (re-search-forward "^$")
       (let* ((json-object-type 'alist)
@@ -6013,6 +6017,30 @@ base toot."
    :keymaps '(ement-tabulated-room-list-mode-map)
    "q" #'quit-window))
 
+(defun my/ement-room-send-reaction (key position)
+  (interactive (list
+                (completing-read "Add reaction: " telega-emoji-reaction-list)
+                (point)))
+  (ement-room-send-reaction key position))
+
+(defun my/ement-room-compose-quit ()
+  (interactive)
+  (when (or (string-empty-p (buffer-string))
+            (y-or-n-p "Quit compose? "))
+    (quit-window t)))
+
+(defun my/ement-room-compose-setup ()
+  (ement-room-compose-org)
+  (setq company-backends '(telega-company-emoji company-capf))
+  (general-define-key
+   :states '(normal visual)
+   :keymaps 'local
+   "Q" #'my/ement-room-compose-quit
+   "C-c C-k" (lambda () (interactive) (quit-window t))
+   "C-c C-c" #'ement-room-compose-send))
+
+(add-hook 'ement-room-compose-hook #'my/ement-room-compose-setup)
+
 (with-eval-after-load 'ement
   (general-define-key
    :states '(normal visual)
@@ -6021,24 +6049,27 @@ base toot."
    "?" #'ement-room-transient
    "C-u" #'ement-room-scroll-down-command
    "C-d" #'ement-room-scroll-up-mark-read
+   "r" #'ement-room-write-reply
+   "a" #'ement-room-send-message
+   "i" #'ement-room-send-message
    "M-<RET>" #'ement-room-compose-message
    "<RET>" #'ement-room-send-message
-   "S-<RET>" #'ement-room-write-reply
    "K" #'ement-room-goto-prev
    "J" #'ement-room-goto-next
    "gr" #'ement-room-sync
-   "rT" #'ement-tag-room
-   "rd" #'ement-describe-room
-   "rm" #'ement-list-members
-   "rn" #'ement-room-set-notification-state
-   "rt" #'ement-room-set-topic
-   "se" #'ement-room-send-emote
-   "sf" #'ement-room-send-file
-   "sr" #'ement-room-send-reaction
-   "sd" #'ement-room-view-event
-   "uI" #'ement-ignore-user
-   "U <RET>" #'ement-send-direct-message
+   "g?" #'ement-describe-room
+   "R?" #'ement-describe-room
+   "Rm" #'ement-list-members
+   "Rn" #'ement-room-set-notification-state
+   "Rt" #'ement-room-set-topic
+   "!" #'my/ement-room-send-reaction
+   "m?" #'ement-room-view-event
+   "Zf" #'ement-room-send-file
    "ui" #'ement-invite-user)
+  (general-define-key
+   :states '(normal visual)
+   :keymaps '(ement-describe-room-mode-map)
+   "q" #'quit-window)
   (general-define-key
    :states '(motion)
    :keymaps '(ement-room-mode-map)
