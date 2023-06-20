@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# [[file:../../Guix.org::*conda][conda:2]]
+# [[file:../../Guix.org::*micromamba][micromamba:1]]
 # Get writable conda envs with npm & without it
-readarray -t CONDA_ENVS_ALL <<< $(conda env list --json | jq '.envs[]')
+readarray -t CONDA_ENVS_ALL <<< $(micromamba env list --json | jq '.envs[]')
 CONDA_ENVS_NPM=()
 CONDA_ENVS_NO_NPM=()
 for env in "${CONDA_ENVS_ALL[@]}"; do
@@ -33,4 +33,4 @@ for env in "${CONDA_ENVS_NO_NPM}"; do
     rm -rf "$env/etc/conda/deactivate.d/conda.sh" || true
     rm -rf "$env/etc/conda/deactivate.d/conda.fish" || true
 done
-# conda:2 ends here
+# micromamba:1 ends here

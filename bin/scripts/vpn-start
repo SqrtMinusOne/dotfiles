@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# [[file:/yadm:iris:/home/pavel/Guix.org::*vpn-start][vpn-start:1]]
+# [[file:../../Guix.org::*vpn-start][vpn-start:1]]
 export DISPLAY=:0
 CONN=$(nmcli -f NAME con show --active | grep -Ev "(.*docker.*|NAME|br-.*|veth.*|tun.*|vnet.*|virbr.*)" | sed 's/ *$//g')
 

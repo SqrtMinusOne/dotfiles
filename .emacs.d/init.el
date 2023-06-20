@@ -83,7 +83,7 @@
      (message "%f Gb" (/ (float data) 1024 1024)))))
 
 (use-package micromamba
-  :straight (:local-repo "~/10-19 Code/12 My Emacs Packages/12.12 micromamba.el")
+  :straight (:host github :repo "SqrtMinusOne/micromamba.el")
   :if (executable-find "micromamba")
   :config
   (micromamba-activate "general"))
@@ -726,7 +726,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "" '(:which-key "various completions")'
   ;; "b" 'counsel-switch-buffer
   "b" 'persp-ivy-switch-buffer
-  "e" 'conda-env-activate
+  "e" 'micromamba-activate
   "f" 'project-find-file
   "c" 'counsel-yank-pop
   "a" 'counsel-rg

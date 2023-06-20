@@ -676,29 +676,21 @@ nmcli connection up "$CONN"
 ** flatpak
 As for now, the easiest way to install most of proprietary software is via flatpak. See the relevant section in [[file:Desktop.org][Desktop.org]].
 
-** conda
-[[https://docs.conda.io/en/latest/][conda]] is a package manager, which I use for managing various versions of Python & Node.js.
+** micromamba
++[[https://docs.conda.io/en/latest/][conda]]+ [[https://github.com/mamba-org/mamba][mamba]] is a package manager that I use for managing various versions of Python & Node.js.
 
-It is packaged for GNU Guix, although the definition has its fair share of workarounds. It is almost surprising to see it work with all the C libraries and stuff. But there are still some problems.
+=mamba= is a reimplementation of =conda= in C++. =mamba= is notably much faster and mostly compatible with =conda=, and =micromamba= is a tiny version of =mamba= that is contained in one statically linked exectuable. I've migrated to =micromamba= mostly because of speed.
 
-First, it's impossible to perform =conda init= to patch files like =.bashrc=, because the command is hell-bent on modifying =/gnu/store/=. So I do this manually, look for the =init_conda= procedures in [[file:Console.org][Console.org]].
+=conda= is packaged for Guix with its fair share of quirks, mostly concerning the impossibility of changing the base environment in =/gnu/store/=. =micromamba= has none of that because it doesn't ship with a base environment. It's not packaged for Guix yet, so I've made a definition with =binary-build-system= in my channel.
 
-Second, the base environment has =/gnu/store/...= as a root, so don't install anything there (and don't run =conda= with superuser rights!).
+You may need to unset =$PYTHONPATH= if you have any global packages installed, otherwise Python from the environemnt will try to import them instead of the conda versions.
 
-Third, by default it tries to create envronments in =/gnu/store=. It's enough to create one environment like this to fix it:
-#+begin_src sh
-mkdir -p ~/.conda/envs
-conda create -p ~/.conda/envs/test
-#+end_src
-
-Fourth, you may need to unset =$PYTHONPATH= if you have any global packages installed, otherwise Python from anaconda will try to import them instead of the conda versions.
-
-Finally, I also want to have an ability to use global npm. Some settings for that are located in [[file:Console::*npm][Console.org]]. Here we want to unset =NPM_CONFIG_USERCONFIG= if there is npm available in the environment.
+I also want to have an ability to use global npm. Some settings for that are located in [[file:Console::*npm][Console.org]]. Here we want to unset =NPM_CONFIG_USERCONFIG= if there is npm available in the environment.
 
 So here is a script to set up conda hooks:
 #+begin_src bash :tangle ~/bin/scripts/setup-conda-npm
 # Get writable conda envs with npm & without it
-readarray -t CONDA_ENVS_ALL <<< $(conda env list --json | jq '.envs[]')
+readarray -t CONDA_ENVS_ALL <<< $(micromamba env list --json | jq '.envs[]')
 CONDA_ENVS_NPM=()
 CONDA_ENVS_NO_NPM=()
 for env in "${CONDA_ENVS_ALL[@]}"; do
