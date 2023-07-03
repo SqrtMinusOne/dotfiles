@@ -107,9 +107,12 @@ HISTFILESIZE=
 
 # [[file:Console.org::*Aliases][Aliases:1]]
 alias v="vim"
-alias gg="lazygit"
-alias ls="exa --icons"
-alias ll="exa -lah --icons"
+if command -v exa > /dev/null; then
+    alias ls="exa --icons"
+    alias ll="exa -lah --icons"
+else
+    alias ll='ls -lah'
+fi
 alias q="exit"
 alias c="clear"
 alias ci="init_mamba"

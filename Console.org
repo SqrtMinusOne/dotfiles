@@ -369,9 +369,12 @@ fi
 *** Aliases
 #+begin_src bash :noweb yes :noweb-ref shell-aliases
 alias v="vim"
-alias gg="lazygit"
-alias ls="exa --icons"
-alias ll="exa -lah --icons"
+if command -v exa > /dev/null; then
+    alias ls="exa --icons"
+    alias ll="exa -lah --icons"
+else
+    alias ll='ls -lah'
+fi
 alias q="exit"
 alias c="clear"
 alias ci="init_mamba"
@@ -453,7 +456,14 @@ Enable vi keybindings & aliases. The alias syntax is the same as in bash, so it'
 #+begin_src fish :noweb yes
 fish_vi_key_bindings
 
-<<shell-aliases>>
+alias q="exit"
+alias c="clear"
+if type -q exa
+    alias ls="exa --icons"
+    alias ll="exa -lah --icons"
+else
+    alias ll="ls -h"
+end
 #+end_src
 
 
@@ -484,6 +494,10 @@ end
 if test -n "$INIT_MAMBA";
     init_mamba
 end
+
+alias ca="micromamba activate"
+alias ci="init_mamba"
+alias cii="export INIT_MAMBA=true && init_mamba"
 #+end_src
 
 Then, check if launched from Emacs with environment activated.
@@ -838,6 +852,7 @@ key_bindings:
 | jless-bin       | JSON viewer                                 |
 | megacmd         | mega.nz client                              |
 | ncdu            | disk usage analyzer                         |
+| openssl         |                                             |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.

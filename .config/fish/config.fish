@@ -7,15 +7,14 @@ end
 # [[file:../../Console.org::*Fish][Fish:2]]
 fish_vi_key_bindings
 
-alias v="vim"
-alias gg="lazygit"
-alias ls="exa --icons"
-alias ll="exa -lah --icons"
 alias q="exit"
 alias c="clear"
-alias ci="init_mamba"
-alias ca="micromamba activate"
-alias cii="export INIT_MAMBA=true && init_mamba"
+if type -q exa
+    alias ls="exa --icons"
+    alias ll="exa -lah --icons"
+else
+    alias ll="ls -h"
+end
 # Fish:2 ends here
 
 # [[file:../../Console.org::*Fish][Fish:3]]
@@ -38,6 +37,10 @@ end
 if test -n "$INIT_MAMBA";
     init_mamba
 end
+
+alias ca="micromamba activate"
+alias ci="init_mamba"
+alias cii="export INIT_MAMBA=true && init_mamba"
 # Micromamba:1 ends here
 
 # [[file:../../Console.org::*Micromamba][Micromamba:2]]

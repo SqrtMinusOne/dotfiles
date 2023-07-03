@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "openssl"
    "ncdu"
    "megacmd"
    "jless-bin"
