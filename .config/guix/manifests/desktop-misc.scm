@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "remmina"
    "font-google-noto-emoji"
    "telegram-desktop"
    "bluez"

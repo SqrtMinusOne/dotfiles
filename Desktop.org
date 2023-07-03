@@ -3719,31 +3719,32 @@ Run services
 * Guix settings
 Other desktop programs I use are listed below.
 
-| Category     | Guix dependency         | Description                               |
-|--------------+-------------------------+-------------------------------------------|
-| desktop-misc | xprop                   | Tool to display properties of X windows   |
-| desktop-misc | arandr                  | GUI to xrandr                             |
-| desktop-misc | light                   | Control screen brightness                 |
-| desktop-misc | ponymix                 | Control PulseAudio CLI                    |
-| desktop-misc | pavucontrol             | Control PulseAudio GUI                    |
-| desktop-misc | network-manager-applet  | Applet to manage network connections      |
-| desktop-misc | xmodmap                 | Program to modify keybindings on X server |
-| desktop-misc | fontconfig              |                                           |
-| desktop-misc | polkit-gnome            | Polkit authentication agent               |
-| desktop-misc | feh                     | Image viewer. Used to set background      |
-| desktop-misc | copyq                   | Clipboard manager                         |
-| desktop-misc | thunar                  | My preferred GUI file manager             |
-| desktop-misc | xdg-utils               | gives xdg-open and stuff                  |
-| desktop-misc | gnome-font-viewer       | view fonts                                |
-| desktop-misc | qbittorrent             | torrent client                            |
-| desktop-misc | anydesk                 | Remote desktop software                   |
-| desktop-misc | vinagre                 | My VNC client of choice                   |
-| desktop-misc | gnome-disk-utility      | Manage disks                              |
-| desktop-misc | gparted                 | Manage partitions                         |
-| desktop-misc | xev                     | Test input                                |
-| desktop-misc | bluez                   | Provides bluetoothctl                     |
-| desktop-misc | telegram-desktop        |                                           |
-| desktop-misc | font-google-noto-emoji  |                                           |
+| Category     | Guix dependency        | Description                               |
+|--------------+------------------------+-------------------------------------------|
+| desktop-misc | xprop                  | Tool to display properties of X windows   |
+| desktop-misc | arandr                 | GUI to xrandr                             |
+| desktop-misc | light                  | Control screen brightness                 |
+| desktop-misc | ponymix                | Control PulseAudio CLI                    |
+| desktop-misc | pavucontrol            | Control PulseAudio GUI                    |
+| desktop-misc | network-manager-applet | Applet to manage network connections      |
+| desktop-misc | xmodmap                | Program to modify keybindings on X server |
+| desktop-misc | fontconfig             |                                           |
+| desktop-misc | polkit-gnome           | Polkit authentication agent               |
+| desktop-misc | feh                    | Image viewer. Used to set background      |
+| desktop-misc | copyq                  | Clipboard manager                         |
+| desktop-misc | thunar                 | My preferred GUI file manager             |
+| desktop-misc | xdg-utils              | gives xdg-open and stuff                  |
+| desktop-misc | gnome-font-viewer      | view fonts                                |
+| desktop-misc | qbittorrent            | torrent client                            |
+| desktop-misc | anydesk                | Remote desktop software                   |
+| desktop-misc | vinagre                | My VNC client of choice                   |
+| desktop-misc | gnome-disk-utility     | Manage disks                              |
+| desktop-misc | gparted                | Manage partitions                         |
+| desktop-misc | xev                    | Test input                                |
+| desktop-misc | bluez                  | Provides bluetoothctl                     |
+| desktop-misc | telegram-desktop       |                                           |
+| desktop-misc | font-google-noto-emoji |                                           |
+| desktop-misc | remmina                |                                           |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
