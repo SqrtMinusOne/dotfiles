@@ -186,6 +186,7 @@ So, here are the rules which match tags & folders:
 | job.digital.support      | Job_Digital.Support      |
 | job.digital.superservice | Job_Digital.Superservice |
 | job.digital.applicants   | Job_Digital.Applicants   |
+| etu                      | Etu                      |
 
 And below is a noweb function, which generates the following commands for notmuch to execute:
 - /before/ sync:
