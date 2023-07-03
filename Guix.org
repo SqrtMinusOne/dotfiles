@@ -555,13 +555,15 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 | system   | patchelf        | A program to modify existsing ELF executables      |
 | system   | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
 
-** VPN
+** OpenVPN
 | Category | Guix dependency             |
 |----------+-----------------------------|
 | system   | openvpn                     |
 | system   | openvpn-update-resolve-conf |
 | system   | openresolv                  |
 | system   | vpnc                        |
+
+Update [2023-06-29 Thu]: My censors seem to be putting sticks in the wheels of OpenVPN... Switched to Wireguard for now. It can be configured with Network Manager.
 
 I'm not sure how to properly spin up VPN on Guix, so here is what ended I'm doing after some trial and error.
 
@@ -673,6 +675,35 @@ echo "Connection: $CONN"
 pkexec nmcli con modify "$CONN" ipv6.method auto
 nmcli connection up "$CONN"
 #+end_src
+** Wireguard
+So, yeah, wireguard can be configured with =NetworkManager= just fine.
+
+The issue with DNS leaks remains, but fortunately =NetworkManager= runs all scripts in =/etc/NetworkManager/dispatcher.d/= when a connection changes, provided that scripts are:
+- owned by root
+- exectuable
+- not readable by other users
+- not setuid.
+See [[https://askubuntu.com/questions/13963/call-script-after-connecting-to-a-wireless-network][this answer]] on StackExchange, and [[https://networkmanager.dev/docs/api/latest/NetworkManager-dispatcher.html][NetworkManager-dispatcher man page]].
+
+#+name: get-nmcli
+#+begin_src bash :tangle no
+echo $(guix build network-manager | grep -ve '-doc$')/bin/nmcli
+#+end_src
+
+So, here's the script:
+#+begin_src bash :tangle no :noweb yes
+#!/bin/sh
+GREP=/run/current-system/profile/bin/grep
+NMCLI=<<get-nmcli()>>
+
+# Run only if wireguard is active
+if $NMCLI connection show --active | $GREP -q wireguard; then
+    echo "nameserver 8.8.8.8" > /etc/resolv.conf
+fi
+#+end_src
+
+Expand the noweb with =C-c C-v v=, put it in =dispatcher.d= and run =chmod 700=.
+
 ** flatpak
 As for now, the easiest way to install most of proprietary software is via flatpak. See the relevant section in [[file:Desktop.org][Desktop.org]].
 

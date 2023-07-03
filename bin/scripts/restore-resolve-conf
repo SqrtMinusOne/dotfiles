@@ -1,4 +1,4 @@
 #!/bin/sh
-# [[file:../../Guix.org::*VPN][VPN:6]]
+# [[file:../../Guix.org::*OpenVPN][OpenVPN:6]]
 resolveconf -u
-# VPN:6 ends here
+# OpenVPN:6 ends here

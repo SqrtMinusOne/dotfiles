@@ -1,5 +1,5 @@
 #!/bin/sh
-# [[file:../../Guix.org::*VPN][VPN:5]]
+# [[file:../../Guix.org::*OpenVPN][OpenVPN:5]]
 /home/pavel/.guix-extra-profiles/console/console/bin/cp /etc/resolv.conf /etc/resolv.conf-bak
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
-# VPN:5 ends here
+# OpenVPN:5 ends here
