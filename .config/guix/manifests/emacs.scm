@@ -10,6 +10,7 @@
    "tdlib-1.8.13"
    "yt-dlp"
    "mpv"
+   "whisper-cpp"
    "rdrview"
    "graphviz"
    "emacs-emacsql-sqlite3"

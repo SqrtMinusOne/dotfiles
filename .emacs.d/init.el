@@ -1598,7 +1598,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
-  (setq copilot-node-executable "/home/pavel/.conda/envs/traject/bin/node")
+  (setq copilot-node-executable "/home/pavel/.guix-extra-profiles/dev/dev/bin/node")
   (general-define-key
    :keymaps 'company-active-map
    "<backtab>" #'my/copilot-tab)
@@ -2605,7 +2605,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :if (not my/remote-server)
   :defer t
   :init
-  (setq org-directory (expand-file-name "~/Documents/org-mode"))
+  (setq org-directory (expand-file-name "~/30-39 Life/32 org-mode"))
   (unless (file-exists-p org-directory)
     (mkdir org-directory t))
   :config
@@ -3433,8 +3433,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
   :if (not my/remote-server)
   :init
   (setq bibtex-dialect 'biblatex)
-  (setq bibtex-completion-bibliography '("~/Documents/org-mode/library.bib"))
-  (setq bibtex-completion-library-path '("~/Documents/library"))
+  (setq bibtex-completion-bibliography '("~/30-39 Life/32 org-mode/library.bib"))
+  (setq bibtex-completion-library-path '("~/30-39 Life/33 Library"))
   (setq bibtex-completion-notes-path "~/Documents/org-mode/literature-notes")
   (setq bibtex-completion-display-formats
         '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}")))
@@ -3973,6 +3973,17 @@ KEYS is a list of cons cells like (<label> . <time>)."
 ;; Make sure to eval the function when org-latex-classes list already exists
 (with-eval-after-load-norem 'ox-latex
   (my/setup-org-latex))
+
+(with-eval-after-load 'ox
+  (setq org-export-dictionary
+        (cl-loop for item in org-export-dictionary collect
+                 (cons
+                  (car item)
+                  (cl-loop for entry in (cdr item)
+                           if (and (equal (car entry) "ru")
+                                   (plist-get (cdr entry) :utf-8))
+                           collect (list "ru" :default (plist-get (cdr entry) :utf-8))
+                           else collect entry)))))
 
 (with-eval-after-load-norem 'org
   (general-define-key
@@ -5080,25 +5091,17 @@ by the `my/elfeed-youtube-subtitles' function."
   (setq-local subed-mpv-video-file (elfeed-entry-link entry))
   (subed-mpv--play subed-mpv-video-file))
 
-(defvar my/whisper-env-path
-  "/home/pavel/10-19 Code/13 Other Projects/13.01 whisper-test/"
-  "Path to the folder with `whisper' environment.")
+(defun my/invoke-whisper--direct (input output-dir remove-wav)
+  "Extract subtitles from a WAV audio file.
 
-(defun my/invoke-whisper (input output-dir)
-  "Extract subtitles from the audio file.
-
-INPUT is the audio file, OUTPUT-DIR is the path to the directory with
-resulting files."
-  (interactive
-   (list
-    (read-file-name "Input file: " nil nil t)
-    (read-directory-name "Output directory: ")))
-  (let* ((buffer (generate-new-buffer "whisper"))
-         (default-directory my/whisper-env-path)
+INPUT is the absolute path to audio file, OUTPUT-DIR is the path to
+the directory with resulting files."
+  (let* ((default-directory output-dir)
+         (buffer (generate-new-buffer "whisper"))
          (proc (start-process
                 "whisper" buffer
-                (concat my/whisper-env-path "venv/bin/whisper")
-                "--output_dir" output-dir "--model" "tiny.en" input)))
+                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-tiny.en.bin"
+                "-otxt" "-ovtt" "-osrt" input)))
     (set-process-sentinel
      proc
      (lambda (process _msg)
@@ -5107,12 +5110,48 @@ resulting files."
          (cond ((and (eq status 'exit) (= code 0))
                 (notifications-notify :body "Audio conversion completed"
                                       :title "Whisper")
+                (when remove-wav
+                  (delete-file input))
+                (dolist (extension '(".txt" ".vtt" ".srt"))
+                  (rename-file (concat input extension)
+                               (concat (file-name-sans-extension input) extension)))
                 (kill-buffer (process-buffer process)))
                ((or (and (eq status 'exit) (> code 0))
                     (eq status 'signal))
                 (let ((err (with-current-buffer (process-buffer process)
                              (buffer-string))))
                   (user-error "Error in Whisper: %s" err)))))))))
+
+(defun my/invoke-whisper (input output-dir)
+  "Extract subtitles from the audio file.
+
+INPUT is the absolute path to the audio file, OUTPUT-DIR is the path
+to the directory with resulting files.
+
+Run ffmpeg if the file is not WAV."
+  (interactive
+   (list
+    (read-file-name "Input file: " nil nil t)
+    (read-directory-name "Output directory: ")))
+  (if (string-match-p (rx ".wav" eos) input)
+      (my/invoke-whisper--direct input output-dir)
+    (let* ((ffmpeg-proc
+            (start-process
+             "ffmpef" nil "ffmpeg" "-i" input "-ar" "16000" "-ac" "1" "-c:a"
+             "pcm_s16le" (concat (file-name-sans-extension input) ".wav"))))
+      (set-process-sentinel
+       ffmpeg-proc
+       (lambda (process _msg)
+         (let ((status (process-status process))
+               (code (process-exit-status process)))
+           (cond ((and (eq status 'exit) (= code 0))
+                  (my/invoke-whisper--direct
+                   (concat (file-name-sans-extension input) ".wav") output-dir t))
+                 ((or (and (eq status 'exit) (> code 0))
+                      (eq status 'signal))
+                  (let ((err (with-current-buffer (process-buffer process)
+                               (buffer-string))))
+                    (user-error "Error in running ffmpeg: %s" err))))))))))
 
 (with-eval-after-load 'elfeed
   (defvar my/elfeed-whisper-podcast-files-directory
@@ -6039,6 +6078,7 @@ base toot."
    "r" #'ement-room-write-reply
    "a" #'ement-room-send-message
    "i" #'ement-room-send-message
+   "e" #'ement-room-edit-message
    "M-<RET>" #'ement-room-compose-message
    "<RET>" #'ement-room-send-message
    "K" #'ement-room-goto-prev

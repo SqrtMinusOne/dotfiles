@@ -2412,7 +2412,7 @@ A general-purpose package to run formatters on files. While the most popular for
   :init
   (add-hook 'prog-mode-hook #'copilot-mode)
   :config
-  (setq copilot-node-executable "/home/pavel/.conda/envs/traject/bin/node")
+  (setq copilot-node-executable "/home/pavel/.guix-extra-profiles/dev/dev/bin/node")
   (general-define-key
    :keymaps 'company-active-map
    "<backtab>" #'my/copilot-tab)
@@ -3618,7 +3618,7 @@ Use the built-in org mode (=:type built-in=).
   :if (not my/remote-server)
   :defer t
   :init
-  (setq org-directory (expand-file-name "~/Documents/org-mode"))
+  (setq org-directory (expand-file-name "~/30-39 Life/32 org-mode"))
   (unless (file-exists-p org-directory)
     (mkdir org-directory t))
   :config
@@ -4802,8 +4802,8 @@ There's a package called [[https://github.com/org-roam/org-roam-bibtex][org-roam
   :if (not my/remote-server)
   :init
   (setq bibtex-dialect 'biblatex)
-  (setq bibtex-completion-bibliography '("~/Documents/org-mode/library.bib"))
-  (setq bibtex-completion-library-path '("~/Documents/library"))
+  (setq bibtex-completion-bibliography '("~/30-39 Life/32 org-mode/library.bib"))
+  (setq bibtex-completion-library-path '("~/30-39 Life/33 Library"))
   (setq bibtex-completion-notes-path "~/Documents/org-mode/literature-notes")
   (setq bibtex-completion-display-formats
         '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}")))
@@ -5588,6 +5588,23 @@ Add a custom LaTeX template without default packages. Packages are indented to b
 (with-eval-after-load-norem 'ox-latex
   (my/setup-org-latex))
 #+end_src
+
+**** Fix Russian dictionary
+No idea why, but somehow the exported uses english words if there isn't =:default= key in the dictionary.
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'ox
+  (setq org-export-dictionary
+        (cl-loop for item in org-export-dictionary collect
+                 (cons
+                  (car item)
+                  (cl-loop for entry in (cdr item)
+                           if (and (equal (car entry) "ru")
+                                   (plist-get (cdr entry) :utf-8))
+                           collect (list "ru" :default (plist-get (cdr entry) :utf-8))
+                           else collect entry)))))
+#+end_src
+
 ** Keybindings & stuff
 *** General keybindings
 #+begin_src emacs-lisp
@@ -7166,19 +7183,13 @@ For obvious reasons, podcasts rarely ship with transcripts. So in this +post+ se
 Edit <2022-10-08 Sat>: Changed [[https://github.com/alphacep/vosk-api][vosk-api]] to OpenAI Whisper.
 
 **** Whisper
-[[https://github.com/openai/whisper][OpenAI Whisper]] is an amazing speech recognition toolkit. It's pretty slow on my PC (compared to [[https://github.com/alphacep/vosk-api][vosk-api]] which I've been using before), but the quality is so much better so I think it's completely worth it.
+[[https://github.com/openai/whisper][OpenAI Whisper]] is an amazing speech recognition toolkit.
 
-All we need to do is install Whisper in a virtual environment:
-#+begin_src bash
-python -m virtualenv venv
-source venv/bin/activate
-pip install openai-whisper
-#+end_src
+The implementation by OpenAI is rather slow on my PC (speed around 0.75 on tiny.en), but [[https://github.com/ggerganov/whisper.cpp][whisper.cpp]] by Georgi Gerganov works much faster (5.9x). I've packaged the latter for Guix.
 
-After which the program can be used as follows:
-#+begin_src bash
-whisper <path-to-file> --output-dir <path-to-output-dir>
-#+end_src
+| Guix dependency |
+|-----------------|
+| whisper-cpp     |
 
 **** Running it from Emacs
 Running the program from Emacs is rather straightforward with [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Asynchronous-Processes.html][asyncronous processes]].
@@ -7186,25 +7197,17 @@ Running the program from Emacs is rather straightforward with [[https://www.gnu.
 I'm using an English-language-only model because that's the only language I need at the moment.
 
 #+begin_src emacs-lisp
-(defvar my/whisper-env-path
-  "/home/pavel/10-19 Code/13 Other Projects/13.01 whisper-test/"
-  "Path to the folder with `whisper' environment.")
+(defun my/invoke-whisper--direct (input output-dir remove-wav)
+  "Extract subtitles from a WAV audio file.
 
-(defun my/invoke-whisper (input output-dir)
-  "Extract subtitles from the audio file.
-
-INPUT is the audio file, OUTPUT-DIR is the path to the directory with
-resulting files."
-  (interactive
-   (list
-    (read-file-name "Input file: " nil nil t)
-    (read-directory-name "Output directory: ")))
-  (let* ((buffer (generate-new-buffer "whisper"))
-         (default-directory my/whisper-env-path)
+INPUT is the absolute path to audio file, OUTPUT-DIR is the path to
+the directory with resulting files."
+  (let* ((default-directory output-dir)
+         (buffer (generate-new-buffer "whisper"))
          (proc (start-process
                 "whisper" buffer
-                (concat my/whisper-env-path "venv/bin/whisper")
-                "--output_dir" output-dir "--model" "tiny.en" input)))
+                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-tiny.en.bin"
+                "-otxt" "-ovtt" "-osrt" input)))
     (set-process-sentinel
      proc
      (lambda (process _msg)
@@ -7213,12 +7216,48 @@ resulting files."
          (cond ((and (eq status 'exit) (= code 0))
                 (notifications-notify :body "Audio conversion completed"
                                       :title "Whisper")
+                (when remove-wav
+                  (delete-file input))
+                (dolist (extension '(".txt" ".vtt" ".srt"))
+                  (rename-file (concat input extension)
+                               (concat (file-name-sans-extension input) extension)))
                 (kill-buffer (process-buffer process)))
                ((or (and (eq status 'exit) (> code 0))
                     (eq status 'signal))
                 (let ((err (with-current-buffer (process-buffer process)
                              (buffer-string))))
                   (user-error "Error in Whisper: %s" err)))))))))
+
+(defun my/invoke-whisper (input output-dir)
+  "Extract subtitles from the audio file.
+
+INPUT is the absolute path to the audio file, OUTPUT-DIR is the path
+to the directory with resulting files.
+
+Run ffmpeg if the file is not WAV."
+  (interactive
+   (list
+    (read-file-name "Input file: " nil nil t)
+    (read-directory-name "Output directory: ")))
+  (if (string-match-p (rx ".wav" eos) input)
+      (my/invoke-whisper--direct input output-dir)
+    (let* ((ffmpeg-proc
+            (start-process
+             "ffmpef" nil "ffmpeg" "-i" input "-ar" "16000" "-ac" "1" "-c:a"
+             "pcm_s16le" (concat (file-name-sans-extension input) ".wav"))))
+      (set-process-sentinel
+       ffmpeg-proc
+       (lambda (process _msg)
+         (let ((status (process-status process))
+               (code (process-exit-status process)))
+           (cond ((and (eq status 'exit) (= code 0))
+                  (my/invoke-whisper--direct
+                   (concat (file-name-sans-extension input) ".wav") output-dir t))
+                 ((or (and (eq status 'exit) (> code 0))
+                      (eq status 'signal))
+                  (let ((err (with-current-buffer (process-buffer process)
+                               (buffer-string))))
+                    (user-error "Error in running ffmpeg: %s" err))))))))))
 #+end_src
 
 If run interactively, the defined function prompts for paths to both files.
@@ -8432,6 +8471,7 @@ Also a keymap for room mode:
    "r" #'ement-room-write-reply
    "a" #'ement-room-send-message
    "i" #'ement-room-send-message
+   "e" #'ement-room-edit-message
    "M-<RET>" #'ement-room-compose-message
    "<RET>" #'ement-room-send-message
    "K" #'ement-room-goto-prev
