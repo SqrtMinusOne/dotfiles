@@ -8501,7 +8501,7 @@ Also a keymap for room mode:
 
 | Guix dependency   |
 |-------------------|
-| tdlib-1.8.13      |
+| tdlib-1.8.14      |
 | font-gnu-unifont  |
 | font-gnu-freefont |
 
@@ -8541,8 +8541,8 @@ Building =telega-server= can create problems. It requires the latest version of 
   (interactive)
   (setq telega-server-libs-prefix
         (string-trim
-         (shell-command-to-string "guix build tdlib-1.8.13")))
-  (telega-server-build "CC=gcc"))
+         (shell-command-to-string "guix build tdlib-1.8.14")))
+  (telega-server-build "CC=gcc")
 #+end_src
 
 Setting up the modeline. The default mode string doesn't look great with my other modeline modules, so I override that.

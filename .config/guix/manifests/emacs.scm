@@ -7,7 +7,7 @@
    "imagemagick"
    "font-gnu-freefont"
    "font-gnu-unifont"
-   "tdlib-1.8.13"
+   "tdlib-1.8.14"
    "yt-dlp"
    "mpv"
    "whisper-cpp"
