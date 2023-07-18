@@ -583,6 +583,26 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (add-hook 'visual-fill-column-mode-hook
             (lambda () (setq visual-fill-column-center-text t))))
 
+(use-package accent
+  :straight t
+  :init
+  (general-define-key
+   :states '(normal)
+   "gs" #'accent-menu)
+  (general-define-key
+   :states '(normal insert)
+   "M-n" #'accent-menu)
+  :commands (accent-menu)
+  :config
+  (general-define-key
+   :keymaps 'popup-menu-keymap
+   "C-j" #'popup-next
+   "C-k" #'popup-previous
+   "M-j" #'popup-next
+   "M-k" #'popup-previous)
+  (setq accent-custom '((a (ā))
+                        (A (Ā)))))
+
 (use-package projectile
   :straight t
   :config
@@ -1286,6 +1306,34 @@ influence of C1 on the result."
   "s" 'lsp-ui-find-workspace-symbol
   "l" 'lsp-execute-code-action
   "e" 'list-flycheck-errors)
+
+(defun my/lsp--progress-status ()
+  "Returns the status of the progress for the current workspaces."
+  (-let ((progress-status
+          (s-join
+           "|"
+           (-keep
+            (lambda (workspace)
+              (let ((tokens (lsp--workspace-work-done-tokens workspace)))
+                (unless (ht-empty? tokens)
+                  (mapconcat
+                   (-lambda ((&WorkDoneProgressBegin :message? :title :percentage?))
+                     (concat (if percentage?
+                                 (if (numberp percentage?)
+                                     (format "%.0f%%%% " percentage?)
+                                   (format "%s%%%% " percentage?))
+                               "")
+                             (let ((msg (url-unhex-string (or message\? title))))
+                               (if (string-match-p "\\`file:///" msg)
+                                   (file-name-nondirectory msg)))))
+                   (ht-values tokens)
+                   "|"))))
+            (lsp-workspaces)))))
+    (unless (s-blank? progress-status)
+      (concat lsp-progress-prefix progress-status))))
+
+(with-eval-after-load 'lsp-mode
+  (advice-add 'lsp--progress-status :override #'my/lsp--progress-status))
 
 (use-package flycheck
   :straight t
@@ -2150,16 +2198,16 @@ Returns (<buffer> . <workspace-index>) or nil."
   (setq plantuml-default-exec-mode 'executable)
   (setq plantuml-indent-level 2)
   (setq my/plantuml-indent-regexp-return "^\s*return\s+.+$")
-  (add-to-list
-   'plantuml-indent-regexp-end
-   my/plantuml-indent-regexp-return)
+  (;; (add-to-list
+   ;;  'plantuml-indent-regexp-end
+   ;;  my/plantuml-indent-regexp-return)
+   )
   (add-to-list 'auto-mode-alist '("\\.plantuml\\'" . plantuml-mode))
   (add-to-list 'auto-mode-alist '("\\.uml\\'" . plantuml-mode))
-  (add-hook 'plantuml-mode-hook #'smartparens-mode))
-
-(general-nmap
-  :keymaps 'plantuml-mode-map
-  "RET" 'plantuml-preview)
+  (add-hook 'plantuml-mode-hook #'smartparens-mode)
+  (general-nmap
+    :keymaps 'plantuml-mode-map
+    "RET" 'plantuml-preview))
 
 (use-package subed
   :straight (:host github :repo "rndusr/subed" :files ("subed/*.el")
@@ -2671,6 +2719,15 @@ Returns (<buffer> . <workspace-index>) or nil."
   (add-to-list 'evil-emacs-state-modes 'org-agenda-mode)
   (require 'evil-org-agenda)
   (evil-org-agenda-set-keys))
+
+(defun my/export-rel-url (path desc format)
+  (cl-case format
+    (html (format "<a href=\"%s\">%s</a>" path (or desc path)))
+    (latex (format "\\href{%s}{%s}" path (or desc path)))
+    (otherwise path)))
+
+(with-eval-after-load 'org
+  (org-link-set-parameters "rel" :follow #'browse-url :export #'my/export-rel-url))
 
 (use-package jupyter
   :straight t
@@ -3429,7 +3486,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
           #'my/set-journal-header)
 
 (use-package org-ref
-  :straight (:files (:defaults (:exclude "*helm*")))
+  :straight (:files (:defaults "citeproc" (:exclude "*helm*")))
   :if (not my/remote-server)
   :init
   (setq bibtex-dialect 'biblatex)
@@ -3921,6 +3978,12 @@ KEYS is a list of cons cells like (<label> . <time>)."
   :if (not my/remote-server)
   :config
   (setq org-html-htmlize-output-type 'css))
+
+(with-eval-after-load 'org-ref
+  (setq org-ref-csl-default-locale "ru-RU")
+  (setq org-ref-csl-default-style (expand-file-name
+                                   (concat user-emacs-directory
+                                           "gost-r-7-0-5-2008-numeric.csl"))))
 
 (defun my/setup-org-latex ()
   (setq org-latex-prefer-user-labels t)
@@ -6135,7 +6198,7 @@ base toot."
   (interactive)
   (setq telega-server-libs-prefix
         (string-trim
-         (shell-command-to-string "guix build tdlib-1.8.13")))
+         (shell-command-to-string "guix build tdlib-1.8.14")))
   (telega-server-build "CC=gcc"))
 
 (add-hook 'telega-load-hook #'telega-mode-line-mode)
