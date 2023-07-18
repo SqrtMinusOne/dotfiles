@@ -30,7 +30,7 @@ export RIPGREP_CONFIG_PATH=$HOME/.config/ripgrep/ripgreprc
 
 hledger path
 #+begin_src sh
-export LEDGER_FILE=~/Documents/org-mode/ledger/ledger.journal
+export LEDGER_FILE="$HOME/30-39 Life/32 org-mode/ledger/ledger.journal"
 #+end_src
 
 Checking if running inside termux

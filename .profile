@@ -8,7 +8,7 @@ export RIPGREP_CONFIG_PATH=$HOME/.config/ripgrep/ripgreprc
 # Environment:2 ends here
 
 # [[file:Console.org::*Environment][Environment:3]]
-export LEDGER_FILE=~/Documents/org-mode/ledger/ledger.journal
+export LEDGER_FILE="$HOME/30-39 Life/32 org-mode/ledger/ledger.journal"
 # Environment:3 ends here
 
 # [[file:Console.org::*Environment][Environment:4]]
