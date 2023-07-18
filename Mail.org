@@ -589,7 +589,15 @@ Then advice the =notmuch-mua-reply= function:
 (with-eval-after-load 'notmuch-mua
   (advice-add #'notmuch-mua-reply :after #'my/message-maybe-fix-signature))
 #+end_src
+** Warn if no subject
+#+begin_src emacs-lisp
+(defun my/message-ensure-subject ()
+  (unless (or (message-field-value "Subject")
+              (y-or-n-p "No subject. Send? "))
+    (user-error "Aborting.")))
 
+(add-hook 'notmuch-mua-send-hook #'my/message-ensure-subject)
+#+end_src
 * mailcap
 mailcap file is a file which defines how to read to different MIME types. Notmuch also uses it, so why not keep it here.
 

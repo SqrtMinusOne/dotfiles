@@ -119,3 +119,10 @@
 
 (with-eval-after-load 'notmuch-mua
   (advice-add #'notmuch-mua-reply :after #'my/message-maybe-fix-signature))
+
+(defun my/message-ensure-subject ()
+  (unless (or (message-field-value "Subject")
+              (y-or-n-p "No subject. Send? "))
+    (user-error "Aborting.")))
+
+(add-hook 'notmuch-mua-send-hook #'my/message-ensure-subject)
