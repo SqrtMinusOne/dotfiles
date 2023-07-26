@@ -281,6 +281,8 @@ I can't say it's better or worse than the built-in functionality or one provided
 
 So, first, we need a predicate that checks whether there is space in the given direction:
 #+begin_src emacs-lisp
+(require 'windmove)
+
 (defun my/exwm-direction-exists-p (dir)
   "Check if there is space in the direction DIR.
 

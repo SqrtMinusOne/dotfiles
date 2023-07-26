@@ -31,6 +31,8 @@
     :foreground (doom-color 'yellow)
     :weight 'bold)))
 
+(require 'windmove)
+
 (defun my/exwm-direction-exists-p (dir)
   "Check if there is space in the direction DIR.
 
