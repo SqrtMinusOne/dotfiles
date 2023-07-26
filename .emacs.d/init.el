@@ -2299,6 +2299,8 @@ Returns (<buffer> . <workspace-index>) or nil."
   (interactive "aFunction symbol: ")
   (advice-mapc (lambda (advice _props) (advice-remove sym advice)) sym))
 
+(add-hook 'inferior-emacs-lisp-mode-hook #'lispy-mode)
+
 (use-package slime
   :straight t
   :commands (slime)
@@ -6261,6 +6263,17 @@ base toot."
   "q" 'google-translate-query-translate
   "Q" 'google-translate-query-translate-reverse
   "t" 'google-translate-smooth-translate)
+
+(use-package biome
+  :straight (:host github :repo "SqrtMinusOne/biome")
+  :commands (biome)
+  :init
+  (my-leader-def "ab" #'biome)
+  :config
+  (add-to-list 'biome-query-coords
+               '("Saint-Petersburg, Russia" 59.93863 30.31413))
+  (add-to-list 'biome-query-coords
+               '("Tyumen, Russia" 57.15222 65.52722)))
 
 (use-package tldr
   :straight t

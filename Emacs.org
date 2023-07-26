@@ -3132,6 +3132,10 @@ Remove all advice from function. Source: https://emacs.stackexchange.com/questio
   (interactive "aFunction symbol: ")
   (advice-mapc (lambda (advice _props) (advice-remove sym advice)) sym))
 #+end_src
+**** IELM
+#+begin_src emacs-lisp
+(add-hook 'inferior-emacs-lisp-mode-hook #'lispy-mode)
+#+end_src
 *** Common lisp
 **** SLIME
 #+begin_src emacs-lisp
@@ -8709,6 +8713,21 @@ References:
   "q" 'google-translate-query-translate
   "Q" 'google-translate-query-translate-reverse
   "t" 'google-translate-smooth-translate)
+#+end_src
+*** biome
+[[https://github.com/SqrtMinusOne/biome][biome]] is my [[https://open-meteo.com/][open-meteo]] client.
+
+#+begin_src emacs-lisp
+(use-package biome
+  :straight (:host github :repo "SqrtMinusOne/biome")
+  :commands (biome)
+  :init
+  (my-leader-def "ab" #'biome)
+  :config
+  (add-to-list 'biome-query-coords
+               '("Saint-Petersburg, Russia" 59.93863 30.31413))
+  (add-to-list 'biome-query-coords
+               '("Tyumen, Russia" 57.15222 65.52722)))
 #+end_src
 ** Reading documentation
 *** tldr
