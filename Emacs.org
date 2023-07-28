@@ -8084,12 +8084,12 @@ Send =/detach= to all servers. Kinda strange that there's no such function alrea
 
 #+end_src
 *** Mastodon
-Mastodon is a decentralized social media network. I use an instance called [[https://emacs.ch/][emacs.ch]]
+Mastodon is a decentralized social media network. I use an instance called [[https://emacs.ch/][emacs.ch]].
 
 **** Package configuration
 [[https://codeberg.org/martianh/mastodon.el][mastodon.el]] is an Emacs client for Mastodon.
 
-The default UI is a bit rough, but Nicolas Rougier's [[https://github.com/rougier/mastodon-alt][mastodon-alt]] package makes things a bit more how I would like to see them.
+The default UI is rather rough, but Nicolas Rougier's [[https://github.com/rougier/mastodon-alt][mastodon-alt]] package makes things a bit more how I would like to see them.
 
 #+begin_src emacs-lisp
 (use-package mastodon
@@ -8167,6 +8167,8 @@ The package also doesn't have evil bindings. I implement a few basic bindings he
 #+end_src
 **** Modeline segment
 This is my attempt to make a modeline indicator for new mastodon notifications.
+
+Edit [2023-07-28 Fri]: I'll probably remove that, don't feel like it's actually useful.
 
 #+begin_src emacs-lisp
 (defvar my/mastodon-mode-string "")
@@ -8260,8 +8262,11 @@ This is my attempt to make a modeline indicator for new mastodon notifications.
         (my/mastodon-mode-line-persist-meta)))))
 #+end_src
 **** Timeline Transient
+The default =mastodon-tl--get-home-timeline= allows only to hide replies, and not boosted posts.
+
+So here's a custom update function:
 #+begin_src emacs-lisp
-(defun my/mastodon-get-update-funciton (hide-boosts hide-replies)
+(defun my/mastodon-get-update-funciton (hide-replies hide-boosts)
   (lambda (toots)
     (let* ((is-profile (eq (mastodon-tl--get-buffer-type) 'profile-statuses))
            (hide-replies (and (not is-profile) hide-replies))
@@ -8275,12 +8280,10 @@ This is my attempt to make a modeline indicator for new mastodon notifications.
                       (or (not hide-boosts)
                           (not (alist-get 'reblog toot)))))
                    toots)))
-      (message "Hide replies: %s" hide-replies)
-      (message "Hide boosts: %s" hide-boosts)
-      (message "Buffer: %s" (buffer-name))
       (mapc #'mastodon-tl--toot toots))))
 #+end_src
 
+In order to use it, the function has to be passed to =mastodon-tl--init=:
 #+begin_src emacs-lisp
 (defun my/mastodon-tl--get-home (hide-replies hide-boosts)
   (mastodon-tl--init
@@ -8292,6 +8295,7 @@ This is my attempt to make a modeline indicator for new mastodon notifications.
    nil))
 #+end_src
 
+And a transient to use it.
 #+begin_src emacs-lisp
 (with-eval-after-load 'mastodon
   (require 'transient)

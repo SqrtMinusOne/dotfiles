@@ -5885,7 +5885,7 @@ ENTRY is an instance of `elfeed-entry'."
         (remove-hook 'kill-emacs-hook #'my/mastodon-mode-line-persist-meta)
         (my/mastodon-mode-line-persist-meta)))))
 
-(defun my/mastodon-get-update-funciton (hide-boosts hide-replies)
+(defun my/mastodon-get-update-funciton (hide-replies hide-boosts)
   (lambda (toots)
     (let* ((is-profile (eq (mastodon-tl--get-buffer-type) 'profile-statuses))
            (hide-replies (and (not is-profile) hide-replies))
@@ -5899,9 +5899,6 @@ ENTRY is an instance of `elfeed-entry'."
                       (or (not hide-boosts)
                           (not (alist-get 'reblog toot)))))
                    toots)))
-      (message "Hide replies: %s" hide-replies)
-      (message "Hide boosts: %s" hide-boosts)
-      (message "Buffer: %s" (buffer-name))
       (mapc #'mastodon-tl--toot toots))))
 
 (defun my/mastodon-tl--get-home (hide-replies hide-boosts)
