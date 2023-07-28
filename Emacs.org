@@ -42,22 +42,27 @@ So, you might extract something of value from here if you're an avid Emacs user,
 * Some remarks
 I decided not to keep configs for features that I do not use anymore because this config is already huge. But here are the last commits that had these features presented.
 
-| Feature           | Last commit                              |
-|-------------------+------------------------------------------|
-| org-roam dailies  | d2648918fcc338bd5c1cd6d5c0aa60a65077ccf7 |
-| org-roam projects | 025278a1e180e86f3aade20242e4ac1cdc1a2f13 |
-| treemacs          | 3d87852745caacc0863c747f1fa9871d367240d2 |
-| tab-bar.el        | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
-| spaceline         | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
-| code compass      | 8594d6f53e42c70bbf903e168607841854818a38 |
-| vue-mode          | 8594d6f53e42c70bbf903e168607841854818a38 |
-| svelte-mode       | 8594d6f53e42c70bbf903e168607841854818a38 |
-| pomidor           | 8594d6f53e42c70bbf903e168607841854818a38 |
-| elfeed-score      | 8e591e0d2afd909ae5be00caf17f9b17c6cd8b61 |
-| org-trello        | 3f5967a5f63928ea9c8567d8d9f31e84cdbbc21f |
-| jabber            | 9b0e73a4703ff35a2d30fd704200052888191217 |
-| wallabag          | 9b0e73a4703ff35a2d30fd704200052888191217 |
-| conda             | 609fc84e439b11ea5064f3a948079daebb654aca |
+| Feature                  | Last commit                              |
+|--------------------------+------------------------------------------|
+| org-roam dailies         | d2648918fcc338bd5c1cd6d5c0aa60a65077ccf7 |
+| org-roam projects        | 025278a1e180e86f3aade20242e4ac1cdc1a2f13 |
+| treemacs                 | 3d87852745caacc0863c747f1fa9871d367240d2 |
+| tab-bar.el               | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
+| spaceline                | 19ff54db9fe21fd5bdf404a8d2612176baa8a6f5 |
+| code compass             | 8594d6f53e42c70bbf903e168607841854818a38 |
+| vue-mode                 | 8594d6f53e42c70bbf903e168607841854818a38 |
+| svelte-mode              | 8594d6f53e42c70bbf903e168607841854818a38 |
+| pomidor                  | 8594d6f53e42c70bbf903e168607841854818a38 |
+| elfeed-score             | 8e591e0d2afd909ae5be00caf17f9b17c6cd8b61 |
+| org-trello               | 3f5967a5f63928ea9c8567d8d9f31e84cdbbc21f |
+| jabber                   | 9b0e73a4703ff35a2d30fd704200052888191217 |
+| wallabag                 | 9b0e73a4703ff35a2d30fd704200052888191217 |
+| conda                    | 609fc84e439b11ea5064f3a948079daebb654aca |
+| notmuch tags keybindings | eac134c5456051171c1c777254f503cc71ce12cd |
+| expand-region            | ab0d01c525f2b44dd64ec09747daf0fced4bd9c7 |
+| org-latex-impatient      | ab0d01c525f2b44dd64ec09747daf0fced4bd9c7 |
+| dired-single             | ab0d01c525f2b44dd64ec09747daf0fced4bd9c7 |
+| progidy                  | ab0d01c525f2b44dd64ec09747daf0fced4bd9c7 |
 
 * Initial setup
 Setting up the environment, performance tuning and a few basic settings.
@@ -226,7 +231,7 @@ I have some concerns that =ps -o rss= may be unrepresentative because of [[https
 
 #+begin_src emacs-lisp
 (use-package micromamba
-  :straight (:host github :repo "SqrtMinusOne/micromamba.el")
+  :straight t
   :if (executable-find "micromamba")
   :config
   (micromamba-activate "general"))
@@ -440,47 +445,11 @@ Do ex search in other buffer. Like =*=, but switch to other buffer and search th
   :after evil
   :config
   (evil-collection-init
-   '(eww
-     devdocs
-     proced
-     emms
-     pass
-     calendar
-     dired
-     ivy
-     debug
-     guix
-     calc
-     docker
-     ibuffer
-     geiser
-     pdf
-     info
-     elfeed
-     edebug
-     bookmark
-     company
-     vterm
-     flycheck
-     profiler
-     cider
-     explain-pause-mode
-     notmuch
-     custom
-     xref
-     eshell
-     helpful
-     compile
-     comint
-     git-timemachine
-     magit
-     prodigy
-     slime
-     forge
-     deadgrep
-     vc-annonate
-     telega
-     doc-view)))
+   '(eww devdocs proced emms pass calendar dired ivy debug guix calc
+         docker ibuffer geiser pdf info elfeed edebug bookmark company
+         vterm flycheck profiler cider explain-pause-mode notmuch custom
+         xref eshell helpful compile comint git-timemachine magit prodigy
+         slime forge deadgrep vc-annonate telega doc-view gnus)))
 #+end_src
 *** Avy
 [[https://github.com/abo-abo/avy][Avy]] is a package that helps navigate Emacs in a tree-like manner.
@@ -979,16 +948,6 @@ References:
 (use-package smartparens
   :straight t)
 #+end_src
-**** Expand region
-A package to select an ever-increasing (or ever-decreasing) region of text.
-
-#+begin_src emacs-lisp
-(use-package expand-region
-  :straight t
-  :commands (er/expand-region)
-  :init
-  (general-nmap "+" 'er/expand-region))
-#+end_src
 **** Visual fill column mode
 #+begin_src emacs-lisp
 (use-package visual-fill-column
@@ -1025,7 +984,7 @@ Input accented characters.
 ** Working with projects
 Packages related to managing projects.
 
-Another important package that also touches this category is [[*Dired][dired]], but it has its separate section in "Applications". I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, but in the end, decided that dired with [[https://github.com/jojojames/dired-sidebar][dired-sidebar]] does a better job.
+I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, but in the end decided that dired with [[https://github.com/jojojames/dired-sidebar][dired-sidebar]] does a better job. Dired has its separate section in "Applications".
 
 *** Projectile
 [[https://github.com/bbatsov/projectile][Projectile]] gives a bunch of useful functions for managing projects, like finding files within a project, fuzzy-find, replace, etc.
@@ -1051,6 +1010,7 @@ Another important package that also touches this category is [[*Dired][dired]], 
 #+end_src
 *** Git & Magit
 [[https://magit.vc/][Magit]] is a git interface for Emacs. The closest non-Emacs alternative (sans actual clones) I know is [[https://github.com/jesseduffield/lazygit][lazygit]], which I used before Emacs.
+
 #+begin_src emacs-lisp
 (use-package magit
   :straight t
@@ -1126,7 +1086,7 @@ Save the last place visited in the file.
 *** Deadgrep
 [[https://github.com/Wilfred/deadgrep][deadgrep]] is a nice Emacs interface for [[https://github.com/BurntSushi/ripgrep][ripgrep]]. Running =ivy-occur= in =counsel-rg= does something a bit similar, but the deadgrep is more full-featured.
 
-Somehow I couldn't hook =toogle-truncate-lines= into the existing hooks, so here goes advice.
+Somehow I couldn't hook =toogle-truncate-lines= into the existing package hooks, so here goes advice.
 
 #+begin_src emacs-lisp
 (defun my/deadgrep-fix-buffer-advice (fun &rest args)
@@ -1327,7 +1287,7 @@ As I use =C-h= to switch buffers, I moved the help to =SPC-h= with the code belo
  "o" 'helpful-symbol)
 #+end_src
 ** Time trackers
-A bunch of time trackers I use.
+Time trackers I happen to use.
 
 References:
 - [[https://wakatime.com][WakaTime]]
@@ -1344,7 +1304,7 @@ Before I figure out how to package this for Guix:
   :straight (:host github :repo "SqrtMinusOne/wakatime-mode")
   :if (not (or my/remote-server))
   :config
-  (setq wakatime-ignore-exit-codes '(0 1 102))
+  (setq wakatime-ignore-exit-codes '(0 1 102 112))
   (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path (expand-file-name "~/bin/wakatime-cli"))))
   ;; (setq wakatime-cli-path (executable-find "wakatime"))
   (global-wakatime-mode))
@@ -1353,7 +1313,8 @@ Before I figure out how to package this for Guix:
 *** ActivityWatch
 #+begin_src emacs-lisp
 (use-package request
-  :straight t)
+  :straight t
+  :defer t)
 
 (use-package activity-watch-mode
   :straight t
@@ -1364,6 +1325,7 @@ Before I figure out how to package this for Guix:
 * UI settings
 ** General settings
 *** Miscellaneous
+
 Disable GUI elements
 #+begin_src emacs-lisp
 (unless my/is-termux
@@ -1375,7 +1337,7 @@ Disable GUI elements
   (menu-bar-mode -1))
 #+end_src
 
-Transparency. Not setting it now, as I'm using [[file:Desktop.org::*Picom][picom]].
+Transparency. Not setting it here, as I used to use [[file:Desktop.org::*Picom][picom]] with i3, and EXWM config has its own settings.
 #+begin_src emacs-lisp
 ;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
 ;; (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
@@ -1499,7 +1461,7 @@ My colorscheme of choice.
   (doom-themes-treemacs-config))
 #+end_src
 *** Custom theme
-Here I define a custom theme, dependent on colors from =doom-themes=.
+Here I define a custom theme dependent on colors from =doom-themes=.
 
 A custom theme is necessary because if one calls =custom-set-faces= and =custom-set-variables= in code, whenever a variable is changed and saved in a customize buffer, data from all calls of these functions is saved as well.
 
@@ -1959,6 +1921,7 @@ LSP-mode provides an IDE-like experience for Emacs - real-time diagnostics, code
 
 References:
 - [[https://emacs-lsp.github.io/lsp-mode/][lsp-mode homepage]]
+
 **** Setup
 #+begin_src emacs-lisp
 (use-package lsp-mode
@@ -3876,7 +3839,7 @@ References:
   :if (not my/remote-server)
   :straight t)
 #+end_src
-*** Setup
+*** Org Babel Setup
 Enable languages
 #+begin_src emacs-lisp
 (with-eval-after-load-norem 'org
@@ -5473,26 +5436,6 @@ An example contact entry can look like this:
   :straight t)
 #+end_src
 ** UI
-*** OFF (OFF) Instant equations preview
-Instant math previews for org mode.
-
-References:
-- [[https://github.com/yangsheng6810/org-latex-impatient][org-latex-impatient repo]]
-
-#+begin_src emacs-lisp
-(use-package org-latex-impatient
-  :straight (:repo "yangsheng6810/org-latex-impatient"
-                   :branch "master"
-                   :host github)
-  :hook (org-mode . org-latex-impatient-mode)
-  :disabled
-  :init
-  (setq org-latex-impatient-tex2svg-bin
-        "/home/pavel/Programs/miniconda3/lib/node_modules/mathjax-node-cli/bin/tex2svg")
-  (setq org-latex-impatient-scale 1.75)
-  (setq org-latex-impatient-delay 1)
-  (setq org-latex-impatient-border-color "#ffffff"))
-#+end_src
 *** LaTeX fragments
 A function to enable LaTeX native highlighting. Not setting this as default, because it loads LaTeX stuff.
 #+begin_src emacs-lisp
@@ -6127,14 +6070,6 @@ I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provi
     "aD" '(dired-recent-open :wk "dired history")))
 #+end_src
 
-+Reuse the current dired buffer instead of spamming new ones.+ Looks like not necessary with Emacs 28.1
-#+begin_src emacs-lisp
-(use-package dired-single
-  :after dired
-  :disabled
-  :straight t)
-  #+end_src
-
 Display icons for files.
 
 | Note      | Type                                                     |
@@ -6300,7 +6235,98 @@ The file itself is encrypted with yadm.
        (completing-read "Dired: " bookmarks nil nil "^")
        bookmarks)))))
 #+end_src
-** Shells
+*** Integrations
+A few functions to send files from Dired to various places.
+
+First, a function to get the target buffer.
+#+begin_src emacs-lisp
+(defun my/get-good-buffer (buffer-major-mode prompt)
+  (or
+   (cl-loop
+    for buf being the buffers
+    if (eq (buffer-local-value 'major-mode buf) buffer-major-mode)
+    collect buf into all-buffers
+    if (and (eq (buffer-local-value 'major-mode buf) buffer-major-mode)
+            (get-buffer-window buf t))
+    collect buf into visible-buffers
+    finally return (if (= (length visible-buffers) 1)
+                       (car visible-buffers)
+                     (if (= (length all-buffers) 1)
+                         (car all-buffers)
+                       (when-let ((buffers-by-name (mapcar (lambda (b)
+                                                             (cons (buffer-name b) b))
+                                                           all-buffers)))
+                         (cdr
+                          (assoc
+                           (completing-read prompt buffers-by-name nil t)
+                           buffers-by-name))))))
+   (user-error "No buffer found!")))
+#+end_src
+
+Attach file to telega.
+#+begin_src emacs-lisp
+(defun my/dired-attach-to-telega (files telega-buffer)
+  (interactive
+   (list (dired-get-marked-files nil nil #'dired-nondirectory-p)
+         (my/get-good-buffer 'telega-chat-mode "Telega buffer: ")))
+  (unless files
+    (user-error "No (non-directory) files selected"))
+  (with-current-buffer telega-buffer
+    (dolist (file files)
+      (telega-chatbuf-attach-file file))))
+#+end_src
+
+Attach files to notmuch.
+#+begin_src emacs-lisp
+(defun my/dired-attach-to-notmuch (files notmuch-buffer)
+  (interactive
+   (list (dired-get-marked-files nil nil #'dired-nondirectory-p)
+         (my/get-good-buffer 'notmuch-message-mode "Notmuch message buffer: ")))
+  (unless files
+    (user-error "No (non-directory) files selected"))
+  (with-current-buffer notmuch-buffer
+    (goto-char (point-max))
+    (dolist (file files)
+      (let ((type
+             (or (mm-default-file-type file)
+		         "application/octet-stream")))
+        (mml-attach-file
+         file
+         type
+         (mml-minibuffer-read-description)
+         (mml-minibuffer-read-disposition type nil file))))))
+#+end_src
+
+Attach files to ement.
+#+begin_src emacs-lisp
+(defun my/dired-attach-to-ement (files ement-buffer)
+  (interactive
+   (list (dired-get-marked-files nil nil #'dired-nondirectory-p)
+         (my/get-good-buffer 'ement-room-mode "Ement room buffer: ")))
+  (unless files
+    (user-error "No (non-directory) files selected"))
+  (with-current-buffer ement-buffer
+    (ement-with-room-and-session
+      (dolist (file files)
+        (ement-room-send-file
+         file
+         (read-from-minibuffer (format "Message body for %s: " file))
+         ement-room
+         ement-session)))))
+#+end_src
+
+And the keybindings:
+#+begin_src emacs-lisp
+(with-eval-after-load 'dired
+  (general-define-key
+   :states '(normal)
+   :keymaps 'dired-mode-map
+   "a" nil
+   "at" #'my/dired-attach-to-telega
+   "am" #'my/dired-attach-to-notmuch
+   "ai" #'my/dired-attach-to-ement))
+#+end_src
+** Shells / Terminals
 *** vterm
 My terminal emulator of choice.
 
@@ -7515,6 +7541,82 @@ My notmuch config now resides in [[file:Mail.org][Mail.org]].
         (load-file mail-file)
       (message "Can't load mail.el"))))
 #+end_src
+*** Gnus
+[[https://www.gnu.org/software/emacs/manual/html_node/gnus/index.html][Gnus]] is an Emacs newsreader.
+
+I'll try to use it for NTTP for now. Will see if I can do more with it.
+
+#+begin_src emacs-lisp
+(use-package gnus
+  :straight t
+  :init
+  (my-leader-def "au" #'gnus)
+  :config
+  (my/persp-add-rule
+    gnus-summary-mode 0 "gnus"
+    ;; gnus-article-edit-mode 0 "gnus"
+    gnus-browse-mode 0 "gnus"
+    gnus-server-mode 0 "gnus"
+    gnus-article-mode 0 "gnus"
+    gnus-group-mode 0 "gnus"
+    gnus-category-mode 0 "gnus")
+  (let ((gnus-directory (concat user-emacs-directory "gnus")))
+    (unless (file-directory-p gnus-directory)
+      (make-directory gnus-directory))
+    (setq gnus-dribble-directory (concat gnus-directory "/dribble"))
+    (setq gnus-init-file (concat gnus-directory "/gnus.el"))
+    (setq gnus-startup-file (concat gnus-directory "/newsrc")))
+  ;; Sources
+  (setq gnus-select-method '(nntp "news.gwene.org"))
+  ;; Dribble
+  (setq gnus-always-read-dribble-file t)
+  ;; Agent
+  (setq gnus-agent-article-alist-save-format 1)
+  (setq gnus-agent-cache t))
+#+end_src
+
+**** Groups
+Toggle current topic.
+
+#+begin_src emacs-lisp
+(defun my/gnus-topic-toggle-topic ()
+  (interactive "" gnus-topic-mode)
+  (when (gnus-group-topic-p)
+    (let ((topic (gnus-topic-find-topology (gnus-current-topic))))
+      (if (eq (cadadr topic) 'visible)
+          (progn
+            (gnus-topic-goto-topic (gnus-current-topic))
+            (gnus-topic-remove-topic nil nil))
+        (gnus-topic-remove-topic t nil)))))
+#+end_src
+
+Custom keybindings.
+#+begin_src emacs-lisp
+(with-eval-after-load 'gnus-group
+  ;; Group
+  (add-hook 'gnus-group-mode-hook #'gnus-topic-mode)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(gnus-group-mode-map)
+   "a" #'gnus-group-toggle-subscription-at-point)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(gnus-topic-mode-map)
+   "TAB" #'my/gnus-topic-toggle-topic
+   "r" #'gnus-topic-catchup-articles))
+#+end_src
+**** Summary
+#+begin_src emacs-lisp
+(with-eval-after-load 'gnus-summary
+  (setq gnus-summary-line-format "%U%R%z%I%(%[%4L: %-23,23f%]%) %s\n")
+  (setq gnus-sum-thread-tree-false-root "> ")
+  (setq gnus-sum-thread-tree-indent "  ")
+  (setq gnus-sum-thread-tree-single-indent " ")
+  (setq gnus-sum-thread-tree-leaf-with-other "+-> ")
+  (setq gnus-sum-thread-tree-root "> ")
+  (setq gnus-sum-thread-tree-single-leaf "\\-> ")
+  (setq gnus-sum-thread-tree-vertical "| "))
+#+end_src
 *** EMMS
 EMMS is the Emacs Multi-Media System. I use it to control MPD & MPV.
 
@@ -8670,14 +8772,6 @@ And custom online status. By default it marks you online when the Emacs frame is
 
 (setq telega-online-status-function #'my/telega-online-status)
 #+end_src
-*** OFF Reddit
-[[https://github.com/thanhvg/emacs-reddigg][reddigg]] allows to view reddit in org-mode.
-
-#+begin_src emacs-lisp :tangle no
-(use-package reddigg
-  :straight t)
-#+end_src
-
 *** Google Translate
 Emacs interface to Google Translate.
 
@@ -8886,59 +8980,6 @@ A package to manage docker containers from Emacs.
   (my-leader-def "ao" 'docker))
 #+end_src
 
-*** Progidy
-[[https://github.com/rejeep/prodigy.el][prodigy.el]] is a package to manage services. I've been using [[https://github.com/tmux/tmux][tmux]] + [[https://github.com/tmux-python/tmuxp][tmuxp]] for quite a long time, but want to try this package as well.
-
-The actual service definitions are in my =~/.emacs.d/private.org=, which is encrypted by =yadm=.
-
-#+begin_src emacs-lisp
-(use-package prodigy
-  :straight t
-  :commands (prodigy)
-  :init
-  (my-leader-def "aP" #'prodigy)
-  :config
-  (general-define-key
-   :states '(normal)
-   :keymaps 'prodigy-view-mode-map
-   "C-h" 'evil-window-left
-   "C-l" 'evil-window-right
-   "C-k" 'evil-window-up
-   "C-j" 'evil-window-down))
-#+end_src
-
-A few functions to work with apps on ports.
-#+begin_src emacs-lisp
-(defun my/get-apps-on-ports ()
-  (mapcar
-   (lambda (line)
-     (let* ((split (split-string line (rx (| (+ " ") (+ "\t")))))
-            (process (elt split 6)))
-       `((netid . ,(elt split 0))
-         (state . ,(elt split 1))
-         (recv-q . ,(elt split 2))
-         (send-q . ,(elt split 3))
-         ,@(let ((data (elt split 4)))
-             (save-match-data
-               (string-match (rx (group-n 1 (* nonl)) ":" (group-n 2 (or (+ num) "*"))) data)
-               `((local-address . ,(match-string 1 data))
-                 (local-port . ,(match-string 2 data)))))
-         ,@(unless (string-empty-p process)
-             `((pid . ,(save-match-data
-                         (string-match (rx "pid=" (+ num)) process)
-                         (string-to-number (substring (match-string 0 process) 4)))))))))
-   (seq-filter
-    (lambda (s) (not (string-empty-p s)))
-    (split-string
-     (shell-command-to-string "ss -tulpnH | grep LISTEN") "\n"))))
-
-(defun my/kill-app-on-port (port &optional signal)
-  (let ((apps (my/get-apps-on-ports)))
-    (dolist (app apps)
-      (when (string-equal (cdr (assoc 'local-port app)) port)
-        (signal-process (cdr (assoc 'pid app)) (or signal 15))
-        (message "Sent %d to %d" (or signal 15) (cdr (assoc 'pid app)))))))
-#+end_src
 *** screenshot.el
 Tecosaur's plugin to make beautiful code screenshots.
 

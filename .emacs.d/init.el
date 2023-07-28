@@ -83,7 +83,7 @@
      (message "%f Gb" (/ (float data) 1024 1024)))))
 
 (use-package micromamba
-  :straight (:host github :repo "SqrtMinusOne/micromamba.el")
+  :straight t
   :if (executable-find "micromamba")
   :config
   (micromamba-activate "general"))
@@ -216,47 +216,11 @@
   :after evil
   :config
   (evil-collection-init
-   '(eww
-     devdocs
-     proced
-     emms
-     pass
-     calendar
-     dired
-     ivy
-     debug
-     guix
-     calc
-     docker
-     ibuffer
-     geiser
-     pdf
-     info
-     elfeed
-     edebug
-     bookmark
-     company
-     vterm
-     flycheck
-     profiler
-     cider
-     explain-pause-mode
-     notmuch
-     custom
-     xref
-     eshell
-     helpful
-     compile
-     comint
-     git-timemachine
-     magit
-     prodigy
-     slime
-     forge
-     deadgrep
-     vc-annonate
-     telega
-     doc-view)))
+   '(eww devdocs proced emms pass calendar dired ivy debug guix calc
+         docker ibuffer geiser pdf info elfeed edebug bookmark company
+         vterm flycheck profiler cider explain-pause-mode notmuch custom
+         xref eshell helpful compile comint git-timemachine magit prodigy
+         slime forge deadgrep vc-annonate telega doc-view gnus)))
 
 (use-package avy
   :straight t
@@ -570,12 +534,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package smartparens
   :straight t)
 
-(use-package expand-region
-  :straight t
-  :commands (er/expand-region)
-  :init
-  (general-nmap "+" 'er/expand-region))
-
 (use-package visual-fill-column
   :straight t
   :commands (visual-fill-column-mode)
@@ -823,13 +781,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight (:host github :repo "SqrtMinusOne/wakatime-mode")
   :if (not (or my/remote-server))
   :config
-  (setq wakatime-ignore-exit-codes '(0 1 102))
+  (setq wakatime-ignore-exit-codes '(0 1 102 112))
   (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path (expand-file-name "~/bin/wakatime-cli"))))
   ;; (setq wakatime-cli-path (executable-find "wakatime"))
   (global-wakatime-mode))
 
 (use-package request
-  :straight t)
+  :straight t
+  :defer t)
 
 (use-package activity-watch-mode
   :straight t
@@ -3892,19 +3851,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
   :after (calfw org)
   :straight t)
 
-(use-package org-latex-impatient
-  :straight (:repo "yangsheng6810/org-latex-impatient"
-                   :branch "master"
-                   :host github)
-  :hook (org-mode . org-latex-impatient-mode)
-  :disabled
-  :init
-  (setq org-latex-impatient-tex2svg-bin
-        "/home/pavel/Programs/miniconda3/lib/node_modules/mathjax-node-cli/bin/tex2svg")
-  (setq org-latex-impatient-scale 1.75)
-  (setq org-latex-impatient-delay 1)
-  (setq org-latex-impatient-border-color "#ffffff"))
-
 (defun my/enable-org-latex ()
   (interactive)
   (customize-set-variable 'org-highlight-latex-and-related '(native))
@@ -4325,11 +4271,6 @@ With ARG, repeats or can move backward if negative."
   (my-leader-def
     "aD" '(dired-recent-open :wk "dired history")))
 
-(use-package dired-single
-  :after dired
-  :disabled
-  :straight t)
-
 (use-package all-the-icons-dired
   :straight t
   :if (not (or my/slow-ssh (not (display-graphic-p))))
@@ -4427,6 +4368,80 @@ With ARG, repeats or can move backward if negative."
       (assoc
        (completing-read "Dired: " bookmarks nil nil "^")
        bookmarks)))))
+
+(defun my/get-good-buffer (buffer-major-mode prompt)
+  (or
+   (cl-loop
+    for buf being the buffers
+    if (eq (buffer-local-value 'major-mode buf) buffer-major-mode)
+    collect buf into all-buffers
+    if (and (eq (buffer-local-value 'major-mode buf) buffer-major-mode)
+            (get-buffer-window buf t))
+    collect buf into visible-buffers
+    finally return (if (= (length visible-buffers) 1)
+                       (car visible-buffers)
+                     (if (= (length all-buffers) 1)
+                         (car all-buffers)
+                       (when-let ((buffers-by-name (mapcar (lambda (b)
+                                                             (cons (buffer-name b) b))
+                                                           all-buffers)))
+                         (cdr
+                          (assoc
+                           (completing-read prompt buffers-by-name nil t)
+                           buffers-by-name))))))
+   (user-error "No buffer found!")))
+
+(defun my/dired-attach-to-telega (files telega-buffer)
+  (interactive
+   (list (dired-get-marked-files nil nil #'dired-nondirectory-p)
+         (my/get-good-buffer 'telega-chat-mode "Telega buffer: ")))
+  (unless files
+    (user-error "No (non-directory) files selected"))
+  (with-current-buffer telega-buffer
+    (dolist (file files)
+      (telega-chatbuf-attach-file file))))
+
+(defun my/dired-attach-to-notmuch (files notmuch-buffer)
+  (interactive
+   (list (dired-get-marked-files nil nil #'dired-nondirectory-p)
+         (my/get-good-buffer 'notmuch-message-mode "Notmuch message buffer: ")))
+  (unless files
+    (user-error "No (non-directory) files selected"))
+  (with-current-buffer notmuch-buffer
+    (goto-char (point-max))
+    (dolist (file files)
+      (let ((type
+             (or (mm-default-file-type file)
+		         "application/octet-stream")))
+        (mml-attach-file
+         file
+         type
+         (mml-minibuffer-read-description)
+         (mml-minibuffer-read-disposition type nil file))))))
+
+(defun my/dired-attach-to-ement (files ement-buffer)
+  (interactive
+   (list (dired-get-marked-files nil nil #'dired-nondirectory-p)
+         (my/get-good-buffer 'ement-room-mode "Ement room buffer: ")))
+  (unless files
+    (user-error "No (non-directory) files selected"))
+  (with-current-buffer ement-buffer
+    (ement-with-room-and-session
+      (dolist (file files)
+        (ement-room-send-file
+         file
+         (read-from-minibuffer (format "Message body for %s: " file))
+         ement-room
+         ement-session)))))
+
+(with-eval-after-load 'dired
+  (general-define-key
+   :states '(normal)
+   :keymaps 'dired-mode-map
+   "a" nil
+   "at" #'my/dired-attach-to-telega
+   "am" #'my/dired-attach-to-notmuch
+   "ai" #'my/dired-attach-to-ement))
 
 (when my/is-termux
   (straight-use-package 'vterm))
@@ -5335,6 +5350,66 @@ ENTRY is an instance of `elfeed-entry'."
     (if (file-exists-p mail-file)
         (load-file mail-file)
       (message "Can't load mail.el"))))
+
+(use-package gnus
+  :straight t
+  :init
+  (my-leader-def "au" #'gnus)
+  :config
+  (my/persp-add-rule
+    gnus-summary-mode 0 "gnus"
+    ;; gnus-article-edit-mode 0 "gnus"
+    gnus-browse-mode 0 "gnus"
+    gnus-server-mode 0 "gnus"
+    gnus-article-mode 0 "gnus"
+    gnus-group-mode 0 "gnus"
+    gnus-category-mode 0 "gnus")
+  (let ((gnus-directory (concat user-emacs-directory "gnus")))
+    (unless (file-directory-p gnus-directory)
+      (make-directory gnus-directory))
+    (setq gnus-dribble-directory (concat gnus-directory "/dribble"))
+    (setq gnus-init-file (concat gnus-directory "/gnus.el"))
+    (setq gnus-startup-file (concat gnus-directory "/newsrc")))
+  ;; Sources
+  (setq gnus-select-method '(nntp "news.gwene.org"))
+  ;; Dribble
+  (setq gnus-always-read-dribble-file t)
+  ;; Agent
+  (setq gnus-agent-article-alist-save-format 1)
+  (setq gnus-agent-cache t))
+
+(defun my/gnus-topic-toggle-topic ()
+  (interactive "" gnus-topic-mode)
+  (when (gnus-group-topic-p)
+    (let ((topic (gnus-topic-find-topology (gnus-current-topic))))
+      (if (eq (cadadr topic) 'visible)
+          (progn
+            (gnus-topic-goto-topic (gnus-current-topic))
+            (gnus-topic-remove-topic nil nil))
+        (gnus-topic-remove-topic t nil)))))
+
+(with-eval-after-load 'gnus-group
+  ;; Group
+  (add-hook 'gnus-group-mode-hook #'gnus-topic-mode)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(gnus-group-mode-map)
+   "a" #'gnus-group-toggle-subscription-at-point)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(gnus-topic-mode-map)
+   "TAB" #'my/gnus-topic-toggle-topic
+   "r" #'gnus-topic-catchup-articles))
+
+(with-eval-after-load 'gnus-summary
+  (setq gnus-summary-line-format "%U%R%z%I%(%[%4L: %-23,23f%]%) %s\n")
+  (setq gnus-sum-thread-tree-false-root "> ")
+  (setq gnus-sum-thread-tree-indent "  ")
+  (setq gnus-sum-thread-tree-single-indent " ")
+  (setq gnus-sum-thread-tree-leaf-with-other "+-> ")
+  (setq gnus-sum-thread-tree-root "> ")
+  (setq gnus-sum-thread-tree-single-leaf "\\-> ")
+  (setq gnus-sum-thread-tree-vertical "| "))
 
 (use-package emms
   :straight t
@@ -6392,50 +6467,6 @@ base toot."
   :commands (docker)
   :init
   (my-leader-def "ao" 'docker))
-
-(use-package prodigy
-  :straight t
-  :commands (prodigy)
-  :init
-  (my-leader-def "aP" #'prodigy)
-  :config
-  (general-define-key
-   :states '(normal)
-   :keymaps 'prodigy-view-mode-map
-   "C-h" 'evil-window-left
-   "C-l" 'evil-window-right
-   "C-k" 'evil-window-up
-   "C-j" 'evil-window-down))
-
-(defun my/get-apps-on-ports ()
-  (mapcar
-   (lambda (line)
-     (let* ((split (split-string line (rx (| (+ " ") (+ "\t")))))
-            (process (elt split 6)))
-       `((netid . ,(elt split 0))
-         (state . ,(elt split 1))
-         (recv-q . ,(elt split 2))
-         (send-q . ,(elt split 3))
-         ,@(let ((data (elt split 4)))
-             (save-match-data
-               (string-match (rx (group-n 1 (* nonl)) ":" (group-n 2 (or (+ num) "*"))) data)
-               `((local-address . ,(match-string 1 data))
-                 (local-port . ,(match-string 2 data)))))
-         ,@(unless (string-empty-p process)
-             `((pid . ,(save-match-data
-                         (string-match (rx "pid=" (+ num)) process)
-                         (string-to-number (substring (match-string 0 process) 4)))))))))
-   (seq-filter
-    (lambda (s) (not (string-empty-p s)))
-    (split-string
-     (shell-command-to-string "ss -tulpnH | grep LISTEN") "\n"))))
-
-(defun my/kill-app-on-port (port &optional signal)
-  (let ((apps (my/get-apps-on-ports)))
-    (dolist (app apps)
-      (when (string-equal (cdr (assoc 'local-port app)) port)
-        (signal-process (cdr (assoc 'pid app)) (or signal 15))
-        (message "Sent %d to %d" (or signal 15) (cdr (assoc 'pid app)))))))
 
 (use-package screenshot
   :straight (:repo "tecosaur/screenshot"
