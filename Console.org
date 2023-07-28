@@ -145,7 +145,7 @@ But I also want to use node from conda occasionally, where prefix is already set
 export NPM_CONFIG_USERCONFIG=$HOME/._npmrc
 #+end_src
 
-The variable is unset in a script in [[file:Guix.org::*conda][Guix.org]].
+The variable is unset in a script in [[file:Guix.org::*micromamba][Guix.org]].
 
 Set PATH & MANPATH
 #+begin_src sh
@@ -275,6 +275,11 @@ xhost +local:root > /dev/null 2>&1
 Set manpager to bat
 #+begin_src bash
 export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
+#+end_src
+
+[[https://codeberg.org/akib/emacs-eat][eat]] integration
+#+begin_src bash
+[ -n "$EAT_SHELL_INTEGRATION_DIR" ] && source "$EAT_SHELL_INTEGRATION_DIR/bash"
 #+end_src
 *** Launch fish
 Launch fish shell unless bash itself is launched from fish.
