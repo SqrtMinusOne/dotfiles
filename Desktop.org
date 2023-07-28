@@ -3847,7 +3847,7 @@ Launch an authentication agent. Necessary for stuff like =pkexec=. I suspect I'm
     #:start (make-system-constructor "xmodmap /home/pavel/.Xmodmap")))
 #+end_src
 ** VPN
-Run my [[file:Guix.org::*VPN][OpenVPN setup]]. Not lauching this automatially, as it requires an active connection.
+Run my [[file:Guix.org::*OpenVPN][OpenVPN setup]]. Not lauching this automatially, as it requires an active connection.
 
 #+begin_src scheme
 (define vpn
