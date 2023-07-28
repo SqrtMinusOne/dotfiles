@@ -45,9 +45,7 @@
             (lambda () (display-line-numbers-mode 0))))
 
 (my-leader-def
-  :infix "am"
-  "" '(:which-key "notmuch")
-  "m" (my/command-in-persp "notmuch" "mail" 0 (notmuch)))
+  "am" (my/command-in-persp "notmuch" "mail" 0 (notmuch)))
 
 (my/persp-add-rule
   notmuch-hello-mode 0 "mail"
@@ -69,24 +67,6 @@
         (:name "pvkorytov (unread)" :query "tag:pvkorytov AND tag:unread")
         (:name "pvkorytov (sent)" :query "tag:pvkorytov AND tag:sent")
         (:name "pvkorytov (all mail)" :query "tag:pvkorytov")))
-
-(my-leader-def
-  :infix "am"
-  "t" '(:which-key "thexcloud@gmail.com")
-  "ti" (my/command-in-persp "tag:main AND tag:inbox" "mail" 0 (notmuch-search "inbox"))
-  "tu" (my/command-in-persp "tag:main AND tag:unread" "mail" 0 (notmuch-search "unread"))
-  "ts" (my/command-in-persp "tag:main AND tag:sent" "mail" 0 (notmuch-search "sent"))
-  "ta" (my/command-in-persp "tag:main" "mail" 0 (notmuch-search "all mail"))
-  "p" '(:which-key "progin6304@gmail.com")
-  "pi" (my/command-in-persp "tag:progin AND tag:inbox" "mail" 0 (notmuch-search "inbox"))
-  "pu" (my/command-in-persp "tag:progin AND tag:unread" "mail" 0 (notmuch-search "unread"))
-  "ps" (my/command-in-persp "tag:progin AND tag:sent" "mail" 0 (notmuch-search "sent"))
-  "pa" (my/command-in-persp "tag:progin" "mail" 0 (notmuch-search "all mail"))
-  "e" '(:which-key "pvkorytov@etu.ru")
-  "ei" (my/command-in-persp "tag:pvkorytov AND tag:inbox" "mail" 0 (notmuch-search "inbox"))
-  "eu" (my/command-in-persp "tag:pvkorytov AND tag:unread" "mail" 0 (notmuch-search "unread"))
-  "es" (my/command-in-persp "tag:pvkorytov AND tag:sent" "mail" 0 (notmuch-search "sent"))
-  "ea" (my/command-in-persp "tag:pvkorytov" "mail" 0 (notmuch-search "all mail")))
 
 (with-eval-after-load 'notmuch
   (add-hook 'message-setup-hook 'mml-secure-sign-pgpmime))

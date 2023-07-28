@@ -430,15 +430,13 @@ And notmuch settings:
 
 The file is read in =init.el=.
 
-** Saved filters and keybindings
-I want to have the saved filters available in both notmuch interface as as keybindings. So a bit more of abusing org tables.
+** Keybindings
+I used to have a more complicated keybinding system here, but that seemed to go against the Dao.
 
 Root keybindings:
 #+begin_src emacs-lisp
 (my-leader-def
-  :infix "am"
-  "" '(:which-key "notmuch")
-  "m" (my/command-in-persp "notmuch" "mail" 0 (notmuch)))
+  "am" (my/command-in-persp "notmuch" "mail" 0 (notmuch)))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -483,38 +481,10 @@ The following formats the tables above to a proper syntax for =setq notmuch-save
   (string-join searches "\n"))
 #+end_src
 
-And the following does the same for my general.el definer:
-#+NAME: format-notmuch-keybindings
-#+begin_src emacs-lisp :var root_tags=root_tags filter_tags=filter_tags :tangle no
-(let ((bindings '()))
-  (dolist (root_tag root_tags)
-    (add-to-list
-     'bindings
-     (format "\"%s\" '(:which-key \"%s\")"
-             (nth 1 root_tag)
-             (nth 2 root_tag))
-     t)
-    (dolist (tag filter_tags)
-      (add-to-list
-       'bindings
-       (format "\"%s\" (my/command-in-persp \"%s\" \"mail\" 0 (notmuch-search \"%s\"))"
-               (concat (nth 1 root_tag) (nth 1 tag))
-               (concat "tag:" (nth 0 root_tag)
-                       (unless (string-empty-p (nth 0 tag))
-                         (concat " AND tag:" (nth 0 tag))))
-               (nth 2 tag))
-       t)))
-  (string-join bindings "\n"))
-#+end_src
-
 #+begin_src emacs-lisp :noweb yes
 (setq notmuch-saved-searches
       '((:name "drafts" :query "tag:draft")
         <<format-notmuch-saved-searches()>>))
-
-(my-leader-def
-  :infix "am"
-  <<format-notmuch-keybindings()>>)
 #+end_src
 ** Signing messages
 #+begin_src emacs-lisp
