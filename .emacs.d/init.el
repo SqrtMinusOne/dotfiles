@@ -920,10 +920,27 @@ influence of C1 on the result."
     (my/update-my-theme))
   (add-hook 'emacs-startup-hook #'my/update-my-theme))
 
+(defun my/color-value (color)
+  (let ((is-doom
+         (seq-find (lambda (x) (string-match-p (rx bos "doom") (symbol-name x)))
+                   custom-enabled-themes))
+        (is-modus
+         (seq-find (lambda (x) (string-match-p (rx bos "modus") (symbol-name x)))
+                   custom-enabled-themes)))
+    (cond
+     (is-doom (doom-color color))
+     (is-modus (cadr
+                (assoc
+                 (pcase color
+                   ('bg 'bg-main)
+                   ('fg 'fg-main)
+                   (_ color))
+                 (modus-themes--current-theme-palette)))))))
+
 (my/use-doom-colors
- (tab-bar-tab :background (doom-color 'bg)
-              :foreground (doom-color 'yellow)
-              :underline (doom-color 'yellow))
+ (tab-bar-tab :background (my/color-value 'bg)
+              :foreground (my/color-value 'yellow)
+              :underline (my/color-value 'yellow))
  (tab-bar :background nil :foreground nil))
 
 (use-package auto-dim-other-buffers
@@ -933,7 +950,7 @@ influence of C1 on the result."
   (auto-dim-other-buffers-mode t)
   (my/use-doom-colors
    (auto-dim-other-buffers-face
-    :background (color-darken-name (doom-color 'bg) 3))))
+    :background (color-darken-name (my/color-value 'bg) 3))))
 
 (defun my/toggle-dark-light-theme ()
   (interactive)
@@ -948,37 +965,37 @@ influence of C1 on the result."
 (with-eval-after-load 'ansi-color
   (my/use-doom-colors
    (ansi-color-black
-    :foreground (doom-color 'base2) :background (doom-color 'base0))
+    :foreground (my/color-value 'base2) :background (my/color-value 'base0))
    (ansi-color-red
-    :foreground (doom-color 'red) :background (doom-color 'red))
+    :foreground (my/color-value 'red) :background (my/color-value 'red))
    (ansi-color-green
-    :foreground (doom-color 'green) :background (doom-color 'green))
+    :foreground (my/color-value 'green) :background (my/color-value 'green))
    (ansi-color-yellow
-    :foreground (doom-color 'yellow) :background (doom-color 'yellow))
+    :foreground (my/color-value 'yellow) :background (my/color-value 'yellow))
    (ansi-color-blue
-    :foreground (doom-color 'dark-blue) :background (doom-color 'dark-blue))
+    :foreground (my/color-value 'dark-blue) :background (my/color-value 'dark-blue))
    (ansi-color-magenta
-    :foreground (doom-color 'violet) :background (doom-color 'violet))
+    :foreground (my/color-value 'violet) :background (my/color-value 'violet))
    (ansi-color-cyan
-    :foreground (doom-color 'dark-cyan) :background (doom-color 'dark-cyan))
+    :foreground (my/color-value 'dark-cyan) :background (my/color-value 'dark-cyan))
    (ansi-color-white
-    :foreground (doom-color 'base8) :background (doom-color 'base8))
+    :foreground (my/color-value 'base8) :background (my/color-value 'base8))
    (ansi-color-bright-black
-    :foreground (doom-color 'base5) :background (doom-color 'base5))
+    :foreground (my/color-value 'base5) :background (my/color-value 'base5))
    (ansi-color-bright-red
-    :foreground (doom-color 'orange) :background (doom-color 'orange))
+    :foreground (my/color-value 'orange) :background (my/color-value 'orange))
    (ansi-color-bright-green
-    :foreground (doom-color 'teal) :background (doom-color 'teal))
+    :foreground (my/color-value 'teal) :background (my/color-value 'teal))
    (ansi-color-bright-yellow
-    :foreground (doom-color 'yellow) :background (doom-color 'yellow))
+    :foreground (my/color-value 'yellow) :background (my/color-value 'yellow))
    (ansi-color-bright-blue
-    :foreground (doom-color 'blue) :background (doom-color 'blue))
+    :foreground (my/color-value 'blue) :background (my/color-value 'blue))
    (ansi-color-bright-magenta
-    :foreground (doom-color 'magenta) :background (doom-color 'magenta))
+    :foreground (my/color-value 'magenta) :background (my/color-value 'magenta))
    (ansi-color-bright-cyan
-    :foreground (doom-color 'cyan) :background (doom-color 'cyan))
+    :foreground (my/color-value 'cyan) :background (my/color-value 'cyan))
    (ansi-color-bright-white
-    :foreground (doom-color 'fg) :background (doom-color 'fg))))
+    :foreground (my/color-value 'fg) :background (my/color-value 'fg))))
 
 (when (display-graphic-p)
   (if (x-list-fonts "JetBrainsMono Nerd Font")
@@ -3906,9 +3923,9 @@ KEYS is a list of cons cells like (<label> . <time>)."
     (my/org-no-ellipsis-in-headlines)))
 
 (my/use-doom-colors
- (org-block :background (color-darken-name (doom-color 'bg) 3))
- (org-block-begin-line :background (color-darken-name (doom-color 'bg) 3)
-                       :foreground (doom-color 'grey)))
+ (org-block :background (color-darken-name (my/color-value 'bg) 3))
+ (org-block-begin-line :background (color-darken-name (my/color-value 'bg) 3)
+                       :foreground (my/color-value 'grey)))
 
 (use-package ox-hugo
   :straight t
@@ -4579,10 +4596,10 @@ With ARG, repeats or can move backward if negative."
   :commands (eshell)
   :init
   (my/use-doom-colors
-   (epe-pipeline-delimiter-face :foreground (doom-color 'green))
-   (epe-pipeline-host-face      :foreground (doom-color 'blue))
-   (epe-pipeline-time-face      :foreground (doom-color 'yellow))
-   (epe-pipeline-user-face      :foreground (doom-color 'red)))
+   (epe-pipeline-delimiter-face :foreground (my/color-value 'green))
+   (epe-pipeline-host-face      :foreground (my/color-value 'blue))
+   (epe-pipeline-time-face      :foreground (my/color-value 'yellow))
+   (epe-pipeline-user-face      :foreground (my/color-value 'red)))
   :config
   (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
   (when my/slow-ssh
@@ -4596,8 +4613,8 @@ With ARG, repeats or can move backward if negative."
   :after eshell
   :init
   (my/use-doom-colors
-   (aweshell-alert-buffer-face  :background (color-darken-name (doom-color 'bg) 3))
-   (aweshell-alert-command-face :foreground (doom-color 'red) :weight 'bold))
+   (aweshell-alert-buffer-face  :background (color-darken-name (my/color-value 'bg) 3))
+   (aweshell-alert-command-face :foreground (my/color-value 'red) :weight 'bold))
   :config
   (setq eshell-prompt-regexp "^[^#\nλ]* λ[#]* ")
   (setq eshell-highlight-prompt t)
@@ -4747,14 +4764,14 @@ With ARG, repeats or can move backward if negative."
   "Face for the elfeed entries with tag \"blogs\"")
 
 (my/use-doom-colors
- (elfeed-search-tag-face :foreground (doom-color 'yellow))
- (elfeed-videos-entry :foreground (doom-color 'red))
- (elfeed-twitter-entry :foreground (doom-color 'blue))
- (elfeed-emacs-entry :foreground (doom-color 'magenta))
- (elfeed-music-entry :foreground (doom-color 'green))
- (elfeed-podcasts-entry :foreground (doom-color 'yellow))
- (elfeed-blogs-entry :foreground (doom-color 'orange))
- (elfeed-govt-entry :foreground (doom-color 'dark-cyan)))
+ (elfeed-search-tag-face :foreground (my/color-value 'yellow))
+ (elfeed-videos-entry :foreground (my/color-value 'red))
+ (elfeed-twitter-entry :foreground (my/color-value 'blue))
+ (elfeed-emacs-entry :foreground (my/color-value 'magenta))
+ (elfeed-music-entry :foreground (my/color-value 'green))
+ (elfeed-podcasts-entry :foreground (my/color-value 'yellow))
+ (elfeed-blogs-entry :foreground (my/color-value 'orange))
+ (elfeed-govt-entry :foreground (my/color-value 'dark-cyan)))
 
 (with-eval-after-load 'elfeed
   (setq elfeed-search-face-alist
@@ -4770,12 +4787,12 @@ With ARG, repeats or can move backward if negative."
 (defun my/update-my-theme-elfeed (&rest _)
   (custom-theme-set-faces
    'my-theme-1
-   `(elfeed-videos-entry ((t :foreground ,(doom-color 'red))))
-   `(elfeed-twitter-entry ((t :foreground ,(doom-color 'blue))))
-   `(elfeed-emacs-entry ((t :foreground ,(doom-color 'magenta))))
-   `(elfeed-music-entry ((t :foreground ,(doom-color 'green))))
-   `(elfeed-podcasts-entry ((t :foreground ,(doom-color 'yellow))))
-   `(elfeed-blogs-entry ((t :foreground ,(doom-color 'orange)))))
+   `(elfeed-videos-entry ((t :foreground ,(my/color-value 'red))))
+   `(elfeed-twitter-entry ((t :foreground ,(my/color-value 'blue))))
+   `(elfeed-emacs-entry ((t :foreground ,(my/color-value 'magenta))))
+   `(elfeed-music-entry ((t :foreground ,(my/color-value 'green))))
+   `(elfeed-podcasts-entry ((t :foreground ,(my/color-value 'yellow))))
+   `(elfeed-blogs-entry ((t :foreground ,(my/color-value 'orange)))))
   (enable-theme 'my-theme-1))
 
 (advice-add 'load-theme :after #'my/update-my-theme-elfeed)
@@ -5719,7 +5736,7 @@ ENTRY is an instance of `elfeed-entry'."
   "Default face for shr rendering.")
 
 (my/use-doom-colors
-  (my/shr-face :foreground (doom-color 'blue)))
+  (my/shr-face :foreground (my/color-value 'blue)))
 
 (defun my/shr-insert-around (fun &rest args)
   (let ((shr-current-font (or shr-current-font 'my/shr-face)))
@@ -6247,10 +6264,10 @@ base toot."
   :init
   (my-leader-def "a l" (my/command-in-persp "telega" "telega" 3 (telega)))
   (my/use-doom-colors
-   (telega-button-active :foreground (doom-color 'base0)
-                         :background (doom-color 'cyan))
-   (telega-webpage-chat-link :foreground (doom-color 'base0)
-                             :background (doom-color 'fg)))
+   (telega-button-active :foreground (my/color-value 'base0)
+                         :background (my/color-value 'cyan))
+   (telega-webpage-chat-link :foreground (my/color-value 'base0)
+                             :background (my/color-value 'fg)))
   :config
   (general-define-key
    :keymaps '(telega-root-mode-map telega-chat-mode-map)
@@ -6442,7 +6459,7 @@ base toot."
    "hs" #'sx-search
    "hS" #'sx-tab-frontpage)
   (my/use-doom-colors
-   (sx-question-mode-accepted :foreground (doom-color 'green)
+   (sx-question-mode-accepted :foreground (my/color-value 'green)
                               :weight 'bold)
    (sx-question-mode-content :background nil))
   (add-hook 'sx-question-mode-hook #'doom-modeline-mode)
