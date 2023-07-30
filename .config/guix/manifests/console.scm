@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "bottom-bin"
    "openssl"
    "ncdu"
    "megacmd"
