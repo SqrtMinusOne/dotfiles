@@ -44,8 +44,8 @@
                      (format "%.2f seconds"
                              (float-time
                               (time-subtract after-init-time before-init-time)))
-                     gcs-done))
-          (setq my/emacs-started t))
+                     gcs-done)
+            (setq my/emacs-started t)))
 
 ;; (setq use-package-verbose t)
 
@@ -872,72 +872,69 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
 
-(defun my/color-join (r g b)
-  "Build a color from R G B.
-Inverse of `color-values'."
-  (format "#%02x%02x%02x"
-          (ash r -8)
-          (ash g -8)
-          (ash b -8)))
+(use-package modus-themes
+  :straight t)
 
-(defun my/color-blend (c1 c2 &optional alpha)
-  "Blend the two colors C1 and C2 with ALPHA.
-C1 and C2 are in the format of `color-values'.
-ALPHA is a number between 0.0 and 1.0 which corresponds to the
-influence of C1 on the result."
-  (setq alpha (or alpha 0.5))
-  (apply #'my/color-join
-         (cl-mapcar
-          (lambda (x y)
-            (round (+ (* x alpha) (* y (- 1 alpha)))))
-          c1 c2)))
+(use-package ct
+  :straight t)
+
+(defun my/modus-get-base (color)
+  (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
+        (base-start (cadr (assoc 'bg-main (modus-themes--current-theme-palette))))
+        (base-end (cadr (assoc 'fg-dim (modus-themes--current-theme-palette)))))
+    (nth base-value (ct-gradient 9 base-start base-end t))))
+
+(defun my/doom-p ()
+  (seq-find (lambda (x) (string-match-p (rx bos "doom") (symbol-name x)))
+            custom-enabled-themes))
+
+(defun my/modus-p ()
+  (seq-find (lambda (x) (string-match-p (rx bos "modus") (symbol-name x)))
+            custom-enabled-themes))
+
+(defun my/color-value (color)
+  (cond
+   ((my/doom-p) (doom-color color))
+   ((my/modus-p) (cadr
+                  (assoc
+                   (cond
+                     ((eq color 'bg) 'bg-main)
+                     ((eq color 'fg) 'fg-main)
+                     ((string-match-p (rx bos "base" digit)
+                                            (symbol-name color))
+                      (my/modus-get-base color))
+                     (t color))
+                   (modus-themes--current-theme-palette))))))
 
 (deftheme my-theme-1)
 
-(defvar my/doom-theme-update-colors-hook nil)
+(defvar my/my-theme-update-color-params nil)
 
-(defmacro my/use-doom-colors (&rest data)
+(defmacro my/use-colors (&rest data)
   `(progn
-     (add-hook 'my/doom-theme-update-colors-hook
-               (lambda ()
-                 (custom-theme-set-faces
-                  'my-theme-1
-                  ,@(cl-loop for i in data collect
-                             `(,'\`
-                               (,(car i)
-                                ((t (,@(cl-loop for (key value) on (cdr i) by #'cddr
-                                                append `(,key (,'\, ,value))))))))))))
-     (when (and (fboundp 'doom-color) my/emacs-started)
+     ,@(cl-loop for i in data collect
+                `(setf (alist-get ',(car i) my/my-theme-update-color-params)
+                       (list ,@(cl-loop for (key value) on (cdr i) by #'cddr
+                                        append `(,key ',value)))))
+     (when (and (or (my/doom-p) (my/modus-p)) my/emacs-started)
        (my/update-my-theme))))
 
 (defun my/update-my-theme (&rest _)
-  (run-hooks 'my/doom-theme-update-colors-hook)
+  (cl-loop for (face . values) in my/my-theme-update-color-params
+           do (custom-theme-set-faces
+               'my-theme-1
+               `(,face ((t ,@(cl-loop for (key value) on values by #'cddr
+                                      collect key
+                                      collect (eval value)))))))
   (enable-theme 'my-theme-1))
 
 (unless my/is-termux
   (advice-add 'load-theme :after #'my/update-my-theme)
-  (when (fboundp 'doom-color)
-    (my/update-my-theme))
+  ;; (when (fboundp 'doom-color)
+  ;;   (my/update-my-theme))
   (add-hook 'emacs-startup-hook #'my/update-my-theme))
 
-(defun my/color-value (color)
-  (let ((is-doom
-         (seq-find (lambda (x) (string-match-p (rx bos "doom") (symbol-name x)))
-                   custom-enabled-themes))
-        (is-modus
-         (seq-find (lambda (x) (string-match-p (rx bos "modus") (symbol-name x)))
-                   custom-enabled-themes)))
-    (cond
-     (is-doom (doom-color color))
-     (is-modus (cadr
-                (assoc
-                 (pcase color
-                   ('bg 'bg-main)
-                   ('fg 'fg-main)
-                   (_ color))
-                 (modus-themes--current-theme-palette)))))))
-
-(my/use-doom-colors
+(my/use-colors
  (tab-bar-tab :background (my/color-value 'bg)
               :foreground (my/color-value 'yellow)
               :underline (my/color-value 'yellow))
@@ -948,9 +945,9 @@ influence of C1 on the result."
   :if (display-graphic-p)
   :config
   (auto-dim-other-buffers-mode t)
-  (my/use-doom-colors
+  (my/use-colors
    (auto-dim-other-buffers-face
-    :background (color-darken-name (my/color-value 'bg) 3))))
+    :background (ct-greaten (my/color-value 'bg) 3))))
 
 (defun my/toggle-dark-light-theme ()
   (interactive)
@@ -963,7 +960,7 @@ influence of C1 on the result."
       (disable-theme 'doom-one-light))))
 
 (with-eval-after-load 'ansi-color
-  (my/use-doom-colors
+  (my/use-colors
    (ansi-color-black
     :foreground (my/color-value 'base2) :background (my/color-value 'base0))
    (ansi-color-red
@@ -3922,9 +3919,9 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (when (eq major-mode 'org-mode)
     (my/org-no-ellipsis-in-headlines)))
 
-(my/use-doom-colors
- (org-block :background (color-darken-name (my/color-value 'bg) 3))
- (org-block-begin-line :background (color-darken-name (my/color-value 'bg) 3)
+(my/use-colors
+ (org-block :background (ct-greaten (my/color-value 'bg) 3))
+ (org-block-begin-line :background (ct-greaten (my/color-value 'bg) 3)
                        :foreground (my/color-value 'grey)))
 
 (use-package ox-hugo
@@ -4611,7 +4608,7 @@ With ARG, repeats or can move backward if negative."
   :after evil-collection
   :commands (eshell)
   :init
-  (my/use-doom-colors
+  (my/use-colors
    (epe-pipeline-delimiter-face :foreground (my/color-value 'green))
    (epe-pipeline-host-face      :foreground (my/color-value 'blue))
    (epe-pipeline-time-face      :foreground (my/color-value 'yellow))
@@ -4628,7 +4625,7 @@ With ARG, repeats or can move backward if negative."
   :straight (:repo "manateelazycat/aweshell" :host github)
   :after eshell
   :init
-  (my/use-doom-colors
+  (my/use-colors
    (aweshell-alert-buffer-face  :background (color-darken-name (my/color-value 'bg) 3))
    (aweshell-alert-command-face :foreground (my/color-value 'red) :weight 'bold))
   :config
@@ -4779,7 +4776,7 @@ With ARG, repeats or can move backward if negative."
 (defface elfeed-govt-entry nil
   "Face for the elfeed entries with tag \"blogs\"")
 
-(my/use-doom-colors
+(my/use-colors
  (elfeed-search-tag-face :foreground (my/color-value 'yellow))
  (elfeed-videos-entry :foreground (my/color-value 'red))
  (elfeed-twitter-entry :foreground (my/color-value 'blue))
@@ -5751,7 +5748,7 @@ ENTRY is an instance of `elfeed-entry'."
   `((t :inherit variable-pitch))
   "Default face for shr rendering.")
 
-(my/use-doom-colors
+(my/use-colors
   (my/shr-face :foreground (my/color-value 'blue)))
 
 (defun my/shr-insert-around (fun &rest args)
@@ -6279,7 +6276,7 @@ base toot."
   :commands (telega)
   :init
   (my-leader-def "a l" (my/command-in-persp "telega" "telega" 3 (telega)))
-  (my/use-doom-colors
+  (my/use-colors
    (telega-button-active :foreground (my/color-value 'base0)
                          :background (my/color-value 'cyan))
    (telega-webpage-chat-link :foreground (my/color-value 'base0)
@@ -6474,7 +6471,7 @@ base toot."
   (my-leader-def
    "hs" #'sx-search
    "hS" #'sx-tab-frontpage)
-  (my/use-doom-colors
+  (my/use-colors
    (sx-question-mode-accepted :foreground (my/color-value 'green)
                               :weight 'bold)
    (sx-question-mode-content :background nil))

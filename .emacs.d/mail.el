@@ -20,7 +20,7 @@
   ;; :ensure nil
   :commands (notmuch notmuch-search)
   :init
-  (my/use-doom-colors
+  (my/use-colors
    (notmuch-wash-cited-text :foreground (doom-color 'yellow)))
   :config
   (setq mail-specify-envelope-from t)
