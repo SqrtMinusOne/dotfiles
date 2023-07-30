@@ -8,7 +8,7 @@
 #+OPTIONS: broken-links:auto h:6 toc:nil
 
 #+begin_quote
-No matter from which side you approach penguins, more of them always come from behind
+No matter from which side you approach penguins, more always come from behind
 #+end_quote
 - A friend of mine
 
