@@ -4451,6 +4451,21 @@ With ARG, repeats or can move backward if negative."
          ement-room
          ement-session)))))
 
+(defun my/dired-attach-to-mastodon (files mastodon-buffer)
+  (interactive
+   (list (dired-get-marked-files nil nil #'dired-nondirectory-p)
+         (or (cl-loop for buf being the buffers
+                      if (eq (buffer-local-value 'mastodon-toot-mode buf) t)
+                      return buf)
+             (user-error "No buffer found!"))))
+  (unless files
+    (user-error "No (non-directory) files selected"))
+  (with-current-buffer mastodon-buffer
+    (dolist (file files)
+      (mastodon-toot--attach-media
+       file
+       (read-from-minibuffer (format "Description for %s: " file))))))
+
 (with-eval-after-load 'dired
   (general-define-key
    :states '(normal)
@@ -4458,7 +4473,8 @@ With ARG, repeats or can move backward if negative."
    "a" nil
    "at" #'my/dired-attach-to-telega
    "am" #'my/dired-attach-to-notmuch
-   "ai" #'my/dired-attach-to-ement))
+   "ai" #'my/dired-attach-to-ement
+   "an" #'my/dired-attach-to-mastodon))
 
 (when my/is-termux
   (straight-use-package 'vterm))
