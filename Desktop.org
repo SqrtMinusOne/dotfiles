@@ -19,36 +19,13 @@ References:
 
 * Global customization
 ** Colors
-My favorite color theme is Palenight ([[https://github.com/JonathanSpeek/palenight-iterm2][color codes]]), and I want to have one source of truth for these colors. Except for Emacs itself, which has [[https://github.com/doomemacs/themes#theme-list][doom-palenight]] (and in which I occasionally switch to =doom-one-light=, e.g. when reading a long text), it can be done rather nicely with Org Mode.
+I used to define color codes here (see [[https://github.com/SqrtMinusOne/dotfiles/commit/2dbf1cdd008ec0061456782cca3ebd76e603b31e][previous version of the file]]), now I just get colors from the current Emacs theme.
 
-First, let's define a table with all the color codes:
-#+tblname: colors
-| color         | key     | value   |
-|---------------+---------+---------|
-| black         | color0  | #292d3e |
-| red           | color1  | #f07178 |
-| green         | color2  | #c3e88d |
-| yellow        | color3  | #ffcb6b |
-| blue          | color4  | #82aaff |
-| magenta       | color5  | #c792ea |
-| cyan          | color6  | #89ddff |
-| white         | color7  | #d0d0d0 |
-| light-black   | color8  | #434758 |
-| light-red     | color9  | #ff8b92 |
-| light-green   | color10 | #ddffa7 |
-| light-yellow  | color11 | #ffe585 |
-| light-blue    | color12 | #9cc4ff |
-| light-magenta | color13 | #e1acff |
-| light-cyan    | color14 | #a3f7ff |
-| light-white   | color15 | #ffffff |
-| color-fg      |         | #000000 |
-
-The table above is the only source of truth for colors in this config.
-
-Contents of this table can then be [[https://orgmode.org/manual/Environment-of-a-Code-Block.html][accessed from a code block]]. Let's define one to return the color code based on its name:
+To use them, let's define a noweb block:
 #+NAME: get-color
-#+begin_src emacs-lisp :var table=colors name="black" quote=0
-(let ((color (seq-some (lambda (e) (and (string= name (car e)) (nth 2 e))) table)))
+#+begin_src emacs-lisp :var name="black" quote=0
+(let ((color (or (my/color-value name)
+                 (my/color-value (intern name)))))
   (if (> quote 0)
       (concat "\"" color "\"")
     color))
@@ -60,7 +37,28 @@ Test:
 #+end_src
 
 #+RESULTS:
-: #f07178
+: #ff5370
+
+This tables used to have values, now it has only keys:
+#+tblname: colors
+| color         | key     |
+|---------------+---------|
+| black         | color0  |
+| red           | color1  |
+| green         | color2  |
+| yellow        | color3  |
+| blue          | color4  |
+| magenta       | color5  |
+| cyan          | color6  |
+| white         | color7  |
+| light-black   | color8  |
+| light-red     | color9  |
+| light-green   | color10 |
+| light-yellow  | color11 |
+| light-blue    | color12 |
+| light-magenta | color13 |
+| light-cyan    | color14 |
+| light-white   | color15 |
 
 ** Xresources
 *** Colors in Xresources
@@ -70,7 +68,7 @@ However, I'd rather use the =Xresources= file wherever possible. Here is the cod
 #+begin_src emacs-lisp :var table=colors
 (mapconcat
  (lambda (elem)
-   (concat "*" (nth 1 elem) ": " (nth 2 elem)))
+   (concat "*" (nth 1 elem) ": " (my/color-value (nth 0 elem))))
  (seq-filter
   (lambda (elem) (and (nth 1 elem)
                       (not (string-empty-p (nth 1 elem)))))
@@ -81,8 +79,8 @@ However, I'd rather use the =Xresources= file wherever possible. Here is the cod
 #+begin_src conf-xdefaults :noweb yes :tangle ~/.Xresources
 <<get-xresources()>>
 
-*background: <<get-color(name="black")>>
-*foreground: <<get-color(name="white")>>
+*background: <<get-color(name="bg")>>
+*foreground: <<get-color(name="fg")>>
 #+end_src
 
 So, whenever a program is capable of reading =.Xresources=, it will get colors from there, otherwise, it will get colors from noweb expressions in the literate config. Thus, in both cases, the color is set in a single Org Mode table.
@@ -264,9 +262,9 @@ Show the current workspace in the modeline.
   :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
   :config
   (add-hook 'exwm-init-hook #'exwm-modeline-mode)
-  (my/use-doom-colors
+  (my/use-colors
    (exwm-modeline-current-workspace
-    :foreground (doom-color 'yellow)
+    :foreground (my/color-value 'yellow)
     :weight 'bold)))
 #+end_src
 ** Windows
@@ -1790,7 +1788,7 @@ The "colors" part is straightforward enough. Polybar can use =Xresources=, so we
 <<get-polybar-colors()>>
 
 background = ${xrdb:background}
-; foreground = ${xrdb:foreground}
+foreground = ${xrdb:color0}
 #+end_src
 *** Glyph settings
 As for the module decorations though, I find it ironic that with all this fancy rendering around I have to resort to Unicode glyphs.
@@ -2198,6 +2196,8 @@ label-muted = MUTE
 
 format-volume-background = <<get-polybar-bg(module="pulseaudio")>>
 format-muted-background = <<get-polybar-bg(module="pulseaudio")>>
+format-volume-foreground = ${colors.foreground}
+format-muted-foreground = ${colors.foreground}
 
 ; format-volume-underline = ${colors.white}
 ; format-muted-underline = ${colors.light-black}
@@ -2225,6 +2225,9 @@ label-song-ellipsis = true
 format-playing-background = <<get-polybar-bg(module="mpd")>>
 format-paused-background = <<get-polybar-bg(module="mpd")>>
 format-stopped-background = <<get-polybar-bg(module="mpd")>>
+format-playing-foreground = ${colors.foreground}
+format-paused-foreground = ${colors.foreground}
+format-stopped-foreground = ${colors.foreground}
 
 label-separator = 0
 separator-foreground = ${colors.red}
@@ -2244,6 +2247,7 @@ type = internal/cpu
 format = " <label>"
 label = %percentage%%
 format-background = <<get-polybar-bg(module="cpu")>>
+format-foreground = ${colors.foreground}
 #+end_src
 *** ram-memory
 RAM usage
@@ -2266,6 +2270,7 @@ label=%gb_used:.1f%
 
 ; format-underline = ${colors.blue}
 format-background = <<get-polybar-bg(module="ram-memory")>>
+format-foreground = ${colors.foreground}
 #+end_src
 
 *** swap-memory
@@ -2277,6 +2282,7 @@ interval = 10
 
 label= %gb_swap_used:.1f%
 format-background = <<get-polybar-bg(module="swap-memory")>>
+format-foreground = ${colors.foreground}
 #+end_src
 
 *** network
@@ -2300,6 +2306,8 @@ label-disconnected = X
 ; format-disconnected-underline = ${colors.red}
 format-connected-background = <<get-polybar-bg(module="network")>>
 format-disconnected-background = <<get-polybar-bg(module="network")>>
+format-connected-foreground = ${colors.foreground}
+format-disconnected-foreground = ${colors.foreground}
 
 ramp-signal-0 = 0
 ramp-signal-1 = 1
@@ -2320,6 +2328,7 @@ interval = 0
 tail = true
 
 format-background = <<get-polybar-bg(module="bandwidth")>>
+format-foreground = ${colors.foreground}
 #+end_src
 
 #+begin_src bash :tangle ./bin/polybar/bandwidth3.sh
@@ -2481,6 +2490,7 @@ fi
 type = custom/script
 exec = /home/pavel/bin/polybar/openvpn.sh
 format-background = <<get-polybar-bg(module="openvpn")>>
+format-foreground = ${colors.foreground}
 interval = 1200
 #+end_src
 *** xkeyboard
@@ -2492,6 +2502,7 @@ format = <label-layout>
 
 ; format-underline = ${colors.magenta}
 format-background = <<get-polybar-bg(module="xkeyboard")>>
+format-foreground = ${colors.foreground}
 label-layout = %icon%
 layout-icon-0 = ru;RU
 layout-icon-1 = us;US
@@ -2509,6 +2520,7 @@ format-discharging = <ramp-capacity> <label-discharging>
 format-discharging-background = <<get-polybar-bg(module="battery")>>
 format-charging-background = <<get-polybar-bg(module="battery")>>
 format-full-background = <<get-polybar-bg(module="battery")>>
+format-foreground = ${colors.foreground}
 label-discharging = %percentage%% %time%
 label-charging =  %percentage%% %time%
 
@@ -2544,6 +2556,7 @@ type = custom/script
 exec = /home/pavel/bin/polybar/weather.sh
 ; format-underline = ${colors.red}
 format-background = <<get-polybar-bg(module="weather")>>
+format-foreground = ${colors.foreground}
 interval = 1200
 #+end_src
 *** sun
@@ -2587,6 +2600,7 @@ fi
 type = custom/script
 exec = /home/pavel/bin/polybar/sun.sh
 format-background = <<get-polybar-bg(module="sun")>>
+format-foreground = ${colors.foreground}
 interval = 60
 #+end_src
 *** aw-afk
@@ -2618,6 +2632,7 @@ type = custom/script
 exec = /home/pavel/bin/polybar/aw_afk.sh
 interval = 60
 format-background = <<get-polybar-bg(module="aw-afk")>>
+format-foreground = ${colors.foreground}
 #+end_src
 *** date
 Current date
@@ -2633,6 +2648,7 @@ time = %H:%M
 time-alt = %H:%M:%S
 
 format-background = <<get-polybar-bg(module="date")>>
+format-foreground = ${colors.foreground}
 label = "%date% %time%"
 #+end_src
 
@@ -2650,6 +2666,7 @@ type = custom/script
 exec = /home/pavel/bin/polybar/pomm.sh
 interval = 1
 format-underline = ${colors.light-green}
+format-foreground = ${colors.foreground}
 #+end_src
 *** SEP
 A simple separator
@@ -2735,7 +2752,7 @@ A theme, based on [[https://github.com/dracula/rofi][dracula theme]] for rofi, b
  #'concat
  (mapcar
   (lambda (elem)
-    (concat (nth 0 elem) ": " (nth 2 elem) ";\n"))
+    (concat (nth 0 elem) ": " (my/color-value (nth 0 elem)) ";\n"))
   table))
 #+end_src
 
@@ -2959,8 +2976,7 @@ As it overwrites its own config all the time, I do not keep the file in VC.
 [General]
 disabledTrayIcon=false
 drawColor=#ff0000
-drawThickness=0
-saveAfterCopyPath=/home/pavel/Pictures
+drawThickness=3
 savePath=/home/pavel/Pictures
 savePathFixed=false
 showStartupLaunchMessage=false
@@ -3497,24 +3513,26 @@ set recolor true
 map <C-r> set recolor false
 map <C-R> set recolor true
 
-set recolor-lightcolor <<get-color(name="black", quote=1)>>
+set recolor-lightcolor <<get-color(name="bg", quote=1)>>
 
-set completion-bg <<get-color(name="black", quote=1)>>
+set completion-bg <<get-color(name="bg", quote=1)>>
 set completion-fg <<get-color(name="white", quote=1)>>
-set completion-group-bg <<get-color(name="light-black", quote=1)>>
+set completion-group-bg <<get-color(name="bg", quote=1)>>
 set completion-group-fg <<get-color(name="white", quote=1)>>
 set completion-highlight-bg <<get-color(name="magenta", quote=1)>>
 set completion-highlight-fg <<get-color(name="black", quote=1)>>
 
-set inputbar-bg <<get-color(name="black", quote=1)>>
+set inputbar-bg <<get-color(name="bg", quote=1)>>
 set inputbar-fg <<get-color(name="light-magenta", quote=1)>>
-set statusbar-bg <<get-color(name="black", quote=1)>>
+set statusbar-bg <<get-color(name="bg", quote=1)>>
 set statusbar-fg <<get-color(name="light-magenta", quote=1)>>
 
 set notification-error-bg <<get-color(name="red", quote=1)>>
-set notification-error-fg <<get-color(name="color-fg", quote=1)>>
+# set notification-error-fg <<get-color(name="color-fg", quote=1)>>
+set notification-error-fg "#000000"
 set notification-warning-bg <<get-color(name="yellow", quote=1)>>
-set notification-warning-fg <<get-color(name="color-fg", quote=1)>>
+# set notification-warning-fg <<get-color(name="color-fg", quote=1)>>
+set notification-warning-fg "#000000"
 #+end_src
 * Various software
 This section generates manifests for various desktop software that I'm using.

@@ -1,22 +1,21 @@
 /* Generated from [[file:../../Desktop.org::*Theme][Theme:1]] */
  * {
-    black: #292d3e;
+    black: #1c1f2b;
     red: #f07178;
     green: #c3e88d;
     yellow: #ffcb6b;
     blue: #82aaff;
     magenta: #c792ea;
-    cyan: #89ddff;
-    white: #d0d0d0;
-    light-black: #434758;
-    light-red: #ff8b92;
-    light-green: #ddffa7;
-    light-yellow: #ffe585;
-    light-blue: #9cc4ff;
-    light-magenta: #e1acff;
-    light-cyan: #a3f7ff;
-    light-white: #ffffff;
-    color-fg: #000000;
+    cyan: #89DDFF;
+    white: #A6Accd;
+    light-black: #313441;
+    light-red: #ff8c91;
+    light-green: #dfffa7;
+    light-yellow: #ffe785;
+    light-blue: #9fc5ff;
+    light-magenta: #e3acff;
+    light-cyan: #a6f9ff;
+    light-white: #c1c7e9;
     
 
     foreground:                  @white;

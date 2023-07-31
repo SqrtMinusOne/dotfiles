@@ -26,9 +26,9 @@
   :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
   :config
   (add-hook 'exwm-init-hook #'exwm-modeline-mode)
-  (my/use-doom-colors
+  (my/use-colors
    (exwm-modeline-current-workspace
-    :foreground (doom-color 'yellow)
+    :foreground (my/color-value 'yellow)
     :weight 'bold)))
 
 (require 'windmove)

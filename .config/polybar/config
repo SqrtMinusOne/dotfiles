@@ -18,7 +18,7 @@ light-cyan = ${xrdb:color14}
 light-white = ${xrdb:color15}
 
 background = ${xrdb:background}
-; foreground = ${xrdb:foreground}
+foreground = ${xrdb:color0}
 ; Colors:2 ends here
 
 ; [[file:../../Desktop.org::*Glyph settings][Glyph settings:1]]
@@ -251,6 +251,8 @@ label-muted = MUTE
 
 format-volume-background = ${colors.light-magenta}
 format-muted-background = ${colors.light-magenta}
+format-volume-foreground = ${colors.foreground}
+format-muted-foreground = ${colors.foreground}
 
 ; format-volume-underline = ${colors.white}
 ; format-muted-underline = ${colors.light-black}
@@ -276,6 +278,9 @@ label-song-ellipsis = true
 format-playing-background = ${colors.magenta}
 format-paused-background = ${colors.magenta}
 format-stopped-background = ${colors.magenta}
+format-playing-foreground = ${colors.foreground}
+format-paused-foreground = ${colors.foreground}
+format-stopped-foreground = ${colors.foreground}
 
 label-separator = 0
 separator-foreground = ${colors.red}
@@ -293,6 +298,7 @@ type = internal/cpu
 format = " <label>"
 label = %percentage%%
 format-background = ${colors.cyan}
+format-foreground = ${colors.foreground}
 ; cpu:1 ends here
 
 ; [[file:../../Desktop.org::*ram-memory][ram-memory:1]]
@@ -314,6 +320,7 @@ label=%gb_used:.1f%
 
 ; format-underline = ${colors.blue}
 format-background = ${colors.light-green}
+format-foreground = ${colors.foreground}
 ; ram-memory:1 ends here
 
 ; [[file:../../Desktop.org::*swap-memory][swap-memory:1]]
@@ -323,6 +330,7 @@ interval = 10
 
 label= %gb_swap_used:.1f%
 format-background = ${colors.green}
+format-foreground = ${colors.foreground}
 ; swap-memory:1 ends here
 
 ; [[file:../../Desktop.org::*network][network:1]]
@@ -341,6 +349,8 @@ label-disconnected = X
 ; format-disconnected-underline = ${colors.red}
 format-connected-background = ${colors.nil}
 format-disconnected-background = ${colors.nil}
+format-connected-foreground = ${colors.foreground}
+format-disconnected-foreground = ${colors.foreground}
 
 ramp-signal-0 = 0
 ramp-signal-1 = 1
@@ -358,6 +368,7 @@ interval = 0
 tail = true
 
 format-background = ${colors.light-red}
+format-foreground = ${colors.foreground}
 ; bandwidth:1 ends here
 
 ; [[file:../../Desktop.org::*ipstack-vpn][ipstack-vpn:2]]
@@ -372,6 +383,7 @@ interval = 1200
 type = custom/script
 exec = /home/pavel/bin/polybar/openvpn.sh
 format-background = ${colors.light-red}
+format-foreground = ${colors.foreground}
 interval = 1200
 ; openvpn:2 ends here
 
@@ -382,6 +394,7 @@ format = <label-layout>
 
 ; format-underline = ${colors.magenta}
 format-background = ${colors.red}
+format-foreground = ${colors.foreground}
 label-layout = %icon%
 layout-icon-0 = ru;RU
 layout-icon-1 = us;US
@@ -398,6 +411,7 @@ format-discharging = <ramp-capacity> <label-discharging>
 format-discharging-background = ${colors.light-cyan}
 format-charging-background = ${colors.light-cyan}
 format-full-background = ${colors.light-cyan}
+format-foreground = ${colors.foreground}
 label-discharging = %percentage%% %time%
 label-charging =  %percentage%% %time%
 
@@ -414,6 +428,7 @@ type = custom/script
 exec = /home/pavel/bin/polybar/weather.sh
 ; format-underline = ${colors.red}
 format-background = ${colors.light-yellow}
+format-foreground = ${colors.foreground}
 interval = 1200
 ; weather:2 ends here
 
@@ -422,6 +437,7 @@ interval = 1200
 type = custom/script
 exec = /home/pavel/bin/polybar/sun.sh
 format-background = ${colors.yellow}
+format-foreground = ${colors.foreground}
 interval = 60
 ; sun:2 ends here
 
@@ -431,6 +447,7 @@ type = custom/script
 exec = /home/pavel/bin/polybar/aw_afk.sh
 interval = 60
 format-background = ${colors.light-blue}
+format-foreground = ${colors.foreground}
 ; aw-afk:2 ends here
 
 ; [[file:../../Desktop.org::*date][date:1]]
@@ -445,6 +462,7 @@ time = %H:%M
 time-alt = %H:%M:%S
 
 format-background = ${colors.blue}
+format-foreground = ${colors.foreground}
 label = "%date% %time%"
 ; date:1 ends here
 
@@ -454,6 +472,7 @@ type = custom/script
 exec = /home/pavel/bin/polybar/pomm.sh
 interval = 1
 format-underline = ${colors.light-green}
+format-foreground = ${colors.foreground}
 ; pomm:2 ends here
 
 ; [[file:../../Desktop.org::*SEP][SEP:1]]

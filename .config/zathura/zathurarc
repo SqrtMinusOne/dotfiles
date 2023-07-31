@@ -6,22 +6,24 @@ set recolor true
 map <C-r> set recolor false
 map <C-R> set recolor true
 
-set recolor-lightcolor "#292d3e"
+set recolor-lightcolor "#292D3E"
 
-set completion-bg "#292d3e"
-set completion-fg "#d0d0d0"
-set completion-group-bg "#434758"
-set completion-group-fg "#d0d0d0"
+set completion-bg "#292D3E"
+set completion-fg "#A6Accd"
+set completion-group-bg "#292D3E"
+set completion-group-fg "#A6Accd"
 set completion-highlight-bg "#c792ea"
-set completion-highlight-fg "#292d3e"
+set completion-highlight-fg "#1c1f2b"
 
-set inputbar-bg "#292d3e"
-set inputbar-fg "#e1acff"
-set statusbar-bg "#292d3e"
-set statusbar-fg "#e1acff"
+set inputbar-bg "#292D3E"
+set inputbar-fg "#e3acff"
+set statusbar-bg "#292D3E"
+set statusbar-fg "#e3acff"
 
 set notification-error-bg "#f07178"
+# set notification-error-fg ""
 set notification-error-fg "#000000"
 set notification-warning-bg "#ffcb6b"
+# set notification-warning-fg ""
 set notification-warning-fg "#000000"
 # Zathura:1 ends here
