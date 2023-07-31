@@ -878,12 +878,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package ct
   :straight t)
 
-(defun my/modus-get-base (color)
-  (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
-        (base-start (cadr (assoc 'bg-main (modus-themes--current-theme-palette))))
-        (base-end (cadr (assoc 'fg-dim (modus-themes--current-theme-palette)))))
-    (nth base-value (ct-gradient 9 base-start base-end t))))
-
 (defun my/doom-p ()
   (seq-find (lambda (x) (string-match-p (rx bos "doom") (symbol-name x)))
             custom-enabled-themes))
@@ -892,19 +886,104 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (seq-find (lambda (x) (string-match-p (rx bos "modus") (symbol-name x)))
             custom-enabled-themes))
 
+(defun my/light-p ()
+  (and (seq-intersection
+        custom-enabled-themes
+        '(doom-one-light modus-operandi))
+       t))
+
+(defun my/dark-p ()
+  (not (my/light-p)))
+
+(defconst my/theme-string-override
+  '((doom-palenight
+     ("red" . "#f07178"))))
+
+(defun my/doom-color (color)
+  (if (stringp color)
+      (let ((override (alist-get (my/doom-p) my/theme-string-override)))
+        (or
+         (alist-get color override nil nil #'equal)
+         (pcase color
+           ((or "red" "green" "yellow" "blue" "magenta" "cyan")
+            (doom-color (intern color)))
+           ("black" (doom-color 'base0))
+           ("white" (doom-color 'base8))
+           ((rx bos "light-")
+            (ct-edit-lab-l-inc (my/doom-color (substring color 6)) 10)))))
+    (doom-color color)))
+
+(defun my/modus-get-base (color)
+  (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
+        (base-start (cadr (assoc 'bg-main (modus-themes--current-theme-palette))))
+        (base-end (cadr (assoc 'fg-dim (modus-themes--current-theme-palette)))))
+    (nth base-value (ct-gradient 9 base-start base-end t))))
+
+(defun my/modus-color (color)
+  (let ((palette (modus-themes--current-theme-palette)))
+    (cond
+     ((member color '("black" "white" "light-black" "light-white"))
+      (let ((bg-main (cadr (assoc 'bg-main palette)))
+            (fg-main (cadr (assoc 'fg-main palette))))
+        (pcase color
+          ("black" (if (ct-light-p bg-main) fg-main bg-main))
+          ("white" (if (ct-light-p bg-main) bg-main fg-main))
+          ("light-black" (ct-edit-lab-l-inc
+                          (if (ct-light-p bg-main) fg-main bg-main)
+                          15))
+          ("light-white" (ct-edit-lab-l-inc
+                          (if (ct-light-p bg-main) bg-main fg-main)
+                          15)))))
+     ((or (eq color 'bg))
+      (cadr (assoc 'bg-main palette)))
+     ((or (eq color 'fg))
+      (cadr (assoc 'fg-main palette)))
+     ((eq color 'violet)
+      (cadr (assoc 'magenta-cooler palette)))
+     ((and (symbolp color) (string-match-p (rx bos "base" digit) (symbol-name color)))
+      (my/modus-get-base color))
+     ((and (symbolp color) (string-match-p (rx bos "dark-") (symbol-name color)))
+      (cadr (assoc (intern (format "%s-cooler" (substring (symbol-name color) 5)))
+                   palette)))
+     ((eq color 'grey)
+      (my/modus-get-base 'base5))
+     ((member color '("red" "green" "yellow" "blue" "magenta" "cyan"))
+      (cadr (assoc (intern color) palette)))
+     ((and (stringp color) (string-match-p (rx bos "light-") color))
+      (cadr (assoc (intern (format "%s-intense" (substring color 6))) palette)))
+     (t (cadr (assoc color palette))))))
+
+(defconst my/test-colors-list
+  '("black" "red" "green" "yellow" "blue" "magenta" "cyan" "white"
+    "light-black" "light-red" "light-green" "light-yellow"
+    "light-blue" "light-magenta" "light-cyan" "light-white" bg fg red
+    green yellow blue magenta cyan dark-blue dark-cyan violet grey
+    base0 base1 base2 base3 base4 base5 base6 base7 base8))
+
+(defun my/test-colors ()
+  (interactive)
+  (let ((buf (generate-new-buffer "*colors-test*")))
+    (with-current-buffer buf
+      (insert (format "%-20s %-10s %-10s" "Color" "Doom" "Modus") "\n")
+      (cl-loop for color in my/test-colors-list
+               do (insert
+                   (format "%-20s %-10s %-10s\n"
+                           (prin1-to-string color)
+                           (my/doom-color color)
+                           (my/modus-color color))))
+      (special-mode)
+      (rainbow-mode))
+    (switch-to-buffer buf)))
+
 (defun my/color-value (color)
   (cond
-   ((my/doom-p) (doom-color color))
-   ((my/modus-p) (cadr
-                  (assoc
-                   (cond
-                     ((eq color 'bg) 'bg-main)
-                     ((eq color 'fg) 'fg-main)
-                     ((string-match-p (rx bos "base" digit)
-                                            (symbol-name color))
-                      (my/modus-get-base color))
-                     (t color))
-                   (modus-themes--current-theme-palette))))))
+   ((eq color 'bg-other)
+    (let ((color (my/color-value 'bg)))
+      (if (ct-light-p color)
+          (ct-edit-lab-l-dec color 3)
+        (ct-edit-lab-l-dec color 3))))
+   ((my/doom-p) (my/doom-color color))
+   ((my/modus-p) (my/modus-color color))))
 
 (deftheme my-theme-1)
 
@@ -920,6 +999,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
        (my/update-my-theme))))
 
 (defun my/update-my-theme (&rest _)
+  (interactive)
   (cl-loop for (face . values) in my/my-theme-update-color-params
            do (custom-theme-set-faces
                'my-theme-1
@@ -930,8 +1010,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (unless my/is-termux
   (advice-add 'load-theme :after #'my/update-my-theme)
-  ;; (when (fboundp 'doom-color)
-  ;;   (my/update-my-theme))
   (add-hook 'emacs-startup-hook #'my/update-my-theme))
 
 (my/use-colors
@@ -940,6 +1018,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
               :underline (my/color-value 'yellow))
  (tab-bar :background nil :foreground nil))
 
+(defun my/switch-theme (theme)
+  (interactive
+   (list (intern (completing-read "Load custom theme: "
+                                  (mapcar #'symbol-name
+				                          (custom-available-themes))))))
+  (cl-loop for enabled-theme in custom-enabled-themes
+           if (not (or (eq enabled-theme 'my-theme-1)
+                       (eq enabled-theme theme)))
+           do (disable-theme enabled-theme))
+  (load-theme theme t))
+
 (use-package auto-dim-other-buffers
   :straight t
   :if (display-graphic-p)
@@ -947,17 +1036,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (auto-dim-other-buffers-mode t)
   (my/use-colors
    (auto-dim-other-buffers-face
-    :background (ct-greaten (my/color-value 'bg) 3))))
-
-(defun my/toggle-dark-light-theme ()
-  (interactive)
-  (let ((is-dark (member 'doom-palenight custom-enabled-themes)))
-    (if is-dark
-        (progn
-          (load-theme 'doom-one-light t)
-          (disable-theme 'doom-palenight))
-      (load-theme 'doom-palenight t)
-      (disable-theme 'doom-one-light))))
+    :background (my/color-value 'bg-other))))
 
 (with-eval-after-load 'ansi-color
   (my/use-colors
@@ -3920,8 +3999,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
     (my/org-no-ellipsis-in-headlines)))
 
 (my/use-colors
- (org-block :background (ct-greaten (my/color-value 'bg) 3))
- (org-block-begin-line :background (ct-greaten (my/color-value 'bg) 3)
+ (org-block :background (my/color-value 'bg-other))
+ (org-block-begin-line :background (my/color-value 'bg-other)
                        :foreground (my/color-value 'grey)))
 
 (use-package ox-hugo

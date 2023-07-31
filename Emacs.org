@@ -1445,7 +1445,7 @@ Showing the last pressed key. Occasionally useful.
       (setq global-mode-string (delete '("" keycast-mode-line " ") global-mode-string)))))
 #+end_src
 ** Themes and colors
-*** Doom themes
+*** Theme packages
 My colorschemes of choice.
 #+begin_src emacs-lisp
 (use-package doom-themes
@@ -1466,24 +1466,21 @@ My colorschemes of choice.
   :straight t)
 #+end_src
 *** Custom theme
-Here I define a custom theme dependent on colors from the current theme.
+Here I define a few things on the top of Emacs theme, because:
+- Occasionally I want to have more theme-derived faces
+- I also want Emacs theme to be applied to the rest of the system (see the [[file:Desktop.org][Desktop]] config on that)
 
-A custom theme is necessary because if one calls =custom-set-faces= and =custom-set-variables= in code, whenever a variable is changed and saved in a customize buffer, data from all calls of these functions is saved as well.
+Theme-derived faces have to placed in a custom theme, because if one calls =custom-set-faces= and =custom-set-variables= in code, whenever a variable is changed and saved in a customize buffer, data from all calls of these functions is saved as well.
 
-First, here's a great package with various color tools:
+**** Get color values
+Here's a great package with various color tools:
 #+begin_src emacs-lisp
 (use-package ct
   :straight t)
 #+end_src
 
-A function to get a color value from the current theme. Supports both =doom-themes= and =modus-themes=... Sort of.
+As of now I want this to support =doom-themes= and =modus-themes=. So, let's get which one is enabled:
 #+begin_src emacs-lisp
-(defun my/modus-get-base (color)
-  (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
-        (base-start (cadr (assoc 'bg-main (modus-themes--current-theme-palette))))
-        (base-end (cadr (assoc 'fg-dim (modus-themes--current-theme-palette)))))
-    (nth base-value (ct-gradient 9 base-start base-end t))))
-
 (defun my/doom-p ()
   (seq-find (lambda (x) (string-match-p (rx bos "doom") (symbol-name x)))
             custom-enabled-themes))
@@ -1491,23 +1488,125 @@ A function to get a color value from the current theme. Supports both =doom-them
 (defun my/modus-p ()
   (seq-find (lambda (x) (string-match-p (rx bos "modus") (symbol-name x)))
             custom-enabled-themes))
-
-(defun my/color-value (color)
-  (cond
-   ((my/doom-p) (doom-color color))
-   ((my/modus-p) (cadr
-                  (assoc
-                   (cond
-                     ((eq color 'bg) 'bg-main)
-                     ((eq color 'fg) 'fg-main)
-                     ((string-match-p (rx bos "base" digit)
-                                            (symbol-name color))
-                      (my/modus-get-base color))
-                     (t color))
-                   (modus-themes--current-theme-palette))))))
 #+end_src
 
-Defining the theme itself.
+I also want to know if the current theme is light or not:
+#+begin_src emacs-lisp
+(defun my/light-p ()
+  (and (seq-intersection
+        custom-enabled-themes
+        '(doom-one-light modus-operandi))
+       t))
+
+(defun my/dark-p ()
+  (not (my/light-p)))
+#+end_src
+
+Now, let's get the current color from =doom=. =doom-themes= provide =doom-color=, but it's not enough to populate =Xresources= and the format doesn't quite match.
+#+begin_src emacs-lisp
+(defconst my/theme-string-override
+  '((doom-palenight
+     ("red" . "#f07178"))))
+
+(defun my/doom-color (color)
+  (if (stringp color)
+      (let ((override (alist-get (my/doom-p) my/theme-string-override)))
+        (or
+         (alist-get color override nil nil #'equal)
+         (pcase color
+           ((or "red" "green" "yellow" "blue" "magenta" "cyan")
+            (doom-color (intern color)))
+           ("black" (doom-color 'base0))
+           ("white" (doom-color 'base8))
+           ((rx bos "light-")
+            (ct-edit-lab-l-inc (my/doom-color (substring color 6)) 10)))))
+    (doom-color color)))
+#+end_src
+
+And the same for =modus-themes=. =my/modus-color= has to accept the same arguments as =my/doom-color= for backward compatibility.
+#+begin_src emacs-lisp
+(defun my/modus-get-base (color)
+  (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
+        (base-start (cadr (assoc 'bg-main (modus-themes--current-theme-palette))))
+        (base-end (cadr (assoc 'fg-dim (modus-themes--current-theme-palette)))))
+    (nth base-value (ct-gradient 9 base-start base-end t))))
+
+(defun my/modus-color (color)
+  (let ((palette (modus-themes--current-theme-palette)))
+    (cond
+     ((member color '("black" "white" "light-black" "light-white"))
+      (let ((bg-main (cadr (assoc 'bg-main palette)))
+            (fg-main (cadr (assoc 'fg-main palette))))
+        (pcase color
+          ("black" (if (ct-light-p bg-main) fg-main bg-main))
+          ("white" (if (ct-light-p bg-main) bg-main fg-main))
+          ("light-black" (ct-edit-lab-l-inc
+                          (if (ct-light-p bg-main) fg-main bg-main)
+                          15))
+          ("light-white" (ct-edit-lab-l-inc
+                          (if (ct-light-p bg-main) bg-main fg-main)
+                          15)))))
+     ((or (eq color 'bg))
+      (cadr (assoc 'bg-main palette)))
+     ((or (eq color 'fg))
+      (cadr (assoc 'fg-main palette)))
+     ((eq color 'violet)
+      (cadr (assoc 'magenta-cooler palette)))
+     ((and (symbolp color) (string-match-p (rx bos "base" digit) (symbol-name color)))
+      (my/modus-get-base color))
+     ((and (symbolp color) (string-match-p (rx bos "dark-") (symbol-name color)))
+      (cadr (assoc (intern (format "%s-cooler" (substring (symbol-name color) 5)))
+                   palette)))
+     ((eq color 'grey)
+      (my/modus-get-base 'base5))
+     ((member color '("red" "green" "yellow" "blue" "magenta" "cyan"))
+      (cadr (assoc (intern color) palette)))
+     ((and (stringp color) (string-match-p (rx bos "light-") color))
+      (cadr (assoc (intern (format "%s-intense" (substring color 6))) palette)))
+     (t (cadr (assoc color palette))))))
+#+end_src
+
+Test the two functions.
+#+begin_src emacs-lisp
+(defconst my/test-colors-list
+  '("black" "red" "green" "yellow" "blue" "magenta" "cyan" "white"
+    "light-black" "light-red" "light-green" "light-yellow"
+    "light-blue" "light-magenta" "light-cyan" "light-white" bg fg red
+    green yellow blue magenta cyan dark-blue dark-cyan violet grey
+    base0 base1 base2 base3 base4 base5 base6 base7 base8))
+
+(defun my/test-colors ()
+  (interactive)
+  (let ((buf (generate-new-buffer "*colors-test*")))
+    (with-current-buffer buf
+      (insert (format "%-20s %-10s %-10s" "Color" "Doom" "Modus") "\n")
+      (cl-loop for color in my/test-colors-list
+               do (insert
+                   (format "%-20s %-10s %-10s\n"
+                           (prin1-to-string color)
+                           (my/doom-color color)
+                           (my/modus-color color))))
+      (special-mode)
+      (rainbow-mode))
+    (switch-to-buffer buf)))
+#+end_src
+
+Finally, one function to get the value of a color in the current theme.
+#+begin_src emacs-lisp
+(defun my/color-value (color)
+  (cond
+   ((eq color 'bg-other)
+    (let ((color (my/color-value 'bg)))
+      (if (ct-light-p color)
+          (ct-edit-lab-l-dec color 3)
+        (ct-edit-lab-l-dec color 3))))
+   ((my/doom-p) (my/doom-color color))
+   ((my/modus-p) (my/modus-color color))))
+#+end_src
+
+And a few more functions
+**** Custom theme
+So, the custom theme:
 #+begin_src emacs-lisp
 (deftheme my-theme-1)
 #+end_src
@@ -1529,6 +1628,7 @@ A macro to simplify defining custom colors.
 This macro puts lambdas to =my/my-theme-update-colors-hook= that updates faces in =my-theme-1=. Now I have to call this hook:
 #+begin_src emacs-lisp
 (defun my/update-my-theme (&rest _)
+  (interactive)
   (cl-loop for (face . values) in my/my-theme-update-color-params
            do (custom-theme-set-faces
                'my-theme-1
@@ -1539,8 +1639,6 @@ This macro puts lambdas to =my/my-theme-update-colors-hook= that updates faces i
 
 (unless my/is-termux
   (advice-add 'load-theme :after #'my/update-my-theme)
-  ;; (when (fboundp 'doom-color)
-  ;;   (my/update-my-theme))
   (add-hook 'emacs-startup-hook #'my/update-my-theme))
 #+end_src
 
@@ -1552,6 +1650,21 @@ Defining colors for =tab-bar.el=:
               :underline (my/color-value 'yellow))
  (tab-bar :background nil :foreground nil))
 #+end_src
+**** Switch theme
+The built-in =load-theme= does not deactivate the previous theme, so here's a function that does that:
+
+#+begin_src emacs-lisp
+(defun my/switch-theme (theme)
+  (interactive
+   (list (intern (completing-read "Load custom theme: "
+                                  (mapcar #'symbol-name
+				                          (custom-available-themes))))))
+  (cl-loop for enabled-theme in custom-enabled-themes
+           if (not (or (eq enabled-theme 'my-theme-1)
+                       (eq enabled-theme theme)))
+           do (disable-theme enabled-theme))
+  (load-theme theme t))
+#+end_src
 *** Dim inactive buffers
 Dim inactive buffers.
 #+begin_src emacs-lisp
@@ -1562,19 +1675,7 @@ Dim inactive buffers.
   (auto-dim-other-buffers-mode t)
   (my/use-colors
    (auto-dim-other-buffers-face
-    :background (ct-greaten (my/color-value 'bg) 3))))
-#+end_src
-*** Toggle light/dark
-#+begin_src emacs-lisp
-(defun my/toggle-dark-light-theme ()
-  (interactive)
-  (let ((is-dark (member 'doom-palenight custom-enabled-themes)))
-    (if is-dark
-        (progn
-          (load-theme 'doom-one-light t)
-          (disable-theme 'doom-palenight))
-      (load-theme 'doom-palenight t)
-      (disable-theme 'doom-one-light))))
+    :background (my/color-value 'bg-other))))
 #+end_src
 *** ANSI colors
 =ansi-color.el= is a built-in Emacs package that translates ANSI color escape codes into faces.
@@ -5535,8 +5636,8 @@ Remove the ellipsis at the end of folded headlines, as it seems unnecessary with
 *** Override colors
 #+begin_src emacs-lisp
 (my/use-colors
- (org-block :background (ct-greaten (my/color-value 'bg) 3))
- (org-block-begin-line :background (ct-greaten (my/color-value 'bg) 3)
+ (org-block :background (my/color-value 'bg-other))
+ (org-block-begin-line :background (my/color-value 'bg-other)
                        :foreground (my/color-value 'grey)))
 #+end_src
 ** Export
