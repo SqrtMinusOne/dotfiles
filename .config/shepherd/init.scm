@@ -123,8 +123,8 @@
                   aw-watcher-window
                   pulseeffects
                   xsettingsd
-                  discord-rich-presence
+                  ;; discord-rich-presence
                   polkit-gnome
                   davmail
-                  xmodmap
+                  ;; xmodmap
                   nm-applet))

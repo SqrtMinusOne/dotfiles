@@ -253,6 +253,7 @@ default-cache-ttl 3600
 max-cache-ttl 3600
 allow-emacs-pinentry
 allow-loopback-pinentry
+pinentry-program /home/pavel/.guix-extra-profiles/console/console/bin/pinentry
 #+end_src
 *** Modeline
 Show the current workspace in the modeline.
@@ -3896,11 +3897,11 @@ Register services
  aw-watcher-window
  pulseeffects
  xsettingsd
- discord-rich-presence
+ ;; discord-rich-presence
  polkit-gnome
  vpn
  davmail
- xmodmap
+ ;; xmodmap
  nm-applet)
 #+end_src
 
