@@ -64,5 +64,6 @@ Mail/progin6304/.credentials.gmailieer.json
 .emacs.d/private.org
 .emacs.d/private.el
 .emacs.d/.trello/sqrtminusone.el
+.emacs.d/gnus/*
 ./.vpn/*
 #+end_src
