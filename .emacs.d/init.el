@@ -895,23 +895,24 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (defun my/dark-p ()
   (not (my/light-p)))
 
-(defconst my/theme-string-override
+(defconst my/theme-override
   '((doom-palenight
-     ("red" . "#f07178"))))
+     (red . "#f07178"))))
 
 (defun my/doom-color (color)
-  (if (stringp color)
-      (let ((override (alist-get (my/doom-p) my/theme-string-override)))
-        (or
-         (alist-get color override nil nil #'equal)
-         (pcase color
-           ((or "red" "green" "yellow" "blue" "magenta" "cyan")
-            (doom-color (intern color)))
-           ("black" (doom-color 'base0))
-           ("white" (doom-color 'base8))
-           ((rx bos "light-")
-            (ct-edit-lab-l-inc (my/doom-color (substring color 6)) 10)))))
-    (doom-color color)))
+  (let ((override (alist-get (my/doom-p) my/theme-override))
+        (color-name (symbol-name color))
+        (is-light (ct-light-p (doom-color 'bg))))
+    (or
+     (alist-get color override)
+     (cond
+      ((eq 'black color)
+       (if is-light (doom-color 'fg) (doom-color 'bg)))
+      ((eq 'white color)
+       (if is-light (doom-color 'bg) (doom-color 'fg)))
+      ((string-match-p (rx bos "light-") color-name)
+       (ct-edit-lab-l-inc (my/doom-color (intern (substring color-name 6))) 10))
+      (t (doom-color color))))))
 
 (defun my/modus-get-base (color)
   (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
@@ -920,45 +921,43 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (nth base-value (ct-gradient 9 base-start base-end t))))
 
 (defun my/modus-color (color)
-  (let ((palette (modus-themes--current-theme-palette)))
+  (let* ((palette (modus-themes--current-theme-palette))
+         (is-light (ct-light-p (cadr (assoc 'bg-main palette)))))
     (cond
-     ((member color '("black" "white" "light-black" "light-white"))
+     ((member color '(black white light-black light-white))
       (let ((bg-main (cadr (assoc 'bg-main palette)))
             (fg-main (cadr (assoc 'fg-main palette))))
         (pcase color
-          ("black" (if (ct-light-p bg-main) fg-main bg-main))
-          ("white" (if (ct-light-p bg-main) bg-main fg-main))
-          ("light-black" (ct-edit-lab-l-inc
-                          (if (ct-light-p bg-main) fg-main bg-main)
-                          15))
-          ("light-white" (ct-edit-lab-l-inc
-                          (if (ct-light-p bg-main) bg-main fg-main)
-                          15)))))
+          ('black (if is-light fg-main bg-main))
+          ('white (if is-light bg-main fg-main))
+          ('light-black (ct-edit-lab-l-inc
+                         (if is-light fg-main bg-main)
+                         15))
+          ('light-white (ct-edit-lab-l-inc
+                         (if is-light bg-main fg-main)
+                         15)))))
      ((or (eq color 'bg))
       (cadr (assoc 'bg-main palette)))
      ((or (eq color 'fg))
       (cadr (assoc 'fg-main palette)))
      ((eq color 'violet)
       (cadr (assoc 'magenta-cooler palette)))
-     ((and (symbolp color) (string-match-p (rx bos "base" digit) (symbol-name color)))
+     ((string-match-p (rx bos "base" digit) (symbol-name color))
       (my/modus-get-base color))
-     ((and (symbolp color) (string-match-p (rx bos "dark-") (symbol-name color)))
+     ((string-match-p (rx bos "dark-") (symbol-name color))
       (cadr (assoc (intern (format "%s-cooler" (substring (symbol-name color) 5)))
                    palette)))
      ((eq color 'grey)
       (my/modus-get-base 'base5))
-     ((member color '("red" "green" "yellow" "blue" "magenta" "cyan"))
-      (cadr (assoc (intern color) palette)))
-     ((and (stringp color) (string-match-p (rx bos "light-") color))
-      (cadr (assoc (intern (format "%s-intense" (substring color 6))) palette)))
+     ((string-match-p (rx bos "light-") (symbol-name color))
+      (cadr (assoc (intern (format "%s-intense" (substring (symbol-name color) 6))) palette)))
      (t (cadr (assoc color palette))))))
 
 (defconst my/test-colors-list
-  '("black" "red" "green" "yellow" "blue" "magenta" "cyan" "white"
-    "light-black" "light-red" "light-green" "light-yellow"
-    "light-blue" "light-magenta" "light-cyan" "light-white" bg fg red
-    green yellow blue magenta cyan dark-blue dark-cyan violet grey
-    base0 base1 base2 base3 base4 base5 base6 base7 base8))
+  '(black red green yellow blue magenta cyan white light-black
+          light-red light-green light-yellow light-blue light-magenta
+          light-cyan light-white bg fg violet grey base0 base1 base2
+          base3 base4 base5 base6 base7 base8))
 
 (defun my/test-colors ()
   (interactive)
@@ -977,6 +976,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (defun my/color-value (color)
   (cond
+   ((stringp color) (my/color-value (intern color)))
    ((eq color 'bg-other)
     (let ((color (my/color-value 'bg)))
       (if (ct-light-p color)
