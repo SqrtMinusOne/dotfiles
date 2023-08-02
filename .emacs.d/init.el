@@ -6361,6 +6361,7 @@ base toot."
    (telega-webpage-chat-link :foreground (my/color-value 'base0)
                              :background (my/color-value 'fg)))
   :config
+  (setq telega-emoji-use-images nil)
   (general-define-key
    :keymaps '(telega-root-mode-map telega-chat-mode-map)
    :states '(normal)
