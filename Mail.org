@@ -186,6 +186,7 @@ So, here are the rules which match tags & folders:
 | job.digital.support      | Job_Digital.Support      |
 | job.digital.superservice | Job_Digital.Superservice |
 | job.digital.applicants   | Job_Digital.Applicants   |
+| job.moevm                | Job_Moevm                |
 | etu                      | Etu                      |
 
 And below is a noweb function, which generates the following commands for notmuch to execute:
@@ -568,6 +569,17 @@ Then advice the =notmuch-mua-reply= function:
 
 (add-hook 'notmuch-mua-send-hook #'my/message-ensure-subject)
 #+end_src
+** Ensure password is loaded
+Otherwise =msmtp= may call =pinentry= while Emacs is locked, which means EXWM can't process the password window.
+
+#+begin_src emacs-lisp
+(defun my/ensure-password ()
+  (interactive)
+  (my/password-store-get "Job/Digital/Email/pvkorytov@etu.ru"))
+
+(add-hook 'notmuch-mua-send-hook #'my/ensure-password)
+#+end_src
+
 * mailcap
 mailcap file is a file which defines how to read to different MIME types. Notmuch also uses it, so why not keep it here.
 

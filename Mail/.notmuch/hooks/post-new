@@ -23,6 +23,8 @@ notmuch tag +job.digital.superservice "path:pvkorytov_etu/Job_Digital.Superservi
 notmuch tag -job.digital.superservice "NOT path:pvkorytov_etu/Job_Digital.Superservice/cur/** AND tag:job.digital.superservice AND tag:pvkorytov"
 notmuch tag +job.digital.applicants "path:pvkorytov_etu/Job_Digital.Applicants/cur/** AND NOT tag:job.digital.applicants"
 notmuch tag -job.digital.applicants "NOT path:pvkorytov_etu/Job_Digital.Applicants/cur/** AND tag:job.digital.applicants AND tag:pvkorytov"
+notmuch tag +job.moevm "path:pvkorytov_etu/Job_Moevm/cur/** AND NOT tag:job.moevm"
+notmuch tag -job.moevm "NOT path:pvkorytov_etu/Job_Moevm/cur/** AND tag:job.moevm AND tag:pvkorytov"
 notmuch tag +etu "path:pvkorytov_etu/Etu/cur/** AND NOT tag:etu"
 notmuch tag -etu "NOT path:pvkorytov_etu/Etu/cur/** AND tag:etu AND tag:pvkorytov"
 echo "Post-new filters done"

@@ -106,3 +106,9 @@
     (user-error "Aborting.")))
 
 (add-hook 'notmuch-mua-send-hook #'my/message-ensure-subject)
+
+(defun my/ensure-password ()
+  (interactive)
+  (my/password-store-get "Job/Digital/Email/pvkorytov@etu.ru"))
+
+(add-hook 'notmuch-mua-send-hook #'my/ensure-password)
