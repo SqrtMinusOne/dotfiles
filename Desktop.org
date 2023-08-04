@@ -17,6 +17,13 @@ Parts prefixed with (OFF) are not used, but kept for historic purposes. For some
 References:
 - [[https://sqrtminusone.xyz/posts/2022-02-12-literate/][A few cases of literate configuration]]. A few interesting ways in which literate configuration is used in this file.
 
+
+* Some remarks
+Removed features:
+| Feature   | Last commit                              |
+|-----------+------------------------------------------|
+| rofi-buku | e22476b0cc6315e104e5ce4de5559a61c830c429 |
+
 * Global customization
 ** Colors
 I used to define color codes here (see [[https://github.com/SqrtMinusOne/dotfiles/commit/2dbf1cdd008ec0061456782cca3ebd76e603b31e][previous version of the file]]), now I just get colors from the current Emacs theme.
@@ -24,8 +31,7 @@ I used to define color codes here (see [[https://github.com/SqrtMinusOne/dotfile
 To use them, let's define a noweb block:
 #+NAME: get-color
 #+begin_src emacs-lisp :var name="black" quote=0
-(let ((color (or (my/color-value name)
-                 (my/color-value (intern name)))))
+(let ((color (or (my/color-value name))))
   (if (> quote 0)
       (concat "\"" color "\"")
     color))
@@ -37,9 +43,28 @@ Test:
 #+end_src
 
 #+RESULTS:
-: #ff5370
+: #f07178
 
-This tables used to have values, now it has only keys:
+Also, get a foreground for the current color:
+#+NAME: get-fg-for-color
+#+begin_src emacs-lisp :var name="black" quote=0
+(let ((val (if (ct-light-p (my/color-value name))
+               (my/color-value 'black)
+             (my/color-value 'white))))
+  (if (eq quote 1)
+      (concat "\"" val "\"")
+    val))
+#+end_src
+
+Test;
+#+begin_src emacs-lisp :noweb yes
+<<get-fg-for-color(name="red", quote=1)>>
+#+end_src
+
+#+RESULTS:
+: #fafafa
+
+This table used to have values, now it has only keys:
 #+tblname: colors
 | color         | key     |
 |---------------+---------|
@@ -62,7 +87,7 @@ This tables used to have values, now it has only keys:
 
 ** Xresources
 *** Colors in Xresources
-However, I'd rather use the =Xresources= file wherever possible. Here is the code to generate an Xresources file from this table:
+Some programs get their colors from =XResources=. Let's generate that file.
 
 #+NAME: get-xresources
 #+begin_src emacs-lisp :var table=colors
@@ -83,7 +108,7 @@ However, I'd rather use the =Xresources= file wherever possible. Here is the cod
 *foreground: <<get-color(name="fg")>>
 #+end_src
 
-So, whenever a program is capable of reading =.Xresources=, it will get colors from there, otherwise, it will get colors from noweb expressions in the literate config. Thus, in both cases, the color is set in a single Org Mode table.
+Run =xrdb -load ~/.Xresources= to apply the changes.
 *** Fonts
 Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting has to be unique for each machine, which means I cannot commit =Xresources= to the repo.
 
@@ -260,7 +285,7 @@ Show the current workspace in the modeline.
 
 #+begin_src emacs-lisp
 (use-package exwm-modeline
-  :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
+  :straight t
   :config
   (add-hook 'exwm-init-hook #'exwm-modeline-mode)
   (my/use-colors
@@ -408,7 +433,7 @@ One feature I'd like to highlight is integration between perspective.el and [[ht
 perspective.el works with EXWM more or less as one would expect - each EXWM workspace has its own set of perspectives. That way it feels somewhat like having multiple Emacs frames in a tiling window manager, although, of course, much more integrated with Emacs.
 
 However, there are still some issues. For instance, I was having strange behaviors with floating windows, EXWM buffers in perspectives, etc. So I've made a package called [[https://github.com/SqrtMinusOne/perspective-exwm.el][perspective-exwm.el]] that does two things:
-- Fixes issues I found with some advises and hooks. Take a look at the package homepage for more detail on that.
+- Advices away the issues I had. Take a look at the package homepage for more detail on that.
 - Provides some additional functionality that makes use of both perspective.el and EXWM.
 
 References:
@@ -621,7 +646,7 @@ Setting up some completion interfaces that fit particularly well to use with EXW
 
 Take a look at [[https://github.com/ch11ng/exwm/issues/550][this issue]] in the EXWM repo about setting it up.
 
-Edit <2022-04-09 Sat>: This looks nice, but unfortunately too unstable. Disabling it.
+Edit [2022-04-09 Sat]: This looks nice, but unfortunately too unstable. Disabling it.
 
 #+begin_src emacs-lisp
 (use-package ivy-posframe
@@ -1756,40 +1781,79 @@ exec "xmodmap ~/.Xmodmap"
 
 [[https://github.com/polybar/polybar][Polybar]] is a nice-looking, WM-agnostic statusbar program.
 
-+I switched to polybar because I wanted to try out some WMs other than i3, but decided to stick with i3 for now.+ Still using polybar with EXWM and pretty happy with it.
-
 Don't forget to install the Google Noto Color Emoji font. Guix package with all Noto fonts is way too large.
 
 References:
 - [[https://github.com/polybar/polybar/wiki][polybar docs]]
+
 ** General settings
-In relation to literate configuration, this is the most +crazy+ advanced case of the former so far in my config.
+This is the most +crazy+ advanced piece of my literate configuration so far.
 
 My polybar has:
 - colors from the general color theme;
 - powerline-ish decorations between modules.
 
 *** Colors
-The "colors" part is straightforward enough. Polybar can use =Xresources=, so we just need to generate the appropriate bindings of Xresources to the polybar variables:
++The "colors" part is straightforward enough+. Once upon the time it was so...
 
+Polybar can use =Xresources=, but the problem with that is you're supposed to use =colorX= as foreground, whereas I need them as background. This usually works fine with dark themes from =doom-themes=, but not so much with high-contrast =modus-themes=.
+
+So...
 #+NAME: get-polybar-colors
 #+begin_src emacs-lisp :var table=colors :tangle no
 (mapconcat
  (lambda (elem)
-   (format "%s = ${xrdb:%s}" (nth 0 elem) (nth 1 elem)))
- (seq-filter
-  (lambda (elem) (when-let (name (nth 1 elem))
-                   (not (string-empty-p name))))
-  table)
+   (format "%s = %s" (car elem) (cdr elem)))
+ (append
+  (nreverse
+   (cl-reduce
+    (lambda (acc name)
+      (let* ((color (my/color-value name)))
+        (unless (member name '("black"))
+          (setq color (ct-iterate
+                       color
+                       (lambda (c) (ct-edit-hsl-l-inc c 2))
+                       (lambda (c)
+                         (ct-light-p c 65)))))
+        (push (cons name color) acc)
+        (push (cons (format "light-%s" name)
+                    (ct-edit-lab-l-inc
+                     color
+                     my/alpha-for-light))
+              acc))
+      acc)
+    '("black" "red" "green" "yellow" "blue" "magenta" "cyan" "white")
+    :initial-value nil))
+  `(("background" . ,(my/color-value 'bg))
+    ("foreground" . "#000000")))
  "\n")
 #+end_src
+
+#+RESULTS: get-polybar-colors
+#+begin_example
+black = #292D3E
+light-black = #383c4e
+red = #f18388
+light-red = #ff959a
+green = #c3e88d
+light-green = #d6fc9f
+yellow = #ffcb6b
+light-yellow = #ffde7d
+blue = #82aaff
+light-blue = #96bcff
+magenta = #c792ea
+light-magenta = #daa4fe
+cyan = #89DDFF
+light-cyan = #9df0ff
+white = #EEFFFF
+light-white = #f1ffff
+background = #292D3E
+foreground = #000000
+#+end_example
 
 #+begin_src conf-windows :noweb yes
 [colors]
 <<get-polybar-colors()>>
-
-background = ${xrdb:background}
-foreground = ${xrdb:color0}
 #+end_src
 *** Glyph settings
 As for the module decorations though, I find it ironic that with all this fancy rendering around I have to resort to Unicode glyphs.
@@ -2745,7 +2809,7 @@ label-urgent-padding = 1
 [[https://github.com/davatorium/rofi][rofi]] is another dynamic menu generator. It can act as dmenu replacement but offers a superset of dmenu's features.
 
 ** Theme
-A theme, based on [[https://github.com/dracula/rofi][dracula theme]] for rofi, but with palenight colorscheme.
+A theme based on the current Emacs theme. Inspired by [[https://github.com/dracula/rofi][dracula theme]].
 
 #+name: get-rofi-colors
 #+begin_src emacs-lisp :var table=colors
@@ -2762,29 +2826,29 @@ A theme, based on [[https://github.com/dracula/rofi][dracula theme]] for rofi, b
  ,* {
     <<get-rofi-colors()>>
 
-    foreground:                  @white;
-    background:                  @black;
-    background-color:            @black;
+    foreground:                  <<get-color(name="fg")>>;
+    background:                  <<get-color(name="bg")>>;
+    background-color:            <<get-color(name="bg")>>;
     separatorcolor:              @blue;
-    border-color:                @blue;
-    selected-normal-foreground:  @black;
-    selected-normal-background:  @blue;
-    selected-active-foreground:  @black;
-    selected-active-background:  @blue;
-    selected-urgent-foreground:  @foreground;
-    selected-urgent-background:  @red;
+    border-color:                <<get-color(name="border")>>;
+    selected-normal-background:  <<get-color(name="blue")>>;
+    selected-normal-foreground:  <<get-fg-for-color(name="blue")>>;
+    selected-active-background:  <<get-color(name="light-blue")>>;
+    selected-active-foreground:  <<get-fg-for-color(name="light-blue")>>;
+    selected-urgent-background:  <<get-color(name="red")>>;
+    selected-urgent-foreground:  <<get-fg-for-color(name="red")>>;
     normal-foreground:           @foreground;
     normal-background:           @background;
     active-foreground:           @blue;
     active-background:           @background;
     urgent-foreground:           @red;
     urgent-background:           @background;
+    alternate-normal-background: <<get-color(name="bg-alt")>>;
     alternate-normal-foreground: @foreground;
-    alternate-normal-background: @light-black;
-    alternate-active-foreground: @blue;
-    alternate-active-background: @light-black;
-    alternate-urgent-foreground: @red;
-    alternate-urgent-background: @light-black;
+    alternate-active-background: <<get-fg-for-color(name="light-blue")>>;
+    alternate-active-foreground: <<get-color(name="light-blue")>>;
+    alternate-urgent-background: <<get-fg-for-color(name="red")>>;
+    alternate-urgent-foreground: <<get-color(name="red")>>;
     spacing:                     2;
 }
 window {
@@ -2898,44 +2962,6 @@ textbox-prompt-colon {
 #+end_src
 
 ** Scripts
-*** Buku bookmarks
-Inspired by the [[https://github.com/knatsakis/rofi-buku][knatsakis/rofi-buku]] script.
-#+begin_src bash :tangle ./bin/scripts/rofi-buku-mine
-if [ $(hostname) = 'pdsk' ]; then
-    BUKU="/home/pavel/.local/bin/buku"
-else
-    BUKU="/home/pavel/Programs/miniconda3/bin/buku"
-fi
-
-# COMMAND="$BUKU -o %"
-# COMMAND="qutebrowser $(buku -f 10 -p %)"
-COMMAND="firefox %"
-if [[ $1 == '-e' ]]; then
-    COMMAND="$BUKU -w %"
-fi
-$BUKU -f 4 -p | awk -F'\t' -v OFS='\t' '{
-    split($4, tags, ",")
-    joined = sep = ""
-    for (i = 1; i in tags; i++) {
-        joined = joined sep "[" tags[i] "]"
-        sep = " "
-    }
-    url = substr($2, 1, 40)
-    if (length($2) > 40) {
-        url = url "..."
-    }
-    if ($1 != "waiting for input") {
-        printf "%-5s %-60s %-45s %s\n", $1, $3, url, joined
-    }
-}' | sort -k 2 | rofi -dmenu -matching normal -sort -sorting-method fzf -width 80 -l 20 | cut -d ' ' -f 1 | {
-    read index;
-    if [[ -z "$index" ]]; then
-        exit 0
-    fi
-    url=$($BUKU -f 10 -p $index)
-    echo ${url#"waiting for input"} | cut -d ' ' -f 1 | xargs -I % $COMMAND
-}
-#+end_src
 *** Man pages
 Inspired by [[https://www.youtube.com/watch?v=8E8sUNHdzG8][this Luke Smith's video]].
 
@@ -3022,13 +3048,9 @@ TYPE_UNDO=Ctrl+Z
 | dunst           |
 | libnotify       |
 
-| Type | Note                            |
-|------+---------------------------------|
-| TODO | Cleanup default config comments |
-
 [[https://github.com/dunst-project/dunst][dunst]] is a lightweight notification daemon.
 
-My customizations of the original config consist mostly of changing colors.
+My customizations of the original config consist mostly of changing colors. Check out the default config or =man dunst= for the description of settings.
 
 References:
 - [[https://dunst-project.org/documentation/][dunst documentation]]
@@ -3036,106 +3058,25 @@ References:
 #+begin_src conf-space :tangle ./.config/dunst/dunstrc :noweb yes
 [global]
     monitor = 0
-
     follow = mouse
-
-    # The geometry of the window:
-    #   [{width}]x{height}[+/-{x}+/-{y}]
-    # The geometry of the message window.
-    # The height is measured in number of notifications everything else
-    # in pixels.  If the width is omitted but the height is given
-    # ("-geometry x2"), the message window expands over the whole screen
-    # (dmenu-like).  If width is 0, the window expands to the longest
-    # message displayed.  A positive x is measured from the left, a
-    # negative from the right side of the screen.  Y is measured from
-    # the top and down respectively.
-    # The width can be negative.  In this case the actual width is the
-    # screen width minus the width defined in within the geometry option.
     geometry = "300x5-30+20"
-
-    # Show how many messages are currently hidden (because of geometry).
     indicate_hidden = yes
-
-    # Shrink window if its smaller than the width.  Will be ignored if
-    # width is 0.
     shrink = no
-
-    # The transparency of the window.  Range: [0; 100].
-    # This option will only work if a compositing window manager is
-    # present (e.g. xcompmgr, compiz, etc.).
     transparency = 15
-
-    # The height of the entire notification.  If the height is smaller
-    # than the font height and padding combined, it will be raised
-    # to the font height and padding.
     notification_height = 0
-
-    # Draw a line of "separator_height" pixel height between two
-    # notifications.
-    # Set to 0 to disable.
     separator_height = 2
-
-    # Padding between text and separator.
     padding = 8
-
-    # Horizontal padding.
     horizontal_padding = 8
-
-    # Defines width in pixels of frame around the notification window.
-    # Set to 0 to disable.
     frame_width = 1
-
-    # Defines color of the frame around the notification window.
-    frame_color = <<get-color(name="white", quote=1)>>
-
-    # Define a color for the separator.
-    # possible values are:
-    #  * auto: dunst tries to find a color fitting to the background;
-    #  * foreground: use the same color as the foreground;
-    #  * frame: use the same color as the frame;
-    #  * anything else will be interpreted as a X color.
+    frame_color = <<get-color(name="border", quote=1)>>
     separator_color = frame
-
-    # Sort messages by urgency.
     sort = yes
-
-    # Don't remove messages, if the user is idle (no mouse or keyboard input)
-    # for longer than idle_threshold seconds.
-    # Set to 0 to disable.
-    # A client can set the 'transient' hint to bypass this. See the rules
-    # section for how to disable this if necessary
     idle_threshold = 120
 
     ### Text ###
-
     font = DejaVu Sans 9
 
-    # The spacing between lines.  If the height is smaller than the
-    # font height, it will get raised to the font height.
     line_height = 0
-
-    # Possible values are:
-    # full: Allow a small subset of html markup in notifications:
-    #        <b>bold</b>
-    #        <i>italic</i>
-    #        <s>strikethrough</s>
-    #        <u>underline</u>
-    #
-    #        For a complete reference see
-    #        <http://developer.gnome.org/pango/stable/PangoMarkupFormat.html>.
-    #
-    # strip: This setting is provided for compatibility with some broken
-    #        clients that send markup even though it's not enabled on the
-    #        server. Dunst will try to strip the markup but the parsing is
-    #        simplistic so using this option outside of matching rules for
-    #        specific applications *IS GREATLY DISCOURAGED*.
-    #
-    # no:    Disable markup parsing, incoming notifications will be treated as
-    #        plain text. Dunst will not advertise that it has the body-markup
-    #        capability if this is set as a global setting.
-    #
-    # It's important to note that markup inside the format option will be parsed
-    # regardless of what this is set to.
     markup = full
 
     # The format of the message.  Possible variables are:
@@ -3149,176 +3090,68 @@ References:
     #   %%  Literal %
     # Markup is allowed
     format = "<b>%s</b>\n%b"
-
-    # Alignment of message text.
-    # Possible values are "left", "center" and "right".
     alignment = left
-
-    # Show age of message if message is older than show_age_threshold
-    # seconds.
-    # Set to -1 to disable.
     show_age_threshold = 60
-
-    # Split notifications into multiple lines if they don't fit into
-    # geometry.
     word_wrap = yes
-
-    # When word_wrap is set to no, specify where to make an ellipsis in long lines.
-    # Possible values are "start", "middle" and "end".
     ellipsize = middle
-
-    # Ignore newlines '\n' in notifications.
     ignore_newline = no
-
-    # Stack together notifications with the same content
     stack_duplicates = true
-
-    # Hide the count of stacked notifications with the same content
     hide_duplicate_count = false
-
-    # Display indicators for URLs (U) and actions (A).
     show_indicators = yes
 
     ### Icons ###
-
-    # Align icons left/right/off
     icon_position = left
-
-    # Scale larger icons down to this size, set to 0 to disable
     max_icon_size = 32
-
-    # Paths to default icons.
     icon_path = /usr/share/icons/Mint-Y/status/32/;/usr/share/icons/Mint-Y/devices/32
 
     ### History ###
-
-    # Should a notification popped up from history be sticky or timeout
-    # as if it would normally do.
     sticky_history = yes
-
-    # Maximum amount of notifications kept in history
     history_length = 20
 
     ### Misc/Advanced ###
-
-    # dmenu path.
     dmenu = /usr/bin/dmenu -p dunst:
-
-    # Browser for opening urls in context menu.
-    browser = /usr/bin/sensible-browser
-
-    # Always run rule-defined scripts, even if the notification is suppressed
+    browser = /home/pavel/.guix-extra-profiles/browsers/browsers/bin/firefox
     always_run_script = true
-
-    # Define the title of the windows spawned by dunst
     title = Dunst
-
-    # Define the class of the windows spawned by dunst
     class = Dunst
-
-    # Print a notification on startup.
-    # This is mainly for error detection, since dbus (re-)starts dunst
-    # automatically after a crash.
     startup_notification = false
-
-    # Manage dunst's desire for talking
-    # Can be one of the following values:
-    #  crit: Critical features. Dunst aborts
-    #  warn: Only non-fatal warnings
-    #  mesg: Important Messages
-    #  info: all unimportant stuff
-    # debug: all less than unimportant stuff
     verbosity = mesg
-
-    # Define the corner radius of the notification window
-    # in pixel size. If the radius is 0, you have no rounded
-    # corners.
-    # The radius will be automatically lowered if it exceeds half of the
-    # notification height to avoid clipping text and/or icons.
     corner_radius = 0
 
     ### Legacy
-
-    # Use the Xinerama extension instead of RandR for multi-monitor support.
-    # This setting is provided for compatibility with older nVidia drivers that
-    # do not support RandR and using it on systems that support RandR is highly
-    # discouraged.
-    #
-    # By enabling this setting dunst will not be able to detect when a monitor
-    # is connected or disconnected which might break follow mode if the screen
-    # layout changes.
     force_xinerama = false
 
     ### mouse
-
-    # Defines action of mouse event
-    # Possible values are:
-    # * none: Don't do anything.
-    # * do_action: If the notification has exactly one action, or one is marked as default,
-    #              invoke it. If there are multiple and no default, open the context menu.
-    # * close_current: Close current notification.
-    # * close_all: Close all notifications.
     mouse_left_click = close_current
     mouse_middle_click = do_action
     mouse_right_click = close_all
 
-# Experimental features that may or may not work correctly. Do not expect them
-# to have a consistent behaviour across releases.
 [experimental]
-    # Calculate the dpi to use on a per-monitor basis.
-    # If this setting is enabled the Xft.dpi value will be ignored and instead
-    # dunst will attempt to calculate an appropriate dpi value for each monitor
-    # using the resolution and physical size. This might be useful in setups
-    # where there are multiple screens with very different dpi values.
     per_monitor_dpi = false
 
 [shortcuts]
-
-    # Shortcuts are specified as [modifier+][modifier+]...key
-    # Available modifiers are "ctrl", "mod1" (the alt-key), "mod2",
-    # "mod3" and "mod4" (windows-key).
-    # Xev might be helpful to find names for keys.
-
-    # Close notification.
     close = ctrl+space
-
-    # Close all notifications.
     close_all = ctrl+shift+space
-
-    # Redisplay last message(s).
-    # On the US keyboard layout "grave" is normally above TAB and left
-    # of "1". Make sure this key actually exists on your keyboard layout,
-    # e.g. check output of 'xmodmap -pke'
     history = ctrl+grave
-
-    # Context menu.
     context = ctrl+shift+period
 
 [urgency_low]
-    # IMPORTANT: colors have to be defined in quotation marks.
-    # Otherwise the "#" and following would be interpreted as a comment.
     background = <<get-color(name="bg-other", quote=1)>>
-    frame_color = <<get-color(name="white", quote=1)>>
+    frame_color = <<get-color(name="border", quote=1)>>
     foreground = <<get-color(name="fg", quote=1)>>
     timeout = 10
-    # Icon for notifications with low urgency, uncomment to enable
-    #icon = /path/to/icon
 
 [urgency_normal]
     background = <<get-color(name="bg", quote=1)>>
-    frame_color = <<get-color(name="white", quote=1)>>
+    frame_color = <<get-color(name="border", quote=1)>>
     foreground = <<get-color(name="fg", quote=1)>>
     timeout = 10
-    # Icon for notifications with normal urgency, uncomment to enable
-    #icon = /path/to/icon
 
 [urgency_critical]
     background = <<get-color(name="red", quote=1)>>
-    foreground = <<get-color(name="black", quote=1)>>
+    foreground = <<get-fg-for-color(name="red", quote=1)>>
     frame_color = <<get-color(name="red", quote=1)>>
     timeout = 0
-    # Icon for notifications with critical urgency, uncomment to enable
-    #icon = /path/to/icon
 #+end_src
 * keynav
 | Guix dependency |
@@ -3329,11 +3162,7 @@ References:
 |---------+--------------------------------|
 | SYMLINK | ./config/keynavrc -> .keynavrc |
 
-How many times you have been working with keyboard-driven programs and had to use a mouse just to press some pesky little button in a modal window?
-
-[[https://github.com/jordansissel/keynav][keynav]] is a program that allows you to control the mouse with the keyboard with the general idea of bisecting the screen to get to the required point. I'm still not sure if there is any point in using it, but it's rather funny. Unfortunately, the colors seem to be hardcoded.
-
-One of the usecases I found so far is to use the program to scroll webpages when tridactyl's scroll captures the wrong scroll area.
+[[https://github.com/jordansissel/keynav][keynav]] is a program for controlling mouse with keyboard, mostly by screen bisection. This is a poor replacement for a proper keyboard-drived sofware, but...
 
 References:
 - [[https://github.com/jordansissel/keynav/blob/master/keynav.pod][keynav documentation]]
@@ -3410,14 +3239,15 @@ fade-exclude = [
 
 [[https://github.com/yshui/picom][picom]] is a compositor for X11. It allows effects such as transparency, blurring, etc.
 
-Sample configuration is a good resource for getting an overview of the available settings. I have only a bunch of necessary settings in mine.
+Check out the sample configuration to get an idea on what's possible. I only have some basic settings in mine.
 
-There are a bunch of forks for picom (e.g. [[https://github.com/ibhagwan/picom][ibhagwan/picom]] adds rounded corners) which seem to have some popularity, but I use the base one.
+Also, there are some fancy forks of picom (e.g. [[https://github.com/ibhagwan/picom][ibhagwan/picom]] adds rounded corners).
 
 References:
 - [[https://github.com/yshui/picom/wiki][picom wiki]]
 - [[https://wiki.archlinux.org/index.php/Picom][Picom on ArchWiki]]
 - [[https://github.com/yshui/picom/blob/next/picom.sample.conf][Sample configuration]]
+
 ** Shadows
 #+begin_src conf-unix
 shadow = true;
@@ -3474,6 +3304,7 @@ opacity-rule = [
 #+end_src
 ** General settings
 Default general settings. Editing some of these may be neeeded in case of performance issues.
+
 #+begin_src conf-unix
 backend = "xrender";
 vsync = true
@@ -3504,36 +3335,39 @@ wintypes:
 | office   | zathura-pdf-mupdf |
 | office   | zathura-djvu      |
 
-[[https://pwmt.org/projects/zathura/][Zathura]] is a pdf viewer with vim-like keybindings. One of my favorite features is an ability to invert the document colors.
+[[https://pwmt.org/projects/zathura/][Zathura]] is a pdf viewer with vim-like keybindings.
+
+#+NAME: zathura-recolor
+#+begin_src emacs-lisp
+(if (my/light-p) "false" "true")
+#+end_src
 
 #+begin_src conf-space :noweb yes :tangle .config/zathura/zathurarc
 set abort-clear-search false
 set guioptions cs
 set selection-clipboard clipboard
-set recolor true
+set recolor <<zathura-recolor()>>
 map <C-r> set recolor false
 map <C-R> set recolor true
 
-set recolor-lightcolor <<get-color(name="bg", quote=1)>>
+set recolor-lightcolor <<get-color(name="black", quote=1)>>
 
 set completion-bg <<get-color(name="bg", quote=1)>>
-set completion-fg <<get-color(name="white", quote=1)>>
+set completion-fg <<get-color(name="fg", quote=1)>>
 set completion-group-bg <<get-color(name="bg", quote=1)>>
-set completion-group-fg <<get-color(name="white", quote=1)>>
+set completion-group-fg <<get-color(name="fg", quote=1)>>
 set completion-highlight-bg <<get-color(name="magenta", quote=1)>>
-set completion-highlight-fg <<get-color(name="black", quote=1)>>
+set completion-highlight-fg <<get-fg-for-color(name="magenta", quote=1)>>
 
-set inputbar-bg <<get-color(name="bg", quote=1)>>
-set inputbar-fg <<get-color(name="light-magenta", quote=1)>>
-set statusbar-bg <<get-color(name="bg", quote=1)>>
-set statusbar-fg <<get-color(name="light-magenta", quote=1)>>
+set inputbar-bg <<get-color(name="light-black", quote=1)>>
+set inputbar-fg <<get-color(name="white", quote=1)>>
+set statusbar-bg <<get-color(name="light-black", quote=1)>>
+set statusbar-fg <<get-color(name="white", quote=1)>>
 
 set notification-error-bg <<get-color(name="red", quote=1)>>
-# set notification-error-fg <<get-color(name="color-fg", quote=1)>>
-set notification-error-fg "#000000"
+set notification-error-fg <<get-fg-for-color(name="red", quote=1)>>
 set notification-warning-bg <<get-color(name="yellow", quote=1)>>
-# set notification-warning-fg <<get-color(name="color-fg", quote=1)>>
-set notification-warning-fg "#000000"
+set notification-warning-fg <<get-fg-for-color(name="yellow", quote=1)>>
 #+end_src
 * Various software
 This section generates manifests for various desktop software that I'm using.
@@ -3675,8 +3509,8 @@ Packages to install:
 |------------------------------+---------|
 | com.github.wwmm.pulseeffects | flathub |
 | com.discordapp.Discord       | flathub |
-| us.zoom.Zoom                 | flathub |
-| com.slack.Slack              | flathub |
+| com.jetbrains.DataGrip       | flathub |
+| chat.rocket.RocketChat       | flathub |
 
 #+begin_src emacs-lisp :var table=flatpak-deps :wrap example
 (mapconcat
@@ -3711,7 +3545,7 @@ nix-channel --update
 
 Installing packages:
 #+begin_src
-nix-env -i vk-messenger slack
+nix-env -i slack
 #+end_src
 * Services
 :PROPERTIES:
@@ -3720,6 +3554,7 @@ nix-env -i vk-messenger slack
 [[https://www.gnu.org/software/shepherd/manual/html_node/index.html][GNU Shepherd]] is a service management system for GNU Guix.
 
 I previously used supervisor, but shepherd also seems pretty capable.
+
 ** Music
 | Category | Guix dependency |
 |----------+-----------------|
@@ -3886,7 +3721,9 @@ Run my [[file:Guix.org::*OpenVPN][OpenVPN setup]]. Not lauching this automatiall
     #:stop (make-kill-destructor)))
 #+end_src
 ** Shepherd config
-Register services
+For some reason, running start on a one-shot service started to hang shepherd, not sure why... Turining these off for now.
+
+Register services:
 #+begin_src scheme
 (register-services
  mpd
@@ -3920,10 +3757,10 @@ Run services
                   aw-watcher-window
                   pulseeffects
                   xsettingsd
-                  discord-rich-presence
+                  ; discord-rich-presence
                   polkit-gnome
                   davmail
-                  xmodmap
+                  ; xmodmap
                   nm-applet))
 #+end_src
 * Guix settings
@@ -3947,7 +3784,6 @@ Other desktop programs I use are listed below.
 | desktop-misc | gnome-font-viewer      | view fonts                                |
 | desktop-misc | qbittorrent            | torrent client                            |
 | desktop-misc | anydesk                | Remote desktop software                   |
-| desktop-misc | vinagre                | My VNC client of choice                   |
 | desktop-misc | gnome-disk-utility     | Manage disks                              |
 | desktop-misc | gparted                | Manage partitions                         |
 | desktop-misc | xev                    | Test input                                |

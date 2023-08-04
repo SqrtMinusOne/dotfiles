@@ -23,7 +23,7 @@
   (pinentry-start))
 
 (use-package exwm-modeline
-  :straight (:host github :repo "SqrtMinusOne/exwm-modeline")
+  :straight t
   :config
   (add-hook 'exwm-init-hook #'exwm-modeline-mode)
   (my/use-colors

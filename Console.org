@@ -748,13 +748,16 @@ source ~/.tmux.line.conf
 |-----------------|
 | alacritty       |
 
-[[https://github.com/alacritty/alacritty][Alacritty]] is a GPU-accelerated terminal emulator. I haven't found it to be an inch faster than st, but configuration the in yml format is way more convenient than patches.
+[[https://github.com/alacritty/alacritty][Alacritty]] is a GPU-accelerated terminal emulator. I haven't found it to be an inch faster than st, but =yml= configuration is way more convenient than patches.
 
-Once again, we have an application which doesn't support reading Xresources, so here goes noweb.
+The application doesn't support XResources, so here goes noweb.
 
-#+name: get-xrdb
-#+begin_src bash :var color="color0" :tangle no
-xrdb -query all | grep "$color:" | cut -f 2
+#+NAME: get-color
+#+begin_src emacs-lisp :var name="black" quote=0 :tangle no
+(let ((color (or (my/color-value name))))
+  (if (> quote 0)
+      (concat "\"" color "\"")
+    color))
 #+end_src
 
 #+begin_src emacs-lisp :tangle no
@@ -779,26 +782,26 @@ env:
 
 colors:
   primary:
-    background: '<<get-xrdb(color="color0")>>'
-    foreground: '<<get-xrdb(color="color7")>>'
+    background: '<<get-color(name="bg")>>'
+    foreground: '<<get-color(name="fg")>>'
   normal:
-    black: '<<get-xrdb(color="color0")>>'
-    red: '<<get-xrdb(color="color1")>>'
-    green: '<<get-xrdb(color="color2")>>'
-    yellow: '<<get-xrdb(color="color3")>>'
-    blue: '<<get-xrdb(color="color4")>>'
-    magenta: '<<get-xrdb(color="color5")>>'
-    cyan: '<<get-xrdb(color="color6")>>'
-    white: '<<get-xrdb(color="color7")>>'
+    black: '<<get-color(name="black")>>'
+    red: '<<get-color(name="red")>>'
+    green: '<<get-color(name="green")>>'
+    yellow: '<<get-color(name="yellow")>>'
+    blue: '<<get-color(name="blue")>>'
+    magenta: '<<get-color(name="magenta")>>'
+    cyan: '<<get-color(name="cyan")>>'
+    white: '<<get-color(name="white")>>'
   bright:
-    Black: '<<get-xrdb(color="color8")>>'
-    Red: '<<get-xrdb(color="color9")>>'
-    Green: '<<get-xrdb(color="color10")>>'
-    Yellow: '<<get-xrdb(color="color11")>>'
-    Blue: '<<get-xrdb(color="color12")>>'
-    Magenta: '<<get-xrdb(color="color13")>>'
-    Cyan: '<<get-xrdb(color="color14")>>'
-    White: '<<get-xrdb(color="color15")>>'
+    Black: '<<get-color(name="light-black")>>'
+    Red: '<<get-color(name="light-red")>>'
+    Green: '<<get-color(name="light-green")>>'
+    Yellow: '<<get-color(name="light-yellow")>>'
+    Blue: '<<get-color(name="light-blue")>>'
+    Magenta: '<<get-color(name="light-magenta")>>'
+    Cyan: '<<get-color(name="light-cyan")>>'
+    White: '<<get-color(name="light-white")>>'
 
 window:
   padding:

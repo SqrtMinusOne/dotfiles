@@ -1493,10 +1493,7 @@ As of now I want this to support =doom-themes= and =modus-themes=. So, let's get
 I also want to know if the current theme is light or not:
 #+begin_src emacs-lisp
 (defun my/light-p ()
-  (and (seq-intersection
-        custom-enabled-themes
-        '(doom-one-light modus-operandi))
-       t))
+  (ct-light-p (my/color-value 'bg)))
 
 (defun my/dark-p ()
   (not (my/light-p)))
@@ -1504,11 +1501,13 @@ I also want to know if the current theme is light or not:
 
 Now, let's get the current color from =doom=. =doom-themes= provide =doom-color=, but I also want to:
 - override some colors
-- add =black=, =white= and =light-*=
+- add =black=, =white=, =light-*= and =border=
 #+begin_src emacs-lisp
 (defconst my/theme-override
   '((doom-palenight
      (red . "#f07178"))))
+
+(defvar my/alpha-for-light 7)
 
 (defun my/doom-color (color)
   (let ((override (alist-get (my/doom-p) my/theme-override))
@@ -1521,8 +1520,11 @@ Now, let's get the current color from =doom=. =doom-themes= provide =doom-color=
        (if is-light (doom-color 'fg) (doom-color 'bg)))
       ((eq 'white color)
        (if is-light (doom-color 'bg) (doom-color 'fg)))
+      ((eq 'border color)
+       (if is-light (doom-color 'base0) (doom-color 'base8)))
       ((string-match-p (rx bos "light-") color-name)
-       (ct-edit-lab-l-inc (my/doom-color (intern (substring color-name 6))) 10))
+       (ct-edit-hsl-l-inc (my/doom-color (intern (substring color-name 6)))
+                          my/alpha-for-light))
       (t (doom-color color))))))
 #+end_src
 
@@ -1544,16 +1546,18 @@ And the same for =modus-themes=. =my/modus-color= has to accept the same argumen
         (pcase color
           ('black (if is-light fg-main bg-main))
           ('white (if is-light bg-main fg-main))
-          ('light-black (ct-edit-lab-l-inc
+          ('light-black (ct-edit-hsl-l-inc
                          (if is-light fg-main bg-main)
                          15))
-          ('light-white (ct-edit-lab-l-inc
+          ('light-white (ct-edit-hsl-l-inc
                          (if is-light bg-main fg-main)
                          15)))))
      ((or (eq color 'bg))
       (cadr (assoc 'bg-main palette)))
      ((or (eq color 'fg))
       (cadr (assoc 'fg-main palette)))
+     ((eq color 'bg-alt)
+      (cadr (assoc 'bg-dim palette)))
      ((eq color 'violet)
       (cadr (assoc 'magenta-cooler palette)))
      ((string-match-p (rx bos "base" digit) (symbol-name color))
@@ -1574,7 +1578,7 @@ Test the two functions.
   '(black red green yellow blue magenta cyan white light-black
           light-red light-green light-yellow light-blue light-magenta
           light-cyan light-white bg fg violet grey base0 base1 base2
-          base3 base4 base5 base6 base7 base8))
+          base3 base4 base5 base6 base7 base8 border bg-alt))
 
 (defun my/test-colors ()
   (interactive)
@@ -1600,8 +1604,8 @@ Finally, one function to get the value of a color in the current theme.
    ((eq color 'bg-other)
     (let ((color (my/color-value 'bg)))
       (if (ct-light-p color)
-          (ct-edit-lab-l-dec color 3)
-        (ct-edit-lab-l-dec color 3))))
+          (ct-edit-hsl-l-dec color 3)
+        (ct-edit-hsl-l-dec color 3))))
    ((my/doom-p) (my/doom-color color))
    ((my/modus-p) (my/modus-color color))))
 #+end_src
@@ -6060,6 +6064,19 @@ emacs -Q --batch -l run-tangle.el
 
 
 I have added this line to yadm's =post_alt= hook, so to run tangle after =yadm alt=
+*** Regenerate desktop config
+Somewhat similar to the previous one... Occasinally I want to re-tangle all desktop configuration files, for instance to apply a new theme.
+
+#+begin_src emacs-lisp
+(defun my/regenerate-desktop ()
+  (interactive)
+  (org-babel-tangle-file "/home/pavel/Desktop.org")
+  (org-babel-tangle-file "/home/pavel/Console.org")
+  (call-process "xrdb" nil nil nil "-load" "/home/pavel/.Xresources")
+  (call-process "~/bin/polybar.sh")
+  (call-process "pkill" nil nil nil "dunst"))
+#+end_src
+
 *** Folders
 #+begin_src emacs-lisp
 (let ((folders-file (expand-file-name "folders.el" user-emacs-directory)))

@@ -1,24 +1,23 @@
 ; [[file:../../Desktop.org::*Colors][Colors:2]]
 [colors]
-black = ${xrdb:color0}
-red = ${xrdb:color1}
-green = ${xrdb:color2}
-yellow = ${xrdb:color3}
-blue = ${xrdb:color4}
-magenta = ${xrdb:color5}
-cyan = ${xrdb:color6}
-white = ${xrdb:color7}
-light-black = ${xrdb:color8}
-light-red = ${xrdb:color9}
-light-green = ${xrdb:color10}
-light-yellow = ${xrdb:color11}
-light-blue = ${xrdb:color12}
-light-magenta = ${xrdb:color13}
-light-cyan = ${xrdb:color14}
-light-white = ${xrdb:color15}
-
-background = ${xrdb:background}
-foreground = ${xrdb:color0}
+black = #292D3E
+light-black = #383c4e
+red = #f18388
+light-red = #ff959a
+green = #c3e88d
+light-green = #d6fc9f
+yellow = #ffcb6b
+light-yellow = #ffde7d
+blue = #82aaff
+light-blue = #96bcff
+magenta = #c792ea
+light-magenta = #daa4fe
+cyan = #89DDFF
+light-cyan = #9df0ff
+white = #EEFFFF
+light-white = #f1ffff
+background = #292D3E
+foreground = #000000
 ; Colors:2 ends here
 
 ; [[file:../../Desktop.org::*Glyph settings][Glyph settings:1]]

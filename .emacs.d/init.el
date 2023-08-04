@@ -887,10 +887,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
             custom-enabled-themes))
 
 (defun my/light-p ()
-  (and (seq-intersection
-        custom-enabled-themes
-        '(doom-one-light modus-operandi))
-       t))
+  (ct-light-p (my/color-value 'bg)))
 
 (defun my/dark-p ()
   (not (my/light-p)))
@@ -898,6 +895,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (defconst my/theme-override
   '((doom-palenight
      (red . "#f07178"))))
+
+(defvar my/alpha-for-light 7)
 
 (defun my/doom-color (color)
   (let ((override (alist-get (my/doom-p) my/theme-override))
@@ -910,8 +909,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
        (if is-light (doom-color 'fg) (doom-color 'bg)))
       ((eq 'white color)
        (if is-light (doom-color 'bg) (doom-color 'fg)))
+      ((eq 'border color)
+       (if is-light (doom-color 'base0) (doom-color 'base8)))
       ((string-match-p (rx bos "light-") color-name)
-       (ct-edit-lab-l-inc (my/doom-color (intern (substring color-name 6))) 10))
+       (ct-edit-hsl-l-inc (my/doom-color (intern (substring color-name 6)))
+                          my/alpha-for-light))
       (t (doom-color color))))))
 
 (defun my/modus-get-base (color)
@@ -930,16 +932,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         (pcase color
           ('black (if is-light fg-main bg-main))
           ('white (if is-light bg-main fg-main))
-          ('light-black (ct-edit-lab-l-inc
+          ('light-black (ct-edit-hsl-l-inc
                          (if is-light fg-main bg-main)
                          15))
-          ('light-white (ct-edit-lab-l-inc
+          ('light-white (ct-edit-hsl-l-inc
                          (if is-light bg-main fg-main)
                          15)))))
      ((or (eq color 'bg))
       (cadr (assoc 'bg-main palette)))
      ((or (eq color 'fg))
       (cadr (assoc 'fg-main palette)))
+     ((eq color 'bg-alt)
+      (cadr (assoc 'bg-dim palette)))
      ((eq color 'violet)
       (cadr (assoc 'magenta-cooler palette)))
      ((string-match-p (rx bos "base" digit) (symbol-name color))
@@ -957,7 +961,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   '(black red green yellow blue magenta cyan white light-black
           light-red light-green light-yellow light-blue light-magenta
           light-cyan light-white bg fg violet grey base0 base1 base2
-          base3 base4 base5 base6 base7 base8))
+          base3 base4 base5 base6 base7 base8 border bg-alt))
 
 (defun my/test-colors ()
   (interactive)
@@ -980,8 +984,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    ((eq color 'bg-other)
     (let ((color (my/color-value 'bg)))
       (if (ct-light-p color)
-          (ct-edit-lab-l-dec color 3)
-        (ct-edit-lab-l-dec color 3))))
+          (ct-edit-hsl-l-dec color 3)
+        (ct-edit-hsl-l-dec color 3))))
    ((my/doom-p) (my/doom-color color))
    ((my/modus-p) (my/modus-color color))))
 
@@ -4257,6 +4261,14 @@ With ARG, repeats or can move backward if negative."
           (lambda ()
             (when (member (buffer-file-name) my/org-config-files)
               (setq-local org-confirm-babel-evaluate nil))))
+
+(defun my/regenerate-desktop ()
+  (interactive)
+  (org-babel-tangle-file "/home/pavel/Desktop.org")
+  (org-babel-tangle-file "/home/pavel/Console.org")
+  (call-process "xrdb" nil nil nil "-load" "/home/pavel/.Xresources")
+  (call-process "~/bin/polybar.sh")
+  (call-process "pkill" nil nil nil "dunst"))
 
 (let ((folders-file (expand-file-name "folders.el" user-emacs-directory)))
   (when (file-exists-p folders-file)

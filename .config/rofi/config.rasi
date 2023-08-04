@@ -1,46 +1,46 @@
 /* Generated from [[file:../../Desktop.org::*Theme][Theme:1]] */
  * {
-    black: #1c1f2b;
+    black: #292D3E;
     red: #f07178;
     green: #c3e88d;
     yellow: #ffcb6b;
     blue: #82aaff;
     magenta: #c792ea;
     cyan: #89DDFF;
-    white: #A6Accd;
-    light-black: #313441;
-    light-red: #ff8c91;
-    light-green: #dfffa7;
-    light-yellow: #ffe785;
-    light-blue: #9fc5ff;
-    light-magenta: #e3acff;
-    light-cyan: #a6f9ff;
-    light-white: #c1c7e9;
+    white: #EEFFFF;
+    light-black: #373c53;
+    light-red: #f39196;
+    light-green: #d2edaa;
+    light-yellow: #ffd78e;
+    light-blue: #a5c2fe;
+    light-magenta: #d6afef;
+    light-cyan: #ace7ff;
+    light-white: #ffffff;
     
 
-    foreground:                  @white;
-    background:                  @black;
-    background-color:            @black;
+    foreground:                  #EEFFFF;
+    background:                  #292D3E;
+    background-color:            #292D3E;
     separatorcolor:              @blue;
-    border-color:                @blue;
-    selected-normal-foreground:  @black;
-    selected-normal-background:  @blue;
-    selected-active-foreground:  @black;
-    selected-active-background:  @blue;
-    selected-urgent-foreground:  @foreground;
-    selected-urgent-background:  @red;
+    border-color:                #A6Accd;
+    selected-normal-background:  #82aaff;
+    selected-normal-foreground:  #292D3E;
+    selected-active-background:  #a5c2fe;
+    selected-active-foreground:  #292D3E;
+    selected-urgent-background:  #f07178;
+    selected-urgent-foreground:  #EEFFFF;
     normal-foreground:           @foreground;
     normal-background:           @background;
     active-foreground:           @blue;
     active-background:           @background;
     urgent-foreground:           @red;
     urgent-background:           @background;
+    alternate-normal-background: #242837;
     alternate-normal-foreground: @foreground;
-    alternate-normal-background: @light-black;
-    alternate-active-foreground: @blue;
-    alternate-active-background: @light-black;
-    alternate-urgent-foreground: @red;
-    alternate-urgent-background: @light-black;
+    alternate-active-background: #292D3E;
+    alternate-active-foreground: #a5c2fe;
+    alternate-urgent-background: #EEFFFF;
+    alternate-urgent-foreground: #f07178;
     spacing:                     2;
 }
 window {

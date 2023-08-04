@@ -106,11 +106,11 @@
  aw-watcher-window
  pulseeffects
  xsettingsd
- discord-rich-presence
+ ;; discord-rich-presence
  polkit-gnome
  vpn
  davmail
- xmodmap
+ ;; xmodmap
  nm-applet)
 
 (action 'shepherd 'daemonize)
@@ -123,8 +123,8 @@
                   aw-watcher-window
                   pulseeffects
                   xsettingsd
-                  ;; discord-rich-presence
+                  ; discord-rich-presence
                   polkit-gnome
                   davmail
-                  ;; xmodmap
+                  ; xmodmap
                   nm-applet))
