@@ -586,6 +586,11 @@ _d_: Discord
 (defun my/exwm-update-class ()
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))
 
+(defun my/exwm-set-alpha (alpha)
+  (setf (alist-get 'alpha default-frame-alist)
+        `(,alpha . ,alpha))
+  (set-frame-parameter (selected-frame) 'alpha `(,alpha . ,alpha)))
+
 (use-package exwm
   :straight t
   :config
@@ -727,8 +732,9 @@ _d_: Discord
                     (backtrace)
                     (buffer-string))))))
 
-  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
-  (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+  (if (my/light-p)
+      (my/exwm-set-alpha 100)
+    (my/exwm-set-alpha 90))
 
   (perspective-exwm-mode)
   (exwm-enable))

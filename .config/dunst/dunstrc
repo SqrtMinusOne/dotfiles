@@ -79,7 +79,7 @@
     context = ctrl+shift+period
 
 [urgency_low]
-    background = "#222637"
+    background = "#222634"
     frame_color = "#A6Accd"
     foreground = "#EEFFFF"
     timeout = 10

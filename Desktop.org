@@ -3,6 +3,7 @@
 #+PROPERTY: header-args                :mkdirp yes
 #+PROPERTY: header-args:emacs-lisp     :eval never-export
 #+PROPERTY: header-args:conf-space     :comments link
+#+PROPERTY: header-args:js             :comments link
 #+PROPERTY: header-args:conf-unix      :comments link
 #+PROPERTY: header-args:conf-windows   :comments link
 #+PROPERTY: header-args:conf-xdefaults :comments link
@@ -138,9 +139,23 @@ A few programs I use to customize the apperance are listed below.
 
 [[https://github.com/derat/xsettingsd][xsettingsd]] is a lightweight daemon which configures X11 applications. It is launched with shepherd in the [[*Services][Services]] section.
 
-#+begin_src conf-space :tangle ~/.config/xsettingsd/xsettingsd.conf
-Net/ThemeName "Matcha-dark-azul"
-Net/IconThemeName "Papirus-Dark"
+#+NAME: get-gtk-theme
+#+begin_src emacs-lisp
+(if (my/light-p)
+    "Matcha-light-azul"
+  "Matcha-dark-azul")
+#+end_src
+
+#+NAME: get-icons-theme
+#+begin_src emacs-lisp
+(if (my/light-p)
+    "Papirus"
+  "Papirus-Dark")
+#+end_src
+
+#+begin_src conf-space :tangle ~/.config/xsettingsd/xsettingsd.conf :noweb yes
+Net/ThemeName "<<get-gtk-theme()>>"
+Net/IconThemeName "<<get-icons-theme()>>"
 Gtk/DecorationLayout "menu:minimize,maximize,close"
 Gtk/FontName "Sans 10"
 Gtk/MonospaceFontName "JetBrainsMono Nerd Mono 12"
@@ -1178,6 +1193,11 @@ And the EXWM config itself.
 (defun my/exwm-update-class ()
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))
 
+(defun my/exwm-set-alpha (alpha)
+  (setf (alist-get 'alpha default-frame-alist)
+        `(,alpha . ,alpha))
+  (set-frame-parameter (selected-frame) 'alpha `(,alpha . ,alpha)))
+
 (use-package exwm
   :straight t
   :config
@@ -1201,8 +1221,9 @@ And the EXWM config itself.
   <<exwm-mode-line-config>>
   <<exwm-fixes>>
 
-  (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
-  (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+  (if (my/light-p)
+      (my/exwm-set-alpha 100)
+    (my/exwm-set-alpha 90))
 
   (perspective-exwm-mode)
   (exwm-enable))
@@ -1796,7 +1817,7 @@ My polybar has:
 *** Colors
 +The "colors" part is straightforward enough+. Once upon the time it was so...
 
-Polybar can use =Xresources=, but the problem with that is you're supposed to use =colorX= as foreground, whereas I need them as background. This usually works fine with dark themes from =doom-themes=, but not so much with high-contrast =modus-themes=.
+Polybar can use =Xresources=, but the problem with that is you're supposed to use =colorX= as foreground, not as background. This usually works fine with dark themes from =doom-themes=, but not so much with high-contrast =modus-themes=.
 
 So...
 #+NAME: get-polybar-colors
@@ -1824,7 +1845,8 @@ So...
       acc)
     '("black" "red" "green" "yellow" "blue" "magenta" "cyan" "white")
     :initial-value nil))
-  `(("background" . ,(my/color-value 'bg))
+  `(("background" . ,(or (my/color-value 'bg-active)
+                         (my/color-value 'bg)))
     ("foreground" . "#000000")))
  "\n")
 #+end_src
@@ -3153,6 +3175,298 @@ References:
     frame_color = <<get-color(name="red", quote=1)>>
     timeout = 0
 #+end_src
+* Firefox
+[[https://www.mozilla.org/en-US/firefox/new/][Firefox]] is my web browser of choice.
+
+** Tridactyl
+[[https://github.com/tridactyl/tridactyl][Tridactyl]] is a Firefox add-on that provides vim-like interface.
+
+Run =:nativeinstall= at the first start.
+
+*** Config
+The native messenger allows to configure the addon with a config file.
+
+#+begin_src conf :tangle ~/.tridactylrc
+sanitize tridactyllocal tridactylsync
+
+bind gn tabnew
+bind gN tabclose
+
+bind O fillcmdline tabopen
+
+bind n findnext 1
+bind N findnext -1
+bind F hint -t
+
+unbind <C-f>
+
+set smoothscroll false
+set findcase sensitive
+colorscheme emacs
+
+bind j scrollline 3
+bind k scrollline -3
+
+guiset_quiet gui full
+guiset_quiet statuspanel left
+guiset_quiet navbar none
+guiset_quiet tabs always
+
+set searchurls.g https://google.com/search?q=
+
+set newtab about:blank
+
+command fixamo_quiet jsb tri.excmds.setpref("privacy.resistFingerprinting.block_mozAddonManager", "true").then(tri.excmds.setpref("extensions.webextensions.restrictedDomains", '""'))
+command fixamo js tri.excmds.setpref("privacy.resistFingerprinting.block_mozAddonManager", "true").then(tri.excmds.setpref("extensions.webextensions.restrictedDomains", '""').then(tri.excmds.fillcmdline_tmp(3000, "Permissions added to user.js. Please restart Firefox to make them take affect.")))
+fixamo_quiet
+#+end_src
+
+*** Theme
+Then, the package has its separate theme.
+
+I based it on =base16-dracula= by [[http://chriskempson.com][Chris Kempson]], but replaced the colors with my Emacs theme.
+
+#+begin_src css :tangle ~/themes/emacs.css :noweb yes
+:root {
+  --tridactyl-fg: <<get-color(name="fg")>>;
+  --tridactyl-bg: <<get-color(name="bg")>>;
+  --tridactyl-url-fg: <<get-color(name="red")>>;
+  --tridactyl-url-bg: <<get-color(name="bg")>>;
+  --tridactyl-highlight-box-bg: <<get-color(name="blue")>>;
+  --tridactyl-highlight-box-fg: <<get-fg-for-color(name="blue")>>;
+
+  /* Command line */
+  --tridactyl-cmdl-bg: <<get-color(name="bg-alt")>>
+  --tridactyl-cmdl-fg: <<get-color(name="fg")>>
+
+  /* Hint character tags */
+  --tridactyl-hintspan-fg: <<get-fg-for-color(name="blue")>> !important;
+  --tridactyl-hintspan-bg: <<get-color(name="blue")>> !important;
+
+  /* Element Highlights */
+  --tridactyl-hint-active-fg: none;
+  --tridactyl-hint-active-bg: none;
+  --tridactyl-hint-active-outline: none;
+  /* --tridactyl-hint-activy-outline: var(--base08); */
+  --tridactyl-hint-bg: none;
+  --tridactyl-hint-outline: none;
+  /* --tridactyl-hint-outline: var(--base08); */
+}
+
+/* a { */
+/*   color: var(--base04); */
+/* } */
+
+#command-line-holder {
+  order: 1;
+  border: 2px solid <<get-color(name="blue")>>;
+  background: <<get-color(name="bg")>>;
+}
+
+#tridactyl-input {
+  padding: 1rem;
+  color: var(--tridactyl-fg);
+  width: 90%;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  background: var(--tridactyl-bg);
+  padding-left: unset;
+  padding: 1rem;
+}
+
+#completions table {
+  font-size: 0.8rem;
+  font-weight: 200;
+  border-spacing: 0;
+  table-layout: fixed;
+  padding: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+#completions > div {
+  max-height: calc(20 * var(--option-height));
+  min-height: calc(10 * var(--option-height));
+}
+
+/* COMPLETIONS */
+
+#completions {
+  --option-height: 1.4em;
+  color: var(--tridactyl-fg);
+  background: var(--tridactyl-bg);
+  display: inline-block;
+  font-size: unset;
+  font-weight: 200;
+  overflow: hidden;
+  width: 100%;
+  border-top: unset;
+  order: 2;
+}
+
+/* Olie doesn't know how CSS inheritance works */
+#completions .HistoryCompletionSource {
+  max-height: unset;
+  min-height: unset;
+}
+
+#completions .HistoryCompletionSource table {
+  width: 100%;
+  font-size: 11pt;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+/* redundancy 2: redundancy 2: more redundancy */
+#completions .BmarkCompletionSource {
+  max-height: unset;
+  min-height: unset;
+}
+
+#completions table tr td.prefix,#completions table tr td.privatewindow,#completions table tr td.container,#completions table tr td.icon {
+  display: none;
+}
+
+#completions .BufferCompletionSource table {
+  width: unset;
+  font-size: unset;
+  border-spacing: unset;
+  table-layout: unset;
+}
+
+#completions table tr .title {
+  width: 50%;
+}
+
+#completions table tr {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#completions .sectionHeader {
+  background: unset;
+  font-weight: 200;
+  border-bottom: unset;
+  padding: 1rem !important;
+  padding-left: unset;
+  padding-bottom: 0.2rem;
+}
+
+#cmdline_iframe {
+  position: fixed !important;
+  bottom: unset;
+  top: 25% !important;
+  left: 10% !important;
+  z-index: 2147483647 !important;
+  width: 80% !important;
+  box-shadow: rgba(0, 0, 0, 0.5) 0px 0px 20px !important;
+}
+
+.TridactylStatusIndicator {
+  position: fixed !important;
+  bottom: 0 !important;
+  background: var(--tridactyl-bg) !important;
+  border: unset !important;
+  border: 1px <<get-color(name="blue")>> solid !important;
+  font-size: 12pt !important;
+  /*font-weight: 200 !important;*/
+  padding: 0.8ex !important;
+}
+
+#completions .focused {
+  background: <<get-color(name="blue")>>;
+  color: <<get-fg-for-color(name="blue")>>;
+}
+
+#completions .focused .url {
+  background: <<get-color(name="blue")>>;
+  color: <<get-fg-for-color(name="blue")>>;
+}
+/* #Ocean-normal { */
+/*  border-color: green !important; */
+/* } */
+
+/* #Ocean-insert { */
+/*  border-color: yellow !important; */
+/* } */
+#+end_src
+** Firefox Color
+[[https://color.firefox.com/][Firefox Color]] is a system that allows for easy experimentation with Firefox themes.
+
+It can serialize themes into URLs like =https://color.firefox.com/?theme=<theme>=, so I thought it would be a piece of cake to generate one from my Emacs theme, right? Well...
+
+As it turns out, Firefox uses npm package called [[https://github.com/masotime/json-url][json-url]] to create =<theme>=, which this package does by the following sequence:
+- msgpack v5
+- lzma
+- url-safe base64
+I tried to reproduce the above in Emacs, but in the end gave up and used the package in a simple node script:
+
+#+begin_src js :tangle ~/bin/firefox-theme/main.js
+const JsonUrl = require('json-url');
+const jsonCodec = JsonUrl('lzma');
+
+const json = JSON.parse(process.argv[2]);
+jsonCodec.compress(json).then((r) => process.stdout.write(r));
+#+end_src
+
+Which I then can use to create the URL.
+
+#+begin_src emacs-lisp
+(defun my/firefox-encode-json (string)
+  (with-output-to-string
+    (with-current-buffer standard-output
+      (call-process "node" nil t nil
+                    (expand-file-name "~/bin/firefox-theme/main.js")
+                    string))))
+
+(defun my/color-value-rgb (color)
+  (let ((color (if (stringp color)
+                   color
+                 (my/color-value color))))
+    `((r . ,(* 2.55 (ct-get-rgb-r color)))
+      (g . ,(* 2.55 (ct-get-rgb-g color)))
+      (b . ,(* 2.55 (ct-get-rgb-b color))))))
+
+(defun my/firefox-get-json ()
+  (let ((toolbar-color
+         (my/color-value-rgb
+          (or
+           (my/color-value 'bg-mode-line-active)
+           (if (my/light-p)
+               (ct-edit-hsl-l-dec (my/color-value 'bg-alt) 10)
+             (ct-edit-hsl-l-inc (my/color-value 'bg-alt) 15)))))
+        (text-color
+         (my/color-value-rgb
+          (if (my/light-p) 'fg 'yellow))))
+    `((colors . ((toolbar . ,toolbar-color)
+                 (toolbar_text . ,text-color)
+                 (frame . ,(my/color-value-rgb 'bg))
+                 (tab_background_text . ,(my/color-value-rgb 'fg))
+                 (toolbar_field . ,(my/color-value-rgb 'bg))
+                 (toolbar_field_text . ,(my/color-value-rgb 'blue))
+                 (tab_line . ,text-color)
+                 (popup . ,(my/color-value-rgb 'bg-alt))
+                 (popup_text . ,(my/color-value-rgb 'fg))
+                 (tab_loading . ,text-color))))))
+
+(defun my/firefox-get-color-url ()
+  (concat
+   "https://color.firefox.com/?theme="
+   (my/firefox-encode-json
+    (json-encode
+     (my/firefox-get-json)))))
+
+(defun my/firefox-kill-color-url ()
+  (interactive)
+  (kill-new (my/firefox-get-color-url)))
+
+(my/firefox-get-color-url)
+#+end_src
+
+#+RESULTS:
+: https://color.firefox.com/?theme=XQAAAAJrAQAAAAAAAABAqYhm849SCia3ftKEGccwS-xMDPsqcRvzbzAAd4k2kmKXySkP4TMALpTiAcE8Rgs7Uh-5qAVfhLcwaZT2bTD-29a13URGpYcmL606LIDWim8VmsoOSfdgHHz_mXYNmDrybfpFjF8MrhAxhCR9CUaEeVVThQwXiNyFKB47dmsAcqhUUHP9tqgY6YXG2A5n1PqZq7QowpQn__84yaYA
+
 * keynav
 | Guix dependency |
 |-----------------|

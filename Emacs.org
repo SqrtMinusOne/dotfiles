@@ -1669,7 +1669,9 @@ The built-in =load-theme= does not deactivate the previous theme, so here's a fu
            if (not (or (eq enabled-theme 'my-theme-1)
                        (eq enabled-theme theme)))
            do (disable-theme enabled-theme))
-  (load-theme theme t))
+  (load-theme theme t)
+  (when current-prefix-arg
+    (my/regenerate-desktop)))
 #+end_src
 *** Dim inactive buffers
 Dim inactive buffers.
@@ -3223,7 +3225,7 @@ Remove all advice from function. Source: https://emacs.stackexchange.com/questio
 #+end_src
 **** IELM
 #+begin_src emacs-lisp
-(add-hook 'inferior-emacs-lisp-mode-hook #'lispy-mode)
+(add-hook 'inferior-emacs-lisp-mode-hook #'smartparens-mode)
 #+end_src
 *** Common lisp
 **** SLIME
@@ -6074,7 +6076,12 @@ Somewhat similar to the previous one... Occasinally I want to re-tangle all desk
   (org-babel-tangle-file "/home/pavel/Console.org")
   (call-process "xrdb" nil nil nil "-load" "/home/pavel/.Xresources")
   (call-process "~/bin/polybar.sh")
-  (call-process "pkill" nil nil nil "dunst"))
+  (call-process "pkill" nil nil nil "dunst")
+  (call-process "herd" nil nil nil "")
+  (when (fboundp #'my/exwm-set-alpha)
+    (if (my/light-p)
+        (my/exwm-set-alpha 100)
+      (my/exwm-set-alpha 90))))
 #+end_src
 
 *** Folders

@@ -1,0 +1,22 @@
+#+TITLE: firefox-theme
+
+Encode JSON with [[https://www.npmjs.com/package/json-url][json-url]]. Use to create URLs for [[https://color.firefox.com/][Firefox Color]].
+
+https://color.firefox.com/?theme=XQAAAAIHAQAAAAAAAABBKYhm849SCia2CaaEGccwS-xMDPsARMm2k1ATMvUAbztT0nA8jHzZWxmH53Zcl6OKO9FFdj7vQjqbs2NpDdIj_5EdCmTYWQeNMeHNc-M6G8YzO_5VKkeZvPZ5U3zNt3zGuy0f9c_R7jIQIdtxDf4DqBQVVO_0s7pB4c_FT2sS57mp_xSoRfHqN00wGpGMExz90em9-Qlsg8kUhIlwvQw__OjqYQ
+
+#+begin_src json
+{
+  colors: {
+    toolbar: { r: 67, g: 71, b: 88 },
+    toolbar_text: { r: 255, g: 203, b: 107 },
+    frame: { r: 41, g: 45, b: 62 },
+    tab_background_text: { r: 255, g: 255, b: 255 },
+    toolbar_field: { r: 41, g: 45, b: 62 },
+    toolbar_field_text: { r: 156, g: 196, b: 255 },
+    tab_line: { r: 255, g: 203, b: 107 },
+    popup: { r: 67, g: 71, b: 88 },
+    popup_text: { r: 255, g: 255, b: 255 }
+  },
+  images: { additional_backgrounds: [ './bg-000.svg' ] }
+}
+#+end_src
