@@ -97,6 +97,13 @@
     #:start (make-forkexec-constructor '("/home/pavel/bin/davmail"))
     #:stop (make-kill-destructor)))
 
+(define vnstatd
+  (make <service>
+    #:provides '(vnstatd)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("vnstatd" "-n"))
+    #:stop (make-kill-destructor)))
+
 (register-services
  mpd
  sqrt-data-agent-mpd
@@ -111,7 +118,8 @@
  vpn
  davmail
  ;; xmodmap
- nm-applet)
+ nm-applet
+ vnstatd)
 
 (action 'shepherd 'daemonize)
 
@@ -127,4 +135,5 @@
                   polkit-gnome
                   davmail
                   ; xmodmap
-                  nm-applet))
+                  nm-applet
+                  vnstatd))

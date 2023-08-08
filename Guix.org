@@ -554,6 +554,9 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 |----------+-----------------+----------------------------------------------------|
 | system   | patchelf        | A program to modify existsing ELF executables      |
 | system   | glibc           | A lot of stuff, including ELF interpeter and ~ldd~ |
+| system   | tor-client      |                                                    |
+| system   | torsocks        |                                                    |
+| system   | vnstat          |                                                    |
 
 ** OpenVPN
 | Category | Guix dependency             |

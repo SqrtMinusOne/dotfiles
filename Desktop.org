@@ -4034,6 +4034,15 @@ Run my [[file:Guix.org::*OpenVPN][OpenVPN setup]]. Not lauching this automatiall
     #:start (make-forkexec-constructor '("/home/pavel/bin/davmail"))
     #:stop (make-kill-destructor)))
 #+end_src
+** vnstatd
+#+begin_src scheme
+(define vnstatd
+  (make <service>
+    #:provides '(vnstatd)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("vnstatd" "-n"))
+    #:stop (make-kill-destructor)))
+#+end_src
 ** Shepherd config
 For some reason, running start on a one-shot service started to hang shepherd, not sure why... Turining these off for now.
 
@@ -4053,7 +4062,8 @@ Register services:
  vpn
  davmail
  ;; xmodmap
- nm-applet)
+ nm-applet
+ vnstatd)
 #+end_src
 
 Daemonize shepherd
@@ -4075,7 +4085,8 @@ Run services
                   polkit-gnome
                   davmail
                   ; xmodmap
-                  nm-applet))
+                  nm-applet
+                  vnstatd))
 #+end_src
 * Guix settings
 Other desktop programs I use are listed below.

@@ -5,6 +5,9 @@
    "openresolv"
    "openvpn-update-resolve-conf"
    "openvpn"
+   "vnstat"
+   "torsocks"
+   "tor-client"
    "glibc"
    "patchelf"))
 ;; Manifest:2 ends here
