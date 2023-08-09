@@ -32,6 +32,10 @@ xhost +local:root > /dev/null 2>&1
 export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
 # Startup & environment:6 ends here
 
+# [[file:Console.org::*Startup & environment][Startup & environment:7]]
+[ -n "$EAT_SHELL_INTEGRATION_DIR" ] && source "$EAT_SHELL_INTEGRATION_DIR/bash"
+# Startup & environment:7 ends here
+
 # [[file:Console.org::*Launch fish][Launch fish:1]]
 use_fish=true
 
