@@ -1031,7 +1031,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
            if (not (or (eq enabled-theme 'my-theme-1)
                        (eq enabled-theme theme)))
            do (disable-theme enabled-theme))
-  (load-theme theme t))
+  (load-theme theme t)
+  (when current-prefix-arg
+    (my/regenerate-desktop)))
 
 (use-package auto-dim-other-buffers
   :straight t
@@ -2355,7 +2357,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (interactive "aFunction symbol: ")
   (advice-mapc (lambda (advice _props) (advice-remove sym advice)) sym))
 
-(add-hook 'inferior-emacs-lisp-mode-hook #'lispy-mode)
+(add-hook 'inferior-emacs-lisp-mode-hook #'smartparens-mode)
 
 (use-package slime
   :straight t
@@ -4268,7 +4270,12 @@ With ARG, repeats or can move backward if negative."
   (org-babel-tangle-file "/home/pavel/Console.org")
   (call-process "xrdb" nil nil nil "-load" "/home/pavel/.Xresources")
   (call-process "~/bin/polybar.sh")
-  (call-process "pkill" nil nil nil "dunst"))
+  (call-process "pkill" nil nil nil "dunst")
+  (call-process "herd" nil nil nil "restart" "xsettingsd")
+  (when (fboundp #'my/exwm-set-alpha)
+    (if (my/light-p)
+        (my/exwm-set-alpha 100)
+      (my/exwm-set-alpha 90))))
 
 (let ((folders-file (expand-file-name "folders.el" user-emacs-directory)))
   (when (file-exists-p folders-file)
@@ -6494,7 +6501,11 @@ base toot."
 (general-define-key
  :states '(normal)
  :keymaps 'Info-mode-map
- (kbd "RET") 'Info-follow-nearest-node
+ (kbd "RET") #'Info-follow-nearest-node
+ "H" #'Info-history-back
+ "L" #'Info-history-forward
+ "n" #'Info-search-next
+ "b" #'Info-search-backward
  "f" #'ace-link-info)
 
 (defun my/man-fix-width (&rest _)

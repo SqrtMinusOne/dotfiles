@@ -1196,7 +1196,8 @@ And the EXWM config itself.
 (defun my/exwm-set-alpha (alpha)
   (setf (alist-get 'alpha default-frame-alist)
         `(,alpha . ,alpha))
-  (set-frame-parameter (selected-frame) 'alpha `(,alpha . ,alpha)))
+  (cl-loop for frame being the frames
+           do (set-frame-parameter frame 'alpha `(,alpha . ,alpha))))
 
 (use-package exwm
   :straight t
@@ -3206,6 +3207,8 @@ colorscheme emacs
 
 bind j scrollline 3
 bind k scrollline -3
+bind --mode=normal <C-i> mode ignore
+bind --mode=ignore <C-i> mode normal
 
 guiset_quiet gui full
 guiset_quiet statuspanel left

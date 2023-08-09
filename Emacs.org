@@ -6077,7 +6077,7 @@ Somewhat similar to the previous one... Occasinally I want to re-tangle all desk
   (call-process "xrdb" nil nil nil "-load" "/home/pavel/.Xresources")
   (call-process "~/bin/polybar.sh")
   (call-process "pkill" nil nil nil "dunst")
-  (call-process "herd" nil nil nil "")
+  (call-process "herd" nil nil nil "restart" "xsettingsd")
   (when (fboundp #'my/exwm-set-alpha)
     (if (my/light-p)
         (my/exwm-set-alpha 100)
@@ -9027,7 +9027,11 @@ Of course, Emacs can also display man and info pages.
 (general-define-key
  :states '(normal)
  :keymaps 'Info-mode-map
- (kbd "RET") 'Info-follow-nearest-node
+ (kbd "RET") #'Info-follow-nearest-node
+ "H" #'Info-history-back
+ "L" #'Info-history-forward
+ "n" #'Info-search-next
+ "b" #'Info-search-backward
  "f" #'ace-link-info)
 
 (defun my/man-fix-width (&rest _)
@@ -9641,9 +9645,10 @@ I thought about making something like a [[https://github.com/magit/transient][tr
 * Guix settings
 | Guix dependency     | Description                   |
 |---------------------+-------------------------------|
-| emacs-vterm         | The vterm package            |
+| emacs-vterm         | The vterm package             |
 | ripgrep             | A recursive search tool       |
 | the-silver-searcher | Another recursive search tool |
+| texinfo             |                               |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no

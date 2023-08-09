@@ -1,5 +1,6 @@
 (specifications->manifest
  '("emacs"
+   "texinfo"
    "the-silver-searcher"
    "ripgrep"
    "emacs-vterm"

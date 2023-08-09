@@ -589,7 +589,8 @@ _d_: Discord
 (defun my/exwm-set-alpha (alpha)
   (setf (alist-get 'alpha default-frame-alist)
         `(,alpha . ,alpha))
-  (set-frame-parameter (selected-frame) 'alpha `(,alpha . ,alpha)))
+  (cl-loop for frame being the frames
+           do (set-frame-parameter frame 'alpha `(,alpha . ,alpha))))
 
 (use-package exwm
   :straight t
