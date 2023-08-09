@@ -4046,6 +4046,30 @@ Run my [[file:Guix.org::*OpenVPN][OpenVPN setup]]. Not lauching this automatiall
     #:start (make-forkexec-constructor '("vnstatd" "-n"))
     #:stop (make-kill-destructor)))
 #+end_src
+** opensnitch
+[[https://github.com/evilsocket/opensnitch][opensnitch]] is a linux firewall.
+
+Install it via nix:
+#+begin_src bash :tangle no
+nix-env -I opensnitchd opensnitch-ui
+#+end_src
+
+#+begin_src scheme
+(define opensnitchd
+  (make <service>
+    #:provides '(opensnitchd)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("sudo" "opensnitchd"))
+    #:stop (make-kill-destructor)))
+
+(define opensnitch-ui
+  (make <service>
+    #:provides '(opensnitch-ui)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("sudo" "opensnitch-ui"))
+    #:stop (make-kill-destructor)))
+#+end_src
+
 ** Shepherd config
 For some reason, running start on a one-shot service started to hang shepherd, not sure why... Turining these off for now.
 
@@ -4066,7 +4090,9 @@ Register services:
  davmail
  ;; xmodmap
  nm-applet
- vnstatd)
+ vnstatd
+ opensnitchd
+ opensnitch-ui)
 #+end_src
 
 Daemonize shepherd
@@ -4089,7 +4115,9 @@ Run services
                   davmail
                   ; xmodmap
                   nm-applet
-                  vnstatd))
+                  vnstatd
+                  opensnitchd
+                  opensnitch-ui))
 #+end_src
 * Guix settings
 Other desktop programs I use are listed below.

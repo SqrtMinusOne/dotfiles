@@ -104,6 +104,20 @@
     #:start (make-forkexec-constructor '("vnstatd" "-n"))
     #:stop (make-kill-destructor)))
 
+(define opensnitchd
+  (make <service>
+    #:provides '(opensnitchd)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("sudo" "opensnitchd"))
+    #:stop (make-kill-destructor)))
+
+(define opensnitch-ui
+  (make <service>
+    #:provides '(opensnitch-ui)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("sudo" "opensnitch-ui"))
+    #:stop (make-kill-destructor)))
+
 (register-services
  mpd
  sqrt-data-agent-mpd
@@ -119,7 +133,9 @@
  davmail
  ;; xmodmap
  nm-applet
- vnstatd)
+ vnstatd
+ opensnitchd
+ opensnitch-ui)
 
 (action 'shepherd 'daemonize)
 
@@ -136,4 +152,6 @@
                   davmail
                   ; xmodmap
                   nm-applet
-                  vnstatd))
+                  vnstatd
+                  opensnitchd
+                  opensnitch-ui))
