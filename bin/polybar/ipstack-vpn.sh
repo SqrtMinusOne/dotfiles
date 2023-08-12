@@ -4,7 +4,7 @@ ip=$(dig +short +timeout=1 myip.opendns.com @resolver1.opendns.com 2> /dev/null)
 # API_KEY="$(pass show My_Online/APIs/ipstack | head -n 1)"
 API_KEY=$IPSTACK_API_KEY
 if [[ -z $ip || $ip == *"timed out"* ]]; then
-    echo "%{u#f07178}%{+u} ?? %{u-}"
+    echo "%{u#cc3333}%{+u} ?? %{u-}"
     exit
 fi
 ip_info=$(curl -s http://api.ipstack.com/${ip}?access_key=${API_KEY})
@@ -17,8 +17,8 @@ if [[ -z $code ]]; then
 fi
 
 if [ -n "$vpn" ]; then
-    echo "%{u#82aaff}%{+u}  $code %{u-}"
+    echo "%{u#375cd8}%{+u}  $code %{u-}"
 else
-    echo "%{u#f07178}%{+u}  $code %{u-}"
+    echo "%{u#cc3333}%{+u}  $code %{u-}"
 fi
 # ipstack-vpn:1 ends here

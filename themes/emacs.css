@@ -1,18 +1,18 @@
 :root {
-  --tridactyl-fg: #EEFFFF;
-  --tridactyl-bg: #292D3E;
-  --tridactyl-url-fg: #f07178;
-  --tridactyl-url-bg: #292D3E;
-  --tridactyl-highlight-box-bg: #82aaff;
-  --tridactyl-highlight-box-fg: #292D3E;
+  --tridactyl-fg: #222222;
+  --tridactyl-bg: #fff8f0;
+  --tridactyl-url-fg: #cc3333;
+  --tridactyl-url-bg: #fff8f0;
+  --tridactyl-highlight-box-bg: #375cd8;
+  --tridactyl-highlight-box-fg: #fff8f0;
 
   /* Command line */
-  --tridactyl-cmdl-bg: #242837
-  --tridactyl-cmdl-fg: #EEFFFF
+  --tridactyl-cmdl-bg: #f6ece8
+  --tridactyl-cmdl-fg: #222222
 
   /* Hint character tags */
-  --tridactyl-hintspan-fg: #292D3E !important;
-  --tridactyl-hintspan-bg: #82aaff !important;
+  --tridactyl-hintspan-fg: #fff8f0 !important;
+  --tridactyl-hintspan-bg: #375cd8 !important;
 
   /* Element Highlights */
   --tridactyl-hint-active-fg: none;
@@ -30,8 +30,8 @@
 
 #command-line-holder {
   order: 1;
-  border: 2px solid #82aaff;
-  background: #292D3E;
+  border: 2px solid #375cd8;
+  background: #fff8f0;
 }
 
 #tridactyl-input {
@@ -139,20 +139,20 @@
   bottom: 0 !important;
   background: var(--tridactyl-bg) !important;
   border: unset !important;
-  border: 1px #82aaff solid !important;
+  border: 1px #375cd8 solid !important;
   font-size: 12pt !important;
   /*font-weight: 200 !important;*/
   padding: 0.8ex !important;
 }
 
 #completions .focused {
-  background: #82aaff;
-  color: #292D3E;
+  background: #375cd8;
+  color: #fff8f0;
 }
 
 #completions .focused .url {
-  background: #82aaff;
-  color: #292D3E;
+  background: #375cd8;
+  color: #fff8f0;
 }
 /* #Ocean-normal { */
 /*  border-color: green !important; */

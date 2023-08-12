@@ -3436,6 +3436,7 @@ Which I then can use to create the URL.
          (my/color-value-rgb
           (or
            (my/color-value 'bg-mode-line-active)
+           (my/color-value 'bg-mode-line)
            (if (my/light-p)
                (ct-edit-hsl-l-dec (my/color-value 'bg-alt) 10)
              (ct-edit-hsl-l-inc (my/color-value 'bg-alt) 15)))))
@@ -3468,7 +3469,7 @@ Which I then can use to create the URL.
 #+end_src
 
 #+RESULTS:
-: https://color.firefox.com/?theme=XQAAAAJrAQAAAAAAAABAqYhm849SCia3ftKEGccwS-xMDPsqcRvzbzAAd4k2kmKXySkP4TMALpTiAcE8Rgs7Uh-5qAVfhLcwaZT2bTD-29a13URGpYcmL606LIDWim8VmsoOSfdgHHz_mXYNmDrybfpFjF8MrhAxhCR9CUaEeVVThQwXiNyFKB47dmsAcqhUUHP9tqgY6YXG2A5n1PqZq7QowpQn__84yaYA
+: https://color.firefox.com/?theme=XQAAAAJFAQAAAAAAAABAqYhm849SCia3ftKEGccwS-xMDPsquqWmWrYLGyvA453nlgdoRTTSje3LA7vfcBuCeiFpttFMurVWViuvuhtBMugWmSsvzgyPVKtRGycIN1zWryrJ9mbJv5mYo-xR8V8hbMdvgfLyrp7SHnedMUPeouponHkloIv8tsVzxCwih5WlhbK_FebmNVUdxiV3yclhLVDXmZtn06QuboIcvf_BITkA
 
 * keynav
 | Guix dependency |

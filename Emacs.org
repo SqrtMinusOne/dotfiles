@@ -1453,9 +1453,9 @@ My colorschemes of choice.
   :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
-  (if my/remote-server
-      (load-theme 'doom-gruvbox t)
-    (load-theme 'doom-palenight t))
+  ;; (if my/remote-server
+  ;;     (load-theme 'doom-gruvbox t)
+  ;;   (load-theme 'doom-palenight t))
   (doom-themes-visual-bell-config)
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
@@ -1463,6 +1463,12 @@ My colorschemes of choice.
 
 #+begin_src emacs-lisp
 (use-package modus-themes
+  :straight t)
+#+end_src
+
+Let's see...
+#+begin_src emacs-lisp
+(use-package ef-themes
   :straight t)
 #+end_src
 *** Custom theme
@@ -1488,6 +1494,10 @@ As of now I want this to support =doom-themes= and =modus-themes=. So, let's get
 (defun my/modus-p ()
   (seq-find (lambda (x) (string-match-p (rx bos "modus") (symbol-name x)))
             custom-enabled-themes))
+
+(defun my/ef-p ()
+  (seq-find (lambda (x) (string-match-p (rx bos "ef") (symbol-name x)))
+            custom-enabled-themes))
 #+end_src
 
 I also want to know if the current theme is light or not:
@@ -1510,22 +1520,23 @@ Now, let's get the current color from =doom=. =doom-themes= provide =doom-color=
 (defvar my/alpha-for-light 7)
 
 (defun my/doom-color (color)
-  (let ((override (alist-get (my/doom-p) my/theme-override))
-        (color-name (symbol-name color))
-        (is-light (ct-light-p (doom-color 'bg))))
-    (or
-     (alist-get color override)
-     (cond
-      ((eq 'black color)
-       (if is-light (doom-color 'fg) (doom-color 'bg)))
-      ((eq 'white color)
-       (if is-light (doom-color 'bg) (doom-color 'fg)))
-      ((eq 'border color)
-       (if is-light (doom-color 'base0) (doom-color 'base8)))
-      ((string-match-p (rx bos "light-") color-name)
-       (ct-edit-hsl-l-inc (my/doom-color (intern (substring color-name 6)))
-                          my/alpha-for-light))
-      (t (doom-color color))))))
+  (when (doom-color 'bg)
+    (let ((override (alist-get (my/doom-p) my/theme-override))
+          (color-name (symbol-name color))
+          (is-light (ct-light-p (doom-color 'bg))))
+      (or
+       (alist-get color override)
+       (cond
+        ((eq 'black color)
+         (if is-light (doom-color 'fg) (doom-color 'bg)))
+        ((eq 'white color)
+         (if is-light (doom-color 'bg) (doom-color 'fg)))
+        ((eq 'border color)
+         (if is-light (doom-color 'base0) (doom-color 'base8)))
+        ((string-match-p (rx bos "light-") color-name)
+         (ct-edit-hsl-l-inc (my/doom-color (intern (substring color-name 6)))
+                            my/alpha-for-light))
+        (t (doom-color color)))))))
 #+end_src
 
 And the same for =modus-themes=. =my/modus-color= has to accept the same arguments as I use for =my/doom-color= for backward compatibility, which requires a bit more tuning.
@@ -1536,9 +1547,8 @@ And the same for =modus-themes=. =my/modus-color= has to accept the same argumen
         (base-end (cadr (assoc 'fg-dim (modus-themes--current-theme-palette)))))
     (nth base-value (ct-gradient 9 base-start base-end t))))
 
-(defun my/modus-color (color)
-  (let* ((palette (modus-themes--current-theme-palette))
-         (is-light (ct-light-p (cadr (assoc 'bg-main palette)))))
+(defun my/prot-color (color palette)
+  (let ((is-light (ct-light-p (cadr (assoc 'bg-main palette)))))
     (cond
      ((member color '(black white light-black light-white))
       (let ((bg-main (cadr (assoc 'bg-main palette)))
@@ -1568,11 +1578,19 @@ And the same for =modus-themes=. =my/modus-color= has to accept the same argumen
      ((eq color 'grey)
       (my/modus-get-base 'base5))
      ((string-match-p (rx bos "light-") (symbol-name color))
-      (cadr (assoc (intern (format "%s-intense" (substring (symbol-name color) 6))) palette)))
+      (or
+       (cadr (assoc (intern (format "%s-intense" (substring (symbol-name color) 6))) palette))
+       (cadr (assoc (intern (format "bg-%s-intense" (substring (symbol-name color) 6))) palette))))
      (t (cadr (assoc color palette))))))
+
+(defun my/modus-color (color)
+  (my/prot-color color (modus-themes--current-theme-palette)))
+
+(defun my/ef-color (color)
+  (my/prot-color color (ef-themes--current-theme-palette)))
 #+end_src
 
-Test the two functions.
+Test the three functions.
 #+begin_src emacs-lisp
 (defconst my/test-colors-list
   '(black red green yellow blue magenta cyan white light-black
@@ -1584,13 +1602,14 @@ Test the two functions.
   (interactive)
   (let ((buf (generate-new-buffer "*colors-test*")))
     (with-current-buffer buf
-      (insert (format "%-20s %-10s %-10s" "Color" "Doom" "Modus") "\n")
+      (insert (format "%-20s %-10s %-10s %-10s" "Color" "Doom" "Modus" "Ef") "\n")
       (cl-loop for color in my/test-colors-list
                do (insert
-                   (format "%-20s %-10s %-10s\n"
+                   (format "%-20s %-10s %-10s %-10s\n"
                            (prin1-to-string color)
                            (my/doom-color color)
-                           (my/modus-color color))))
+                           (my/modus-color color)
+                           (my/ef-color color))))
       (special-mode)
       (rainbow-mode))
     (switch-to-buffer buf)))
@@ -1602,12 +1621,14 @@ Finally, one function to get the value of a color in the current theme.
   (cond
    ((stringp color) (my/color-value (intern color)))
    ((eq color 'bg-other)
-    (let ((color (my/color-value 'bg)))
-      (if (ct-light-p color)
-          (ct-edit-hsl-l-dec color 3)
-        (ct-edit-hsl-l-dec color 3))))
+    (or (my/color-value 'bg-dim)
+        (let ((color (my/color-value 'bg)))
+          (if (ct-light-p color)
+              (ct-edit-hsl-l-dec color 2)
+            (ct-edit-hsl-l-dec color 3)))))
    ((my/doom-p) (my/doom-color color))
-   ((my/modus-p) (my/modus-color color))))
+   ((my/modus-p) (my/modus-color color))
+   ((my/ef-p) (my/ef-color color))))
 #+end_src
 
 And a few more functions
@@ -1672,6 +1693,10 @@ The built-in =load-theme= does not deactivate the previous theme, so here's a fu
   (load-theme theme t)
   (when current-prefix-arg
     (my/regenerate-desktop)))
+#+end_src
+
+#+begin_src emacs-lisp
+(my/switch-theme 'ef-duo-light)
 #+end_src
 *** Dim inactive buffers
 Dim inactive buffers.

@@ -865,14 +865,17 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
-  (if my/remote-server
-      (load-theme 'doom-gruvbox t)
-    (load-theme 'doom-palenight t))
+  ;; (if my/remote-server
+  ;;     (load-theme 'doom-gruvbox t)
+  ;;   (load-theme 'doom-palenight t))
   (doom-themes-visual-bell-config)
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
 
 (use-package modus-themes
+  :straight t)
+
+(use-package ef-themes
   :straight t)
 
 (use-package ct
@@ -884,6 +887,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (defun my/modus-p ()
   (seq-find (lambda (x) (string-match-p (rx bos "modus") (symbol-name x)))
+            custom-enabled-themes))
+
+(defun my/ef-p ()
+  (seq-find (lambda (x) (string-match-p (rx bos "ef") (symbol-name x)))
             custom-enabled-themes))
 
 (defun my/light-p ()
@@ -922,9 +929,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         (base-end (cadr (assoc 'fg-dim (modus-themes--current-theme-palette)))))
     (nth base-value (ct-gradient 9 base-start base-end t))))
 
-(defun my/modus-color (color)
-  (let* ((palette (modus-themes--current-theme-palette))
-         (is-light (ct-light-p (cadr (assoc 'bg-main palette)))))
+(defun my/prot-color (color palette)
+  (let ((is-light (ct-light-p (cadr (assoc 'bg-main palette)))))
     (cond
      ((member color '(black white light-black light-white))
       (let ((bg-main (cadr (assoc 'bg-main palette)))
@@ -954,8 +960,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
      ((eq color 'grey)
       (my/modus-get-base 'base5))
      ((string-match-p (rx bos "light-") (symbol-name color))
-      (cadr (assoc (intern (format "%s-intense" (substring (symbol-name color) 6))) palette)))
+      (or
+       (cadr (assoc (intern (format "%s-intense" (substring (symbol-name color) 6))) palette))
+       (cadr (assoc (intern (format "bg-%s-intense" (substring (symbol-name color) 6))) palette))))
      (t (cadr (assoc color palette))))))
+
+(defun my/modus-color (color)
+  (my/prot-color color (modus-themes--current-theme-palette)))
+
+(defun my/ef-color (color)
+  (my/prot-color color (ef-themes--current-theme-palette)))
 
 (defconst my/test-colors-list
   '(black red green yellow blue magenta cyan white light-black
@@ -967,13 +981,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (interactive)
   (let ((buf (generate-new-buffer "*colors-test*")))
     (with-current-buffer buf
-      (insert (format "%-20s %-10s %-10s" "Color" "Doom" "Modus") "\n")
+      (insert (format "%-20s %-10s %-10s %-10s" "Color" "Doom" "Modus" "Ef") "\n")
       (cl-loop for color in my/test-colors-list
                do (insert
-                   (format "%-20s %-10s %-10s\n"
+                   (format "%-20s %-10s %-10s %-10s\n"
                            (prin1-to-string color)
                            (my/doom-color color)
-                           (my/modus-color color))))
+                           (my/modus-color color)
+                           (my/ef-color color))))
       (special-mode)
       (rainbow-mode))
     (switch-to-buffer buf)))
@@ -982,12 +997,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (cond
    ((stringp color) (my/color-value (intern color)))
    ((eq color 'bg-other)
-    (let ((color (my/color-value 'bg)))
-      (if (ct-light-p color)
-          (ct-edit-hsl-l-dec color 3)
-        (ct-edit-hsl-l-dec color 3))))
+    (or (my/color-value 'bg-dim)
+        (let ((color (my/color-value 'bg)))
+          (if (ct-light-p color)
+              (ct-edit-hsl-l-dec color 2)
+            (ct-edit-hsl-l-dec color 3)))))
    ((my/doom-p) (my/doom-color color))
-   ((my/modus-p) (my/modus-color color))))
+   ((my/modus-p) (my/modus-color color))
+   ((my/ef-p) (my/ef-color color))))
 
 (deftheme my-theme-1)
 
@@ -1034,6 +1051,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (load-theme theme t)
   (when current-prefix-arg
     (my/regenerate-desktop)))
+
+(my/switch-theme 'ef-duo-light)
 
 (use-package auto-dim-other-buffers
   :straight t

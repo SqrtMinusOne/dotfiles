@@ -19,11 +19,11 @@ time=$(sunwait poll daylight rise ${LAT} $LON)
 
 if [[ ${time} == 'DAY' ]]; then
     sunset=$(sunwait list daylight set ${LAT} ${LON})
-    # echo "%{u#ffcb6b}%{+u} $sunset %{u-}"
+    # echo "%{u#8a5d00}%{+u} $sunset %{u-}"
     echo $sunset
 else
     sunrise=$(sunwait list daylight rise ${LAT} ${LON})
-    # echo "%{u#f07178}%{+u} $sunrise %{u-}"
+    # echo "%{u#cc3333}%{+u} $sunrise %{u-}"
     echo $sunrise
 fi
 # sun:1 ends here

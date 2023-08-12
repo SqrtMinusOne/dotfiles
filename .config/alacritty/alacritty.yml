@@ -1,4 +1,4 @@
-# [[file:../../Console.org::*Alacritty][Alacritty:3]]
+# [[file:../../Console.org::*Alacritty][Alacritty:4]]
 decorations: none
 
 font:
@@ -13,25 +13,25 @@ env:
 
 colors:
   primary:
-    background: '#292D3E'
-    foreground: '#EEFFFF'
+    background: '#fff8f0'
+    foreground: '#222222'
   normal:
-    black: '#292D3E'
-    red: '#f07178'
-    green: '#c3e88d'
-    yellow: '#ffcb6b'
-    blue: '#82aaff'
-    magenta: '#c792ea'
-    cyan: '#89DDFF'
-    white: '#EEFFFF'
+    black: '#222222'
+    red: '#cc3333'
+    green: '#217a3c'
+    yellow: '#8a5d00'
+    blue: '#375cd8'
+    magenta: '#ba35af'
+    cyan: '#1f6fbf'
+    white: '#fff8f0'
   bright:
-    Black: '#373c53'
-    Red: '#f39196'
-    Green: '#d2edaa'
-    Yellow: '#ffd78e'
-    Blue: '#a5c2fe'
-    Magenta: '#d6afef'
-    Cyan: '#ace7ff'
+    Black: '#484848'
+    Red: '#ff8f88'
+    Green: '#8adf80'
+    Yellow: '#fac200'
+    Blue: '#cbcfff'
+    Magenta: '#df8fff'
+    Cyan: '#88c8ff'
     White: '#ffffff'
 
 window:
@@ -39,7 +39,7 @@ window:
     x: 0
     y: 0
   dynamic_padding: true
-  opacity: 0.80
+  opacity: 1
 
 key_bindings:
   - { key: Paste,                                       action: Paste          }
@@ -66,4 +66,4 @@ key_bindings:
   - { key: NumpadAdd,      mods: Control,                         action: IncreaseFontSize }
   - { key: Minus,          mods: Control,                         action: DecreaseFontSize }
   - { key: NumpadSubtract, mods: Control,                         action: DecreaseFontSize }
-# Alacritty:3 ends here
+# Alacritty:4 ends here

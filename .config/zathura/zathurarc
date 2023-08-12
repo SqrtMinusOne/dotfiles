@@ -2,26 +2,26 @@
 set abort-clear-search false
 set guioptions cs
 set selection-clipboard clipboard
-set recolor true
+set recolor false
 map <C-r> set recolor false
 map <C-R> set recolor true
 
-set recolor-lightcolor "#292D3E"
+set recolor-lightcolor "#222222"
 
-set completion-bg "#292D3E"
-set completion-fg "#EEFFFF"
-set completion-group-bg "#292D3E"
-set completion-group-fg "#EEFFFF"
-set completion-highlight-bg "#c792ea"
-set completion-highlight-fg "#292D3E"
+set completion-bg "#fff8f0"
+set completion-fg "#222222"
+set completion-group-bg "#fff8f0"
+set completion-group-fg "#222222"
+set completion-highlight-bg "#ba35af"
+set completion-highlight-fg "#fff8f0"
 
-set inputbar-bg "#373c53"
-set inputbar-fg "#EEFFFF"
-set statusbar-bg "#373c53"
-set statusbar-fg "#EEFFFF"
+set inputbar-bg "#484848"
+set inputbar-fg "#fff8f0"
+set statusbar-bg "#484848"
+set statusbar-fg "#fff8f0"
 
-set notification-error-bg "#f07178"
-set notification-error-fg "#EEFFFF"
-set notification-warning-bg "#ffcb6b"
-set notification-warning-fg "#292D3E"
+set notification-error-bg "#cc3333"
+set notification-error-fg "#fff8f0"
+set notification-warning-bg "#8a5d00"
+set notification-warning-fg "#fff8f0"
 # Zathura:2 ends here

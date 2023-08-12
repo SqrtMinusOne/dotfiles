@@ -1,46 +1,46 @@
 /* Generated from [[file:../../Desktop.org::*Theme][Theme:1]] */
  * {
-    black: #292D3E;
-    red: #f07178;
-    green: #c3e88d;
-    yellow: #ffcb6b;
-    blue: #82aaff;
-    magenta: #c792ea;
-    cyan: #89DDFF;
-    white: #EEFFFF;
-    light-black: #373c53;
-    light-red: #f39196;
-    light-green: #d2edaa;
-    light-yellow: #ffd78e;
-    light-blue: #a5c2fe;
-    light-magenta: #d6afef;
-    light-cyan: #ace7ff;
+    black: #222222;
+    red: #cc3333;
+    green: #217a3c;
+    yellow: #8a5d00;
+    blue: #375cd8;
+    magenta: #ba35af;
+    cyan: #1f6fbf;
+    white: #fff8f0;
+    light-black: #484848;
+    light-red: #ff8f88;
+    light-green: #8adf80;
+    light-yellow: #fac200;
+    light-blue: #cbcfff;
+    light-magenta: #df8fff;
+    light-cyan: #88c8ff;
     light-white: #ffffff;
     
 
-    foreground:                  #EEFFFF;
-    background:                  #292D3E;
-    background-color:            #292D3E;
+    foreground:                  #222222;
+    background:                  #fff8f0;
+    background-color:            #fff8f0;
     separatorcolor:              @blue;
-    border-color:                #A6Accd;
-    selected-normal-background:  #82aaff;
-    selected-normal-foreground:  #292D3E;
-    selected-active-background:  #a5c2fe;
-    selected-active-foreground:  #292D3E;
-    selected-urgent-background:  #f07178;
-    selected-urgent-foreground:  #EEFFFF;
+    border-color:                #baafba;
+    selected-normal-background:  #375cd8;
+    selected-normal-foreground:  #fff8f0;
+    selected-active-background:  #cbcfff;
+    selected-active-foreground:  #222222;
+    selected-urgent-background:  #cc3333;
+    selected-urgent-foreground:  #fff8f0;
     normal-foreground:           @foreground;
     normal-background:           @background;
     active-foreground:           @blue;
     active-background:           @background;
     urgent-foreground:           @red;
     urgent-background:           @background;
-    alternate-normal-background: #242837;
+    alternate-normal-background: #f6ece8;
     alternate-normal-foreground: @foreground;
-    alternate-active-background: #292D3E;
-    alternate-active-foreground: #a5c2fe;
-    alternate-urgent-background: #EEFFFF;
-    alternate-urgent-foreground: #f07178;
+    alternate-active-background: #222222;
+    alternate-active-foreground: #cbcfff;
+    alternate-urgent-background: #fff8f0;
+    alternate-urgent-foreground: #cc3333;
     spacing:                     2;
 }
 window {
