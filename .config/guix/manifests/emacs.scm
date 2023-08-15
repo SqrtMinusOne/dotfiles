@@ -1,5 +1,5 @@
 (specifications->manifest
- '("emacs"
+ '("emacs-next-tree-sitter"
    "texinfo"
    "the-silver-searcher"
    "ripgrep"
@@ -8,7 +8,7 @@
    "imagemagick"
    "font-gnu-freefont"
    "font-gnu-unifont"
-   "tdlib-1.8.14"
+   "tdlib-1.8.15"
    "yt-dlp"
    "mpv"
    "whisper-cpp"

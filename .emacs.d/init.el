@@ -587,13 +587,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     "M" 'magit-file-dispatch)
   :config
   (setq magit-blame-styles
-      '((headings
-         (heading-format . "%-20a %C %s\n"))
-        (highlight
-         (highlight-face . magit-blame-highlight))
-        (lines
-         (show-lines . t)
-         (show-message . t)))))
+        '((headings
+           (heading-format . "%-20a %C %s\n"))
+          (highlight
+           (highlight-face . magit-blame-highlight))
+          (lines
+           (show-lines . t)
+           (show-message . t)))))
 
 (use-package forge
   :after magit
@@ -906,22 +906,23 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (defvar my/alpha-for-light 7)
 
 (defun my/doom-color (color)
-  (let ((override (alist-get (my/doom-p) my/theme-override))
-        (color-name (symbol-name color))
-        (is-light (ct-light-p (doom-color 'bg))))
-    (or
-     (alist-get color override)
-     (cond
-      ((eq 'black color)
-       (if is-light (doom-color 'fg) (doom-color 'bg)))
-      ((eq 'white color)
-       (if is-light (doom-color 'bg) (doom-color 'fg)))
-      ((eq 'border color)
-       (if is-light (doom-color 'base0) (doom-color 'base8)))
-      ((string-match-p (rx bos "light-") color-name)
-       (ct-edit-hsl-l-inc (my/doom-color (intern (substring color-name 6)))
-                          my/alpha-for-light))
-      (t (doom-color color))))))
+  (when (doom-color 'bg)
+    (let ((override (alist-get (my/doom-p) my/theme-override))
+          (color-name (symbol-name color))
+          (is-light (ct-light-p (doom-color 'bg))))
+      (or
+       (alist-get color override)
+       (cond
+        ((eq 'black color)
+         (if is-light (doom-color 'fg) (doom-color 'bg)))
+        ((eq 'white color)
+         (if is-light (doom-color 'bg) (doom-color 'fg)))
+        ((eq 'border color)
+         (if is-light (doom-color 'base0) (doom-color 'base8)))
+        ((string-match-p (rx bos "light-") color-name)
+         (ct-edit-hsl-l-inc (my/doom-color (intern (substring color-name 6)))
+                            my/alpha-for-light))
+        (t (doom-color color)))))))
 
 (defun my/modus-get-base (color)
   (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
@@ -1037,7 +1038,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  (tab-bar-tab :background (my/color-value 'bg)
               :foreground (my/color-value 'yellow)
               :underline (my/color-value 'yellow))
- (tab-bar :background nil :foreground nil))
+ (tab-bar :background nil :foreground nil)
+ (magit-section-secondary-heading :foreground (my/color-value 'blue)
+                                  :weight 'bold))
 
 (defun my/switch-theme (theme)
   (interactive
@@ -1100,11 +1103,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (when (display-graphic-p)
   (if (x-list-fonts "JetBrainsMono Nerd Font")
-      (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
+      (let ((font "-JB  -JetBrainsMono Nerd Font-medium-normal-normal-*-17-*-*-*-m-0-iso10646-1"))
+        (set-frame-font font nil t)
+        (add-to-list 'default-frame-alist `(font . ,font)))
     (message "Install JetBrainsMono Nerd Font!")))
 
 (when (display-graphic-p)
-  (set-face-attribute 'variable-pitch nil :family "Cantarell" :height 1.0))
+  (set-face-attribute 'variable-pitch nil :family "Cantarell" :height 1.0)
+  (set-face-attribute
+   'italic nil
+   :family "JetBrainsMono Nerd Font"
+   :weight 'regular
+   :slant 'italic))
 
 (use-package ligature
   :straight (:host github :repo "mickeynp/ligature.el")
@@ -2581,6 +2591,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package csv-mode
   :straight t
+  :disabled
   :mode "\\.csv\\'")
 
 (use-package yaml-mode
@@ -3368,7 +3379,9 @@ KEYS is a list of cons cells like (<label> . <time>)."
     (my/org-alert-cleanup)))
 
 (with-eval-after-load 'org
-  (my/org-alert-mode))
+  (if my/emacs-started
+      (my/org-alert-mode)
+    (add-hook 'emacs-startup-hook #'my/org-alert-mode)))
 
 (my-leader-def
   :infix "o"
@@ -4914,21 +4927,6 @@ With ARG, repeats or can move backward if negative."
           (blogs elfeed-blogs-entry)
           (unread elfeed-search-unread-title-face))))
 
-(defun my/update-my-theme-elfeed (&rest _)
-  (custom-theme-set-faces
-   'my-theme-1
-   `(elfeed-videos-entry ((t :foreground ,(my/color-value 'red))))
-   `(elfeed-twitter-entry ((t :foreground ,(my/color-value 'blue))))
-   `(elfeed-emacs-entry ((t :foreground ,(my/color-value 'magenta))))
-   `(elfeed-music-entry ((t :foreground ,(my/color-value 'green))))
-   `(elfeed-podcasts-entry ((t :foreground ,(my/color-value 'yellow))))
-   `(elfeed-blogs-entry ((t :foreground ,(my/color-value 'orange)))))
-  (enable-theme 'my-theme-1))
-
-(advice-add 'load-theme :after #'my/update-my-theme-elfeed)
-(when (fboundp 'doom-color)
-  (my/update-my-theme-elfeed))
-
 (use-package elfeed-summary
   :commands (elfeed-summary)
   :straight t
@@ -4958,6 +4956,17 @@ With ARG, repeats or can move backward if negative."
 
 (defun my/get-enclosures-url (entry)
   (caar (elfeed-entry-enclosures entry)))
+
+(use-package elfeed-tube
+  :straight t
+  :after elfeed
+  :config
+  (setq elfeed-tube-auto-fetch-p nil)
+  (elfeed-tube-setup)
+  (general-define-key
+   :states 'normal
+   :keymaps '(elfeed-search-mode-map elfeed-show-mode-map)
+   "gf" #'elfeed-tube-fetch))
 
 (with-eval-after-load 'emms
   (define-emms-source elfeed (entry)
@@ -6420,7 +6429,7 @@ base toot."
   (interactive)
   (setq telega-server-libs-prefix
         (string-trim
-         (shell-command-to-string "guix build tdlib-1.8.14")))
+         (shell-command-to-string "guix build tdlib-1.8.15")))
   (telega-server-build "CC=gcc"))
 
 (add-hook 'telega-load-hook #'telega-mode-line-mode)

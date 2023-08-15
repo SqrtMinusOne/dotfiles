@@ -141,26 +141,27 @@ _=_: Balance          "
 
 (defun my/exwm-configure-window ()
   (interactive)
-  (pcase exwm-class-name
-    ((or "Firefox" "Nightly")
-     (perspective-exwm-assign-window
-      :workspace-index 2
-      :persp-name "browser"))
-    ("Nyxt"
-     (perspective-exwm-assign-window
-      :workspace-index 2
-      :persp-name "browser"))
-    ("Alacritty"
-     (perspective-exwm-assign-window
-      :persp-name "term"))
-    ((or "VK" "Slack" "discord" "TelegramDesktop" "Rocket.Chat")
-     (perspective-exwm-assign-window
-      :workspace-index 3
-      :persp-name "comms"))
-    ((or "Chromium-browser" "jetbrains-datagrip")
-     (perspective-exwm-assign-window
-      :workspace-index 4
-      :persp-name "dev"))))
+  (unless exwm--floating-frame
+    (pcase exwm-class-name
+      ((or "Firefox" "Nightly")
+       (perspective-exwm-assign-window
+        :workspace-index 2
+        :persp-name "browser"))
+      ("Nyxt"
+       (perspective-exwm-assign-window
+        :workspace-index 2
+        :persp-name "browser"))
+      ("Alacritty"
+       (perspective-exwm-assign-window
+        :persp-name "term"))
+      ((or "VK" "Slack" "discord" "TelegramDesktop" "Rocket.Chat")
+       (perspective-exwm-assign-window
+        :workspace-index 3
+        :persp-name "comms"))
+      ((or "Chromium-browser" "jetbrains-datagrip")
+       (perspective-exwm-assign-window
+        :workspace-index 4
+        :persp-name "dev")))))
 
 (add-hook 'exwm-manage-finish-hook #'my/exwm-configure-window)
 

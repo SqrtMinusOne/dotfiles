@@ -1021,13 +1021,13 @@ I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, 
     "M" 'magit-file-dispatch)
   :config
   (setq magit-blame-styles
-      '((headings
-         (heading-format . "%-20a %C %s\n"))
-        (highlight
-         (highlight-face . magit-blame-highlight))
-        (lines
-         (show-lines . t)
-         (show-message . t)))))
+        '((headings
+           (heading-format . "%-20a %C %s\n"))
+          (highlight
+           (highlight-face . magit-blame-highlight))
+          (lines
+           (show-lines . t)
+           (show-message . t)))))
 #+end_src
 
 [[https://github.com/magit/forge][forge]] provides integration with forges, such as GitHub and GitLab.
@@ -1675,7 +1675,9 @@ Defining colors for =tab-bar.el=:
  (tab-bar-tab :background (my/color-value 'bg)
               :foreground (my/color-value 'yellow)
               :underline (my/color-value 'yellow))
- (tab-bar :background nil :foreground nil))
+ (tab-bar :background nil :foreground nil)
+ (magit-section-secondary-heading :foreground (my/color-value 'blue)
+                                  :weight 'bold))
 #+end_src
 **** Switch theme
 The built-in =load-theme= does not deactivate the previous theme, so here's a function that does that:
@@ -1763,7 +1765,9 @@ References:
 #+begin_src emacs-lisp
 (when (display-graphic-p)
   (if (x-list-fonts "JetBrainsMono Nerd Font")
-      (set-frame-font "JetBrainsMono Nerd Font 10" nil t)
+      (let ((font "-JB  -JetBrainsMono Nerd Font-medium-normal-normal-*-17-*-*-*-m-0-iso10646-1"))
+        (set-frame-font font nil t)
+        (add-to-list 'default-frame-alist `(font . ,font)))
     (message "Install JetBrainsMono Nerd Font!")))
 #+end_src
 
@@ -1771,7 +1775,12 @@ To make the icons work (e.g. in the Doom Modeline), run =M-x all-the-icons-insta
 *** Other fonts
 #+begin_src emacs-lisp
 (when (display-graphic-p)
-  (set-face-attribute 'variable-pitch nil :family "Cantarell" :height 1.0))
+  (set-face-attribute 'variable-pitch nil :family "Cantarell" :height 1.0)
+  (set-face-attribute
+   'italic nil
+   :family "JetBrainsMono Nerd Font"
+   :weight 'regular
+   :slant 'italic))
 #+end_src
 *** Ligatures
 Ligature setup for the JetBrainsMono font.
@@ -3568,6 +3577,7 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
 #+begin_src emacs-lisp
 (use-package csv-mode
   :straight t
+  :disabled
   :mode "\\.csv\\'")
 #+end_src
 *** YAML
@@ -4713,9 +4723,13 @@ Let's wrap it into a minor mode:
     (my/org-alert-cleanup)))
 #+end_src
 
+I don't have any idea why, but evaluating =(my/org-alert-mode)= just after =org= breaks font-lock after I try to open =inbox.org=. =emacs-startup-hook=, however, works fine.
+
 #+begin_src emacs-lisp
 (with-eval-after-load 'org
-  (my/org-alert-mode))
+  (if my/emacs-started
+      (my/org-alert-mode)
+    (add-hook 'emacs-startup-hook #'my/org-alert-mode)))
 #+end_src
 
 **** Other settings
@@ -6925,24 +6939,6 @@ Setting up custom faces for certain tags to make the feed look a bit nicer.
           (blogs elfeed-blogs-entry)
           (unread elfeed-search-unread-title-face))))
 #+end_src
-
-Also, a function to automatically adjust these colors with the Doom theme.
-#+begin_src emacs-lisp
-(defun my/update-my-theme-elfeed (&rest _)
-  (custom-theme-set-faces
-   'my-theme-1
-   `(elfeed-videos-entry ((t :foreground ,(my/color-value 'red))))
-   `(elfeed-twitter-entry ((t :foreground ,(my/color-value 'blue))))
-   `(elfeed-emacs-entry ((t :foreground ,(my/color-value 'magenta))))
-   `(elfeed-music-entry ((t :foreground ,(my/color-value 'green))))
-   `(elfeed-podcasts-entry ((t :foreground ,(my/color-value 'yellow))))
-   `(elfeed-blogs-entry ((t :foreground ,(my/color-value 'orange)))))
-  (enable-theme 'my-theme-1))
-
-(advice-add 'load-theme :after #'my/update-my-theme-elfeed)
-(when (fboundp 'doom-color)
-  (my/update-my-theme-elfeed))
-#+end_src
 *** elfeed-summary
 [[https://github.com/SqrtMinusOne/elfeed-summary][elfeed-summary]] is my package that provides a feed summary interface for elfeed.
 
@@ -6990,6 +6986,20 @@ Second, a function that returns a URL to an enclosure. This is generally how pod
 #+begin_src emacs-lisp
 (defun my/get-enclosures-url (entry)
   (caar (elfeed-entry-enclosures entry)))
+#+end_src
+
+And a package called [[https://github.com/karthink/elfeed-tube][elfeed-tube]] to fetch some additional data from YouTUbe.
+#+begin_src emacs-lisp
+(use-package elfeed-tube
+  :straight t
+  :after elfeed
+  :config
+  (setq elfeed-tube-auto-fetch-p nil)
+  (elfeed-tube-setup)
+  (general-define-key
+   :states 'normal
+   :keymaps '(elfeed-search-mode-map elfeed-show-mode-map)
+   "gf" #'elfeed-tube-fetch))
 #+end_src
 
 Now, a function to add a YouTube link with metadata from elfeed to EMMS.
@@ -8879,7 +8889,7 @@ Also a keymap for room mode:
 
 | Guix dependency   |
 |-------------------|
-| tdlib-1.8.14      |
+| tdlib-1.8.15      |
 | font-gnu-unifont  |
 | font-gnu-freefont |
 
@@ -8920,7 +8930,7 @@ Building =telega-server= can create problems. It requires the latest version of 
   (interactive)
   (setq telega-server-libs-prefix
         (string-trim
-         (shell-command-to-string "guix build tdlib-1.8.14")))
+         (shell-command-to-string "guix build tdlib-1.8.15")))
   (telega-server-build "CC=gcc"))
 #+end_src
 
@@ -9683,6 +9693,6 @@ I thought about making something like a [[https://github.com/magit/transient][tr
 
 #+begin_src scheme :tangle .config/guix/manifests/emacs.scm :noweb yes
 (specifications->manifest
- '("emacs"
+ '("emacs-next-tree-sitter"
    <<packages()>>))
 #+end_src
