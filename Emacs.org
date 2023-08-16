@@ -63,6 +63,7 @@ I decided not to keep configs for features that I do not use anymore because thi
 | org-latex-impatient      | ab0d01c525f2b44dd64ec09747daf0fced4bd9c7 |
 | dired-single             | ab0d01c525f2b44dd64ec09747daf0fced4bd9c7 |
 | progidy                  | ab0d01c525f2b44dd64ec09747daf0fced4bd9c7 |
+| tree-sitter              | 1920a48aec49837d63fa88ca315928dc4e9d14c2 |
 
 * Initial setup
 Setting up the environment, performance tuning and a few basic settings.
@@ -1469,7 +1470,10 @@ My colorschemes of choice.
 Let's see...
 #+begin_src emacs-lisp
 (use-package ef-themes
-  :straight t)
+  :straight t
+  :config
+  (setq ef-duo-light-palette-overrides
+        '((constant green))))
 #+end_src
 *** Custom theme
 Here I define a few things on the top of Emacs theme, because:
@@ -2221,35 +2225,38 @@ References:
                  (window-height   . 0.33))))
 #+end_src
 *** Tree Sitter
-An incremental code parsing system, constructing a syntax tree at runtime.
-
-Right now it doesn't do much except provide a better syntax highlighting than regexes, but this integration is a rather recent development. There are already some major modes built on top of this thing.
-
-Also, it seems to break if run from mmm-mode, so there is a small workaround.
+Tree-Sitter integration with Emacs 29.
 
 References:
-- [[https://tree-sitter.github.io/tree-sitter/][Tree-sitter library]]
-- [[https://ubolonton.github.io/emacs-tree-sitter/][Emacs Tree-sitter]]
+- [[https://www.masteringemacs.org/article/how-to-get-started-tree-sitter][How to Get Started with Tree-Sitter - Mastering Emacs]]
 
 #+begin_src emacs-lisp
-(defun my/tree-sitter-if-not-mmm ()
-  (when (not (and (boundp 'mmm-temp-buffer-name)
-                  (string-equal mmm-temp-buffer-name (buffer-name))))
-    (tree-sitter-mode)
-    (tree-sitter-hl-mode)))
-
-(use-package tree-sitter
-  :straight t
-  :if (not (or my/remote-server my/is-termux))
-  :hook ((typescript-mode . my/tree-sitter-if-not-mmm)
-         (js-mode . my/tree-sitter-if-not-mmm)
-         (python-mode . tree-sitter-mode)
-         (python-mode . tree-sitter-hl-mode)
-         (csharp-mode . tree-sitter-mode)))
-
-(use-package tree-sitter-langs
-  :straight t
-  :after tree-sitter)
+(use-package treesit
+  :straight (:type built-in)
+  :if (featurep 'treesit)
+  :config
+  (setq treesit-language-source-alist
+        '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+          (cmake "https://github.com/uyha/tree-sitter-cmake")
+          (css "https://github.com/tree-sitter/tree-sitter-css")
+          (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+          (go "https://github.com/tree-sitter/tree-sitter-go")
+          (html "https://github.com/tree-sitter/tree-sitter-html")
+          (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+          (json "https://github.com/tree-sitter/tree-sitter-json")
+          (make "https://github.com/alemuller/tree-sitter-make")
+          (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+          (python "https://github.com/tree-sitter/tree-sitter-python")
+          (toml "https://github.com/tree-sitter/tree-sitter-toml")
+          (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+          (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+          (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+  (setq treesit-font-lock-level 4)
+  (setq major-mode-remap-alist
+        '((typescript-mode . typescript-ts-mode)
+          (js-mode . javascript-ts-mode)
+          (python-mode . python-ts-mode)
+          (json-mode . json-ts-mode))))
 #+end_src
 *** DAP
 An Emacs client for Debugger Adapter Protocol.
@@ -3260,6 +3267,7 @@ Remove all advice from function. Source: https://emacs.stackexchange.com/questio
 **** IELM
 #+begin_src emacs-lisp
 (add-hook 'inferior-emacs-lisp-mode-hook #'smartparens-mode)
+(my-leader-def "bi" #'ielm)
 #+end_src
 *** Common lisp
 **** SLIME
@@ -3741,10 +3749,13 @@ Don't know about this.
 | omnisharp         | t        |
 | dotnet            | t        |
 
+Disabled that for now because it depends on the old tree sitter.
+
 #+begin_src emacs-lisp
 (use-package csharp-mode
   :straight t
   :mode "\\.cs\\'"
+  :disabled t
   :config
   (setq lsp-csharp-server-path (executable-find "omnisharp-wrapper"))
   (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
