@@ -12,6 +12,32 @@ No matter from which side you approach penguins, more always come from behind
 #+end_quote
 - A friend of mine
 
+
+* Colors
+Noweb function to get colors.
+
+#+NAME: get-color
+#+begin_src emacs-lisp :var name="black" quote=0 :tangle no
+(let ((color (or (my/color-value name))))
+  (if (> quote 0)
+      (concat "\"" color "\"")
+    color))
+#+end_src
+
+#+NAME: get-fg-for-color
+#+begin_src emacs-lisp :var name="black" quote=0 :tangle no
+(let ((val (if (ct-light-p (my/color-value name))
+               (my/color-value 'black)
+             (my/color-value 'white))))
+  (if (eq quote 1)
+      (concat "\"" val "\"")
+    val))
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+(setq-local org-confirm-babel-evaluate nil)
+#+end_src
+
 * =.profile=
 :PROPERTIES:
 :header-args+: :tangle ./.profile
@@ -522,7 +548,7 @@ set fish_color_error red
 set fish_color_escape yellow
 set fish_color_operator yellow
 set fish_color_param magenta
-set fish_color_quote brwhite
+set fish_color_quote green
 set fish_color_redirection yellow
 #+end_src
 ** Keybindings
@@ -749,30 +775,6 @@ source ~/.tmux.line.conf
 | alacritty       |
 
 [[https://github.com/alacritty/alacritty][Alacritty]] is a GPU-accelerated terminal emulator. I haven't found it to be an inch faster than st, but =yml= configuration is way more convenient than patches.
-
-The application doesn't support XResources, so here goes noweb.
-
-#+NAME: get-color
-#+begin_src emacs-lisp :var name="black" quote=0 :tangle no
-(let ((color (or (my/color-value name))))
-  (if (> quote 0)
-      (concat "\"" color "\"")
-    color))
-#+end_src
-
-#+NAME: get-fg-for-color
-#+begin_src emacs-lisp :var name="black" quote=0 :tangle no
-(let ((val (if (ct-light-p (my/color-value name))
-               (my/color-value 'black)
-             (my/color-value 'white))))
-  (if (eq quote 1)
-      (concat "\"" val "\"")
-    val))
-#+end_src
-
-#+begin_src emacs-lisp :tangle no
-(setq-local org-confirm-babel-evaluate nil)
-#+end_src
 
 References:
 - [[https://github.com/alacritty/alacritty/blob/master/alacritty.yml][default config]]

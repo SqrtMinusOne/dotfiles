@@ -57,7 +57,7 @@ set fish_color_error red
 set fish_color_escape yellow
 set fish_color_operator yellow
 set fish_color_param magenta
-set fish_color_quote brwhite
+set fish_color_quote green
 set fish_color_redirection yellow
 # Colors:1 ends here
 
