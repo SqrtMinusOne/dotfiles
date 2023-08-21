@@ -849,31 +849,31 @@ key_bindings:
   - { key: NumpadSubtract, mods: Control,                         action: DecreaseFontSize }
 #+end_src
 * Various console applications
-| Guix dependency | Description                                 |
-|-----------------+---------------------------------------------|
-| ncurses         | Provides stuff like ~clear~                 |
-| exa             | ~ls~ replacement, written in Rust           |
-| bat             | ~cat~ clone with syntax highlighting        |
-| htop            | Interactive process viewer                  |
-| nethogs         | A tool to group processed by used bandwidth |
-| osync           | rsync wrapper                               |
-| neofetch        | Fetch system info                           |
-| fzf             | fuzzy finder                                |
-| p7zip           | archiver                                    |
-| password-store  | CLI password manager                        |
-| zip             |                                             |
-| unzip           |                                             |
-| jmtpfs          | A tool to mount MTP devices (e.g. Android)  |
-| tokei           | Count lines of code                         |
-| sshfs           | Mount stuff over SSH                        |
-| git-lfs         |                                             |
-| glibc-locales   |                                             |
-| direnv          |                                             |
-| jless-bin       | JSON viewer                                 |
-| megacmd         | mega.nz client                              |
-| ncdu            | disk usage analyzer                         |
-| openssl         |                                             |
-| bottom-bin      | resource monitor                            |
+| Guix dependency       | Description                                 |
+|-----------------------+---------------------------------------------|
+| ncurses               | Provides stuff like ~clear~                 |
+| exa                   | ~ls~ replacement, written in Rust           |
+| bat                   | ~cat~ clone with syntax highlighting        |
+| htop                  | Interactive process viewer                  |
+| nethogs               | A tool to group processed by used bandwidth |
+| osync                 | rsync wrapper                               |
+| neofetch              | Fetch system info                           |
+| fzf                   | fuzzy finder                                |
+| p7zip                 | archiver                                    |
+| password-store        | CLI password manager                        |
+| zip                   |                                             |
+| unzip                 |                                             |
+| jmtpfs                | A tool to mount MTP devices (e.g. Android)  |
+| tokei                 | Count lines of code                         |
+| sshfs                 | Mount stuff over SSH                        |
+| git-lfs               |                                             |
+| glibc-locales         |                                             |
+| direnv                |                                             |
+| jless-bin             | JSON viewer                                 |
+| megacmd               | mega.nz client                              |
+| ncdu                  | disk usage analyzer                         |
+| openssl               |                                             |
+| bottom-bin            | resource monitor                            |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.
@@ -908,7 +908,7 @@ else
 fi
 #+end_src
 ** =autocommit=
-A script to autocommit files in a repository. I use it to sync my org directory and password store. I guess it's not how git is intended to be used, but it works for me.
+A script to perform automatic commits in a repository. I use it to sync my org directory and password store. I guess it's not how git is intended to be used, but it works for me.
 
 Usage:
 #+begin_example
@@ -920,11 +920,11 @@ Environment:
 |---------------+-----------------+---------------|
 | =TIMEOUT_MIN= | Default timeout | 60            |
 
-Here's more or less what the script is doing:
+Here's roughly what the script is doing:
 - If there is a merge conflict, notify
-- If there are changed files in the last =TIMEOUT_MIN= minutes, commit
+- If there were changed files in the last =TIMEOUT_MIN= minutes, commit
 - Fetch
-- If there were changes in the last =TTMEOUT_MIN=, merge (usually the merge has to be fast-forwarded)
+- If there were changes in the last =TTMEOUT_MIN=, merge (usually the merge is just fast-forward)
 - If the fetch was successful & the merge was either successful or delayed because of changes in the last =TIMEOUT_MIN=, push
 - Send a notification about the events above
 - Send a separate notification if there is a merge conflict

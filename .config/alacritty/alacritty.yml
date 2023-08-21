@@ -1,4 +1,4 @@
-# [[file:../../Console.org::*Alacritty][Alacritty:4]]
+# [[file:../../Console.org::*Alacritty][Alacritty:1]]
 decorations: none
 
 font:
@@ -66,4 +66,4 @@ key_bindings:
   - { key: NumpadAdd,      mods: Control,                         action: IncreaseFontSize }
   - { key: Minus,          mods: Control,                         action: DecreaseFontSize }
   - { key: NumpadSubtract, mods: Control,                         action: DecreaseFontSize }
-# Alacritty:4 ends here
+# Alacritty:1 ends here
