@@ -358,7 +358,10 @@ Basic evil configuration.
   :config
   (evil-mode 1)
   ;; (setq evil-respect-visual-line-mode t)
-  (evil-set-undo-system 'undo-tree))
+  (evil-set-undo-system 'undo-tree)
+  (general-define-key
+   :states '(motion)
+   "ze" nil))
 #+end_src
 **** Addons
 [[https://github.com/emacs-evil/evil-surround][evil-surround]] emulates one of my favorite vim plugins, surround.vim. Adds a lot of parentheses management options.
@@ -653,9 +656,12 @@ The most versatile is the built-in =hs-minor-mode=, which seems to work out of t
 Evil does a pretty good job of abstracting all these packages with a set of vim-like keybindings. I was using =SPC= in vim, but as now this isn't an option, I set =TAB= to toggle folding.
 
 #+begin_src emacs-lisp
-(general-nmap :keymaps '(hs-minor-mode-map outline-minor-mode-map)
-  "ze" 'hs-hide-level
-  "TAB" 'evil-toggle-fold)
+(require 'hideshow)
+(general-define-key
+ :keymaps '(hs-minor-mode-map outline-minor-mode-map)
+ :states '(normal motion)
+ "ze" 'hs-hide-level
+ "TAB" 'evil-toggle-fold)
 #+end_src
 **** Zoom UI
 #+begin_src emacs-lisp
@@ -1796,12 +1802,15 @@ Ligature setup for the JetBrainsMono font.
   (ligature-set-ligatures
    '(
      typescript-mode
+     typescript-ts-mode
      js2-mode
+     javascript-ts-mode
      vue-mode
      svelte-mode
      scss-mode
      php-mode
      python-mode
+     python-ts-mode
      js-mode
      markdown-mode
      clojure-mode
@@ -2224,6 +2233,24 @@ References:
                  (reusable-frames . visible)
                  (window-height   . 0.33))))
 #+end_src
+*** General additional config
+Have to put this before tree-sitter because I need =my/set-smartparens-indent= there.
+
+Make smartparens behave the way I like for C-like languages.
+#+begin_src emacs-lisp
+(defun my/set-smartparens-indent (mode)
+  (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
+#+end_src
+
+Override flycheck checker with eslint.
+#+begin_src emacs-lisp
+(defun my/set-flycheck-eslint()
+  "Override flycheck checker with eslint."
+  (setq-local lsp-diagnostic-package :none)
+  (setq-local flycheck-checker 'javascript-eslint))
+#+end_src
 *** Tree Sitter
 Tree-Sitter integration with Emacs 29.
 
@@ -2256,7 +2283,14 @@ References:
         '((typescript-mode . typescript-ts-mode)
           (js-mode . javascript-ts-mode)
           (python-mode . python-ts-mode)
-          (json-mode . json-ts-mode))))
+          (json-mode . json-ts-mode)))
+  (cl-loop for (old-mode . new-mode) in major-mode-remap-alist
+           do (my/set-smartparens-indent new-mode)
+           do (set (intern (concat (symbol-name new-mode) "-hook"))
+                   (list
+                    (eval `(lambda ()
+                             (run-hooks
+                              ',(intern (concat (symbol-name old-mode) "-hook")))))))))
 #+end_src
 *** DAP
 An Emacs client for Debugger Adapter Protocol.
@@ -2611,22 +2645,6 @@ A general-purpose package to run formatters on files. While the most popular for
    "M-l" #'copilot-accept-completion-by-word)
   (setq copilot-lispy-integration t))
 #+end_src
-*** General additional config
-Make smartparens behave the way I like for C-like languages.
-#+begin_src emacs-lisp
-(defun my/set-smartparens-indent (mode)
-  (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-  (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
-#+end_src
-
-Override flycheck checker with eslint.
-#+begin_src emacs-lisp
-(defun my/set-flycheck-eslint()
-  "Override flycheck checker with eslint."
-  (setq-local lsp-diagnostic-package :none)
-  (setq-local flycheck-checker 'javascript-eslint))
-#+end_src
 ** Web development
 Configs for various web development technologies I'm using.
 *** Emmet
@@ -2673,7 +2691,12 @@ My bit of config here:
   :straight t
   :init
   (my-leader-def
-    :keymaps '(js-mode-map web-mode-map typescript-mode-map vue-mode-map svelte-mode-map)
+    :keymaps '(js-mode-map
+               web-mode-map
+               typescript-mode-map
+               typescript-ts-mode-map
+               vue-mode-map
+               svelte-mode-map)
     "rr" #'prettier-prettify))
 #+end_src
 *** TypeScript
@@ -8760,6 +8783,7 @@ And the prefix itself:
 *** ement.el
 [[https://github.com/alphapapa/ement.el][ement.el]] is a Matrix client for Emacs. This package turned out to be somewhat complicated to setup.
 
+**** General config
 #+begin_src emacs-lisp
 (use-package plz
   :straight (:host github :repo "alphapapa/plz.el")
@@ -8811,6 +8835,7 @@ And the prefix itself:
               :around #'my/perspective-assign-ignore-advice))
 #+end_src
 
+**** Keybindings
 Some custom keymaps for room lists:
 #+begin_src emacs-lisp
 (with-eval-after-load 'ement-room-list
@@ -8894,6 +8919,48 @@ Also a keymap for room mode:
    :keymaps '(ement-room-mode-map)
    "C-u" #'ement-room-scroll-down-command
    "C-d" #'ement-room-scroll-up-mark-read))
+#+end_src
+
+**** Various functions
+Scroll to the previous mention.
+
+#+begin_quote
+ alphapapa 🐃​> And, yes, that is a currently unsolved problem. As I said, in the future we can try using a different API endpoint to access those notifications similarly to Element. In the meantime, you can load old messages (e.g. "C-u 1000 M-v" to load 1000 old ones at a time), until you find it, maybe using "C-s sqrtm" to search for messages mentioning you.
+
+Or you can load up Element for a moment to see what the mention was, if that's easier.
+#+end_quote
+
+#+begin_src emacs-lisp
+(defun my/ement-about-me-p (event)
+  (let ((me (ement-user-id (ement-session-user ement-session))))
+    (or
+     (equal (ement-user-id (ement-event-sender event)) me)
+     (when-let ((formatted-body
+                 (alist-get
+                  'formatted_body
+                  (ement-event-content event))))
+       (string-match-p me formatted-body)))))
+
+(defun my/ement-scroll-to-previous-about-me ()
+  (interactive)
+  (let ((scrolled 0))
+    (when (< (line-number-at-pos) 20)
+      (forward-line 20))
+    (if ement-room-retro-loading
+        (run-with-timer 0.5 nil #'my/ement-scroll-to-previous-about-me)
+      (while (let ((event (ewoc-data (ewoc-locate ement-ewoc))))
+               (and
+                (not ement-room-retro-loading)
+                (or
+                 (not (ement-event-p event))
+                 (not (my/ement-about-me-p event)))))
+        (condition-case _err
+            (scroll-down 1)
+          (beginning-of-buffer
+           (call-interactively #'ement-room-retro)
+           (run-with-timer 0.5 nil #'my/ement-scroll-to-previous-about-me)))
+        (cl-incf scrolled)
+        (message "Scrolled %s" scrolled)))))
 #+end_src
 *** Telega
 [[https://github.com/zevlg/telega.el/][telega.el]] is a Telegam client for Emacs.

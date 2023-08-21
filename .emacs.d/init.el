@@ -156,7 +156,10 @@
   :config
   (evil-mode 1)
   ;; (setq evil-respect-visual-line-mode t)
-  (evil-set-undo-system 'undo-tree))
+  (evil-set-undo-system 'undo-tree)
+  (general-define-key
+   :states '(motion)
+   "ze" nil))
 
 (use-package evil-surround
   :straight t
@@ -360,9 +363,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package xref
   :straight (:type built-in))
 
-(general-nmap :keymaps '(hs-minor-mode-map outline-minor-mode-map)
-  "ze" 'hs-hide-level
-  "TAB" 'evil-toggle-fold)
+(require 'hideshow)
+(general-define-key
+ :keymaps '(hs-minor-mode-map outline-minor-mode-map)
+ :states '(normal motion)
+ "ze" 'hs-hide-level
+ "TAB" 'evil-toggle-fold)
 
 (defun my/zoom-in ()
   "Increase font size by 10 points"
@@ -1126,12 +1132,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (ligature-set-ligatures
    '(
      typescript-mode
+     typescript-ts-mode
      js2-mode
+     javascript-ts-mode
      vue-mode
      svelte-mode
      scss-mode
      php-mode
      python-mode
+     python-ts-mode
      js-mode
      markdown-mode
      clojure-mode
@@ -1444,6 +1453,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                  (reusable-frames . visible)
                  (window-height   . 0.33))))
 
+(defun my/set-smartparens-indent (mode)
+  (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
+
+(defun my/set-flycheck-eslint()
+  "Override flycheck checker with eslint."
+  (setq-local lsp-diagnostic-package :none)
+  (setq-local flycheck-checker 'javascript-eslint))
+
 (use-package treesit
   :straight (:type built-in)
   :if (featurep 'treesit)
@@ -1469,7 +1488,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         '((typescript-mode . typescript-ts-mode)
           (js-mode . javascript-ts-mode)
           (python-mode . python-ts-mode)
-          (json-mode . json-ts-mode))))
+          (json-mode . json-ts-mode)))
+  (cl-loop for (old-mode . new-mode) in major-mode-remap-alist
+           do (my/set-smartparens-indent new-mode)
+           do (set (intern (concat (symbol-name new-mode) "-hook"))
+                   (list
+                    (eval `(lambda ()
+                             (run-hooks
+                              ',(intern (concat (symbol-name old-mode) "-hook")))))))))
 
 (use-package dap-mode
   :straight t
@@ -1755,16 +1781,6 @@ Returns (<buffer> . <workspace-index>) or nil."
    "M-l" #'copilot-accept-completion-by-word)
   (setq copilot-lispy-integration t))
 
-(defun my/set-smartparens-indent (mode)
-  (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-  (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
-
-(defun my/set-flycheck-eslint()
-  "Override flycheck checker with eslint."
-  (setq-local lsp-diagnostic-package :none)
-  (setq-local flycheck-checker 'javascript-eslint))
-
 (defun my/should-run-emmet-p ()
   (and (bound-and-true-p emmet-mode)
        (or (and (derived-mode-p 'web-mode)
@@ -1796,7 +1812,12 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight t
   :init
   (my-leader-def
-    :keymaps '(js-mode-map web-mode-map typescript-mode-map vue-mode-map svelte-mode-map)
+    :keymaps '(js-mode-map
+               web-mode-map
+               typescript-mode-map
+               typescript-ts-mode-map
+               vue-mode-map
+               svelte-mode-map)
     "rr" #'prettier-prettify))
 
 (use-package typescript-mode
@@ -6408,6 +6429,37 @@ base toot."
    :keymaps '(ement-room-mode-map)
    "C-u" #'ement-room-scroll-down-command
    "C-d" #'ement-room-scroll-up-mark-read))
+
+(defun my/ement-about-me-p (event)
+  (let ((me (ement-user-id (ement-session-user ement-session))))
+    (or
+     (equal (ement-user-id (ement-event-sender event)) me)
+     (when-let ((formatted-body
+                 (alist-get
+                  'formatted_body
+                  (ement-event-content event))))
+       (string-match-p me formatted-body)))))
+
+(defun my/ement-scroll-to-previous-about-me ()
+  (interactive)
+  (let ((scrolled 0))
+    (when (< (line-number-at-pos) 20)
+      (forward-line 20))
+    (if ement-room-retro-loading
+        (run-with-timer 0.5 nil #'my/ement-scroll-to-previous-about-me)
+      (while (let ((event (ewoc-data (ewoc-locate ement-ewoc))))
+               (and
+                (not ement-room-retro-loading)
+                (or
+                 (not (ement-event-p event))
+                 (not (my/ement-about-me-p event)))))
+        (condition-case _err
+            (scroll-down 1)
+          (beginning-of-buffer
+           (call-interactively #'ement-room-retro)
+           (run-with-timer 0.5 nil #'my/ement-scroll-to-previous-about-me)))
+        (cl-incf scrolled)
+        (message "Scrolled %s" scrolled)))))
 
 (use-package telega
   :straight t
