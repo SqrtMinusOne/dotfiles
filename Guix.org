@@ -664,7 +664,7 @@ if [[ $(hostname) == 'iris' ]]; then
     VPN_FILE=~/.vpn/mullvad_openvpn_linux_se_all/mullvad_se_all.conf
 fi
 echo $VPN_FILE
-sudo openvpn --config $VPN_FILE
+pkexec openvpn --config $VPN_FILE
 #+end_src
 
 *** +vpn-stop+
