@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "android-file-transfer"
    "remmina"
    "font-google-noto-emoji"
    "telegram-desktop"

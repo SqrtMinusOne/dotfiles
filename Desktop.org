@@ -4056,6 +4056,7 @@ Install it via nix:
 nix-env -I opensnitchd opensnitch-ui
 #+end_src
 
+=sudoers= has to be modified this to work.
 #+begin_src scheme
 (define opensnitchd
   (make <service>
@@ -4093,8 +4094,9 @@ Register services:
  ;; xmodmap
  nm-applet
  vnstatd
- opensnitchd
- opensnitch-ui)
+ ;; opensnitchd
+ ;; opensnitch-ui
+ )
 #+end_src
 
 Daemonize shepherd
@@ -4149,6 +4151,7 @@ Other desktop programs I use are listed below.
 | desktop-misc | telegram-desktop       |                                           |
 | desktop-misc | font-google-noto-emoji |                                           |
 | desktop-misc | remmina                |                                           |
+| desktop-misc | android-file-transfer  |                                           |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
