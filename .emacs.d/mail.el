@@ -54,19 +54,24 @@
   notmuch-message-mode 0 "mail")
 
 (setq notmuch-saved-searches
-      '((:name "drafts" :query "tag:draft")
-        (:name "main (inbox)" :query "tag:main AND tag:inbox")
-        (:name "main (unread)" :query "tag:main AND tag:unread")
-        (:name "main (sent)" :query "tag:main AND tag:sent")
-        (:name "main (all mail)" :query "tag:main")
-        (:name "progin (inbox)" :query "tag:progin AND tag:inbox")
-        (:name "progin (unread)" :query "tag:progin AND tag:unread")
-        (:name "progin (sent)" :query "tag:progin AND tag:sent")
-        (:name "progin (all mail)" :query "tag:progin")
-        (:name "pvkorytov (inbox)" :query "tag:pvkorytov AND tag:inbox")
-        (:name "pvkorytov (unread)" :query "tag:pvkorytov AND tag:unread")
-        (:name "pvkorytov (sent)" :query "tag:pvkorytov AND tag:sent")
-        (:name "pvkorytov (all mail)" :query "tag:pvkorytov")))
+      '((:name "drafts" :query "tag:draft" :key "d")
+        (:name "main (inbox)" :query "tag:main AND tag:inbox" :key "mi")
+        (:name "main (unread)" :query "tag:main AND tag:unread" :key "mu")
+        (:name "main (sent)" :query "tag:main AND tag:sent" :key "ms")
+        (:name "main (all mail)" :query "tag:main" :key "ma")
+        (:name "progin (inbox)" :query "tag:progin AND tag:inbox" :key "pi")
+        (:name "progin (unread)" :query "tag:progin AND tag:unread" :key "pu")
+        (:name "progin (sent)" :query "tag:progin AND tag:sent" :key "ps")
+        (:name "progin (all mail)" :query "tag:progin" :key "pa")
+        (:name "pvkorytov (inbox)" :query "tag:pvkorytov AND tag:inbox" :key "vi")
+        (:name "pvkorytov (unread)" :query "tag:pvkorytov AND tag:unread" :key "vu")
+        (:name "pvkorytov (sent)" :query "tag:pvkorytov AND tag:sent" :key "vs")
+        (:name "pvkorytov (all mail)" :query "tag:pvkorytov" :key "va")))
+
+(general-define-key
+ :states '(normal visual)
+ :keymaps '(notmuch-hello-mode-map)
+ "f" #'notmuch-jump-search)
 
 (with-eval-after-load 'notmuch
   (add-hook 'message-setup-hook 'mml-secure-sign-pgpmime))

@@ -451,9 +451,9 @@ Root keybindings:
 #+NAME: root_tags
 | Root tag  | Prefix | Keybinding description |
 |-----------+--------+------------------------|
-| main      | t      | thexcloud@gmail.com    |
+| main      | m      | thexcloud@gmail.com    |
 | progin    | p      | progin6304@gmail.com   |
-| pvkorytov | e      | pvkorytov@etu.ru       |
+| pvkorytov | v      | pvkorytov@etu.ru       |
 
 #+NAME: filter_tags
 | Tag    | Prefix | Name     |
@@ -471,21 +471,29 @@ The following formats the tables above to a proper syntax for =setq notmuch-save
     (dolist (tag filter_tags)
       (add-to-list
        'searches
-       (format "(:name \"%s\" :query \"%s\")"
+       (format "(:name \"%s\" :query \"%s\" :key \"%s\")"
                (format "%s (%s)"
                        (nth 0 root_tag)
                        (nth 2 tag))
                (concat "tag:" (nth 0 root_tag)
                        (unless (string-empty-p (nth 0 tag))
-                         (concat " AND tag:" (nth 0 tag)))))
+                         (concat " AND tag:" (nth 0 tag))))
+               (concat (nth 1 root_tag) (nth 1 tag)))
        t)))
   (string-join searches "\n"))
 #+end_src
 
 #+begin_src emacs-lisp :noweb yes
 (setq notmuch-saved-searches
-      '((:name "drafts" :query "tag:draft")
+      '((:name "drafts" :query "tag:draft" :key "d")
         <<format-notmuch-saved-searches()>>))
+#+end_src
+
+#+begin_src emacs-lisp
+(general-define-key
+ :states '(normal visual)
+ :keymaps '(notmuch-hello-mode-map)
+ "f" #'notmuch-jump-search)
 #+end_src
 ** Signing messages
 #+begin_src emacs-lisp
