@@ -1,7 +1,7 @@
 #+TITLE: My dotfiles
 #+HUGO_ALIASES: /config
 
-[[https://forthebadge.com/images/badges/works-on-my-machine.svg]]
+[[file:dot-imgs/works-on-my-machine.svg]]
 
 These are my GNU/Linux configuration files. [[https://github.com/SqrtMinusOne/dotfiles][View at GitHub]].
 
