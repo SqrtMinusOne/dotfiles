@@ -2704,10 +2704,11 @@ My bit of config here:
 (use-package typescript-mode
   :straight t
   :mode "\\.ts\\'"
-  :config
+  :init
   (add-hook 'typescript-mode-hook #'smartparens-mode)
   (add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'typescript-mode-hook #'hs-minor-mode)
+  :config
   (my/set-smartparens-indent 'typescript-mode))
 #+end_src
 *** JavaScript
@@ -4484,7 +4485,7 @@ Also, my project structure is somewhat chaotic, so I have an =.el= file in the o
                        org-directory "/projects/"
                        f))
           (seq-filter
-           (lambda (f) (not (member f '("." ".."))))
+           (lambda (f) (not (file-directory-p f)))
            (directory-files
             (concat org-directory "/projects"))))))
     (setq org-agenda-files
@@ -6983,7 +6984,8 @@ The default interface of elfeed is just a list of all entries, so it gets hard t
   :commands (elfeed-summary)
   :straight t
   :config
-  (setq elfeed-summary-filter-by-title t))
+  (setq elfeed-summary-filter-by-title t)
+  (setq elfeed-summary-skip-sync-tag 'skip))
 #+end_src
 *** elfeed-sync
 [[https://github.com/SqrtMinusOne/elfeed-sync][elfeed-sync]] is my package to sync elfeed with [[https://tt-rss.org/][tt-rss]].

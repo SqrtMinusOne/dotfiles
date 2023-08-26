@@ -1823,10 +1823,11 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package typescript-mode
   :straight t
   :mode "\\.ts\\'"
-  :config
+  :init
   (add-hook 'typescript-mode-hook #'smartparens-mode)
   (add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
   (add-hook 'typescript-mode-hook #'hs-minor-mode)
+  :config
   (my/set-smartparens-indent 'typescript-mode))
 
 (add-hook 'js-mode-hook #'smartparens-mode)
@@ -3199,7 +3200,7 @@ Returns (<buffer> . <workspace-index>) or nil."
                        org-directory "/projects/"
                        f))
           (seq-filter
-           (lambda (f) (not (member f '("." ".."))))
+           (lambda (f) (not (file-directory-p f)))
            (directory-files
             (concat org-directory "/projects"))))))
     (setq org-agenda-files
@@ -4965,7 +4966,8 @@ With ARG, repeats or can move backward if negative."
   :commands (elfeed-summary)
   :straight t
   :config
-  (setq elfeed-summary-filter-by-title t))
+  (setq elfeed-summary-filter-by-title t)
+  (setq elfeed-summary-skip-sync-tag 'skip))
 
 (use-package elfeed-sync
   :straight (:host github :repo "SqrtMinusOne/elfeed-sync")
