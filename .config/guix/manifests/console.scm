@@ -1,6 +1,5 @@
 (specifications->manifest
  '(
-   "bottom-bin"
    "openssl"
    "ncdu"
    "megacmd"
@@ -23,6 +22,7 @@
    "bat"
    "exa"
    "ncurses"
+   "bottom-bin"
    "alacritty"
    "xclip"
    "python-tmuxp"

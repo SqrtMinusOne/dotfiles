@@ -848,6 +848,30 @@ key_bindings:
   - { key: Minus,          mods: Control,                         action: DecreaseFontSize }
   - { key: NumpadSubtract, mods: Control,                         action: DecreaseFontSize }
 #+end_src
+* Bottom
+| Guix dependency       | Description                                 |
+|-----------------------+---------------------------------------------|
+| bottom-bin            | resource monitor                            |
+
+[[https://github.com/ClementTsang/bottom][bottom]] is a TUI system monitor.
+
+See the [[https://github.com/ClementTsang/bottom/blob/master/sample_configs/default_config.toml][default config]] for the avaliable options.
+
+#+NAME: bottom-theme
+#+begin_src elisp
+(if (my/light-p) "default-light" "default")
+#+end_src
+
+#+begin_src toml :tangle ~/.config/bottom/bottom.toml :noweb yes
+[flags]
+hide_table_gap = true  # Remove space in tables
+color = "<<bottom-theme()>>"
+process_command = true
+
+[processes]
+columns = ["PID", "State", "Name", "CPU%", "Mem%", "R/s", "W/s", "User"]
+#+end_src
+
 * Various console applications
 | Guix dependency       | Description                                 |
 |-----------------------+---------------------------------------------|
@@ -873,7 +897,6 @@ key_bindings:
 | megacmd               | mega.nz client                              |
 | ncdu                  | disk usage analyzer                         |
 | openssl               |                                             |
-| bottom-bin            | resource monitor                            |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.
