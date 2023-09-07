@@ -3628,7 +3628,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
                          "xdg-open" (file-truename file))))
   :after (org)
   :config
-  (require 'org-ref-ivy)
+  (with-eval-after-load 'ivy-bibtex
+    (require 'org-ref-ivy))
   (general-define-key
    :keymaps 'org-mode-map
    "C-c l" #'org-ref-insert-link-hydra/body)
@@ -3637,7 +3638,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
    "M-RET" 'org-ref-bibtex-hydra/body))
 
 (use-package ivy-bibtex
-  :commands (ivy-bibtex)
+  :after (org-ref)
   :straight t
   :init
   (my-leader-def "fB" 'ivy-bibtex))

@@ -5052,7 +5052,8 @@ There's a package called [[https://github.com/org-roam/org-roam-bibtex][org-roam
                          "xdg-open" (file-truename file))))
   :after (org)
   :config
-  (require 'org-ref-ivy)
+  (with-eval-after-load 'ivy-bibtex
+    (require 'org-ref-ivy))
   (general-define-key
    :keymaps 'org-mode-map
    "C-c l" #'org-ref-insert-link-hydra/body)
@@ -5066,7 +5067,7 @@ There's a package called [[https://github.com/org-roam/org-roam-bibtex][org-roam
 
 #+begin_src emacs-lisp
 (use-package ivy-bibtex
-  :commands (ivy-bibtex)
+  :after (org-ref)
   :straight t
   :init
   (my-leader-def "fB" 'ivy-bibtex))
