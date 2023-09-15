@@ -246,8 +246,10 @@ By default, =custom= writes stuff to =init.el=, which is somewhat annoying. The 
 (load custom-file 'noerror)
 #+end_src
 *** authinfo
+Use only the gpg-encrypted version of the file.
 #+begin_src emacs-lisp
-(setq auth-source-debug nil)
+(setq auth-source-debug t)
+(setq auth-sources '("~/.authinfo"))
 #+end_src
 *** Private config
 I have some variables which I don't commit to the repo, e.g. my current location. They are stored in =private.el=
@@ -358,10 +360,12 @@ Basic evil configuration.
   :config
   (evil-mode 1)
   ;; (setq evil-respect-visual-line-mode t)
-  (evil-set-undo-system 'undo-tree)
-  (general-define-key
-   :states '(motion)
-   "ze" nil))
+  (when (fboundp #'undo-tree-undo)
+    (evil-set-undo-system 'undo-tree))
+  (when (fboundp #'general-define-key)
+    (general-define-key
+     :states '(motion)
+     "ze" nil)))
 #+end_src
 **** Addons
 [[https://github.com/emacs-evil/evil-surround][evil-surround]] emulates one of my favorite vim plugins, surround.vim. Adds a lot of parentheses management options.
@@ -1002,9 +1006,7 @@ I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, 
   :straight t
   :config
   (projectile-mode +1)
-  (setq projectile-project-search-path '("~/Code" "~/Documents"))
-  (defadvice projectile-project-root (around ignore-remote first activate)
-    (unless (file-remote-p default-directory) ad-do-it)))
+  (setq projectile-project-search-path '("~/Code" "~/Documents")))
 
 (use-package counsel-projectile
   :after (counsel projectile)
@@ -4594,7 +4596,8 @@ References:
    "{" #'org-habit-stats-scroll-graph-left-big
    "}" #'org-habit-stats-scroll-graph-right-big
    "." #'org-habit-stats-view-next-habit
-   "," #'org-habit-stats-view-previous-habit))
+   "," #'org-habit-stats-view-previous-habit)
+   (add-hook 'org-after-todo-state-change-hook 'org-habit-stats-update-properties))
 #+end_src
 **** Custom agendas
 Some custom agendas to fit my workflow.
@@ -6304,11 +6307,7 @@ Display icons for files.
   :hook (dired-mode . (lambda ()
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode))))
-  :config
-  ;; (advice-add 'dired-add-entry :around #'all-the-icons-dired--propertize)
-  ;; (advice-add 'dired-remove-entry :around #'all-the-icons-dired--propertize)
-  ;; (advice-add 'dired-kill-subdir :around #'all-the-icons-dired--propertize)
-  )
+  :config)
 #+end_src
 
 Provides stuff like =dired-open-xdg=
@@ -6392,25 +6391,65 @@ I add my own keybindings and some extra functionality.
 *** TRAMP
 TRAMP is a package that provides remote editing capacities. It is particularly useful for remote server management.
 
-One of the reasons why TRAMP may be slow is that some plugins do too many requests to the filesystem. To debug these issues, set the following variable to 6:
+Unfortunately, many Emacs packages don't exactly moderate their rate of filesystem operations, and on TRAMP over network each operation adds additional overhead, so... it can get pretty slow. To debug these issues, set the following variable to 6:
 #+begin_src emacs-lisp
-(setq tramp-verbose 1)
+(setq tramp-verbose 6)
 #+end_src
 
-To check if a file is remote, you can use ~file-remote-p~. E.g. ~(file-remote-p default-directory)~ for a current buffer. The problem with this approach is that it's rather awkward to add these checks in every hook, especially for global modes, so for now, I just set an environment variable for Emacs which disables these modes.
+I used to launch a separate Emacs instance for TRAMP, which had some of these packages disabled via environment variables, my [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html][advice]]-fu got better since then.
 
-So far I have found the following problematic plugins:
-| Plugin              | Note                                     | Solution                      |
-|---------------------+------------------------------------------+-------------------------------|
-| editorconfig        | looks for .editorconfig in the file tree | do not enable globally        |
-| all-the-icons-dired | runs test on every file in the directory | disable                       |
-| projectile          | looks for .git, .svn, etc                | advice ~projectile-file-name~ |
-| lsp                 | does a whole lot of stuff                | disable                       |
-| git-gutter          | runs git                                 | disable                       |
-| vterm               | no proper TRAMP integration              | use eshell or shell           |
+So, to determine if the buffer is in TRAMP:
+#+begin_src emacs-lisp
+(defun my/tramp-p (&optional buffer)
+  (file-remote-p
+   (buffer-local-value 'default-directory (or buffer (current-buffer)))))
+#+end_src
+
+And advice to disable a function for TRAMP-related buffers:
+#+begin_src emacs-lisp
+(defun my/tramp-void-if-tramp (fun &rest args)
+  (unless (my/tramp-p)
+    (apply fun args)))
+
+(defun my/tramp-void-if-file-is-tramp (fun &optional dir)
+  (unless (file-remote-p (or dir default-directory))
+    (funcall fun dir)))
+#+end_src
+
+=editorconfig= lovely package looks for the =.editorconfig= file in the file tree.
+#+begin_src emacs-lisp
+(with-eval-after-load 'editorconfig
+  (advice-add #'editorconfig-apply :around #'my/tramp-void-if-tramp)
+  (advice-add #'editorconfig--disabled-for-filename
+              :around #'my/tramp-void-if-file-is-tramp))
+#+end_src
+
+=all-the-icons-dired= runs =test= on every file in the directory.
+#+begin_src emacs-lisp
+(with-eval-after-load 'all-the-icons-dired
+  (advice-add #'all-the-icons-dired-mode :around #'my/tramp-void-if-tramp))
+#+end_src
+
+=projectile= looks for =.git=, =.svn=, etc. to find the project root. Maybe I'll make a more economic implementation if I need one.
+#+begin_src emacs-lisp
+(with-eval-after-load 'projectile
+  (advice-add #'projectile-project-root :around #'my/tramp-void-if-file-is-tramp))
+#+end_src
+
+=lsp= does a whole lot of stuff. It probably can be used with TRAMP on faster connections, but not in my case.
+#+begin_src emacs-lisp
+(with-eval-after-load 'lsp
+  (advice-add #'lsp :around #'my/tramp-void-if-tramp)
+  (advice-add #'lsp-deferred :around #'my/tramp-void-if-tramp))
+#+end_src
+
+=git-gutter= runs =git= a lot of times.
+#+begin_src emacs-lisp
+(with-eval-after-load 'git-gutter
+  (advice-add #'git-gutter--turn-on :around #'my/tramp-void-if-tramp))
+#+end_src
 
 At any rate, it's usable, although not perfect.
-
 Some other optimization settings:
 #+begin_src emacs-lisp
 (setq remote-file-name-inhibit-cache nil)
@@ -9099,7 +9138,7 @@ References:
 
 #+begin_src emacs-lisp
 (use-package biome
-  :straight (:host github :repo "SqrtMinusOne/biome")
+  :straight t
   :commands (biome)
   :init
   (my-leader-def "ab" #'biome)
