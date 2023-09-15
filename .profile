@@ -63,6 +63,10 @@ export GUIX_PACKAGE_PATH=~/guix-packages
 export GUIX_LOCPATH=$HOME/.guix-extra-profiles/console/console/lib/locale
 # Guix settings:4 ends here
 
+# [[file:Console.org::*Guix settings][Guix settings:5]]
+export GIO_EXTRA_MODULES=""
+# Guix settings:5 ends here
+
 # [[file:Console.org::*Other package managers][Other package managers:1]]
 if [ -d "$HOME/.cask" ]; then
     export PATH="/home/pavel/.cask/bin:$PATH"

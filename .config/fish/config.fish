@@ -1,6 +1,11 @@
 # [[file:../../Console.org::*Fish][Fish:1]]
-if [ "$TERM" != "dumb" ]; and type -q starship
+if [ "$TERM" != "dumb" ]; and type -q starship;
     starship init fish | source
+else
+    function fish_prompt -d "Write out the prompt"
+        printf '%s@%s %s%s%s > ' $USER $hostname \
+            (set_color $fish_color_cwd) (basename (pwd)) (set_color normal)
+    end
 end
 # Fish:1 ends here
 
