@@ -8970,7 +8970,7 @@ Or you can load up Element for a moment to see what the mention was, if that's e
 
 | Guix dependency   |
 |-------------------|
-| tdlib-1.8.15      |
+| tdlib-1.8.17      |
 | font-gnu-unifont  |
 | font-gnu-freefont |
 
@@ -9011,7 +9011,7 @@ Building =telega-server= can create problems. It requires the latest version of 
   (interactive)
   (setq telega-server-libs-prefix
         (string-trim
-         (shell-command-to-string "guix build tdlib-1.8.15")))
+         (shell-command-to-string "guix build tdlib-1.8.16")))
   (telega-server-build "CC=gcc"))
 #+end_src
 
