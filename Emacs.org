@@ -9009,7 +9009,7 @@ Or you can load up Element for a moment to see what the mention was, if that's e
 
 | Guix dependency   |
 |-------------------|
-| tdlib-1.8.17      |
+| tdlib-1.8.16      |
 | font-gnu-unifont  |
 | font-gnu-freefont |
 
