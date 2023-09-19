@@ -119,6 +119,11 @@ Locale settings
 #+begin_src sh
 export GUIX_LOCPATH=$HOME/.guix-extra-profiles/console/console/lib/locale
 #+end_src
+
+Somehow LibreOffice doesn't work without the following:
+#+begin_src sh
+export GIO_EXTRA_MODULES=""
+#+end_src
 ** Other package managers
 Using other package managers with Guix requires some extra work.
 
@@ -478,8 +483,13 @@ init_yc () {
 
 Launch starship
 #+begin_src fish
-if [ "$TERM" != "dumb" ]; and type -q starship
+if [ "$TERM" != "dumb" ]; and type -q starship;
     starship init fish | source
+else
+    function fish_prompt -d "Write out the prompt"
+        printf '%s@%s %s%s%s > ' $USER $hostname \
+            (set_color $fish_color_cwd) (basename (pwd)) (set_color normal)
+    end
 end
 #+end_src
 

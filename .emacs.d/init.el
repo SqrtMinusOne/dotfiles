@@ -91,7 +91,8 @@
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
 
-(setq auth-source-debug nil)
+(setq auth-source-debug t)
+(setq auth-sources '("~/.authinfo"))
 
 (let ((private-file (expand-file-name "private.el" user-emacs-directory)))
   (when (file-exists-p private-file)
@@ -156,10 +157,12 @@
   :config
   (evil-mode 1)
   ;; (setq evil-respect-visual-line-mode t)
-  (evil-set-undo-system 'undo-tree)
-  (general-define-key
-   :states '(motion)
-   "ze" nil))
+  (when (fboundp #'undo-tree-undo)
+    (evil-set-undo-system 'undo-tree))
+  (when (fboundp #'general-define-key)
+    (general-define-key
+     :states '(motion)
+     "ze" nil)))
 
 (use-package evil-surround
   :straight t
@@ -571,9 +574,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (projectile-mode +1)
-  (setq projectile-project-search-path '("~/Code" "~/Documents"))
-  (defadvice projectile-project-root (around ignore-remote first activate)
-    (unless (file-remote-p default-directory) ad-do-it)))
+  (setq projectile-project-search-path '("~/Code" "~/Documents")))
 
 (use-package counsel-projectile
   :after (counsel projectile)
@@ -3281,7 +3282,8 @@ Returns (<buffer> . <workspace-index>) or nil."
    "{" #'org-habit-stats-scroll-graph-left-big
    "}" #'org-habit-stats-scroll-graph-right-big
    "." #'org-habit-stats-view-next-habit
-   "," #'org-habit-stats-view-previous-habit))
+   "," #'org-habit-stats-view-previous-habit)
+   (add-hook 'org-after-todo-state-change-hook 'org-habit-stats-update-properties))
 
 (defun my/org-match-at-point-p (match)
   "Return non-nil if headline at point matches MATCH.
@@ -4457,11 +4459,7 @@ With ARG, repeats or can move backward if negative."
   :hook (dired-mode . (lambda ()
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode))))
-  :config
-  ;; (advice-add 'dired-add-entry :around #'all-the-icons-dired--propertize)
-  ;; (advice-add 'dired-remove-entry :around #'all-the-icons-dired--propertize)
-  ;; (advice-add 'dired-kill-subdir :around #'all-the-icons-dired--propertize)
-  )
+  :config)
 
 (use-package dired-open
   :straight t
@@ -4521,7 +4519,37 @@ With ARG, repeats or can move backward if negative."
    "sQ" 'my/dired-kill-all-subdirs
    (kbd "TAB") 'dired-hide-subdir))
 
-(setq tramp-verbose 1)
+(setq tramp-verbose 6)
+
+(defun my/tramp-p (&optional buffer)
+  (file-remote-p
+   (buffer-local-value 'default-directory (or buffer (current-buffer)))))
+
+(defun my/tramp-void-if-tramp (fun &rest args)
+  (unless (my/tramp-p)
+    (apply fun args)))
+
+(defun my/tramp-void-if-file-is-tramp (fun &optional dir)
+  (unless (file-remote-p (or dir default-directory))
+    (funcall fun dir)))
+
+(with-eval-after-load 'editorconfig
+  (advice-add #'editorconfig-apply :around #'my/tramp-void-if-tramp)
+  (advice-add #'editorconfig--disabled-for-filename
+              :around #'my/tramp-void-if-file-is-tramp))
+
+(with-eval-after-load 'all-the-icons-dired
+  (advice-add #'all-the-icons-dired-mode :around #'my/tramp-void-if-tramp))
+
+(with-eval-after-load 'projectile
+  (advice-add #'projectile-project-root :around #'my/tramp-void-if-file-is-tramp))
+
+(with-eval-after-load 'lsp
+  (advice-add #'lsp :around #'my/tramp-void-if-tramp)
+  (advice-add #'lsp-deferred :around #'my/tramp-void-if-tramp))
+
+(with-eval-after-load 'git-gutter
+  (advice-add #'git-gutter--turn-on :around #'my/tramp-void-if-tramp))
 
 (setq remote-file-name-inhibit-cache nil)
 (setq vc-ignore-dir-regexp
@@ -6562,7 +6590,7 @@ base toot."
   "t" 'google-translate-smooth-translate)
 
 (use-package biome
-  :straight (:host github :repo "SqrtMinusOne/biome")
+  :straight t
   :commands (biome)
   :init
   (my-leader-def "ab" #'biome)
