@@ -13,6 +13,7 @@
    "lua"
    "gcc-toolchain"
    "pkg-config"
+   "gopls"
    "go"
    "openjdk:jdk"
    "node"

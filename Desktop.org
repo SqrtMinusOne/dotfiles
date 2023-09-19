@@ -3727,6 +3727,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | node              |          |
 | dev      | openjdk:jdk       |          |
 | dev      | go                |          |
+| dev      | gopls             |          |
 | dev      | pkg-config        |          |
 | dev      | gcc-toolchain     |          |
 | dev      | lua               |          |
@@ -4114,14 +4115,15 @@ Run services
                   aw-watcher-window
                   pulseeffects
                   xsettingsd
-                  ; discord-rich-presence
-                  polkit-gnome
+                  ;; discord-rich-presence
+                  ;; polkit-gnome
                   davmail
-                  ; xmodmap
-                  nm-applet
+                  ;; ; xmodmap
+                  ;; nm-applet
                   vnstatd
-                  opensnitchd
-                  opensnitch-ui))
+                  ;; opensnitchd
+                  ;; opensnitch-ui
+                  ))
 #+end_src
 * Guix settings
 Other desktop programs I use are listed below.
