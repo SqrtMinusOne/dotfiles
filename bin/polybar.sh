@@ -10,7 +10,7 @@ elif [ "$hostname" = "eminence" ]; then
     else
         TRAY_MONITOR="eDP"
     fi
-elif [ "$hostname" = "iris"]; then
+elif [ "$hostname" = "iris" ]; then
     TRAY_MONITOR="HDMI-1"
 else
     TRAY_MONITOR="HDMI-A-0"
