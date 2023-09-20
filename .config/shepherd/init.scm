@@ -134,8 +134,9 @@
  ;; xmodmap
  nm-applet
  vnstatd
- opensnitchd
- opensnitch-ui)
+ ;; opensnitchd
+ ;; opensnitch-ui
+ )
 
 (action 'shepherd 'daemonize)
 
@@ -147,11 +148,12 @@
                   aw-watcher-window
                   pulseeffects
                   xsettingsd
-                  ; discord-rich-presence
-                  polkit-gnome
+                  ;; discord-rich-presence
+                  ;; polkit-gnome
                   davmail
-                  ; xmodmap
-                  nm-applet
+                  ;; ; xmodmap
+                  ;; nm-applet
                   vnstatd
-                  opensnitchd
-                  opensnitch-ui))
+                  ;; opensnitchd
+                  ;; opensnitch-ui
+                  ))

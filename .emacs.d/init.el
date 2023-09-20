@@ -702,7 +702,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                perspective-exwm-switch-perspective
                my/persp-ivy-switch-buffer-other-window
                lsp-execute-code-action
-               dired-recent-open))
+               dired-recent-open
+               my/index-nav))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 
@@ -2311,6 +2312,9 @@ Returns (<buffer> . <workspace-index>) or nil."
 ;;   :config
 ;;   (setq livedown-browser "qutebrowser"))
 
+(use-package adoc-mode
+  :straight t)
+
 (use-package plantuml-mode
   :straight t
   :mode "(\\.\\(plantuml?\\|uml\\|puml\\)\\'"
@@ -2665,6 +2669,9 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight t
   :config
   (my/set-smartparens-indent 'nginx-mode))
+
+(use-package hcl-mode
+  :straight t)
 
 (add-hook 'sh-mode-hook #'smartparens-mode)
 

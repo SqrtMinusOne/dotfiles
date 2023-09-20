@@ -1188,7 +1188,8 @@ References:
                perspective-exwm-switch-perspective
                my/persp-ivy-switch-buffer-other-window
                lsp-execute-code-action
-               dired-recent-open))
+               dired-recent-open
+               my/index-nav))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 #+end_src
@@ -3127,6 +3128,11 @@ Section snippets. The code turned out to be more complicated than just writing t
 ;;   (setq livedown-browser "qutebrowser"))
 
 #+end_src
+*** Ascii Doc
+#+begin_src emacs-lisp
+(use-package adoc-mode
+  :straight t)
+#+end_src
 *** PlantUML
 | Guix dependency |
 |-----------------|
@@ -3667,6 +3673,11 @@ A package to quickly create =.gitignore= files.
   :straight t
   :config
   (my/set-smartparens-indent 'nginx-mode))
+#+end_src
+*** HCL
+#+begin_src emacs-lisp
+(use-package hcl-mode
+  :straight t)
 #+end_src
 ** Shell
 *** sh
