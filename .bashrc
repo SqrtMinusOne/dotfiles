@@ -133,7 +133,7 @@ fi
 
 # [[file:Console.org::*Micromamba][Micromamba:1]]
 init_mamba () {
-    export MAMBA_EXE="/gnu/store/w0rrglxs2247nr4wawrh5dylisjra1q4-micromamba-bin-1.4.4-0/bin/micromamba";
+    export MAMBA_EXE="/home/pavel/.guix-extra-profiles/dev/dev/bin/micromamba";
     export MAMBA_ROOT_PREFIX="/home/pavel/micromamba";
     __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
     if [ $? -eq 0 ]; then
