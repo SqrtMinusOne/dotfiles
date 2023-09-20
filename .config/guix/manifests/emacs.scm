@@ -15,7 +15,6 @@
    "rdrview"
    "graphviz"
    "emacs-emacsql-sqlite3"
-   "python-jupytext"
    "python-isort"
    "python-black"
    "python-yapf"

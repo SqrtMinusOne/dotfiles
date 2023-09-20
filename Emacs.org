@@ -3570,9 +3570,9 @@ To fix that, I've modified the following function in the =python-pytest= package
 *** code-cells
 Support for text with magic comments.
 
-| Guix dependency |
-|-----------------|
-| python-jupytext |
+| Guix dependency | Disabled |
+|-----------------+----------|
+| python-jupytext | t        |
 
 #+begin_src emacs-lisp
 (use-package code-cells
