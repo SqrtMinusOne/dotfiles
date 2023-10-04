@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "wireshark"
    "socat"
    "leiningen"
    "python-virtualenv"
