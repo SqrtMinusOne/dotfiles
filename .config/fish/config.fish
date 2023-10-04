@@ -57,7 +57,7 @@ alias cii="export INIT_MAMBA=true && init_mamba"
 # [[file:../../Console.org::*Colors][Colors:1]]
 set fish_color_command cyan
 set fish_color_comment green
-set fish_color_end white
+set fish_color_end black
 set fish_color_error red
 set fish_color_escape yellow
 set fish_color_operator yellow
