@@ -265,7 +265,17 @@
         "color": "b",
         "states": [
           {
-            "startDate": "2020-02-01"
+            "startDate": "2020-02-01",
+            "endDate": "2022-08-31"
+          }
+        ]
+      },
+      {
+        "name": "DBeaver",
+        "color": "y",
+        "states": [
+          {
+            "startDate": "2022-08-31"
           }
         ]
       },
