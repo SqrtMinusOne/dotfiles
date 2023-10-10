@@ -507,6 +507,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (global-undo-tree-mode)
+  (evil-set-undo-system 'undo-tree)
   (setq undo-tree-visualizer-diff t)
   (setq undo-tree-visualizer-timestamps t)
   (setq undo-tree-auto-save-history nil)
