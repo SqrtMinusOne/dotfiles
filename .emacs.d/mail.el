@@ -112,6 +112,36 @@
 
 (add-hook 'notmuch-mua-send-hook #'my/message-ensure-subject)
 
+(defvar my/ru-formal-pronous
+  '("вы" "вас" "вам" "вами" "ваш" "ваша" "ваше" "ваши" "вашего"
+    "вашей" "вашему" "вашим" "вашем" "вашеми"))
+
+(defvar my/ru-formal-pronous-regex
+  (regexp-opt my/ru-formal-pronous 'words))
+
+(defun my/message-ensure-capitalized-formal-pronouns ()
+  (interactive)
+  (save-excursion
+    (message-goto-body)
+    (cl-block nil
+      (let ((case-fold-search nil)
+            confirmed)
+        (while (re-search-forward my/ru-formal-pronous-regex nil t)
+          (let* ((match (match-string 0))
+                 (capitalized (capitalize match))
+                 (beg (match-beginning 0))
+                 (end (match-end 0)))
+            (if (or confirmed
+                    (y-or-n-p (format "Replace %s with %s? "
+                                      match capitalized)))
+                (progn
+                  (delete-region beg end)
+                  (insert capitalized)
+                  (setq confirmed t))
+              (cl-return))))))))
+
+(add-hook 'notmuch-mua-send-hook #'my/message-ensure-capitalized-formal-pronouns)
+
 (defun my/ensure-password ()
   (interactive)
   (my/password-store-get "Job/Digital/Email/pvkorytov@etu.ru"))
