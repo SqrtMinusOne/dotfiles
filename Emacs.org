@@ -3487,7 +3487,7 @@ References:
 The following binding calls yapf & isort on the buffer
 #+begin_src emacs-lisp
 (my-leader-def
-  :keymaps 'python-mode-map
+  :keymaps '(python-mode-map python-ts-mode-map)
   "rr" (lambda ()
          (interactive)
          (save-excursion
@@ -6428,7 +6428,7 @@ And advice to disable a function for TRAMP-related buffers:
     (funcall fun dir)))
 #+end_src
 
-=editorconfig= lovely package looks for the =.editorconfig= file in the file tree.
+=editorconfig=. This lovely package looks for =.editorconfig= in the file tree.
 #+begin_src emacs-lisp
 (with-eval-after-load 'editorconfig
   (advice-add #'editorconfig-apply :around #'my/tramp-void-if-tramp)

@@ -2538,7 +2538,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :commands (py-isort-buffer py-isort-region))
 
 (my-leader-def
-  :keymaps 'python-mode-map
+  :keymaps '(python-mode-map python-ts-mode-map)
   "rr" (lambda ()
          (interactive)
          (save-excursion
