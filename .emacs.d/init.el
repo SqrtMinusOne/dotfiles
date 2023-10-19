@@ -571,6 +571,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq accent-custom '((a (ā))
                         (A (Ā)))))
 
+(use-package binky
+  :straight t
+  :init
+  (my-leader-def "j" #'binky-binky))
+
 (use-package projectile
   :straight t
   :config
@@ -3263,6 +3268,26 @@ Returns (<buffer> . <workspace-index>) or nil."
                   "* %?\n"
                   "/Entered on/ %U"))))
 
+(use-package org-super-agenda
+  :straight t
+  :after (org)
+  :config
+  ;; Alphapapa doesn't like evil
+  (general-define-key
+   :keymaps '(org-super-agenda-header-map)
+   "h" nil
+   "j" nil
+   "k" nil
+   "l" nil))
+
+(defun my/org-super-agenda--make-agenda-header-around (fun name)
+  (remove-text-properties 0 (length name) '(line-prefix nil) name)
+  (remove-text-properties 0 (length name) '(wrap-prefix nil) name)
+  (funcall fun (substring-no-properties name)))
+
+(with-eval-after-load 'org-super-agenda
+  (advice-add 'org-super-agenda--make-agenda-header :around #'my/org-super-agenda--make-agenda-header-around))
+
 (use-package org-ql
   :after (org)
   :if (not my/remote-server)
@@ -3273,7 +3298,60 @@ Returns (<buffer> . <workspace-index>) or nil."
   ;; See https://github.com/alphapapa/org-ql/pull/237
   (setq org-ql-regexp-part-ts-time
         (rx " " (repeat 1 2 digit) ":" (repeat 2 digit)
-            (optional "-" (repeat 1 2 digit) ":" (repeat 2 digit)))))
+            (optional "-" (repeat 1 2 digit) ":" (repeat 2 digit))))
+  )
+
+(defun my/org-meeting--prompt ()
+  (let* ((meetings (org-ql-query
+                     :select #'element-with-markers
+                     :from (org-agenda-files)
+                     :where '(and (todo) (tags "mt") (ts-active :from today to 31))
+                     :order-by 'scheduled))
+         (data (mapcar
+                (lambda (meeting)
+                  (let ((raw-value (org-element-property :raw-value meeting))
+                        (scheduled (org-format-timestamp
+                                    (org-element-property :scheduled meeting)
+                                    (cdr org-time-stamp-formats))))
+                    (cons (format "%-30s %s" raw-value
+                                  (propertize scheduled 'face 'org-agenda-date))
+                          meeting)))
+                meetings))
+         (ivy-prescient-sort-commands nil))
+    (cdr
+     (assoc
+      (completing-read "Meeting: " data nil t)
+      data))))
+
+(defun my/org-meeting--format-link (meeting)
+  (format "[[file:%s::*%s][%s]]"
+          (buffer-file-name
+           (marker-buffer
+            (org-element-property :org-marker meeting)))
+          (org-element-property :raw-value meeting)
+          (org-element-property :raw-value meeting)))
+
+(defun my/org-meeting-link ()
+  (interactive)
+  (let ((meeting (my/org-meeting--prompt)))
+    (org-set-property "MEETING" (my/org-meeting--format-link meeting))))
+
+(defun my/org-ql-meeting-tasks (meeting)
+  (interactive (list (my/org-meeting--prompt)))
+  (org-ql-search (org-agenda-files)
+    `(property "MEETING" ,(my/org-meeting--format-link meeting))
+    :sort '(date priority todo)
+    :buffer (format "*Meeting Tasks: %s*" (org-element-property :raw-value meeting))
+    :super-groups '((:auto-outline-path t))))
+
+(defun my/org-ql-meeting-tasks-agenda ()
+  (interactive)
+  (let ((meeting (save-window-excursion
+                   (org-agenda-switch-to)
+                   (org-back-to-heading)
+                   (org-ql--add-markers
+                    (org-element-at-point)))))
+    (my/org-ql-meeting-tasks meeting)))
 
 (use-package org-habit-stats
   :straight (:host github :repo "ml729/org-habit-stats")
@@ -4027,6 +4105,31 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (use-package calfw-org
   :after (calfw org)
   :straight t)
+
+(defun my/org-timeblock-conf ()
+  (display-line-numbers-mode -1))
+
+(use-package org-timeblock
+  :straight (:host github :repo "ichernyshovvv/org-timeblock")
+  :commands (org-timeblock-mode)
+  :init
+  (my-leader-def "ot" #'org-timeblock)
+  :config
+  (add-hook 'org-timeblock-mode-hook #'my/org-timeblock-conf)
+  (general-define-key
+   :keymaps '(org-timeblock-mode-map)
+   :states '(normal visual)
+   "j" #'org-timeblock-forward-block
+   "h" #'org-timeblock-backward-column
+   "l" #'org-timeblock-forward-column
+   "k" #'org-timeblock-backward-block
+   "M-[" #'org-timeblock-day-earlier
+   "M-]" #'org-timeblock-day-later
+   "H" #'org-timeblock-day-earlier
+   "L" #'org-timeblock-day-later
+   "RET" #'org-timeblock-goto
+   "t" #'org-timeblock-todo-set
+   "q" #'quit-window))
 
 (defun my/enable-org-latex ()
   (interactive)
