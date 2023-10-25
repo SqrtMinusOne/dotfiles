@@ -294,11 +294,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "<f1> e" #'eval-expression)
 
 (my-leader-def
-  "SPC" '(:wk "second level")
-  "SPC x" '(:wk "ctl-x")
-  "SPC x" ctl-x-map)
-
-(my-leader-def
   "a" '(:which-key "apps"))
 
 (general-def
@@ -709,7 +704,9 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
                my/persp-ivy-switch-buffer-other-window
                lsp-execute-code-action
                dired-recent-open
-               my/index-nav))
+               org-ql-view
+               my/index-nav
+               org-set-effort))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 
@@ -3225,6 +3222,9 @@ Returns (<buffer> . <workspace-index>) or nil."
     (setq org-refile-targets
           `(,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
+               project-files)
+            ,@(mapcar
+               (lambda (f) `(,f . (:regexp . "Tasks")))
                project-files)))
     (when (file-exists-p (concat org-directory "/scripts/refile.el"))
       (load-file (concat org-directory "/scripts/refile.el"))
@@ -3232,9 +3232,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (with-eval-after-load-norem 'org
   (setq org-roam-directory (concat org-directory "/roam"))
-  (my/update-org-agenda)
-  ;; (setq org-default-notes-file (concat org-directory "/notes.org"))
-  )
+  (my/update-org-agenda))
 
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
@@ -3268,6 +3266,85 @@ Returns (<buffer> . <workspace-index>) or nil."
                   "* %?\n"
                   "/Entered on/ %U"))))
 
+(with-eval-after-load 'org
+  (setq org-clock-persist 'clock)
+  (org-clock-persistence-insinuate))
+
+(with-eval-after-load-norem 'org
+  (add-to-list
+   'org-global-properties
+   '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 4:00 8:00")))
+
+(setq org-log-done 'time)
+
+(defun my/org-clock-in--fix-mode-line ()
+  (when (memq 'org-mode-line-string global-mode-string)
+    (let (new-global-mode-string
+          appended
+          (is-first t))
+      (dolist (item global-mode-string)
+        (cond
+         ((or (equal item '(:eval (exwm-modeline-segment)))
+              (equal item '(:eval (persp-mode-line))))
+          (unless appended
+            (when is-first
+              (push "" new-global-mode-string))
+            (push 'org-mode-line-string new-global-mode-string)
+            (setq appended t))
+          (push item new-global-mode-string))
+         ((equal item 'org-mode-line-string))
+         (t
+          (push item new-global-mode-string)))
+        (setq is-first nil))
+      (unless appended
+        (push 'org-mode-line-string new-global-mode-string))
+      (setq global-mode-string (nreverse new-global-mode-string)))))
+
+(add-hook 'org-clock-in-hook #'my/org-clock-in--fix-mode-line)
+
+(defun my/org-clock-in-prompt-time (&optional select)
+  (interactive "P")
+  (org-clock-in
+   select
+   (encode-time
+    (org-parse-time-string
+     (org-read-date t)))))
+
+(with-eval-after-load 'org
+  (my-leader-def
+    :keymaps 'org-mode-map
+    :infix "SPC"
+    "I" #'my/org-clock-in-prompt-time))
+
+(defun my/org-clock-get-total-minutes-at-point ()
+  "Get total clocked time for heading at point."
+  (let* ((element (org-element-at-point-no-context))
+         (s (buffer-substring-no-properties
+             (org-element-property :begin element)
+             (org-element-property :end element))))
+    (with-temp-buffer
+      (insert s)
+      (org-clock-sum)
+      org-clock-file-total-minutes)))
+
+(defconst my/org-clock-total-prop :CLOCK_TOTAL)
+
+(defun my/org-clock-set-total-clocked ()
+  "Set total clocked time for heading at point."
+  (interactive)
+  (save-excursion
+    (org-back-to-heading t)
+    (org-set-property
+     (substring
+      (symbol-name my/org-clock-total-prop)
+      1)
+     (org-duration-from-minutes
+      (my/org-clock-get-total-minutes-at-point)))))
+
+(add-hook 'org-clock-in-hook #'my/org-clock-set-total-clocked)
+(add-hook 'org-clock-out-hook #'my/org-clock-set-total-clocked)
+(add-hook 'org-clock-cancel-hook #'my/org-clock-set-total-clocked)
+
 (use-package org-super-agenda
   :straight t
   :after (org)
@@ -3278,7 +3355,14 @@ Returns (<buffer> . <workspace-index>) or nil."
    "h" nil
    "j" nil
    "k" nil
-   "l" nil))
+   "l" nil)
+  (org-super-agenda--def-auto-group outline-path-file "their outline paths & files"
+    :key-form
+    (org-super-agenda--when-with-marker-buffer (org-super-agenda--get-marker item)
+      ;; org-ql depends on f and s anyway
+      (s-join "/" (cons
+                   (f-filename (buffer-file-name))
+                   (org-get-outline-path))))))
 
 (defun my/org-super-agenda--make-agenda-header-around (fun name)
   (remove-text-properties 0 (length name) '(line-prefix nil) name)
@@ -3292,14 +3376,296 @@ Returns (<buffer> . <workspace-index>) or nil."
   :after (org)
   :if (not my/remote-server)
   :straight (:fetcher github
-                      :repo "alphapapa/org-ql"
+                      :repo "SqrtMinusOne/org-ql"
                       :files (:defaults (:exclude "helm-org-ql.el")))
   :init
   ;; See https://github.com/alphapapa/org-ql/pull/237
   (setq org-ql-regexp-part-ts-time
         (rx " " (repeat 1 2 digit) ":" (repeat 2 digit)
             (optional "-" (repeat 1 2 digit) ":" (repeat 2 digit))))
-  )
+  (my-leader-def "ov" #'org-ql-view))
+
+(cl-defun my/org-ql-view-recent-items
+    (&key num-days (type 'ts)
+          (files (org-agenda-files))
+          (groups '((:auto-outline-path-file t)
+                    (:auto-todo t))))
+  "Show items in FILES from last NUM-DAYS days with timestamps of TYPE.
+TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
+`closed'."
+  (interactive (list :num-days (read-number "Days: ")
+                     :type (->> '(ts ts-active ts-inactive clocked closed)
+                                (completing-read "Timestamp type: ")
+                                intern)))
+  ;; It doesn't make much sense to use other date-based selectors to
+  ;; look into the past, so to prevent confusion, we won't allow them.
+  (-let* ((query (pcase-exhaustive type
+                   ((or 'ts 'ts-active 'ts-inactive)
+                    `(,type :from ,(- num-days) :to 0))
+                   ((or 'clocked 'closed)
+                    `(,type :from ,(- num-days) :to 0)))))
+    (org-ql-search files query
+      :title "Recent items"
+      :sort '(todo priority date)
+      :super-groups groups)))
+
+(defun my/org-ql-all-todo ()
+  (interactive)
+  ;; The hack I borrowed from notmuch to make " " a separator
+  (let* ((crm-separator " ")
+         (crm-local-completion-map
+	      (let ((map (make-sparse-keymap)))
+	        (set-keymap-parent map crm-local-completion-map)
+	        (define-key map " " 'self-insert-command)
+	        map))
+         (ivy-prescient-sort-commands nil)
+         (categories (completing-read-multiple
+                      "Categories: "
+                      '("TEACH" "EDU" "JOB" "LIFE" "CONFIG"))))
+    (org-ql-search (org-agenda-files)
+      `(and (todo)
+            ,@(unless (seq-empty-p categories)
+                `((category ,@categories))))
+      :sort '(priority todo deadline)
+      :super-groups '((:auto-outline-path-file t)))))
+
+(setq org-ql-views
+      (list
+       (cons "Overview: All TODO" #'my/org-ql-all-todo)
+       (cons "Review: Stale tasks"
+             (list :buffers-files #'org-agenda-files
+                   :query '(and (todo)
+                                (not (ts :from -14)))
+                   :title "Review: Stale tasks"
+                   :sort '(todo priority date)
+                   :super-groups '((:auto-outline-path-file t))))
+       (cons "Review: Clocked" #'my/org-ql-clocked-report)
+       (cons "Review: Recently timestamped" #'my/org-ql-view-recent-items)
+       (cons "Review: Unlinked to meetings"
+             (list :buffers-files #'org-agenda-files
+                   :query '(and (todo "DONE" "NO")
+                                (not (property "MEETING"))
+                                (ts :from -7))
+                   :super-groups '((:auto-outline-path-file t))))
+       (cons "Review: Meeting" #'my/org-ql-meeting-tasks)))
+
+(defun my/org-ql-view--format-element-override (element)
+  "Format ELEMENT for `org-ql-view'.
+
+Check `org-ql-view--format-element' for the original implementation
+and lots of comments which are too long for my Emacs config."
+  (if (not element)
+      ""
+    (setf element (org-ql-view--resolve-element-properties element))
+    (let* ((properties (cadr element))
+           (properties (cl-loop for (key val) on properties by #'cddr
+                                for symbol = (intern (cl-subseq (symbol-name key) 1))
+                                unless (member symbol '(parent))
+                                append (list symbol val)))
+           (title (--> (org-ql-view--add-faces element)
+                       (org-element-property :raw-value it)
+                       (org-link-display-format it)))
+           (todo-keyword (-some--> (org-element-property :todo-keyword element)
+                           (org-ql-view--add-todo-face it)))
+           (tag-list (if org-use-tag-inheritance
+                         (if-let ((marker (or (org-element-property :org-hd-marker element)
+                                              (org-element-property :org-marker element))))
+                             (with-current-buffer (marker-buffer marker)
+                               (org-with-wide-buffer
+                                (goto-char marker)
+                                (cl-loop for type in (org-ql--tags-at marker)
+                                         unless (or (eq 'org-ql-nil type)
+                                                    (not type))
+                                         append type)))
+                           (display-warning 'org-ql (format "No marker found for item: %s" title))
+                           (org-element-property :tags element))
+                       (org-element-property :tags element)))
+           (tag-string (when tag-list
+                         (--> tag-list
+                              (s-join ":" it)
+                              (s-wrap it ":")
+                              (org-add-props it nil 'face 'org-tag))))
+           ;;  (category (org-element-property :category element))
+           (priority-string (-some->> (org-element-property :priority element)
+                              (char-to-string)
+                              (format "[#%s]")
+                              (org-ql-view--add-priority-face)))
+           (clock-string (let ((effort (org-element-property :EFFORT element))
+                               (clocked (org-element-property my/org-clock-total-prop element)))
+                           (cond
+                            ((and clocked effort) (format "[%s/%s]" clocked effort))
+                            ((and clocked (not effort) (format "[%s]" clocked)))
+                            ((and (not clocked) effort) (format "[EST: %s]" effort)))))
+           (habit-property (org-with-point-at (or (org-element-property :org-hd-marker element)
+                                                  (org-element-property :org-marker element))
+                             (when (org-is-habit-p)
+                               (org-habit-parse-todo))))
+           (due-string (pcase (org-element-property :relative-due-date element)
+                         ('nil "")
+                         (string (format " %s " (org-add-props string nil 'face 'org-ql-view-due-date)))))
+           (string (s-join " " (-non-nil (list todo-keyword priority-string title due-string clock-string tag-string)))))
+      (remove-list-of-text-properties 0 (length string) '(line-prefix) string)
+      (--> string
+           (concat "  " it)
+           (org-add-props it properties
+             'org-agenda-type 'search
+             'todo-state todo-keyword
+             'tags tag-list
+             'org-habit-p habit-property)))))
+
+(with-eval-after-load 'org-ql
+  (advice-add #'org-ql-view--format-element :override #'my/org-ql-view--format-element-override))
+
+(defun my/alist-agg (path alist value)
+  "Traverse ALIST by PATH, adding VALUE to each node.
+
+PATH is the list of keys to traverse.  ALIST has to have the following
+structure:
+alist := ((key . (total . alist)) . alist) | nil
+I.e. car is the key, cadr is the total, cddr is the rest of alist.
+
+VALUE is a number."
+  (let ((key (car path))
+        (rest (cdr path)))
+    (setf (alist-get key alist nil nil #'equal)
+          (cons
+           (+ value (or (car (alist-get key alist nil nil #'equal)) 0))
+           (when rest
+             (my/alist-agg rest (cdr (alist-get key alist nil nil #'equal))
+                           value))))
+    alist))
+
+(defun my/org-ql--clocked-agg (results)
+  (let* ((params
+          (mapcar
+           (lambda (elem)
+             (let ((marker (org-element-property :org-marker elem)))
+               (with-current-buffer (marker-buffer marker)
+                 (goto-char marker)
+                 ;; This uses cache, contrary to `org-get-tags'.
+                 (let* ((tags-val (org-ql--tags-at (point)))
+                        (tags (seq-filter
+                               #'stringp ;; to filter out `org-ql-nil'
+                               (append (car tags-val) (cdr tags-val))))
+                        (filename (f-filename
+                                   (buffer-file-name)))
+                        (outline-path (org-ql--outline-path))
+                        (category (org-get-category)))
+                   `((:tags . ,tags)
+                     (:outline-path . ,outline-path)
+                     (:filename . ,filename)
+                     (:category . ,category))))))
+           results))
+         (result-types
+          (mapcar
+           (lambda (elem)
+             (let ((is-meeting (seq-contains-p (alist-get :tags elem) "mt"))
+                   (is-in-project (seq-contains-p (alist-get :tags elem) "proj"))
+                   (is-task (seq-some
+                             (lambda (o)
+                               (or (string-match-p (rx (or "t" "T") "ask") o) t))
+                             (alist-get :outline-path elem))))
+               (cond
+                (is-meeting "Meeting")
+                ((and is-in-project is-task) "Project Task")
+                ((and (not is-in-project) is-task) "Other Task")
+                (t "Other"))))
+           params))
+         time-per-type time-per-category time-per-outline)
+    (cl-loop for elem in results
+             for param in params
+             for type in result-types
+             for duration = (or
+                             (org-duration-to-minutes
+                              (org-element-property my/org-clock-total-prop elem))
+                             0)
+             do (setq time-per-type
+                      (my/alist-agg (list type) time-per-type duration)
+                      time-per-outline
+                      (my/alist-agg `(,(alist-get :filename param)
+                                      ,@(alist-get :outline-path param))
+                                    time-per-outline duration)
+                      time-per-category
+                      (my/alist-agg (list (alist-get :category param))
+                                    time-per-category duration)))
+    `((:time-per-type . ,time-per-type)
+      (:time-per-category . ,time-per-category)
+      (:time-per-outline . ,time-per-outline))))
+
+(defun my/time-start-of-day (epoch)
+  (let ((time (decode-time (seconds-to-time epoch))))
+    (time-convert
+     (encode-time 0 0 0 (nth 3 time) (nth 4 time) (nth 5 time))
+     'integer)))
+
+(defun my/org-ql--clocked-agg-by-time-parse-buffer ()
+  (let (res min-ts max-ts)
+    (org-element-map (org-element-parse-buffer) 'clock
+      (lambda (clock)
+        (let ((start (time-convert
+                      (org-timestamp-to-time (org-element-property :value clock))
+                      'integer))
+              (end (time-convert
+                    (org-timestamp-to-time (org-element-property :value clock) t)
+                    'integer)))
+          (if min-ts
+              (setq min-ts (min min-ts start))
+            (setq min-ts start))
+          (if max-ts
+              (setq max-ts (max max-ts end))))))
+    (when min-ts
+      (setq min-ts (my/time-start-of-day min-ts))
+      (setq max-ts (my/time-start-of-day max-ts))
+      (cl-loop for ts from min-ts to max-ts by (* 24 60 60)
+               do (progn
+                    (org-clock-sum ts (+ ts (* 24 60 60)))
+                    (push (cons ts org-clock-file-total-minutes) res))))
+    res))
+
+(defun my/org-ql--clocked-agg-by-time (elements)
+  (with-temp-buffer
+    (dolist (elem elements)
+      (let ((buffer (marker-buffer (org-element-property :org-marker elem))))
+        (insert-buffer-substring-no-properties
+         buffer (org-element-property :begin elem)
+         (org-element-property :end elem))
+        (insert "\n")))
+    (goto-char (point-min))
+    (save-excursion
+      (let ((inhibit-message t))
+        (replace-regexp (rx bol (+ "*")) "*")))
+    (my/org-ql--clocked-agg-by-time-parse-buffer)))
+
+(defun my/org-ql-clocked-report (days)
+  (interactive "nDays: ")
+  (let ((results (org-ql-query
+                   :select #'element-with-markers
+                   :from (org-agenda-files)
+                   :where `(clocked :from ,(- days) to today))))
+    (setq my/test (list (my/org-ql--clocked-agg results)
+                        (my/org-ql--clocked-agg-by-time results)))))
+
+(defun my/org-ql-clocked-report (days)
+  (interactive "nDays: ")
+  (let* ((results (org-ql-query
+                    :select #'element-with-markers
+                    :from (org-agenda-files)
+                    :where `(clocked :from ,days to today)))
+         (org-super-agenda-groups '((:auto-outline-path-file t)))
+         (tasks-string
+          (mapconcat
+           #'identity
+           (org-super-agenda--group-items
+            (-map #'org-ql-view--format-element results))
+           "\n"))
+         (buffer (get-buffer-create "*org-ql-clocked*")))
+    (setq my/test results)
+    (with-current-buffer buffer
+      (setq-local buffer-read-only t)
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert tasks-string)))
+    (switch-to-buffer buffer)))
 
 (defun my/org-meeting--prompt ()
   (let* ((meetings (org-ql-query
@@ -3331,15 +3697,28 @@ Returns (<buffer> . <workspace-index>) or nil."
           (org-element-property :raw-value meeting)
           (org-element-property :raw-value meeting)))
 
-(defun my/org-meeting-link ()
-  (interactive)
-  (let ((meeting (my/org-meeting--prompt)))
-    (org-set-property "MEETING" (my/org-meeting--format-link meeting))))
+(defun my/org-meeting-link (&optional arg)
+  (interactive "p")
+  (save-excursion
+    (org-back-to-heading t)
+    (let* ((meeting (my/org-meeting--prompt))
+           (link (my/org-meeting--format-link meeting))
+           (element (org-element-at-point-no-context)))
+      (if (or (not arg) (not (org-element-property :MEETING element)))
+          (org-set-property "MEETING" link)
+        (let ((range (org-get-property-block
+                      (org-element-property :begin element)))
+              (case-fold-search nil))
+          (goto-char (cdr range))
+          (beginning-of-line)
+          (insert-and-inherit ":MEETING+: " link "\n")
+          (org-indent-line))))))
 
 (defun my/org-ql-meeting-tasks (meeting)
   (interactive (list (my/org-meeting--prompt)))
   (org-ql-search (org-agenda-files)
-    `(property "MEETING" ,(my/org-meeting--format-link meeting))
+    `(property "MEETING" ,(my/org-meeting--format-link meeting)
+               :multi t)
     :sort '(date priority todo)
     :buffer (format "*Meeting Tasks: %s*" (org-element-property :raw-value meeting))
     :super-groups '((:auto-outline-path t))))
@@ -3402,7 +3781,7 @@ skip exactly those headlines that do not match."
         (format-time-string "%Y-%m-%d" scheduled)
       "")))
 
-(setq org-agenda-hide-tags-regexp (rx (or "org" "refile" "habit")))
+(setq org-agenda-hide-tags-regexp (rx (or "org" "refile" "proj" "habit")))
 
 (setq org-agenda-custom-commands
       `(("p" "My outline"
@@ -3506,18 +3885,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
       (my/org-alert-mode)
     (add-hook 'emacs-startup-hook #'my/org-alert-mode)))
 
-(my-leader-def
-  :infix "o"
-  "" '(:which-key "org-mode")
-  "c" 'org-capture
-  "a" 'org-agenda)
-
-(with-eval-after-load-norem 'org
-  (add-to-list 'org-global-properties
-               '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 2:00 4:00")))
-
-(setq org-log-done 'time)
-
 (defun my/org-clone-subtree-with-time-shift (n &optional shift)
   (interactive "nNumber of clones to produce: ")
   (unless (wholenump n) (user-error "Invalid number of replications %s" n))
@@ -3600,6 +3967,25 @@ KEYS is a list of cons cells like (<label> . <time>)."
 			                (delete-region (match-beginning 1) (match-end 1)))))))
 		          (buffer-string)))))
     (goto-char beg)))
+
+(my-leader-def
+  :infix "o"
+  "" '(:which-key "org-mode")
+  "c" 'org-capture
+  "a" 'org-agenda)
+
+(with-eval-after-load 'org
+  (my-leader-def
+    :infix "SPC"
+    :keymaps '(org-mode-map)
+    "i" #'org-clock-in
+    "o" #'org-clock-out
+    "O" #'org-clock-cancel
+    "c" #'org-clock-goto
+    "p" #'org-set-property
+    "e" #'org-set-effort
+    "r" #'org-priority
+    "m" #'my/org-meeting-link))
 
 (use-package org-journal
   :straight t
