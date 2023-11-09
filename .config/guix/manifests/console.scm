@@ -7,6 +7,7 @@
    "direnv"
    "glibc-locales"
    "git-lfs"
+   "lftp"
    "sshfs"
    "tokei"
    "jmtpfs"

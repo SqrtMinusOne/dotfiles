@@ -1,1 +1,1 @@
-(job "0 * * * * " "truncate -s /home/pavel/.local/state/shepherd/shepherd.log")
+(job "0 * * * * " "truncate -s 0 /home/pavel/.local/state/shepherd/shepherd.log")

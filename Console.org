@@ -883,30 +883,31 @@ columns = ["PID", "State", "Name", "CPU%", "Mem%", "R/s", "W/s", "User"]
 #+end_src
 
 * Various console applications
-| Guix dependency       | Description                                 |
-|-----------------------+---------------------------------------------|
-| ncurses               | Provides stuff like ~clear~                 |
-| exa                   | ~ls~ replacement, written in Rust           |
-| bat                   | ~cat~ clone with syntax highlighting        |
-| htop                  | Interactive process viewer                  |
-| nethogs               | A tool to group processed by used bandwidth |
-| osync                 | rsync wrapper                               |
-| neofetch              | Fetch system info                           |
-| fzf                   | fuzzy finder                                |
-| p7zip                 | archiver                                    |
-| password-store        | CLI password manager                        |
-| zip                   |                                             |
-| unzip                 |                                             |
-| jmtpfs                | A tool to mount MTP devices (e.g. Android)  |
-| tokei                 | Count lines of code                         |
-| sshfs                 | Mount stuff over SSH                        |
-| git-lfs               |                                             |
-| glibc-locales         |                                             |
-| direnv                |                                             |
-| jless-bin             | JSON viewer                                 |
-| megacmd               | mega.nz client                              |
-| ncdu                  | disk usage analyzer                         |
-| openssl               |                                             |
+| Guix dependency | Description                                 |
+|-----------------+---------------------------------------------|
+| ncurses         | Provides stuff like ~clear~                 |
+| exa             | ~ls~ replacement, written in Rust           |
+| bat             | ~cat~ clone with syntax highlighting        |
+| htop            | Interactive process viewer                  |
+| nethogs         | A tool to group processed by used bandwidth |
+| osync           | rsync wrapper                               |
+| neofetch        | Fetch system info                           |
+| fzf             | fuzzy finder                                |
+| p7zip           | archiver                                    |
+| password-store  | CLI password manager                        |
+| zip             |                                             |
+| unzip           |                                             |
+| jmtpfs          | A tool to mount MTP devices (e.g. Android)  |
+| tokei           | Count lines of code                         |
+| sshfs           | Mount stuff over SSH                        |
+| lftp            | File transfer                               |
+| git-lfs         |                                             |
+| glibc-locales   |                                             |
+| direnv          |                                             |
+| jless-bin       | JSON viewer                                 |
+| megacmd         | mega.nz client                              |
+| ncdu            | disk usage analyzer                         |
+| openssl         |                                             |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.
