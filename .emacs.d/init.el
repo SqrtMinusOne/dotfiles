@@ -2911,7 +2911,19 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package restclient
   :if (not my/remote-server)
-  :straight t)
+  :straight t
+  :config
+  (general-define-key
+   :keymaps 'restclient-mode-map
+   :states '(normal visual)
+   "RET" #'restclient-http-send-current
+   "M-RET" #'restclient-http-send-current-stay-in-window
+   "y" nil
+   "M-y" #'restclient-copy-curl-command)
+  (general-define-key
+   :keymaps 'restclient-response-mode-map
+   :states '(normal visual)
+   "q" #'quit-window))
 
 (use-package ob-restclient
   :after (org restclient)
@@ -3516,6 +3528,50 @@ and lots of comments which are too long for my Emacs config."
 (with-eval-after-load 'org-ql
   (advice-add #'org-ql-view--format-element :override #'my/org-ql-view--format-element-override))
 
+(defun my/org-ql--get-clock-data-parse-buffer ()
+  (let (res)
+    (org-element-map (org-element-parse-buffer) 'clock
+      (lambda (clock)
+        (let ((start (time-convert
+                      (org-timestamp-to-time (org-element-property :value clock))
+                      'integer))
+              (end (time-convert
+                    (org-timestamp-to-time (org-element-property :value clock) t)
+                    'integer)))
+          (save-excursion
+            (org-back-to-heading t)
+            (let* ((headline (org-element-at-point-no-context))
+                   (tags-val (org-ql--tags-at (point)))
+                   (tags (seq-filter
+                          #'stringp ;; to filter out `org-ql-nil'
+                          (append (unless (eq (car tags-val) 'org-ql-nil)
+                                    (car tags-val))
+                                  (unless (eq (cdr tags-val) 'org-ql-nil)
+                                    (cdr tags-val)))))
+                   (filename (f-filename
+                              (buffer-file-name)))
+                   (outline-path (mapcar
+                                  #'substring-no-properties
+                                  (org-ql--outline-path)))
+                   (category (org-get-category)))
+              (push
+               `((:start . ,start)
+                 (:end . ,end)
+                 (:headline . ,headline)
+                 (:tags . ,tags)
+                 (:filename . ,filename)
+                 (:outline-path . ,outline-path)
+                 (:category . ,category))
+               res))))))
+    res))
+
+(defun my/org-ql--get-clock-data ()
+  (let (res)
+    (dolist (file (org-agenda-files))
+      (with-current-buffer (find-file-noselect file)
+        (setq res (append res (my/org-ql--get-clock-data-parse-buffer)))))
+    res))
+
 (defun my/alist-agg (path alist value)
   "Traverse ALIST by PATH, adding VALUE to each node.
 
@@ -3731,6 +3787,12 @@ VALUE is a number."
                    (org-ql--add-markers
                     (org-element-at-point)))))
     (my/org-ql-meeting-tasks meeting)))
+
+(with-eval-after-load 'org-agenda
+  (general-define-key
+   :keymaps 'org-agenda-mode-map
+   :states '(normal motion)
+   "gm" #'my/org-ql-meeting-tasks-agenda))
 
 (use-package org-habit-stats
   :straight (:host github :repo "ml729/org-habit-stats")
@@ -7056,6 +7118,44 @@ base toot."
 
 (setq telega-online-status-function #'my/telega-online-status)
 
+(defun my/telega-switch-to-topic ()
+  (interactive)
+  (let* ((topics-data (gethash
+                       (plist-get telega-chatbuf--chat :id)
+                       telega--chat-topics))
+         (topics-string
+          (mapcar
+           (lambda (topic)
+             (let* ((name (plist-get (plist-get topic :info) :name))
+                    (unread-count (plist-get topic :unread_count))
+                    (name-string (with-temp-buffer
+                                   (telega-ins--topic-title topic 'with-icon)
+                                   (buffer-string))))
+               (if (zerop unread-count)
+                   name-string
+                 (format "%-40s (%s)"
+                         name-string
+                         (propertize (format "%d" unread-count)
+                                     'face 'telega-unread-unmuted-modeline)))))
+           topics-data))
+         (topics-collection (cl-loop for datum in topics-data
+                                     for string in topics-string
+                                     collect (cons string datum)))
+         (topic (completing-read "Topic: " topics-collection nil t)))
+    (telega-chat--goto-thread
+     telega-chatbuf--chat
+     (plist-get
+      (plist-get
+       (alist-get topic topics-collection nil nil #'equal)
+       :info)
+      :message_thread_id))))
+
+(with-eval-after-load 'telega
+  (general-define-key
+   :states '(normal)
+   :keymaps 'telega-chat-mode-map
+   "T" #'my/telega-switch-to-topic))
+
 (use-package google-translate
   :straight t
   :if (not my/remote-server)
@@ -7320,6 +7420,9 @@ base toot."
 (defun my/elcord-update-presence-mask-advice (r)
   (list (my/elcord-mask-buffer-name (nth 0 r)) (nth 1 r)))
 
+(defun my/elcord-symlink ()
+  (shell-command-to-string "bash -c 'ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0 &'"))
+
 (use-package elcord
   :straight t
   :if (and (or
@@ -7333,7 +7436,8 @@ base toot."
   (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)
   (add-to-list 'elcord-mode-text-alist '(telega-chat-mode . "Telega Chat"))
   (add-to-list 'elcord-mode-text-alist '(telega-root-mode . "Telega Root"))
-  (elcord-mode))
+  (elcord-mode)
+  (my/elcord-symlink))
 
 (use-package snow
   :straight (:repo "alphapapa/snow.el" :host github)
