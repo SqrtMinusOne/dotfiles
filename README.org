@@ -40,6 +40,7 @@ A few other repositories I may consider a part of my config:
   - [[https://github.com/SqrtMinusOne/elfeed-summary][elfeed-summary]]
   - [[https://github.com/SqrtMinusOne/password-store-ivy][password-store-ivy]]
   - [[https://github.com/SqrtMinusOne/elfeed-sync][elfeed-sync]]
+  - [[https://github.com/SqrtMinusOne?tab=repositories&q=&type=&language=emacs+lisp&sort=][...]]
 
 See also [[https://sqrtminusone.xyz/posts/][my blog posts]].
 
