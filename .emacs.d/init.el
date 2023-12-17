@@ -226,7 +226,7 @@
          docker ibuffer geiser pdf info elfeed edebug bookmark company
          vterm flycheck profiler cider explain-pause-mode notmuch custom
          xref eshell helpful compile comint git-timemachine magit prodigy
-         slime forge deadgrep vc-annonate telega doc-view gnus)))
+         slime forge deadgrep vc-annonate telega doc-view gnus outline)))
 
 (use-package avy
   :straight t
@@ -3278,6 +3278,12 @@ Returns (<buffer> . <workspace-index>) or nil."
                   "* %?\n"
                   "/Entered on/ %U"))))
 
+(use-package org-clock-agg
+  :straight (:host github :repo "SqrtMinusOne/org-clock-agg")
+  :commands (org-clock-agg)
+  :init
+  (my-leader-def "ol" #'org-clock-agg))
+
 (with-eval-after-load 'org
   (setq org-clock-persist 'clock)
   (org-clock-persistence-insinuate))
@@ -3388,14 +3394,99 @@ Returns (<buffer> . <workspace-index>) or nil."
   :after (org)
   :if (not my/remote-server)
   :straight (:fetcher github
-                      :repo "SqrtMinusOne/org-ql"
+                      :repo "alphapapa/org-ql"
                       :files (:defaults (:exclude "helm-org-ql.el")))
   :init
   ;; See https://github.com/alphapapa/org-ql/pull/237
   (setq org-ql-regexp-part-ts-time
         (rx " " (repeat 1 2 digit) ":" (repeat 2 digit)
             (optional "-" (repeat 1 2 digit) ":" (repeat 2 digit))))
-  (my-leader-def "ov" #'org-ql-view))
+  (my-leader-def "ov" #'org-ql-view)
+  (my-leader-def "oq" #'org-ql-search))
+
+(with-eval-after-load 'org-ql
+  (org-ql-defpred property (property &optional value &key inherit multi)
+    "Return non-nil if current entry has PROPERTY, and optionally VALUE.
+If INHERIT is nil, only match entries with PROPERTY set on the
+entry; if t, also match entries with inheritance.  If INHERIT is
+not specified, use the Boolean value of
+`org-use-property-inheritance', which see (i.e. it is only
+interpreted as nil or non-nil).  If MULTI is non-nil, also check for
+multi-value properties."
+    :normalizers ((`(,predicate-names)
+                   ;; HACK: This clause protects against the case in
+                   ;; which the arguments are nil, which would cause an
+                   ;; error in `rx-to-string' in other clauses.  This
+                   ;; can happen with `org-ql-completing-read',
+                   ;; e.g. when the input is "property:" while the user
+                   ;; is typing.
+                   ;; FIXME: Instead of this being moot, make this
+                   ;; predicate test for whether an entry has local
+                   ;; properties when no arguments are given.
+                   (list 'property ""))
+                  (`(,predicate-names ,property ,value . ,plist)
+                   ;; Convert keyword property arguments to strings.  Non-sexp
+                   ;; queries result in keyword property arguments (because to do
+                   ;; otherwise would require ugly special-casing in the parsing).
+                   (when (keywordp property)
+                     (setf property (substring (symbol-name property) 1)))
+                   (list 'property property value
+                         :inherit (if (plist-member plist :inherit)
+                                      (plist-get plist :inherit)
+                                    org-use-property-inheritance)
+                         :multi (when (plist-member plist :multi)
+                                  (plist-get plist :multi)))))
+    ;; MAYBE: Should case folding be disabled for properties?  What about values?
+    ;; MAYBE: Support (property) without args.
+
+    ;; NOTE: When inheritance is enabled, the preamble can't be used,
+    ;; which will make the search slower.
+    :preambles ((`(,predicate-names ,property ,value ,(map :multi) . ,(map :inherit))
+                 ;; We do NOT return nil, because the predicate still needs to be tested,
+                 ;; because the regexp could match a string not inside a property drawer.
+                 (list :regexp (unless inherit
+                                 (rx-to-string `(seq bol (0+ space) ":" ,property
+                                                     ,@(when multi '((? "+"))) ":"
+                                                     (1+ space) ,value (0+ space) eol)))
+                       :query query))
+                (`(,predicate-names ,property ,(map :multi) . ,(map :inherit))
+                 ;; We do NOT return nil, because the predicate still needs to be tested,
+                 ;; because the regexp could match a string not inside a property drawer.
+                 ;; NOTE: The preamble only matches if there appears to be a value.
+                 ;; A line like ":ID: " without any other text does not match.
+                 (list :regexp (unless inherit
+                                 (rx-to-string `(seq bol (0+ space) ":" ,property
+                                                     ,@(when multi '((? "+")))
+                                                     ":" (1+ space)
+                                                     (minimal-match (1+ not-newline)) eol)))
+                       :query query)))
+    :body
+    (pcase property
+      ('nil (user-error "Property matcher requires a PROPERTY argument"))
+      (_ (pcase value
+           ('nil
+            ;; Check that PROPERTY exists
+            (org-ql--value-at
+             (point) (lambda ()
+                       (org-entry-get (point) property))))
+           (_
+            ;; Check that PROPERTY has VALUE.
+
+            ;; TODO: Since --value-at doesn't account for inheritance,
+            ;; we should generalize --tags-at to also work for property
+            ;; inheritance and use it here, which should be much faster.
+            (if multi
+                (when-let (values (org-ql--value-at
+                                   (point) (lambda ()
+                                             ;; The default separator is space
+                                             (let ((org-property-separators `((,property . "\n"))))
+                                               (org-entry-get (point) property inherit)))))
+                  (seq-some (lambda (v)
+                              (string-equal value v))
+                            (split-string values "\n")))
+              (string-equal value (org-ql--value-at
+                                   (point) (lambda ()
+                                             (org-entry-get (point) property inherit)))))))))))
 
 (cl-defun my/org-ql-view-recent-items
     (&key num-days (type 'ts)
@@ -3527,201 +3618,6 @@ and lots of comments which are too long for my Emacs config."
 
 (with-eval-after-load 'org-ql
   (advice-add #'org-ql-view--format-element :override #'my/org-ql-view--format-element-override))
-
-(defun my/org-ql--get-clock-data-parse-buffer ()
-  (let (res)
-    (org-element-map (org-element-parse-buffer) 'clock
-      (lambda (clock)
-        (let ((start (time-convert
-                      (org-timestamp-to-time (org-element-property :value clock))
-                      'integer))
-              (end (time-convert
-                    (org-timestamp-to-time (org-element-property :value clock) t)
-                    'integer)))
-          (save-excursion
-            (org-back-to-heading t)
-            (let* ((headline (org-element-at-point-no-context))
-                   (tags-val (org-ql--tags-at (point)))
-                   (tags (seq-filter
-                          #'stringp ;; to filter out `org-ql-nil'
-                          (append (unless (eq (car tags-val) 'org-ql-nil)
-                                    (car tags-val))
-                                  (unless (eq (cdr tags-val) 'org-ql-nil)
-                                    (cdr tags-val)))))
-                   (filename (f-filename
-                              (buffer-file-name)))
-                   (outline-path (mapcar
-                                  #'substring-no-properties
-                                  (org-ql--outline-path)))
-                   (category (org-get-category)))
-              (push
-               `((:start . ,start)
-                 (:end . ,end)
-                 (:headline . ,headline)
-                 (:tags . ,tags)
-                 (:filename . ,filename)
-                 (:outline-path . ,outline-path)
-                 (:category . ,category))
-               res))))))
-    res))
-
-(defun my/org-ql--get-clock-data ()
-  (let (res)
-    (dolist (file (org-agenda-files))
-      (with-current-buffer (find-file-noselect file)
-        (setq res (append res (my/org-ql--get-clock-data-parse-buffer)))))
-    res))
-
-(defun my/alist-agg (path alist value)
-  "Traverse ALIST by PATH, adding VALUE to each node.
-
-PATH is the list of keys to traverse.  ALIST has to have the following
-structure:
-alist := ((key . (total . alist)) . alist) | nil
-I.e. car is the key, cadr is the total, cddr is the rest of alist.
-
-VALUE is a number."
-  (let ((key (car path))
-        (rest (cdr path)))
-    (setf (alist-get key alist nil nil #'equal)
-          (cons
-           (+ value (or (car (alist-get key alist nil nil #'equal)) 0))
-           (when rest
-             (my/alist-agg rest (cdr (alist-get key alist nil nil #'equal))
-                           value))))
-    alist))
-
-(defun my/org-ql--clocked-agg (results)
-  (let* ((params
-          (mapcar
-           (lambda (elem)
-             (let ((marker (org-element-property :org-marker elem)))
-               (with-current-buffer (marker-buffer marker)
-                 (goto-char marker)
-                 ;; This uses cache, contrary to `org-get-tags'.
-                 (let* ((tags-val (org-ql--tags-at (point)))
-                        (tags (seq-filter
-                               #'stringp ;; to filter out `org-ql-nil'
-                               (append (car tags-val) (cdr tags-val))))
-                        (filename (f-filename
-                                   (buffer-file-name)))
-                        (outline-path (org-ql--outline-path))
-                        (category (org-get-category)))
-                   `((:tags . ,tags)
-                     (:outline-path . ,outline-path)
-                     (:filename . ,filename)
-                     (:category . ,category))))))
-           results))
-         (result-types
-          (mapcar
-           (lambda (elem)
-             (let ((is-meeting (seq-contains-p (alist-get :tags elem) "mt"))
-                   (is-in-project (seq-contains-p (alist-get :tags elem) "proj"))
-                   (is-task (seq-some
-                             (lambda (o)
-                               (or (string-match-p (rx (or "t" "T") "ask") o) t))
-                             (alist-get :outline-path elem))))
-               (cond
-                (is-meeting "Meeting")
-                ((and is-in-project is-task) "Project Task")
-                ((and (not is-in-project) is-task) "Other Task")
-                (t "Other"))))
-           params))
-         time-per-type time-per-category time-per-outline)
-    (cl-loop for elem in results
-             for param in params
-             for type in result-types
-             for duration = (or
-                             (org-duration-to-minutes
-                              (org-element-property my/org-clock-total-prop elem))
-                             0)
-             do (setq time-per-type
-                      (my/alist-agg (list type) time-per-type duration)
-                      time-per-outline
-                      (my/alist-agg `(,(alist-get :filename param)
-                                      ,@(alist-get :outline-path param))
-                                    time-per-outline duration)
-                      time-per-category
-                      (my/alist-agg (list (alist-get :category param))
-                                    time-per-category duration)))
-    `((:time-per-type . ,time-per-type)
-      (:time-per-category . ,time-per-category)
-      (:time-per-outline . ,time-per-outline))))
-
-(defun my/time-start-of-day (epoch)
-  (let ((time (decode-time (seconds-to-time epoch))))
-    (time-convert
-     (encode-time 0 0 0 (nth 3 time) (nth 4 time) (nth 5 time))
-     'integer)))
-
-(defun my/org-ql--clocked-agg-by-time-parse-buffer ()
-  (let (res min-ts max-ts)
-    (org-element-map (org-element-parse-buffer) 'clock
-      (lambda (clock)
-        (let ((start (time-convert
-                      (org-timestamp-to-time (org-element-property :value clock))
-                      'integer))
-              (end (time-convert
-                    (org-timestamp-to-time (org-element-property :value clock) t)
-                    'integer)))
-          (if min-ts
-              (setq min-ts (min min-ts start))
-            (setq min-ts start))
-          (if max-ts
-              (setq max-ts (max max-ts end))))))
-    (when min-ts
-      (setq min-ts (my/time-start-of-day min-ts))
-      (setq max-ts (my/time-start-of-day max-ts))
-      (cl-loop for ts from min-ts to max-ts by (* 24 60 60)
-               do (progn
-                    (org-clock-sum ts (+ ts (* 24 60 60)))
-                    (push (cons ts org-clock-file-total-minutes) res))))
-    res))
-
-(defun my/org-ql--clocked-agg-by-time (elements)
-  (with-temp-buffer
-    (dolist (elem elements)
-      (let ((buffer (marker-buffer (org-element-property :org-marker elem))))
-        (insert-buffer-substring-no-properties
-         buffer (org-element-property :begin elem)
-         (org-element-property :end elem))
-        (insert "\n")))
-    (goto-char (point-min))
-    (save-excursion
-      (let ((inhibit-message t))
-        (replace-regexp (rx bol (+ "*")) "*")))
-    (my/org-ql--clocked-agg-by-time-parse-buffer)))
-
-(defun my/org-ql-clocked-report (days)
-  (interactive "nDays: ")
-  (let ((results (org-ql-query
-                   :select #'element-with-markers
-                   :from (org-agenda-files)
-                   :where `(clocked :from ,(- days) to today))))
-    (setq my/test (list (my/org-ql--clocked-agg results)
-                        (my/org-ql--clocked-agg-by-time results)))))
-
-(defun my/org-ql-clocked-report (days)
-  (interactive "nDays: ")
-  (let* ((results (org-ql-query
-                    :select #'element-with-markers
-                    :from (org-agenda-files)
-                    :where `(clocked :from ,days to today)))
-         (org-super-agenda-groups '((:auto-outline-path-file t)))
-         (tasks-string
-          (mapconcat
-           #'identity
-           (org-super-agenda--group-items
-            (-map #'org-ql-view--format-element results))
-           "\n"))
-         (buffer (get-buffer-create "*org-ql-clocked*")))
-    (setq my/test results)
-    (with-current-buffer buffer
-      (setq-local buffer-read-only t)
-      (let ((inhibit-read-only t))
-        (erase-buffer)
-        (insert tasks-string)))
-    (switch-to-buffer buffer)))
 
 (defun my/org-meeting--prompt ()
   (let* ((meetings (org-ql-query
@@ -4906,10 +4802,6 @@ With ARG, repeats or can move backward if negative."
         (my/exwm-set-alpha 100)
       (my/exwm-set-alpha 90))))
 
-(let ((folders-file (expand-file-name "folders.el" user-emacs-directory)))
-  (when (file-exists-p folders-file)
-    (load-file folders-file)))
-
 (use-package dired
   :ensure nil
   :custom ((dired-listing-switches "-alh --group-directories-first"))
@@ -5876,6 +5768,11 @@ generated randomly.
 If a file with the given FILE-NAME already exists, the function will
 invoke CALLBACK straight away without doing the rendering, unless
 OVERWRITE is non-nil."
+  (interactive (list (read-string "Video ID: ")
+                     (lambda (file-name)
+                       (find-file file-name))
+                     :file-name nil
+                     :overwrite t))
   (unless file-name
     (setq file-name (format "/tmp/%d.vtt" (random 100000000))))
   (if (and (file-exists-p file-name) (not overwrite))
@@ -7302,6 +7199,651 @@ base toot."
   (add-hook 'sx-question-mode-hook #'doom-modeline-mode)
   (add-hook 'sx-question-list-mode-hook #'doom-modeline-mode))
 
+(use-package ini
+  :straight (:host github :repo "daniel-ness/ini.el"))
+
+(defvar my/index-root (concat (getenv "HOME") "/"))
+
+(defvar my/index-file
+  (concat org-directory "/misc/index.org"))
+
+(defun my/index--tree-get-recursive (heading &optional path)
+  "Read the index tree recursively from HEADING.
+
+HEADING is an org-element of type `headline'.
+
+If PATH is provided, it is the path to the current node. If not
+provided, it is assumed to be the root of the index.
+
+The return value is an alist; see `my/index--tree-get' for details."
+  (when (eq (org-element-type heading) 'headline)
+    (let (val
+          (new-path (concat
+                     (or path my/index-root)
+                     (org-element-property :raw-value heading)
+                     "/")))
+      (when-let* ((children (thread-last
+                              (org-element-contents heading)
+                              (mapcar (lambda (e)
+                                        (my/index--tree-get-recursive
+                                         e new-path)))
+                              (seq-filter #'identity))))
+        (setf (alist-get :children val) children))
+      (when-let ((machine (org-element-property :MACHINE heading)))
+        (setf (alist-get :machine val) (split-string machine)))
+      (when-let ((symlink (org-element-property :SYMLINK heading)))
+        (setf (alist-get :symlink val) symlink))
+      (when (org-element-property :PROJECT heading)
+        (setf (alist-get :project val) t))
+      (when-let* ((kind-str (org-element-property :KIND heading))
+                  (kind (intern kind-str)))
+        (setf (alist-get :kind val) kind)
+        (when (equal kind 'git)
+          (let ((remote (org-element-property :REMOTE heading)))
+            (unless remote
+              (user-error "No remote for %s" (alist-get :name val)))
+            (setf (alist-get :remote val) remote))))
+      (setf (alist-get :name val) (org-element-property :raw-value heading)
+            (alist-get :path val) new-path)
+      val)))
+
+(defun my/index--tree-get ()
+  "Read the index tree from the current org buffer.
+
+The return value is a list of alists, each representing a
+folder/node.  Alists can have the following keys:
+- `:name'
+- `:path'
+- `:children' - child nodes
+- `:machine' - list of machines on which the node is active
+- `:symlink' - a symlink to create
+- `:kind' - one of \"git\", \"mega\", or \"dummy\"
+- `:remote' - the remote to use for git nodes"
+  (let* ((tree
+          (thread-last
+            (org-element-map (org-element-parse-buffer) 'headline #'identity)
+            (seq-filter (lambda (el)
+                          (and
+                           (= (org-element-property :level el) 1)
+                           (seq-contains-p
+                            (mapcar #'substring-no-properties (org-element-property :tags el))
+                            "folder"))))
+            (mapcar #'my/index--tree-get-recursive))))
+    tree))
+
+(defun my/index--extact-number (name)
+  "Extract the number from the index NAME.
+
+NAME is a string.  The number is the first sequence of digits, e.g.:
+- 10-19
+- 10.01
+- 10.01.Y22.01"
+  (save-match-data
+    (string-match (rx bos (+ (| num alpha "." "-"))) name)
+    (match-string 0 name)))
+
+(defun my/tree--verfify-recursive (elem &optional current)
+  "Verify that ELEM is a valid tree element.
+
+CURRENT is the current number or name of the parent element."
+  (let* ((name (alist-get :name elem))
+         (number (my/index--extact-number name)))
+    (unless number
+      (user-error "Can't find number: %s" name))
+    (cond
+     ((and (listp current) (not (null current)))
+      (unless (seq-some (lambda (cand) (string-prefix-p cand name)) current)
+        (user-error "Name: %s doesn't match: %s" name current)))
+     ((stringp current)
+      (unless (string-prefix-p current name)
+        (user-error "Name: %s doesn't match: %s" name current))))
+    (let ((recur-value
+           (if (string-match-p (rx (+ num) "-" (+ num)) number)
+               (let* ((borders (split-string number "-"))
+                      (start (string-to-number (nth 0 borders)))
+                      (end (string-to-number (nth 1 borders))))
+                 (cl-loop for i from start to (1- end) collect (number-to-string i)))
+             number)))
+      (mapcar (lambda (e) (my/tree--verfify-recursive e recur-value))
+              (alist-get :children elem))))
+  t)
+
+(defun my/index--tree-verify (tree)
+  "Verify that TREE is a valid tree.
+
+Return t if it is valid, otherwise raise an error.
+
+See `my/index--tree-get' for the format of TREE."
+  (mapcar #'my/tree--verfify-recursive tree))
+
+(defun my/index--tree-narrow-recursive (elem machine)
+  "Remove all children of ELEM that are not active on MACHINE."
+  (unless (when-let ((elem-machines (alist-get :machine elem)))
+            (not (seq-some (lambda (elem-machine)
+                             (string-equal elem-machine machine))
+                           elem-machines)))
+    (setf (alist-get :children elem)
+          (seq-filter
+           #'identity
+           (mapcar (lambda (e)
+                     (my/index--tree-narrow-recursive e machine))
+                   (alist-get :children elem))))
+    elem))
+
+(defun my/index--tree-narrow (tree)
+  "Remove all elements of TREE that are not active on machine."
+  (seq-filter
+   #'identity
+   (mapcar
+    (lambda (elem) (my/index--tree-narrow-recursive elem (system-name)))
+    (copy-tree tree))))
+
+(defun my/index--filesystem-tree-mapping (full-tree tree &optional active-paths)
+  "Return a \"sync state\" between the filesystem and the tree.
+
+FULL-TREE and TREE are forms as defined by `my/index--tree-get'.  TREE
+is the narrowed FULL-TREE (returned by `my/index--tree-narrow').
+
+ACTIVE-PATHS is a list of paths that are currently active.  If not
+provided, it is computed from TREE.
+
+The return value is a list of alists with the following keys:
+- path - the path of the folder
+- exists - whether the folder exists on the filesystem
+- has-to-exist - whether the folder exists in the tree
+- extra - if the folder exists in the filesystem but not in the tree.
+- children - a list of alists with the same keys for the children of
+  the folder."
+  (let ((active-paths (or active-paths (my/index--tree-get-paths tree))))
+    (cl-loop for elem in full-tree
+             for path = (alist-get :path elem)
+             for extra-folders = (when (and (alist-get :children elem)
+                                            (file-directory-p path))
+                                   (seq-difference
+                                    (mapcar (lambda (d) (if (file-directory-p d)
+                                                            (concat d "/")
+                                                          d))
+                                            (directory-files path t (rx (not ".") eos)))
+                                    (cl-loop for child in (alist-get :children elem)
+                                             collect (alist-get :path child))))
+             for folder-exists = (file-directory-p path)
+             for folder-has-to-exist = (seq-contains-p active-paths path)
+             collect `((path . ,path)
+                       (exists . ,folder-exists)
+                       (has-to-exist . ,folder-has-to-exist)
+                       (children . ,(append
+                                     (cl-loop for f in extra-folders
+                                              collect `((path . ,f)
+                                                        (exists . t)
+                                                        (has-to-exist . nil)
+                                                        (extra . t)))
+                                     (my/index--filesystem-tree-mapping
+                                      (alist-get :children elem) tree active-paths)))))))
+
+(defun my/index--filesystem-commands (mapping)
+  "Get commands to sync filesystem with the tree.
+
+MAPPING is a form generated by `my/index--filesystem-tree-mapping'
+that describes the \"sync state\" between the filesystem and the
+tree.
+
+The return value is a list of commands as defined by
+`my/index--commands-display'."
+  (cl-loop for elem in mapping
+           for path = (alist-get 'path elem)
+           for exists = (alist-get 'exists elem)
+           for has-to-exist = (alist-get 'has-to-exist elem)
+           for extra = (alist-get 'extra elem)
+           when (and (not exists) has-to-exist)
+           collect (list (format "mkdir \"%s\"" path) "Make directories" 1)
+           when (and exists (not has-to-exist))
+           collect (list (format "rm -rf \"%s\"" path)
+                         (if extra "Remove extra files" "Remove directories")
+                         (if extra 20 10))
+           append (my/index--filesystem-commands (alist-get 'children elem))))
+
+(defun my/parse-table-str (string)
+  "Convert a table-like STRING into alist.
+
+The input format is as follows:
+HEADER1 HEADER2 HEADER3
+value1  value2  3
+value4  value5  6
+
+Which creates the following output:
+\(((HEADER1. \"value1\") (HEADER2 . \"value2\") (HEADER3 . \"3\"))
+ ((HEADER1. \"value4\") (HEADER2 . \"value5\") (HEADER3 . \"6\")))
+
+The functions also skips lines in [square brackets] and ones that
+start with more than 3 spaces."
+  (when-let* ((lines (seq-filter
+                 (lambda (s) (not (or (string-empty-p s)
+                                      (string-match-p (rx bos "[" (* nonl) "]") s)
+                                      (string-match-p (rx bos (>= 3 " ")) s))))
+                 (split-string string "\n")))
+         (first-line (car lines))
+         (headers (split-string first-line))
+         (header-indices (mapcar
+                          (lambda (header)
+                            (cl-search header first-line))
+                          headers)))
+    (cl-loop for line in (cdr lines)
+             collect (cl-loop for header in headers
+                              for start in header-indices
+                              for end in (append (cdr header-indices)
+                                                 (list (length line)))
+                              collect (cons
+                                       (intern header)
+                                       (string-trim
+                                        (substring line start end)))))))
+
+(defun my/index--mega-data-from-sync ()
+  "Get the current MEGA sync status.
+
+The return value is a list of alists with the following keys:
+- path - path to file or directory
+- enabled - whether the file or directory is enabled for sync"
+  (let ((mega-result (my/parse-table-str
+                      (shell-command-to-string "mega-sync --path-display-size=10000"))))
+    (cl-loop for value in mega-result
+             for localpath = (alist-get 'LOCALPATH value)
+             collect `((path . ,(if (file-directory-p localpath)
+                                    (concat localpath "/")
+                                  localpath))
+                       (enabled . ,(string-equal (alist-get 'ACTIVE value)
+                                                 "Enabled"))))))
+
+(defun my/index--tree-get-paths (tree &optional kind)
+  "Get paths from TREE.
+
+TREE is a form a defined by `my/index--tree-get'.  KIND is either a
+filter by the kind attribute or nil, in which case all paths are
+returned.
+
+The return value is a list of strings."
+  (cl-loop for elem in tree
+           when (or (null kind) (eq (alist-get :kind elem) kind))
+           collect (alist-get :path elem)
+           append (my/index--tree-get-paths
+                   (alist-get :children elem) kind)))
+
+(defun my/index--mega-local-path (path)
+  "Get path in the MEGA cloud by the local path PATH."
+  (string-replace my/index-root "/" path))
+
+(defun my/index--mega-commands (full-tree tree)
+  "Get commands to sync the mega-sync state with TREE.
+
+FULL-TREE and TREE are forms as defined by `my/index--tree-get'.  TREE
+is the narrowed FULL-TREE (returned by `my/index--tree-narrow').
+
+The return value is a list of commands as defined by
+`my/index--commands-display'."
+  (let* ((paths-all (my/index--tree-get-paths full-tree))
+         (mega-paths-to-enable (my/index--tree-get-paths tree 'mega))
+         (mega-info (my/index--mega-data-from-sync))
+         (mega-paths-enabled (seq-map
+                              (lambda (e) (alist-get 'path e))
+                              (seq-filter (lambda (e) (alist-get 'enabled e))
+                                          mega-info)))
+         (mega-paths-disabled (seq-map
+                               (lambda (e) (alist-get 'path e))
+                               (seq-filter (lambda (e) (not (alist-get 'enabled e)))
+                                           mega-info))))
+    (append
+     (cl-loop for path in (seq-difference mega-paths-to-enable mega-paths-enabled)
+              if (seq-contains-p mega-paths-disabled path)
+              collect (list (format "mega-sync -e \"%s\"" path) "Mega enable sync" 5)
+              else append (list
+                           (list (format "mega-mkdir -p \"%s\""
+                                         (my/index--mega-local-path path))
+                                 "Mega mkdirs" 4)
+                           (list (format "mega-sync \"%s\" \"%s\""
+                                         path (my/index--mega-local-path path))
+                                 "Mega add sync" 5)))
+     (cl-loop for path in (seq-difference
+                           (seq-intersection mega-paths-enabled paths-all)
+                           mega-paths-to-enable)
+              collect (list
+                       (format "mega-sync -d \"%s\""
+                               (substring path 0 (1- (length path))))
+                       "Mega remove sync" 4)))))
+
+(defun my/index--git-commands (tree)
+  "Get commands to clone the yet uncloned git repos in TREE.
+
+TREE is a form a defined by `my/index--tree-get'.  This is supposed to
+be the tree narrowed to the current machine (`my/index--tree-narrow').
+
+The return value is a list of commands as defined by
+`my/index--commands-display'."
+  (cl-loop for elem in tree
+           for path = (alist-get :path elem)
+           when (and (eq (alist-get :kind elem) 'git)
+                     (or (not (file-directory-p path))
+                         (directory-empty-p path)))
+           collect (list (format "git clone \"%s\" \"%s\""
+                                 (alist-get :remote elem)
+                                 path)
+                         "Init git repos" 2)
+           append (my/index--git-commands (alist-get :children elem))))
+
+(defun my/index--bare-project-name (name)
+  "Remove the alphanumeric prefix from NAME.
+
+E.g. 10.03.R.01 Project Name -> Project Name."
+  (replace-regexp-in-string
+   (rx bos (+ (| num alpha "." "-")) space) "" name))
+
+(defun my/index--wakatime-escape (string)
+  "Escape STRING for use in a WakaTime config file."
+  (thread-last
+    string
+    (replace-regexp-in-string (rx "'") "\\\\'")
+    (replace-regexp-in-string (rx "(") "\\\\(")
+    (replace-regexp-in-string (rx ")") "\\\\)")))
+
+(defun my/index--wakatime-get-map-tree (tree)
+  "Get a list of (folder-name . bare-project-name) pairs from TREE.
+
+TREE is a form as defined by `my/index--tree-get'.
+\"bare-project-name\" is project name without the alphanumeric
+prefix."
+  (cl-loop for elem in tree
+           for name = (alist-get :name elem)
+           if (eq (alist-get :kind elem) 'git)
+           collect (cons (my/index--wakatime-escape name)
+                         (my/index--wakatime-escape
+                          (my/index--bare-project-name name)))
+           if (and (eq (alist-get :kind elem) 'git)
+                   (alist-get :symlink elem))
+           collect (cons (my/index--wakatime-escape
+                          ;; lmao
+                          ;; /a/b/c/ -> c
+                          ;; /a/b/c -> b
+                          (file-name-nondirectory
+                           (directory-file-name
+                            (file-name-directory (alist-get :symlink elem)))))
+                         (my/index--wakatime-escape
+                          (my/index--bare-project-name name)))
+           append (my/index--wakatime-get-map-tree (alist-get :children elem))))
+
+(defun my/index--wakatime-commands (tree)
+  "Get commands to update WakaTime config from TREE.
+
+TREE is a form a defined by `my/index--tree-get'. The return value is
+a list of commands as defined by `my/index--commands-display'."
+  (let* ((map-tree (my/index--wakatime-get-map-tree tree))
+         (map-tree-encoding (ini-encode `(("projectmap" . ,map-tree))))
+         (map-tree-saved (with-temp-buffer
+                           (insert-file-contents (expand-file-name "~/.wakatime.cfg"))
+                           (string-match-p (regexp-quote map-tree-encoding)
+                                           (buffer-string)))))
+    (unless map-tree-saved
+      (let ((insert-command (list (format "echo \"\n\n%s\" >> ~/.wakatime.cfg"
+                                          map-tree-encoding)
+                                  "Update WakaTime config" 9)))
+        (list (list (format "sed -i -z 's/\\[projectmap\\]\\n[^[]*//g' ~/.wakatime.cfg")
+                    "Update WakaTime config" 9)
+              insert-command)))))
+
+(defun my/index-get-symlink-commands (tree)
+  "Get commands to create symlinks from TREE.
+
+TREE is a form a defined by `my/index--tree-get'. The return value is
+a list of commands as defined by `my/index--commands-display'."
+  (cl-loop for elem in tree
+           for path = (alist-get :path elem)
+           for symlink = (alist-get :symlink elem)
+           when (and symlink (not (string-match-p (rx "/" eos) symlink)))
+           do (user-error "Wrong symlink: %s (should be a directory)" symlink)
+           when (and path symlink
+                     (or (file-exists-p symlink)
+                         (file-exists-p (substring symlink 0 -1)))
+                     (not (file-symlink-p (substring symlink 0 -1))))
+           collect (list (format "rm -rf %s" (substring symlink 0 -1))
+                         "Remove files to make symlinks" 6)
+           when (and path symlink
+                     (not (file-symlink-p (substring symlink 0 -1))))
+           collect (list (format "ln -s '%s' '%s'" path
+                                 (substring symlink 0 -1))
+                         "Make symlinks" 7)
+           append (my/index-get-symlink-commands (alist-get :children elem))))
+
+(defvar-local my/index-commands nil
+  "Commands to be executed by `my/index-commands-exec'")
+
+(defun my/index--commands-display (commands)
+  "Display COMMANDS in a buffer.
+
+COMMANDS is a list of commands as defined by `my/index--commands-display'."
+  (unless commands
+    (user-error "No commands to display"))
+  (let ((buffer (get-buffer-create "*index commands*"))
+        (groups (seq-sort-by
+                 (lambda (g) (nth 2 (nth 1 g)))
+                 #'<
+                 (seq-group-by (lambda (c) (nth 1 c))
+                               commands))))
+    (with-current-buffer buffer
+      (sh-mode)
+      (let ((inhibit-read-only t)
+            commands-sequence)
+        (erase-buffer)
+        (setq-local my/index-commands nil)
+        (cl-loop for g in groups
+                 for group-name = (car g)
+                 for elems = (cdr g)
+                 do (insert "# " group-name "\n")
+                 do (cl-loop for elem in elems
+                             do (push (nth 0 elem) my/index-commands)
+                             do (insert (nth 0 elem) "\n")))
+        (setq-local buffer-read-only t)))
+    (switch-to-buffer buffer)))
+
+(defun my/index-commands-exec ()
+  (interactive)
+  (unless (eq major-mode 'sh-mode)
+    (user-error "Not shell mode"))
+  (let ((filename (make-temp-file "index-commands-")))
+    (write-region (point-min) (point-max) filename)
+    (compile (concat "bash -x " filename))))
+
+(defvar my/index--tree nil
+  "The last version of the index tree.")
+
+(defun my/index--tree-retrive ()
+  "Retrive the last version of the index tree.
+
+This function returns the last saved version of the index tree if it
+is still valid. Otherwise, it re-parses the index file."
+  (setq
+   my/index--tree
+   (cond ((string-equal (buffer-file-name) my/index-file)
+          (my/index--tree-get))
+         ((or (null my/index--tree)
+              (file-has-changed-p my/index-file 'index))
+          (with-temp-buffer
+            (insert-file-contents my/index-file)
+            (let ((buffer-file-name my/index-file))
+              (my/index--tree-get))))
+         (t my/index--tree))))
+
+(defun my/index-commands-sync ()
+  "Sync the filesystem with the index."
+  (interactive)
+  (let* ((full-tree (my/index--tree-retrive)))
+    (my/index--tree-verify full-tree)
+    (let* ((tree (my/index--tree-narrow full-tree))
+           (mega-commands (my/index--mega-commands full-tree tree))
+           (mapping (my/index--filesystem-tree-mapping full-tree tree))
+           (folder-commands (my/index--filesystem-commands mapping))
+           (git-commands (my/index--git-commands tree))
+           (waka-commands (my/index--wakatime-commands tree))
+           (symlink-commands (my/index-get-symlink-commands tree)))
+      (my/index--commands-display (append mega-commands folder-commands git-commands
+                                          waka-commands symlink-commands)))))
+
+(defun my/index--nav-extend (name path)
+  "Find all index-related files in PATH.
+
+NAME is the name of the root index entry, e.g. \"10.01
+Something\".  If PATH containts folders like \"10.01.01
+Something\", \"10.01.02 ...\", they will be returned.
+
+The return value is a form as defined by `my/index--nav-get'."
+  (when (file-directory-p path)
+    (let* ((number (my/index--extact-number name))
+           (files (mapcar
+                   (lambda (f) (cons f (concat path f)))
+                   (seq-filter (lambda (f) (not (string-prefix-p "." f)))
+                               (directory-files path))))
+           (matching-files
+            (seq-filter
+             (lambda (f) (and (file-directory-p (cdr f))
+                              (string-prefix-p number (car f))))
+             files)))
+      (when (and (length> matching-files 0)
+                 (length< matching-files (length files)))
+        (user-error "Extraneuous files in %s" path))
+      (cl-loop for (name-1 . path-1) in matching-files
+               append (if-let ((child-files (my/index--nav-extend name-1 (concat path-1 "/"))))
+                          (mapcar
+                           (lambda (child-datum)
+                             (push name-1 (alist-get :names child-datum))
+                             child-datum)
+                           child-files)
+                        `(((:names . (,name-1))
+                           (:path . ,(concat path-1 "/")))))))))
+
+(defun my/index--nav-get (tree &optional names)
+  "Get the navigation structure from TREE.
+
+TREE is a form as defined by `my/index--tree-get'.  NAMES is a
+list of names of the parent entries, e.g. (\"10.01 Something\"), used
+for recursive calls.
+
+The result is a list of alists with the following keys:
+- `:names` - list of names, e.g.
+  (\"10.01 Something\" \"10.01.01 Something\")
+- `:path` - path to the folder, e.g.
+  \"/path/10 stuff/10.01 Something/10.01.01 Something/\"
+- `:child-navs` - list of child navigation structures (optional)"
+  (seq-sort-by
+   (lambda (item) (alist-get :path item))
+   #'string-lessp
+   (cl-reduce
+    (lambda (acc elem)
+      (let* ((name (alist-get :name elem))
+             (path (alist-get :path elem)))
+        (cond ((alist-get :project elem)
+               (let ((current-nav `((:names . (,@names ,name))
+                                    (:path . ,path))))
+                 (when-let (child-navs
+                            (and (alist-get :children elem)
+                                 (my/index--nav-get (alist-get :children elem))))
+                   (setf (alist-get :child-navs current-nav) child-navs))
+                 (push current-nav acc)))
+              ((alist-get :children elem)
+               (when-let (child-navs (my/index--nav-get
+                                      (alist-get :children elem)
+                                      `(,@names ,name)))
+                 (cl-loop for child-nav in child-navs
+                          do (push child-nav acc))))
+              (t (if-let ((extended-nav (my/index--nav-extend name path)))
+                     (cl-loop for child-nav in extended-nav
+                              do (setf (alist-get :names child-nav)
+                                       (append names (list name)
+                                               (alist-get :names child-nav)))
+                              do (push child-nav acc))
+                   (push `((:names . (,@names ,name))
+                           (:path . ,path))
+                         acc))))
+        acc))
+    tree
+    :initial-value nil)))
+
+(defvar my/index--nav nil
+  "Navigation stucture for the index.")
+
+(defun my/index--nav-retrive ()
+  "Retrive the navigation structure from the index file.
+
+The return value is a form as defined by `my/index--nav-get'."
+  (if (or (null my/index--nav)
+          (file-has-changed-p my/index-file 'nav))
+      (let ((tree (my/index--tree-retrive)))
+        (setq my/index--nav (my/index--nav-get
+                             (my/index--tree-narrow tree))))
+    my/index--nav))
+
+(defun my/index--nav-prompt (nav)
+  "Prompt the user for the navigation item to select.
+
+NAV is a structure as defined by `my/index--nav-get'."
+  (let* ((collection
+          (mapcar (lambda (item)
+                    (cons (car (last (alist-get :names item)))
+                          (alist-get :path item)))
+                  nav))
+         (ivy-prescient-sort-commands nil))
+    (cdr
+     (assoc
+      (completing-read "Index: " collection nil t)
+      collection))))
+
+(defun my/index--nav-find-path (nav path)
+  "Find the navigation item in NAV with the given PATH.
+
+NAV is a structure as defined by `my/index--nav-get'."
+  (seq-find
+   (lambda (item)
+     (string-prefix-p (alist-get :path item) path))
+   nav))
+
+(defun my/index-nav (arg &optional func)
+  "Navigate the filesystem index.
+
+ARG is the prefix argument.  It modifies the behavior of the
+command as follows:
+- If not in an indexed directory, or in an indexed directory with no
+  indexed children:
+  - nil: Select an indexed directory.
+  - '(4): Select an indexed directory, and select a child indexed
+    directory if available.
+- If in an indexed directory with indexed children (a project):
+  - nil: Select another indexed directory from the project.
+  - '(4): Select a top-level indexed directory (the same as nil for
+    the previous case).
+  - '(16): The same as '(4) for the previous case.
+
+FUNC is the function to call with the selected path.  It defaults
+to `dired' if used interactively."
+  (interactive (list current-prefix-arg #'dired))
+  (let* ((nav (my/index--nav-retrive))
+         (current-nav (my/index--nav-find-path
+                       nav (expand-file-name default-directory)))
+         (current-child-navs (alist-get :child-navs current-nav)))
+    (cond
+     ((or (and (null arg) (null current-child-navs))
+          (and (equal arg '(4)) current-child-navs))
+      (funcall
+       func
+       (my/index--nav-prompt nav)))
+     ((or (and (equal arg '(4)) (null current-child-navs))
+          (and (equal arg '(16)) current-child-navs))
+      (let ((selected (my/index--nav-find-path
+                       nav
+                       (my/index--nav-prompt nav))))
+        (if-let (child-navs (alist-get :child-navs selected))
+            (funcall func (my/index--nav-prompt child-navs))
+          (funcall func (alist-get :path selected)))))
+     ((and (null arg) current-child-navs)
+      (funcall func (my/index--nav-prompt current-child-navs))))))
+
+(my-leader-def
+  "i" #'my/index-nav)
+
 (use-package pass
   :straight t
   :commands (pass)
@@ -7636,3 +8178,11 @@ repositories are marked."
             repos "\n")
            "\n")))
         "\n")))))
+
+(use-package imgur
+  :straight (:host github :repo "larsmagne/imgur.el")
+  :defer t)
+
+(use-package meme
+  :straight (:host github :repo "larsmagne/meme" :files (:defaults "images"))
+  :commands (meme))
