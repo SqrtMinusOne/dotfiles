@@ -9935,7 +9935,7 @@ Each "area" is an Org header with the =folder= tag; the Org hierarchy forms the 
 - =machine= - a list of hostnames for which the node is active (or =nil=)
 - =kind= - =mega=, =git=, or =dummy=
 - =remote= - remote URL for =git=
-- =symlink= - in case the folder has to be symlinked somewhere else[fn:2]
+- =symlink= - in case the folder has to be symlinked somewhere else
 
 E.g. a part of the tree above:
 #+begin_src org
