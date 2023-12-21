@@ -4538,6 +4538,12 @@ Refile settings
 (setq org-outline-path-complete-in-steps nil)
 #+end_src
 
+My day ends late sometimes. Thanks John Wigley.
+
+#+begin_src emacs-lisp
+(setq org-extend-today-until 4)
+#+end_src
+
 **** Capture templates
 Settings for Org capture mode. The goal here is to have a non-disruptive process to capture various ideas.
 
@@ -4907,7 +4913,6 @@ Putting all the above in =org-ql-views=.
                    :title "Review: Stale tasks"
                    :sort '(todo priority date)
                    :super-groups '((:auto-outline-path-file t))))
-       (cons "Review: Clocked" #'my/org-ql-clocked-report)
        (cons "Review: Recently timestamped" #'my/org-ql-view-recent-items)
        (cons "Review: Unlinked to meetings"
              (list :buffers-files #'org-agenda-files
@@ -5423,7 +5428,8 @@ And it was interesting to find the reinforcement effect of checked dates on the 
   (setq org-journal-file-type 'weekly)
   (setq org-journal-file-format "%Y-%m-%d.org")
   (setq org-journal-date-format "%A, %Y-%m-%d")
-  (setq org-journal-enable-encryption t))
+  (setq org-journal-enable-encryption t)
+  (setq org-journal-time-format-post-midnight "PM: %R "))
 #+end_src
 
 So, [[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]] is my package that implements a tagging system for org-journal.
@@ -7041,6 +7047,20 @@ Attach file to telega.
       (telega-chatbuf-attach-file file))))
 #+end_src
 
+Save a file to a dired buffer.
+#+begin_src emacs-lisp
+(defun my/telega-save-to-dired (msg arg)
+  (interactive
+   (list (telega-msg-for-interactive)
+         (prefix-numeric-value current-prefix-arg)))
+  (if (eq arg 4)
+      (let ((default-directory
+             (with-current-buffer (my/get-good-buffer 'dired-mode "Dired buffer: ")
+               (dired-current-directory))))
+        (telega-msg-save msg))
+    (telega-msg-save msg)))
+#+end_src
+
 Attach files to notmuch.
 #+begin_src emacs-lisp
 (defun my/dired-attach-to-notmuch (files notmuch-buffer)
@@ -7109,6 +7129,13 @@ And the keybindings:
    "am" #'my/dired-attach-to-notmuch
    "ai" #'my/dired-attach-to-ement
    "an" #'my/dired-attach-to-mastodon))
+#+end_src
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'telega
+  (general-define-key
+   :keymaps 'telega-msg-button-map
+   "S" #'my/telega-save-to-dired))
 #+end_src
 ** Shells / Terminals
 *** vterm

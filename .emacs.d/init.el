@@ -3249,6 +3249,8 @@ Returns (<buffer> . <workspace-index>) or nil."
 (setq org-refile-use-outline-path 'file)
 (setq org-outline-path-complete-in-steps nil)
 
+(setq org-extend-today-until 4)
+
 (defun my/generate-inbox-note-name ()
   (format
    "%s/inbox-notes/%s%s.org"
@@ -3542,7 +3544,6 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
                    :title "Review: Stale tasks"
                    :sort '(todo priority date)
                    :super-groups '((:auto-outline-path-file t))))
-       (cons "Review: Clocked" #'my/org-ql-clocked-report)
        (cons "Review: Recently timestamped" #'my/org-ql-view-recent-items)
        (cons "Review: Unlinked to meetings"
              (list :buffers-files #'org-agenda-files
@@ -3961,7 +3962,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (setq org-journal-file-type 'weekly)
   (setq org-journal-file-format "%Y-%m-%d.org")
   (setq org-journal-date-format "%A, %Y-%m-%d")
-  (setq org-journal-enable-encryption t))
+  (setq org-journal-enable-encryption t)
+  (setq org-journal-time-format-post-midnight "PM: %R "))
 
 (use-package org-journal-tags
   :straight (:host github :repo "SqrtMinusOne/org-journal-tags")
@@ -5060,6 +5062,17 @@ With ARG, repeats or can move backward if negative."
     (dolist (file files)
       (telega-chatbuf-attach-file file))))
 
+(defun my/telega-save-to-dired (msg arg)
+  (interactive
+   (list (telega-msg-for-interactive)
+         (prefix-numeric-value current-prefix-arg)))
+  (if (eq arg 4)
+      (let ((default-directory
+             (with-current-buffer (my/get-good-buffer 'dired-mode "Dired buffer: ")
+               (dired-current-directory))))
+        (telega-msg-save msg))
+    (telega-msg-save msg)))
+
 (defun my/dired-attach-to-notmuch (files notmuch-buffer)
   (interactive
    (list (dired-get-marked-files nil nil #'dired-nondirectory-p)
@@ -5117,6 +5130,11 @@ With ARG, repeats or can move backward if negative."
    "am" #'my/dired-attach-to-notmuch
    "ai" #'my/dired-attach-to-ement
    "an" #'my/dired-attach-to-mastodon))
+
+(with-eval-after-load 'telega
+  (general-define-key
+   :keymaps 'telega-msg-button-map
+   "S" #'my/telega-save-to-dired))
 
 (when my/is-termux
   (straight-use-package 'vterm))
