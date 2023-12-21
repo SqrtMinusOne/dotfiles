@@ -3395,9 +3395,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package org-ql
   :after (org)
   :if (not my/remote-server)
-  :straight (:fetcher github
-                      :repo "alphapapa/org-ql"
-                      :files (:defaults (:exclude "helm-org-ql.el")))
+  :straight t
   :init
   ;; See https://github.com/alphapapa/org-ql/pull/237
   (setq org-ql-regexp-part-ts-time
