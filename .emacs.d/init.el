@@ -536,6 +536,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (general-imap "M-TAB" 'company-yasnippet)
 
+(setq default-input-method "russian-computer")
+
 (use-package smartparens
   :straight t)
 
@@ -2865,6 +2867,107 @@ Returns (<buffer> . <workspace-index>) or nil."
 (with-eval-after-load 'org
   (org-link-set-parameters "rel" :follow #'browse-url :export #'my/export-rel-url))
 
+(with-eval-after-load-norem 'org
+  (general-define-key
+   :keymaps 'org-mode-map
+   "C-c d" 'org-decrypt-entry
+   "C-c e" 'org-encrypt-entry
+   "M-p" 'org-latex-preview
+   "M-o" 'org-redisplay-inline-images)
+
+  (general-define-key
+   :keymaps 'org-mode-map
+   :states '(normal emacs)
+   "L" 'org-shiftright
+   "H" 'org-shiftleft
+   "S-<next>" 'org-next-visible-heading
+   "S-<prior>" 'org-previous-visible-heading
+   "M-0" 'org-next-visible-heading
+   "M-9" 'org-previous-visible-heading
+   "M-]" 'org-babel-next-src-block
+   "M-[" 'org-babel-previous-src-block)
+
+  (general-define-key
+   :keymaps 'org-agenda-mode-map
+   "M-]" 'org-agenda-later
+   "M-[" 'org-agenda-earlier)
+
+  (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c))
+
+(defun my/org-link-copy (&optional arg)
+  "Extract URL from org-mode link and add it to kill ring."
+  (interactive "P")
+  (let* ((link (org-element-lineage (org-element-context) '(link) t))
+         (type (org-element-property :type link))
+         (url (org-element-property :path link))
+         (url (concat type ":" url)))
+    (kill-new url)
+    (message (concat "Copied URL: " url))))
+
+(with-eval-after-load-norem 'org
+  (general-nmap :keymaps 'org-mode-map
+    "C-x C-l" 'my/org-link-copy))
+
+(defun my/org-babel-next-visible-src-block (arg)
+  "Move to the next visible source block.
+
+With ARG, repeats or can move backward if negative."
+  (interactive "p")
+  (let ((regexp org-babel-src-block-regexp))
+    (if (< arg 0)
+	    (beginning-of-line)
+      (end-of-line))
+    (while (and (< arg 0) (re-search-backward regexp nil :move))
+      (unless (bobp)
+	    (while (pcase (get-char-property-and-overlay (point) 'invisible)
+		         (`(outline . ,o)
+		          (goto-char (overlay-start o))
+		          (re-search-backward regexp nil :move))
+		         (_ nil))))
+      (cl-incf arg))
+    (while (and (> arg 0) (re-search-forward regexp nil t))
+      (while (pcase (get-char-property-and-overlay (point) 'invisible)
+	           (`(outline . ,o)
+		        (goto-char (overlay-end o))
+		        (re-search-forward regexp nil :move))
+	           (_ (end-of-line) nil)))
+      (re-search-backward regexp nil :move)
+      (cl-decf arg))
+    (if (> arg 0) (goto-char (point-max)) (beginning-of-line))))
+
+(defun my/org-babel-previous-visible-src-block (arg)
+  "Move to the prevous visible source block.
+
+With ARG, repeats or can move backward if negative."
+  (interactive "p")
+  (my/org-babel-next-visible-src-block (- arg)))
+
+(with-eval-after-load 'org
+  (general-define-key
+   :keymaps 'org-mode-map
+   :states '(normal emacs)
+   "M-]" #'my/org-babel-next-visible-src-block
+   "M-[" #'my/org-babel-previous-visible-src-block))
+
+(defun my/org-file-open ()
+  (interactive)
+  (let* ((files
+          (thread-last
+            '("projects" "misc")
+            (mapcar (lambda (f)
+                      (directory-files (concat org-directory "/" f) t (rx ".org" eos))))
+            (apply #'append)
+            (mapcar (lambda (file)
+                      (string-replace (concat org-directory "/") "" file)))
+            (append
+             '("inbox.org" "contacts.org")))))
+    (find-file
+     (concat org-directory "/"
+             (completing-read "Org file: " files)))))
+
+(my-leader-def
+  "o o" 'my/org-file-open)
+
 (use-package jupyter
   :straight t
   :after (org)
@@ -3284,7 +3387,8 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight (:host github :repo "SqrtMinusOne/org-clock-agg")
   :commands (org-clock-agg)
   :init
-  (my-leader-def "ol" #'org-clock-agg))
+  (with-eval-after-load 'org
+    (my-leader-def "ol" #'org-clock-agg)))
 
 (with-eval-after-load 'org
   (setq org-clock-persist 'clock)
@@ -4619,107 +4723,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
                                    (plist-get (cdr entry) :utf-8))
                            collect (list "ru" :default (plist-get (cdr entry) :utf-8))
                            else collect entry)))))
-
-(with-eval-after-load-norem 'org
-  (general-define-key
-   :keymaps 'org-mode-map
-   "C-c d" 'org-decrypt-entry
-   "C-c e" 'org-encrypt-entry
-   "M-p" 'org-latex-preview
-   "M-o" 'org-redisplay-inline-images)
-
-  (general-define-key
-   :keymaps 'org-mode-map
-   :states '(normal emacs)
-   "L" 'org-shiftright
-   "H" 'org-shiftleft
-   "S-<next>" 'org-next-visible-heading
-   "S-<prior>" 'org-previous-visible-heading
-   "M-0" 'org-next-visible-heading
-   "M-9" 'org-previous-visible-heading
-   "M-]" 'org-babel-next-src-block
-   "M-[" 'org-babel-previous-src-block)
-
-  (general-define-key
-   :keymaps 'org-agenda-mode-map
-   "M-]" 'org-agenda-later
-   "M-[" 'org-agenda-earlier)
-
-  (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c))
-
-(defun my/org-link-copy (&optional arg)
-  "Extract URL from org-mode link and add it to kill ring."
-  (interactive "P")
-  (let* ((link (org-element-lineage (org-element-context) '(link) t))
-         (type (org-element-property :type link))
-         (url (org-element-property :path link))
-         (url (concat type ":" url)))
-    (kill-new url)
-    (message (concat "Copied URL: " url))))
-
-(with-eval-after-load-norem 'org
-  (general-nmap :keymaps 'org-mode-map
-    "C-x C-l" 'my/org-link-copy))
-
-(defun my/org-babel-next-visible-src-block (arg)
-  "Move to the next visible source block.
-
-With ARG, repeats or can move backward if negative."
-  (interactive "p")
-  (let ((regexp org-babel-src-block-regexp))
-    (if (< arg 0)
-	    (beginning-of-line)
-      (end-of-line))
-    (while (and (< arg 0) (re-search-backward regexp nil :move))
-      (unless (bobp)
-	    (while (pcase (get-char-property-and-overlay (point) 'invisible)
-		         (`(outline . ,o)
-		          (goto-char (overlay-start o))
-		          (re-search-backward regexp nil :move))
-		         (_ nil))))
-      (cl-incf arg))
-    (while (and (> arg 0) (re-search-forward regexp nil t))
-      (while (pcase (get-char-property-and-overlay (point) 'invisible)
-	           (`(outline . ,o)
-		        (goto-char (overlay-end o))
-		        (re-search-forward regexp nil :move))
-	           (_ (end-of-line) nil)))
-      (re-search-backward regexp nil :move)
-      (cl-decf arg))
-    (if (> arg 0) (goto-char (point-max)) (beginning-of-line))))
-
-(defun my/org-babel-previous-visible-src-block (arg)
-  "Move to the prevous visible source block.
-
-With ARG, repeats or can move backward if negative."
-  (interactive "p")
-  (my/org-babel-next-visible-src-block (- arg)))
-
-(with-eval-after-load 'org
-  (general-define-key
-   :keymaps 'org-mode-map
-   :states '(normal emacs)
-   "M-]" #'my/org-babel-next-visible-src-block
-   "M-[" #'my/org-babel-previous-visible-src-block))
-
-(defun my/org-file-open ()
-  (interactive)
-  (let* ((files
-          (thread-last
-            '("projects" "misc")
-            (mapcar (lambda (f)
-                      (directory-files (concat org-directory "/" f) t (rx ".org" eos))))
-            (apply #'append)
-            (mapcar (lambda (file)
-                      (string-replace (concat org-directory "/") "" file)))
-            (append
-             '("inbox.org" "contacts.org")))))
-    (find-file
-     (concat org-directory "/"
-             (completing-read "Org file: " files)))))
-
-(my-leader-def
-  "o o" 'my/org-file-open)
 
 (defun my/extract-guix-dependencies (&optional category)
   (let ((dependencies '()))
