@@ -2965,8 +2965,9 @@ With ARG, repeats or can move backward if negative."
      (concat org-directory "/"
              (completing-read "Org file: " files)))))
 
-(my-leader-def
-  "o o" 'my/org-file-open)
+(with-eval-after-load 'org
+  (my-leader-def
+    "o o" 'my/org-file-open))
 
 (use-package jupyter
   :straight t

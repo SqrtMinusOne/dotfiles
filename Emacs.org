@@ -960,6 +960,14 @@ References:
 (setq default-input-method "russian-computer")
 #+end_src
 
+=M-x delete-horizontal-space= doesn't feel that useful to me.
+
+#+begin_src emacs-lisp
+(general-define-key
+ :keymaps 'global-map
+ "M-\\" #'toggle-input-method)
+#+end_src
+
 *** Other small packages
 **** Managing parentheses (smartparens)
 A minor mode to deal with pairs. Its functionality overlaps with evil-surround, but smartparens provides the most comfortable way to do stuff like automatically insert pairs.
@@ -4100,8 +4108,9 @@ A function to open a file from =org-directory=, excluding a few directories like
      (concat org-directory "/"
              (completing-read "Org file: " files)))))
 
-(my-leader-def
-  "o o" 'my/org-file-open)
+(with-eval-after-load 'org
+  (my-leader-def
+    "o o" 'my/org-file-open))
 #+end_src
 ** Literate programing
 *** Python & Jupyter
