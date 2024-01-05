@@ -964,7 +964,7 @@ References:
 
 #+begin_src emacs-lisp
 (general-define-key
- :keymaps 'global-map
+ :keymaps 'global
  "M-\\" #'toggle-input-method)
 #+end_src
 
@@ -7072,7 +7072,7 @@ Attach file to telega.
       (telega-chatbuf-attach-file file))))
 #+end_src
 
-Save a file to a dired buffer.
+Save a telega file to a dired buffer.
 #+begin_src emacs-lisp
 (defun my/telega-save-to-dired (msg arg)
   (interactive
@@ -7105,6 +7105,19 @@ Attach files to notmuch.
          type
          (mml-minibuffer-read-description)
          (mml-minibuffer-read-disposition type nil file))))))
+#+end_src
+
+Save a notmuch file to a dired buffer.
+#+begin_src emacs-lisp
+(defun my/notmuch-save-to-dired (arg)
+  (interactive
+   (list (prefix-numeric-value current-prefix-arg)))
+  (if (eq arg 4)
+      (let ((default-directory
+             (with-current-buffer (my/get-good-buffer 'dired-mode "Dired buffer: ")
+               (dired-current-directory))))
+        (notmuch-show-save-part))
+    (notmuch-show-save-part)))
 #+end_src
 
 Attach files to ement.
@@ -7161,6 +7174,14 @@ And the keybindings:
   (general-define-key
    :keymaps 'telega-msg-button-map
    "S" #'my/telega-save-to-dired))
+#+end_src
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'notmuch
+  (general-define-key
+   :keymaps 'notmuch-show-mode-map
+   :states 'normal
+   ". s" #'my/notmuch-save-to-dired))
 #+end_src
 ** Shells / Terminals
 *** vterm
@@ -10789,6 +10810,19 @@ Finally, something that I can bind to a key.
 (my-leader-def
   "i" #'my/index-nav)
 #+end_src
+*** Export tree
+I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
+
+#+begin_src emacs-lisp
+(defun my/index-export (file)
+  (interactive (list (read-file-name "File: " "~/logs-sync/data/index.json")))
+  (let ((full-tree (my/index--tree-retrive)))
+    (unless (file-exists-p (file-name-directory file))
+      (make-directory (file-name-directory file) t))
+    (with-temp-file file
+      (insert (json-encode full-tree))
+      (json-pretty-print-buffer))))
+#+end_src
 ** Utilities
 *** pass
 I use [[https://www.passwordstore.org/][pass]] as my password manager. Expectedly, there is Emacs frontend for it.
@@ -10957,6 +10991,56 @@ Emacs' built-in calendar. Can even calculate sunrise and sunset times.
 (setq calendar-latitude 59.9375)
 (setq calendar-longitude 30.308611)
 #+end_src
+** Chess
+*** chess.el
+chess.el is a package by John Wiegley.
+
+#+begin_src emacs-lisp
+(use-package chess
+  :straight t)
+#+end_src
+
+*** Render PGN
+A Python script to convert a PGN string to SVG:
+#+begin_src python :tangle ~/bin/python-scripts/render_pgn.py
+import chess
+import chess.svg
+import chess.pgn
+import io
+import sys
+
+pgn = sys.argv[1]
+out_file = sys.argv[2]
+
+game = chess.pgn.read_game(io.StringIO(pgn))
+game = game.end()
+board = game.board()
+svg = chess.svg.board(board=board)
+with open(out_file, 'w') as f:
+    f.write(svg)
+#+end_src
+
+=python-chess= is installed in the =dev= profile because =python3= is also there.
+
+An =org-babel= block:
+#+begin_src emacs-lisp
+(setq my/chess-python "/home/pavel/.guix-extra-profiles/dev/dev/bin/python3")
+
+(defun org-babel-execute:pgn (body params)
+  (let ((out-file (or (alist-get :file params)
+                      (org-babel-temp-file "pgn-" ".svg"))))
+    (org-babel-eval
+     (format "%s %s '%s' '%s'" my/chess-python
+             "~/bin/python-scripts/render_pgn.py"
+             body out-file)
+     "")
+    nil))
+
+(defvar org-babel-default-header-args:pgn
+  '((:results . "file") (:exports . "results"))
+  "Default arguments for evaluating a pgn source block.")
+#+end_src
+
 ** Fun
 *** Discord integration
 Integration with Discord. Shows which file is being edited in Emacs.

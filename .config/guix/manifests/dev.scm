@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "python-chess"
    "wireshark"
    "socat"
    "leiningen"

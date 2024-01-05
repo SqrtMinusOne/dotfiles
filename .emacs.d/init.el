@@ -538,6 +538,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq default-input-method "russian-computer")
 
+(general-define-key
+ :keymaps 'global
+ "M-\\" #'toggle-input-method)
+
 (use-package smartparens
   :straight t)
 
@@ -5093,6 +5097,16 @@ KEYS is a list of cons cells like (<label> . <time>)."
          (mml-minibuffer-read-description)
          (mml-minibuffer-read-disposition type nil file))))))
 
+(defun my/notmuch-save-to-dired (arg)
+  (interactive
+   (list (prefix-numeric-value current-prefix-arg)))
+  (if (eq arg 4)
+      (let ((default-directory
+             (with-current-buffer (my/get-good-buffer 'dired-mode "Dired buffer: ")
+               (dired-current-directory))))
+        (notmuch-show-save-part))
+    (notmuch-show-save-part)))
+
 (defun my/dired-attach-to-ement (files ement-buffer)
   (interactive
    (list (dired-get-marked-files nil nil #'dired-nondirectory-p)
@@ -5137,6 +5151,12 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (general-define-key
    :keymaps 'telega-msg-button-map
    "S" #'my/telega-save-to-dired))
+
+(with-eval-after-load 'notmuch
+  (general-define-key
+   :keymaps 'notmuch-show-mode-map
+   :states 'normal
+   ". s" #'my/notmuch-save-to-dired))
 
 (when my/is-termux
   (straight-use-package 'vterm))
@@ -7864,6 +7884,15 @@ to `dired' if used interactively."
 (my-leader-def
   "i" #'my/index-nav)
 
+(defun my/index-export (file)
+  (interactive (list (read-file-name "File: " "~/logs-sync/data/index.json")))
+  (let ((full-tree (my/index--tree-retrive)))
+    (unless (file-exists-p (file-name-directory file))
+      (make-directory (file-name-directory file) t))
+    (with-temp-file file
+      (insert (json-encode full-tree))
+      (json-pretty-print-buffer))))
+
 (use-package pass
   :straight t
   :commands (pass)
@@ -7960,6 +7989,25 @@ to `dired' if used interactively."
 
 (setq calendar-latitude 59.9375)
 (setq calendar-longitude 30.308611)
+
+(use-package chess
+  :straight t)
+
+(setq my/chess-python "/home/pavel/.guix-extra-profiles/dev/dev/bin/python3")
+
+(defun org-babel-execute:pgn (body params)
+  (let ((out-file (or (alist-get :file params)
+                      (org-babel-temp-file "pgn-" ".svg"))))
+    (org-babel-eval
+     (format "%s %s '%s' '%s'" my/chess-python
+             "~/bin/python-scripts/render_pgn.py"
+             body out-file)
+     "")
+    nil))
+
+(defvar org-babel-default-header-args:pgn
+  '((:results . "file") (:exports . "results"))
+  "Default arguments for evaluating a pgn source block.")
 
 (defun my/elcord-mask-buffer-name (name)
   (cond
