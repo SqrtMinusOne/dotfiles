@@ -65,6 +65,8 @@ I decided not to keep configs for features that I do not use anymore because thi
 | progidy                  | ab0d01c525f2b44dd64ec09747daf0fced4bd9c7 |
 | tree-sitter              | 1920a48aec49837d63fa88ca315928dc4e9d14c2 |
 | org-roam-protocol        | 2f0c20eb01b8899d00d129cc7ca5c6b263c69c65 |
+| eshell-info-banner       | 4ccc0bbc412b68e1401533264d801d86b1fc8cc7 |
+| aweshell                 | 4ccc0bbc412b68e1401533264d801d86b1fc8cc7 |
 
 * Initial setup
 Setting up the environment, performance tuning and a few basic settings.
@@ -1273,7 +1275,7 @@ References:
   :straight t
   :config
   (global-company-mode)
-  (setq company-idle-delay 0.125)
+  (setq company-idle-delay 0.2)
   (setq company-dabbrev-downcase nil)
   (setq company-show-numbers t))
 
@@ -7185,7 +7187,7 @@ And the keybindings:
 #+end_src
 ** Shells / Terminals
 *** vterm
-My terminal emulator of choice.
+[[https://github.com/akermu/emacs-libvterm][vterm]] is a terminal emulator for Emacs.
 
 References:
 - [[https://github.com/akermu/emacs-libvterm][emacs-libvterm repo]]
@@ -7200,21 +7202,24 @@ On Guix it makes more sense to use the Guix package to avoid building the vterm 
 
 The actual config:
 #+begin_src emacs-lisp
+(defun my/vterm-setup ()
+  (display-line-numbers-mode 0)
+  (setq-local term-prompt-regexp
+              (rx bol (| ">" "✕") " ")))
+
 (use-package vterm
   :commands (vterm vterm-other-window)
   :config
   (setq vterm-kill-buffer-on-exit t)
 
-  (add-hook 'vterm-mode-hook
-            (lambda ()
-              (setq-local global-display-line-numbers-mode nil)
-              (display-line-numbers-mode 0)))
+  (setq vterm-environment '("IS_VTERM=1"))
 
+  (add-hook 'vterm-mode-hook #'my/vterm-setup)
 
-  (advice-add 'evil-collection-vterm-insert
-              :before (lambda (&rest args)
-                        (ignore-errors
-                          (apply #'vterm-reset-cursor-point args))))
+  ;; (advice-add 'evil-collection-vterm-insert
+  ;;             :before (lambda (&rest args)
+  ;;                       (ignore-errors
+  ;;                         (apply #'vterm-reset-cursor-point args))))
 
   (general-define-key
    :keymaps 'vterm-mode-map
@@ -7270,21 +7275,21 @@ I guess that's the first Emacs function I wrote!
   "Toogle subteminal."
   (interactive)
   (let ((vterm-window
-        (seq-find
-         (lambda (window)
-           (string-match
-            "vterm-subterminal.*"
-            (buffer-name (window-buffer window))))
-         (window-list))))
+         (seq-find
+          (lambda (window)
+            (string-match
+             "vterm-subterminal.*"
+             (buffer-name (window-buffer window))))
+          (window-list))))
     (if vterm-window
         (if (eq (get-buffer-window (current-buffer)) vterm-window)
             (kill-buffer (current-buffer))
           (select-window vterm-window))
       (vterm-other-window "vterm-subterminal"))))
 
-(unless my/slow-ssh
-  (general-nmap "`" 'my/toggle-vterm-subteminal)
-  (general-nmap "~" 'vterm))
+;; (unless my/slow-ssh
+;;   (general-nmap "`" 'my/toggle-vterm-subteminal)
+;;   (general-nmap "~" 'vterm))
 #+end_src
 **** Dired integration
 A function to get pwd for vterm. Couldn't find a built-in function for some reason, but this seems work fine:
@@ -7335,71 +7340,376 @@ That is, with the help of [[file:Console.org::Functions][this function]], I can 
   (add-hook 'vterm-mode-hook 'with-editor-export-editor))
 #+end_src
 *** eshell
-A shell written in Emacs lisp. I don't use it as of now, but keep the config just in case.
+[[https://www.gnu.org/software/emacs/manual/html_mono/eshell.html][eshell]] is a shell implemented in Emacs Lisp.
+
+I'll try to use it as my primary shell for a few reasons. Firstly, I just want to have a "normal" (...evil...) editing experience for shell prompts. My current shell setup is fish with vi bindings, which doesn't work well with vterm because the shell just accepts the keystrokes from the terminal, completely oblivious to the current Emacs state. So, I need to do stuff like entering insert state in Emacs, then entering normal state in the shell while keeping Emacs in insert state. That's just too much pain sometimes.
+
+This setup also frequently messes with fish autosuggestions.
+
+Secondly, I do want to be able to run =dired= or =find-file= from the terminal. I've sort of implemented that in the [[*vterm][vterm]] section, but an Emacs-integrated shell is obviously more convenient for that.
+
+TODO:
+- Configure it for TRAMP (=company-idle-delay= to a large value, what else?)
+
+**** Initial configuration
+Some initial configuration.
 
 #+begin_src emacs-lisp
 (defun my/configure-eshell ()
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
   (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-  (setq eshell-history-size 10000)
-  (setq eshell-hist-ingnoredups t)
-  (setq eshell-buffer-maximum-lines 10000)
 
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+  (general-define-key
+   :states '(normal insert)
+   :keymaps 'eshell-mode-map
+   "<home>" #'eshell-bol
+   "C-r" #'counsel-esh-history)
+
+  (general-define-key
+   :keymaps 'eshell-mode-map
+   :states '(insert)
+   "<tab>" 'my/eshell-complete)
+
   (general-define-key
    :states '(normal)
    :keymaps 'eshell-mode-map
-   (kbd "C-h") 'evil-window-left
-   (kbd "C-l") 'evil-window-right
-   (kbd "C-k") 'evil-window-up
-   (kbd "C-j") 'evil-window-down))
+   "C-h" 'evil-window-left
+   "C-l" 'evil-window-right
+   "C-k" 'evil-window-up
+   "C-j" 'evil-window-down)
+   ;; XXX Did they forget to set it to nil?
+   (setq eshell-first-time-p nil))
 
 (use-package eshell
-  :ensure nil
+  :straight (:type built-in)
   :after evil-collection
   :commands (eshell)
   :init
-  (my/use-colors
+  (setq eshell-history-size 10000)
+  (setq eshell-hist-ignoredups t)
+  (setq eshell-buffer-maximum-lines 10000)
+  :config
+  ;; XXX 90 to override `evil-collection'
+  (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
+  (setq eshell-command-aliases-list
+        '(("q" "exit")
+          ("c" "clear")
+          ("ll" "ls -la")
+          ("e" "find-file")))
+  (setq eshell-banner-message ""))
+#+end_src
+
+**** UI
+I'll try reusing the [[https://starship.rs/][Starship]] prompt.
+
+The executable can print out the text of the prompt, but somehow it refuses when there's =TERM=dumb= in the environment. I also advise Eshell to record the execution time for the =--cmd-duration= flag.
+#+begin_src emacs-lisp
+(defvar-local my/eshell-last-command-start-time nil)
+
+(defun my/get-starship-prompt ()
+  (let ((cmd (format "TERM=xterm starship prompt --status=%d --cmd-duration=%d"
+                     eshell-last-command-status
+                     (if my/eshell-last-command-start-time
+                         (let ((delta (float-time
+                                       (time-subtract
+                                        (current-time)
+                                        my/eshell-last-command-start-time))))
+                           (setq my/eshell-last-command-start-time nil)
+                           (round (* delta 1000)))
+                       0))))
+    (with-temp-buffer
+      (call-process "bash" nil t nil "-c" cmd)
+      (thread-first "\n"
+                    (concat (string-trim (buffer-string)))
+                    (ansi-color-apply)))))
+
+(defun my/eshell-set-start-time (&rest _args)
+  (setq-local my/eshell-last-command-start-time (current-time)))
+
+(with-eval-after-load 'eshell
+  (advice-add #'eshell-send-input :before #'my/eshell-set-start-time))
+#+end_src
+
+Now this can go in =eshell-prompt-function= with two more options. First, =eshell-highlight-prompt= has to be set to nil because it screws up faces applied by =ansi-color.el=.
+
+Second, =eshell-prompt-regexp= has to align with the =starship= configuration. The relevant part of mine looks like this:
+#+begin_src toml
+[character]
+success_symbol = "[> ](bold green)"
+error_symbol = "[✕ ](bold red)"
+#+end_src
+
+So my regex matches with either of these two prompts. IIRC the default value is different from mine.
+#+begin_src emacs-lisp
+(with-eval-after-load 'eshell
+  (setq eshell-prompt-regexp (rx bol (| ">" "✕") " "))
+  (setq eshell-prompt-function #'my/get-starship-prompt)
+  (setq eshell-highlight-prompt nil))
+#+end_src
+
+[[https://github.com/zwild/eshell-prompt-extras/][eshell-prompt-extras]] is an alternative to the above that doesn't depend on =starship=. I'll keep it here for now because I expect I won't be able to use starship everywhere.
+#+begin_src emacs-lisp
+(my/use-colors
    (epe-pipeline-delimiter-face :foreground (my/color-value 'green))
    (epe-pipeline-host-face      :foreground (my/color-value 'blue))
    (epe-pipeline-time-face      :foreground (my/color-value 'yellow))
    (epe-pipeline-user-face      :foreground (my/color-value 'red)))
-  :config
-  (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
-  (when my/slow-ssh
-    (add-hook 'eshell-mode-hook
-              (lambda ()
-                (setq-local company-idle-delay 1000))))
-  (setq eshell-banner-message ""))
 
-(use-package aweshell
-  :straight (:repo "manateelazycat/aweshell" :host github)
+(use-package eshell-prompt-extras
+  :straight t
   :after eshell
-  :init
-  (my/use-colors
-   (aweshell-alert-buffer-face  :background (color-darken-name (my/color-value 'bg) 3))
-   (aweshell-alert-command-face :foreground (my/color-value 'red) :weight 'bold))
+  :disabled t
   :config
-  (setq eshell-prompt-regexp "^[^#\nλ]* λ[#]* ")
-  (setq eshell-highlight-prompt t)
   (setq eshell-prompt-function 'epe-theme-pipeline))
-
-(use-package eshell-info-banner
-  :defer t
-  :if (not my/slow-ssh)
-  :straight (eshell-info-banner :type git
-                                :host github
-                                :repo "phundrak/eshell-info-banner.el")
-  :hook (eshell-banner-load . eshell-info-banner-update-banner)
-  :config
-  (setq eshell-info-banner-filter-duplicate-partitions t)
-  (setq eshell-info-banner-exclude-partitions '("b/efi")))
-
-(when (or my/slow-ssh my/remote-server)
-  (general-nmap "`" 'aweshell-dedicated-toggle)
-  (general-nmap "~" 'eshell))
 #+end_src
+
+[[https://github.com/akreisher/eshell-syntax-highlighting/][eshell-syntax-highlighting]] highlights things like correct/incorrect commands (like fish).
+#+begin_src emacs-lisp
+(use-package eshell-syntax-highlighting
+  :straight t
+  :after eshell
+  :config
+  (eshell-syntax-highlighting-global-mode))
+#+end_src
+
+[[https://github.com/ryuslash/eshell-fringe-status/][eshell-fringe-status]] shows the status of the last command in fringe. I've disabled it because I configured starship to use status from eshell.
+#+begin_src emacs-lisp
+(use-package eshell-fringe-status
+  :straight t
+  :after eshell
+  :disabled t
+  :config
+  (add-hook 'eshell-mode-hook 'eshell-fringe-status-mode))
+#+end_src
+
+**** Fish completions
+[[https://github.com/LemonBreezes/emacs-fish-completion/][emacs-fish-completion]] uses =fish= to autocomplete prompts when the built-in completion fails. This way, it can autocomplete =docker=, =yarn=, etc., which is pretty cool.
+
+#+begin_src emacs-lisp
+(use-package fish-completion
+  :straight t
+  :after eshell
+  :if (executable-find "fish")
+  :config
+  (global-fish-completion-mode))
+#+end_src
+
+**** Fish-like autosuggestions
+I'm used to these fancy autosuggestions provided by =fish=.
+
+There are two packages that do something like that:
+- [[https://github.com/dieggsy/esh-autosuggest][esh-autosuggest]]. It just uses [[https://github.com/company-mode/company-mode][company-mode]] to display suggestions, which prevents using =company-mode= for anything else.
+- [[https://elpa.gnu.org/packages/capf-autosuggest.html][capf-autosuggest]]. It mostly does what I want, but it doesn't verify its suggestion, e.g. it can suggest =cd= to a non-existing directory. I tried advising this functionality, but then the package became too slow because it fetches all candidates on each keystroke.
+
+So, I've spent a ridiculous amount of time implementing this probably unnecessary feature, and I'm still not sure if I should keep it...
+
+But anyway, here's my overlay-based solution inspired by [[https://github.com/copilot-emacs/copilot.el][copilot.el]]. First, we need to get the current input string:
+#+begin_src emacs-lisp
+(defun my/eshell-get-input ()
+  (save-excursion
+    (beginning-of-line)
+    (when (looking-at-p eshell-prompt-regexp)
+      (substring-no-properties (eshell-get-old-input)))))
+#+end_src
+
+In order to verify suggestions (for instance, to check whether the suggested directory exists), it's necessary to "unquote" strings because history stores them in the quoted form.
+
+There's a built-in function called =shell-unquote-argument=, but it requires the current buffer to have a process for a seemingly Windows-related reason... So below is a copy of this function without that part.
+#+begin_src emacs-lisp
+(defun my/shell-unquote-argument-without-process (string)
+  (save-match-data
+    (let ((idx 0) next inside
+	      (quote-chars (rx (| "'" "`" "\"" "\\"))))
+      (while (and (< idx (length string))
+		          (setq next (string-match quote-chars string next)))
+	    (cond ((= (aref string next) ?\\)
+	           (setq string (replace-match "" nil nil string))
+	           (setq next (1+ next)))
+	          ((and inside (= (aref string next) inside))
+	           (setq string (replace-match "" nil nil string))
+	           (setq inside nil))
+	          (inside
+	           (setq next (1+ next)))
+	          (t
+	           (setq inside (aref string next))
+	           (setq string (replace-match "" nil nil string)))))
+      string)))
+#+end_src
+
+Now, verify one suggestion against the current input. At the moment, outside of checking the prefix, it does the following:
+- If the suggestion is =cd= to directory, check if this directory exists
+- If it's =git something=, check if we're in a git repo
+
+#+begin_src emacs-lisp
+(defun my/eshell-history-is-good-suggestion (input suggestion)
+  (and (string-prefix-p input suggestion)
+       (if (string-prefix-p "cd " input)
+           (let ((suggested-dir
+                  (my/shell-unquote-argument-without-process
+                   (substring suggestion 3))))
+             (if (or (string-prefix-p "/" suggested-dir)
+                     (string-prefix-p "~" suggested-dir))
+                 (file-directory-p suggested-dir)
+               (file-directory-p (concat (eshell/pwd) "/" suggested-dir))))
+         t)
+       (if (string-prefix-p "git" suggestion)
+           ;; How is this faster than 'magit-toplevel'?
+           (vc-git-root)
+         t)))
+#+end_src
+
+And propose one suggestion for the current =input=, because I don't need more. It users two sources:
+- =eshell-history-ring=
+- =pcomplete=, which is integrated with =eshell= out-of-the-box. It was soo painful to figure out... But it works.
+
+#+begin_src emacs-lisp
+(defun my/eshell-history-suggest-one (input)
+  (unless (seq-empty-p input)
+    (or
+     (when-let (s (cl-loop for elem in (ring-elements eshell-history-ring)
+                           for proc-elem = (string-trim (substring-no-properties elem))
+                           when (my/eshell-history-is-good-suggestion input proc-elem)
+                           return proc-elem))
+       (substring s (length input)))
+     (ignore-errors
+       (when-let* ((pcomplete-stub input)
+                   (completions (pcomplete-completions))
+                   (one-completion (car (all-completions pcomplete-stub completions)))
+                   (bound (car (completion-boundaries pcomplete-stub completions nil ""))))
+         (unless (zerop bound)
+           (setq one-completion (concat (substring pcomplete-stub 0 bound) one-completion)))
+         ;; (message "%s %s" pcomplete-stub one-completion)
+         (comint-quote-filename
+          (substring one-completion (min
+                                     (length pcomplete-stub)
+                                     (length one-completion)))))))))
+#+end_src
+
+As I said, I want to use an overlay to display the suggestion. I tried to store the current overlay in a buffer-local variable, but somehow it was getting lost at times... And there aren't many overlays anyway, so this doesn't seem to slow down Emacs that much.
+
+#+begin_src emacs-lisp
+(defun my/eshell-overlay-get ()
+  (seq-find (lambda (ov)
+              (overlay-get ov 'my/eshell-completion-overlay))
+            (overlays-in (point-min) (point-max))))
+#+end_src
+
+Thanks [[https://emacs.stackexchange.com/questions/15078/inserting-before-an-after-string-overlay][this answer on StackExchange]] for pointing out the [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Special-Properties.html#index-cursor-_0028text-property_0029][cursor]] text property.
+#+begin_src emacs-lisp
+(defun my/eshell-overlay-update (pos value)
+  (let ((overlay-value (propertize value 'face 'shadow
+                                   'cursor t))
+        (overlay (my/eshell-overlay-get)))
+    (if overlay
+        (move-overlay overlay pos pos)
+      (setq overlay (make-overlay pos pos (current-buffer) nil t))
+      (overlay-put overlay 'my/eshell-completion-overlay t))
+    (overlay-put overlay 'after-string overlay-value)))
+#+end_src
+
+The function to remove the overlay:
+#+begin_src emacs-lisp
+(defun my/eshell-overlay-remove (&rest _)
+  (dolist (ov (overlays-in (point-min) (point-max)))
+    (when (overlay-get ov 'my/eshell-completion-overlay)
+      (delete-overlay ov))))
+#+end_src
+
+Putting that all together.
+
+This also hides the overlay if =company= completion is active because =company= sometimes creates its own overlays that intersect with mine... I don't yet understand when it happens because sometimes =company= just creates the completion dialog with no overlay, and I couldn't find a way to check if the overlay is created or not.
+
+#+begin_src emacs-lisp
+(defun my/eshell-overlay-suggest (&rest _args)
+  (if-let* ((input (my/eshell-get-input))
+            (suggestion (my/eshell-history-suggest-one input))
+            (_ (not company-prefix)))
+      (my/eshell-overlay-update (line-end-position) suggestion)
+    (my/eshell-overlay-remove)))
+#+end_src
+
+The function can be added in =after-change-functions=, which is executed on every text modification. This shouldn't slow eshell down because =eshell-send-input= sets =inhibit-modification-hooks= to t.
+
+#+begin_src emacs-lisp
+(defun my/eshell-overlay-suggest-enable ()
+  (interactive)
+  (add-hook 'after-change-functions #'my/eshell-overlay-suggest nil t)
+  (add-hook 'company-completion-started-hook #'my/eshell-overlay-suggest nil t)
+  (add-hook 'company-after-completion-hook #'my/eshell-overlay-suggest nil t)
+  ;; (setq-local company-idle-delay nil)
+  )
+
+(add-hook 'eshell-mode-hook #'my/eshell-overlay-suggest-enable)
+#+end_src
+
+Finally, a function that inserts the overlay in buffer if it's available and calls =company-complete= if it's not. I've bound it to =<tab>=.
+#+begin_src emacs-lisp
+(defun my/eshell-complete ()
+  (interactive)
+  (if (and (= (point) (line-end-position)))
+      (if-let ((overlay (my/eshell-overlay-get)))
+          (progn
+            (delete-overlay overlay)
+            (insert (overlay-get overlay 'after-string)))
+        (company-complete))
+    (company-complete)))
+#+end_src
+**** Dedicated buffer
+Make a dedicated buffer for eshell in the bottom of the screen.
+
+#+begin_src emacs-lisp
+(add-to-list 'display-buffer-alist
+             '("eshell-dedicated.*"
+               (display-buffer-reuse-window
+                display-buffer-in-side-window)
+               (side . bottom)
+               (reusable-frames . visible)
+               (window-height . 0.33)))
+
+(defun my/eshell-dedicated ()
+  (interactive)
+  ;; XXX the byte-compiler freaks out if eshell is required within the
+  ;; `let*' block because it binds `dedicated-buffer'... dynamically?
+  ;; How?
+  (require 'eshell)
+  (let* ((eshell-buffer-name "eshell-dedicated")
+         (dedicated-buffer (get-buffer eshell-buffer-name)))
+    (if (not dedicated-buffer)
+        (eshell)
+      (let ((window (get-buffer-window dedicated-buffer)))
+        (if (eq (selected-window) window)
+            (kill-buffer-and-window)
+          (select-window window))))))
+#+end_src
+
+**** Global keybindings
+#+begin_src emacs-lisp
+(general-define-key
+ :states '(normal)
+ "`" #'my/eshell-dedicated
+ "~" #'eshell)
+#+end_src
+
+*** eat
+[[https://codeberg.org/akib/emacs-eat][eat]] is a terminal emulator written in Emacs Lisp.
+
+It's slower than =vterm=, but it seems to be the second best option because of =line-mode=, which sends the input line-by-line allowing it to edit like in =eshell=. However, this obviously disables syntax higlighting and autosuggestions, which =eshell= with my configuration has.
+
+Still, I'll probably switch to =eat= if =eshell= doesn't work for me.
+#+begin_src emacs-lisp
+(use-package eat
+  :straight (:files ("*.el" ("term" "term/*.el") "*.texi"
+               "*.ti" ("terminfo/e" "terminfo/e/*")
+               ("terminfo/65" "terminfo/65/*")
+               ("integration" "integration/*")
+               (:exclude ".dir-locals.el" "*-tests.el"))))
+#+end_src
+
+Yeah, and =eat= has integration with eshell too.
+#+begin_src emacs-lisp
+(add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode)
+#+end_src
+
 *** shell
 Interactive subshell (=M-x shell=) is a way to run commands with input and output through an Emacs buffer.
 

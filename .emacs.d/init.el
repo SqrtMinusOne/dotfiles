@@ -753,7 +753,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (global-company-mode)
-  (setq company-idle-delay 0.125)
+  (setq company-idle-delay 0.2)
   (setq company-dabbrev-downcase nil)
   (setq company-show-numbers t))
 
@@ -5161,21 +5161,24 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (when my/is-termux
   (straight-use-package 'vterm))
 
+(defun my/vterm-setup ()
+  (display-line-numbers-mode 0)
+  (setq-local term-prompt-regexp
+              (rx bol (| ">" "✕") " ")))
+
 (use-package vterm
   :commands (vterm vterm-other-window)
   :config
   (setq vterm-kill-buffer-on-exit t)
 
-  (add-hook 'vterm-mode-hook
-            (lambda ()
-              (setq-local global-display-line-numbers-mode nil)
-              (display-line-numbers-mode 0)))
+  (setq vterm-environment '("IS_VTERM=1"))
 
+  (add-hook 'vterm-mode-hook #'my/vterm-setup)
 
-  (advice-add 'evil-collection-vterm-insert
-              :before (lambda (&rest args)
-                        (ignore-errors
-                          (apply #'vterm-reset-cursor-point args))))
+  ;; (advice-add 'evil-collection-vterm-insert
+  ;;             :before (lambda (&rest args)
+  ;;                       (ignore-errors
+  ;;                         (apply #'vterm-reset-cursor-point args))))
 
   (general-define-key
    :keymaps 'vterm-mode-map
@@ -5225,21 +5228,21 @@ KEYS is a list of cons cells like (<label> . <time>)."
   "Toogle subteminal."
   (interactive)
   (let ((vterm-window
-        (seq-find
-         (lambda (window)
-           (string-match
-            "vterm-subterminal.*"
-            (buffer-name (window-buffer window))))
-         (window-list))))
+         (seq-find
+          (lambda (window)
+            (string-match
+             "vterm-subterminal.*"
+             (buffer-name (window-buffer window))))
+          (window-list))))
     (if vterm-window
         (if (eq (get-buffer-window (current-buffer)) vterm-window)
             (kill-buffer (current-buffer))
           (select-window vterm-window))
       (vterm-other-window "vterm-subterminal"))))
 
-(unless my/slow-ssh
-  (general-nmap "`" 'my/toggle-vterm-subteminal)
-  (general-nmap "~" 'vterm))
+;; (unless my/slow-ssh
+;;   (general-nmap "`" 'my/toggle-vterm-subteminal)
+;;   (general-nmap "~" 'vterm))
 
 (defun my/vterm-get-pwd ()
   (if vterm--process
@@ -5274,64 +5277,254 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (defun my/configure-eshell ()
   (add-hook 'eshell-pre-command-hook 'eshell-save-some-history)
   (add-to-list 'eshell-output-filter-functions 'eshell-truncate-buffer)
-  (setq eshell-history-size 10000)
-  (setq eshell-hist-ingnoredups t)
-  (setq eshell-buffer-maximum-lines 10000)
 
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "<home>") 'eshell-bol)
-  (evil-define-key '(normal insert visual) eshell-mode-map (kbd "C-r") 'counsel-esh-history)
+  (general-define-key
+   :states '(normal insert)
+   :keymaps 'eshell-mode-map
+   "<home>" #'eshell-bol
+   "C-r" #'counsel-esh-history)
+
+  (general-define-key
+   :keymaps 'eshell-mode-map
+   :states '(insert)
+   "<tab>" 'my/eshell-complete)
+
   (general-define-key
    :states '(normal)
    :keymaps 'eshell-mode-map
-   (kbd "C-h") 'evil-window-left
-   (kbd "C-l") 'evil-window-right
-   (kbd "C-k") 'evil-window-up
-   (kbd "C-j") 'evil-window-down))
+   "C-h" 'evil-window-left
+   "C-l" 'evil-window-right
+   "C-k" 'evil-window-up
+   "C-j" 'evil-window-down)
+   ;; XXX Did they forget to set it to nil?
+   (setq eshell-first-time-p nil))
 
 (use-package eshell
-  :ensure nil
+  :straight (:type built-in)
   :after evil-collection
   :commands (eshell)
   :init
-  (my/use-colors
+  (setq eshell-history-size 10000)
+  (setq eshell-hist-ignoredups t)
+  (setq eshell-buffer-maximum-lines 10000)
+  :config
+  ;; XXX 90 to override `evil-collection'
+  (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
+  (setq eshell-command-aliases-list
+        '(("q" "exit")
+          ("c" "clear")
+          ("ll" "ls -la")
+          ("e" "find-file")))
+  (setq eshell-banner-message ""))
+
+(defvar-local my/eshell-last-command-start-time nil)
+
+(defun my/get-starship-prompt ()
+  (let ((cmd (format "TERM=xterm starship prompt --status=%d --cmd-duration=%d"
+                     eshell-last-command-status
+                     (if my/eshell-last-command-start-time
+                         (let ((delta (float-time
+                                       (time-subtract
+                                        (current-time)
+                                        my/eshell-last-command-start-time))))
+                           (setq my/eshell-last-command-start-time nil)
+                           (round (* delta 1000)))
+                       0))))
+    (with-temp-buffer
+      (call-process "bash" nil t nil "-c" cmd)
+      (thread-first "\n"
+                    (concat (string-trim (buffer-string)))
+                    (ansi-color-apply)))))
+
+(defun my/eshell-set-start-time (&rest _args)
+  (setq-local my/eshell-last-command-start-time (current-time)))
+
+(with-eval-after-load 'eshell
+  (advice-add #'eshell-send-input :before #'my/eshell-set-start-time))
+
+(with-eval-after-load 'eshell
+  (setq eshell-prompt-regexp (rx bol (| ">" "✕") " "))
+  (setq eshell-prompt-function #'my/get-starship-prompt)
+  (setq eshell-highlight-prompt nil))
+
+(my/use-colors
    (epe-pipeline-delimiter-face :foreground (my/color-value 'green))
    (epe-pipeline-host-face      :foreground (my/color-value 'blue))
    (epe-pipeline-time-face      :foreground (my/color-value 'yellow))
    (epe-pipeline-user-face      :foreground (my/color-value 'red)))
-  :config
-  (add-hook 'eshell-first-time-mode-hook 'my/configure-eshell 90)
-  (when my/slow-ssh
-    (add-hook 'eshell-mode-hook
-              (lambda ()
-                (setq-local company-idle-delay 1000))))
-  (setq eshell-banner-message ""))
 
-(use-package aweshell
-  :straight (:repo "manateelazycat/aweshell" :host github)
+(use-package eshell-prompt-extras
+  :straight t
   :after eshell
-  :init
-  (my/use-colors
-   (aweshell-alert-buffer-face  :background (color-darken-name (my/color-value 'bg) 3))
-   (aweshell-alert-command-face :foreground (my/color-value 'red) :weight 'bold))
+  :disabled t
   :config
-  (setq eshell-prompt-regexp "^[^#\nλ]* λ[#]* ")
-  (setq eshell-highlight-prompt t)
   (setq eshell-prompt-function 'epe-theme-pipeline))
 
-(use-package eshell-info-banner
-  :defer t
-  :if (not my/slow-ssh)
-  :straight (eshell-info-banner :type git
-                                :host github
-                                :repo "phundrak/eshell-info-banner.el")
-  :hook (eshell-banner-load . eshell-info-banner-update-banner)
+(use-package eshell-syntax-highlighting
+  :straight t
+  :after eshell
   :config
-  (setq eshell-info-banner-filter-duplicate-partitions t)
-  (setq eshell-info-banner-exclude-partitions '("b/efi")))
+  (eshell-syntax-highlighting-global-mode))
 
-(when (or my/slow-ssh my/remote-server)
-  (general-nmap "`" 'aweshell-dedicated-toggle)
-  (general-nmap "~" 'eshell))
+(use-package eshell-fringe-status
+  :straight t
+  :after eshell
+  :disabled t
+  :config
+  (add-hook 'eshell-mode-hook 'eshell-fringe-status-mode))
+
+(use-package fish-completion
+  :straight t
+  :after eshell
+  :if (executable-find "fish")
+  :config
+  (global-fish-completion-mode))
+
+(defun my/eshell-get-input ()
+  (save-excursion
+    (beginning-of-line)
+    (when (looking-at-p eshell-prompt-regexp)
+      (substring-no-properties (eshell-get-old-input)))))
+
+(defun my/shell-unquote-argument-without-process (string)
+  (save-match-data
+    (let ((idx 0) next inside
+	      (quote-chars (rx (| "'" "`" "\"" "\\"))))
+      (while (and (< idx (length string))
+		          (setq next (string-match quote-chars string next)))
+	    (cond ((= (aref string next) ?\\)
+	           (setq string (replace-match "" nil nil string))
+	           (setq next (1+ next)))
+	          ((and inside (= (aref string next) inside))
+	           (setq string (replace-match "" nil nil string))
+	           (setq inside nil))
+	          (inside
+	           (setq next (1+ next)))
+	          (t
+	           (setq inside (aref string next))
+	           (setq string (replace-match "" nil nil string)))))
+      string)))
+
+(defun my/eshell-history-is-good-suggestion (input suggestion)
+  (and (string-prefix-p input suggestion)
+       (if (string-prefix-p "cd " input)
+           (let ((suggested-dir
+                  (my/shell-unquote-argument-without-process
+                   (substring suggestion 3))))
+             (if (or (string-prefix-p "/" suggested-dir)
+                     (string-prefix-p "~" suggested-dir))
+                 (file-directory-p suggested-dir)
+               (file-directory-p (concat (eshell/pwd) "/" suggested-dir))))
+         t)
+       (if (string-prefix-p "git" suggestion)
+           ;; How is this faster than 'magit-toplevel'?
+           (vc-git-root)
+         t)))
+
+(defun my/eshell-history-suggest-one (input)
+  (unless (seq-empty-p input)
+    (or
+     (when-let (s (cl-loop for elem in (ring-elements eshell-history-ring)
+                           for proc-elem = (string-trim (substring-no-properties elem))
+                           when (my/eshell-history-is-good-suggestion input proc-elem)
+                           return proc-elem))
+       (substring s (length input)))
+     (ignore-errors
+       (when-let* ((pcomplete-stub input)
+                   (completions (pcomplete-completions))
+                   (one-completion (car (all-completions pcomplete-stub completions)))
+                   (bound (car (completion-boundaries pcomplete-stub completions nil ""))))
+         (unless (zerop bound)
+           (setq one-completion (concat (substring pcomplete-stub 0 bound) one-completion)))
+         ;; (message "%s %s" pcomplete-stub one-completion)
+         (comint-quote-filename
+          (substring one-completion (min
+                                     (length pcomplete-stub)
+                                     (length one-completion)))))))))
+
+(defun my/eshell-overlay-get ()
+  (seq-find (lambda (ov)
+              (overlay-get ov 'my/eshell-completion-overlay))
+            (overlays-in (point-min) (point-max))))
+
+(defun my/eshell-overlay-update (pos value)
+  (let ((overlay-value (propertize value 'face 'shadow
+                                   'cursor t))
+        (overlay (my/eshell-overlay-get)))
+    (if overlay
+        (move-overlay overlay pos pos)
+      (setq overlay (make-overlay pos pos (current-buffer) nil t))
+      (overlay-put overlay 'my/eshell-completion-overlay t))
+    (overlay-put overlay 'after-string overlay-value)))
+
+(defun my/eshell-overlay-remove (&rest _)
+  (dolist (ov (overlays-in (point-min) (point-max)))
+    (when (overlay-get ov 'my/eshell-completion-overlay)
+      (delete-overlay ov))))
+
+(defun my/eshell-overlay-suggest (&rest _args)
+  (if-let* ((input (my/eshell-get-input))
+            (suggestion (my/eshell-history-suggest-one input))
+            (_ (not company-prefix)))
+      (my/eshell-overlay-update (line-end-position) suggestion)
+    (my/eshell-overlay-remove)))
+
+(defun my/eshell-overlay-suggest-enable ()
+  (interactive)
+  (add-hook 'after-change-functions #'my/eshell-overlay-suggest nil t)
+  (add-hook 'company-completion-started-hook #'my/eshell-overlay-suggest nil t)
+  (add-hook 'company-after-completion-hook #'my/eshell-overlay-suggest nil t)
+  ;; (setq-local company-idle-delay nil)
+  )
+
+(add-hook 'eshell-mode-hook #'my/eshell-overlay-suggest-enable)
+
+(defun my/eshell-complete ()
+  (interactive)
+  (if (and (= (point) (line-end-position)))
+      (if-let ((overlay (my/eshell-overlay-get)))
+          (progn
+            (delete-overlay overlay)
+            (insert (overlay-get overlay 'after-string)))
+        (company-complete))
+    (company-complete)))
+
+(add-to-list 'display-buffer-alist
+             '("eshell-dedicated.*"
+               (display-buffer-reuse-window
+                display-buffer-in-side-window)
+               (side . bottom)
+               (reusable-frames . visible)
+               (window-height . 0.33)))
+
+(defun my/eshell-dedicated ()
+  (interactive)
+  ;; XXX the byte-compiler freaks out if eshell is required within the
+  ;; `let*' block because it binds `dedicated-buffer'... dynamically?
+  ;; How?
+  (require 'eshell)
+  (let* ((eshell-buffer-name "eshell-dedicated")
+         (dedicated-buffer (get-buffer eshell-buffer-name)))
+    (if (not dedicated-buffer)
+        (eshell)
+      (let ((window (get-buffer-window dedicated-buffer)))
+        (if (eq (selected-window) window)
+            (kill-buffer-and-window)
+          (select-window window))))))
+
+(general-define-key
+ :states '(normal)
+ "`" #'my/eshell-dedicated
+ "~" #'eshell)
+
+(use-package eat
+  :straight (:files ("*.el" ("term" "term/*.el") "*.texi"
+               "*.ti" ("terminfo/e" "terminfo/e/*")
+               ("terminfo/65" "terminfo/65/*")
+               ("integration" "integration/*")
+               (:exclude ".dir-locals.el" "*-tests.el"))))
+
+(add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode)
 
 (defun my/setup-shell ()
   (setq-local comint-use-prompt-regexp t)
