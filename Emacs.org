@@ -7342,11 +7342,11 @@ That is, with the help of [[file:Console.org::Functions][this function]], I can 
 *** eshell
 [[https://www.gnu.org/software/emacs/manual/html_mono/eshell.html][eshell]] is a shell implemented in Emacs Lisp.
 
-I'll try to use it as my primary shell for a few reasons. Firstly, I just want to have a "normal" (...evil...) editing experience for shell prompts. My current shell setup is fish with vi bindings, which doesn't work well with vterm because the shell just accepts the keystrokes from the terminal, completely oblivious to the current Emacs state. So, I need to do stuff like entering insert state in Emacs, then entering normal state in the shell while keeping Emacs in insert state. That's just too much pain sometimes.
+I'll try to use it as my primary shell for a few reasons. First, I just want to have a "normal" (...evil...) editing experience for shell prompts. My current shell setup is fish with vi bindings, which doesn't work well with vterm because the shell just accepts the keystrokes from the terminal, completely oblivious to the current Emacs state. So, I need to do stuff like entering insert state in Emacs, then entering normal state in the shell while keeping Emacs in insert state. That's just too much pain sometimes.
 
 This setup also frequently messes with fish autosuggestions.
 
-Secondly, I do want to be able to run =dired= or =find-file= from the terminal. I've sort of implemented that in the [[*vterm][vterm]] section, but an Emacs-integrated shell is obviously more convenient for that.
+Second, I do want to be able to run =dired= or =find-file= from the terminal. I've sort of implemented that in the [[*vterm][vterm]] section, but an Emacs-integrated shell is obviously more convenient for that.
 
 TODO:
 - Configure it for TRAMP (=company-idle-delay= to a large value, what else?)
