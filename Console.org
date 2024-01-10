@@ -495,7 +495,11 @@ end
 
 Enable vi keybindings & aliases. The alias syntax is the same as in bash, so it's just a noweb reference to =.bashrc=.
 #+begin_src fish :noweb yes
-fish_vi_key_bindings
+if [ "$IS_VTERM" != "1" ];
+    fish_vi_key_bindings
+else
+    fish_default_key_bindings
+end
 
 alias q="exit"
 alias c="clear"
@@ -602,8 +606,8 @@ References:
 
 #+begin_src conf-toml :tangle ./.config/starship.toml
 [character]
-success_symbol = "[➤ ](bold green)"
-error_symbol = "[ ](bold red)"
+success_symbol = "[> ](bold green)"
+error_symbol = "[✕ ](bold red)"
 vicmd_symbol = "[ᐊ ](bold green)"
 
 [aws]

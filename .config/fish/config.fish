@@ -10,7 +10,11 @@ end
 # Fish:1 ends here
 
 # [[file:../../Console.org::*Fish][Fish:2]]
-fish_vi_key_bindings
+if [ "$IS_VTERM" != "1" ];
+    fish_vi_key_bindings
+else
+    fish_default_key_bindings
+end
 
 alias q="exit"
 alias c="clear"

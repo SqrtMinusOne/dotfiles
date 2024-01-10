@@ -1,7 +1,7 @@
 # [[file:../Console.org::*Starship prompt][Starship prompt:1]]
 [character]
-success_symbol = "[➤ ](bold green)"
-error_symbol = "[ ](bold red)"
+success_symbol = "[> ](bold green)"
+error_symbol = "[✕ ](bold red)"
 vicmd_symbol = "[ᐊ ](bold green)"
 
 [aws]
