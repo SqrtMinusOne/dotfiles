@@ -2405,7 +2405,8 @@ Returns (<buffer> . <workspace-index>) or nil."
   :init
   (my-leader-def "ar" #'reverso)
   :config
-  (setq reverso-languages '(russian english german)))
+  (setq reverso-languages '(russian english german))
+  (reverso-history-mode))
 
 (use-package lispy
   :commands (lispy-mode)
@@ -4835,7 +4836,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
    "l" #'dired-find-file
    "=" #'dired-narrow
    "-" #'my/dired-create-empty-file-subtree
-   "~" #'vterm
+   "~" #'eshell
    "M-r" #'wdired-change-to-wdired-mode
    "<left>" #'dired-up-directory
    "<right>" #'dired-find-file
@@ -4977,6 +4978,16 @@ KEYS is a list of cons cells like (<label> . <time>)."
    "sS" 'my/dired-open-this-subdir
    "sQ" 'my/dired-kill-all-subdirs
    (kbd "TAB") 'dired-hide-subdir))
+
+(defun my/dired-goto-project-root ()
+  (interactive)
+  (dired--find-possibly-alternative-file (projectile-project-root)))
+
+(with-eval-after-load 'dired
+  (general-define-key
+   :states '(normal)
+   :keymaps 'dired-mode-map
+   "H" #'my/dired-goto-project-root))
 
 (setq tramp-verbose 6)
 
@@ -5287,7 +5298,9 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (general-define-key
    :keymaps 'eshell-mode-map
    :states '(insert)
-   "<tab>" 'my/eshell-complete)
+   "<tab>" 'my/eshell-complete
+   "M-k" #'eshell-previous-matching-input-from-input
+   "M-j" #'eshell-next-matching-input-from-input)
 
   (general-define-key
    :states '(normal)
@@ -5296,8 +5309,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
    "C-l" 'evil-window-right
    "C-k" 'evil-window-up
    "C-j" 'evil-window-down)
-   ;; XXX Did they forget to set it to nil?
-   (setq eshell-first-time-p nil))
+  ;; XXX Did they forget to set it to nil?
+  (setq eshell-first-time-p nil))
 
 (use-package eshell
   :straight (:type built-in)
@@ -5469,15 +5482,20 @@ KEYS is a list of cons cells like (<label> . <time>)."
       (my/eshell-overlay-update (line-end-position) suggestion)
     (my/eshell-overlay-remove)))
 
-(defun my/eshell-overlay-suggest-enable ()
-  (interactive)
-  (add-hook 'after-change-functions #'my/eshell-overlay-suggest nil t)
-  (add-hook 'company-completion-started-hook #'my/eshell-overlay-suggest nil t)
-  (add-hook 'company-after-completion-hook #'my/eshell-overlay-suggest nil t)
-  ;; (setq-local company-idle-delay nil)
-  )
+(define-minor-mode my/eshell-overlay-suggest-mode
+  "Fish-like suggestions for eshell."
+  :after-hook
+  (if my/eshell-overlay-suggest-mode
+      (progn
+        (add-hook 'after-change-functions #'my/eshell-overlay-suggest nil t)
+        (add-hook 'company-completion-started-hook #'my/eshell-overlay-suggest nil t)
+        (add-hook 'company-after-completion-hook #'my/eshell-overlay-suggest nil t))
+    (remove-hook 'after-change-functions #'my/eshell-overlay-suggest t)
+    (add-hook 'company-completion-started-hook #'my/eshell-overlay-suggest t)
+    (add-hook 'company-after-completion-hook #'my/eshell-overlay-suggest t)
+    (my/eshell-overlay-remove)))
 
-(add-hook 'eshell-mode-hook #'my/eshell-overlay-suggest-enable)
+;; (add-hook 'eshell-mode-hook #'my/eshell-overlay-suggest-mode)
 
 (defun my/eshell-complete ()
   (interactive)
@@ -5511,6 +5529,11 @@ KEYS is a list of cons cells like (<label> . <time>)."
         (if (eq (selected-window) window)
             (kill-buffer-and-window)
           (select-window window))))))
+
+(defun eshell/prt ()
+  (if-let ((root (projectile-project-root)))
+      (eshell/cd root)
+    (message "Not in a project")))
 
 (general-define-key
  :states '(normal)
@@ -8447,3 +8470,7 @@ repositories are marked."
 (use-package meme
   :straight (:host github :repo "larsmagne/meme" :files (:defaults "images"))
   :commands (meme))
+
+(use-package ed-mode
+  :straight (:host github :repo "ryanprior/ed-mode")
+  :commands (ed))

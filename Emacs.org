@@ -3284,7 +3284,8 @@ References:
   :init
   (my-leader-def "ar" #'reverso)
   :config
-  (setq reverso-languages '(russian english german)))
+  (setq reverso-languages '(russian english german))
+  (reverso-history-mode))
 #+end_src
 ** Lisp
 [[file:dot-imgs/lisp_cycles.png]]
@@ -6741,7 +6742,7 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
    "l" #'dired-find-file
    "=" #'dired-narrow
    "-" #'my/dired-create-empty-file-subtree
-   "~" #'vterm
+   "~" #'eshell
    "M-r" #'wdired-change-to-wdired-mode
    "<left>" #'dired-up-directory
    "<right>" #'dired-find-file
@@ -6925,6 +6926,20 @@ I add my own keybindings and some extra functionality.
    "sS" 'my/dired-open-this-subdir
    "sQ" 'my/dired-kill-all-subdirs
    (kbd "TAB") 'dired-hide-subdir))
+#+end_src
+*** Other functions
+Goto project root.
+
+#+begin_src emacs-lisp
+(defun my/dired-goto-project-root ()
+  (interactive)
+  (dired--find-possibly-alternative-file (projectile-project-root)))
+
+(with-eval-after-load 'dired
+  (general-define-key
+   :states '(normal)
+   :keymaps 'dired-mode-map
+   "H" #'my/dired-goto-project-root))
 #+end_src
 *** TRAMP
 TRAMP is a package that provides remote editing capacities. It is particularly useful for remote server management.
@@ -7368,7 +7383,9 @@ Some initial configuration.
   (general-define-key
    :keymaps 'eshell-mode-map
    :states '(insert)
-   "<tab>" 'my/eshell-complete)
+   "<tab>" 'my/eshell-complete
+   "M-k" #'eshell-previous-matching-input-from-input
+   "M-j" #'eshell-next-matching-input-from-input)
 
   (general-define-key
    :states '(normal)
@@ -7377,8 +7394,8 @@ Some initial configuration.
    "C-l" 'evil-window-right
    "C-k" 'evil-window-up
    "C-j" 'evil-window-down)
-   ;; XXX Did they forget to set it to nil?
-   (setq eshell-first-time-p nil))
+  ;; XXX Did they forget to set it to nil?
+  (setq eshell-first-time-p nil))
 
 (use-package eshell
   :straight (:type built-in)
@@ -7631,15 +7648,20 @@ This also hides the overlay if =company= completion is active because =company= 
 The function can be added in =after-change-functions=, which is executed on every text modification. This shouldn't slow eshell down because =eshell-send-input= sets =inhibit-modification-hooks= to t.
 
 #+begin_src emacs-lisp
-(defun my/eshell-overlay-suggest-enable ()
-  (interactive)
-  (add-hook 'after-change-functions #'my/eshell-overlay-suggest nil t)
-  (add-hook 'company-completion-started-hook #'my/eshell-overlay-suggest nil t)
-  (add-hook 'company-after-completion-hook #'my/eshell-overlay-suggest nil t)
-  ;; (setq-local company-idle-delay nil)
-  )
+(define-minor-mode my/eshell-overlay-suggest-mode
+  "Fish-like suggestions for eshell."
+  :after-hook
+  (if my/eshell-overlay-suggest-mode
+      (progn
+        (add-hook 'after-change-functions #'my/eshell-overlay-suggest nil t)
+        (add-hook 'company-completion-started-hook #'my/eshell-overlay-suggest nil t)
+        (add-hook 'company-after-completion-hook #'my/eshell-overlay-suggest nil t))
+    (remove-hook 'after-change-functions #'my/eshell-overlay-suggest t)
+    (add-hook 'company-completion-started-hook #'my/eshell-overlay-suggest t)
+    (add-hook 'company-after-completion-hook #'my/eshell-overlay-suggest t)
+    (my/eshell-overlay-remove)))
 
-(add-hook 'eshell-mode-hook #'my/eshell-overlay-suggest-enable)
+;; (add-hook 'eshell-mode-hook #'my/eshell-overlay-suggest-mode)
 #+end_src
 
 Finally, a function that inserts the overlay in buffer if it's available and calls =company-complete= if it's not. I've bound it to =<tab>=.
@@ -7681,7 +7703,13 @@ Make a dedicated buffer for eshell in the bottom of the screen.
             (kill-buffer-and-window)
           (select-window window))))))
 #+end_src
-
+**** Custom commands
+#+begin_src emacs-lisp
+(defun eshell/prt ()
+  (if-let ((root (projectile-project-root)))
+      (eshell/cd root)
+    (message "Not in a project")))
+#+end_src
 **** Global keybindings
 #+begin_src emacs-lisp
 (general-define-key
@@ -11730,6 +11758,14 @@ Generate memes from Emacs.
   :commands (meme))
 #+end_src
 
+*** Ed
+My text editor isn't old enough.
+
+#+begin_src emacs-lisp
+(use-package ed-mode
+  :straight (:host github :repo "ryanprior/ed-mode")
+  :commands (ed))
+#+end_src
 * Guix settings
 | Guix dependency     | Description                   |
 |---------------------+-------------------------------|
