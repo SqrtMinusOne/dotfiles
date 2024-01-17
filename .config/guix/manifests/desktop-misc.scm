@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "mcron"
    "android-file-transfer"
    "remmina"
    "font-google-noto-emoji"

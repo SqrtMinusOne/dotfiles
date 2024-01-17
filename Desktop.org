@@ -118,7 +118,7 @@ Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting 
 (let ((hostname (system-name)))
   (cond ((string-equal hostname "azure") 120)
         ((string-equal hostname "eminence") 120)
-        ((string-equal hostname "indigo") 120)
+        ((string-equal hostname "violet") 120)
         ((string-equal hostname "iris") 120)
         (t 96)))
 #+end_src
@@ -197,6 +197,8 @@ if [ "$hostname" = "indigo" ]; then
     xrandr --output DisplayPort-0 --off --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal --output DVI-D-0 --mode 1920x1080 --pos 1920x0 --rotate normal
 elif [ "$hostname" = "eminence" ]; then
     xgamma -gamma 1.25
+elif [ "$hostname" = "violet" ]; then
+    xrandr --output HDMI-0 --primary --mode 1920x1080 --pos 0x0 --rotate normal --output DP-0 --off --output DP-1 --mode 1920x1080 --pos 1920x0 --rotate normal --output DP-2 --off --output DP-3 --off --output DP-4 --off --output DP-5 --off --output None-1-1 --off
 fi
 #+end_src
 * EXWM
@@ -275,12 +277,12 @@ The GUI pinentry doesn't work too well with EXWM because of issues with popup wi
 #+begin_src emacs-lisp
 (use-package pinentry
   :straight t
-  :after (exwm)
+  ;; :after (exwm)
   :config
   (setenv "GPG_AGENT_INFO" nil) ;; use emacs pinentry
   (setq auth-source-debug t)
 
-  (setq epg-gpg-program "gpg2") ;; not necessary
+  (setq epg-gpg-program "gpg") ;; not necessary
   (require 'epa-file)
   (epa-file-enable)
   (setq epa-pinentry-mode 'loopback)
@@ -288,12 +290,17 @@ The GUI pinentry doesn't work too well with EXWM because of issues with popup wi
   (pinentry-start))
 #+end_src
 
-#+begin_src conf-space :tangle ~/.gnupg/gpg-agent.conf
+#+NAME: find-pinentry
+#+begin_src emacs-lisp
+(executable-find "pinentry")
+#+end_src
+
+#+begin_src conf-space :tangle ~/.gnupg/gpg-agent.conf :noweb yes
 default-cache-ttl 3600
 max-cache-ttl 3600
 allow-emacs-pinentry
 allow-loopback-pinentry
-pinentry-program /home/pavel/.guix-extra-profiles/console/console/bin/pinentry
+pinentry-program <<find-pinentry()>>
 #+end_src
 *** Modeline
 Show the current workspace in the modeline.
@@ -543,13 +550,14 @@ One note here is that workspaces may also disappear (e.g. after =M-x exwm-worksp
 *** The monitor list
 The second piece of the puzzle is getting the monitor list in the right order.
 
-While it is possible to retrieve the monitor list from =exwm-randr-workspace-output-plist=, this won't scale well beyond two monitors, mainly because changing this variable may screw up the order.
+While it is possible to retrieve the monitor list from =exwm-randr-workspace-monitor-plist=, this won't scale well beyond two monitors, mainly because changing this variable may screw up the order.
 
 So the easiest way is to just define the variable like that:
 #+begin_src emacs-lisp :eval no
 (setq my/exwm-monitor-list
       (pcase (system-name)
         ("indigo" '(nil "DVI-D-0"))
+        ("violet" '(nil "DP-1"))
         (_ '(nil))))
 #+end_src
 
@@ -559,7 +567,7 @@ A function to get the current monitor:
 #+begin_src emacs-lisp :eval no
 (defun my/exwm-get-current-monitor ()
   "Return the current monitor name or nil."
-  (plist-get exwm-randr-workspace-output-plist
+  (plist-get exwm-randr-workspace-monitor-plist
              (cl-position (selected-frame)
                           exwm-workspace--list)))
 #+end_src
@@ -599,9 +607,9 @@ One caveat here is that on the startup the =my/exwm-last-workspaces= variable wo
                                         for _ in exwm-workspace--list
                                         collect i))
               if (if other-monitor
-                     (string-equal (plist-get exwm-randr-workspace-output-plist i)
+                     (string-equal (plist-get exwm-randr-workspace-monitor-plist i)
                                    other-monitor)
-                   (not (plist-get exwm-randr-workspace-output-plist i)))
+                   (not (plist-get exwm-randr-workspace-monitor-plist i)))
               return i))))
 #+end_src
 
@@ -1210,8 +1218,8 @@ And the EXWM config itself.
   (require 'exwm-randr)
   (exwm-randr-enable)
   (start-process-shell-command "xrandr" nil "~/bin/scripts/screen-layout")
-  (when (string= (system-name) "indigo")
-    (setq my/exwm-another-monitor "DVI-D-0")
+  (when (string= (system-name) "violet")
+    (setq my/exwm-another-monitor "DP-1")
     (setq exwm-randr-workspace-monitor-plist `(2 ,my/exwm-another-monitor 3 ,my/exwm-another-monitor)))
 
   (setq exwm-workspace-warp-cursor t)
@@ -1925,6 +1933,8 @@ Also excluding some modules from certain monitors, which for now is about exclud
 |----------+---------|
 | DVI-D-0  | battery |
 | HDMI-A-0 | battery |
+| HDMI-0   | battery |
+| DP-1     | battery |
 
 Another thing we need to do is to set the color of modules in accordance with the =polybar_modules= table. The background can be determined from the =Color= column with the following code block:
 #+NAME: get-polybar-bg
@@ -2178,7 +2188,7 @@ elif [ "$hostname" = "eminence" ]; then
 elif [ "$hostname" = "iris" ]; then
     TRAY_MONITOR="HDMI-1"
 else
-    TRAY_MONITOR="HDMI-A-0"
+    TRAY_MONITOR="DP-1"
 fi
 
 # Setting varying on the monitor
@@ -2188,6 +2198,8 @@ declare -A FONT_SIZES=(
     ["DVI-D-0"]="13"
     ["HDMI-A-0"]="13"
     ["HDMI-1"]="13"
+    ["HDMI-0"]="13"
+    ["DP-1"]="13"
 )
 declare -A EMOJI_SCALE=(
     ["eDP"]="9"
@@ -2195,6 +2207,8 @@ declare -A EMOJI_SCALE=(
     ["DVI-D-0"]="10"
     ["HDMI-A-0"]="10"
     ["HDMI-1"]="10"
+    ["HDMI-0"]="10"
+    ["DP-1"]="10"
 )
 declare -A BAR_HEIGHT=(
     ["eDP"]="29"
@@ -2202,6 +2216,8 @@ declare -A BAR_HEIGHT=(
     ["DVI-D-0"]="29"
     ["HDMI-A-0"]="29"
     ["HDMI-1"]="29"
+    ["HDMI-0"]="29"
+    ["DP-1"]="29"
 )
 declare -A BLOCKS=(
     ["eDP"]="<<polybar-generate-modules(monitor="eDP")>>"
@@ -2209,6 +2225,8 @@ declare -A BLOCKS=(
     ["DVI-D-0"]="<<polybar-generate-modules(monitor="DVI-D-0")>>"
     ["HDMI-A-0"]="<<polybar-generate-modules(monitor="HDMI-A-0")>>"
     ["HDMI-1"]="<<polybar-generate-modules(monitor="HDMI-1")>>"
+    ["HDMI-0"]="<<polybar-generate-modules(monitor="HDMI-0")>>"
+    ["DP-1"]="<<polybar-generate-modules(monitor="DP-1")>>"
 )
 
 # Geolocation for some modules
@@ -3470,7 +3488,7 @@ Which I then can use to create the URL.
 #+end_src
 
 #+RESULTS:
-: https://color.firefox.com/?theme=XQAAAAJFAQAAAAAAAABAqYhm849SCia3ftKEGccwS-xMDPsquqWmWrYLGyvA453nlgdoRTTSje3LA7vfcBuCeiFpttFMurVWViuvuhtBMugWmSsvzgyPVKtRGycIN1zWryrJ9mbJv5mYo-xR8V8hbMdvgfLyrp7SHnedMUPeouponHkloIv8tsVzxCwih5WlhbK_FebmNVUdxiV3yclhLVDXmZtn06QuboIcvf_BITkA
+: https://color.firefox.com/?theme=XQAAAAJFAQAAAAAAAABAqYhm849SCia3ftKEGccwS-xMDPsqcRvjh8JMhYPDf9_kNjVRdqrKsHr5AamG1FlOJ8DH_BqRXLhVF02YoR2FXVUIEYoXiV-3q19EVo-NqESyeWWEIwj-0QxR3X-JxWYJLJYc6tAeNGGDXNNrM0pNWpwesvR43yXL_fJfr9Q919y2QwP0cK7ZXO1lRou4HkpwWW4LWdO3V6ox_BN9yA
 
 * keynav
 | Guix dependency |
@@ -3877,6 +3895,10 @@ nix-env -i slack
 
 I previously used supervisor, but shepherd also seems pretty capable.
 
+| Guix dependency |
+|-----------------|
+| shepherd        |
+
 ** Music
 | Category | Guix dependency |
 |----------+-----------------|
@@ -4156,6 +4178,7 @@ Other desktop programs I use are listed below.
 | desktop-misc | font-google-noto-emoji |                                           |
 | desktop-misc | remmina                |                                           |
 | desktop-misc | android-file-transfer  |                                           |
+| desktop-misc | mcron                  |                                           |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no

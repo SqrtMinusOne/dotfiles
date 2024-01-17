@@ -15,7 +15,7 @@
   (setenv "GPG_AGENT_INFO" nil) ;; use emacs pinentry
   (setq auth-source-debug t)
 
-  (setq epg-gpg-program "gpg2") ;; not necessary
+  (setq epg-gpg-program "gpg") ;; not necessary
   (require 'epa-file)
   (epa-file-enable)
   (setq epa-pinentry-mode 'loopback)
@@ -186,11 +186,12 @@ _=_: Balance          "
 (setq my/exwm-monitor-list
       (pcase (system-name)
         ("indigo" '(nil "DVI-D-0"))
+        ("violet" '(nil "DP-1"))
         (_ '(nil))))
 
 (defun my/exwm-get-current-monitor ()
   "Return the current monitor name or nil."
-  (plist-get exwm-randr-workspace-output-plist
+  (plist-get exwm-randr-workspace-monitor-plist
              (cl-position (selected-frame)
                           exwm-workspace--list)))
 
@@ -222,9 +223,9 @@ DIR is either 'left or 'right."
                                         for _ in exwm-workspace--list
                                         collect i))
               if (if other-monitor
-                     (string-equal (plist-get exwm-randr-workspace-output-plist i)
+                     (string-equal (plist-get exwm-randr-workspace-monitor-plist i)
                                    other-monitor)
-                   (not (plist-get exwm-randr-workspace-output-plist i)))
+                   (not (plist-get exwm-randr-workspace-monitor-plist i)))
               return i))))
 
 (defun my/exwm-workspace-switch-monitor ()
@@ -603,8 +604,8 @@ _d_: Discord
   (require 'exwm-randr)
   (exwm-randr-enable)
   (start-process-shell-command "xrandr" nil "~/bin/scripts/screen-layout")
-  (when (string= (system-name) "indigo")
-    (setq my/exwm-another-monitor "DVI-D-0")
+  (when (string= (system-name) "violet")
+    (setq my/exwm-another-monitor "DP-1")
     (setq exwm-randr-workspace-monitor-plist `(2 ,my/exwm-another-monitor 3 ,my/exwm-another-monitor)))
 
   (setq exwm-workspace-warp-cursor t)

@@ -13,7 +13,7 @@ elif [ "$hostname" = "eminence" ]; then
 elif [ "$hostname" = "iris" ]; then
     TRAY_MONITOR="HDMI-1"
 else
-    TRAY_MONITOR="HDMI-A-0"
+    TRAY_MONITOR="DP-1"
 fi
 
 # Setting varying on the monitor
@@ -23,6 +23,8 @@ declare -A FONT_SIZES=(
     ["DVI-D-0"]="13"
     ["HDMI-A-0"]="13"
     ["HDMI-1"]="13"
+    ["HDMI-0"]="13"
+    ["DP-1"]="13"
 )
 declare -A EMOJI_SCALE=(
     ["eDP"]="9"
@@ -30,6 +32,8 @@ declare -A EMOJI_SCALE=(
     ["DVI-D-0"]="10"
     ["HDMI-A-0"]="10"
     ["HDMI-1"]="10"
+    ["HDMI-0"]="10"
+    ["DP-1"]="10"
 )
 declare -A BAR_HEIGHT=(
     ["eDP"]="29"
@@ -37,6 +41,8 @@ declare -A BAR_HEIGHT=(
     ["DVI-D-0"]="29"
     ["HDMI-A-0"]="29"
     ["HDMI-1"]="29"
+    ["HDMI-0"]="29"
+    ["DP-1"]="29"
 )
 declare -A BLOCKS=(
     ["eDP"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan battery glyph-light-cyan--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
@@ -44,6 +50,8 @@ declare -A BLOCKS=(
     ["DVI-D-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
     ["HDMI-A-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
     ["HDMI-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan battery glyph-light-cyan--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["HDMI-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["DP-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
 )
 
 # Geolocation for some modules

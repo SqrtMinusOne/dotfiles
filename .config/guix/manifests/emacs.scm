@@ -1,5 +1,5 @@
 (specifications->manifest
- '("emacs-next-tree-sitter"
+ '("emacs"
    "texinfo"
    "the-silver-searcher"
    "ripgrep"
@@ -14,7 +14,6 @@
    "whisper-cpp"
    "rdrview"
    "graphviz"
-   "emacs-emacsql-sqlite3"
    "python-isort"
    "python-black"
    "python-yapf"

@@ -1,6 +1,7 @@
 (specifications->manifest
  '(
    "activitywatch-bin"
+   "shepherd"
    "xdg-desktop-portal"
    "flatpak"
    "picom"

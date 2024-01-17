@@ -5,5 +5,7 @@ if [ "$hostname" = "indigo" ]; then
     xrandr --output DisplayPort-0 --off --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal --output DVI-D-0 --mode 1920x1080 --pos 1920x0 --rotate normal
 elif [ "$hostname" = "eminence" ]; then
     xgamma -gamma 1.25
+elif [ "$hostname" = "violet" ]; then
+    xrandr --output HDMI-0 --primary --mode 1920x1080 --pos 0x0 --rotate normal --output DP-0 --off --output DP-1 --mode 1920x1080 --pos 1920x0 --rotate normal --output DP-2 --off --output DP-3 --off --output DP-4 --off --output DP-5 --off --output None-1-1 --off
 fi
 # Device-specific settings:1 ends here
