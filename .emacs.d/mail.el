@@ -1,8 +1,10 @@
 (setq user-mail-address "thexcloud@gmail.com")
 (setq user-full-name "Pavel Korytov")
 
-(let ((default-directory  "/home/pavel/.guix-extra-profiles/mail/mail/share/emacs/site-lisp"))
-  (normal-top-level-add-subdirs-to-load-path))
+(let ((dir  "/home/pavel/.guix-extra-profiles/mail/mail/share/emacs/site-lisp"))
+  (when (file-directory-p dir)
+    (let ((default-directory dir))
+      (normal-top-level-add-subdirs-to-load-path))))
 
 (defun my/notmuch-toggle-trash ()
   (interactive)
