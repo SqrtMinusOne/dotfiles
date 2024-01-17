@@ -33,6 +33,14 @@ if [ -d "$HOME/.local/bin" ] ; then
 fi
 # My paths:1 ends here
 
+#!/usr/bin/env bash
+# [[file:Console.org::*SSL Certs][SSL Certs:1]]
+export SSL_CERT_DIR="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/"
+export SSL_CERT_FILE="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/ca-certificates.crt"
+export GIT_SSL_CAINFO="$SSL_CERT_FILE"
+export CURL_CA_BUNDLE="$SSL_CERT_FILE"
+# SSL Certs:1 ends here
+
 # [[file:Console.org::*Guix settings][Guix settings:1]]
 if [ -z "$IS_ANDROID" ]; then
     GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
@@ -83,6 +91,8 @@ fi
 if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
   . /run/current-system/profile/etc/profile.d/nix.sh
 fi
+
+if [ -e /home/pavel/.nix-profile/etc/profile.d/nix.sh ]; then . /home/pavel/.nix-profile/etc/profile.d/nix.sh; fi
 # Other package managers:3 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:4]]

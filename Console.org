@@ -83,7 +83,15 @@ if [ -d "$HOME/.local/bin" ] ; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 #+end_src
+** SSL Certs
+This seems necessary when running Guix on a foreign distro.
 
+#+begin_src bash
+export SSL_CERT_DIR="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/"
+export SSL_CERT_FILE="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/ca-certificates.crt"
+export GIT_SSL_CAINFO="$SSL_CERT_FILE"
+export CURL_CA_BUNDLE="$SSL_CERT_FILE"
+#+end_src
 ** Guix settings
 Enable extra profiles
 
@@ -146,7 +154,11 @@ Enable Nix
 if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
   . /run/current-system/profile/etc/profile.d/nix.sh
 fi
+
+if [ -e /home/pavel/.nix-profile/etc/profile.d/nix.sh ]; then . /home/pavel/.nix-profile/etc/profile.d/nix.sh; fi
 #+end_src
+
+#+RESULTS:
 
 Use Guix fontconfig. Necessary for nix apps
 #+begin_src sh
@@ -1037,7 +1049,7 @@ fi
 
 =mcron= job:
 #+begin_src scheme :tangle ~/.config/cron/autocommit.guile
-(job "0 * * * *" "autocommit ~/Documents/org-mode")
+(job "0 * * * *" "autocommit /home/pavel/30-39\\ Life/32\\ org-mode/")
 (job "0,15,30,45 * * * *" "autocommit ~/.password-store")
 #+end_src
 * Guix settings
