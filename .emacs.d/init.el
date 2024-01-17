@@ -91,8 +91,8 @@
 (setq custom-file (concat user-emacs-directory "custom.el"))
 (load custom-file 'noerror)
 
-(setq auth-source-debug t)
-(setq auth-sources '("~/.authinfo"))
+(setq auth-source-debug nil)
+(setq auth-sources '("~/.authinfo.gpg"))
 
 (let ((private-file (expand-file-name "private.el" user-emacs-directory)))
   (when (file-exists-p private-file)
@@ -600,6 +600,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     "m" 'magit
     "M" 'magit-file-dispatch)
   :config
+  (require 'forge)
   (setq magit-blame-styles
         '((headings
            (heading-format . "%-20a %C %s\n"))
@@ -608,15 +609,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
           (lines
            (show-lines . t)
            (show-message . t)))))
-
-(use-package forge
-  :after magit
-  :straight t
-  :config
-  (add-to-list 'forge-alist '("gitlab.etu.ru"
-                              "gitlab.etu.ru/api/v4"
-                              "gitlab.etu.ru"
-                              forge-gitlab-repository)))
 
 (use-package git-gutter
   :straight t
@@ -627,6 +619,65 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package git-timemachine
   :straight t
   :commands (git-timemachine))
+
+(use-package forge
+  :after magit
+  :straight t
+  :config
+  (add-to-list 'forge-alist '("gitlab.etu.ru"
+                              "gitlab.etu.ru/api/v4"
+                              "gitlab.etu.ru"
+                              forge-gitlab-repository)))
+
+(defun my/password-store-get-field (entry field)
+  (if-let (field (password-store-get-field entry field))
+      field
+    (my/password-store-get-field entry field)))
+
+(defun my/ghub--token (host username package &optional nocreate forge)
+  (cond ((and (or (equal host "gitlab.etu.ru/api/v4")
+                  (equal host "gitlab.etu.ru/api"))
+              (equal username "pvkorytov"))
+         (my/password-store-get-field
+          "Job/Digital/Infrastructure/gitlab.etu.ru"
+          (format "%s-token" package)))
+        (t (error "Don't know token: %s %s %s" host username package))))
+
+(with-eval-after-load 'ghub
+  (advice-add #'ghub--token :override #'my/ghub--token))
+
+(use-package code-review
+  :straight (:host github :repo "phelrine/code-review" :branch "fix/closql-update")
+  :after forge
+  :config
+  (setq code-review-auth-login-marker 'forge)
+  (setq code-review-gitlab-base-url "gitlab.etu.ru")
+  (setq code-review-gitlab-host "gitlab.etu.ru/api")
+  (setq code-review-gitlab-graphql-host "gitlab.etu.ru/api")
+  (general-define-key
+   :states '(normal visual)
+   :keymaps '(code-review-mode-map)
+   "RET" #'code-review-comment-add-or-edit
+   "gr" #'code-review-reload
+   "r" #'code-review-transient-api
+   "s" #'code-review-comment-code-suggestion
+   "d" #'code-review-submit-single-diff-comment-at-point
+   "TAB" #'magit-section-toggle)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(forge-topic-mode-map)
+   "M-RET" #'code-review-forge-pr-at-point))
+
+(defun my/code-review-comment-quit ()
+  "Quit the comment window."
+  (interactive)
+  (magit-mode-quit-window t)
+  (with-current-buffer (get-buffer code-review-buffer-name)
+    (goto-char code-review-comment-cursor-pos)
+    (code-review-comment-reset-global-vars)))
+
+(with-eval-after-load 'code-review
+  (advice-add #'code-review-comment-quit :override #'my/code-review-comment-quit))
 
 (use-package editorconfig
   :straight t
@@ -1076,6 +1127,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
     (my/regenerate-desktop)))
 
 (my/switch-theme 'ef-duo-light)
+
+(with-eval-after-load 'transient
+  (my/use-colors
+   (transient-key-exit :foreground (my/color-value 'dark-red))
+   (transient-key-noop :foreground (my/color-value 'grey))
+   (transient-key-return :foreground (my/color-value 'yellow))
+   (transient-key-stay :foreground (my/color-value 'green))))
 
 (use-package auto-dim-other-buffers
   :straight t
@@ -5003,10 +5061,17 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (unless (file-remote-p (or dir default-directory))
     (funcall fun dir)))
 
+(defun my/editorconfig--advice-find-file-noselect-around (f f1 filename &rest args)
+  (if (file-remote-p filename)
+      (apply f1 filename args)
+    (apply f f1 filename args)))
+
 (with-eval-after-load 'editorconfig
   (advice-add #'editorconfig-apply :around #'my/tramp-void-if-tramp)
   (advice-add #'editorconfig--disabled-for-filename
-              :around #'my/tramp-void-if-file-is-tramp))
+              :around #'my/tramp-void-if-file-is-tramp)
+  (advice-add #'editorconfig--advice-find-file-noselect :around
+              #'my/editorconfig--advice-find-file-noselect-around))
 
 (with-eval-after-load 'all-the-icons-dired
   (advice-add #'all-the-icons-dired-mode :around #'my/tramp-void-if-tramp))

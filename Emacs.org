@@ -251,8 +251,8 @@ By default, =custom= writes stuff to =init.el=, which is somewhat annoying. The 
 *** authinfo
 Use only the gpg-encrypted version of the file.
 #+begin_src emacs-lisp
-(setq auth-source-debug t)
-(setq auth-sources '("~/.authinfo"))
+(setq auth-source-debug nil)
+(setq auth-sources '("~/.authinfo.gpg"))
 #+end_src
 *** Private config
 I have some variables which I don't commit to the repo, e.g. my current location. They are stored in =private.el=
@@ -1060,6 +1060,7 @@ I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, 
     "m" 'magit
     "M" 'magit-file-dispatch)
   :config
+  (require 'forge)
   (setq magit-blame-styles
         '((headings
            (heading-format . "%-20a %C %s\n"))
@@ -1068,18 +1069,6 @@ I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, 
           (lines
            (show-lines . t)
            (show-message . t)))))
-#+end_src
-
-[[https://github.com/magit/forge][forge]] provides integration with forges, such as GitHub and GitLab.
-#+begin_src emacs-lisp
-(use-package forge
-  :after magit
-  :straight t
-  :config
-  (add-to-list 'forge-alist '("gitlab.etu.ru"
-                              "gitlab.etu.ru/api/v4"
-                              "gitlab.etu.ru"
-                              forge-gitlab-repository)))
 #+end_src
 
 [[https://github.com/emacsorphanage/git-gutter][git-gutter]] is a package which shows git changes for each line (added/changed/deleted lines).
@@ -1096,6 +1085,79 @@ I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, 
 (use-package git-timemachine
   :straight t
   :commands (git-timemachine))
+#+end_src
+*** Forge and code-review
+[[https://github.com/magit/forge][forge]] provides integration with forges, such as GitHub and GitLab.
+#+begin_src emacs-lisp
+(use-package forge
+  :after magit
+  :straight t
+  :config
+  (add-to-list 'forge-alist '("gitlab.etu.ru"
+                              "gitlab.etu.ru/api/v4"
+                              "gitlab.etu.ru"
+                              forge-gitlab-repository)))
+#+end_src
+
+=forge= depends on a package called [[https://github.com/magit/ghub][ghub]]. I don't like that it uses =auth-source= to store the token so I'll advise it to use =password-store=.
+
+#+begin_src emacs-lisp
+(defun my/password-store-get-field (entry field)
+  (if-let (field (password-store-get-field entry field))
+      field
+    (my/password-store-get-field entry field)))
+
+(defun my/ghub--token (host username package &optional nocreate forge)
+  (cond ((and (or (equal host "gitlab.etu.ru/api/v4")
+                  (equal host "gitlab.etu.ru/api"))
+              (equal username "pvkorytov"))
+         (my/password-store-get-field
+          "Job/Digital/Infrastructure/gitlab.etu.ru"
+          (format "%s-token" package)))
+        (t (error "Don't know token: %s %s %s" host username package))))
+
+(with-eval-after-load 'ghub
+  (advice-add #'ghub--token :override #'my/ghub--token))
+#+end_src
+
+[[https://github.com/wandersoncferreira/code-review][code-review]] is a package that implements code review in Emacs. The main branch is broken, [[https://github.com/wandersoncferreira/code-review/pull/246][but this PR]] works.
+
+#+begin_src emacs-lisp
+(use-package code-review
+  :straight (:host github :repo "phelrine/code-review" :branch "fix/closql-update")
+  :after forge
+  :config
+  (setq code-review-auth-login-marker 'forge)
+  (setq code-review-gitlab-base-url "gitlab.etu.ru")
+  (setq code-review-gitlab-host "gitlab.etu.ru/api")
+  (setq code-review-gitlab-graphql-host "gitlab.etu.ru/api")
+  (general-define-key
+   :states '(normal visual)
+   :keymaps '(code-review-mode-map)
+   "RET" #'code-review-comment-add-or-edit
+   "gr" #'code-review-reload
+   "r" #'code-review-transient-api
+   "s" #'code-review-comment-code-suggestion
+   "d" #'code-review-submit-single-diff-comment-at-point
+   "TAB" #'magit-section-toggle)
+  (general-define-key
+   :states '(normal)
+   :keymaps '(forge-topic-mode-map)
+   "M-RET" #'code-review-forge-pr-at-point))
+#+end_src
+
+Fix issue [[https://github.com/wandersoncferreira/code-review/issues/253][253]]:
+#+begin_src emacs-lisp
+(defun my/code-review-comment-quit ()
+  "Quit the comment window."
+  (interactive)
+  (magit-mode-quit-window t)
+  (with-current-buffer (get-buffer code-review-buffer-name)
+    (goto-char code-review-comment-cursor-pos)
+    (code-review-comment-reset-global-vars)))
+
+(with-eval-after-load 'code-review
+  (advice-add #'code-review-comment-quit :override #'my/code-review-comment-quit))
 #+end_src
 
 *** Editorconfig
@@ -1746,6 +1808,18 @@ The built-in =load-theme= does not deactivate the previous theme, so here's a fu
 #+begin_src emacs-lisp
 (my/switch-theme 'ef-duo-light)
 #+end_src
+**** Extending current theme
+Colors that aren't set in themes.
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'transient
+  (my/use-colors
+   (transient-key-exit :foreground (my/color-value 'dark-red))
+   (transient-key-noop :foreground (my/color-value 'grey))
+   (transient-key-return :foreground (my/color-value 'yellow))
+   (transient-key-stay :foreground (my/color-value 'green))))
+#+end_src
+
 *** Dim inactive buffers
 Dim inactive buffers.
 #+begin_src emacs-lisp
@@ -6971,10 +7045,17 @@ And advice to disable a function for TRAMP-related buffers:
 
 =editorconfig=. This lovely package looks for =.editorconfig= in the file tree.
 #+begin_src emacs-lisp
+(defun my/editorconfig--advice-find-file-noselect-around (f f1 filename &rest args)
+  (if (file-remote-p filename)
+      (apply f1 filename args)
+    (apply f f1 filename args)))
+
 (with-eval-after-load 'editorconfig
   (advice-add #'editorconfig-apply :around #'my/tramp-void-if-tramp)
   (advice-add #'editorconfig--disabled-for-filename
-              :around #'my/tramp-void-if-file-is-tramp))
+              :around #'my/tramp-void-if-file-is-tramp)
+  (advice-add #'editorconfig--advice-find-file-noselect :around
+              #'my/editorconfig--advice-find-file-noselect-around))
 #+end_src
 
 =all-the-icons-dired= runs =test= on every file in the directory.
@@ -7424,7 +7505,7 @@ The executable can print out the text of the prompt, but somehow it refuses when
 (defvar-local my/eshell-last-command-start-time nil)
 
 (defun my/get-starship-prompt ()
-  (let ((cmd (format "TERM=xterm starship prompt --status=%d --cmd-duration=%d"
+  (let ((cmd (format "TERM=xterm starship prompt --status=%d --cmd-duration=%d --logical-path=%s"
                      eshell-last-command-status
                      (if my/eshell-last-command-start-time
                          (let ((delta (float-time
@@ -7433,7 +7514,8 @@ The executable can print out the text of the prompt, but somehow it refuses when
                                         my/eshell-last-command-start-time))))
                            (setq my/eshell-last-command-start-time nil)
                            (round (* delta 1000)))
-                       0))))
+                       0)
+                       default-directory)))
     (with-temp-buffer
       (call-process "bash" nil t nil "-c" cmd)
       (thread-first "\n"
@@ -7709,6 +7791,14 @@ Make a dedicated buffer for eshell in the bottom of the screen.
   (if-let ((root (projectile-project-root)))
       (eshell/cd root)
     (message "Not in a project")))
+#+end_src
+**** TRAMP compatiblity
+#+begin_src emacs-lisp
+(defun my/eshell-maybe-configure-for-tramp ()
+  (when (file-remote-p default-directory)
+    (setq-local company-idle-delay nil)))
+
+(add-hook 'eshell-mode-hook #'my/eshell-maybe-configure-for-tramp)
 #+end_src
 **** Global keybindings
 #+begin_src emacs-lisp
