@@ -557,6 +557,7 @@ Don't forget to install =JetBrainsMono Nerd Font=.
 | system   | tor-client      |                                                    |
 | system   | torsocks        |                                                    |
 | system   | vnstat          |                                                    |
+| system   | nss-certs       |                                                    |
 
 ** OpenVPN
 | Category | Guix dependency             |

@@ -23,7 +23,6 @@
 (setq my/remote-server
       (or (string= (getenv "IS_REMOTE") "true")
           (string= (system-name) "dev-digital")
-          (string= (system-name) "violet")
           (string= (system-name) "viridian")))
 
 (setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
@@ -1537,21 +1536,24 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :if (featurep 'treesit)
   :config
   (setq treesit-language-source-alist
-        '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-          (cmake "https://github.com/uyha/tree-sitter-cmake")
-          (css "https://github.com/tree-sitter/tree-sitter-css")
-          (elisp "https://github.com/Wilfred/tree-sitter-elisp")
-          (go "https://github.com/tree-sitter/tree-sitter-go")
-          (html "https://github.com/tree-sitter/tree-sitter-html")
-          (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
-          (json "https://github.com/tree-sitter/tree-sitter-json")
-          (make "https://github.com/alemuller/tree-sitter-make")
-          (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-          (python "https://github.com/tree-sitter/tree-sitter-python")
-          (toml "https://github.com/tree-sitter/tree-sitter-toml")
-          (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
-          (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
-          (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+        (mapcar
+         (lambda (item)
+           `(,@item nil nil ,(executable-find "gcc") ,(executable-find "c++")))
+         '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+           (cmake "https://github.com/uyha/tree-sitter-cmake")
+           (css "https://github.com/tree-sitter/tree-sitter-css")
+           (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+           (go "https://github.com/tree-sitter/tree-sitter-go")
+           (html "https://github.com/tree-sitter/tree-sitter-html")
+           (javascript "https://github.com/tree-sitter/tree-sitter-javascript" "master" "src")
+           (json "https://github.com/tree-sitter/tree-sitter-json")
+           (make "https://github.com/alemuller/tree-sitter-make")
+           (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+           (python "https://github.com/tree-sitter/tree-sitter-python")
+           (toml "https://github.com/tree-sitter/tree-sitter-toml")
+           (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+           (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+           (yaml "https://github.com/ikatyang/tree-sitter-yaml"))))
   (setq treesit-font-lock-level 4)
   (setq major-mode-remap-alist
         '((typescript-mode . typescript-ts-mode)
@@ -2876,6 +2878,18 @@ Returns (<buffer> . <workspace-index>) or nil."
   (org-crypt-use-before-save-magic)
   (setq org-tags-exclude-from-inheritance '("crypt"))
   (setq org-crypt-key "C1EC867E478472439CC82410DE004F32AFA00205"))
+
+(with-eval-after-load 'epg
+  (setq epg-gpg-program "gpg")
+  (setq epg-config--program-alist
+        `((OpenPGP
+           epg-gpg-program
+           ;; ("gpg2" . ,epg-gpg2-minimum-version)
+           ("gpg" . ((,epg-gpg-minimum-version . "2.0")
+                     ,epg-gpg2-minimum-version)))
+          (CMS
+           epg-gpgsm-program
+           ("gpgsm" . "2.0.4")))))
 
 (defun my/epa--select-keys-around (fun prompt keys)
   (if (= (seq-length keys) 1)
@@ -5398,7 +5412,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (defvar-local my/eshell-last-command-start-time nil)
 
 (defun my/get-starship-prompt ()
-  (let ((cmd (format "TERM=xterm starship prompt --status=%d --cmd-duration=%d"
+  (let ((cmd (format "TERM=xterm starship prompt --status=%d --cmd-duration=%d --logical-path=%s"
                      eshell-last-command-status
                      (if my/eshell-last-command-start-time
                          (let ((delta (float-time
@@ -5407,7 +5421,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
                                         my/eshell-last-command-start-time))))
                            (setq my/eshell-last-command-start-time nil)
                            (round (* delta 1000)))
-                       0))))
+                       0)
+                     (shell-quote-argument default-directory))))
     (with-temp-buffer
       (call-process "bash" nil t nil "-c" cmd)
       (thread-first "\n"
@@ -5599,6 +5614,12 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (if-let ((root (projectile-project-root)))
       (eshell/cd root)
     (message "Not in a project")))
+
+(defun my/eshell-maybe-configure-for-tramp ()
+  (when (file-remote-p default-directory)
+    (setq-local company-idle-delay nil)))
+
+(add-hook 'eshell-mode-hook #'my/eshell-maybe-configure-for-tramp)
 
 (general-define-key
  :states '(normal)
@@ -7302,7 +7323,7 @@ base toot."
   (interactive)
   (setq telega-server-libs-prefix
         (string-trim
-         (shell-command-to-string "guix build tdlib-1.8.16")))
+         (shell-command-to-string "guix build tdlib")))
   (telega-server-build "CC=gcc"))
 
 (add-hook 'telega-load-hook #'telega-mode-line-mode)
@@ -7525,8 +7546,9 @@ base toot."
 
 (defvar my/index-root (concat (getenv "HOME") "/"))
 
-(defvar my/index-file
-  (concat org-directory "/misc/index.org"))
+(with-eval-after-load 'org
+  (defvar my/index-file
+    (concat org-directory "/misc/index.org")))
 
 (defun my/index--tree-get-recursive (heading &optional path)
   "Read the index tree recursively from HEADING.
@@ -8233,7 +8255,7 @@ to `dired' if used interactively."
   (setenv "GPG_AGENT_INFO" nil) ;; use emacs pinentry
   (setq auth-source-debug t)
 
-  (setq epg-gpg-program "gpg2") ;; not necessary
+  (setq epg-gpg-program "gpg") ;; not necessary
   (require 'epa-file)
   (epa-file-enable)
   (setq epa-pinentry-mode 'loopback)
@@ -8317,7 +8339,7 @@ to `dired' if used interactively."
 (use-package elcord
   :straight t
   :if (and (or
-            (string= (system-name) "indigo")
+            (string= (system-name) "violet")
             (string= (system-name) "eminence")
             (string= (system-name) "iris"))
            (not my/slow-ssh)
