@@ -277,7 +277,7 @@ The GUI pinentry doesn't work too well with EXWM because of issues with popup wi
 #+begin_src emacs-lisp
 (use-package pinentry
   :straight t
-  ;; :after (exwm)
+  :after (exwm)
   :config
   (setenv "GPG_AGENT_INFO" nil) ;; use emacs pinentry
   (setq auth-source-debug t)
@@ -291,9 +291,12 @@ The GUI pinentry doesn't work too well with EXWM because of issues with popup wi
 #+end_src
 
 #+NAME: find-pinentry
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (executable-find "pinentry")
 #+end_src
+
+#+RESULTS: find-pinentry
+: /home/pavel/.guix-profile/bin/pinentry
 
 #+begin_src conf-space :tangle ~/.gnupg/gpg-agent.conf :noweb yes
 default-cache-ttl 3600
@@ -314,6 +317,13 @@ Show the current workspace in the modeline.
    (exwm-modeline-current-workspace
     :foreground (my/color-value 'yellow)
     :weight 'bold)))
+#+end_src
+*** Misc
+Check if running Arch and not Guix.
+
+#+begin_src emacs-lisp
+(defun my/is-arch ()
+  (file-exists-p "/etc/arch-release"))
 #+end_src
 ** Windows
 A bunch of functions related to managing windows in EXWM.
@@ -1197,7 +1207,9 @@ And the EXWM config itself.
   (my/exwm-run-polybar)
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
-  (my/run-in-background "gpgconf --reload gpg-agent"))
+  (my/run-in-background "gpgconf --reload gpg-agent")
+  (when (my/is-arch)
+    (my/run-in-background "set_layout")))
 
 (defun my/exwm-update-class ()
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))

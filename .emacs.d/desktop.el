@@ -31,6 +31,9 @@
     :foreground (my/color-value 'yellow)
     :weight 'bold)))
 
+(defun my/is-arch ()
+  (file-exists-p "/etc/arch-release"))
+
 (require 'windmove)
 
 (defun my/exwm-direction-exists-p (dir)
@@ -583,7 +586,9 @@ _d_: Discord
   (my/exwm-run-polybar)
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
-  (my/run-in-background "gpgconf --reload gpg-agent"))
+  (my/run-in-background "gpgconf --reload gpg-agent")
+  (when (my/is-arch)
+    (my/run-in-background "set_layout")))
 
 (defun my/exwm-update-class ()
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))
