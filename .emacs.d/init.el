@@ -548,8 +548,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :commands (visual-fill-column-mode)
   :config
-  (add-hook 'visual-fill-column-mode-hook
-            (lambda () (setq visual-fill-column-center-text t))))
+  ;; How did it get here?
+  ;; (add-hook 'visual-fill-column-mode-hook
+  ;;           (lambda () (setq visual-fill-column-center-text t)))
+  )
 
 (use-package accent
   :straight t
@@ -850,6 +852,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :config
   (setq wakatime-ignore-exit-codes '(0 1 102 112))
   (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path (expand-file-name "~/bin/wakatime-cli"))))
+  (when (file-exists-p "~/.wakatime.cfg")
+    (setq wakatime-api-key
+          (string-trim
+           (shell-command-to-string "awk '/api-key/{print $NF}' ~/.wakatime.cfg"))))
   ;; (setq wakatime-cli-path (executable-find "wakatime"))
   (global-wakatime-mode))
 
@@ -7303,6 +7309,7 @@ base toot."
                              :background (my/color-value 'fg)))
   :config
   (setq telega-emoji-use-images nil)
+  (setq telega-chat-fill-column 80)
   (general-define-key
    :keymaps '(telega-root-mode-map telega-chat-mode-map)
    :states '(normal)
@@ -7342,13 +7349,15 @@ base toot."
 
 (defun my/telega-chat-setup ()
   (set (make-local-variable 'company-backends)
-       (append (list telega-emoji-company-backend
+       (append (list 'telega-company-emoji
                      'telega-company-username
                      'telega-company-hashtag
                      'telega-company-markdown-precode)
                (when (telega-chat-bot-p telega-chatbuf--chat)
                  '(telega-company-botcmd))))
-  (company-mode 1))
+  (company-mode 1)
+  (setopt visual-fill-column-width
+          (+ telega-chat-fill-column 4)))
 (add-hook 'telega-chat-mode-hook #'my/telega-chat-setup)
 
 (defun my/telega-online-status ()
