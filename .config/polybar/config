@@ -27,16 +27,9 @@ gright = 
 ; Glyph settings:1 ends here
 
 ; [[file:../../Desktop.org::*Generating glyphs][Generating glyphs:3]]
-[module/glyph-light-cyan--cyan]
+[module/glyph-light-cyan--light-cyan]
 type = custom/text
 content-background = ${colors.light-cyan}
-content-foreground = ${colors.cyan}
-content = ${glyph.gright}
-content-font = 5
-
-[module/glyph-magenta--light-cyan]
-type = custom/text
-content-background = ${colors.magenta}
 content-foreground = ${colors.light-cyan}
 content = ${glyph.gright}
 content-font = 5
@@ -97,10 +90,17 @@ content-foreground = ${colors.light-green}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-magenta--cyan]
+[module/glyph-light-cyan--cyan]
+type = custom/text
+content-background = ${colors.light-cyan}
+content-foreground = ${colors.cyan}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-magenta--light-cyan]
 type = custom/text
 content-background = ${colors.magenta}
-content-foreground = ${colors.cyan}
+content-foreground = ${colors.light-cyan}
 content = ${glyph.gright}
 content-font = 5
 
@@ -420,6 +420,19 @@ ramp-capacity-2 = 
 ramp-capacity-3 = 
 ramp-capacity-4 = 
 ; battery:1 ends here
+
+; [[file:../../Desktop.org::*temperature][temperature:1]]
+[module/temperature]
+type = internal/temperature
+interval = 10
+
+format = <label>
+format-foreground = ${colors.foreground}
+format-background = ${colors.light-cyan}
+format-warn =  <label-warn>
+format-warn-foreground = ${colors.foreground}
+format-warn-background = ${colors.light-cyan}
+; temperature:1 ends here
 
 ; [[file:../../Desktop.org::*weather][weather:2]]
 [module/weather]

@@ -1926,6 +1926,7 @@ As we want to interweave polybar modules with these glyphs in the right order an
 |-------+-------------+---------------+-------|
 |     1 | pulseaudio  | light-magenta | +     |
 |     2 | mpd         | magenta       | +     |
+|    15 | temperature | light-cyan    | +     |
 |     9 | battery     | light-cyan    | +     |
 |     3 | cpu         | cyan          | +     |
 |     4 | ram-memory  | light-green   | +     |
@@ -2650,6 +2651,19 @@ ramp-capacity-3 = 
 ramp-capacity-4 = 
 #+end_src
 
+*** temperature
+#+begin_src conf-windows :noweb yes
+[module/temperature]
+type = internal/temperature
+interval = 10
+
+format = <label>
+format-foreground = ${colors.foreground}
+format-background = <<get-polybar-bg(module="battery")>>
+format-warn =  <label-warn>
+format-warn-foreground = ${colors.foreground}
+format-warn-background = <<get-polybar-bg(module="battery")>>
+#+end_src
 *** weather
 Gets current weather from [[http://wttr.in/][wttr.in]]
 #+begin_src bash :tangle ./bin/polybar/weather.sh
