@@ -5,6 +5,7 @@
    "openresolv"
    "openvpn-update-resolve-conf"
    "openvpn"
+   "nss-certs"
    "vnstat"
    "torsocks"
    "tor-client"

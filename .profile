@@ -22,6 +22,14 @@ fi
 # TZ='Asia/Karachi'; export TZ
 # Environment:5 ends here
 
+#!/usr/bin/env bash
+# [[file:Console.org::*Environment][Environment:6]]
+if [ -f "/home/pavel/.no-guix" ]; then
+    export NO_GUIX=true
+    export PATH=$(echo $PATH | tr ":" "\n" | grep -vE "guix|nix|gnu" | tr "\n" ":")
+fi
+# Environment:6 ends here
+
 # [[file:Console.org::*My paths][My paths:1]]
 if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin:$PATH"
@@ -33,7 +41,6 @@ if [ -d "$HOME/.local/bin" ] ; then
 fi
 # My paths:1 ends here
 
-#!/usr/bin/env bash
 # [[file:Console.org::*SSL Certs][SSL Certs:1]]
 export SSL_CERT_DIR="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/"
 export SSL_CERT_FILE="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/ca-certificates.crt"
@@ -42,7 +49,7 @@ export CURL_CA_BUNDLE="$SSL_CERT_FILE"
 # SSL Certs:1 ends here
 
 # [[file:Console.org::*Guix settings][Guix settings:1]]
-if [ -z "$IS_ANDROID" ]; then
+if [ -z "$IS_ANDROID" ] && [ -z "$NO_GUIX" ] ; then
     GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
     for i in $GUIX_EXTRA_PROFILES/*; do
         profile=$i/$(basename "$i")
@@ -88,21 +95,21 @@ fi
 # Other package managers:2 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:3]]
-if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
+if [ -f /run/current-system/profile/etc/profile.d/nix.sh ] && [ -z "$NO_GUIX" ] ; then
   . /run/current-system/profile/etc/profile.d/nix.sh
 fi
 
-if [ -e /home/pavel/.nix-profile/etc/profile.d/nix.sh ]; then . /home/pavel/.nix-profile/etc/profile.d/nix.sh; fi
+if [ -e /home/pavel/.nix-profile/etc/profile.d/nix.sh ] && [ -z "$NO_GUIX" ] ; then . /home/pavel/.nix-profile/etc/profile.d/nix.sh; fi
 # Other package managers:3 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:4]]
-if [ -d "$HOME/.guix-extra-profiles/desktop-misc" ]; then
+if [ -d "$HOME/.guix-extra-profiles/desktop-misc" ] && [ -z "$NO_GUIX" ] ; then
     export FONTCONFIG_PATH="$HOME/.guix-extra-profiles/desktop-misc/desktop-misc/etc/fonts"
 fi
 # Other package managers:4 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:5]]
-if [ -d "$HOME/.nix-profile" ]; then
+if [ -d "$HOME/.nix-profile" ] && [ -z "$NO_GUIX" ]; then
     export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
 fi
 # Other package managers:5 ends here

@@ -71,6 +71,15 @@ Timezone
 #+begin_src sh
 # TZ='Asia/Karachi'; export TZ
 #+end_src
+
+Turn off Guix
+#+begin_src bash
+if [ -f "/home/pavel/.no-guix" ]; then
+    export NO_GUIX=true
+    export PATH=$(echo $PATH | tr ":" "\n" | grep -vE "guix|nix|gnu" | tr "\n" ":")
+fi
+#+end_src
+
 ** My paths
 My script folders
 #+begin_src sh
@@ -96,7 +105,7 @@ export CURL_CA_BUNDLE="$SSL_CERT_FILE"
 Enable extra profiles
 
 #+begin_src sh
-if [ -z "$IS_ANDROID" ]; then
+if [ -z "$IS_ANDROID" ] && [ -z "$NO_GUIX" ] ; then
     GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
     for i in $GUIX_EXTRA_PROFILES/*; do
         profile=$i/$(basename "$i")
@@ -151,25 +160,25 @@ fi
 
 Enable Nix
 #+begin_src sh
-if [ -f /run/current-system/profile/etc/profile.d/nix.sh ]; then
+if [ -f /run/current-system/profile/etc/profile.d/nix.sh ] && [ -z "$NO_GUIX" ] ; then
   . /run/current-system/profile/etc/profile.d/nix.sh
 fi
 
-if [ -e /home/pavel/.nix-profile/etc/profile.d/nix.sh ]; then . /home/pavel/.nix-profile/etc/profile.d/nix.sh; fi
+if [ -e /home/pavel/.nix-profile/etc/profile.d/nix.sh ] && [ -z "$NO_GUIX" ] ; then . /home/pavel/.nix-profile/etc/profile.d/nix.sh; fi
 #+end_src
 
 #+RESULTS:
 
 Use Guix fontconfig. Necessary for nix apps
 #+begin_src sh
-if [ -d "$HOME/.guix-extra-profiles/desktop-misc" ]; then
+if [ -d "$HOME/.guix-extra-profiles/desktop-misc" ] && [ -z "$NO_GUIX" ] ; then
     export FONTCONFIG_PATH="$HOME/.guix-extra-profiles/desktop-misc/desktop-misc/etc/fonts"
 fi
 #+end_src
 
 Make nix apps visible to launchers:
 #+begin_src sh
-if [ -d "$HOME/.nix-profile" ]; then
+if [ -d "$HOME/.nix-profile" ] && [ -z "$NO_GUIX" ]; then
     export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
 fi
 #+end_src
