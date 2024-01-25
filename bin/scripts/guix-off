@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# [[file:../../Guix.org::*Turn off Guix profiles][Turn off Guix profiles:1]]
+export PATH=$(echo $PATH | tr ":" "\n" | grep -vE "guix|nix|gnu" | tr "\n" ":")
+# Turn off Guix profiles:1 ends here

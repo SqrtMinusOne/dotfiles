@@ -114,6 +114,10 @@ else
 fi
 
 #+end_src
+** Turn off Guix profiles
+#+begin_src bash :tangle ~/bin/scripts/guix-off
+export PATH=$(echo $PATH | tr ":" "\n" | grep -vE "guix|nix|gnu" | tr "\n" ":")
+#+end_src
 * Channels
 Specifying additional channels.
 
