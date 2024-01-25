@@ -2,20 +2,28 @@
 [colors]
 black = #222222
 light-black = #303030
+dark-black = #131313
 red = #e28b8b
 light-red = #f69d9d
+dark-red = #cd7879
 green = #31ba54
 light-green = #4acd65
+dark-green = #09a642
 yellow = #e49300
 light-yellow = #faa522
+dark-yellow = #ce8000
 blue = #8f9fe3
 light-blue = #a2b1f7
+dark-blue = #7b8ccf
 magenta = #db81cf
 light-magenta = #ef93e2
+dark-magenta = #c66ebb
 cyan = #66a7e4
 light-cyan = #7ab9f8
+dark-cyan = #5094d0
 white = #fff8f0
 light-white = #fffef6
+dark-white = #eae3dc
 background = #c7c0ba
 foreground = #000000
 ; Colors:2 ends here
@@ -27,9 +35,16 @@ gright = 
 ; Glyph settings:1 ends here
 
 ; [[file:../../Desktop.org::*Generating glyphs][Generating glyphs:3]]
-[module/glyph-light-cyan--light-cyan]
+[module/glyph-light-cyan--cyan]
 type = custom/text
 content-background = ${colors.light-cyan}
+content-foreground = ${colors.cyan}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-magenta--light-cyan]
+type = custom/text
+content-background = ${colors.magenta}
 content-foreground = ${colors.light-cyan}
 content = ${glyph.gright}
 content-font = 5
@@ -90,17 +105,17 @@ content-foreground = ${colors.light-green}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-light-cyan--cyan]
+[module/glyph-cyan--cyan]
 type = custom/text
-content-background = ${colors.light-cyan}
+content-background = ${colors.cyan}
 content-foreground = ${colors.cyan}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-magenta--light-cyan]
+[module/glyph-magenta--cyan]
 type = custom/text
 content-background = ${colors.magenta}
-content-foreground = ${colors.light-cyan}
+content-foreground = ${colors.cyan}
 content = ${glyph.gright}
 content-font = 5
 
@@ -300,6 +315,18 @@ format-background = ${colors.cyan}
 format-foreground = ${colors.foreground}
 ; cpu:1 ends here
 
+; [[file:../../Desktop.org::*nvidia][nvidia:2]]
+[module/nvidia]
+type = custom/script
+exec = /home/pavel/bin/polybar/nvidia.sh
+interval = 2
+format =  <label>
+; tail = true
+
+format-background = ${colors.light-cyan}
+format-foreground = ${colors.foreground}
+; nvidia:2 ends here
+
 ; [[file:../../Desktop.org::*ram-memory][ram-memory:1]]
 [module/ram-memory]
 type = internal/memory
@@ -407,9 +434,9 @@ adapter = ADP0
 
 time-format = %H:%M
 format-discharging = <ramp-capacity> <label-discharging>
-format-discharging-background = ${colors.light-cyan}
-format-charging-background = ${colors.light-cyan}
-format-full-background = ${colors.light-cyan}
+format-discharging-background = ${colors.cyan}
+format-charging-background = ${colors.cyan}
+format-full-background = ${colors.cyan}
 format-foreground = ${colors.foreground}
 label-discharging = %percentage%% %time%
 label-charging =  %percentage%% %time%
@@ -426,12 +453,14 @@ ramp-capacity-4 = 
 type = internal/temperature
 interval = 10
 
+hwmon-path = /sys/devices/platform/coretemp.0/hwmon/hwmon2/temp1_input
+
 format = <label>
 format-foreground = ${colors.foreground}
-format-background = ${colors.light-cyan}
+format-background = ${colors.cyan}
 format-warn =  <label-warn>
 format-warn-foreground = ${colors.foreground}
-format-warn-background = ${colors.light-cyan}
+format-warn-background = ${colors.cyan}
 ; temperature:1 ends here
 
 ; [[file:../../Desktop.org::*weather][weather:2]]

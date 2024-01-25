@@ -1863,7 +1863,12 @@ So...
                     (ct-edit-lab-l-inc
                      color
                      my/alpha-for-light))
-              acc))
+              acc)
+        (push (cons (format "dark-%s" name)
+                    (ct-edit-lab-l-dec
+                     color
+                     my/alpha-for-light))
+              acc) )
       acc)
     '("black" "red" "green" "yellow" "blue" "magenta" "cyan" "white")
     :initial-value nil))
@@ -1875,23 +1880,31 @@ So...
 
 #+RESULTS: get-polybar-colors
 #+begin_example
-black = #292D3E
-light-black = #383c4e
-red = #f18388
-light-red = #ff959a
-green = #c3e88d
-light-green = #d6fc9f
-yellow = #ffcb6b
-light-yellow = #ffde7d
-blue = #82aaff
-light-blue = #96bcff
-magenta = #c792ea
-light-magenta = #daa4fe
-cyan = #89DDFF
-light-cyan = #9df0ff
-white = #EEFFFF
-light-white = #f1ffff
-background = #292D3E
+black = #222222
+light-black = #303030
+dark-black = #131313
+red = #e28b8b
+light-red = #f69d9d
+dark-red = #cd7879
+green = #31ba54
+light-green = #4acd65
+dark-green = #09a642
+yellow = #e49300
+light-yellow = #faa522
+dark-yellow = #ce8000
+blue = #8f9fe3
+light-blue = #a2b1f7
+dark-blue = #7b8ccf
+magenta = #db81cf
+light-magenta = #ef93e2
+dark-magenta = #c66ebb
+cyan = #66a7e4
+light-cyan = #7ab9f8
+dark-cyan = #5094d0
+white = #fff8f0
+light-white = #fffef6
+dark-white = #eae3dc
+background = #c7c0ba
 foreground = #000000
 #+end_example
 
@@ -1926,9 +1939,10 @@ As we want to interweave polybar modules with these glyphs in the right order an
 |-------+-------------+---------------+-------|
 |     1 | pulseaudio  | light-magenta | +     |
 |     2 | mpd         | magenta       | +     |
-|    15 | temperature | light-cyan    | +     |
-|     9 | battery     | light-cyan    | +     |
+|    16 | nvidia      | light-cyan    | +     |
 |     3 | cpu         | cyan          | +     |
+|    15 | temperature | cyan          | +     |
+|     9 | battery     | cyan          | +     |
 |     4 | ram-memory  | light-green   | +     |
 |     5 | swap-memory | green         | +     |
 |     6 | bandwidth   | light-red     | +     |
@@ -1948,6 +1962,11 @@ Also excluding some modules from certain monitors, which for now is about exclud
 | HDMI-A-0 | battery |
 | HDMI-0   | battery |
 | DP-1     | battery |
+| eDP      | nvidia  |
+| eDP-1    | nvidia  |
+| DVI-D-0  | nvidia  |
+| HDMI-A-0 | nvidia  |
+| HDMI-1   | nvidia  |
 
 Another thing we need to do is to set the color of modules in accordance with the =polybar_modules= table. The background can be determined from the =Color= column with the following code block:
 #+NAME: get-polybar-bg
@@ -2369,6 +2388,25 @@ label = %percentage%%
 format-background = <<get-polybar-bg(module="cpu")>>
 format-foreground = ${colors.foreground}
 #+end_src
+*** nvidia
+Display NVIDIA usage with nvidia-smi
+
+#+begin_src bash :tangle ~/bin/polybar/nvidia.sh
+nvidia-smi --query-gpu=utilization.gpu,power.draw,temperature.gpu,memory.used --format=csv,noheader | sed -s 's/ %/%/;s/W, [0-9]\+/&°C/;s/,/  /g'
+#+end_src
+
+#+begin_src conf-windows :noweb yes
+[module/nvidia]
+type = custom/script
+exec = /home/pavel/bin/polybar/nvidia.sh
+interval = 2
+format =  <label>
+; tail = true
+
+format-background = <<get-polybar-bg(module="nvidia")>>
+format-foreground = ${colors.foreground}
+#+end_src
+
 *** ram-memory
 RAM usage
 #+begin_src conf-windows :noweb yes
@@ -2656,6 +2694,8 @@ ramp-capacity-4 = 
 [module/temperature]
 type = internal/temperature
 interval = 10
+
+hwmon-path = /sys/devices/platform/coretemp.0/hwmon/hwmon2/temp1_input
 
 format = <label>
 format-foreground = ${colors.foreground}
@@ -3767,6 +3807,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | docker-compose    |          |
 | dev      | postgresql        |          |
 | dev      | virt-manager      |          |
+| dev      | dnsmasq           |          |
 | dev      | git-filter-repo   |          |
 | dev      | node              |          |
 | dev      | openjdk:jdk       |          |
@@ -3789,6 +3830,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | socat             |          |
 | dev      | wireshark         |          |
 | dev      | python-chess      |          |
+| dev      | python-cairosvg   |          |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
