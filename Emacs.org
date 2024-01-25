@@ -2380,7 +2380,12 @@ References:
   (setq treesit-language-source-alist
         (mapcar
          (lambda (item)
-           `(,@item nil nil ,(executable-find "gcc") ,(executable-find "c++")))
+           (let ((lang (nth 0 item))
+                 (url (nth 1 item))
+                 (rev (nth 2 item))
+                 (source-dir (nth 3 item)))
+             `(,lang ,url ,rev ,source-dir
+                     ,(executable-find "gcc") ,(executable-find "c++"))))
          '((bash "https://github.com/tree-sitter/tree-sitter-bash")
            (cmake "https://github.com/uyha/tree-sitter-cmake")
            (css "https://github.com/tree-sitter/tree-sitter-css")
@@ -7516,7 +7521,9 @@ Some initial configuration.
           ("c" "clear")
           ("ll" "ls -la")
           ("e" "find-file")))
-  (setq eshell-banner-message ""))
+  (setq eshell-banner-message "")
+  (setq eshell-visual-commands
+        `(,@eshell-visual-commands "jless")))
 #+end_src
 
 **** UI
@@ -7847,7 +7854,7 @@ Still, I'll probably switch to =eat= if =eshell= doesn't work for me.
 
 Yeah, and =eat= has integration with eshell too.
 #+begin_src emacs-lisp
-(add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode)
+(add-hook 'eshell-load-hook #'eat-eshell-mode)
 #+end_src
 
 *** shell
@@ -9565,8 +9572,8 @@ The package also doesn't have evil bindings. I implement a few basic bindings he
   (general-define-key
    :states '(normal motion)
    :keymaps '(mastodon-mode-map)
-   "J" #'mastodon-tl--goto-next-toot
-   "K" #'mastodon-tl--goto-prev-toot
+   "J" #'mastodon-tl--goto-next-item
+   "K" #'mastodon-tl--goto-prev-item
    "M-j" #'mastodon-tl--next-tab-item
    "M-k" #'mastodon-tl--prev-tab-item
    "<tab>" #'mastodon-tl--next-tab-item
@@ -9747,7 +9754,7 @@ The first dispatches "general" actions:
      ("m" "Mastodon" mastodon)
      ("t" "Timelines" my/mastodon-tl)
      ("n" "Notifications" mastodon-notifications-get)
-     ("s" "Search query" mastodon-search--search-query)]
+     ("s" "Search query" mastodon-search--query)]
     ["Tags"
      :class transient-row
      ("aa" "Followed tags" mastodon-tl--list-followed-tags)
@@ -10117,7 +10124,8 @@ Configuring company backends for the chat buffer, as recommended in the manual:
                  '(telega-company-botcmd))))
   (company-mode 1)
   (setopt visual-fill-column-width
-          (+ telega-chat-fill-column 4)))
+          (+ telega-chat-fill-column 4))
+  (setq-local split-width-threshold 1))
 (add-hook 'telega-chat-mode-hook #'my/telega-chat-setup)
 #+end_src
 
@@ -11460,18 +11468,36 @@ A Python script to convert a PGN string to SVG:
 import chess
 import chess.svg
 import chess.pgn
+import cairosvg
 import io
 import sys
 
-pgn = sys.argv[1]
+line = sys.argv[1]
 out_file = sys.argv[2]
+is_fen = False
 
-game = chess.pgn.read_game(io.StringIO(pgn))
-game = game.end()
-board = game.board()
+if len(sys.argv) > 3 and sys.argv[3] == 'true':
+    is_fen = True
+
+def parse_pgn(line):
+    game = chess.pgn.read_game(io.StringIO(line))
+    game = game.end()
+    board = game.board()
+    return board
+
+def parse_fen(line):
+    board = chess.Board(line)
+    return board
+
+if is_fen:
+    board = parse_fen(line)
+else:
+    board = parse_pgn(line)
+
 svg = chess.svg.board(board=board)
-with open(out_file, 'w') as f:
-    f.write(svg)
+png = cairosvg.svg2png(
+    bytestring=svg, write_to=out_file, output_width=400, output_height=400
+)
 #+end_src
 
 =python-chess= is installed in the =dev= profile because =python3= is also there.
@@ -11482,7 +11508,7 @@ An =org-babel= block:
 
 (defun org-babel-execute:pgn (body params)
   (let ((out-file (or (alist-get :file params)
-                      (org-babel-temp-file "pgn-" ".svg"))))
+                      (org-babel-temp-file "pgn-" ".png"))))
     (org-babel-eval
      (format "%s %s '%s' '%s'" my/chess-python
              "~/bin/python-scripts/render_pgn.py"
@@ -11491,6 +11517,20 @@ An =org-babel= block:
     nil))
 
 (defvar org-babel-default-header-args:pgn
+  '((:results . "file") (:exports . "results"))
+  "Default arguments for evaluating a pgn source block.")
+
+(defun org-babel-execute:fen (body params)
+  (let ((out-file (or (alist-get :file params)
+                      (org-babel-temp-file "fen-" ".png"))))
+    (org-babel-eval
+     (format "%s %s '%s' '%s' true" my/chess-python
+             "~/bin/python-scripts/render_pgn.py"
+             body out-file)
+     "")
+    nil))
+
+(defvar org-babel-default-header-args:fen
   '((:results . "file") (:exports . "results"))
   "Default arguments for evaluating a pgn source block.")
 #+end_src

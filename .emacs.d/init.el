@@ -1544,7 +1544,12 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq treesit-language-source-alist
         (mapcar
          (lambda (item)
-           `(,@item nil nil ,(executable-find "gcc") ,(executable-find "c++")))
+           (let ((lang (nth 0 item))
+                 (url (nth 1 item))
+                 (rev (nth 2 item))
+                 (source-dir (nth 3 item)))
+             `(,lang ,url ,rev ,source-dir
+                     ,(executable-find "gcc") ,(executable-find "c++"))))
          '((bash "https://github.com/tree-sitter/tree-sitter-bash")
            (cmake "https://github.com/uyha/tree-sitter-cmake")
            (css "https://github.com/tree-sitter/tree-sitter-css")
@@ -5413,7 +5418,9 @@ KEYS is a list of cons cells like (<label> . <time>)."
           ("c" "clear")
           ("ll" "ls -la")
           ("e" "find-file")))
-  (setq eshell-banner-message ""))
+  (setq eshell-banner-message "")
+  (setq eshell-visual-commands
+        `(,@eshell-visual-commands "jless")))
 
 (defvar-local my/eshell-last-command-start-time nil)
 
@@ -5639,7 +5646,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
                ("integration" "integration/*")
                (:exclude ".dir-locals.el" "*-tests.el"))))
 
-(add-hook 'eshell-load-hook #'eat-eshell-visual-command-mode)
+(add-hook 'eshell-load-hook #'eat-eshell-mode)
 
 (defun my/setup-shell ()
   (setq-local comint-use-prompt-regexp t)
@@ -6884,8 +6891,8 @@ ENTRY is an instance of `elfeed-entry'."
   (general-define-key
    :states '(normal motion)
    :keymaps '(mastodon-mode-map)
-   "J" #'mastodon-tl--goto-next-toot
-   "K" #'mastodon-tl--goto-prev-toot
+   "J" #'mastodon-tl--goto-next-item
+   "K" #'mastodon-tl--goto-prev-item
    "M-j" #'mastodon-tl--next-tab-item
    "M-k" #'mastodon-tl--prev-tab-item
    "<tab>" #'mastodon-tl--next-tab-item
@@ -7043,7 +7050,7 @@ ENTRY is an instance of `elfeed-entry'."
      ("m" "Mastodon" mastodon)
      ("t" "Timelines" my/mastodon-tl)
      ("n" "Notifications" mastodon-notifications-get)
-     ("s" "Search query" mastodon-search--search-query)]
+     ("s" "Search query" mastodon-search--query)]
     ["Tags"
      :class transient-row
      ("aa" "Followed tags" mastodon-tl--list-followed-tags)
@@ -7357,7 +7364,8 @@ base toot."
                  '(telega-company-botcmd))))
   (company-mode 1)
   (setopt visual-fill-column-width
-          (+ telega-chat-fill-column 4)))
+          (+ telega-chat-fill-column 4))
+  (setq-local split-width-threshold 1))
 (add-hook 'telega-chat-mode-hook #'my/telega-chat-setup)
 
 (defun my/telega-online-status ()
@@ -8309,7 +8317,7 @@ to `dired' if used interactively."
 
 (defun org-babel-execute:pgn (body params)
   (let ((out-file (or (alist-get :file params)
-                      (org-babel-temp-file "pgn-" ".svg"))))
+                      (org-babel-temp-file "pgn-" ".png"))))
     (org-babel-eval
      (format "%s %s '%s' '%s'" my/chess-python
              "~/bin/python-scripts/render_pgn.py"
@@ -8318,6 +8326,20 @@ to `dired' if used interactively."
     nil))
 
 (defvar org-babel-default-header-args:pgn
+  '((:results . "file") (:exports . "results"))
+  "Default arguments for evaluating a pgn source block.")
+
+(defun org-babel-execute:fen (body params)
+  (let ((out-file (or (alist-get :file params)
+                      (org-babel-temp-file "fen-" ".png"))))
+    (org-babel-eval
+     (format "%s %s '%s' '%s' true" my/chess-python
+             "~/bin/python-scripts/render_pgn.py"
+             body out-file)
+     "")
+    nil))
+
+(defvar org-babel-default-header-args:fen
   '((:results . "file") (:exports . "results"))
   "Default arguments for evaluating a pgn source block.")
 
