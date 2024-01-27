@@ -17,4 +17,5 @@
    "python-isort"
    "python-black"
    "python-yapf"
-   "plantuml"))
+   "plantuml"
+   "xkb-switch"))

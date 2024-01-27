@@ -100,6 +100,10 @@
 (use-package no-littering
   :straight t)
 
+(defun my/run-in-background (command)
+  (let ((command-parts (split-string command "[ ]+")))
+    (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
+
 (setq confirm-kill-emacs 'y-or-n-p)
 
 (use-package general
@@ -537,9 +541,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (setq default-input-method "russian-computer")
 
+(defun my/toggle-input-method ()
+  (interactive)
+  (if (derived-mode-p 'exwm-mode)
+      (my/run-in-background "xkb-switch -n")
+    (if (equal (string-trim
+                (shell-command-to-string "xkb-switch -p"))
+               "us")
+        (toggle-input-method)
+      (my/run-in-background "xkb-switch -s us"))))
+
 (general-define-key
  :keymaps 'global
- "M-\\" #'toggle-input-method)
+ "M-\\" #'my/toggle-input-method)
 
 (use-package smartparens
   :straight t)
@@ -554,14 +568,14 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   )
 
 (use-package accent
-  :straight t
+  :straight (:host github :repo "SqrtMinusOne/accent")
   :init
   (general-define-key
    :states '(normal)
-   "gs" #'accent-menu)
+   "gs" #'accent-company)
   (general-define-key
    :states '(normal insert)
-   "M-n" #'accent-menu)
+   "M-n" #'accent-company)
   :commands (accent-menu)
   :config
   (general-define-key
@@ -5419,8 +5433,9 @@ KEYS is a list of cons cells like (<label> . <time>)."
           ("ll" "ls -la")
           ("e" "find-file")))
   (setq eshell-banner-message "")
-  (setq eshell-visual-commands
-        `(,@eshell-visual-commands "jless")))
+  ;; (setq eshell-visual-commands
+  ;;       `(,@eshell-visual-commands "jless"))
+  )
 
 (defvar-local my/eshell-last-command-start-time nil)
 
@@ -8164,18 +8179,9 @@ NAV is a structure as defined by `my/index--nav-get'."
 (defun my/index-nav (arg &optional func)
   "Navigate the filesystem index.
 
-ARG is the prefix argument.  It modifies the behavior of the
-command as follows:
-- If not in an indexed directory, or in an indexed directory with no
-  indexed children:
-  - nil: Select an indexed directory.
-  - '(4): Select an indexed directory, and select a child indexed
-    directory if available.
-- If in an indexed directory with indexed children (a project):
-  - nil: Select another indexed directory from the project.
-  - '(4): Select a top-level indexed directory (the same as nil for
-    the previous case).
-  - '(16): The same as '(4) for the previous case.
+If ARG is nil, navigate all levels sequentially from the top one.
+
+If ARG is '(4), select another directory from the same level.
 
 FUNC is the function to call with the selected path.  It defaults
 to `dired' if used interactively."
@@ -8184,25 +8190,32 @@ to `dired' if used interactively."
          (current-nav (my/index--nav-find-path
                        nav (expand-file-name default-directory)))
          (current-child-navs (alist-get :child-navs current-nav)))
-    (cond
-     ((or (and (null arg) (null current-child-navs))
-          (and (equal arg '(4)) current-child-navs))
-      (funcall
-       func
-       (my/index--nav-prompt nav)))
-     ((or (and (equal arg '(4)) (null current-child-navs))
-          (and (equal arg '(16)) current-child-navs))
-      (let ((selected (my/index--nav-find-path
-                       nav
-                       (my/index--nav-prompt nav))))
-        (if-let (child-navs (alist-get :child-navs selected))
-            (funcall func (my/index--nav-prompt child-navs))
-          (funcall func (alist-get :path selected)))))
-     ((and (null arg) current-child-navs)
-      (funcall func (my/index--nav-prompt current-child-navs))))))
+    (cond ((null arg)
+           (let ((selected (my/index--nav-find-path
+                            nav
+                            (my/index--nav-prompt nav))))
+             (if-let (child-navs (alist-get :child-navs selected))
+                 (funcall func (my/index--nav-prompt child-navs))
+               (funcall func (alist-get :path selected)))))
+          ((and (equal arg '(4)) current-child-navs)
+           (funcall func (my/index--nav-prompt current-child-navs)))
+          ((and (equal arg '(4)) (null current-child-navs))
+           (funcall func (my/index--nav-prompt nav))))))
+
+(defun my/index-nav-with-select-file (arg)
+  (interactive (list current-prefix-arg))
+  (my/index-nav
+   arg
+   (lambda (dir)
+     (let ((default-directory dir))
+       (projectile-find-file)))))
 
 (my-leader-def
-  "i" #'my/index-nav)
+  :infix "i"
+  "" '(:wk "index")
+  "i" #'my/index-nav
+  "s" #'my/index-commands-sync
+  "p" #'my/index-nav-with-select-file)
 
 (defun my/index-export (file)
   (interactive (list (read-file-name "File: " "~/logs-sync/data/index.json")))

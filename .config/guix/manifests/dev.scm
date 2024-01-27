@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "python-cairosvg"
    "python-chess"
    "wireshark"
    "socat"
@@ -20,6 +21,7 @@
    "openjdk:jdk"
    "node"
    "git-filter-repo"
+   "dnsmasq"
    "virt-manager"
    "postgresql"
    "docker-compose"

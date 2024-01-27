@@ -362,10 +362,6 @@ DIR is either 'left or 'right."
   (when exwm--connection
     (exwm-input--update-global-prefix-keys)))
 
-(defun my/run-in-background (command)
-  (let ((command-parts (split-string command "[ ]+")))
-    (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
-
 (defhydra my/exwm-apps-hydra (:color blue :hint nil)
   "
 ^Apps^

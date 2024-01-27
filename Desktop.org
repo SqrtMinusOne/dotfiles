@@ -902,6 +902,9 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "<XF86AudioPause>") . ,(my/app-command "mpc pause"))
         (,(kbd "<print>") . ,(my/app-command "flameshot gui"))
 
+        ;; Input method
+        (,(kbd "M-\\") . my/toggle-input-method)
+
         ;; Switch workspace
         (,(kbd "s-q") . my/exwm-switch-to-other-monitor)
         (,(kbd "s-w") . exwm-workspace-switch)
@@ -942,10 +945,6 @@ A function to apply changes to =exwm-input-global-keys=.
 *** App shortcuts
 A +transient+ hydra for shortcuts for the most frequent apps.
 #+begin_src emacs-lisp
-(defun my/run-in-background (command)
-  (let ((command-parts (split-string command "[ ]+")))
-    (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
-
 (defhydra my/exwm-apps-hydra (:color blue :hint nil)
   "
 ^Apps^
