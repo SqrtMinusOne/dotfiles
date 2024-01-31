@@ -277,6 +277,13 @@ I think I've copied it from somewhere.
   (let ((command-parts (split-string command "[ ]+")))
     (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
 #+end_src
+*** Close buffer and its windows
+#+begin_src emacs-lisp
+(defun my/quit-window-and-buffer ()
+  (interactive)
+  (quit-window t))
+#+end_src
+
 ** Prevent Emacs from closing
 This adds a confirmation to avoid accidental Emacs closing.
 
@@ -4238,10 +4245,6 @@ A function to open a file from =org-directory=, excluding a few directories like
     (find-file
      (concat org-directory "/"
              (completing-read "Org file: " files)))))
-
-(with-eval-after-load 'org
-  (my-leader-def
-    "o o" 'my/org-file-open))
 #+end_src
 ** Literate programing
 *** Python & Jupyter
@@ -5651,7 +5654,8 @@ Global keybindings:
   :infix "o"
   "" '(:which-key "org-mode")
   "c" 'org-capture
-  "a" 'org-agenda)
+  "a" 'org-agenda
+  "o" #'my/org-file-open)
 #+end_src
 
 Local keybindings
@@ -6874,7 +6878,8 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
    "M-r" #'wdired-change-to-wdired-mode
    "<left>" #'dired-up-directory
    "<right>" #'dired-find-file
-   "M-<return>" #'dired-open-xdg))
+   "M-<return>" #'dired-open-xdg)
+   (dired-async-mode))
 
 (defun my/dired-home ()
   "Open dired at $HOME"
@@ -11027,7 +11032,24 @@ a list of commands as defined by `my/index--commands-display'."
 **** Run all commands
 And put that all together.
 
-First, as I want to check what's going to be executed, let's make a function to display commands in a separate buffer. Making it =sh-mode= is enough for now.
+First, as I want to check what's going to be executed, let's make a function to display commands in a separate buffer.
+
+The mode definition is as follows:
+#+begin_src emacs-lisp
+(defvar my/index-commands-mode-map
+  (let ((keymap (make-sparse-keymap)))
+    (define-key keymap (kbd "C-c C-c") #'my/index-commands-exec)
+    (define-key keymap (kbd "q") #'my/quit-window-and-buffer)
+    (when (fboundp 'evil-define-key*)
+      (evil-define-key* 'normal keymap
+        "q" #'my/quit-window-and-buffer))
+    keymap)
+  "Keymap for `biome-api-error-mode'.")
+
+(define-derived-mode my/index-commands-mode sh-mode "Index Commands"
+  "A mode to display index commands.")
+#+end_src
+
 #+begin_src emacs-lisp
 (defvar-local my/index-commands nil
   "Commands to be executed by `my/index-commands-exec'")
@@ -11045,7 +11067,7 @@ COMMANDS is a list of commands as defined by `my/index--commands-display'."
                  (seq-group-by (lambda (c) (nth 1 c))
                                commands))))
     (with-current-buffer buffer
-      (sh-mode)
+      (my/index-commands-mode)
       (let ((inhibit-read-only t)
             commands-sequence)
         (erase-buffer)
@@ -11065,7 +11087,7 @@ In order to execute these commands, [[https://www.gnu.org/software/emacs/manual/
 #+begin_src emacs-lisp
 (defun my/index-commands-exec ()
   (interactive)
-  (unless (eq major-mode 'sh-mode)
+  (unless (eq major-mode 'my/index-commands-mode)
     (user-error "Not shell mode"))
   (let ((filename (make-temp-file "index-commands-")))
     (write-region (point-min) (point-max) filename)
@@ -11291,12 +11313,17 @@ Finally, something that I can bind to a key.
      (let ((default-directory dir))
        (projectile-find-file)))))
 
+(defun my/index-open-file ()
+  (interactive)
+  (find-file my/index-file))
+
 (my-leader-def
   :infix "i"
   "" '(:wk "index")
   "i" #'my/index-nav
   "s" #'my/index-commands-sync
-  "p" #'my/index-nav-with-select-file)
+  "p" #'my/index-nav-with-select-file
+  "f" #'my/index-open-file)
 #+end_src
 *** Export tree
 I also need the tree to use in my =sqrt-data=, so let's export this to JSON.

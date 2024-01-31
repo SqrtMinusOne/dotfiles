@@ -104,6 +104,10 @@
   (let ((command-parts (split-string command "[ ]+")))
     (apply #'call-process `(,(car command-parts) nil 0 nil ,@(cdr command-parts)))))
 
+(defun my/quit-window-and-buffer ()
+  (interactive)
+  (quit-window t))
+
 (setq confirm-kill-emacs 'y-or-n-p)
 
 (use-package general
@@ -3067,10 +3071,6 @@ With ARG, repeats or can move backward if negative."
      (concat org-directory "/"
              (completing-read "Org file: " files)))))
 
-(with-eval-after-load 'org
-  (my-leader-def
-    "o o" 'my/org-file-open))
-
 (use-package jupyter
   :straight t
   :after (org)
@@ -4136,7 +4136,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
   :infix "o"
   "" '(:which-key "org-mode")
   "c" 'org-capture
-  "a" 'org-agenda)
+  "a" 'org-agenda
+  "o" #'my/org-file-open)
 
 (with-eval-after-load 'org
   (my-leader-def
@@ -4937,7 +4938,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
    "M-r" #'wdired-change-to-wdired-mode
    "<left>" #'dired-up-directory
    "<right>" #'dired-find-file
-   "M-<return>" #'dired-open-xdg))
+   "M-<return>" #'dired-open-xdg)
+   (dired-async-mode))
 
 (defun my/dired-home ()
   "Open dired at $HOME"
@@ -7985,6 +7987,19 @@ a list of commands as defined by `my/index--commands-display'."
                          "Make symlinks" 7)
            append (my/index-get-symlink-commands (alist-get :children elem))))
 
+(defvar my/index-commands-mode-map
+  (let ((keymap (make-sparse-keymap)))
+    (define-key keymap (kbd "C-c C-c") #'my/index-commands-exec)
+    (define-key keymap (kbd "q") #'my/quit-window-and-buffer)
+    (when (fboundp 'evil-define-key*)
+      (evil-define-key* 'normal keymap
+        "q" #'my/quit-window-and-buffer))
+    keymap)
+  "Keymap for `biome-api-error-mode'.")
+
+(define-derived-mode my/index-commands-mode sh-mode "Index Commands"
+  "A mode to display index commands.")
+
 (defvar-local my/index-commands nil
   "Commands to be executed by `my/index-commands-exec'")
 
@@ -8001,7 +8016,7 @@ COMMANDS is a list of commands as defined by `my/index--commands-display'."
                  (seq-group-by (lambda (c) (nth 1 c))
                                commands))))
     (with-current-buffer buffer
-      (sh-mode)
+      (my/index-commands-mode)
       (let ((inhibit-read-only t)
             commands-sequence)
         (erase-buffer)
@@ -8018,7 +8033,7 @@ COMMANDS is a list of commands as defined by `my/index--commands-display'."
 
 (defun my/index-commands-exec ()
   (interactive)
-  (unless (eq major-mode 'sh-mode)
+  (unless (eq major-mode 'my/index-commands-mode)
     (user-error "Not shell mode"))
   (let ((filename (make-temp-file "index-commands-")))
     (write-region (point-min) (point-max) filename)
@@ -8210,12 +8225,17 @@ to `dired' if used interactively."
      (let ((default-directory dir))
        (projectile-find-file)))))
 
+(defun my/index-open-file ()
+  (interactive)
+  (find-file my/index-file))
+
 (my-leader-def
   :infix "i"
   "" '(:wk "index")
   "i" #'my/index-nav
   "s" #'my/index-commands-sync
-  "p" #'my/index-nav-with-select-file)
+  "p" #'my/index-nav-with-select-file
+  "f" #'my/index-open-file)
 
 (defun my/index-export (file)
   (interactive (list (read-file-name "File: " "~/logs-sync/data/index.json")))
