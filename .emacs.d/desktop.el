@@ -695,6 +695,9 @@ _d_: Discord
           (,(kbd "<XF86AudioPause>") . ,(my/app-command "mpc pause"))
           (,(kbd "<print>") . ,(my/app-command "flameshot gui"))
   
+          ;; Input method
+          (,(kbd "M-\\") . my/toggle-input-method)
+  
           ;; Switch workspace
           (,(kbd "s-q") . my/exwm-switch-to-other-monitor)
           (,(kbd "s-w") . exwm-workspace-switch)
