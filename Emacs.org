@@ -4979,6 +4979,32 @@ And use the function to set the total clocked time.
 (add-hook 'org-clock-cancel-hook #'my/org-clock-set-total-clocked)
 #+end_src
 
+***** Switch between recently clocked items
+#+begin_src emacs-lisp
+(defun my/org-clock-recent ()
+  (interactive)
+  (let* ((entries (org-ql-query
+                    :select #'element-with-markers
+                    :from (org-agenda-files)
+                    :where '(clocked :from -1)))
+         (entries-data (mapcar (lambda (e)
+                                 (cons (org-element-property :raw-value e) e))
+                               entries)))
+    (unless entries
+      (user-error "No recently clocked entries!"))
+    entries-data
+    (let* ((entry (alist-get (completing-read "Entry: " entries-data)
+                             entries-data nil nil #'equal))
+           (marker (org-element-property :org-marker entry)))
+      (pop-to-buffer-same-window (marker-buffer marker))
+      (goto-char marker))))
+
+(with-eval-after-load 'org
+  (my-leader-def
+    :keymaps 'org-mode-map
+    :infix "SPC"
+    "C" #'my/org-clock-recent))
+#+end_src
 **** org-super-agenda
 [[https://github.com/alphapapa/org-super-agenda][org-super-agenda]] is alphapapa's extension to group items in org-agenda. I don't use it instead of the standard agenda, but =org-ql= uses it for some of its views.
 

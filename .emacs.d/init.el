@@ -3572,6 +3572,30 @@ With ARG, repeats or can move backward if negative."
 (add-hook 'org-clock-out-hook #'my/org-clock-set-total-clocked)
 (add-hook 'org-clock-cancel-hook #'my/org-clock-set-total-clocked)
 
+(defun my/org-clock-recent ()
+  (interactive)
+  (let* ((entries (org-ql-query
+                    :select #'element-with-markers
+                    :from (org-agenda-files)
+                    :where '(clocked :from -1)))
+         (entries-data (mapcar (lambda (e)
+                                 (cons (org-element-property :raw-value e) e))
+                               entries)))
+    (unless entries
+      (user-error "No recently clocked entries!"))
+    entries-data
+    (let* ((entry (alist-get (completing-read "Entry: " entries-data)
+                             entries-data nil nil #'equal))
+           (marker (org-element-property :org-marker entry)))
+      (pop-to-buffer-same-window (marker-buffer marker))
+      (goto-char marker))))
+
+(with-eval-after-load 'org
+  (my-leader-def
+    :keymaps 'org-mode-map
+    :infix "SPC"
+    "C" #'my/org-clock-recent))
+
 (use-package org-super-agenda
   :straight t
   :after (org)
