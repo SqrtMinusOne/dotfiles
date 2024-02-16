@@ -631,7 +631,11 @@ I'm using Mullvad VPN. The =~/.vpn= folder stores its OpenVPN config (=openvpn.o
   #+begin_src sh :tangle ~/bin/scripts/vpn-fix-routes
   echo "Adding default route to $route_vpn_gateway with /0 mask..."
 
-  IP=/run/current-system/profile/sbin/ip
+  if [ -f "/run/current-system/profile/sbin/ip" ]; then
+      IP=/run/current-system/profile/sbin/ip
+  else
+      IP=/usr/bin/ip
+  fi
 
   $IP route add default via $route_vpn_gateway
 
