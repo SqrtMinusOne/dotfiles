@@ -348,7 +348,8 @@ A function to dump keybindings starting with a prefix to a buffer in a tree-like
       (erase-buffer))
     (my/dump-bindings-recursive prefix 0 buffer)
     (with-current-buffer buffer
-      (goto-char (point-min)))
+      (goto-char (point-min))
+      (setq-local buffer-read-only t))
     (switch-to-buffer-other-window buffer)))
 #+end_src
 *** Evil
@@ -476,32 +477,6 @@ Do ex search in other buffer. Like =*=, but switch to other buffer and search th
          vterm flycheck profiler cider explain-pause-mode notmuch custom
          xref eshell helpful compile comint git-timemachine magit prodigy
          slime forge deadgrep vc-annonate telega doc-view gnus outline)))
-#+end_src
-*** Avy
-[[https://github.com/abo-abo/avy][Avy]] is a package that helps navigate Emacs in a tree-like manner.
-
-References:
-- [[https://karthinks.com/software/avy-can-do-anything/][Avy can do anything]]
-
-#+begin_src emacs-lisp
-(use-package avy
-  :straight t
-  :config
-  (setq avy-timeout-seconds 0.5)
-  (setq avy-ignored-modes
-        '(image-mode doc-view-mode pdf-view-mode exwm-mode))
-  (general-define-key
-   :states '(normal motion)
-   "-" nil
-   "--" #'avy-goto-char-2
-   "-=" #'avy-goto-symbol-1))
-#+End_src
-
-[[https://github.com/abo-abo/ace-link][ace-link]] is a package to jump to links with avy.
-#+begin_src emacs-lisp
-(use-package ace-link
-  :straight t
-  :commands (ace-link-info ace-link-help ace-link-woman ace-link-eww))
 #+end_src
 *** My keybindings
 Various keybinding settings that I can't put anywhere else.
@@ -1030,7 +1005,7 @@ Input accented characters.
 
 #+begin_src emacs-lisp
 (use-package accent
-  :straight (:host github :repo "SqrtMinusOne/accent")
+  :straight (:host github :repo "eliascotto/accent")
   :init
   (general-define-key
    :states '(normal)
@@ -1048,15 +1023,6 @@ Input accented characters.
    "M-k" #'popup-previous)
   (setq accent-custom '((a (ā))
                         (A (Ā)))))
-#+end_src
-**** binky
-Experimenting with this package.
-
-#+begin_src emacs-lisp
-(use-package binky
-  :straight t
-  :init
-  (my-leader-def "j" #'binky-binky))
 #+end_src
 ** Working with projects
 Packages related to managing projects.
@@ -1237,6 +1203,114 @@ Somehow I couldn't hook =toogle-truncate-lines= into the existing package hooks,
   :commands (deadgrep)
   :config
   (advice-add #'deadgrep--buffer :around #'my/deadgrep-fix-buffer-advice))
+#+end_src
+** Navigation
+Things to navigate in Emacs.
+
+*** Registers
+References:
+- [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Registers.html][Registers (GNU Emacs Manual)]]
+
+Somehow there's no built-in function to clear a register.
+
+#+begin_src emacs-lisp
+(defun my/register-clear (register)
+  (interactive (list (register-read-with-preview "Clear register: ")))
+  (setq register-alist (delq (assoc register register-alist) register-alist)))
+#+end_src
+
+#+begin_src emacs-lisp
+(setq register-preview-delay which-key-idle-delay)
+
+(my-leader-def
+  :infix "g"
+  "" '(:wk "registers & marks")
+  "y" #'copy-to-register
+  "p" #'insert-register
+  "o" #'point-to-register
+  "c" #'my/register-clear
+  "r" #'jump-to-register
+  "R" #'counsel-register
+  "w" #'window-configuration-to-register)
+#+End_src
+
+*** Marks
+References:
+- [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Mark.html][The Mark and the Region (GNU Emacs Manual)]]
+- [[https://www.masteringemacs.org/article/fixing-mark-commands-transient-mark-mode][Fixing the mark commands in transient mark mode - Mastering Emacs]]
+
+=transient-mark-mode= makes using marks for navigation a bit more cumbersome, but I'm not sure of potential side effects of disabling it... As of now, I want only to push a mark without activating it, so here's a function for that (taken from Mickey Peterson's article):
+
+#+begin_src emacs-lisp
+(defun my/push-mark-no-activate ()
+  "Pushes `point' to `mark-ring' and does not activate the region
+   Equivalent to \\[set-mark-command] when \\[transient-mark-mode] is disabled"
+  (interactive)
+  (push-mark (point) t nil)
+  (message "Pushed mark to ring"))
+#+end_src
+
+Also a function to clear the current mark ring.
+#+begin_src emacs-lisp
+(defun my/mark-ring-clear ()
+  (interactive)
+  (setq mark-ring nil))
+#+end_src
+
+A variant of =counsel-mark-ring= to work with =global-mark-ring=:
+
+#+begin_src emacs-lisp
+(defun my/counsel-global-mark-ring ()
+  "Browse `mark-ring' interactively.
+Obeys `widen-automatically', which see."
+  (interactive)
+  (let* ((counsel--mark-ring-calling-point (point))
+         (marks (copy-sequence global-mark-ring))
+         (marks (delete-dups marks))
+         (candidates (counsel-mark--get-candidates marks)))
+    (if candidates
+        (counsel-mark--ivy-read "Mark: " candidates 'my/counsel-global-mark-ring)
+      (message "Mark ring is empty"))))
+#+end_src
+
+Keybindings:
+#+begin_src emacs-lisp
+(my-leader-def
+  :infix "g"
+  "g" #'counsel-mark-ring
+  "G" #'my/counsel-global-mark-ring
+  "C" #'my/mark-ring-clear)
+
+(general-define-key
+ :keymaps 'global
+ "C-SPC" #'my/push-mark-no-activate)
+#+end_src
+
+*** Avy
+[[https://github.com/abo-abo/avy][Avy]] is a package that helps navigate Emacs in a tree-like manner.
+
+References:
+- [[https://karthinks.com/software/avy-can-do-anything/][Avy can do anything]]
+
+#+begin_src emacs-lisp
+(use-package avy
+  :straight t
+  :config
+  (setq avy-timeout-seconds 0.5)
+  (setq avy-ignored-modes
+        '(image-mode doc-view-mode pdf-view-mode exwm-mode))
+  (general-define-key
+   :states '(normal motion)
+   "-" nil
+   "--" #'avy-goto-char-2
+   "-=" #'avy-goto-symbol-1))
+#+End_src
+
+[[https://github.com/abo-abo/ace-link][ace-link]] is a package to jump to links with avy.
+#+begin_src emacs-lisp
+(use-package ace-link
+  :straight t
+  :commands (ace-link-info ace-link-help ace-link-woman ace-link-eww))
 #+end_src
 
 ** Completion
@@ -5053,8 +5127,10 @@ It doesn't look great with org-bars mode, so...
   (setq org-ql-regexp-part-ts-time
         (rx " " (repeat 1 2 digit) ":" (repeat 2 digit)
             (optional "-" (repeat 1 2 digit) ":" (repeat 2 digit))))
-  (my-leader-def "ov" #'org-ql-view)
-  (my-leader-def "oq" #'org-ql-search))
+  (my-leader-def
+    :infix "o"
+    "v" #'org-ql-view
+    "q" #'org-ql-search))
 #+end_src
 
 ***** Add :multi argument to the property predicate

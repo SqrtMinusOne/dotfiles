@@ -147,7 +147,8 @@
       (erase-buffer))
     (my/dump-bindings-recursive prefix 0 buffer)
     (with-current-buffer buffer
-      (goto-char (point-min)))
+      (goto-char (point-min))
+      (setq-local buffer-read-only t))
     (switch-to-buffer-other-window buffer)))
 
 (use-package evil
@@ -234,22 +235,6 @@
          vterm flycheck profiler cider explain-pause-mode notmuch custom
          xref eshell helpful compile comint git-timemachine magit prodigy
          slime forge deadgrep vc-annonate telega doc-view gnus outline)))
-
-(use-package avy
-  :straight t
-  :config
-  (setq avy-timeout-seconds 0.5)
-  (setq avy-ignored-modes
-        '(image-mode doc-view-mode pdf-view-mode exwm-mode))
-  (general-define-key
-   :states '(normal motion)
-   "-" nil
-   "--" #'avy-goto-char-2
-   "-=" #'avy-goto-symbol-1))
-
-(use-package ace-link
-  :straight t
-  :commands (ace-link-info ace-link-help ace-link-woman ace-link-eww))
 
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
@@ -572,7 +557,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   )
 
 (use-package accent
-  :straight (:host github :repo "SqrtMinusOne/accent")
+  :straight (:host github :repo "eliascotto/accent")
   :init
   (general-define-key
    :states '(normal)
@@ -590,11 +575,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    "M-k" #'popup-previous)
   (setq accent-custom '((a (ā))
                         (A (Ā)))))
-
-(use-package binky
-  :straight t
-  :init
-  (my-leader-def "j" #'binky-binky))
 
 (use-package projectile
   :straight t
@@ -720,6 +700,72 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :commands (deadgrep)
   :config
   (advice-add #'deadgrep--buffer :around #'my/deadgrep-fix-buffer-advice))
+
+(defun my/register-clear (register)
+  (interactive (list (register-read-with-preview "Clear register: ")))
+  (setq register-alist (delq (assoc register register-alist) register-alist)))
+
+(setq register-preview-delay which-key-idle-delay)
+
+(my-leader-def
+  :infix "g"
+  "" '(:wk "registers & marks")
+  "y" #'copy-to-register
+  "p" #'insert-register
+  "o" #'point-to-register
+  "c" #'my/register-clear
+  "r" #'jump-to-register
+  "R" #'counsel-register
+  "w" #'window-configuration-to-register)
+
+(defun my/push-mark-no-activate ()
+  "Pushes `point' to `mark-ring' and does not activate the region
+   Equivalent to \\[set-mark-command] when \\[transient-mark-mode] is disabled"
+  (interactive)
+  (push-mark (point) t nil)
+  (message "Pushed mark to ring"))
+
+(defun my/mark-ring-clear ()
+  (interactive)
+  (setq mark-ring nil))
+
+(defun my/counsel-global-mark-ring ()
+  "Browse `mark-ring' interactively.
+Obeys `widen-automatically', which see."
+  (interactive)
+  (let* ((counsel--mark-ring-calling-point (point))
+         (marks (copy-sequence global-mark-ring))
+         (marks (delete-dups marks))
+         (candidates (counsel-mark--get-candidates marks)))
+    (if candidates
+        (counsel-mark--ivy-read "Mark: " candidates 'my/counsel-global-mark-ring)
+      (message "Mark ring is empty"))))
+
+(my-leader-def
+  :infix "g"
+  "g" #'counsel-mark-ring
+  "G" #'my/counsel-global-mark-ring
+  "C" #'my/mark-ring-clear)
+
+(general-define-key
+ :keymaps 'global
+ "C-SPC" #'my/push-mark-no-activate)
+
+(use-package avy
+  :straight t
+  :config
+  (setq avy-timeout-seconds 0.5)
+  (setq avy-ignored-modes
+        '(image-mode doc-view-mode pdf-view-mode exwm-mode))
+  (general-define-key
+   :states '(normal motion)
+   "-" nil
+   "--" #'avy-goto-char-2
+   "-=" #'avy-goto-symbol-1))
+
+(use-package ace-link
+  :straight t
+  :commands (ace-link-info ace-link-help ace-link-woman ace-link-eww))
 
 (use-package ivy
   :straight t
@@ -3632,8 +3678,10 @@ With ARG, repeats or can move backward if negative."
   (setq org-ql-regexp-part-ts-time
         (rx " " (repeat 1 2 digit) ":" (repeat 2 digit)
             (optional "-" (repeat 1 2 digit) ":" (repeat 2 digit))))
-  (my-leader-def "ov" #'org-ql-view)
-  (my-leader-def "oq" #'org-ql-search))
+  (my-leader-def
+    :infix "o"
+    "v" #'org-ql-view
+    "q" #'org-ql-search))
 
 (with-eval-after-load 'org-ql
   (org-ql-defpred property (property &optional value &key inherit multi)
