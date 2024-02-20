@@ -453,7 +453,7 @@ ramp-capacity-4 = 
 type = internal/temperature
 interval = 10
 
-hwmon-path = /sys/devices/platform/coretemp.0/hwmon/hwmon2/temp1_input
+hwmon-path = ${env:TEMP_HWMON_PATH}
 
 format = <label>
 format-foreground = ${colors.foreground}

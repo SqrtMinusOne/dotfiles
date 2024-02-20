@@ -54,6 +54,11 @@ declare -A BLOCKS=(
     ["DP-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan nvidia glyph-light-cyan--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
 )
 
+declare -A TEMP_HWMON_PATHS=(
+    ["eminence"]="/sys/devices/pci0000:00/0000:00:18.3/hwmon/hwmon2/temp1_input"
+    ["indigo"]="/sys/devices/platform/coretemp.0/hwmon/hwmon2/temp1_input"
+)
+
 # Geolocation for some modules
 export LOC="SPB"
 
@@ -78,6 +83,7 @@ for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     # export FONT3="JetBrains Mono Nerd Font:monospace:size=15;1"
     export HEIGHT=${BAR_HEIGHT[$MONITOR]}
     export RIGHT_BLOCKS=${BLOCKS[$MONITOR]}
+    export TEMP_HWMON_PATH=${TEMP}
     polybar mybar &
 done
 # Launch script:1 ends here

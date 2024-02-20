@@ -2260,6 +2260,11 @@ declare -A BLOCKS=(
     ["DP-1"]="<<polybar-generate-modules(monitor="DP-1")>>"
 )
 
+declare -A TEMP_HWMON_PATHS=(
+    ["eminence"]="/sys/devices/pci0000:00/0000:00:18.3/hwmon/hwmon2/temp1_input"
+    ["indigo"]="/sys/devices/platform/coretemp.0/hwmon/hwmon2/temp1_input"
+)
+
 # Geolocation for some modules
 export LOC="SPB"
 
@@ -2284,6 +2289,7 @@ for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     # export FONT3="JetBrains Mono Nerd Font:monospace:size=15;1"
     export HEIGHT=${BAR_HEIGHT[$MONITOR]}
     export RIGHT_BLOCKS=${BLOCKS[$MONITOR]}
+    export TEMP_HWMON_PATH=${TEMP}
     polybar mybar &
 done
 #+end_src
@@ -2694,7 +2700,7 @@ ramp-capacity-4 = 
 type = internal/temperature
 interval = 10
 
-hwmon-path = /sys/devices/platform/coretemp.0/hwmon/hwmon2/temp1_input
+hwmon-path = ${env:TEMP_HWMON_PATH}
 
 format = <label>
 format-foreground = ${colors.foreground}
