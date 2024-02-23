@@ -2866,6 +2866,21 @@ Returns (<buffer> . <workspace-index>) or nil."
    "j" #'doc-view-next-line-or-next-page
    "k" #'doc-view-previous-line-or-previous-page))
 
+(use-package gnuplot
+  :straight t
+  :commands (gnuplot-mode gnuplot-make-buffer)
+  :init
+  (add-to-list 'auto-mode-alist '("\\.gp\\'" . gnuplot-mode))
+  :config
+  (general-define-key
+   :keymaps 'gnuplot-mode-map
+   "C-c C-c" #'gnuplot-send-buffer-to-gnuplot)
+  (general-define-key
+   :states '(normal)
+   :keymaps 'gnuplot-mode-map
+   "RET" #'gnuplot-send-buffer-to-gnuplot)
+  (add-hook 'gnuplot-mode-hook #'smartparens-mode))
+
 (use-package x509-mode
   :straight t)
 

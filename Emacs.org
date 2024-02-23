@@ -3981,6 +3981,25 @@ Don't know about this.
    "j" #'doc-view-next-line-or-next-page
    "k" #'doc-view-previous-line-or-previous-page))
 #+end_src
+** Gnuplot
+Emacs integration for [[http://gnuplot.info/][gnuplot]].
+
+#+begin_src emacs-lisp
+(use-package gnuplot
+  :straight t
+  :commands (gnuplot-mode gnuplot-make-buffer)
+  :init
+  (add-to-list 'auto-mode-alist '("\\.gp\\'" . gnuplot-mode))
+  :config
+  (general-define-key
+   :keymaps 'gnuplot-mode-map
+   "C-c C-c" #'gnuplot-send-buffer-to-gnuplot)
+  (general-define-key
+   :states '(normal)
+   :keymaps 'gnuplot-mode-map
+   "RET" #'gnuplot-send-buffer-to-gnuplot)
+  (add-hook 'gnuplot-mode-hook #'smartparens-mode))
+#+end_src
 ** x509
 #+begin_src emacs-lisp
 (use-package x509-mode
