@@ -31,16 +31,7 @@ Table of contents and software:
 A few other repositories I may consider a part of my config:
 - [[https://github.com/SqrtMinusOne/channel-q][channel-q]] is my Guix channel
 - [[https://github.com/SqrtMinusOne/sqrt-data][sqrt-data]] is a home for my statistics gathering effort
-- Emacs packages that I wrote (some of them originated in my Emacs config):
-  - [[https://github.com/SqrtMinusOne/lyrics-fetcher.el][lyrics-fetcher.el]]
-  - [[https://github.com/SqrtMinusOne/pomm.el][pomm.el]]
-  - [[https://github.com/SqrtMinusOne/perspective-exwm.el][perspective-exwm.el]]
-  - [[https://github.com/SqrtMinusOne/exwm-modeline][exwm-modeline.el]]
-  - [[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]]
-  - [[https://github.com/SqrtMinusOne/elfeed-summary][elfeed-summary]]
-  - [[https://github.com/SqrtMinusOne/password-store-ivy][password-store-ivy]]
-  - [[https://github.com/SqrtMinusOne/elfeed-sync][elfeed-sync]]
-  - [[https://github.com/SqrtMinusOne?tab=repositories&q=&type=&language=emacs+lisp&sort=][...]]
+- [[https://sqrtminusone.xyz/emacs-packages/][My Emacs Packages]], some of which originated in my Emacs config
 
 See also [[https://sqrtminusone.xyz/posts/][my blog posts]].
 
