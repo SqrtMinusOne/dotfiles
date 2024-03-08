@@ -84,5 +84,16 @@ end
 # Functions:1 ends here
 
 # [[file:../../Console.org::*direnv][direnv:1]]
-direnv hook fish | source
+if type -q direnv
+    direnv hook fish | source
+end
 # direnv:1 ends here
+
+# [[file:../../Console.org::*atuin][atuin:1]]
+if type -q atuin
+    set -gx ATUIN_NOBIND "true"
+    atuin init fish | source
+    bind \cr _atuin_search
+    bind -M insert \cr _atuin_search
+end
+# atuin:1 ends here

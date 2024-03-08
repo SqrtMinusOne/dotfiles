@@ -603,7 +603,18 @@ end
 #+end_src
 ** direnv
 #+begin_src fish
-direnv hook fish | source
+if type -q direnv
+    direnv hook fish | source
+end
+#+end_src
+** atuin
+#+begin_src fish
+if type -q atuin
+    set -gx ATUIN_NOBIND "true"
+    atuin init fish | source
+    bind \cr _atuin_search
+    bind -M insert \cr _atuin_search
+end
 #+end_src
 * Nushell
 :PROPERTIES:
@@ -905,6 +916,16 @@ process_command = true
 
 [processes]
 columns = ["PID", "State", "Name", "CPU%", "Mem%", "R/s", "W/s", "User"]
+#+end_src
+* Atuin
+[[https://github.com/atuinsh/atuin][atuin]] is a tool that replaces shell history with a SQLite database, providing some additional functionality.
+
+See [[https://docs.atuin.sh/configuration/config/][config reference]].
+
+#+begin_src toml :tangle ~/.config/atuin/config.toml
+update_check = false
+enter_accept = true
+keymap_mode = "vim-insert"
 #+end_src
 
 * Various console applications
