@@ -619,6 +619,41 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :commands (git-timemachine))
 
+(use-package difftastic
+  :straight t
+  :commands (difftastic-magit-diff
+             difftastic-magit-show
+             difftastic-files
+             difftastic-buffers)
+  :init
+  (with-eval-after-load 'magit-diff
+    (transient-append-suffix 'magit-diff '(-1 -1)
+      [("D" "Difftastic diff (dwim)" difftastic-magit-diff)
+       ("S" "Difftastic show" difftastic-magit-show)])
+    (general-define-key
+     :keymaps 'magit-blame-read-only-mode-map
+     :states 'normal
+     "D" #'difftastic-magit-show
+     "S" #'difftastic-magit-show))
+  :config
+  (setq difftastic-executable (executable-find "difft"))
+  (general-define-key
+   :keymaps 'difftastic-mode-map
+   :states '(normal)
+   "gr" #'difftastic-rerun
+   "q" #'kill-buffer-and-window))
+
+(defun my/difftastic-pop-at-bottom (buffer-or-name _requested-width)
+  (let ((window (split-window-below)))
+    (select-window window)
+    (evil-move-window 'below))
+  (set-window-buffer (selected-window) buffer-or-name))
+
+(setq difftastic-display-buffer-function #'my/difftastic-pop-at-bottom)
+
+(setq difftastic-requested-window-width-function
+      (lambda () (- (frame-width) 4)))
+
 (use-package forge
   :after magit
   :straight t
@@ -828,7 +863,8 @@ Obeys `widen-automatically', which see."
                dired-recent-open
                org-ql-view
                my/index-nav
-               org-set-effort))
+               org-set-effort
+               eshell-atuin-history))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 
@@ -3209,7 +3245,8 @@ With ARG, repeats or can move backward if negative."
      (plantuml . t)
      (octave . t)
      ,@(unless my/is-termux '((jupyter . t)))
-     (sparql . t)))
+     (sparql . t)
+     (gnuplot . t)))
 
   (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images))
 
@@ -4403,11 +4440,11 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (my-leader-def
     :infix "or"
     "" '(:which-key "org-roam")
-    "i" 'org-roam-node-insert
-    "r" 'org-roam-node-find
-    "g" 'org-roam-graph
-    "c" 'org-roam-capture
-    "b" 'org-roam-buffer-toggle)
+    "i" #'org-roam-node-insert
+    "r" #'org-roam-node-find
+    "g" #'org-roam-graph
+    "c" #'org-roam-capture
+    "b" #'org-roam-buffer-toggle)
   (general-define-key
    :keymaps 'org-roam-mode-map
    :states '(normal)
@@ -4422,9 +4459,10 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (my-leader-def
     :keymap 'org-mode-map
     :infix "or"
-    "t" 'org-roam-tag-add
-    "T" 'org-roam-tag-remove
-    "s" 'org-roam-db-autosync-mode)
+    "t" #'org-roam-tag-add
+    "T" #'org-roam-tag-remove
+    "s" #'org-roam-db-autosync-mode
+    "a" #'org-roam-alias-add)
   (general-define-key
    :keymap 'org-mode-map
    "C-c i" 'org-roam-node-insert))
@@ -5485,8 +5523,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (general-define-key
    :states '(normal insert)
    :keymaps 'eshell-mode-map
-   "<home>" #'eshell-bol
-   "C-r" #'counsel-esh-history)
+   "<home>" #'eshell-bol)
 
   (general-define-key
    :keymaps 'eshell-mode-map
@@ -5703,6 +5740,18 @@ KEYS is a list of cons cells like (<label> . <time>)."
             (insert (overlay-get overlay 'after-string)))
         (company-complete))
     (company-complete)))
+
+(use-package eshell-atuin
+  :straight (:host github :repo "SqrtMinusOne/eshell-atuin")
+  :after eshell
+  :config
+  (eshell-atuin-mode)
+  (setq eshell-atuin-search-fields '(time duration command))
+  (setq eshell-atuin-history-format "%-160c %t + %d")
+  (general-define-key
+   :states '(normal insert)
+   :keymaps 'eshell-mode-map
+   "C-r" #'eshell-atuin-history))
 
 (add-to-list 'display-buffer-alist
              '("eshell-dedicated.*"
@@ -6316,7 +6365,7 @@ the directory with resulting files."
          (buffer (generate-new-buffer "whisper"))
          (proc (start-process
                 "whisper" buffer
-                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-tiny.en.bin"
+                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-medium.en.bin"
                 "-otxt" "-ovtt" "-osrt" input)))
     (set-process-sentinel
      proc

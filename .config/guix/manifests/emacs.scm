@@ -18,4 +18,5 @@
    "python-black"
    "python-yapf"
    "plantuml"
+   "difftastic-bin"
    "xkb-switch"))

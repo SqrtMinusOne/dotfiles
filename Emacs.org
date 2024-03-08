@@ -1050,7 +1050,11 @@ I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, 
 (general-nmap "C-p" 'counsel-projectile-find-file)
 #+end_src
 *** Git & Magit
-[[https://magit.vc/][Magit]] is a git interface for Emacs. The closest non-Emacs alternative (sans actual clones) I know is [[https://github.com/jesseduffield/lazygit][lazygit]], which I used before Emacs.
+[[https://magit.vc/][Magit]] is a git interface for Emacs.
+
+A few CLI alternatives:
+- [[https://github.com/jesseduffield/lazygit][lazygit]]. I used it before Emacs
+- [[https://github.com/altsem/gitu][gitu]]. A CLI magit clone
 
 #+begin_src emacs-lisp
 (use-package magit
@@ -1072,7 +1076,7 @@ I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, 
            (show-message . t)))))
 #+end_src
 
-[[https://github.com/emacsorphanage/git-gutter][git-gutter]] is a package which shows git changes for each line (added/changed/deleted lines).
+[[https://github.com/emacsorphanage/git-gutter][git-gutter]] is shows git changes for each line (added/changed/deleted lines).
 #+begin_src emacs-lisp
 (use-package git-gutter
   :straight t
@@ -1087,6 +1091,56 @@ I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, 
   :straight t
   :commands (git-timemachine))
 #+end_src
+
+| Guix dependency |
+|-----------------|
+| difftastic-bin  |
+
+[[https://github.com/pkryger/difftastic.el][difftastic.el]] is a wrapper package for [[https://difftastic.wilfred.me.uk/][difftastic]].
+#+begin_src emacs-lisp
+(use-package difftastic
+  :straight t
+  :commands (difftastic-magit-diff
+             difftastic-magit-show
+             difftastic-files
+             difftastic-buffers)
+  :init
+  (with-eval-after-load 'magit-diff
+    (transient-append-suffix 'magit-diff '(-1 -1)
+      [("D" "Difftastic diff (dwim)" difftastic-magit-diff)
+       ("S" "Difftastic show" difftastic-magit-show)])
+    (general-define-key
+     :keymaps 'magit-blame-read-only-mode-map
+     :states 'normal
+     "D" #'difftastic-magit-show
+     "S" #'difftastic-magit-show))
+  :config
+  (setq difftastic-executable (executable-find "difft"))
+  (general-define-key
+   :keymaps 'difftastic-mode-map
+   :states '(normal)
+   "gr" #'difftastic-rerun
+   "q" #'kill-buffer-and-window))
+#+end_src
+
+My screen isn't wide enough to run =difftastic= in vertical split, so...
+#+begin_src emacs-lisp
+(defun my/difftastic-pop-at-bottom (buffer-or-name _requested-width)
+  (let ((window (split-window-below)))
+    (select-window window)
+    (evil-move-window 'below))
+  (set-window-buffer (selected-window) buffer-or-name))
+
+(setq difftastic-display-buffer-function #'my/difftastic-pop-at-bottom)
+#+end_src
+
+And I suspect the built-in window width function doesn't work as intended because of =global-display-line-numbers-mode=.
+
+#+begin_src emacs-lisp
+(setq difftastic-requested-window-width-function
+      (lambda () (- (frame-width) 4)))
+#+end_src
+
 *** Forge and code-review
 [[https://github.com/magit/forge][forge]] provides integration with forges, such as GitHub and GitLab.
 #+begin_src emacs-lisp
@@ -1393,7 +1447,8 @@ References:
                dired-recent-open
                org-ql-view
                my/index-nav
-               org-set-effort))
+               org-set-effort
+               eshell-atuin-history))
   ;; Do not use prescient in find-file
   (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
 #+end_src
@@ -4454,7 +4509,8 @@ Enable languages
      (plantuml . t)
      (octave . t)
      ,@(unless my/is-termux '((jupyter . t)))
-     (sparql . t)))
+     (sparql . t)
+     (gnuplot . t)))
 
   (add-hook 'org-babel-after-execute-hook 'org-redisplay-inline-images))
 #+end_src
@@ -6053,11 +6109,11 @@ A set of keybindings to quickly access things in Org Roam.
   (my-leader-def
     :infix "or"
     "" '(:which-key "org-roam")
-    "i" 'org-roam-node-insert
-    "r" 'org-roam-node-find
-    "g" 'org-roam-graph
-    "c" 'org-roam-capture
-    "b" 'org-roam-buffer-toggle)
+    "i" #'org-roam-node-insert
+    "r" #'org-roam-node-find
+    "g" #'org-roam-graph
+    "c" #'org-roam-capture
+    "b" #'org-roam-buffer-toggle)
   (general-define-key
    :keymaps 'org-roam-mode-map
    :states '(normal)
@@ -6072,9 +6128,10 @@ A set of keybindings to quickly access things in Org Roam.
   (my-leader-def
     :keymap 'org-mode-map
     :infix "or"
-    "t" 'org-roam-tag-add
-    "T" 'org-roam-tag-remove
-    "s" 'org-roam-db-autosync-mode)
+    "t" #'org-roam-tag-add
+    "T" #'org-roam-tag-remove
+    "s" #'org-roam-db-autosync-mode
+    "a" #'org-roam-alias-add)
   (general-define-key
    :keymap 'org-mode-map
    "C-c i" 'org-roam-node-insert))
@@ -7638,8 +7695,7 @@ Some initial configuration.
   (general-define-key
    :states '(normal insert)
    :keymaps 'eshell-mode-map
-   "<home>" #'eshell-bol
-   "C-r" #'counsel-esh-history)
+   "<home>" #'eshell-bol)
 
   (general-define-key
    :keymaps 'eshell-mode-map
@@ -7940,6 +7996,22 @@ Finally, a function that inserts the overlay in buffer if it's available and cal
             (insert (overlay-get overlay 'after-string)))
         (company-complete))
     (company-complete)))
+#+end_src
+**** Atuin integration
+[[https://github.com/SqrtMinusOne/eshell-atuin][eshell-atuin]] is my package that integrates eshell with [[https://github.com/atuinsh/atuin][atuin]].
+
+#+begin_src emacs-lisp
+(use-package eshell-atuin
+  :straight (:host github :repo "SqrtMinusOne/eshell-atuin")
+  :after eshell
+  :config
+  (eshell-atuin-mode)
+  (setq eshell-atuin-search-fields '(time duration command))
+  (setq eshell-atuin-history-format "%-160c %t + %d")
+  (general-define-key
+   :states '(normal insert)
+   :keymaps 'eshell-mode-map
+   "C-r" #'eshell-atuin-history))
 #+end_src
 **** Dedicated buffer
 Make a dedicated buffer for eshell in the bottom of the screen.
@@ -8784,7 +8856,7 @@ the directory with resulting files."
          (buffer (generate-new-buffer "whisper"))
          (proc (start-process
                 "whisper" buffer
-                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-tiny.en.bin"
+                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-medium.en.bin"
                 "-otxt" "-ovtt" "-osrt" input)))
     (set-process-sentinel
      proc
