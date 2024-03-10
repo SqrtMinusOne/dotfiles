@@ -12,6 +12,7 @@
    "yt-dlp"
    "mpv"
    "whisper-cpp"
+   "python-youtube-transcript-api"
    "rdrview"
    "graphviz"
    "python-isort"

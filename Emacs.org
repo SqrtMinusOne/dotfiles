@@ -8713,7 +8713,7 @@ However, sans the pictures issue, for certain sites like Wikipedia this is usabl
 **** Getting subtitles
 Finally, let's get to transcripts.
 
-| Guix package                  |
+| Guix dependency               |
 |-------------------------------|
 | python-youtube-transcript-api |
 
