@@ -7470,6 +7470,7 @@ base toot."
   :config
   (setq telega-emoji-use-images nil)
   (setq telega-chat-fill-column 80)
+  (remove-hook 'telega-chat-mode-hook #'telega-chat-auto-fill-mode)
   (general-define-key
    :keymaps '(telega-root-mode-map telega-chat-mode-map)
    :states '(normal)

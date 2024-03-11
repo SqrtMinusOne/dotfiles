@@ -10294,6 +10294,7 @@ Or you can load up Element for a moment to see what the mention was, if that's e
   :config
   (setq telega-emoji-use-images nil)
   (setq telega-chat-fill-column 80)
+  (remove-hook 'telega-chat-mode-hook #'telega-chat-auto-fill-mode)
   (general-define-key
    :keymaps '(telega-root-mode-map telega-chat-mode-map)
    :states '(normal)
