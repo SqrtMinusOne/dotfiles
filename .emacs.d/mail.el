@@ -119,7 +119,8 @@
     "вашей" "вашему" "вашим" "вашем" "вашеми"))
 
 (defvar my/ru-formal-pronous-regex
-  (regexp-opt my/ru-formal-pronous 'words))
+  (regexp-opt
+   (mapcar (lambda (p) (format " %s " p)) my/ru-formal-pronous) 'words))
 
 (defun my/message-ensure-capitalized-formal-pronouns ()
   (interactive)
