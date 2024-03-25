@@ -114,13 +114,6 @@ References:
 ** Variables & environment
 This section is about optioning the Emacs config.
 
-The following is true if Emacs is meant to be used with TRAMP over slow ssh. Take a look at the [[*TRAMP][TRAMP]] section for more details.
-#+begin_src emacs-lisp
-(setq my/slow-ssh
-      (or
-       (string= (getenv "IS_TRAMP") "true")))
-#+end_src
-
 The following is true is Emacs is run on a remote server where I don't need stuff like my org workflow
 #+begin_src emacs-lisp
 (setq my/remote-server
@@ -134,8 +127,9 @@ And the following is true if Emacs is run from termux on Android.
 (setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
 #+end_src
 
-Also, I sometimes need to know if a program is running inside Emacs (say, inside a terminal emulator). To do that, I set the following environment variable:
+Also, I sometimes need to know if a program is running inside Emacs (say, inside a terminal emulator). And sometimes I need to know if I'm running a nested Emacs session. To do that, I set the following environment variable:
 #+begin_src emacs-lisp
+(setq my/nested-emacs (and (getenv "IS_EMACS") t))
 (setenv "IS_EMACS" "true")
 #+end_src
 
@@ -704,7 +698,7 @@ This script is being run from the [[file:Desktop.org::*i3wm][i3 configuration]].
 
 For this to work, we need to make sure that Emacs starts a server, so here is an expression to do just that:
 #+BEGIN_SRC emacs-lisp
-(unless my/remote-server
+(unless (or my/remote-server my/nested-emacs)
   (add-hook 'after-init-hook #'server-start))
 #+END_SRC
 
@@ -1032,7 +1026,6 @@ I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, 
 *** Projectile
 [[https://github.com/bbatsov/projectile][Projectile]] gives a bunch of useful functions for managing projects, like finding files within a project, fuzzy-find, replace, etc.
 
-~defadvice~ is meant to speed projectile up with TRAMP a bit.
 #+begin_src emacs-lisp
 (use-package projectile
   :straight t
@@ -1080,7 +1073,6 @@ A few CLI alternatives:
 #+begin_src emacs-lisp
 (use-package git-gutter
   :straight t
-  :if (not my/slow-ssh)
   :config
   (global-git-gutter-mode +1))
 #+end_src
@@ -1225,7 +1217,6 @@ References:
 (use-package editorconfig
   :straight t
   :config
-  (unless my/slow-ssh (editorconfig-mode 1))
   (add-to-list 'editorconfig-indentation-alist
                '(emmet-mode emmet-indentation)))
 #+end_src
@@ -2379,7 +2370,7 @@ References:
 #+begin_src emacs-lisp
 (use-package lsp-mode
   :straight t
-  :if (not (or my/slow-ssh my/is-termux my/remote-server))
+  :if (not (or my/is-termux my/remote-server))
   :hook (
          (typescript-mode . lsp)
          (js-mode . lsp)
@@ -3685,7 +3676,6 @@ For some reason it doesn't use pipenv python executable, so here is a small work
 (use-package lsp-pyright
   :straight t
   :defer t
-  :if (not my/slow-ssh)
   :hook (python-mode . (lambda ()
                          (require 'lsp-pyright)
                          (setq-local lsp-pyright-python-executable-cmd (my/get-pipenv-python))
@@ -3703,7 +3693,6 @@ Automatically creates & manages virtualenvs and stores data in =Pipfile= and =Pi
 (use-package pipenv
   :straight t
   :hook (python-mode . pipenv-mode)
-  :if (not my/slow-ssh)
   :init
   (setq
    pipenv-projectile-after-switch-function
@@ -3891,10 +3880,9 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
 #+begin_src emacs-lisp
 (use-package json-mode
   :straight t
-  :mode "\\.json\\'"
   :config
-  (add-hook 'json-mode #'smartparens-mode)
-  (add-hook 'json-mode #'hs-minor-mode)
+  (add-hook 'json-mode-hook #'smartparens-mode)
+  (add-hook 'json-mode-hook #'hs-minor-mode)
   (my/set-smartparens-indent 'json-mode))
 #+end_src
 *** CSV
@@ -4058,7 +4046,8 @@ Emacs integration for [[http://gnuplot.info/][gnuplot]].
 ** x509
 #+begin_src emacs-lisp
 (use-package x509-mode
-  :straight t)
+  :straight (:host github :repo "jobbflykt/x509-mode"
+                   :build (:not native-compile)))
 #+end_src
 ** Java
 #+begin_src emacs-lisp
@@ -6222,6 +6211,29 @@ And a minor mode to toggle the display in a particular =org-roam= buffer.
     (my/org-roam--count-overlay-remove-all)
     (remove-hook 'after-save-hook #'my/org-roam--count-overlay-remove-all t)))
 #+end_src
+**** Extract all links from page
+#+begin_src emacs-lisp
+(defun my/org-roam-extract-links ()
+  (interactive)
+  (let ((buffer (generate-new-buffer "*roam-links*"))
+        elems)
+    (org-element-map (org-element-parse-buffer) 'link
+      (lambda (elem)
+        (when (string-equal (org-element-property :type elem) "id")
+          (push elem elems))))
+    (with-current-buffer buffer
+      (cl-loop for elem in elems
+               for file-name =
+               (file-name-nondirectory
+                (caar
+                 (org-roam-db-query
+                  [:select [file]
+                           :from nodes
+                           :where (= id $s1)]
+                  (org-element-property :path elem))))
+               do (insert file-name "\n")))
+    (switch-to-buffer buffer)))
+#+end_src
 **** Org Roam UI
 A browser frontend to visualize the Roam database as a graph.
 
@@ -6716,6 +6728,7 @@ References:
 (use-package ox-ipynb
   :straight (:host github :repo "jkitchin/ox-ipynb")
   :if (not my/remote-server)
+  :disabled t
   :after ox)
 #+end_src
 *** Html export
@@ -7065,7 +7078,8 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
   (dired (expand-file-name "~")))
 
 (my-leader-def
-  "ad" #'dired)
+  "ad" #'dired
+  "aD" #'my/dired-bookmark-open)
 #+end_src
 *** Addons
 I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provides a lot of extensions for dired functionality, but it also creates some new problems, so I opt out of it. Fortunately, the one feature I want from this package - adding more colors to dired buffers - is available as a separate package.
@@ -7153,7 +7167,7 @@ Display icons for files.
 #+begin_src emacs-lisp
 (use-package all-the-icons-dired
   :straight t
-  :if (not (or my/slow-ssh (not (display-graphic-p))))
+  :if (display-graphic-p)
   :hook (dired-mode . (lambda ()
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode))))
@@ -7192,7 +7206,6 @@ Display git info, such as the last commit for file and stuff. It's pretty useful
 (use-package dired-git-info
   :straight t
   :after dired
-  :if (not my/slow-ssh)
   :config
   (general-define-key
    :keymap 'dired-mode-map
@@ -7252,104 +7265,14 @@ Goto project root.
    :keymaps 'dired-mode-map
    "H" #'my/dired-goto-project-root))
 #+end_src
-*** TRAMP
-TRAMP is a package that provides remote editing capacities. It is particularly useful for remote server management.
-
-Unfortunately, many Emacs packages don't exactly moderate their rate of filesystem operations, and on TRAMP over network each operation adds additional overhead, so... it can get pretty slow. To debug these issues, set the following variable to 6:
-#+begin_src emacs-lisp
-(setq tramp-verbose 6)
-#+end_src
-
-I used to launch a separate Emacs instance for TRAMP, which had some of these packages disabled via environment variables, my [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html][advice]]-fu got better since then.
-
-So, to determine if the buffer is in TRAMP:
-#+begin_src emacs-lisp
-(defun my/tramp-p (&optional buffer)
-  (file-remote-p
-   (buffer-local-value 'default-directory (or buffer (current-buffer)))))
-#+end_src
-
-And advice to disable a function for TRAMP-related buffers:
-#+begin_src emacs-lisp
-(defun my/tramp-void-if-tramp (fun &rest args)
-  (unless (my/tramp-p)
-    (apply fun args)))
-
-(defun my/tramp-void-if-file-is-tramp (fun &optional dir)
-  (unless (file-remote-p (or dir default-directory))
-    (funcall fun dir)))
-#+end_src
-
-=editorconfig=. This lovely package looks for =.editorconfig= in the file tree.
-#+begin_src emacs-lisp
-(defun my/editorconfig--advice-find-file-noselect-around (f f1 filename &rest args)
-  (if (file-remote-p filename)
-      (apply f1 filename args)
-    (apply f f1 filename args)))
-
-(with-eval-after-load 'editorconfig
-  (advice-add #'editorconfig-apply :around #'my/tramp-void-if-tramp)
-  (advice-add #'editorconfig--disabled-for-filename
-              :around #'my/tramp-void-if-file-is-tramp)
-  (advice-add #'editorconfig--advice-find-file-noselect :around
-              #'my/editorconfig--advice-find-file-noselect-around))
-#+end_src
-
-=all-the-icons-dired= runs =test= on every file in the directory.
-#+begin_src emacs-lisp
-(with-eval-after-load 'all-the-icons-dired
-  (advice-add #'all-the-icons-dired-mode :around #'my/tramp-void-if-tramp))
-#+end_src
-
-=projectile= looks for =.git=, =.svn=, etc. to find the project root. Maybe I'll make a more economic implementation if I need one.
-#+begin_src emacs-lisp
-(with-eval-after-load 'projectile
-  (advice-add #'projectile-project-root :around #'my/tramp-void-if-file-is-tramp))
-#+end_src
-
-=lsp= does a whole lot of stuff. It probably can be used with TRAMP on faster connections, but not in my case.
-#+begin_src emacs-lisp
-(with-eval-after-load 'lsp
-  (advice-add #'lsp :around #'my/tramp-void-if-tramp)
-  (advice-add #'lsp-deferred :around #'my/tramp-void-if-tramp))
-#+end_src
-
-=git-gutter= runs =git= a lot of times.
-#+begin_src emacs-lisp
-(with-eval-after-load 'git-gutter
-  (advice-add #'git-gutter--turn-on :around #'my/tramp-void-if-tramp))
-#+end_src
-
-At any rate, it's usable, although not perfect.
-Some other optimization settings:
-#+begin_src emacs-lisp
-(setq remote-file-name-inhibit-cache nil)
-(setq vc-ignore-dir-regexp
-      (format "\\(%s\\)\\|\\(%s\\)"
-              vc-ignore-dir-regexp
-              tramp-file-name-regexp))
-#+end_src
-
-Set the default shell to =bin/bash= for TRAMP or on a remote server.
-#+begin_src emacs-lisp
-(when (or my/remote-server my/slow-ssh)
-  (setq explicit-shell-file-name "/bin/bash"))
-#+end_src
-
-Also, here is a hack to make TRAMP find =ls= on Guix:
-#+begin_src emacs-lisp
-(with-eval-after-load 'tramp
-  (setq tramp-remote-path
-        (append tramp-remote-path
-                '(tramp-own-remote-path))))
-#+end_src
 *** Bookmarks
 A simple bookmark list for Dired, mainly to use with TRAMP. I may look into a proper bookmarking system later.
 
 Bookmarks are listed in the [[file:.emacs.d/private.el][private.el]] file, which has an expression like this:
 #+begin_example emacs-lisp :tangle no
 (setq my/dired-bookmarks
-      '(("sudo" . "/sudo::/")))
+      '(("HOME" . "~")
+        ("sudo" . "/sudo::/")))
 #+end_example
 
 The file itself is encrypted with yadm.
@@ -7518,6 +7441,121 @@ And the keybindings:
    :states 'normal
    ". s" #'my/notmuch-save-to-dired))
 #+end_src
+** TRAMP
+TRAMP is a package that provides remote editing capacities. It is particularly useful for remote server management.
+
+*** General settings
+Some settings I copy-pasted from somewhere:
+#+begin_src emacs-lisp
+(setq remote-file-name-inhibit-cache nil)
+(setq vc-ignore-dir-regexp
+      (format "\\(%s\\)\\|\\(%s\\)"
+              vc-ignore-dir-regexp
+              tramp-file-name-regexp))
+#+end_src
+
+Also, a hack to make TRAMP find =ls= on Guix:
+#+begin_src emacs-lisp
+(with-eval-after-load 'tramp
+  (setq tramp-remote-path
+        (append tramp-remote-path
+                '(tramp-own-remote-path))))
+#+end_src
+
+Set the default shell to =bin/bash= for TRAMP or on a remote server.
+#+begin_src emacs-lisp
+(when (or my/remote-server)
+  (setq explicit-shell-file-name "/bin/bash"))
+#+end_src
+
+*** Package optimizations
+Unfortunately, many Emacs packages don't exactly moderate their rate of filesystem operations, and on TRAMP over network each operation adds additional overhead, so... it can get pretty slow. To debug these issues, set the following variable to 6:
+#+begin_src emacs-lisp
+(setq tramp-verbose 0)
+#+end_src
+
+I used to launch a separate Emacs instance for TRAMP to disable these packages with an environment variable, but my [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Advising-Functions.html][advice]]-fu got better since then.
+
+So, to determine if the buffer is in TRAMP:
+#+begin_src emacs-lisp
+(defun my/tramp-p (&optional buffer)
+  (file-remote-p
+   (buffer-local-value 'default-directory (or buffer (current-buffer)))))
+#+end_src
+
+And advice to disable a function for TRAMP-related buffers:
+#+begin_src emacs-lisp
+(defun my/tramp-void-if-tramp (fun &rest args)
+  (unless (my/tramp-p)
+    (apply fun args)))
+
+(defun my/tramp-void-if-file-is-tramp (fun &optional dir)
+  (unless (file-remote-p (or dir default-directory))
+    (funcall fun dir)))
+#+end_src
+
+=editorconfig=. This lovely package looks for =.editorconfig= in the file tree.
+#+begin_src emacs-lisp
+(defun my/editorconfig--advice-find-file-noselect-around (f f1 filename &rest args)
+  (if (file-remote-p filename)
+      (apply f1 filename args)
+    (apply f f1 filename args)))
+
+(with-eval-after-load 'editorconfig
+  (advice-add #'editorconfig-apply :around #'my/tramp-void-if-tramp)
+  (advice-add #'editorconfig--disabled-for-filename
+              :around #'my/tramp-void-if-file-is-tramp)
+  (advice-add #'editorconfig--advice-find-file-noselect :around
+              #'my/editorconfig--advice-find-file-noselect-around))
+#+end_src
+
+=all-the-icons-dired= runs =test= on every file in the directory.
+#+begin_src emacs-lisp
+(with-eval-after-load 'all-the-icons-dired
+  (advice-add #'all-the-icons-dired-mode :around #'my/tramp-void-if-tramp))
+#+end_src
+
+=projectile= looks for =.git=, =.svn=, etc. to find the project root. Maybe I'll make a more economic implementation if I need one.
+#+begin_src emacs-lisp
+(with-eval-after-load 'projectile
+  (advice-add #'projectile-project-root :around #'my/tramp-void-if-file-is-tramp))
+#+end_src
+
+=lsp= does a whole lot of stuff. It probably can be used with TRAMP on faster connections, but not in my case.
+#+begin_src emacs-lisp
+(with-eval-after-load 'lsp-mode
+  (advice-add #'lsp :around #'my/tramp-void-if-tramp)
+  (advice-add #'lsp-deferred :around #'my/tramp-void-if-tramp))
+#+end_src
+
+=git-gutter= runs =git= a lot of times.
+#+begin_src emacs-lisp
+(with-eval-after-load 'git-gutter
+  (advice-add #'git-gutter--turn-on :around #'my/tramp-void-if-tramp))
+#+end_src
+
+=dired-git-info= is runs =git= a lot of times.
+#+begin_src emacs-lisp
+(with-eval-after-load 'dired-git-info
+  (advice-add #'dired-git-info-mode :around #'my/tramp-void-if-tramp))
+#+end_src
+
+=pipenv=. Don't remember what was the deal with this one.
+#+begin_src emacs-lisp
+(with-eval-after-load 'pipenv
+  (advice-add #'pipenv-mode :around #'my/tramp-void-if-tramp))
+#+end_src
+
+=eshell= works pretty well, but =company-mode= gets pretty slow.
+#+begin_src emacs-lisp
+(defun my/shell-maybe-configure-for-tramp ()
+  (when (my/tramp-p)
+    (setq company-idle-delay nil)))
+
+(add-hook 'eshell-mode-hook #'my/shell-maybe-configure-for-tramp)
+(add-hook 'shell-mode-hook #'my/shell-maybe-configure-for-tramp)
+#+end_src
+
 ** Shells / Terminals
 *** vterm
 [[https://github.com/akermu/emacs-libvterm][vterm]] is a terminal emulator for Emacs.
@@ -8047,14 +8085,6 @@ Make a dedicated buffer for eshell in the bottom of the screen.
       (eshell/cd root)
     (message "Not in a project")))
 #+end_src
-**** TRAMP compatiblity
-#+begin_src emacs-lisp
-(defun my/eshell-maybe-configure-for-tramp ()
-  (when (file-remote-p default-directory)
-    (setq-local company-idle-delay nil)))
-
-(add-hook 'eshell-mode-hook #'my/eshell-maybe-configure-for-tramp)
-#+end_src
 **** Global keybindings
 #+begin_src emacs-lisp
 (general-define-key
@@ -8072,10 +8102,12 @@ Still, I'll probably switch to =eat= if =eshell= doesn't work for me.
 #+begin_src emacs-lisp
 (use-package eat
   :straight (:files ("*.el" ("term" "term/*.el") "*.texi"
-               "*.ti" ("terminfo/e" "terminfo/e/*")
-               ("terminfo/65" "terminfo/65/*")
-               ("integration" "integration/*")
-               (:exclude ".dir-locals.el" "*-tests.el"))))
+                     "*.ti" ("terminfo/e" "terminfo/e/*")
+                     ("terminfo/65" "terminfo/65/*")
+                     ("integration" "integration/*")
+                     (:exclude ".dir-locals.el" "*-tests.el")))
+  :config
+  (setq eat-shell "/bin/bash"))
 #+end_src
 
 Yeah, and =eat= has integration with eshell too.
@@ -11700,6 +11732,19 @@ Emacs' built-in calendar. Can even calculate sunrise and sunset times.
 (setq calendar-latitude 59.9375)
 (setq calendar-longitude 30.308611)
 #+end_src
+** Calc
+[[https://github.com/kickingvegas/Casual][casual]] is a transient interface for the built-in calc.el
+
+#+begin_src emacs-lisp
+(use-package casual
+  :straight (:host github :repo "kickingvegas/Casual")
+  :after calc
+  :config
+  (general-define-key
+   :states '(normal)
+   :keymaps 'calc-mode-map
+   "M-o" #'casual-main-menu))
+#+end_src
 ** Chess
 *** chess.el
 chess.el is a package by John Wiegley.
@@ -11826,8 +11871,8 @@ And the package configuration:
             (string= (system-name) "violet")
             (string= (system-name) "eminence")
             (string= (system-name) "iris"))
-           (not my/slow-ssh)
-           (not my/remote-server))
+           (not my/remote-server)
+           (not my/nested-emacs))
   :config
   (setq elcord-buffer-details-format-function #'my/elcord-buffer-details-format-functions)
   (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)

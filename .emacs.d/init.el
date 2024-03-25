@@ -16,10 +16,6 @@
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
 
-(setq my/slow-ssh
-      (or
-       (string= (getenv "IS_TRAMP") "true")))
-
 (setq my/remote-server
       (or (string= (getenv "IS_REMOTE") "true")
           (string= (system-name) "dev-digital")
@@ -27,6 +23,7 @@
 
 (setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
 
+(setq my/nested-emacs (and (getenv "IS_EMACS") t))
 (setenv "IS_EMACS" "true")
 
 (defmacro with-eval-after-load-norem (file &rest body)
@@ -378,7 +375,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (global-set-key (kbd "C-+") 'my/zoom-in)
 (global-set-key (kbd "C-=") 'my/zoom-out)
 
-(unless my/remote-server
+(unless (or my/remote-server my/nested-emacs)
   (add-hook 'after-init-hook #'server-start))
 
 (defmacro i3-msg (&rest args)
@@ -611,7 +608,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (use-package git-gutter
   :straight t
-  :if (not my/slow-ssh)
   :config
   (global-git-gutter-mode +1))
 
@@ -716,7 +712,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (use-package editorconfig
   :straight t
   :config
-  (unless my/slow-ssh (editorconfig-mode 1))
   (add-to-list 'editorconfig-indentation-alist
                '(emmet-mode emmet-indentation)))
 
@@ -1517,7 +1512,7 @@ Obeys `widen-automatically', which see."
 
 (use-package lsp-mode
   :straight t
-  :if (not (or my/slow-ssh my/is-termux my/remote-server))
+  :if (not (or my/is-termux my/remote-server))
   :hook (
          (typescript-mode . lsp)
          (js-mode . lsp)
@@ -2681,7 +2676,6 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package lsp-pyright
   :straight t
   :defer t
-  :if (not my/slow-ssh)
   :hook (python-mode . (lambda ()
                          (require 'lsp-pyright)
                          (setq-local lsp-pyright-python-executable-cmd (my/get-pipenv-python))
@@ -2693,7 +2687,6 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package pipenv
   :straight t
   :hook (python-mode . pipenv-mode)
-  :if (not my/slow-ssh)
   :init
   (setq
    pipenv-projectile-after-switch-function
@@ -2803,10 +2796,9 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package json-mode
   :straight t
-  :mode "\\.json\\'"
   :config
-  (add-hook 'json-mode #'smartparens-mode)
-  (add-hook 'json-mode #'hs-minor-mode)
+  (add-hook 'json-mode-hook #'smartparens-mode)
+  (add-hook 'json-mode-hook #'hs-minor-mode)
   (my/set-smartparens-indent 'json-mode))
 
 (use-package csv-mode
@@ -2918,7 +2910,8 @@ Returns (<buffer> . <workspace-index>) or nil."
   (add-hook 'gnuplot-mode-hook #'smartparens-mode))
 
 (use-package x509-mode
-  :straight t)
+  :straight (:host github :repo "jobbflykt/x509-mode"
+                   :build (:not native-compile)))
 
 (use-package lsp-java
   :straight t
@@ -4516,6 +4509,27 @@ KEYS is a list of cons cells like (<label> . <time>)."
     (my/org-roam--count-overlay-remove-all)
     (remove-hook 'after-save-hook #'my/org-roam--count-overlay-remove-all t)))
 
+(defun my/org-roam-extract-links ()
+  (interactive)
+  (let ((buffer (generate-new-buffer "*roam-links*"))
+        elems)
+    (org-element-map (org-element-parse-buffer) 'link
+      (lambda (elem)
+        (when (string-equal (org-element-property :type elem) "id")
+          (push elem elems))))
+    (with-current-buffer buffer
+      (cl-loop for elem in elems
+               for file-name =
+               (file-name-nondirectory
+                (caar
+                 (org-roam-db-query
+                  [:select [file]
+                           :from nodes
+                           :where (= id $s1)]
+                  (org-element-property :path elem))))
+               do (insert file-name "\n")))
+    (switch-to-buffer buffer)))
+
 (use-package org-roam-ui
   :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
   :if (not my/remote-server)
@@ -4875,6 +4889,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (use-package ox-ipynb
   :straight (:host github :repo "jkitchin/ox-ipynb")
   :if (not my/remote-server)
+  :disabled t
   :after ox)
 
 (use-package htmlize
@@ -5072,7 +5087,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (dired (expand-file-name "~")))
 
 (my-leader-def
-  "ad" #'dired)
+  "ad" #'dired
+  "aD" #'my/dired-bookmark-open)
 
 (use-package diredfl
   :straight t
@@ -5139,7 +5155,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
 
 (use-package all-the-icons-dired
   :straight t
-  :if (not (or my/slow-ssh (not (display-graphic-p))))
+  :if (display-graphic-p)
   :hook (dired-mode . (lambda ()
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode))))
@@ -5166,7 +5182,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (use-package dired-git-info
   :straight t
   :after dired
-  :if (not my/slow-ssh)
   :config
   (general-define-key
    :keymap 'dired-mode-map
@@ -5212,59 +5227,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
    :states '(normal)
    :keymaps 'dired-mode-map
    "H" #'my/dired-goto-project-root))
-
-(setq tramp-verbose 6)
-
-(defun my/tramp-p (&optional buffer)
-  (file-remote-p
-   (buffer-local-value 'default-directory (or buffer (current-buffer)))))
-
-(defun my/tramp-void-if-tramp (fun &rest args)
-  (unless (my/tramp-p)
-    (apply fun args)))
-
-(defun my/tramp-void-if-file-is-tramp (fun &optional dir)
-  (unless (file-remote-p (or dir default-directory))
-    (funcall fun dir)))
-
-(defun my/editorconfig--advice-find-file-noselect-around (f f1 filename &rest args)
-  (if (file-remote-p filename)
-      (apply f1 filename args)
-    (apply f f1 filename args)))
-
-(with-eval-after-load 'editorconfig
-  (advice-add #'editorconfig-apply :around #'my/tramp-void-if-tramp)
-  (advice-add #'editorconfig--disabled-for-filename
-              :around #'my/tramp-void-if-file-is-tramp)
-  (advice-add #'editorconfig--advice-find-file-noselect :around
-              #'my/editorconfig--advice-find-file-noselect-around))
-
-(with-eval-after-load 'all-the-icons-dired
-  (advice-add #'all-the-icons-dired-mode :around #'my/tramp-void-if-tramp))
-
-(with-eval-after-load 'projectile
-  (advice-add #'projectile-project-root :around #'my/tramp-void-if-file-is-tramp))
-
-(with-eval-after-load 'lsp
-  (advice-add #'lsp :around #'my/tramp-void-if-tramp)
-  (advice-add #'lsp-deferred :around #'my/tramp-void-if-tramp))
-
-(with-eval-after-load 'git-gutter
-  (advice-add #'git-gutter--turn-on :around #'my/tramp-void-if-tramp))
-
-(setq remote-file-name-inhibit-cache nil)
-(setq vc-ignore-dir-regexp
-      (format "\\(%s\\)\\|\\(%s\\)"
-              vc-ignore-dir-regexp
-              tramp-file-name-regexp))
-
-(when (or my/remote-server my/slow-ssh)
-  (setq explicit-shell-file-name "/bin/bash"))
-
-(with-eval-after-load 'tramp
-  (setq tramp-remote-path
-        (append tramp-remote-path
-                '(tramp-own-remote-path))))
 
 (defun my/dired-bookmark-open ()
   (interactive)
@@ -5399,6 +5361,72 @@ KEYS is a list of cons cells like (<label> . <time>)."
    :keymaps 'notmuch-show-mode-map
    :states 'normal
    ". s" #'my/notmuch-save-to-dired))
+
+(setq remote-file-name-inhibit-cache nil)
+(setq vc-ignore-dir-regexp
+      (format "\\(%s\\)\\|\\(%s\\)"
+              vc-ignore-dir-regexp
+              tramp-file-name-regexp))
+
+(with-eval-after-load 'tramp
+  (setq tramp-remote-path
+        (append tramp-remote-path
+                '(tramp-own-remote-path))))
+
+(when (or my/remote-server)
+  (setq explicit-shell-file-name "/bin/bash"))
+
+(setq tramp-verbose 0)
+
+(defun my/tramp-p (&optional buffer)
+  (file-remote-p
+   (buffer-local-value 'default-directory (or buffer (current-buffer)))))
+
+(defun my/tramp-void-if-tramp (fun &rest args)
+  (unless (my/tramp-p)
+    (apply fun args)))
+
+(defun my/tramp-void-if-file-is-tramp (fun &optional dir)
+  (unless (file-remote-p (or dir default-directory))
+    (funcall fun dir)))
+
+(defun my/editorconfig--advice-find-file-noselect-around (f f1 filename &rest args)
+  (if (file-remote-p filename)
+      (apply f1 filename args)
+    (apply f f1 filename args)))
+
+(with-eval-after-load 'editorconfig
+  (advice-add #'editorconfig-apply :around #'my/tramp-void-if-tramp)
+  (advice-add #'editorconfig--disabled-for-filename
+              :around #'my/tramp-void-if-file-is-tramp)
+  (advice-add #'editorconfig--advice-find-file-noselect :around
+              #'my/editorconfig--advice-find-file-noselect-around))
+
+(with-eval-after-load 'all-the-icons-dired
+  (advice-add #'all-the-icons-dired-mode :around #'my/tramp-void-if-tramp))
+
+(with-eval-after-load 'projectile
+  (advice-add #'projectile-project-root :around #'my/tramp-void-if-file-is-tramp))
+
+(with-eval-after-load 'lsp-mode
+  (advice-add #'lsp :around #'my/tramp-void-if-tramp)
+  (advice-add #'lsp-deferred :around #'my/tramp-void-if-tramp))
+
+(with-eval-after-load 'git-gutter
+  (advice-add #'git-gutter--turn-on :around #'my/tramp-void-if-tramp))
+
+(with-eval-after-load 'dired-git-info
+  (advice-add #'dired-git-info-mode :around #'my/tramp-void-if-tramp))
+
+(with-eval-after-load 'pipenv
+  (advice-add #'pipenv-mode :around #'my/tramp-void-if-tramp))
+
+(defun my/shell-maybe-configure-for-tramp ()
+  (when (my/tramp-p)
+    (setq company-idle-delay nil)))
+
+(add-hook 'eshell-mode-hook #'my/shell-maybe-configure-for-tramp)
+(add-hook 'shell-mode-hook #'my/shell-maybe-configure-for-tramp)
 
 (when my/is-termux
   (straight-use-package 'vterm))
@@ -5781,12 +5809,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
       (eshell/cd root)
     (message "Not in a project")))
 
-(defun my/eshell-maybe-configure-for-tramp ()
-  (when (file-remote-p default-directory)
-    (setq-local company-idle-delay nil)))
-
-(add-hook 'eshell-mode-hook #'my/eshell-maybe-configure-for-tramp)
-
 (general-define-key
  :states '(normal)
  "`" #'my/eshell-dedicated
@@ -5794,10 +5816,12 @@ KEYS is a list of cons cells like (<label> . <time>)."
 
 (use-package eat
   :straight (:files ("*.el" ("term" "term/*.el") "*.texi"
-               "*.ti" ("terminfo/e" "terminfo/e/*")
-               ("terminfo/65" "terminfo/65/*")
-               ("integration" "integration/*")
-               (:exclude ".dir-locals.el" "*-tests.el"))))
+                     "*.ti" ("terminfo/e" "terminfo/e/*")
+                     ("terminfo/65" "terminfo/65/*")
+                     ("integration" "integration/*")
+                     (:exclude ".dir-locals.el" "*-tests.el")))
+  :config
+  (setq eat-shell "/bin/bash"))
 
 (add-hook 'eshell-load-hook #'eat-eshell-mode)
 
@@ -8480,6 +8504,15 @@ to `dired' if used interactively."
 (setq calendar-latitude 59.9375)
 (setq calendar-longitude 30.308611)
 
+(use-package casual
+  :straight (:host github :repo "kickingvegas/Casual")
+  :after calc
+  :config
+  (general-define-key
+   :states '(normal)
+   :keymaps 'calc-mode-map
+   "M-o" #'casual-main-menu))
+
 (use-package chess
   :straight t)
 
@@ -8543,8 +8576,8 @@ to `dired' if used interactively."
             (string= (system-name) "violet")
             (string= (system-name) "eminence")
             (string= (system-name) "iris"))
-           (not my/slow-ssh)
-           (not my/remote-server))
+           (not my/remote-server)
+           (not my/nested-emacs))
   :config
   (setq elcord-buffer-details-format-function #'my/elcord-buffer-details-format-functions)
   (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)
