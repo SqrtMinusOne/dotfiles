@@ -262,6 +262,7 @@ I want to launch some apps from EXWM instead of the Xsession file for two purpos
 As of now, these are polybar, feh and, shepherd:
 #+begin_src emacs-lisp
 (defun my/exwm-run-polybar ()
+  (interactive)
   (call-process "~/bin/polybar.sh"))
 
 (defun my/exwm-set-wallpaper ()

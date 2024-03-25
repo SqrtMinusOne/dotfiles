@@ -1,4 +1,5 @@
 (defun my/exwm-run-polybar ()
+  (interactive)
   (call-process "~/bin/polybar.sh"))
 
 (defun my/exwm-set-wallpaper ()
