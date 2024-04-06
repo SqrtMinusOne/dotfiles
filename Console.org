@@ -96,10 +96,12 @@ fi
 This seems necessary when running Guix on a foreign distro.
 
 #+begin_src bash
-export SSL_CERT_DIR="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/"
-export SSL_CERT_FILE="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/ca-certificates.crt"
-export GIT_SSL_CAINFO="$SSL_CERT_FILE"
-export CURL_CA_BUNDLE="$SSL_CERT_FILE"
+if [ -d "$HOME/.guix-extra-profiles" ] ; then
+    export SSL_CERT_DIR="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/"
+    export SSL_CERT_FILE="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/ca-certificates.crt"
+    export GIT_SSL_CAINFO="$SSL_CERT_FILE"
+    export CURL_CA_BUNDLE="$SSL_CERT_FILE"
+fi
 #+end_src
 ** Guix settings
 Enable extra profiles
