@@ -23,6 +23,10 @@
 
 (setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
 
+(defun my/system-name ()
+  (or (getenv "ANDROID_NAME")
+      (system-name)))
+
 (setq my/nested-emacs (and (getenv "IS_EMACS") t))
 (setenv "IS_EMACS" "true")
 
@@ -43,7 +47,7 @@
                      gcs-done)
             (setq my/emacs-started t)))
 
-;; (setq use-package-verbose t)
+(setq use-package-verbose t)
 
 (setq gc-cons-threshold 80000000)
 (setq read-process-output-max (* 1024 1024))
@@ -374,6 +378,13 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 ;; change font size, interactively
 (global-set-key (kbd "C-+") 'my/zoom-in)
 (global-set-key (kbd "C-=") 'my/zoom-out)
+
+(when my/is-termux
+  (define-key key-translation-map (kbd "`") (kbd "<escape>"))
+  (define-key key-translation-map (kbd "<escape>") (kbd "`")))
+
+(when my/is-termux
+  (setq split-width-threshold 90))
 
 (unless (or my/remote-server my/nested-emacs)
   (add-hook 'after-init-hook #'server-start))
@@ -946,7 +957,11 @@ Obeys `widen-automatically', which see."
   :if (not (or my/remote-server))
   :config
   (setq wakatime-ignore-exit-codes '(0 1 102 112))
-  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path (expand-file-name "~/bin/wakatime-cli"))))
+  (advice-add 'wakatime-init :after
+              (lambda ()
+                (setq wakatime-cli-path (or
+                                         (executable-find "wakatime-cli")
+                                         (expand-file-name "~/bin/wakatime-cli")))))
   (when (file-exists-p "~/.wakatime.cfg")
     (setq wakatime-api-key
           (string-trim
@@ -2970,12 +2985,13 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (my/set-smartparens-indent 'lua-mode)
 
+(setq org-directory (expand-file-name "~/30-39 Life/32 org-mode"))
+
 (use-package org
   :straight (:type built-in)
   :if (not my/remote-server)
   :defer t
   :init
-  (setq org-directory (expand-file-name "~/30-39 Life/32 org-mode"))
   (unless (file-exists-p org-directory)
     (mkdir org-directory t))
   :config
@@ -3521,13 +3537,15 @@ With ARG, repeats or can move backward if negative."
                        f))
           (seq-filter
            (lambda (f) (not (file-directory-p f)))
-           (directory-files
-            (concat org-directory "/projects"))))))
+           (when (file-directory-p (concat org-directory "/projects"))
+             (directory-files
+              (concat org-directory "/projects")))))))
     (setq org-agenda-files
-          `("inbox.org"
-            "misc/habit.org"
-            "contacts.org"
-            ,@project-files))
+          (seq-filter #'file-exists-p
+                    `("inbox.org"
+                      "misc/habit.org"
+                      "contacts.org"
+                      ,@project-files)))
     (setq org-refile-targets
           `(,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
@@ -3539,8 +3557,9 @@ With ARG, repeats or can move backward if negative."
       (load-file (concat org-directory "/scripts/refile.el"))
       (run-hooks 'my/org-refile-hooks))))
 
+(setq org-roam-directory (concat org-directory "/roam"))
 (with-eval-after-load-norem 'org
-  (setq org-roam-directory (concat org-directory "/roam"))
+  (require 'seq)
   (my/update-org-agenda))
 
 (setq org-refile-use-outline-path 'file)
@@ -4114,21 +4133,22 @@ KEYS is a list of cons cells like (<label> . <time>)."
                   (remhash key my/org-alert--alerts)))))
 
 (defun my/org-alert--update-today-alerts ()
-  (let ((items
-         (org-ql-query
-           :select 'element
-           :from (org-agenda-files)
-           :where `(and
-                    (todo "FUTURE")
-                    (ts-active :from ,(format-time-string "%Y-%m-%d %H:%M")
-                               :to ,(format-time-string
-                                     "%Y-%m-%d"
-                                     (time-add
-                                      (current-time)
-                                      (* 60 60 24)))
-                               :with-time t))
-           :order-by 'date))
-        scheduled-keys)
+  (when-let* ((files (org-agenda-files))
+              (items
+               (org-ql-query
+                 :select 'element
+                 :from files
+                 :where `(and
+                          (todo "FUTURE")
+                          (ts-active :from ,(format-time-string "%Y-%m-%d %H:%M")
+                                     :to ,(format-time-string
+                                           "%Y-%m-%d"
+                                           (time-add
+                                            (current-time)
+                                            (* 60 60 24)))
+                                     :with-time t))
+                 :order-by 'date))
+              scheduled-keys)
     (cl-loop
      for item in items
      for scheduled = (org-timestamp-to-time (org-element-property :scheduled item))
@@ -4339,8 +4359,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
 
 (defun my/set-journal-header ()
   (org-set-property "Emacs" emacs-version)
-  (org-set-property "Hostname" system-name)
-  (org-journal-tags-prop-apply-delta :add (list (format "host.%s" (system-name))))
+  (org-set-property "Hostname" (my/system-name))
+  (org-journal-tags-prop-apply-delta :add (list (format "host.%s" (my/system-name))))
   (when (boundp 'my/location)
     (org-set-property "Location" my/location)
     (when-let ((weather (my/weather-get)))
@@ -4410,7 +4430,9 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (use-package org-roam
   :straight (:host github :repo "org-roam/org-roam"
                    :files (:defaults "extensions/*.el"))
-  :if (not my/remote-server)
+  :if (and
+       (not my/remote-server)
+       (file-directory-p org-roam-directory))
   :after org
   :init
   (setq org-roam-file-extensions '("org"))
@@ -4866,6 +4888,9 @@ KEYS is a list of cons cells like (<label> . <time>)."
   :straight (:repo "tonyaldon/org-bars" :host github)
   :if (display-graphic-p)
   :hook (org-mode . org-bars-mode))
+
+(unless (display-graphic-p)
+  (add-hook 'org-mode-hook #'org-indent-mode))
 
 (defun my/org-no-ellipsis-in-headlines ()
   (remove-from-invisibility-spec '(outline . t))
@@ -5607,6 +5632,10 @@ KEYS is a list of cons cells like (<label> . <time>)."
                      (shell-quote-argument default-directory))))
     (with-temp-buffer
       (call-process "bash" nil t nil "-c" cmd)
+      (when my/is-termux
+        (let ((inhibit-message t))
+          (replace-string "\\[" "" nil (point-min) (point-max))
+          (replace-string "\\]" "" nil (point-min) (point-max))))
       (thread-first "\n"
                     (concat (string-trim (buffer-string)))
                     (ansi-color-apply)))))
@@ -7625,6 +7654,9 @@ base toot."
   :commands (biome)
   :init
   (my-leader-def "ab" #'biome)
+  (when my/is-termux
+    (setq biome-query-tab-key "<TAB>")
+    (setq biome-api-try-parse-error-as-response t))
   :config
   (add-to-list 'biome-query-coords
                '("Saint-Petersburg, Russia" 59.93863 30.31413))
@@ -7873,7 +7905,7 @@ See `my/index--tree-get' for the format of TREE."
   (seq-filter
    #'identity
    (mapcar
-    (lambda (elem) (my/index--tree-narrow-recursive elem (system-name)))
+    (lambda (elem) (my/index--tree-narrow-recursive elem (my/system-name)))
     (copy-tree tree))))
 
 (defun my/index--filesystem-tree-mapping (full-tree tree &optional active-paths)

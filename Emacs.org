@@ -1,4 +1,4 @@
-#+PROPERTY: header-args :mkdirp yes
+#+PROPERTY: heaaer-args :mkdirp yes
 #+PROPERTY: header-args:bash       :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el :mkdirp yes :eval never-export :exports both
 #+TODO: CHECK(s) | OFF(o)
@@ -127,6 +127,13 @@ And the following is true if Emacs is run from termux on Android.
 (setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
 #+end_src
 
+Custom system name logic because on termux it's always "localhost".
+#+begin_src emacs-lisp
+(defun my/system-name ()
+  (or (getenv "ANDROID_NAME")
+      (system-name)))
+#+end_src
+
 Also, I sometimes need to know if a program is running inside Emacs (say, inside a terminal emulator). And sometimes I need to know if I'm running a nested Emacs session. To do that, I set the following environment variable:
 #+begin_src emacs-lisp
 (setq my/nested-emacs (and (getenv "IS_EMACS") t))
@@ -169,7 +176,7 @@ A small function to print out the loading time and number of GCs during the load
 
 Set the following to =t= to print debug information during the startup. This will include the order in which the packages are loaded and the loading time of individual packages.
 #+begin_src emacs-lisp
-;; (setq use-package-verbose t)
+(setq use-package-verbose t)
 #+end_src
 
 *** Garbage collection
@@ -668,6 +675,20 @@ Evil does a pretty good job of abstracting all these packages with a set of vim-
 ;; change font size, interactively
 (global-set-key (kbd "C-+") 'my/zoom-in)
 (global-set-key (kbd "C-=") 'my/zoom-out)
+#+end_src
+*** Termux
+For some reason my ONYX device has the tilde and escape wrong.
+
+#+begin_src emacs-lisp
+(when my/is-termux
+  (define-key key-translation-map (kbd "`") (kbd "<escape>"))
+  (define-key key-translation-map (kbd "<escape>") (kbd "`")))
+#+end_src
+
+And the screen is less wide.
+#+begin_src emacs-lisp
+(when my/is-termux
+  (setq split-width-threshold 90))
 #+end_src
 ** i3 integration
 UPD <2021-11-27 Sat>. I have finally switched to EXWM as my window manager, but as long as I keep i3 as a backup solution, this section persists. Check out the [[https://sqrtminusone.xyz/posts/2021-10-04-emacs-i3/][post]] for a somewhat better presentation.
@@ -1565,7 +1586,11 @@ Before I figure out how to package this for Guix:
   :if (not (or my/remote-server))
   :config
   (setq wakatime-ignore-exit-codes '(0 1 102 112))
-  (advice-add 'wakatime-init :after (lambda () (setq wakatime-cli-path (expand-file-name "~/bin/wakatime-cli"))))
+  (advice-add 'wakatime-init :after
+              (lambda ()
+                (setq wakatime-cli-path (or
+                                         (executable-find "wakatime-cli")
+                                         (expand-file-name "~/bin/wakatime-cli")))))
   (when (file-exists-p "~/.wakatime.cfg")
     (setq wakatime-api-key
           (string-trim
@@ -4139,12 +4164,13 @@ References:
 Use the built-in org mode (=:type built-in=).
 
 #+begin_src emacs-lisp :noweb yes
+(setq org-directory (expand-file-name "~/30-39 Life/32 org-mode"))
+
 (use-package org
   :straight (:type built-in)
   :if (not my/remote-server)
   :defer t
   :init
-  (setq org-directory (expand-file-name "~/30-39 Life/32 org-mode"))
   (unless (file-exists-p org-directory)
     (mkdir org-directory t))
   :config
@@ -4923,13 +4949,15 @@ Also, my project structure is somewhat chaotic, so I have an =.el= file in the o
                        f))
           (seq-filter
            (lambda (f) (not (file-directory-p f)))
-           (directory-files
-            (concat org-directory "/projects"))))))
+           (when (file-directory-p (concat org-directory "/projects"))
+             (directory-files
+              (concat org-directory "/projects")))))))
     (setq org-agenda-files
-          `("inbox.org"
-            "misc/habit.org"
-            "contacts.org"
-            ,@project-files))
+          (seq-filter #'file-exists-p
+                    `("inbox.org"
+                      "misc/habit.org"
+                      "contacts.org"
+                      ,@project-files)))
     (setq org-refile-targets
           `(,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
@@ -4941,8 +4969,9 @@ Also, my project structure is somewhat chaotic, so I have an =.el= file in the o
       (load-file (concat org-directory "/scripts/refile.el"))
       (run-hooks 'my/org-refile-hooks))))
 
+(setq org-roam-directory (concat org-directory "/roam"))
 (with-eval-after-load-norem 'org
-  (setq org-roam-directory (concat org-directory "/roam"))
+  (require 'seq)
   (my/update-org-agenda))
 #+end_src
 
@@ -5651,21 +5680,22 @@ KEYS is a list of cons cells like (<label> . <time>)."
 And a function to extract the required items with =org-ql-query= and schedule them:
 #+begin_src emacs-lisp
 (defun my/org-alert--update-today-alerts ()
-  (let ((items
-         (org-ql-query
-           :select 'element
-           :from (org-agenda-files)
-           :where `(and
-                    (todo "FUTURE")
-                    (ts-active :from ,(format-time-string "%Y-%m-%d %H:%M")
-                               :to ,(format-time-string
-                                     "%Y-%m-%d"
-                                     (time-add
-                                      (current-time)
-                                      (* 60 60 24)))
-                               :with-time t))
-           :order-by 'date))
-        scheduled-keys)
+  (when-let* ((files (org-agenda-files))
+              (items
+               (org-ql-query
+                 :select 'element
+                 :from files
+                 :where `(and
+                          (todo "FUTURE")
+                          (ts-active :from ,(format-time-string "%Y-%m-%d %H:%M")
+                                     :to ,(format-time-string
+                                           "%Y-%m-%d"
+                                           (time-add
+                                            (current-time)
+                                            (* 60 60 24)))
+                                     :with-time t))
+                 :order-by 'date))
+              scheduled-keys)
     (cl-loop
      for item in items
      for scheduled = (org-timestamp-to-time (org-element-property :scheduled item))
@@ -5943,8 +5973,8 @@ And here's the function that creates a drawer with such information. At the mome
 #+begin_src emacs-lisp
 (defun my/set-journal-header ()
   (org-set-property "Emacs" emacs-version)
-  (org-set-property "Hostname" system-name)
-  (org-journal-tags-prop-apply-delta :add (list (format "host.%s" (system-name))))
+  (org-set-property "Hostname" (my/system-name))
+  (org-journal-tags-prop-apply-delta :add (list (format "host.%s" (my/system-name))))
   (when (boundp 'my/location)
     (org-set-property "Location" my/location)
     (when-let ((weather (my/weather-get)))
@@ -6067,7 +6097,9 @@ References:
 (use-package org-roam
   :straight (:host github :repo "org-roam/org-roam"
                    :files (:defaults "extensions/*.el"))
-  :if (not my/remote-server)
+  :if (and
+       (not my/remote-server)
+       (file-directory-p org-roam-directory))
   :after org
   :init
   (setq org-roam-file-extensions '("org"))
@@ -6689,6 +6721,12 @@ Disabled it for now because of overlapping functionality with org-bars.
   :straight (:repo "tonyaldon/org-bars" :host github)
   :if (display-graphic-p)
   :hook (org-mode . org-bars-mode))
+#+end_src
+
+Fallback to the standard =org-indent-mode= on terminal.
+#+begin_src emacs-lisp
+(unless (display-graphic-p)
+  (add-hook 'org-mode-hook #'org-indent-mode))
 #+end_src
 
 Remove the ellipsis at the end of folded headlines, as it seems unnecessary with =org-bars=.
@@ -7795,6 +7833,10 @@ The executable can print out the text of the prompt, but somehow it refuses when
                      (shell-quote-argument default-directory))))
     (with-temp-buffer
       (call-process "bash" nil t nil "-c" cmd)
+      (when my/is-termux
+        (let ((inhibit-message t))
+          (replace-string "\\[" "" nil (point-min) (point-max))
+          (replace-string "\\]" "" nil (point-min) (point-max))))
       (thread-first "\n"
                     (concat (string-trim (buffer-string)))
                     (ansi-color-apply)))))
@@ -10487,11 +10529,15 @@ References:
   :commands (biome)
   :init
   (my-leader-def "ab" #'biome)
+  (when my/is-termux
+    (setq biome-query-tab-key "<TAB>")
+    (setq biome-api-try-parse-error-as-response t))
   :config
   (add-to-list 'biome-query-coords
                '("Saint-Petersburg, Russia" 59.93863 30.31413))
   (add-to-list 'biome-query-coords
                '("Tyumen, Russia" 57.15222 65.52722)))
+
 #+end_src
 ** Reading documentation
 *** tldr
@@ -10911,7 +10957,7 @@ Finally, we need to narrow the tree to only leave nodes that are active for the 
   (seq-filter
    #'identity
    (mapcar
-    (lambda (elem) (my/index--tree-narrow-recursive elem (system-name)))
+    (lambda (elem) (my/index--tree-narrow-recursive elem (my/system-name)))
     (copy-tree tree))))
 #+end_src
 
