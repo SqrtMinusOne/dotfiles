@@ -176,7 +176,7 @@ A small function to print out the loading time and number of GCs during the load
 
 Set the following to =t= to print debug information during the startup. This will include the order in which the packages are loaded and the loading time of individual packages.
 #+begin_src emacs-lisp
-(setq use-package-verbose t)
+(setq use-package-verbose nil)
 #+end_src
 
 *** Garbage collection

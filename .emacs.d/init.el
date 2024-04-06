@@ -47,7 +47,7 @@
                      gcs-done)
             (setq my/emacs-started t)))
 
-(setq use-package-verbose t)
+(setq use-package-verbose nil)
 
 (setq gc-cons-threshold 80000000)
 (setq read-process-output-max (* 1024 1024))
