@@ -13,9 +13,10 @@ notmuch search --output=files "NOT path:pvkorytov_etu/Job_Digital.Docs/cur/** AN
 notmuch search --output=files "NOT path:pvkorytov_etu/Job_Digital.Support/cur/** AND tag:job.digital.support AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Job_Digital.Support/cur/
 notmuch search --output=files "NOT path:pvkorytov_etu/Job_Digital.Superservice/cur/** AND tag:job.digital.superservice AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Job_Digital.Superservice/cur/
 notmuch search --output=files "NOT path:pvkorytov_etu/Job_Digital.Applicants/cur/** AND tag:job.digital.applicants AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Job_Digital.Applicants/cur/
+notmuch search --output=files "NOT path:pvkorytov_etu/Job_Digital.Testers/cur/** AND tag:job.digital.testers AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Job_Digital.Testers/cur/
 notmuch search --output=files "NOT path:pvkorytov_etu/Job_Moevm/cur/** AND tag:job.moevm AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Job_Moevm/cur/
 notmuch search --output=files "NOT path:pvkorytov_etu/Etu/cur/** AND tag:etu AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Etu/cur/
-notmuch search --output=files "NOT path:pvkorytov_etu/Archive/cur/** AND NOT tag:inbox AND NOT tag:sent AND NOT tag:spam AND NOT tag:trash AND NOT tag:job.digital AND NOT tag:job.digital.docs AND NOT tag:job.digital.support AND NOT tag:job.digital.superservice AND NOT tag:job.digital.applicants AND NOT tag:job.moevm AND NOT tag:etu AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Archive/cur/
+notmuch search --output=files "NOT path:pvkorytov_etu/Archive/cur/** AND NOT tag:inbox AND NOT tag:sent AND NOT tag:spam AND NOT tag:trash AND NOT tag:job.digital AND NOT tag:job.digital.docs AND NOT tag:job.digital.support AND NOT tag:job.digital.superservice AND NOT tag:job.digital.applicants AND NOT tag:job.digital.testers AND NOT tag:job.moevm AND NOT tag:etu AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu/Archive/cur/
 echo "Pre-new filters done"
 
 parallel --link -j0 "(cd /home/pavel/Mail/{1}/ && {2} {3})" ::: thexcloud progin6304 pvkorytov_etu ::: "$GMI" "$GMI" "offlineimap" ::: sync sync ""

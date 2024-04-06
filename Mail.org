@@ -183,6 +183,7 @@ So, here are the rules which match tags & folders:
 | job.digital.support      | Job_Digital.Support      |
 | job.digital.superservice | Job_Digital.Superservice |
 | job.digital.applicants   | Job_Digital.Applicants   |
+| job.digital.testers      | Job_Digital.Testers      |
 | job.moevm                | Job_Moevm                |
 | etu                      | Etu                      |
 
