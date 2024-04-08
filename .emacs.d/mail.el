@@ -6,6 +6,10 @@
     (let ((default-directory dir))
       (normal-top-level-add-subdirs-to-load-path))))
 
+(use-package notmuch
+  :straight t
+  :if my/is-termux)
+
 (defun my/notmuch-toggle-trash ()
   (interactive)
   (evil-collection-notmuch-toggle-tag "trash" "search" #'ignore))
@@ -69,6 +73,7 @@
         (:name "pvkorytov (unread)" :query "tag:pvkorytov AND tag:unread" :key "vu")
         (:name "pvkorytov (sent)" :query "tag:pvkorytov AND tag:sent" :key "vs")
         (:name "pvkorytov (all mail)" :query "tag:pvkorytov" :key "va")))
+(setq notmuch-show-empty-saved-searches t)
 
 (general-define-key
  :states '(normal visual)

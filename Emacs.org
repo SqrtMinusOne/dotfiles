@@ -2192,6 +2192,8 @@ References:
   (setq doom-modeline-persp-icon nil)
   (setq doom-modeline-persp-name nil)
   (setq doom-modeline-display-misc-in-all-mode-lines nil)
+  (when my/is-termux
+    (setopt doom-modeline-icon nil))
   :config
   (setq doom-modeline-minor-modes nil)
   (setq doom-modeline-irc nil)
@@ -9156,7 +9158,7 @@ However, the quality of the output for Whisper is just so much better so I consi
 My notmuch config now resides in [[file:Mail.org][Mail.org]].
 
 #+begin_src emacs-lisp
-(unless (or my/is-termux my/remote-server)
+(unless (or my/remote-server)
   (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
     (if (file-exists-p mail-file)
         (load-file mail-file)

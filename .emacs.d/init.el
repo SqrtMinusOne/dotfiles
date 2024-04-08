@@ -1387,6 +1387,8 @@ Obeys `widen-automatically', which see."
   (setq doom-modeline-persp-icon nil)
   (setq doom-modeline-persp-name nil)
   (setq doom-modeline-display-misc-in-all-mode-lines nil)
+  (when my/is-termux
+    (setopt doom-modeline-icon nil))
   :config
   (setq doom-modeline-minor-modes nil)
   (setq doom-modeline-irc nil)
@@ -6588,7 +6590,7 @@ ENTRY is an instance of `elfeed-entry'."
        (lambda (&key error-thrown &allow-other-keys)
          (message "Error!: %S" error-thrown))))))
 
-(unless (or my/is-termux my/remote-server)
+(unless (or my/remote-server)
   (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
     (if (file-exists-p mail-file)
         (load-file mail-file)
