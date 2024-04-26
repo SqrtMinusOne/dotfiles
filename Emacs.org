@@ -1345,7 +1345,8 @@ Keybindings:
   :infix "g"
   "g" #'counsel-mark-ring
   "G" #'my/counsel-global-mark-ring
-  "C" #'my/mark-ring-clear)
+  "C" #'my/mark-ring-clear
+  "m" #'my/push-mark-no-activate)
 
 (general-define-key
  :keymaps 'global
@@ -1990,7 +1991,9 @@ The built-in =load-theme= does not deactivate the previous theme, so here's a fu
 #+end_src
 
 #+begin_src emacs-lisp
-(my/switch-theme 'ef-duo-light)
+(if my/is-termux
+    (my/switch-theme 'modus-operandi-tinted)
+  (my/switch-theme 'ef-duo-light))
 #+end_src
 **** Extending current theme
 Colors that aren't set in themes.
@@ -2189,6 +2192,8 @@ References:
   (setq doom-modeline-persp-icon nil)
   (setq doom-modeline-persp-name nil)
   (setq doom-modeline-display-misc-in-all-mode-lines nil)
+  (when my/is-termux
+    (setopt doom-modeline-icon nil))
   :config
   (setq doom-modeline-minor-modes nil)
   (setq doom-modeline-irc nil)
@@ -7043,11 +7048,13 @@ One note is that by default running these commands will require the user to conf
 
 #+begin_src emacs-lisp
 (setq my/org-config-files
-      '("/home/pavel/Emacs.org"
-        "/home/pavel/Desktop.org"
-        "/home/pavel/Console.org"
-        "/home/pavel/Guix.org"
-        "/home/pavel/Mail.org"))
+      (mapcar
+       #'expand-file-name
+       '("~/Emacs.org"
+         "~/Desktop.org"
+         "~/Console.org"
+         "~/Guix.org"
+         "~/Mail.org")))
 
 (add-hook 'org-mode-hook
           (lambda ()
@@ -9195,7 +9202,7 @@ However, the quality of the output for Whisper is just so much better so I consi
 My notmuch config now resides in [[file:Mail.org][Mail.org]].
 
 #+begin_src emacs-lisp
-(unless (or my/is-termux my/remote-server)
+(unless (or my/remote-server)
   (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
     (if (file-exists-p mail-file)
         (load-file mail-file)
@@ -10401,7 +10408,7 @@ Or you can load up Element for a moment to see what the mention was, if that's e
 #+begin_src emacs-lisp
 (use-package telega
   :straight t
-  :if (not (or my/remote-server my/is-termux))
+  :if (not (or my/remote-server))
   :commands (telega)
   :init
   (my-leader-def "a l" (my/command-in-persp "telega" "telega" 3 (telega)))
@@ -10431,13 +10438,15 @@ Or you can load up Element for a moment to see what the mention was, if that's e
     telega-webpage-mode 3 "telega"))
 #+end_src
 
-Building =telega-server= can create problems. It requires the latest version of =tdlib=, which isn't available anywhere, but I can inherit the Guix package definition.
+Building =telega-server= can create problems. On Guix I can use the Guix package definition, on termux just build manually.
 #+begin_src emacs-lisp
 (defun my/telega-server-build ()
   (interactive)
   (setq telega-server-libs-prefix
-        (string-trim
-         (shell-command-to-string "guix build tdlib")))
+        (if (executable-find "guix")
+            (string-trim
+             (shell-command-to-string "guix build tdlib"))
+          (expand-file-name "~/bin/td/build/res/usr/local")))
   (telega-server-build "CC=gcc"))
 #+end_src
 
@@ -10461,6 +10470,7 @@ Setting up the modeline. The default mode string doesn't look great with my othe
 Configuring company backends for the chat buffer, as recommended in the manual:
 #+begin_src emacs-lisp
 (defun my/telega-chat-setup ()
+  (interactive)
   (set (make-local-variable 'company-backends)
        (append (list 'telega-company-emoji
                      'telega-company-username
@@ -10470,7 +10480,8 @@ Configuring company backends for the chat buffer, as recommended in the manual:
                  '(telega-company-botcmd))))
   (company-mode 1)
   (setopt visual-fill-column-width
-          (+ telega-chat-fill-column 4))
+          (+ telega-chat-fill-column
+             (if (display-graphic-p) 4 5)))
   (setq-local split-width-threshold 1))
 (add-hook 'telega-chat-mode-hook #'my/telega-chat-setup)
 #+end_src

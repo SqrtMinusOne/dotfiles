@@ -786,7 +786,8 @@ Obeys `widen-automatically', which see."
   :infix "g"
   "g" #'counsel-mark-ring
   "G" #'my/counsel-global-mark-ring
-  "C" #'my/mark-ring-clear)
+  "C" #'my/mark-ring-clear
+  "m" #'my/push-mark-no-activate)
 
 (general-define-key
  :keymaps 'global
@@ -1241,7 +1242,9 @@ Obeys `widen-automatically', which see."
   (when current-prefix-arg
     (my/regenerate-desktop)))
 
-(my/switch-theme 'ef-duo-light)
+(if my/is-termux
+    (my/switch-theme 'modus-operandi-tinted)
+  (my/switch-theme 'ef-duo-light))
 
 (with-eval-after-load 'transient
   (my/use-colors
@@ -1384,6 +1387,8 @@ Obeys `widen-automatically', which see."
   (setq doom-modeline-persp-icon nil)
   (setq doom-modeline-persp-name nil)
   (setq doom-modeline-display-misc-in-all-mode-lines nil)
+  (when my/is-termux
+    (setopt doom-modeline-icon nil))
   :config
   (setq doom-modeline-minor-modes nil)
   (setq doom-modeline-irc nil)
@@ -5072,11 +5077,13 @@ KEYS is a list of cons cells like (<label> . <time>)."
    "\n"))
 
 (setq my/org-config-files
-      '("/home/pavel/Emacs.org"
-        "/home/pavel/Desktop.org"
-        "/home/pavel/Console.org"
-        "/home/pavel/Guix.org"
-        "/home/pavel/Mail.org"))
+      (mapcar
+       #'expand-file-name
+       '("~/Emacs.org"
+         "~/Desktop.org"
+         "~/Console.org"
+         "~/Guix.org"
+         "~/Mail.org")))
 
 (add-hook 'org-mode-hook
           (lambda ()
@@ -6605,7 +6612,7 @@ ENTRY is an instance of `elfeed-entry'."
        (lambda (&key error-thrown &allow-other-keys)
          (message "Error!: %S" error-thrown))))))
 
-(unless (or my/is-termux my/remote-server)
+(unless (or my/remote-server)
   (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
     (if (file-exists-p mail-file)
         (load-file mail-file)
@@ -7534,7 +7541,7 @@ base toot."
 
 (use-package telega
   :straight t
-  :if (not (or my/remote-server my/is-termux))
+  :if (not (or my/remote-server))
   :commands (telega)
   :init
   (my-leader-def "a l" (my/command-in-persp "telega" "telega" 3 (telega)))
@@ -7566,8 +7573,10 @@ base toot."
 (defun my/telega-server-build ()
   (interactive)
   (setq telega-server-libs-prefix
-        (string-trim
-         (shell-command-to-string "guix build tdlib")))
+        (if (executable-find "guix")
+            (string-trim
+             (shell-command-to-string "guix build tdlib"))
+          (expand-file-name "~/bin/td/build/res/usr/local")))
   (telega-server-build "CC=gcc"))
 
 (add-hook 'telega-load-hook #'telega-mode-line-mode)
@@ -7585,6 +7594,7 @@ base toot."
         "]"))
 
 (defun my/telega-chat-setup ()
+  (interactive)
   (set (make-local-variable 'company-backends)
        (append (list 'telega-company-emoji
                      'telega-company-username
@@ -7594,7 +7604,8 @@ base toot."
                  '(telega-company-botcmd))))
   (company-mode 1)
   (setopt visual-fill-column-width
-          (+ telega-chat-fill-column 4))
+          (+ telega-chat-fill-column
+             (if (display-graphic-p) 4 5)))
   (setq-local split-width-threshold 1))
 (add-hook 'telega-chat-mode-hook #'my/telega-chat-setup)
 
