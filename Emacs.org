@@ -3792,10 +3792,11 @@ The following binding calls yapf & isort on the buffer
              (py-isort-buffer))
            (python-black-buffer))))
 #+end_src
-*** sphinx-doc
+*** OFF sphinx-doc
+CLOSED: [2024-04-23 Tue 12:33]
 A package to generate sphinx-compatible docstrings.
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (use-package sphinx-doc
   :straight t
   :hook (python-mode . sphinx-doc-mode)
@@ -3804,6 +3805,22 @@ A package to generate sphinx-compatible docstrings.
     :keymaps 'sphinx-doc-mode-map
     "rd" 'sphinx-doc))
 #+end_src
+*** numpydoc
+[[https://github.com/douglasdavis/numpydoc.el][numpydoc.el]] is a package to generate docstring in Python functions.
+
+#+begin_src emacs-lisp
+(use-package numpydoc
+  :straight t
+  :commands (numpydoc-generate)
+  :init
+  (my-leader-def
+    :keymaps 'python-ts-mode-map
+    "rd" #'numpydoc-generate)
+  :config
+  (setq numpydoc-insertion-style 'prompt)
+  (setq numpydoc-insert-return-without-typehint nil))
+#+end_src
+
 *** pytest
 [[https://docs.pytest.org/en/6.2.x/][pytest]] is a unit testing framework for Python.
 
@@ -4302,27 +4319,29 @@ I've moved this block above because the =my-leader-def= expression in the next b
 (with-eval-after-load-norem 'org
   (general-define-key
    :keymaps 'org-mode-map
-   "C-c d" 'org-decrypt-entry
-   "C-c e" 'org-encrypt-entry
-   "M-p" 'org-latex-preview
-   "M-o" 'org-redisplay-inline-images)
+   "C-c d" #'org-decrypt-entry
+   "C-c e" #'org-encrypt-entry
+   "M-p" #'org-latex-preview
+   "M-o" #'org-redisplay-inline-images)
 
   (general-define-key
    :keymaps 'org-mode-map
    :states '(normal emacs)
-   "L" 'org-shiftright
-   "H" 'org-shiftleft
-   "S-<next>" 'org-next-visible-heading
-   "S-<prior>" 'org-previous-visible-heading
-   "M-0" 'org-next-visible-heading
-   "M-9" 'org-previous-visible-heading
-   "M-]" 'org-babel-next-src-block
-   "M-[" 'org-babel-previous-src-block)
+   "L" #'org-shiftright
+   "H" #'org-shiftleft
+   "S-<next>" #'org-next-visible-heading
+   "S-<prior>" #'org-previous-visible-heading
+   "M-0" #'org-next-visible-heading
+   "M-9" #'org-previous-visible-heading
+   "C-0" #'org-forward-heading-same-level
+   "C-9" #'org-backward-heading-same-level
+   "M-]" #'org-babel-next-src-block
+   "M-[" #'org-babel-previous-src-block)
 
   (general-define-key
    :keymaps 'org-agenda-mode-map
-   "M-]" 'org-agenda-later
-   "M-[" 'org-agenda-earlier)
+   "M-]" #'org-agenda-later
+   "M-[" #'org-agenda-earlier)
 
   (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c))
 #+end_src
@@ -4409,6 +4428,7 @@ A function to open a file from =org-directory=, excluding a few directories like
      (concat org-directory "/"
              (completing-read "Org file: " files)))))
 #+end_src
+
 ** Literate programing
 *** Python & Jupyter
 Use jupyter kernels for Org Mode.
@@ -4443,6 +4463,16 @@ Fortunately, =emacs-jupyter= provides a function for that problem as well.
   "Refresh Jupyter languages"
   (interactive)
   (org-babel-jupyter-aliases-from-kernelspecs t))
+#+end_src
+
+A function to load =jupyter=. The problem with doing that on startup is that it tried to locate the =jupyter= executable, which I have only in an environment.
+#+begin_src emacs-lisp
+(defun my/org-load-jupyter ()
+  (interactive)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((jupyter . t)))
+  (my/jupyter-refesh-langs))
 #+end_src
 *** Hy
 #+begin_src emacs-lisp
@@ -4523,7 +4553,6 @@ Enable languages
      (shell . t)
      (plantuml . t)
      (octave . t)
-     ,@(unless my/is-termux '((jupyter . t)))
      (sparql . t)
      (gnuplot . t)))
 
@@ -5634,6 +5663,21 @@ And the agendas themselves:
 - Me at 15:05: Sh*t
 
 Okay, I will set up +org-alert+ some custom alert system.
+
+There's also [[https://gitlab.com/grinn.amy/org-yaap][org-yaap]] by Amy Grinn, but I opt for my system for now.
+
+#+begin_src emacs-lisp
+(use-package org-yaap
+  :straight (org-yaap :type git :host gitlab :repo "SqrtMinusOne/org-yaap")
+  :after (org)
+  :if (not my/nested-emacs)
+  :disabled t
+  :config
+  (org-yaap-mode 1)
+  (setq org-yaap-alert-before '(10 1))
+  (setq org-yaap-alert-title "PROXIMITY ALERT")
+  (setq org-yaap-todo-keywords-only '("FUTURE")))
+#+end_src
 
 I want to have multiple warnings, let it be 10 minutes in advance and 1 minute in advance for now.
 #+begin_src emacs-lisp
@@ -8921,7 +8965,7 @@ Running the program from Emacs is rather straightforward with [[https://www.gnu.
 I'm using an English-language-only model because that's the only language I need at the moment.
 
 #+begin_src emacs-lisp
-(defun my/invoke-whisper--direct (input output-dir remove-wav)
+(defun my/invoke-whisper--direct (input output-dir &optional remove-wav)
   "Extract subtitles from a WAV audio file.
 
 INPUT is the absolute path to audio file, OUTPUT-DIR is the path to
@@ -8930,8 +8974,8 @@ the directory with resulting files."
          (buffer (generate-new-buffer "whisper"))
          (proc (start-process
                 "whisper" buffer
-                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-medium.en.bin"
-                "-otxt" "-ovtt" "-osrt" input)))
+                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-medium.bin"
+                "-otxt" "-ovtt" "-osrt" "-l" "auto" input)))
     (set-process-sentinel
      proc
      (lambda (process _msg)
@@ -9822,6 +9866,7 @@ The default UI is rather rough, but Nicolas Rougier's [[https://github.com/rougi
   ;; Hide spoilers by default
   (setq-default mastodon-toot--content-warning t)
   (setq mastodon-media--avatar-height 40)
+  (setq mastodon-tl--timeline-posts-count "40")
   (setq mastodon-tl--show-avatars t)
   ;; The default emojis take two characters for me
   (setq mastodon-tl--symbols
@@ -10181,7 +10226,7 @@ And the prefix itself:
   :straight (:host github :repo "alphapapa/ement.el")
   :commands (ement-connect)
   :init
-  (my-leader-def "ai" #'my/ement)
+  (my-leader-def "ax" #'my/ement)
   :config
   (setq ement-room-list-auto-update t)
   (setq ement-room-mark-rooms-read 'send)
@@ -10509,7 +10554,9 @@ References:
       (google-translate-at-point-reverse)))
   (setq google-translate-translation-directions-alist
         '(("en" . "ru")
-          ("ru" . "en"))))
+          ("ru" . "en")
+          ("de" . "en")
+          ("en" . "de"))))
 
 (my-leader-def
   :infix "at"
@@ -10660,6 +10707,61 @@ There is a package called =devdocs= that does more or less the same, but I like 
    (sx-question-mode-content :background nil))
   (add-hook 'sx-question-mode-hook #'doom-modeline-mode)
   (add-hook 'sx-question-list-mode-hook #'doom-modeline-mode))
+#+end_src
+** LLM
+Trying out LLM integrations.
+
+I don't have access to any proprietary APIs, but LLaMA 3 8b with [[https://ollama.com/][ollama]] works for some purposes.
+
+*** gptel
+[[https://github.com/karthink/gptel][gtpel]] is a package that provides an interface to chat with LLMs.
+
+#+begin_src emacs-lisp
+(use-package gptel
+  :straight t
+  :init
+  (my-leader-def
+    :infix "ai"
+    "" '(:wk "AI")
+    "i" #'gptel)
+  :commands (gptel gptel-send gptel-menu)
+  :config
+  (setq gptel-model "llama3:latest")
+  (setq gptel-backend
+        (gptel-make-ollama "Ollama"
+          :host "localhost:11434"
+          :stream t
+          :models '("llama3:latest")))
+  (general-define-key
+   :keymaps '(gptel-mode-map)
+   :states '(insert normal)
+   "C-<return>" 'gptel-send))
+#+end_src
+*** ellama
+[[https://github.com/s-kostyaev/ellama][ellama]] provides commands that feed things from Emacs buffers into LLMs with various prompts.
+
+#+begin_src emacs-lisp
+(use-package ellama
+  :straight t
+  :init
+  (setq ellama-language "English")
+  :config
+  (require 'llm-ollama)
+  (my-leader-def
+    "aie" '(:wk "ellama" :keymap ellama-command-map))
+  (which-key-add-key-based-replacements
+    (rx "SPC a i e a") "ask"
+    (rx "SPC a i e c") "code"
+    (rx "SPC a i e d") "define"
+    (rx "SPC a i e i") "improve"
+    (rx "SPC a i e m") "make"
+    (rx "SPC a i e p") "provider"
+    (rx "SPC a i e s") "summarize"
+    (rx "SPC a i e t") "translate/complete"
+    (rx "SPC a i e x") "context")
+  (setq ellama-provider (make-llm-ollama
+                         :chat-model "llama3:latest"
+                         :embedding-model "llama3:latest")))
 #+end_src
 ** Declarative filesystem management
 My filesystem is, shall we say, not the most orderly place.

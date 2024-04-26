@@ -2734,13 +2734,16 @@ Returns (<buffer> . <workspace-index>) or nil."
              (py-isort-buffer))
            (python-black-buffer))))
 
-(use-package sphinx-doc
+(use-package numpydoc
   :straight t
-  :hook (python-mode . sphinx-doc-mode)
-  :config
+  :commands (numpydoc-generate)
+  :init
   (my-leader-def
-    :keymaps 'sphinx-doc-mode-map
-    "rd" 'sphinx-doc))
+    :keymaps 'python-ts-mode-map
+    "rd" #'numpydoc-generate)
+  :config
+  (setq numpydoc-insertion-style 'prompt)
+  (setq numpydoc-insert-return-without-typehint nil))
 
 (defun my/set-pipenv-pytest ()
   (setq-local
@@ -3082,27 +3085,29 @@ Returns (<buffer> . <workspace-index>) or nil."
 (with-eval-after-load-norem 'org
   (general-define-key
    :keymaps 'org-mode-map
-   "C-c d" 'org-decrypt-entry
-   "C-c e" 'org-encrypt-entry
-   "M-p" 'org-latex-preview
-   "M-o" 'org-redisplay-inline-images)
+   "C-c d" #'org-decrypt-entry
+   "C-c e" #'org-encrypt-entry
+   "M-p" #'org-latex-preview
+   "M-o" #'org-redisplay-inline-images)
 
   (general-define-key
    :keymaps 'org-mode-map
    :states '(normal emacs)
-   "L" 'org-shiftright
-   "H" 'org-shiftleft
-   "S-<next>" 'org-next-visible-heading
-   "S-<prior>" 'org-previous-visible-heading
-   "M-0" 'org-next-visible-heading
-   "M-9" 'org-previous-visible-heading
-   "M-]" 'org-babel-next-src-block
-   "M-[" 'org-babel-previous-src-block)
+   "L" #'org-shiftright
+   "H" #'org-shiftleft
+   "S-<next>" #'org-next-visible-heading
+   "S-<prior>" #'org-previous-visible-heading
+   "M-0" #'org-next-visible-heading
+   "M-9" #'org-previous-visible-heading
+   "C-0" #'org-forward-heading-same-level
+   "C-9" #'org-backward-heading-same-level
+   "M-]" #'org-babel-next-src-block
+   "M-[" #'org-babel-previous-src-block)
 
   (general-define-key
    :keymaps 'org-agenda-mode-map
-   "M-]" 'org-agenda-later
-   "M-[" 'org-agenda-earlier)
+   "M-]" #'org-agenda-later
+   "M-[" #'org-agenda-earlier)
 
   (general-nmap :keymaps 'org-mode-map "RET" 'org-ctrl-c-ctrl-c))
 
@@ -3192,6 +3197,13 @@ With ARG, repeats or can move backward if negative."
   (interactive)
   (org-babel-jupyter-aliases-from-kernelspecs t))
 
+(defun my/org-load-jupyter ()
+  (interactive)
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((jupyter . t)))
+  (my/jupyter-refesh-langs))
+
 (use-package ob-hy
   :after (org)
   :if (not my/remote-server)
@@ -3253,7 +3265,6 @@ With ARG, repeats or can move backward if negative."
      (shell . t)
      (plantuml . t)
      (octave . t)
-     ,@(unless my/is-termux '((jupyter . t)))
      (sparql . t)
      (gnuplot . t)))
 
@@ -4098,6 +4109,17 @@ skip exactly those headlines that do not match."
                      ((org-agenda-overriding-header "Habits")
                       (org-agenda-prefix-format " %i %-12:c")
                       (org-agenda-hide-tags-regexp ".")))))))
+
+(use-package org-yaap
+  :straight (org-yaap :type git :host gitlab :repo "SqrtMinusOne/org-yaap")
+  :after (org)
+  :if (not my/nested-emacs)
+  :disabled t
+  :config
+  (org-yaap-mode 1)
+  (setq org-yaap-alert-before '(10 1))
+  (setq org-yaap-alert-title "PROXIMITY ALERT")
+  (setq org-yaap-todo-keywords-only '("FUTURE")))
 
 (setq my/org-alert-notify-times '(600 60))
 
@@ -6409,7 +6431,7 @@ by the `my/elfeed-youtube-subtitles' function."
   (setq-local subed-mpv-video-file (elfeed-entry-link entry))
   (subed-mpv--play subed-mpv-video-file))
 
-(defun my/invoke-whisper--direct (input output-dir remove-wav)
+(defun my/invoke-whisper--direct (input output-dir &optional remove-wav)
   "Extract subtitles from a WAV audio file.
 
 INPUT is the absolute path to audio file, OUTPUT-DIR is the path to
@@ -6418,8 +6440,8 @@ the directory with resulting files."
          (buffer (generate-new-buffer "whisper"))
          (proc (start-process
                 "whisper" buffer
-                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-medium.en.bin"
-                "-otxt" "-ovtt" "-osrt" input)))
+                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-medium.bin"
+                "-otxt" "-ovtt" "-osrt" "-l" "auto" input)))
     (set-process-sentinel
      proc
      (lambda (process _msg)
@@ -7058,6 +7080,7 @@ ENTRY is an instance of `elfeed-entry'."
   ;; Hide spoilers by default
   (setq-default mastodon-toot--content-warning t)
   (setq mastodon-media--avatar-height 40)
+  (setq mastodon-tl--timeline-posts-count "40")
   (setq mastodon-tl--show-avatars t)
   ;; The default emojis take two characters for me
   (setq mastodon-tl--symbols
@@ -7366,7 +7389,7 @@ base toot."
   :straight (:host github :repo "alphapapa/ement.el")
   :commands (ement-connect)
   :init
-  (my-leader-def "ai" #'my/ement)
+  (my-leader-def "ax" #'my/ement)
   :config
   (setq ement-room-list-auto-update t)
   (setq ement-room-mark-rooms-read 'send)
@@ -7638,7 +7661,9 @@ base toot."
       (google-translate-at-point-reverse)))
   (setq google-translate-translation-directions-alist
         '(("en" . "ru")
-          ("ru" . "en"))))
+          ("ru" . "en")
+          ("de" . "en")
+          ("en" . "de"))))
 
 (my-leader-def
   :infix "at"
@@ -7767,6 +7792,48 @@ base toot."
    (sx-question-mode-content :background nil))
   (add-hook 'sx-question-mode-hook #'doom-modeline-mode)
   (add-hook 'sx-question-list-mode-hook #'doom-modeline-mode))
+
+(use-package gptel
+  :straight t
+  :init
+  (my-leader-def
+    :infix "ai"
+    "" '(:wk "AI")
+    "i" #'gptel)
+  :commands (gptel gptel-send gptel-menu)
+  :config
+  (setq gptel-model "llama3:latest")
+  (setq gptel-backend
+        (gptel-make-ollama "Ollama"
+          :host "localhost:11434"
+          :stream t
+          :models '("llama3:latest")))
+  (general-define-key
+   :keymaps '(gptel-mode-map)
+   :states '(insert normal)
+   "C-<return>" 'gptel-send))
+
+(use-package ellama
+  :straight t
+  :init
+  (setq ellama-language "English")
+  :config
+  (require 'llm-ollama)
+  (my-leader-def
+    "aie" '(:wk "ellama" :keymap ellama-command-map))
+  (which-key-add-key-based-replacements
+    (rx "SPC a i e a") "ask"
+    (rx "SPC a i e c") "code"
+    (rx "SPC a i e d") "define"
+    (rx "SPC a i e i") "improve"
+    (rx "SPC a i e m") "make"
+    (rx "SPC a i e p") "provider"
+    (rx "SPC a i e s") "summarize"
+    (rx "SPC a i e t") "translate/complete"
+    (rx "SPC a i e x") "context")
+  (setq ellama-provider (make-llm-ollama
+                         :chat-model "llama3:latest"
+                         :embedding-model "llama3:latest")))
 
 (use-package ini
   :straight (:host github :repo "daniel-ness/ini.el"))

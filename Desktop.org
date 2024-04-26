@@ -4171,6 +4171,15 @@ nix-env -I opensnitchd opensnitch-ui
     #:start (make-forkexec-constructor '("sudo" "opensnitch-ui"))
     #:stop (make-kill-destructor)))
 #+end_src
+** ollama
+#+begin_src scheme
+(define ollama
+  (make <service>
+    #:provides '(ollama)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("/home/pavel/bin/ollama" "serve"))
+    #:stop (make-kill-destructor)))
+#+end_src
 
 ** Shepherd config
 For some reason, running start on a one-shot service started to hang shepherd, not sure why... Turining these off for now.
@@ -4195,7 +4204,7 @@ Register services:
  vnstatd
  ;; opensnitchd
  ;; opensnitch-ui
- )
+ ollama)
 #+end_src
 
 Daemonize shepherd

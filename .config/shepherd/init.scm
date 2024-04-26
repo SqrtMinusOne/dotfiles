@@ -118,6 +118,13 @@
     #:start (make-forkexec-constructor '("sudo" "opensnitch-ui"))
     #:stop (make-kill-destructor)))
 
+(define ollama
+  (make <service>
+    #:provides '(ollama)
+    #:respawn? #t
+    #:start (make-forkexec-constructor '("/home/pavel/bin/ollama" "serve"))
+    #:stop (make-kill-destructor)))
+
 (register-services
  mpd
  sqrt-data-agent-mpd
@@ -136,7 +143,7 @@
  vnstatd
  ;; opensnitchd
  ;; opensnitch-ui
- )
+ ollama)
 
 (action 'shepherd 'daemonize)
 
