@@ -2734,10 +2734,9 @@ Returns (<buffer> . <workspace-index>) or nil."
   :keymaps '(python-mode-map python-ts-mode-map)
   "rr" (lambda ()
          (interactive)
-         (save-excursion
-           (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
-             (py-isort-buffer))
-           (python-black-buffer))))
+         (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
+           (py-isort-buffer))
+         (python-black-buffer)))
 
 (use-package numpydoc
   :straight t
@@ -4295,6 +4294,66 @@ KEYS is a list of cons cells like (<label> . <time>)."
 			                (delete-region (match-beginning 1) (match-end 1)))))))
 		          (buffer-string)))))
     (goto-char beg)))
+
+(defun my/org-archive--get-file ()
+  "Get an archive version of the file."
+  (let ((archive-file
+         (concat
+          (file-name-directory (buffer-file-name))
+          "archive/" (file-name-nondirectory (buffer-file-name)))))
+    (unless (file-exists-p archive-file)
+      (make-empty-file archive-file))
+    archive-file))
+
+(defun my/org-refile--assert-path-exists (refile-path)
+  (cl-assert (equal org-refile-use-outline-path 'file))
+  (let* ((parts (string-split refile-path "/"))
+         (tbl (mapcar
+	           (lambda (x)
+		         (cons (concat (car x) "/") (cdr x)))
+	           org-refile-target-table)))
+    (cl-loop for i from 1
+             for part in (cdr parts)
+             for target = (org-refile--get-location
+                           (string-join (seq-take parts (1+ i)) "/")
+                           tbl)
+             unless target
+             do (let ((parent-target
+                       (org-refile--get-location
+                        (string-join (seq-take parts i) "/")
+                        tbl)))
+                  (push (org-refile-new-child parent-target part) tbl)))))
+
+(defun my/org-archive-refile ()
+  (interactive)
+  (let* ((org-refile-targets `((,(my/org-archive--get-file) . (:maxlevel . 6))))
+         (org-refile-target-table (org-refile-get-targets))
+         (org-refile-history nil)
+         (org-refile-use-outline-path 'file)
+         (org-refile-allow-creating-parent-nodes t)
+         (org-outline-path-complete-in-steps nil)
+         (refile-path (string-join
+                       (append
+                        (list (file-name-nondirectory
+                               (buffer-file-name)))
+                        (org-get-outline-path nil t))
+                       "/")))
+    ;; The path is already known
+    (flet ((completing-read (&rest _) refile-path))
+      (my/org-refile--assert-path-exists refile-path)
+      (org-refile))))
+
+(defun my/org-archive-refile-all (days)
+  (interactive (list (read-number "Days: " 60)))
+  (let ((records (org-ql-query
+                   :select #'element-with-markers
+                   :from (current-buffer)
+                   :where `(and (ts :to ,(- days)) done))))
+    (when (y-or-n-p (format "Archive %d records? " (length records)))
+      (dolist (record records)
+        (let ((marker (org-element-property :org-marker record)))
+          (org-with-point-at marker
+            (my/org-archive-refile)))))))
 
 (my-leader-def
   :infix "o"
@@ -7382,6 +7441,18 @@ base toot."
      :class transient-row
      ("q" "Quit" transient-quit-one)]))
 
+(use-package wallabag
+  :straight (:host github :repo "chenyanming/wallabag.el" :files (:defaults "default.css" "emojis.alist"))
+  :init
+  (my-leader-def "aE" #'wallabag)
+  :commands (wallabag wallabag-add-entry)
+  :config
+  (setq wallabag-host "https://wallabag.sqrtminusone.xyz")
+  (setq wallabag-username "sqrtminusone")
+  (setq wallabag-password (my/password-store-get "Selfhosted/wallabag"))
+  (setq wallabag-clientid (password-store-get-field "Selfhosted/wallabag" "client_id"))
+  (setq wallabag-secret (password-store-get-field "Selfhosted/wallabag" "client_secret")))
+
 (use-package plz
   :straight (:host github :repo "alphapapa/plz.el")
   :defer t)
@@ -8588,8 +8659,10 @@ to `dired' if used interactively."
   ;; :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
   :commands (pomm pomm-third-time)
   :init
-  (my-leader-def "ap" #'pomm-third-time)
+  (my-leader-def "ap" #'pomm)
   (setq alert-default-style 'libnotify)
+  (setq pomm-audio-enabled t)
+  (setq pomm-audio-player-executable (executable-find "mpv"))
   :config
   (pomm-mode-line-mode))
 

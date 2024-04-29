@@ -3792,10 +3792,9 @@ The following binding calls yapf & isort on the buffer
   :keymaps '(python-mode-map python-ts-mode-map)
   "rr" (lambda ()
          (interactive)
-         (save-excursion
-           (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
-             (py-isort-buffer))
-           (python-black-buffer))))
+         (unless (and (fboundp #'org-src-edit-buffer-p) (org-src-edit-buffer-p))
+           (py-isort-buffer))
+         (python-black-buffer)))
 #+end_src
 *** OFF sphinx-doc
 CLOSED: [2024-04-23 Tue 12:33]
@@ -5891,6 +5890,87 @@ Unfortunately, I see no way to advise the original function, so here's my versio
 #+end_src
 
 My addition to that is the form with =evil-numbers/inc-at-pt=.
+**** Archiving records
+- *CREDIT*: thanks [[https://emacs.ch/@grinn][Amy]] for pointing me to the right functionality of =org-refile=.
+
+I have several org files for long-running projects. They are getting hard to manage because there are lots of different tasks, events, etc.
+
+So I want to create "archive versions" of these files which would have the same structure but store items, say, with a timestamp older than 2 months.
+
+Archive versions are to be stored in the =archive= subdirectory relative to the current file, e.g., =foo.org= -> =archive/foo.org=:
+#+begin_src emacs-lisp
+(defun my/org-archive--get-file ()
+  "Get an archive version of the file."
+  (let ((archive-file
+         (concat
+          (file-name-directory (buffer-file-name))
+          "archive/" (file-name-nondirectory (buffer-file-name)))))
+    (unless (file-exists-p archive-file)
+      (make-empty-file archive-file))
+    archive-file))
+#+end_src
+
+In order to maintain structure, we need to make sure that the archive version has all the necessary headers.
+
+=org-refile= (or, to be precise, =org-refile-get-location=) by itself can create the last level of headers with =org-refile-allow-creating-parent-nodes=. So I can just invoke the same logic for all missing headers:
+#+begin_src emacs-lisp
+(defun my/org-refile--assert-path-exists (refile-path)
+  (cl-assert (equal org-refile-use-outline-path 'file))
+  (let* ((parts (string-split refile-path "/"))
+         (tbl (mapcar
+	           (lambda (x)
+		         (cons (concat (car x) "/") (cdr x)))
+	           org-refile-target-table)))
+    (cl-loop for i from 1
+             for part in (cdr parts)
+             for target = (org-refile--get-location
+                           (string-join (seq-take parts (1+ i)) "/")
+                           tbl)
+             unless target
+             do (let ((parent-target
+                       (org-refile--get-location
+                        (string-join (seq-take parts i) "/")
+                        tbl)))
+                  (push (org-refile-new-child parent-target part) tbl)))))
+#+end_src
+
+Now we can make a function to archive one record interactively.
+#+begin_src emacs-lisp
+(defun my/org-archive-refile ()
+  (interactive)
+  (let* ((org-refile-targets `((,(my/org-archive--get-file) . (:maxlevel . 6))))
+         (org-refile-target-table (org-refile-get-targets))
+         (org-refile-history nil)
+         (org-refile-use-outline-path 'file)
+         (org-refile-allow-creating-parent-nodes t)
+         (org-outline-path-complete-in-steps nil)
+         (refile-path (string-join
+                       (append
+                        (list (file-name-nondirectory
+                               (buffer-file-name)))
+                        (org-get-outline-path nil t))
+                       "/")))
+    ;; The path is already known
+    (flet ((completing-read (&rest _) refile-path))
+      (my/org-refile--assert-path-exists refile-path)
+      (org-refile))))
+#+end_src
+
+And a function to archive all records older than the given number of days. I'll use =org-ql= to find these records.
+#+begin_src emacs-lisp
+(defun my/org-archive-refile-all (days)
+  (interactive (list (read-number "Days: " 60)))
+  (let ((records (org-ql-query
+                   :select #'element-with-markers
+                   :from (current-buffer)
+                   :where `(and (ts :to ,(- days)) done))))
+    (when (y-or-n-p (format "Archive %d records? " (length records)))
+      (dolist (record records)
+        (let ((marker (org-element-property :org-marker record)))
+          (org-with-point-at marker
+            (my/org-archive-refile)))))))
+#+end_src
+
 **** Keybindings
 Global keybindings:
 
@@ -10213,7 +10293,20 @@ And the prefix itself:
      :class transient-row
      ("q" "Quit" transient-quit-one)]))
 #+end_src
-
+*** wallabag
+#+begin_src emacs-lisp
+(use-package wallabag
+  :straight (:host github :repo "chenyanming/wallabag.el" :files (:defaults "default.css" "emojis.alist"))
+  :init
+  (my-leader-def "aE" #'wallabag)
+  :commands (wallabag wallabag-add-entry)
+  :config
+  (setq wallabag-host "https://wallabag.sqrtminusone.xyz")
+  (setq wallabag-username "sqrtminusone")
+  (setq wallabag-password (my/password-store-get "Selfhosted/wallabag"))
+  (setq wallabag-clientid (password-store-get-field "Selfhosted/wallabag" "client_id"))
+  (setq wallabag-secret (password-store-get-field "Selfhosted/wallabag" "client_secret")))
+#+end_src
 *** ement.el
 [[https://github.com/alphapapa/ement.el][ement.el]] is a Matrix client for Emacs. This package turned out to be somewhat complicated to setup.
 
@@ -11839,8 +11932,10 @@ My package for doing Pomodoro timer.
   ;; :straight (:local-repo "~/Code/Emacs/pomm" :files (:defaults "resources"))
   :commands (pomm pomm-third-time)
   :init
-  (my-leader-def "ap" #'pomm-third-time)
+  (my-leader-def "ap" #'pomm)
   (setq alert-default-style 'libnotify)
+  (setq pomm-audio-enabled t)
+  (setq pomm-audio-player-executable (executable-find "mpv"))
   :config
   (pomm-mode-line-mode))
 #+end_src
