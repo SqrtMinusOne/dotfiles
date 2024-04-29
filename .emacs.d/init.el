@@ -1233,7 +1233,7 @@ Obeys `widen-automatically', which see."
   (interactive
    (list (intern (completing-read "Load custom theme: "
                                   (mapcar #'symbol-name
-				                          (custom-available-themes))))))
+                                          (custom-available-themes))))))
   (cl-loop for enabled-theme in custom-enabled-themes
            if (not (or (eq enabled-theme 'my-theme-1)
                        (eq enabled-theme theme)))
@@ -3136,22 +3136,22 @@ With ARG, repeats or can move backward if negative."
   (interactive "p")
   (let ((regexp org-babel-src-block-regexp))
     (if (< arg 0)
-	    (beginning-of-line)
+        (beginning-of-line)
       (end-of-line))
     (while (and (< arg 0) (re-search-backward regexp nil :move))
       (unless (bobp)
-	    (while (pcase (get-char-property-and-overlay (point) 'invisible)
-		         (`(outline . ,o)
-		          (goto-char (overlay-start o))
-		          (re-search-backward regexp nil :move))
-		         (_ nil))))
+        (while (pcase (get-char-property-and-overlay (point) 'invisible)
+                 (`(outline . ,o)
+                  (goto-char (overlay-start o))
+                  (re-search-backward regexp nil :move))
+                 (_ nil))))
       (cl-incf arg))
     (while (and (> arg 0) (re-search-forward regexp nil t))
       (while (pcase (get-char-property-and-overlay (point) 'invisible)
-	           (`(outline . ,o)
-		        (goto-char (overlay-end o))
-		        (re-search-forward regexp nil :move))
-	           (_ (end-of-line) nil)))
+               (`(outline . ,o)
+                (goto-char (overlay-end o))
+                (re-search-forward regexp nil :move))
+               (_ (end-of-line) nil)))
       (re-search-backward regexp nil :move)
       (cl-decf arg))
     (if (> arg 0) (goto-char (point-max)) (beginning-of-line))))
@@ -3405,7 +3405,7 @@ With ARG, repeats or can move backward if negative."
       (org-babel-map-executables nil
         (when (>= (point) point)
           (if (memq (org-element-type (org-element-context))
-		            '(babel-call inline-babel-call))
+                    '(babel-call inline-babel-call))
               (org-babel-lob-execute-maybe)
             (org-babel-execute-src-block arg)))))))
 
@@ -3417,7 +3417,7 @@ With ARG, repeats or can move backward if negative."
       (org-babel-map-executables nil
         (when (<= (point) point)
           (if (memq (org-element-type (org-element-context))
-		            '(babel-call inline-babel-call))
+                    '(babel-call inline-babel-call))
               (org-babel-lob-execute-maybe)
             (org-babel-execute-src-block arg)))))))
 
@@ -3875,10 +3875,10 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
   ;; The hack I borrowed from notmuch to make " " a separator
   (let* ((crm-separator " ")
          (crm-local-completion-map
-	      (let ((map (make-sparse-keymap)))
-	        (set-keymap-parent map crm-local-completion-map)
-	        (define-key map " " 'self-insert-command)
-	        map))
+          (let ((map (make-sparse-keymap)))
+            (set-keymap-parent map crm-local-completion-map)
+            (define-key map " " 'self-insert-command)
+            map))
          (ivy-prescient-sort-commands nil)
          (categories (completing-read-multiple
                       "Categories: "
@@ -4217,82 +4217,82 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (unless (wholenump n) (user-error "Invalid number of replications %s" n))
   (when (org-before-first-heading-p) (user-error "No subtree to clone"))
   (let* ((beg (save-excursion (org-back-to-heading t) (point)))
-	     (end-of-tree (save-excursion (org-end-of-subtree t t) (point)))
-	     (shift
-	      (or shift
-	          (if (and (not (equal current-prefix-arg '(4)))
-		               (save-excursion
-			             (goto-char beg)
-			             (re-search-forward org-ts-regexp-both end-of-tree t)))
-		          (read-from-minibuffer
-		           "Date shift per clone (e.g. +1w, empty to copy unchanged): ")
-		        "")))                   ;No time shift
-	     (doshift
-	      (and (org-string-nw-p shift)
-	           (or (string-match "\\`[ \t]*\\([+-]?[0-9]+\\)\\([hdwmy]\\)[ \t]*\\'"
-				                 shift)
-		           (user-error "Invalid shift specification %s" shift)))))
+         (end-of-tree (save-excursion (org-end-of-subtree t t) (point)))
+         (shift
+          (or shift
+              (if (and (not (equal current-prefix-arg '(4)))
+                       (save-excursion
+                         (goto-char beg)
+                         (re-search-forward org-ts-regexp-both end-of-tree t)))
+                  (read-from-minibuffer
+                   "Date shift per clone (e.g. +1w, empty to copy unchanged): ")
+                "")))                   ;No time shift
+         (doshift
+          (and (org-string-nw-p shift)
+               (or (string-match "\\`[ \t]*\\([+-]?[0-9]+\\)\\([hdwmy]\\)[ \t]*\\'"
+                                 shift)
+                   (user-error "Invalid shift specification %s" shift)))))
     (goto-char end-of-tree)
     (unless (bolp) (insert "\n"))
     (let* ((end (point))
-	       (template (buffer-substring beg end))
-	       (shift-n (and doshift (string-to-number (match-string 1 shift))))
-	       (shift-what (pcase (and doshift (match-string 2 shift))
-			             (`nil nil)
-			             ("h" 'hour)
-			             ("d" 'day)
-			             ("w" (setq shift-n (* 7 shift-n)) 'day)
-			             ("m" 'month)
-			             ("y" 'year)
-			             (_ (error "Unsupported time unit"))))
-	       (nmin 1)
-	       (nmax n)
-	       (n-no-remove -1)
-	       (org-id-overriding-file-name (buffer-file-name (buffer-base-buffer)))
-	       (idprop (org-entry-get beg "ID")))
+           (template (buffer-substring beg end))
+           (shift-n (and doshift (string-to-number (match-string 1 shift))))
+           (shift-what (pcase (and doshift (match-string 2 shift))
+                         (`nil nil)
+                         ("h" 'hour)
+                         ("d" 'day)
+                         ("w" (setq shift-n (* 7 shift-n)) 'day)
+                         ("m" 'month)
+                         ("y" 'year)
+                         (_ (error "Unsupported time unit"))))
+           (nmin 1)
+           (nmax n)
+           (n-no-remove -1)
+           (org-id-overriding-file-name (buffer-file-name (buffer-base-buffer)))
+           (idprop (org-entry-get beg "ID")))
       (when (and doshift
-		         (string-match-p "<[^<>\n]+ [.+]?\\+[0-9]+[hdwmy][^<>\n]*>"
-				                 template))
-	    (delete-region beg end)
-	    (setq end beg)
-	    (setq nmin 0)
-	    (setq nmax (1+ nmax))
-	    (setq n-no-remove nmax))
+                 (string-match-p "<[^<>\n]+ [.+]?\\+[0-9]+[hdwmy][^<>\n]*>"
+                                 template))
+        (delete-region beg end)
+        (setq end beg)
+        (setq nmin 0)
+        (setq nmax (1+ nmax))
+        (setq n-no-remove nmax))
       (goto-char end)
       (cl-loop for n from nmin to nmax do
-	           (insert
-		        ;; Prepare clone.
-		        (with-temp-buffer
-		          (insert template)
-		          (org-mode)
-		          (goto-char (point-min))
-		          (org-show-subtree)
-		          (and idprop (if org-clone-delete-id
-				                  (org-entry-delete nil "ID")
-				                (org-id-get-create t)))
-		          (unless (= n 0)
-		            (while (re-search-forward org-clock-line-re nil t)
-		              (delete-region (line-beginning-position)
-				                     (line-beginning-position 2)))
-		            (goto-char (point-min))
-		            (while (re-search-forward org-drawer-regexp nil t)
-		              (org-remove-empty-drawer-at (point))))
-		          (goto-char (point-min))
+               (insert
+                ;; Prepare clone.
+                (with-temp-buffer
+                  (insert template)
+                  (org-mode)
+                  (goto-char (point-min))
+                  (org-show-subtree)
+                  (and idprop (if org-clone-delete-id
+                                  (org-entry-delete nil "ID")
+                                (org-id-get-create t)))
+                  (unless (= n 0)
+                    (while (re-search-forward org-clock-line-re nil t)
+                      (delete-region (line-beginning-position)
+                                     (line-beginning-position 2)))
+                    (goto-char (point-min))
+                    (while (re-search-forward org-drawer-regexp nil t)
+                      (org-remove-empty-drawer-at (point))))
+                  (goto-char (point-min))
 
-		          (when doshift
-		            (while (re-search-forward org-ts-regexp-both nil t)
-		              (org-timestamp-change (* n shift-n) shift-what))
+                  (when doshift
+                    (while (re-search-forward org-ts-regexp-both nil t)
+                      (org-timestamp-change (* n shift-n) shift-what))
                     (save-excursion
                       (goto-char (point-min))
                       (evil-numbers/inc-at-pt n (point-min)))
-		            (unless (= n n-no-remove)
-		              (goto-char (point-min))
-		              (while (re-search-forward org-ts-regexp nil t)
-			            (save-excursion
-			              (goto-char (match-beginning 0))
-			              (when (looking-at "<[^<>\n]+\\( +[.+]?\\+[0-9]+[hdwmy]\\)")
-			                (delete-region (match-beginning 1) (match-end 1)))))))
-		          (buffer-string)))))
+                    (unless (= n n-no-remove)
+                      (goto-char (point-min))
+                      (while (re-search-forward org-ts-regexp nil t)
+                        (save-excursion
+                          (goto-char (match-beginning 0))
+                          (when (looking-at "<[^<>\n]+\\( +[.+]?\\+[0-9]+[hdwmy]\\)")
+                            (delete-region (match-beginning 1) (match-end 1)))))))
+                  (buffer-string)))))
     (goto-char beg)))
 
 (defun my/org-archive--get-file ()
@@ -4309,9 +4309,9 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (cl-assert (equal org-refile-use-outline-path 'file))
   (let* ((parts (string-split refile-path "/"))
          (tbl (mapcar
-	           (lambda (x)
-		         (cons (concat (car x) "/") (cdr x)))
-	           org-refile-target-table)))
+               (lambda (x)
+                 (cons (concat (car x) "/") (cdr x)))
+               org-refile-target-table)))
     (cl-loop for i from 1
              for part in (cdr parts)
              for target = (org-refile--get-location
@@ -4431,10 +4431,10 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (defun my/get-mood ()
   (let* ((crm-separator " ")
          (crm-local-completion-map
-	      (let ((map (make-sparse-keymap)))
-	        (set-keymap-parent map crm-local-completion-map)
-	        (define-key map " " 'self-insert-command)
-	        map))
+          (let ((map (make-sparse-keymap)))
+            (set-keymap-parent map crm-local-completion-map)
+            (define-key map " " 'self-insert-command)
+            map))
          (ivy-prescient-sort-commands nil))
     (mapconcat
      #'identity
@@ -5407,7 +5407,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
     (dolist (file files)
       (let ((type
              (or (mm-default-file-type file)
-		         "application/octet-stream")))
+                 "application/octet-stream")))
         (mml-attach-file
          file
          type
@@ -5781,20 +5781,20 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (defun my/shell-unquote-argument-without-process (string)
   (save-match-data
     (let ((idx 0) next inside
-	      (quote-chars (rx (| "'" "`" "\"" "\\"))))
+          (quote-chars (rx (| "'" "`" "\"" "\\"))))
       (while (and (< idx (length string))
-		          (setq next (string-match quote-chars string next)))
-	    (cond ((= (aref string next) ?\\)
-	           (setq string (replace-match "" nil nil string))
-	           (setq next (1+ next)))
-	          ((and inside (= (aref string next) inside))
-	           (setq string (replace-match "" nil nil string))
-	           (setq inside nil))
-	          (inside
-	           (setq next (1+ next)))
-	          (t
-	           (setq inside (aref string next))
-	           (setq string (replace-match "" nil nil string)))))
+                  (setq next (string-match quote-chars string next)))
+        (cond ((= (aref string next) ?\\)
+               (setq string (replace-match "" nil nil string))
+               (setq next (1+ next)))
+              ((and inside (= (aref string next) inside))
+               (setq string (replace-match "" nil nil string))
+               (setq inside nil))
+              (inside
+               (setq next (1+ next)))
+              (t
+               (setq inside (aref string next))
+               (setq string (replace-match "" nil nil string)))))
       string)))
 
 (defun my/eshell-history-is-good-suggestion (input suggestion)
@@ -6902,7 +6902,7 @@ ENTRY is an instance of `elfeed-entry'."
 (defun my/emms-lyrics-restore-mode-line-override ()
   "Restore the mode line."
   (setq global-mode-string
-	    (remove '(:eval emms-lyrics-mode-line-string) global-mode-string))
+        (remove '(:eval emms-lyrics-mode-line-string) global-mode-string))
   (force-mode-line-update))
 
 (with-eval-after-load 'emms-lyrics
@@ -6998,17 +6998,17 @@ ENTRY is an instance of `elfeed-entry'."
 
 (defun my/ytel-draw--buffer-nil-videos-fix ()
   (let ((inhibit-read-only t)
-	    (current-line      (line-number-at-pos)))
+        (current-line      (line-number-at-pos)))
     (erase-buffer)
     (setf header-line-format
           (concat "Search results for "
-				  (propertize ytel-search-term 'face 'ytel-video-published-face)
-				  ", page "
-				  (number-to-string ytel-current-page)))
+                  (propertize ytel-search-term 'face 'ytel-video-published-face)
+                  ", page "
+                  (number-to-string ytel-current-page)))
     (seq-do
      (lambda (v)
-	   (ytel--insert-video v)
-	   (insert "\n"))
+       (ytel--insert-video v)
+       (insert "\n"))
      (seq-filter
       (lambda (v)
         (ytel-video-title v))
