@@ -73,7 +73,7 @@
         (:name "pvkorytov (unread)" :query "tag:pvkorytov AND tag:unread" :key "vu")
         (:name "pvkorytov (sent)" :query "tag:pvkorytov AND tag:sent" :key "vs")
         (:name "pvkorytov (all mail)" :query "tag:pvkorytov" :key "va")))
-(setq notmuch-show-empty-saved-searches t)
+(setq notmuch-show-empty-saved-searches nil)
 
 (general-define-key
  :states '(normal visual)

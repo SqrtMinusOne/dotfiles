@@ -500,7 +500,7 @@ The following formats the tables above to a proper syntax for =setq notmuch-save
 (setq notmuch-saved-searches
       '((:name "drafts" :query "tag:draft" :key "d")
         <<format-notmuch-saved-searches()>>))
-(setq notmuch-show-empty-saved-searches t)
+(setq notmuch-show-empty-saved-searches nil)
 #+end_src
 
 #+begin_src emacs-lisp
