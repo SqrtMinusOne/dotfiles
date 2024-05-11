@@ -4976,21 +4976,21 @@ Also, my project structure is somewhat chaotic, so I have an =.el= file in the o
 (defun my/update-org-agenda ()
   (interactive)
   (let ((project-files
-         (mapcar
-          (lambda (f) (concat
-                       org-directory "/projects/"
-                       f))
-          (seq-filter
-           (lambda (f) (not (file-directory-p f)))
-           (when (file-directory-p (concat org-directory "/projects"))
-             (directory-files
-              (concat org-directory "/projects")))))))
+         (when (file-directory-p (concat org-directory "/projects"))
+           (thread-last "/projects"
+                        (concat org-directory)
+                        (directory-files)
+                        (mapcar (lambda (f)
+                                  (concat
+                                   org-directory "/projects/" f)))
+                        (seq-filter (lambda (f)
+                                      (not (file-directory-p f))))))))
     (setq org-agenda-files
           (seq-filter #'file-exists-p
-                    `("inbox.org"
-                      "misc/habit.org"
-                      "contacts.org"
-                      ,@project-files)))
+                      `("inbox.org"
+                        "misc/habit.org"
+                        "contacts.org"
+                        ,@project-files)))
     (setq org-refile-targets
           `(,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
@@ -5248,6 +5248,8 @@ It doesn't look great with org-bars mode, so...
   :after (org)
   :if (not my/remote-server)
   :straight t
+  :config
+  (setq org-ql-ask-unsafe-queries nil)
   :init
   ;; See https://github.com/alphapapa/org-ql/pull/237
   (setq org-ql-regexp-part-ts-time
@@ -5393,7 +5395,7 @@ A view to return all TODOs in a category.
          (ivy-prescient-sort-commands nil)
          (categories (completing-read-multiple
                       "Categories: "
-                      '("TEACH" "EDU" "JOB" "LIFE" "CONFIG"))))
+                      '("TEACH" "EDU" "JOB" "LIFE" "COMP"))))
     (org-ql-search (org-agenda-files)
       `(and (todo)
             ,@(unless (seq-empty-p categories)
@@ -5412,6 +5414,7 @@ Putting all the above in =org-ql-views=.
        (cons "Review: Stale tasks"
              (list :buffers-files #'org-agenda-files
                    :query '(and (todo)
+                                (not (tags "nots"))
                                 (not (ts :from -14)))
                    :title "Review: Stale tasks"
                    :sort '(todo priority date)
@@ -5742,23 +5745,23 @@ And a function to extract the required items with =org-ql-query= and schedule th
                                             (current-time)
                                             (* 60 60 24)))
                                      :with-time t))
-                 :order-by 'date))
-              scheduled-keys)
-    (cl-loop
-     for item in items
-     for scheduled = (org-timestamp-to-time (org-element-property :scheduled item))
-     do (cl-loop
-         for before-time in my/org-alert-notify-times
-         for label = (format "%s at %s [%s min. remaining]"
-                             (org-element-property :raw-value item)
-                             (format-time-string "%H:%M" scheduled)
-                             (number-to-string (/ before-time 60)))
-         for time = (time-convert
-                     (+ (time-convert scheduled 'integer) (- before-time)))
-         do (progn
-              (my/org-alert--schedule label time)
-              (push (cons label time) scheduled-keys))))
-    (my/org-alert-cleanup scheduled-keys)))
+                 :order-by 'date)))
+    (let (scheduled-keys)
+      (cl-loop
+       for item in items
+       for scheduled = (org-timestamp-to-time (org-element-property :scheduled item))
+       do (cl-loop
+           for before-time in my/org-alert-notify-times
+           for label = (format "%s at %s [%s min. remaining]"
+                               (org-element-property :raw-value item)
+                               (format-time-string "%H:%M" scheduled)
+                               (number-to-string (/ before-time 60)))
+           for time = (time-convert
+                       (+ (time-convert scheduled 'integer) (- before-time)))
+           do (progn
+                (my/org-alert--schedule label time)
+                (push (cons label time) scheduled-keys))))
+      (my/org-alert-cleanup scheduled-keys))))
 #+end_src
 
 Let's wrap it into a minor mode:
@@ -5980,7 +5983,9 @@ Global keybindings:
   "" '(:which-key "org-mode")
   "c" 'org-capture
   "a" 'org-agenda
-  "o" #'my/org-file-open)
+  "o" #'my/org-file-open
+  "v" #'org-ql-view
+  "q" #'org-ql-search)
 #+end_src
 
 Local keybindings
@@ -6474,16 +6479,20 @@ Advise =deft-parse-title= to be able to extract title from the Org property:
   (advice-add #'deft-parse-title :around #'my/deft-parse-title-around))
 #+end_src
 *** Review workflow
-UPD <2022-03-27 Sun>. Out of action for now
+Tiago Forte has several few interesting blog posts:
+- [[https://fortelabs.com/blog/the-weekly-review-is-an-operating-system/][The Weekly Review is an Operating System]]
+- [[https://fortelabs.com/blog/the-design-of-a-weekly-review/][The Design of a Weekly Review]]
 
-My take on a review workflow. As a baseline, I want to have a template that lists the important changes since the last review and other basic information. I'm doing reviews regularly, but the time intervals still may vary, hence this flexibility.
+This is probably my third time to implement a weekly review.
 
-This section has seen some updates over time.
+I want two general things from the workflow:
+- to perform maintainance operations, such as clearing various inboxes;
+- to reflect on what I've done over the past week.
+
+For the second point I'll try to collect data from various sources and add the data to my review template.
 
 **** Data from git
-First, as I have [[file:Console.org::=autocommit=][autocommit]] set up in my org directory, here is a handy function to get an alist of changed files of a form =(status . path)=. In principle, the =rev= parameter can be a commit, tag, etc but here I'm interested in a form like =@{2021-08-30}=.
-
-Also in principle, Org Roam DB also stores stuff like creation time and modification time, but I started this section before I started using Org Roam extensively, so git works fine for me.
+First, as I have [[file:Console.org::=autocommit=][autocommit]] set up in my org directory, here is a function to get an alist of changed files in a form =(status . path)=. The =rev= parameter can be a commit, tag, etc. but here I'm interested in the date form (e.g. =@{2021-08-30}=).
 
 #+begin_src emacs-lisp
 (setq my/git-diff-status
@@ -6492,6 +6501,7 @@ Also in principle, Org Roam DB also stores stuff like creation time and modifica
         ("D" . deleted)
         ("M" . modified)
         ("R" . renamed)
+        ("R100" . moved)
         ("T" . type-changed)
         ("U" . unmerged)))
 
@@ -6502,7 +6512,7 @@ Also in principle, Org Roam DB also stores stuff like creation time and modifica
        (let ((elems (split-string file "\t")))
          (cons
           (cdr (assoc (car elems) my/git-diff-status))
-          (nth 1 elems))))
+          (car (last elems)))))
      (split-string files "\n" t))))
 #+end_src
 
@@ -6512,211 +6522,125 @@ I'll use it to get a list of added and changed files in the Org directory since 
   (let ((default-directory org-directory))
     (my/get-files-status (format "@{%s}" date))))
 #+end_src
+
 **** Data from org-roam
-Now that we have the list of new & changed files, I want to sort into a bunch of categories: projects, log entries, etc. The categories are defined by tags.
+I'll use data from git to get the list of what I've been working on. The directories include =org-roam= itself and =inbox-notes=, where my in-process notes live.
 
-So here is a list of plists that sets these categories. The properties are as follows:
-- =:status= is a git status for the file
-- =:tags= is a plist that sets up the following conditions for the Roam node
-  - =:include= - should be empty or one of these should be present
-  - =:exclude= - should be empty or none of these should be present
-- =:title= is the name of category as I want it to be seen in the review template
 #+begin_src emacs-lisp
-(setq my/org-review-roam-queries
-      '((:status added
-                 :tags (:include ("org"))
-                 :title "New Project Entries")
-        (:status changed
-                 :tags (:include ("org"))
-                 :title "Changed Project Entries")
-        (:status added
-                 :tags (:exclude ("org"))
-                 :title "New Zettelkasten Entries")
-        (:status changed
-                 :tags (:exclude ("org"))
-                 :title "Changed Zettelkasten Entries")))
+(defun my/org-review-format-org-roam (date)
+  (let ((changes (my/org-changed-files-since-date date))
+        (nodes (org-roam-node-list))
+        (nodes-by-file (make-hash-table :test #'equal)))
+    (cl-loop for node in nodes
+             for file = (org-roam-node-file node)
+             do (puthash file node nodes-by-file))
+    (concat
+     "*** Zettelkasten Updates\n"
+     "TODO Sort the updates by topics\n\n"
+     "Changes in inbox:\n"
+     (thread-last
+       changes
+       (seq-filter
+        (lambda (file) (string-match-p (rx bos "inbox-notes") (cdr file))))
+       (seq-sort-by (lambda (s) (symbol-name (car s)))
+                    #'string-lessp)
+       (mapcar (lambda (change)
+                 (format "- %s :: %s\n"
+                         (cond
+                          ((or (member (car change) '(deleted moved))
+                               (string-match-p "figured-out" (cdr change)))
+                           "Processed")
+                          (t (capitalize (symbol-name (car change)))))
+                         (cdr change))))
+       (apply #'concat))
+     "\nChanges in notes:\n"
+     (thread-last
+       changes
+       (mapcar (lambda (c)
+                 (cons (car c)
+                       (gethash
+                        (concat org-directory "/" (cdr c))
+                        nodes-by-file))))
+       (seq-filter #'cdr)
+       (seq-sort-by (lambda (c) (concat (symbol-name (car c))
+                                        (org-roam-node-title (cdr c))))
+                    #'string-lessp)
+       (mapcar (lambda (c)
+                 (format "- %s :: [[id:%s][%s]]\n"
+                         (capitalize (symbol-name (car c)))
+                         (org-roam-node-id (cdr c))
+                         (org-roam-node-title (cdr c)))))
+       (apply #'concat)))))
+#+end_src
+**** Org Journal integration
+#+begin_src emacs-lisp
+(defun my/org-review-get-last-review-date (kind)
+  (let* ((start-of-day (- (time-convert nil #'integer)
+                          (% (time-convert nil #'integer)
+                             (* 24 60 60))))
+         (query-res (org-journal-tags-query
+                     :tag-names (list (format "review.%s" kind))
+                     :start-date (pcase kind
+                                   ('weekly
+                                    (- start-of-day
+                                       (* 21 24 60 60)))
+                                   (_ (error "Unsupported kind: %s" kind)))
+                     :location 'section)))
+    (if query-res
+        (org-journal-tag-reference-date (car query-res))
+      (pcase kind
+        ('weekly (- start-of-day (* 7 24 60 60)))))))
 #+end_src
 
-This list is used to extract & format the relevant section of the review template.
-
-=cl-loop= seems pretty good as a control flow structure, but I'll see if it is also pretty good at producing poorly maintainable code. At least at the moment of this writing, the function below looks rather concise.
 #+begin_src emacs-lisp
-(defun my/org-review-format-roam (changes)
-  (cl-loop for query in my/org-review-roam-queries
-           with nodes = (org-roam-node-list)
-           with node-tags = (mapcar #'org-roam-node-tags nodes)
-           for include-tags = (plist-get (plist-get query :tags) :include)
-           for exclude-tags = (plist-get (plist-get query :tags) :exclude)
-           ;; List of nodes filtered by :tags in query
-           for filtered-nodes =
-           (cl-loop for node in nodes
-                    for tags in node-tags
-                    if (and
-                        (or (seq-empty-p include-tags)
-                            (seq-intersection include-tags tags))
-                        (or (seq-empty-p exclude-tags)
-                            (not (seq-intersection exclude-tags tags))))
-                    collect node)
-           ;; List of changes filtered by :status in query
-           for filtered-changes =
-           (cl-loop for change in changes
-                    if (and (eq (car change) (plist-get query :status))
-                            (string-match-p (rx bos "roam") (cdr change)))
-                    collect (cdr change))
-           ;; Intersection of the two filtered lists
-           for final-nodes =
-           (cl-loop for node in filtered-nodes
-                    for path = (file-relative-name (org-roam-node-file node)
-                                                   org-directory)
-                    if (member path filtered-changes)
-                    collect node)
-           ;; If the intersction list is not empty, format it to the result
-           if final-nodes
-           concat (format "** %s\n" (plist-get query :title))
-           ;; FInal list of links, sorted by title
-           and concat (cl-loop for node in (seq-sort
-                                            (lambda (node1 node2)
-                                              (string-lessp
-                                               (org-roam-node-title node1)
-                                               (org-roam-node-title node2)))
-                                            final-nodes)
-                               concat (format "- [[id:%s][%s]]\n"
-                                              (org-roam-node-id node)
-                                              (org-roam-node-title node)))))
-#+end_src
-**** Data from org-agenda via org-ql
-+Third+ second, I want to list some changes in my agenda. This section will change depending on what I'm currently working on.
+(defun my/org-review-set-weekly-record ()
+  (save-excursion
+    (let ((last-review-date (my/org-review-get-last-review-date 'weekly)))
+      (org-journal-tags-prop-apply-delta :add '("review.weekly"))
+      (insert "Weekly Review")
+      (goto-char (point-max))
 
-So, here is a list of queries results of which I want to see in the review template. The format is =(name date-field order-by-field query)=.
-#+begin_src emacs-lisp
-(setq my/org-ql-review-queries
-      `(("Waitlist" scheduled scheduled
-         (and
-          (done)
-          (tags-inherited "waitlist")))
-        ("Personal tasks done" closed ,nil
-         (and
-          (tags-inherited "personal")
-          (todo "DONE")))
-        ("Attended meetings" closed scheduled
-         (and
-          (tags-inherited "meeting")
-          (todo "PASSED")))
-        ("Done project tasks" closed deadline
-         (and
-          (todo "DONE")
-          (ancestors
-           (heading "Tasks"))))))
-#+end_src
+      (insert "Last review date: "
+              (format-time-string
+               "[%Y-%m-%d]"
+               (seconds-to-time last-review-date)))
+      (insert "
 
-The query will be executed like this: =(and (date-field :from rev-date) query)=
-#+begin_src emacs-lisp
-(defun my/org-review-exec-ql (saved rev-date)
-  (let ((query `(and
-                 (,(nth 1 saved) :from ,rev-date)
-                 ,(nth 3 saved))))
-    (org-ql-query
-      :select #'element
-      :from (org-agenda-files)
-      :where query
-      :order-by (nth 2 saved))))
-#+end_src
+Review checklist:
+- [ ] Clear email inbox
+- [ ] Reconcile ledger
+- [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
+- [ ] Process [[file:../inbox.org][inbox]]
+- [ ] Create [[file:../recurring.org][recurring tasks]] for next week
+- [ ] Check agenda (-1 / +2 weeks): priorities, deadlines
+- [ ] Check TODOs: priorities, deadlines
+  - [[org-ql-search:todo%3A?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: All TODOs]]
+  - [[org-ql-search:(and (todo) (not (tags \"nots\")) (not (ts :from -14)))?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: Stale tasks]]
+  - [[org-ql-search:todo%3AWAIT?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: WAIT]]
+- [ ] Run auto-archiving
+- [ ] Review journal records
+")
 
-Format one element of the query result.
-#+begin_src emacs-lisp
-(defun my/org-review-format-element (elem)
-  (concat
-   (string-pad
-    (plist-get (cadr elem) :raw-value)
-    40)
-   (when-let (scheduled (plist-get (cadr elem) :scheduled))
-     (concat " [SCHEDULED: " (plist-get (cadr scheduled) :raw-value) "]"))
-   (when-let (deadline (plist-get (cadr elem) :deadline))
-     (concat " [DEADLINE: " (plist-get (cadr deadline) :raw-value) "]"))))
-#+end_src
+      (insert (my/org-review-format-org-roam
+               (format-seconds "%Y-%m-%d" last-review-date)))
+      (insert "
+,*** Summary
+TODO Write something, maybe? "))))
 
-Execute all the saved queries and format an Org list for the capture template.
-#+begin_src emacs-lisp
-(defun my/org-review-format-queries (rev-date)
-  (mapconcat
-   (lambda (results)
-     (concat "** " (car results) "\n"
-             (string-join
-              (mapcar (lambda (r) (concat "- " r)) (cdr results))
-              "\n")
-             "\n"))
-   (seq-filter
-    (lambda (result)
-      (not (seq-empty-p (cdr result))))
-    (mapcar
-     (lambda (saved)
-       (cons
-        (car saved)
-        (mapcar
-         #'my/org-review-format-element
-         (my/org-review-exec-ql saved rev-date))))
-     my/org-ql-review-queries))
-   "\n"))
-#+end_src
-**** Capture template
-Now, we have to put all this together and define a capture template for the review.
-
-+I'll use a separate directory for the review files, just like for org-journal and org-roam.+ I'll store the review files in org-roam. Time will tell if that's a good idea. The filename will have a format =YYYY-MM-DD.org=, which will also free me from the effort of storing the last review date somewhere.
-
-If somehow there are no files in the folder, fallback to the current date minus one two week. Also featuring the most awkward date transformation I've ever done just to add one date.
-
-#+begin_src emacs-lisp
-(setq my/org-review-directory "review")
-
-(defun my/get-last-review-date ()
-  (->
-   (substring
-    (or
-     (-max-by
-      'string-greaterp
-      (-filter
-       (lambda (f) (not (or (string-equal f ".") (string-equal f ".."))))
-       (directory-files (f-join org-roam-directory my/org-review-directory))))
-     (format-time-string
-      "%Y-%m-%d"
-      (time-subtract
-       (current-time)
-       (seconds-to-time (* 60 60 24 14)))))
-    0 10)
-   (concat "T00:00:00-00:00")
-   parse-time-string
-   encode-time
-   (time-add (seconds-to-time (* 60 60 24)))
-   ((lambda (time)
-      (format-time-string "%Y-%m-%d" time)))))
-#+end_src
-
-A template looks like this:
-#+begin_src emacs-lisp
-(setq my/org-review-capture-template
-      `("r" "Review" plain
-        ,(string-join
-          '("#+title: %<%Y-%m-%d>: REVIEW"
-            "#+category: REVIEW"
-            "#+filetags: log review"
-            "#+STARTUP: overview"
-            ""
-            "Last review date: %(org-timestamp-translate (org-timestamp-from-string (format \"<%s>\" (my/get-last-review-date))))"
-            ""
-            "* Roam"
-            "%(my/org-review-format-roam (my/org-changed-files-since-date (my/get-last-review-date)))"
-            "* Agenda"
-            "%(my/org-review-format-queries (my/get-last-review-date))"
-            "* Thoughts"
-            "%?")
-          "\n")
-        :if-new (file "review/%<%Y-%m-%d>.org.gpg")))
-
-(defun my/org-roam-capture-review ()
+(defun my/org-review-weekly ()
   (interactive)
-  (org-roam-capture- :node (org-roam-node-create)
-                     :templates `(,my/org-review-capture-template)))
+  (let ((org-journal-after-entry-create-hook
+         `(,@org-journal-after-entry-create-hook
+           my/org-review-set-weekly-record)))
+    (org-journal-new-entry nil)
+    (org-fold-show-subtree)))
 #+end_src
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'org-journal
+  (my-leader-def "ojw" #'my/org-review-weekly))
+#+end_src
+
 *** Contacts
 =org-contacts= is a package to store contacts in an org file.
 
@@ -10294,6 +10218,15 @@ And the prefix itself:
      ("q" "Quit" transient-quit-one)]))
 #+end_src
 *** wallabag
+[[https://github.com/wallabag/wallabag][wallabag]] is a self-hosted "read it later" app.
+
+This might be the best online reading advice I've heard:
+
+#+begin_quote
+I have a different approach: waiting periods. Every time I come across something I may want to read/watch, I’m totally allowed to. No limits! The only requirement is I have to save it to Pocket, and then choose to consume it at a later time.
+#+end_quote
+Source: [[https://fortelabs.com/blog/the-secret-power-of-read-it-later-apps/][Tiago Forte - The Secret Power of ‘Read It Later’ Apps]]
+
 #+begin_src emacs-lisp
 (use-package wallabag
   :straight (:host github :repo "chenyanming/wallabag.el" :files (:defaults "default.css" "emojis.alist"))
@@ -10830,17 +10763,25 @@ I don't have access to any proprietary APIs, but LLaMA 3 8b with [[https://ollam
     "i" #'gptel)
   :commands (gptel gptel-send gptel-menu)
   :config
-  (setq gptel-model "llama3:latest")
-  (setq gptel-backend
-        (gptel-make-ollama "Ollama"
-          :host "localhost:11434"
-          :stream t
-          :models '("llama3:latest")))
+  (defun my/gptel-switch-backend (model)
+    (interactive (list (completing-read "Model: " my/gptel-backends)))
+    (setq gptel-model model)
+    (setq gptel-backend (alist-get model my/gptel-backends nil nil #'equal)))
+
+  (setq my/gptel-backends
+        `(("llama3:latest" . ,(gptel-make-ollama "Ollama"
+                                :host "localhost:11434"
+                                :stream t
+                                :models '("llama3:latest" "llama3-gradient"
+                                          "llama3:instruct")))))
+  (my/gptel-switch-backend "llama3:latest")
+
   (general-define-key
    :keymaps '(gptel-mode-map)
    :states '(insert normal)
    "C-<return>" 'gptel-send))
 #+end_src
+
 *** ellama
 [[https://github.com/s-kostyaev/ellama][ellama]] provides commands that feed things from Emacs buffers into LLMs with various prompts.
 
@@ -10851,22 +10792,203 @@ I don't have access to any proprietary APIs, but LLaMA 3 8b with [[https://ollam
   (setq ellama-language "English")
   :config
   (require 'llm-ollama)
+  ;; I've looked for this option for 1.5 hours
+  (setq ellama-long-lines-length 100000)
   (my-leader-def
     "aie" '(:wk "ellama" :keymap ellama-command-map))
-  (which-key-add-key-based-replacements
-    (rx "SPC a i e a") "ask"
-    (rx "SPC a i e c") "code"
-    (rx "SPC a i e d") "define"
-    (rx "SPC a i e i") "improve"
-    (rx "SPC a i e m") "make"
-    (rx "SPC a i e p") "provider"
-    (rx "SPC a i e s") "summarize"
-    (rx "SPC a i e t") "translate/complete"
-    (rx "SPC a i e x") "context")
+
   (setq ellama-provider (make-llm-ollama
-                         :chat-model "llama3:latest"
-                         :embedding-model "llama3:latest")))
+                         :chat-model "llama3:instruct"
+                         :embedding-model "llama3:instruct"))
+  (setq ellama-providers
+        `(("llama3:8b" . ,(make-llm-ollama
+                           :chat-model "llama3:latest"
+                           :embedding-model "llama3:latest"))
+          ("llama3:instruct" . ,(make-llm-ollama
+                                 :chat-model "llama3:instruct"
+                                 :embedding-model "llama3:instruct")))))
 #+end_src
+
+The keybindings are a bit crazy to use even with =which-key=, so here goes transient.el.
+#+begin_src emacs-lisp
+(with-eval-after-load 'ellama
+  (transient-define-prefix my/ellama ()
+    "Ellama actions."
+    ["General"
+     :class transient-row
+     ("a" "Chat" ellama-chat)]
+    ["Code"
+     :class transient-row
+     ("ca" "Add" ellama-code-add)
+     ("cc" "Complete" ellama-code-complete)
+     ("ce" "Edit" ellama-code-edit)
+     ("cr" "Review" ellama-code-review)
+     ("ci" "Improve" ellama-code-improve)]
+    ["Natural Language"
+     :class transient-row
+     ("np" "Proof-read" my/ellama-proof-read)
+     ("nw" "Improve wording" my/ellama-improve-wording)
+     ("nc" "Improve conciseness" my/ellama-improve-concise)]
+    ["Formatting"
+     :class transient-row
+     ("ff" "Format" ellama-make-format)
+     ("fm" "List" ellama-make-list)
+     ("ft" "Table" ellama-make-table)]
+    ["Explain & Summarize"
+     :class transient-row
+     ("es" "Summarize" ellama-summarize)
+     ("ea" "Ask about" ellama-ask-about)
+     ("es" "Send to chat" ellama-ask-selection)
+     ("ew" "Word definition" ellama-define-word)]
+    ["Context"
+     :class transient-row
+     ("xb" "Add buffer" ellama-context-add-buffer)
+     ("xf" "Add file" ellama-context-add-file)
+     ("xi" "Add info" ellama-context-add-info-node)
+     ("xs" "Add selection" ellama-context-add-selection)]
+    ["Settings & Sessions"
+     :class transient-row
+     ("sp" "Provider" ellama-provider-select)
+     ("ss" "Session" ellama-session-switch)
+     ("sr" "Rename ression" ellama-session-rename)
+     ("sd" "Delete session" ellama-session-remove)])
+  (my-leader-def "aie" #'my/ellama))
+#+end_src
+
+**** Change natural text & diff against the results
+One pattern I often want is to change the given text and compare it to the old version.
+
+LLMs aren't perfectly good at saying what changes they have done, so the pattern here is to query the model and show the changed text together with the diff.
+
+So first, I need to diff two strings.
+#+begin_src emacs-lisp :noweb yes
+(defun my/diff-strings (str1 str2)
+  (let ((file1 (make-temp-file "diff1"))
+        (file2 (make-temp-file "diff2")))
+    (unwind-protect
+        (progn
+          (with-temp-file file1
+            (insert str1))
+          (with-temp-file file2
+            (insert str2))
+          (with-temp-buffer
+            (diff-mode)
+            (diff-no-select file1 file2 (diff-switches) t (current-buffer))
+            (font-lock-fontify-buffer)
+            (buffer-string)))
+      (delete-file file1)
+      (delete-file file2))))
+#+end_src
+
+And the function to do the prompting iself. Llama tends to output in Markdown, so I use a function from Ellama to convert the output back to Org-mode, if necessary.
+#+begin_src emacs-lisp :noweb yes
+(defun my/ellama-text-with-diff (text is-org-mode prompt)
+  (llm-chat-async
+   ellama-provider
+   (llm-make-chat-prompt
+    (format prompt text))
+
+   (lambda (changed-text)
+     (when is-org-mode
+       (setq changed-text (ellama--translate-markdown-to-org-filter changed-text)))
+     (let ((buffer (generate-new-buffer "*ellama-diff*")))
+       (with-current-buffer buffer
+         (text-mode)
+         (insert changed-text)
+         (insert "\n\n")
+         (insert (my/diff-strings text changed-text)))
+       (display-buffer buffer)))
+   (lambda (&rest err)
+     (message "Error: %s" err))))
+#+end_src
+
+As for prompts, I like the following prompt to proof-read text. It's pretty conservative, but good for fixing typos, missing commas, articles, etc.
+#+begin_src emacs-lisp
+(setq my/ellama-proof-read-prompt
+      "Proof-read the following text. Fix any errors but keep the original style. Print the changed text and nothing else, not even \"Here's the proof-read text\".\n\n %s")
+
+(defun my/ellama--text ()
+  (if (region-active-p)
+	  (buffer-substring-no-properties (region-beginning) (region-end))
+	(buffer-substring-no-properties (point-min) (point-max))))
+
+(defun my/ellama-proof-read (text is-org-mode)
+  (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
+  (my/ellama-text-with-diff text is-org-mode my/ellama-proof-read-prompt))
+#+end_src
+
+The following is more expansive, but preserves less of the original text. For instance, it tends to replace my /id est/ and /exempli gratia/. But sometimes it has good ideas.
+#+begin_src emacs-lisp
+(setq my/ellama-improve-wording-prompt
+      "Proof-read the following text. Fix any errors and improve wording. Print the changed text and nothing else, not even \"Here's the improved text\".\n\n %s")
+
+(defun my/ellama-improve-wording (text is-org-mode)
+  (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
+  (my/ellama-text-with-diff text is-org-mode my/ellama-improve-wording-prompt))
+#+end_src
+
+Also, a prompt to make a text more concise.
+#+begin_src emacs-lisp
+(setq my/ellama-improve-concise-prompt
+      "Make the following text more concise. Print the changed text and nothing else, not even \"Here's the improved text\".\n\n %s")
+
+(defun my/ellama-improve-concise (text is-org-mode)
+  (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
+  (my/ellama-text-with-diff text is-org-mode my/ellama-improve-concise-prompt))
+#+end_src
+
+**** Other thoughts
+- =ellama-code-complete= is pretty good to write migrations
+*** Model settings
+**** llama3-gradient
+[[https://ollama.com/library/llama3-gradient][llama3-gradient]] is a version of LLaMA 3 with an extended context size. It requires setting the =num_ctx= parameter to work correctly.
+
+For ellama, the following works:
+#+begin_src emacs-lisp
+(with-eval-after-load 'ellama
+  (cl-defstruct (llm-ollama-gradient (:include llm-ollama)) num-ctx)
+
+  (cl-defmethod llm-provider-chat-request ((provider llm-ollama-gradient) prompt _)
+    (let (request-alist messages options)
+      (setq messages
+            (mapcar (lambda (interaction)
+                      `(("role" . ,(symbol-name (llm-chat-prompt-interaction-role interaction)))
+                        ("content" . ,(llm-chat-prompt-interaction-content interaction))))
+                    (llm-chat-prompt-interactions prompt)))
+      (when (llm-chat-prompt-context prompt)
+        (push `(("role" . "system")
+                ("content" . ,(llm-provider-utils-get-system-prompt prompt llm-ollama-example-prelude)))
+              messages))
+      (push `("messages" . ,messages) request-alist)
+      (push `("model" . ,(llm-ollama-chat-model provider)) request-alist)
+      (when (llm-chat-prompt-temperature prompt)
+        (push `("temperature" . ,(llm-chat-prompt-temperature prompt)) options))
+      (when (llm-chat-prompt-max-tokens prompt)
+        (push `("num_predict" . ,(llm-chat-prompt-max-tokens prompt)) options))
+      (when (llm-ollama-gradient-num-ctx provider)
+        (push `("num_ctx" . ,(llm-ollama-gradient-num-ctx provider)) options))
+      (when options (push `("options" . ,options) request-alist))
+      request-alist))
+
+  (push `("llama3-gradient" . ,(make-llm-ollama-gradient
+                                :chat-model "llama3-gradient"
+                                :embedding-model "llama3-gradient"
+                                :num-ctx 48000))
+        ellama-providers))
+#+end_src
+
+For gptel, this approach doesn't work and I've got no clue why. So...
+#+begin_src emacs-lisp
+(with-eval-after-load 'gptel
+  (cl-defmethod gptel--request-data :around ((_backend gptel-ollama) prompts)
+    (let ((request-alist (cl-call-next-method)))
+      (when (equal gptel-model "llama3-gradient")
+        (plist-put request-alist :options
+                   `(:num_ctx 48000
+                              ,@(plist-get request-alist :options))))
+      request-alist)))
+#+end_src
+
 ** Declarative filesystem management
 My filesystem is, shall we say, not the most orderly place.
 
@@ -11818,7 +11940,7 @@ I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
 #+end_src
 ** Utilities
 *** pass
-I use [[https://www.passwordstore.org/][pass]] as my password manager. Expectedly, there is Emacs frontend for it.
+I use [[https://www.passwordstore.org/][pass]] as my password manager. Expectedly, there is an Emacs frontend for it.
 
 This package is pretty good to manage the password database. I use [[https://github.com/SqrtMinusOne/password-store-ivy][password-store-ivy]] (another package of mine) to actually type passwords. [[https://github.com/carnager/rofi-pass][rofi-pass]] is another good option.
 

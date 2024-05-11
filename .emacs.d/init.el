@@ -3546,21 +3546,21 @@ With ARG, repeats or can move backward if negative."
 (defun my/update-org-agenda ()
   (interactive)
   (let ((project-files
-         (mapcar
-          (lambda (f) (concat
-                       org-directory "/projects/"
-                       f))
-          (seq-filter
-           (lambda (f) (not (file-directory-p f)))
-           (when (file-directory-p (concat org-directory "/projects"))
-             (directory-files
-              (concat org-directory "/projects")))))))
+         (when (file-directory-p (concat org-directory "/projects"))
+           (thread-last "/projects"
+                        (concat org-directory)
+                        (directory-files)
+                        (mapcar (lambda (f)
+                                  (concat
+                                   org-directory "/projects/" f)))
+                        (seq-filter (lambda (f)
+                                      (not (file-directory-p f))))))))
     (setq org-agenda-files
           (seq-filter #'file-exists-p
-                    `("inbox.org"
-                      "misc/habit.org"
-                      "contacts.org"
-                      ,@project-files)))
+                      `("inbox.org"
+                        "misc/habit.org"
+                        "contacts.org"
+                        ,@project-files)))
     (setq org-refile-targets
           `(,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
@@ -3752,6 +3752,8 @@ With ARG, repeats or can move backward if negative."
   :after (org)
   :if (not my/remote-server)
   :straight t
+  :config
+  (setq org-ql-ask-unsafe-queries nil)
   :init
   ;; See https://github.com/alphapapa/org-ql/pull/237
   (setq org-ql-regexp-part-ts-time
@@ -3882,7 +3884,7 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
          (ivy-prescient-sort-commands nil)
          (categories (completing-read-multiple
                       "Categories: "
-                      '("TEACH" "EDU" "JOB" "LIFE" "CONFIG"))))
+                      '("TEACH" "EDU" "JOB" "LIFE" "COMP"))))
     (org-ql-search (org-agenda-files)
       `(and (todo)
             ,@(unless (seq-empty-p categories)
@@ -3896,6 +3898,7 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
        (cons "Review: Stale tasks"
              (list :buffers-files #'org-agenda-files
                    :query '(and (todo)
+                                (not (tags "nots"))
                                 (not (ts :from -14)))
                    :title "Review: Stale tasks"
                    :sort '(todo priority date)
@@ -4173,23 +4176,23 @@ KEYS is a list of cons cells like (<label> . <time>)."
                                             (current-time)
                                             (* 60 60 24)))
                                      :with-time t))
-                 :order-by 'date))
-              scheduled-keys)
-    (cl-loop
-     for item in items
-     for scheduled = (org-timestamp-to-time (org-element-property :scheduled item))
-     do (cl-loop
-         for before-time in my/org-alert-notify-times
-         for label = (format "%s at %s [%s min. remaining]"
-                             (org-element-property :raw-value item)
-                             (format-time-string "%H:%M" scheduled)
-                             (number-to-string (/ before-time 60)))
-         for time = (time-convert
-                     (+ (time-convert scheduled 'integer) (- before-time)))
-         do (progn
-              (my/org-alert--schedule label time)
-              (push (cons label time) scheduled-keys))))
-    (my/org-alert-cleanup scheduled-keys)))
+                 :order-by 'date)))
+    (let (scheduled-keys)
+      (cl-loop
+       for item in items
+       for scheduled = (org-timestamp-to-time (org-element-property :scheduled item))
+       do (cl-loop
+           for before-time in my/org-alert-notify-times
+           for label = (format "%s at %s [%s min. remaining]"
+                               (org-element-property :raw-value item)
+                               (format-time-string "%H:%M" scheduled)
+                               (number-to-string (/ before-time 60)))
+           for time = (time-convert
+                       (+ (time-convert scheduled 'integer) (- before-time)))
+           do (progn
+                (my/org-alert--schedule label time)
+                (push (cons label time) scheduled-keys))))
+      (my/org-alert-cleanup scheduled-keys))))
 
 (setq my/org-alert--timer nil)
 
@@ -4360,7 +4363,9 @@ KEYS is a list of cons cells like (<label> . <time>)."
   "" '(:which-key "org-mode")
   "c" 'org-capture
   "a" 'org-agenda
-  "o" #'my/org-file-open)
+  "o" #'my/org-file-open
+  "v" #'org-ql-view
+  "q" #'org-ql-search)
 
 (with-eval-after-load 'org
   (my-leader-def
@@ -4703,6 +4708,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
         ("D" . deleted)
         ("M" . modified)
         ("R" . renamed)
+        ("R100" . moved)
         ("T" . type-changed)
         ("U" . unmerged)))
 
@@ -4713,177 +4719,119 @@ KEYS is a list of cons cells like (<label> . <time>)."
        (let ((elems (split-string file "\t")))
          (cons
           (cdr (assoc (car elems) my/git-diff-status))
-          (nth 1 elems))))
+          (car (last elems)))))
      (split-string files "\n" t))))
 
 (defun my/org-changed-files-since-date (date)
   (let ((default-directory org-directory))
     (my/get-files-status (format "@{%s}" date))))
 
-(setq my/org-review-roam-queries
-      '((:status added
-                 :tags (:include ("org"))
-                 :title "New Project Entries")
-        (:status changed
-                 :tags (:include ("org"))
-                 :title "Changed Project Entries")
-        (:status added
-                 :tags (:exclude ("org"))
-                 :title "New Zettelkasten Entries")
-        (:status changed
-                 :tags (:exclude ("org"))
-                 :title "Changed Zettelkasten Entries")))
+(defun my/org-review-format-org-roam (date)
+  (let ((changes (my/org-changed-files-since-date date))
+        (nodes (org-roam-node-list))
+        (nodes-by-file (make-hash-table :test #'equal)))
+    (cl-loop for node in nodes
+             for file = (org-roam-node-file node)
+             do (puthash file node nodes-by-file))
+    (concat
+     "*** Zettelkasten Updates\n"
+     "TODO Sort the updates by topics\n\n"
+     "Changes in inbox:\n"
+     (thread-last
+       changes
+       (seq-filter
+        (lambda (file) (string-match-p (rx bos "inbox-notes") (cdr file))))
+       (seq-sort-by (lambda (s) (symbol-name (car s)))
+                    #'string-lessp)
+       (mapcar (lambda (change)
+                 (format "- %s :: %s\n"
+                         (cond
+                          ((or (member (car change) '(deleted moved))
+                               (string-match-p "figured-out" (cdr change)))
+                           "Processed")
+                          (t (capitalize (symbol-name (car change)))))
+                         (cdr change))))
+       (apply #'concat))
+     "\nChanges in notes:\n"
+     (thread-last
+       changes
+       (mapcar (lambda (c)
+                 (cons (car c)
+                       (gethash
+                        (concat org-directory "/" (cdr c))
+                        nodes-by-file))))
+       (seq-filter #'cdr)
+       (seq-sort-by (lambda (c) (concat (symbol-name (car c))
+                                        (org-roam-node-title (cdr c))))
+                    #'string-lessp)
+       (mapcar (lambda (c)
+                 (format "- %s :: [[id:%s][%s]]\n"
+                         (capitalize (symbol-name (car c)))
+                         (org-roam-node-id (cdr c))
+                         (org-roam-node-title (cdr c)))))
+       (apply #'concat)))))
 
-(defun my/org-review-format-roam (changes)
-  (cl-loop for query in my/org-review-roam-queries
-           with nodes = (org-roam-node-list)
-           with node-tags = (mapcar #'org-roam-node-tags nodes)
-           for include-tags = (plist-get (plist-get query :tags) :include)
-           for exclude-tags = (plist-get (plist-get query :tags) :exclude)
-           ;; List of nodes filtered by :tags in query
-           for filtered-nodes =
-           (cl-loop for node in nodes
-                    for tags in node-tags
-                    if (and
-                        (or (seq-empty-p include-tags)
-                            (seq-intersection include-tags tags))
-                        (or (seq-empty-p exclude-tags)
-                            (not (seq-intersection exclude-tags tags))))
-                    collect node)
-           ;; List of changes filtered by :status in query
-           for filtered-changes =
-           (cl-loop for change in changes
-                    if (and (eq (car change) (plist-get query :status))
-                            (string-match-p (rx bos "roam") (cdr change)))
-                    collect (cdr change))
-           ;; Intersection of the two filtered lists
-           for final-nodes =
-           (cl-loop for node in filtered-nodes
-                    for path = (file-relative-name (org-roam-node-file node)
-                                                   org-directory)
-                    if (member path filtered-changes)
-                    collect node)
-           ;; If the intersction list is not empty, format it to the result
-           if final-nodes
-           concat (format "** %s\n" (plist-get query :title))
-           ;; FInal list of links, sorted by title
-           and concat (cl-loop for node in (seq-sort
-                                            (lambda (node1 node2)
-                                              (string-lessp
-                                               (org-roam-node-title node1)
-                                               (org-roam-node-title node2)))
-                                            final-nodes)
-                               concat (format "- [[id:%s][%s]]\n"
-                                              (org-roam-node-id node)
-                                              (org-roam-node-title node)))))
+(defun my/org-review-get-last-review-date (kind)
+  (let* ((start-of-day (- (time-convert nil #'integer)
+                          (% (time-convert nil #'integer)
+                             (* 24 60 60))))
+         (query-res (org-journal-tags-query
+                     :tag-names (list (format "review.%s" kind))
+                     :start-date (pcase kind
+                                   ('weekly
+                                    (- start-of-day
+                                       (* 21 24 60 60)))
+                                   (_ (error "Unsupported kind: %s" kind)))
+                     :location 'section)))
+    (if query-res
+        (org-journal-tag-reference-date (car query-res))
+      (pcase kind
+        ('weekly (- start-of-day (* 7 24 60 60)))))))
 
-(setq my/org-ql-review-queries
-      `(("Waitlist" scheduled scheduled
-         (and
-          (done)
-          (tags-inherited "waitlist")))
-        ("Personal tasks done" closed ,nil
-         (and
-          (tags-inherited "personal")
-          (todo "DONE")))
-        ("Attended meetings" closed scheduled
-         (and
-          (tags-inherited "meeting")
-          (todo "PASSED")))
-        ("Done project tasks" closed deadline
-         (and
-          (todo "DONE")
-          (ancestors
-           (heading "Tasks"))))))
+(defun my/org-review-set-weekly-record ()
+  (save-excursion
+    (let ((last-review-date (my/org-review-get-last-review-date 'weekly)))
+      (org-journal-tags-prop-apply-delta :add '("review.weekly"))
+      (insert "Weekly Review")
+      (goto-char (point-max))
 
-(defun my/org-review-exec-ql (saved rev-date)
-  (let ((query `(and
-                 (,(nth 1 saved) :from ,rev-date)
-                 ,(nth 3 saved))))
-    (org-ql-query
-      :select #'element
-      :from (org-agenda-files)
-      :where query
-      :order-by (nth 2 saved))))
+      (insert "Last review date: "
+              (format-time-string
+               "[%Y-%m-%d]"
+               (seconds-to-time last-review-date)))
+      (insert "
 
-(defun my/org-review-format-element (elem)
-  (concat
-   (string-pad
-    (plist-get (cadr elem) :raw-value)
-    40)
-   (when-let (scheduled (plist-get (cadr elem) :scheduled))
-     (concat " [SCHEDULED: " (plist-get (cadr scheduled) :raw-value) "]"))
-   (when-let (deadline (plist-get (cadr elem) :deadline))
-     (concat " [DEADLINE: " (plist-get (cadr deadline) :raw-value) "]"))))
+Review checklist:
+- [ ] Clear email inbox
+- [ ] Reconcile ledger
+- [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
+- [ ] Process [[file:../inbox.org][inbox]]
+- [ ] Create [[file:../recurring.org][recurring tasks]] for next week
+- [ ] Check agenda (-1 / +2 weeks): priorities, deadlines
+- [ ] Check TODOs: priorities, deadlines
+  - [[org-ql-search:todo%3A?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: All TODOs]]
+  - [[org-ql-search:(and (todo) (not (tags \"nots\")) (not (ts :from -14)))?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: Stale tasks]]
+  - [[org-ql-search:todo%3AWAIT?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: WAIT]]
+- [ ] Run auto-archiving
+- [ ] Review journal records
+")
 
-(defun my/org-review-format-queries (rev-date)
-  (mapconcat
-   (lambda (results)
-     (concat "** " (car results) "\n"
-             (string-join
-              (mapcar (lambda (r) (concat "- " r)) (cdr results))
-              "\n")
-             "\n"))
-   (seq-filter
-    (lambda (result)
-      (not (seq-empty-p (cdr result))))
-    (mapcar
-     (lambda (saved)
-       (cons
-        (car saved)
-        (mapcar
-         #'my/org-review-format-element
-         (my/org-review-exec-ql saved rev-date))))
-     my/org-ql-review-queries))
-   "\n"))
+      (insert (my/org-review-format-org-roam
+               (format-seconds "%Y-%m-%d" last-review-date)))
+      (insert "
+*** Summary
+TODO Write something, maybe? "))))
 
-(setq my/org-review-directory "review")
-
-(defun my/get-last-review-date ()
-  (->
-   (substring
-    (or
-     (-max-by
-      'string-greaterp
-      (-filter
-       (lambda (f) (not (or (string-equal f ".") (string-equal f ".."))))
-       (directory-files (f-join org-roam-directory my/org-review-directory))))
-     (format-time-string
-      "%Y-%m-%d"
-      (time-subtract
-       (current-time)
-       (seconds-to-time (* 60 60 24 14)))))
-    0 10)
-   (concat "T00:00:00-00:00")
-   parse-time-string
-   encode-time
-   (time-add (seconds-to-time (* 60 60 24)))
-   ((lambda (time)
-      (format-time-string "%Y-%m-%d" time)))))
-
-(setq my/org-review-capture-template
-      `("r" "Review" plain
-        ,(string-join
-          '("#+title: %<%Y-%m-%d>: REVIEW"
-            "#+category: REVIEW"
-            "#+filetags: log review"
-            "#+STARTUP: overview"
-            ""
-            "Last review date: %(org-timestamp-translate (org-timestamp-from-string (format \"<%s>\" (my/get-last-review-date))))"
-            ""
-            "* Roam"
-            "%(my/org-review-format-roam (my/org-changed-files-since-date (my/get-last-review-date)))"
-            "* Agenda"
-            "%(my/org-review-format-queries (my/get-last-review-date))"
-            "* Thoughts"
-            "%?")
-          "\n")
-        :if-new (file "review/%<%Y-%m-%d>.org.gpg")))
-
-(defun my/org-roam-capture-review ()
+(defun my/org-review-weekly ()
   (interactive)
-  (org-roam-capture- :node (org-roam-node-create)
-                     :templates `(,my/org-review-capture-template)))
+  (let ((org-journal-after-entry-create-hook
+         `(,@org-journal-after-entry-create-hook
+           my/org-review-set-weekly-record)))
+    (org-journal-new-entry nil)
+    (org-fold-show-subtree)))
+
+(with-eval-after-load 'org-journal
+  (my-leader-def "ojw" #'my/org-review-weekly))
 
 (use-package org-contacts
   :straight (:type git :repo "https://repo.or.cz/org-contacts.git")
@@ -7884,12 +7832,19 @@ base toot."
     "i" #'gptel)
   :commands (gptel gptel-send gptel-menu)
   :config
-  (setq gptel-model "llama3:latest")
-  (setq gptel-backend
-        (gptel-make-ollama "Ollama"
-          :host "localhost:11434"
-          :stream t
-          :models '("llama3:latest")))
+  (defun my/gptel-switch-backend (model)
+    (interactive (list (completing-read "Model: " my/gptel-backends)))
+    (setq gptel-model model)
+    (setq gptel-backend (alist-get model my/gptel-backends nil nil #'equal)))
+
+  (setq my/gptel-backends
+        `(("llama3:latest" . ,(gptel-make-ollama "Ollama"
+                                :host "localhost:11434"
+                                :stream t
+                                :models '("llama3:latest" "llama3-gradient"
+                                          "llama3:instruct")))))
+  (my/gptel-switch-backend "llama3:latest")
+
   (general-define-key
    :keymaps '(gptel-mode-map)
    :states '(insert normal)
@@ -7901,21 +7856,166 @@ base toot."
   (setq ellama-language "English")
   :config
   (require 'llm-ollama)
+  ;; I've looked for this option for 1.5 hours
+  (setq ellama-long-lines-length 100000)
   (my-leader-def
     "aie" '(:wk "ellama" :keymap ellama-command-map))
-  (which-key-add-key-based-replacements
-    (rx "SPC a i e a") "ask"
-    (rx "SPC a i e c") "code"
-    (rx "SPC a i e d") "define"
-    (rx "SPC a i e i") "improve"
-    (rx "SPC a i e m") "make"
-    (rx "SPC a i e p") "provider"
-    (rx "SPC a i e s") "summarize"
-    (rx "SPC a i e t") "translate/complete"
-    (rx "SPC a i e x") "context")
+
   (setq ellama-provider (make-llm-ollama
-                         :chat-model "llama3:latest"
-                         :embedding-model "llama3:latest")))
+                         :chat-model "llama3:instruct"
+                         :embedding-model "llama3:instruct"))
+  (setq ellama-providers
+        `(("llama3:8b" . ,(make-llm-ollama
+                           :chat-model "llama3:latest"
+                           :embedding-model "llama3:latest"))
+          ("llama3:instruct" . ,(make-llm-ollama
+                                 :chat-model "llama3:instruct"
+                                 :embedding-model "llama3:instruct")))))
+
+(with-eval-after-load 'ellama
+  (transient-define-prefix my/ellama ()
+    "Ellama actions."
+    ["General"
+     :class transient-row
+     ("a" "Chat" ellama-chat)]
+    ["Code"
+     :class transient-row
+     ("ca" "Add" ellama-code-add)
+     ("cc" "Complete" ellama-code-complete)
+     ("ce" "Edit" ellama-code-edit)
+     ("cr" "Review" ellama-code-review)
+     ("ci" "Improve" ellama-code-improve)]
+    ["Natural Language"
+     :class transient-row
+     ("np" "Proof-read" my/ellama-proof-read)
+     ("nw" "Improve wording" my/ellama-improve-wording)
+     ("nc" "Improve conciseness" my/ellama-improve-concise)]
+    ["Formatting"
+     :class transient-row
+     ("ff" "Format" ellama-make-format)
+     ("fm" "List" ellama-make-list)
+     ("ft" "Table" ellama-make-table)]
+    ["Explain & Summarize"
+     :class transient-row
+     ("es" "Summarize" ellama-summarize)
+     ("ea" "Ask about" ellama-ask-about)
+     ("es" "Send to chat" ellama-ask-selection)
+     ("ew" "Word definition" ellama-define-word)]
+    ["Context"
+     :class transient-row
+     ("xb" "Add buffer" ellama-context-add-buffer)
+     ("xf" "Add file" ellama-context-add-file)
+     ("xi" "Add info" ellama-context-add-info-node)
+     ("xs" "Add selection" ellama-context-add-selection)]
+    ["Settings & Sessions"
+     :class transient-row
+     ("sp" "Provider" ellama-provider-select)
+     ("ss" "Session" ellama-session-switch)
+     ("sr" "Rename ression" ellama-session-rename)
+     ("sd" "Delete session" ellama-session-remove)])
+  (my-leader-def "aie" #'my/ellama))
+
+(defun my/diff-strings (str1 str2)
+  (let ((file1 (make-temp-file "diff1"))
+        (file2 (make-temp-file "diff2")))
+    (unwind-protect
+        (progn
+          (with-temp-file file1
+            (insert str1))
+          (with-temp-file file2
+            (insert str2))
+          (with-temp-buffer
+            (diff-mode)
+            (diff-no-select file1 file2 (diff-switches) t (current-buffer))
+            (font-lock-fontify-buffer)
+            (buffer-string)))
+      (delete-file file1)
+      (delete-file file2))))
+
+(defun my/ellama-text-with-diff (text is-org-mode prompt)
+  (llm-chat-async
+   ellama-provider
+   (llm-make-chat-prompt
+    (format prompt text))
+
+   (lambda (changed-text)
+     (when is-org-mode
+       (setq changed-text (ellama--translate-markdown-to-org-filter changed-text)))
+     (let ((buffer (generate-new-buffer "*ellama-diff*")))
+       (with-current-buffer buffer
+         (text-mode)
+         (insert changed-text)
+         (insert "\n\n")
+         (insert (my/diff-strings text changed-text)))
+       (display-buffer buffer)))
+   (lambda (&rest err)
+     (message "Error: %s" err))))
+
+(setq my/ellama-proof-read-prompt
+      "Proof-read the following text. Fix any errors but keep the original style. Print the changed text and nothing else, not even \"Here's the proof-read text\".\n\n %s")
+
+(defun my/ellama--text ()
+  (if (region-active-p)
+	  (buffer-substring-no-properties (region-beginning) (region-end))
+	(buffer-substring-no-properties (point-min) (point-max))))
+
+(defun my/ellama-proof-read (text is-org-mode)
+  (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
+  (my/ellama-text-with-diff text is-org-mode my/ellama-proof-read-prompt))
+
+(setq my/ellama-improve-wording-prompt
+      "Proof-read the following text. Fix any errors and improve wording. Print the changed text and nothing else, not even \"Here's the improved text\".\n\n %s")
+
+(defun my/ellama-improve-wording (text is-org-mode)
+  (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
+  (my/ellama-text-with-diff text is-org-mode my/ellama-improve-wording-prompt))
+
+(setq my/ellama-improve-concise-prompt
+      "Make the following text more concise. Print the changed text and nothing else, not even \"Here's the improved text\".\n\n %s")
+
+(defun my/ellama-improve-concise (text is-org-mode)
+  (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
+  (my/ellama-text-with-diff text is-org-mode my/ellama-improve-concise-prompt))
+
+(with-eval-after-load 'ellama
+  (cl-defstruct (llm-ollama-gradient (:include llm-ollama)) num-ctx)
+
+  (cl-defmethod llm-provider-chat-request ((provider llm-ollama-gradient) prompt _)
+    (let (request-alist messages options)
+      (setq messages
+            (mapcar (lambda (interaction)
+                      `(("role" . ,(symbol-name (llm-chat-prompt-interaction-role interaction)))
+                        ("content" . ,(llm-chat-prompt-interaction-content interaction))))
+                    (llm-chat-prompt-interactions prompt)))
+      (when (llm-chat-prompt-context prompt)
+        (push `(("role" . "system")
+                ("content" . ,(llm-provider-utils-get-system-prompt prompt llm-ollama-example-prelude)))
+              messages))
+      (push `("messages" . ,messages) request-alist)
+      (push `("model" . ,(llm-ollama-chat-model provider)) request-alist)
+      (when (llm-chat-prompt-temperature prompt)
+        (push `("temperature" . ,(llm-chat-prompt-temperature prompt)) options))
+      (when (llm-chat-prompt-max-tokens prompt)
+        (push `("num_predict" . ,(llm-chat-prompt-max-tokens prompt)) options))
+      (when (llm-ollama-gradient-num-ctx provider)
+        (push `("num_ctx" . ,(llm-ollama-gradient-num-ctx provider)) options))
+      (when options (push `("options" . ,options) request-alist))
+      request-alist))
+
+  (push `("llama3-gradient" . ,(make-llm-ollama-gradient
+                                :chat-model "llama3-gradient"
+                                :embedding-model "llama3-gradient"
+                                :num-ctx 48000))
+        ellama-providers))
+
+(with-eval-after-load 'gptel
+  (cl-defmethod gptel--request-data :around ((_backend gptel-ollama) prompts)
+    (let ((request-alist (cl-call-next-method)))
+      (when (equal gptel-model "llama3-gradient")
+        (plist-put request-alist :options
+                   `(:num_ctx 48000
+                              ,@(plist-get request-alist :options))))
+      request-alist)))
 
 (use-package ini
   :straight (:host github :repo "daniel-ness/ini.el"))
