@@ -3557,10 +3557,13 @@ With ARG, repeats or can move backward if negative."
                                       (not (file-directory-p f))))))))
     (setq org-agenda-files
           (seq-filter #'file-exists-p
-                      `("inbox.org"
-                        "misc/habit.org"
-                        "contacts.org"
-                        ,@project-files)))
+                      (append
+                       project-files
+                       (mapcar (lambda (f)
+                                 (concat org-directory "/" f))
+                               '("inbox.org"
+                                 "misc/habit.org"
+                                 "contacts.org")))))
     (setq org-refile-targets
           `(,@(mapcar
                (lambda (f) `(,f . (:tag . "refile")))
@@ -4351,7 +4354,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (let ((records (org-ql-query
                    :select #'element-with-markers
                    :from (current-buffer)
-                   :where `(and (ts :to ,(- days)) done))))
+                   :where `(and (ts :to ,(- days)) (done)))))
     (when (y-or-n-p (format "Archive %d records? " (length records)))
       (dolist (record records)
         (let ((marker (org-element-property :org-marker record)))
@@ -4817,7 +4820,7 @@ Review checklist:
 ")
 
       (insert (my/org-review-format-org-roam
-               (format-seconds "%Y-%m-%d" last-review-date)))
+               (format-time-string "%Y-%m-%d" (seconds-to-time last-review-date))))
       (insert "
 *** Summary
 TODO Write something, maybe? "))))
@@ -7832,23 +7835,25 @@ base toot."
     "i" #'gptel)
   :commands (gptel gptel-send gptel-menu)
   :config
-  (defun my/gptel-switch-backend (model)
-    (interactive (list (completing-read "Model: " my/gptel-backends)))
-    (setq gptel-model model)
-    (setq gptel-backend (alist-get model my/gptel-backends nil nil #'equal)))
+  (setq gptel-mode "llama3:latest")
+  (setq gptel-backend (gptel-make-ollama "Ollama"
+                        :host "localhost:11434"
+                        :stream t
+                        :models '("llama3:latest" "llama3-gradient"
+                                  "llama3:instruct")))
 
-  (setq my/gptel-backends
-        `(("llama3:latest" . ,(gptel-make-ollama "Ollama"
-                                :host "localhost:11434"
-                                :stream t
-                                :models '("llama3:latest" "llama3-gradient"
-                                          "llama3:instruct")))))
   (my/gptel-switch-backend "llama3:latest")
-
   (general-define-key
    :keymaps '(gptel-mode-map)
    :states '(insert normal)
-   "C-<return>" 'gptel-send))
+   "C-<return>" 'gptel-send)
+  (general-define-key
+   :keymaps '(gptel-mode-map)
+   :states '(normal)
+   "?" #'gptel-menu)
+  (gptel-make-gemini "Gemini"
+    :key (my/password-store-get-field "My_Online/Accounts/google-gemini" "api")
+    :stream t))
 
 (use-package ellama
   :straight t
@@ -7937,7 +7942,6 @@ base toot."
    ellama-provider
    (llm-make-chat-prompt
     (format prompt text))
-
    (lambda (changed-text)
      (when is-org-mode
        (setq changed-text (ellama--translate-markdown-to-org-filter changed-text)))
