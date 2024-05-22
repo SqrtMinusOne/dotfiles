@@ -379,7 +379,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (global-set-key (kbd "C-+") 'my/zoom-in)
 (global-set-key (kbd "C-=") 'my/zoom-out)
 
-(when my/is-termux
+(when (and my/is-termux (not (equal (my/system-name) "snow")))
   (define-key key-translation-map (kbd "`") (kbd "<escape>"))
   (define-key key-translation-map (kbd "<escape>") (kbd "`")))
 
@@ -2555,6 +2555,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (defun my/ltex-need-p ()
   (let ((file-name (buffer-file-name)))
     (cond
+     (my/is-termux nil)
      ((null file-name) nil)
      ((string-match-p (rx "/home/pavel/" (+ alnum) ".org" eos) file-name) nil)
      ((string-match-p (rx (literal org-directory) "/" (or "roam" "inbox-notes" "literature-notes" "journal")) file-name) t)
@@ -7859,7 +7860,6 @@ base toot."
 
 (use-package ellama
   :straight t
-  :if (not my/is-termux)
   :init
   (setq ellama-language "English")
   :config
