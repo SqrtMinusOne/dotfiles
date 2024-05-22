@@ -4785,7 +4785,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
                                     (- start-of-day
                                        (* 21 24 60 60)))
                                    (_ (error "Unsupported kind: %s" kind)))
-                     :location 'section)))
+                     :location 'section
+                     :order 'descending)))
     (if query-res
         (org-journal-tag-reference-date (car query-res))
       (pcase kind
@@ -7828,6 +7829,7 @@ base toot."
 
 (use-package gptel
   :straight t
+  :if (not my/is-termux)
   :init
   (my-leader-def
     :infix "ai"
@@ -7857,6 +7859,7 @@ base toot."
 
 (use-package ellama
   :straight t
+  :if (not my/is-termux)
   :init
   (setq ellama-language "English")
   :config
@@ -7956,7 +7959,7 @@ base toot."
      (message "Error: %s" err))))
 
 (setq my/ellama-proof-read-prompt
-      "Proof-read the following text. Fix any errors but keep the original style. Print the changed text and nothing else, not even \"Here's the proof-read text\".\n\n %s")
+      "Proof-read the following text. Fix any errors but keep the original style and punctuation, including linebreaks. Print the changed text and nothing else, not even \"Here's the proof-read text\".\n\n %s")
 
 (defun my/ellama--text ()
   (if (region-active-p)

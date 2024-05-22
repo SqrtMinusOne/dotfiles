@@ -6588,7 +6588,8 @@ I'll use data from git to get the list of what I've been working on. The directo
                                     (- start-of-day
                                        (* 21 24 60 60)))
                                    (_ (error "Unsupported kind: %s" kind)))
-                     :location 'section)))
+                     :location 'section
+                     :order 'descending)))
     (if query-res
         (org-journal-tag-reference-date (car query-res))
       (pcase kind
@@ -10911,7 +10912,7 @@ And the function to do the prompting iself. Llama tends to output in Markdown, s
 As for prompts, I like the following prompt to proof-read text. It's pretty conservative, but good for fixing typos, missing commas, articles, etc.
 #+begin_src emacs-lisp
 (setq my/ellama-proof-read-prompt
-      "Proof-read the following text. Fix any errors but keep the original style. Print the changed text and nothing else, not even \"Here's the proof-read text\".\n\n %s")
+      "Proof-read the following text. Fix any errors but keep the original style and punctuation, including linebreaks. Print the changed text and nothing else, not even \"Here's the proof-read text\".\n\n %s")
 
 (defun my/ellama--text ()
   (if (region-active-p)
