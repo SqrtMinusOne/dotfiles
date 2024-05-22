@@ -60,7 +60,11 @@ if [ -z "$IS_ANDROID" ] && [ -z "$NO_GUIX" ] ; then
             . "$GUIX_PROFILE"/etc/profile
         fi
         if [ -d "$profile"/share/man ]; then
-            export MANPATH="${MANPATH:-$(manpath)}:$profile/share/man"
+            if command -v manpath; then
+                export MANPATH="${MANPATH:-$(manpath)}:$profile/share/man"
+            else
+                export MANPATH="${MANPATH}:$profile/share/man"
+            fi
         fi
         export XDG_DATA_DIRS="$XDG_DATA_DIRS:$profile/share"
         unset profile

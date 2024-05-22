@@ -116,7 +116,11 @@ if [ -z "$IS_ANDROID" ] && [ -z "$NO_GUIX" ] ; then
             . "$GUIX_PROFILE"/etc/profile
         fi
         if [ -d "$profile"/share/man ]; then
-            export MANPATH="${MANPATH:-$(manpath)}:$profile/share/man"
+            if command -v manpath; then
+                export MANPATH="${MANPATH:-$(manpath)}:$profile/share/man"
+            else
+                export MANPATH="${MANPATH}:$profile/share/man"
+            fi
         fi
         export XDG_DATA_DIRS="$XDG_DATA_DIRS:$profile/share"
         unset profile
@@ -1097,21 +1101,61 @@ fi
 #+end_src
 * Android notes
 SSH instructions: https://wiki.termux.com/wiki/Remote_Access
+** Installation
+First, run
+#+begin_src bash
+pkg update
+#+end_src
 
-Don't forget to install the following termux packages:
-| Termux package |
-|----------------|
-| vim            |
-| tmux           |
-| starship       |
-| fish           |
-| exa            |
-| bat            |
-| git            |
+Then install the following packages:
+
+| Package  |
+|----------|
+| yadm     |
+| gnupg    |
+| git      |
+| which    |
+| starship |
+| atuin    |
+| vim      |
+| tmux     |
+| emacs    |
+| make     |
+| clang    |
+| ripgrep  |
+| cmake    |
+| gperf    |
+
+Run
+#+begin_src bash
+termux-setup-storage
+#+end_src
+
+Then import ssh and gpg keys. Set the main key to ultimate trust (=gpg --edit-key ...=, then =trust=).
+
+Then:
+#+begin_src bash
+yadm clone git@github.com/SqrtMinusOne/dotfiles.git
+#+end_src
+
+Install nerd fonts: https://github.com/notflawffles/termux-nerd-installer
+#+begin_src bash
+git clone https://github.com/notflawffles/termux-nerd-installer.git
+cd termux-nerd-installer
+make install
+#+end_src
+
+Clone =passwords.git= to =~/.password-store/=, =org-mode.git= to =~/30-39 Life/32 org-mode=.
+
+Create the file =~/.android-profile= with contents:
+#+begin_src bash
+export ANDROID_NAME=<name>
+#+end_src
+
+Then =emacs= should launch fine.
 
 Also:
 - cleanup =$PREFIX/etc/motd= to remove hello message.
-- copy the required font at =$HOME/.termux/font.ttf= and run =termux-reload-settings=.
 
 ** Installation of [[https://gitlab.com/dwt1/shell-color-scripts][DT's colorscripts]]:
 #+begin_src bash :tangle no :eval no
