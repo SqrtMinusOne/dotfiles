@@ -451,7 +451,7 @@ ramp-capacity-4 = 
 ; [[file:../../Desktop.org::*temperature][temperature:1]]
 [module/temperature]
 type = internal/temperature
-interval = 10
+interval = 2
 
 hwmon-path = ${env:TEMP_HWMON_PATH}
 

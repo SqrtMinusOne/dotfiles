@@ -57,6 +57,7 @@ declare -A BLOCKS=(
 declare -A TEMP_HWMON_PATHS=(
     ["eminence"]="/sys/devices/pci0000:00/0000:00:18.3/hwmon/hwmon2/temp1_input"
     ["indigo"]="/sys/devices/platform/coretemp.0/hwmon/hwmon2/temp1_input"
+    ["violet"]="/sys/devices/platform/coretemp.0/hwmon/hwmon2/temp1_input"
 )
 
 # Geolocation for some modules
@@ -74,6 +75,7 @@ for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     fi
     SIZE=${FONT_SIZES[$MONITOR]}
     SCALE=${EMOJI_SCALE[$MONITOR]}
+    TEMP=${TEMP_HWMON_PATHS[$(hostname)]}
     if [[ -z "$SCALE" ]]; then
         continue
     fi
