@@ -1395,6 +1395,66 @@ Obeys `widen-automatically', which see."
   (setq doom-modeline-buffer-state-icon nil)
   (doom-modeline-mode 1))
 
+(defun my/tab-bar-mode-line--format ()
+  (unless (derived-mode-p 'company-box-mode)
+    (cl-letf (((symbol-function 'window-pixel-width)
+               'frame-pixel-width)
+              ((symbol-function 'window-margins)
+               (lambda (&rest _)
+                 (list nil))))
+      (let ((doom-modeline-window-width-limit nil)
+            (doom-modeline--limited-width-p nil))
+        (format-mode-line
+         '("%e"
+           (:eval
+            (doom-modeline-format--main))))))))
+
+(defun my/hide-mode-line-if-only-window ()
+  (let* ((windows (window-list))
+         (hide-mode-line-p (length= windows 1)))
+    (dolist (win windows)
+      (with-current-buffer (window-buffer win)
+        (unless (eq hide-mode-line-p hide-mode-line-mode)
+          (hide-mode-line-mode
+           (if hide-mode-line-p +1 -1)))))))
+
+(define-minor-mode my/tab-bar-mode-line-mode
+  "Use tab-bar as mode line mode."
+  :global t
+  (if my/tab-bar-mode-line-mode
+      (progn
+        (tab-bar-mode +1)
+        (setq tab-bar-format '(my/tab-bar-mode-line--format))
+        (set-face-attribute 'tab-bar nil :inherit 'mode-line)
+        (add-hook 'window-configuration-change-hook #'my/hide-mode-line-if-only-window)
+
+        (dolist (buf (buffer-list))
+          (with-current-buffer buf
+            (doom-modeline-set-modeline 'minimal)))
+        (doom-modeline-set-modeline 'minimal 'default)
+
+        (dolist (frame (frame-list))
+          (with-selected-frame frame
+            (my/hide-mode-line-if-only-window))
+          (when-let (cb-frame (company-box--get-frame frame))
+            (set-frame-parameter cb-frame 'tab-bar-lines 0)))
+        (setenv "POLYBAR_BOTTOM" "false")
+        (when (fboundp #'my/exwm-run-polybar)
+          (my/exwm-run-polybar)))
+    (tab-bar-mode -1)
+    (setq tab-bar-format
+          '(tab-bar-format-history tab-bar-format-tabs tab-bar-separator tab-bar-format-add-tab))
+    (set-face-attribute 'tab-bar nil :inherit 'default)
+    (remove-hook 'window-configuration-change-hook #'my/hide-mode-line-if-only-window)
+    (global-hide-mode-line-mode -1)
+    (dolist (buf (buffer-list))
+      (with-current-buffer buf
+        (doom-modeline-set-modeline 'main)))
+    (doom-modeline-set-modeline 'main 'default)
+    (setenv "POLYBAR_BOTTOM" "true")
+    (when (fboundp #'my/exwm-run-polybar)
+      (my/exwm-run-polybar))))
+
 (use-package perspective
   :straight t
   :init
@@ -1961,12 +2021,15 @@ Returns (<buffer> . <workspace-index>) or nil."
       (indent-for-tab-command)))
 
 (use-package copilot
-  :straight (:host github :repo "SqrtMinusOne/copilot.el" :files ("dist" "*.el"))
+  :straight (:host github :repo "copilot/copilot.el")
   :commands (copilot-mode)
   :if (not (or my/remote-server my/is-termux))
   :init
-  (add-hook 'prog-mode-hook #'copilot-mode)
+  (add-hook 'emacs-startup-hook
+            (lambda ()
+              (add-hook 'prog-mode-hook #'copilot-mode)))
   :config
+  (push '(copilot) warning-suppress-types)
   (setq copilot-node-executable "/home/pavel/.guix-extra-profiles/dev/dev/bin/node")
   (general-define-key
    :keymaps 'company-active-map
@@ -1975,8 +2038,7 @@ Returns (<buffer> . <workspace-index>) or nil."
    :keymaps 'copilot-mode-map
    "<tab>" #'my/copilot-tab
    "M-j" #'copilot-accept-completion-by-line
-   "M-l" #'copilot-accept-completion-by-word)
-  (setq copilot-lispy-integration t))
+   "M-l" #'copilot-accept-completion-by-word))
 
 (defun my/should-run-emmet-p ()
   (and (bound-and-true-p emmet-mode)
@@ -2573,7 +2635,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight t
   :commands (langtool-check)
   :config
-  (setq langtool-language-tool-server-jar "/home/pavel/bin/LanguageTool-5.7/languagetool-server.jar")
+  (setq langtool-language-tool-server-jar "/home/pavel/bin/LanguageTool-6.4/languagetool-server.jar")
   (setq langtool-mother-tongue "ru")
   (setq langtool-default-language "en-US"))
 
@@ -3438,7 +3500,7 @@ With ARG, repeats or can move backward if negative."
 
 (use-package hide-mode-line
   :straight t
-  :after (org-present))
+  :commands (hide-mode-line-mode))
 
 (defun my/present-next-with-latex ()
   (interactive)
@@ -3543,6 +3605,12 @@ With ARG, repeats or can move backward if negative."
           (buffer-file-name))
          name ".csv")
         "orgtbl-to-csv")))))
+
+(use-package phscroll
+  :straight (:host github :repo "misohena/phscroll")
+  :config
+  (with-eval-after-load 'org
+    (require 'org-phscroll)))
 
 (defun my/update-org-agenda ()
   (interactive)
