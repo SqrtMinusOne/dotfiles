@@ -1,27 +1,28 @@
-# [[file:Mail.org::*Config][Config:1]]
+# [[file:Mail.org::*Config][Config:2]]
 [database]
 path=/home/pavel/Mail
-# Config:1 ends here
+# Config:2 ends here
 
-# [[file:Mail.org::*Config][Config:2]]
+# [[file:Mail.org::*Config][Config:3]]
 [user]
 name=Pavel Korytov
 primary_email=thexcloud@gmail.com
 other_email=progin6304@gmail.com;pvkorytov@etu.ru
-# Config:2 ends here
-
-# [[file:Mail.org::*Config][Config:3]]
-[new]
-tags=new;
-ignore=.osync_workdir;.mbsyncstate;.uidvalidity;.lock;/.*gmailieer\.json.*/
 # Config:3 ends here
 
 # [[file:Mail.org::*Config][Config:4]]
-[search]
-exclude_tags=trash;spam;
+[new]
+tags=new;
+# ignore=.osync_workdir;.mbsyncstate;.uidvalidity;.lock;/.*gmailieer\.json.*/
+ignore=/.*[.](json|lock|bak|osync_workdir|mbsyncstate|uidvalidity)$/
 # Config:4 ends here
 
 # [[file:Mail.org::*Config][Config:5]]
+[search]
+exclude_tags=trash;spam;
+# Config:5 ends here
+
+# [[file:Mail.org::*Config][Config:6]]
 [maildir]
 synchronize_flags=true
-# Config:5 ends here
+# Config:6 ends here

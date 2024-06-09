@@ -29,6 +29,8 @@ notmuch tag +job.moevm "path:pvkorytov_etu/Job_Moevm/cur/** AND NOT tag:job.moev
 notmuch tag -job.moevm "NOT path:pvkorytov_etu/Job_Moevm/cur/** AND tag:job.moevm AND tag:pvkorytov"
 notmuch tag +etu "path:pvkorytov_etu/Etu/cur/** AND NOT tag:etu"
 notmuch tag -etu "NOT path:pvkorytov_etu/Etu/cur/** AND tag:etu AND tag:pvkorytov"
+notmuch tag +etu.grad-school "path:pvkorytov_etu/Etu.Grad_School/cur/** AND NOT tag:etu.grad-school"
+notmuch tag -etu.grad-school "NOT path:pvkorytov_etu/Etu.Grad_School/cur/** AND tag:etu.grad-school AND tag:pvkorytov"
 echo "Post-new filters done"
 notmuch tag -new "tag:new"
 # =post_new=:2 ends here

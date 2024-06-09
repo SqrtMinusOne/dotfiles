@@ -192,6 +192,7 @@ So, here are the rules which match tags & folders:
 | job.digital.testers      | Job_Digital.Testers      |
 | job.moevm                | Job_Moevm                |
 | etu                      | Etu                      |
+| etu.grad-school          | Etu.Grad_School          |
 
 And below is a noweb function, which generates the following commands for notmuch to execute:
 - /before/ sync:
