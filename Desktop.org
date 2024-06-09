@@ -2125,7 +2125,7 @@ monitor = ${env:MONITOR:}
 width = 100%
 height = ${env:HEIGHT:27}
 fixed-center = false
-bottom=true
+bottom = ${env:POLYBAR_BOTTOM:true}
 
 background = ${colors.background}
 foreground = ${colors.black}
