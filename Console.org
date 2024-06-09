@@ -1109,22 +1109,24 @@ pkg update
 
 Then install the following packages:
 
-| Package  |
-|----------|
-| yadm     |
-| gnupg    |
-| git      |
-| which    |
-| starship |
-| atuin    |
-| vim      |
-| tmux     |
-| emacs    |
-| make     |
-| clang    |
-| ripgrep  |
-| cmake    |
-| gperf    |
+| Package      |
+|--------------|
+| yadm         |
+| gnupg        |
+| git          |
+| which        |
+| starship     |
+| atuin        |
+| vim          |
+| tmux         |
+| emacs        |
+| make         |
+| clang        |
+| ripgrep      |
+| cmake        |
+| gperf        |
+| iproute2     |
+| wakatime-cli |
 
 Run
 #+begin_src bash
