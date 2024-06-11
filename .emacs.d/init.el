@@ -542,9 +542,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (interactive)
   (if (derived-mode-p 'exwm-mode)
       (my/run-in-background "xkb-switch -n")
-    (if (equal (string-trim
-                (shell-command-to-string "xkb-switch -p"))
-               "us")
+    (if (or
+         (not (executable-find "xkb-switch"))
+         (equal (string-trim
+                 (shell-command-to-string "xkb-switch -p"))
+                "us"))
         (toggle-input-method)
       (my/run-in-background "xkb-switch -s us"))))
 
@@ -7191,6 +7193,10 @@ ENTRY is an instance of `elfeed-entry'."
 (use-package transient
   :straight t
   :defer t)
+
+(unless (display-graphic-p)
+  (defun image-transforms-p () nil)
+  (setq image-types '(svg png gif tiff jpeg xpm xbm pbm)))
 
 (defun my/mastodon-configure ()
   (display-line-numbers-mode -1))
