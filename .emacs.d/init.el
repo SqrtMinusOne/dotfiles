@@ -3249,6 +3249,76 @@ With ARG, repeats or can move backward if negative."
      (concat org-directory "/"
              (completing-read "Org file: " files)))))
 
+(defun my/enable-org-latex ()
+  (interactive)
+  (customize-set-variable 'org-highlight-latex-and-related '(native))
+  (add-hook 'org-mode-hook (lambda () (yas-activate-extra-mode 'LaTeX-mode)))
+  (sp-local-pair 'org-mode "$" "$")
+  (sp--remove-local-pair "'"))
+
+(with-eval-after-load-norem 'org
+  (setq my/org-latex-scale 1.75)
+  (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale)))
+
+(with-eval-after-load-norem 'org
+  (setq my/latex-preview-header "\\documentclass{article}
+\\usepackage[usenames]{color}
+\\usepackage{graphicx}
+\\usepackage{grffile}
+\\usepackage{longtable}
+\\usepackage{wrapfig}
+\\usepackage{rotating}
+\\usepackage[normalem]{ulem}
+\\usepackage{amsmath}
+\\usepackage{textcomp}
+\\usepackage{amssymb}
+\\usepackage{capt-of}
+\\usepackage{hyperref}
+\\pagestyle{empty}")
+
+  (setq org-preview-latex-process-alist
+        (mapcar
+         (lambda (item)
+           (cons
+            (car item)
+            (plist-put (cdr item) :latex-header my/latex-preview-header)))
+         org-preview-latex-process-alist)))
+
+(use-package org-superstar
+  :straight t
+  :disabled
+  :hook (org-mode . org-superstar-mode))
+
+(use-package org-bars
+  :straight (:repo "tonyaldon/org-bars" :host github)
+  :if (display-graphic-p)
+  :hook (org-mode . org-bars-mode))
+
+(unless (display-graphic-p)
+  (add-hook 'org-mode-hook #'org-indent-mode))
+
+(defun my/org-no-ellipsis-in-headlines ()
+  (remove-from-invisibility-spec '(outline . t))
+  (add-to-invisibility-spec 'outline))
+
+(with-eval-after-load 'org-bars
+  (add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
+  (when (eq major-mode 'org-mode)
+    (my/org-no-ellipsis-in-headlines)))
+
+(my/use-colors
+ (org-block :background (my/color-value 'bg-other))
+ (org-block-begin-line :background (my/color-value 'bg-other)
+                       :foreground (my/color-value 'grey)))
+
+(use-package org-appear
+  :after (org)
+  :straight t)
+
+(use-package org-fragtog
+  :after (org)
+  :straight t)
+
 (use-package jupyter
   :straight t
   :after (org)
@@ -3973,6 +4043,15 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
                                 (not (tags "nots"))
                                 (not (ts :from -14)))
                    :title "Review: Stale tasks"
+                   :sort '(todo priority date)
+                   :super-groups '((:auto-outline-path-file t))))
+       (cons "Review: Unclocked tasks"
+             (list :buffers-files #'org-agenda-files
+                   :query '(and (done)
+                                (ts :from -14)
+                                (not (clocked))
+                                (not (tags "nots")))
+                   :title "Review: Unclocked tasks"
                    :sort '(todo priority date)
                    :super-groups '((:auto-outline-path-file t))))
        (cons "Review: Recently timestamped" #'my/org-ql-view-recent-items)
@@ -4774,6 +4853,16 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (with-eval-after-load 'deft
   (advice-add #'deft-parse-title :around #'my/deft-parse-title-around))
 
+(defun my/org-roam-node-setup ()
+  (setq-local org-hide-emphasis-markers t)
+  (org-appear-mode 1)
+  (when (display-graphic-p)
+    (org-fragtog-mode 1)
+    (org-latex-preview '(16))))
+
+(with-eval-after-load 'org
+  (add-hook 'org-roam-find-file-hook 'my/org-roam-node-setup))
+
 (setq my/git-diff-status
       '(("A" . added)
         ("C" . copied)
@@ -4950,68 +5039,6 @@ TODO Write something, maybe? "))))
    "RET" #'org-timeblock-goto
    "t" #'org-timeblock-todo-set
    "q" #'quit-window))
-
-(defun my/enable-org-latex ()
-  (interactive)
-  (customize-set-variable 'org-highlight-latex-and-related '(native))
-  (add-hook 'org-mode-hook (lambda () (yas-activate-extra-mode 'LaTeX-mode)))
-  (sp-local-pair 'org-mode "$" "$")
-  (sp--remove-local-pair "'"))
-
-(with-eval-after-load-norem 'org
-  (setq my/org-latex-scale 1.75)
-  (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale)))
-
-(with-eval-after-load-norem 'org
-  (setq my/latex-preview-header "\\documentclass{article}
-\\usepackage[usenames]{color}
-\\usepackage{graphicx}
-\\usepackage{grffile}
-\\usepackage{longtable}
-\\usepackage{wrapfig}
-\\usepackage{rotating}
-\\usepackage[normalem]{ulem}
-\\usepackage{amsmath}
-\\usepackage{textcomp}
-\\usepackage{amssymb}
-\\usepackage{capt-of}
-\\usepackage{hyperref}
-\\pagestyle{empty}")
-
-  (setq org-preview-latex-process-alist
-        (mapcar
-         (lambda (item)
-           (cons
-            (car item)
-            (plist-put (cdr item) :latex-header my/latex-preview-header)))
-         org-preview-latex-process-alist)))
-
-(use-package org-superstar
-  :straight t
-  :disabled
-  :hook (org-mode . org-superstar-mode))
-
-(use-package org-bars
-  :straight (:repo "tonyaldon/org-bars" :host github)
-  :if (display-graphic-p)
-  :hook (org-mode . org-bars-mode))
-
-(unless (display-graphic-p)
-  (add-hook 'org-mode-hook #'org-indent-mode))
-
-(defun my/org-no-ellipsis-in-headlines ()
-  (remove-from-invisibility-spec '(outline . t))
-  (add-to-invisibility-spec 'outline))
-
-(with-eval-after-load 'org-bars
-  (add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
-  (when (eq major-mode 'org-mode)
-    (my/org-no-ellipsis-in-headlines)))
-
-(my/use-colors
- (org-block :background (my/color-value 'bg-other))
- (org-block-begin-line :background (my/color-value 'bg-other)
-                       :foreground (my/color-value 'grey)))
 
 (use-package ox-hugo
   :straight t

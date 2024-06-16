@@ -4499,6 +4499,111 @@ A function to open a file from =org-directory=, excluding a few directories like
              (completing-read "Org file: " files)))))
 #+end_src
 
+** UI
+*** LaTeX fragments
+A function to enable LaTeX native highlighting. Not setting this as default, because it loads LaTeX stuff.
+#+begin_src emacs-lisp
+(defun my/enable-org-latex ()
+  (interactive)
+  (customize-set-variable 'org-highlight-latex-and-related '(native))
+  (add-hook 'org-mode-hook (lambda () (yas-activate-extra-mode 'LaTeX-mode)))
+  (sp-local-pair 'org-mode "$" "$")
+  (sp--remove-local-pair "'"))
+#+end_src
+
+Call the function before opening an org file or reopen a buffer after calling the function.
+
+Scale latex fragments preview.
+#+begin_src emacs-lisp
+(with-eval-after-load-norem 'org
+  (setq my/org-latex-scale 1.75)
+  (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale)))
+#+end_src
+
+Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HEADER= entries. To circumvent this, I add a custom header and modify the ~org-preview-latex-process-alist~ variable
+#+begin_src emacs-lisp
+(with-eval-after-load-norem 'org
+  (setq my/latex-preview-header "\\documentclass{article}
+\\usepackage[usenames]{color}
+\\usepackage{graphicx}
+\\usepackage{grffile}
+\\usepackage{longtable}
+\\usepackage{wrapfig}
+\\usepackage{rotating}
+\\usepackage[normalem]{ulem}
+\\usepackage{amsmath}
+\\usepackage{textcomp}
+\\usepackage{amssymb}
+\\usepackage{capt-of}
+\\usepackage{hyperref}
+\\pagestyle{empty}")
+
+  (setq org-preview-latex-process-alist
+        (mapcar
+         (lambda (item)
+           (cons
+            (car item)
+            (plist-put (cdr item) :latex-header my/latex-preview-header)))
+         org-preview-latex-process-alist)))
+#+end_src
+*** Better headers
+[[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]] is a package that makes Org heading lines look a bit prettier.
+
+Disabled it for now because of overlapping functionality with org-bars.
+#+begin_src emacs-lisp
+(use-package org-superstar
+  :straight t
+  :disabled
+  :hook (org-mode . org-superstar-mode))
+#+end_src
+
+[[https://github.com/tonyaldon/org-bars][org-bars]] highlights Org indentation with bars.
+#+begin_src emacs-lisp
+(use-package org-bars
+  :straight (:repo "tonyaldon/org-bars" :host github)
+  :if (display-graphic-p)
+  :hook (org-mode . org-bars-mode))
+#+end_src
+
+Fallback to the standard =org-indent-mode= on terminal.
+#+begin_src emacs-lisp
+(unless (display-graphic-p)
+  (add-hook 'org-mode-hook #'org-indent-mode))
+#+end_src
+
+Remove the ellipsis at the end of folded headlines, as it seems unnecessary with =org-bars=.
+#+begin_src emacs-lisp
+(defun my/org-no-ellipsis-in-headlines ()
+  (remove-from-invisibility-spec '(outline . t))
+  (add-to-invisibility-spec 'outline))
+
+(with-eval-after-load 'org-bars
+  (add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
+  (when (eq major-mode 'org-mode)
+    (my/org-no-ellipsis-in-headlines)))
+#+end_src
+*** Override colors
+#+begin_src emacs-lisp
+(my/use-colors
+ (org-block :background (my/color-value 'bg-other))
+ (org-block-begin-line :background (my/color-value 'bg-other)
+                       :foreground (my/color-value 'grey)))
+#+end_src
+*** Hide stuff in buffer
+[[https://github.com/awth13/org-appear][org-appear]] is a package that toggles visibility of hidden elements upon entering and leaving them.
+
+#+begin_src emacs-lisp
+(use-package org-appear
+  :after (org)
+  :straight t)
+#+end_src
+
+[[https://github.com/io12/org-fragtog][org-fragtog]] does the same for LaTeX fragment previews.
+#+begin_src emacs-lisp
+(use-package org-fragtog
+  :after (org)
+  :straight t)
+#+end_src
 ** Literate programing
 *** Python & Jupyter
 Use jupyter kernels for Org Mode.
@@ -5495,6 +5600,15 @@ Putting all the above in =org-ql-views=.
                                 (not (tags "nots"))
                                 (not (ts :from -14)))
                    :title "Review: Stale tasks"
+                   :sort '(todo priority date)
+                   :super-groups '((:auto-outline-path-file t))))
+       (cons "Review: Unclocked tasks"
+             (list :buffers-files #'org-agenda-files
+                   :query '(and (done)
+                                (ts :from -14)
+                                (not (clocked))
+                                (not (tags "nots")))
+                   :title "Review: Unclocked tasks"
                    :sort '(todo priority date)
                    :super-groups '((:auto-outline-path-file t))))
        (cons "Review: Recently timestamped" #'my/org-ql-view-recent-items)
@@ -6556,6 +6670,23 @@ Advise =deft-parse-title= to be able to extract title from the Org property:
 (with-eval-after-load 'deft
   (advice-add #'deft-parse-title :around #'my/deft-parse-title-around))
 #+end_src
+**** Notes display
+I decided to borrow a few UX things from [[https://obsidian.md/][Obsidian]], namely hiding syntax when cursor leaves the line.
+
+[[https://github.com/awth13/org-appear?tab=readme-ov-file][org-appear]] and [[https://github.com/io12/org-fragtog][org-fragtog]] do pretty much that.
+
+#+begin_src emacs-lisp
+(defun my/org-roam-node-setup ()
+  (setq-local org-hide-emphasis-markers t)
+  (org-appear-mode 1)
+  (when (display-graphic-p)
+    (org-fragtog-mode 1)
+    (org-latex-preview '(16))))
+
+(with-eval-after-load 'org
+  (add-hook 'org-roam-find-file-hook 'my/org-roam-node-setup))
+#+end_src
+
 *** Review workflow
 Tiago Forte has several few interesting blog posts:
 - [[https://fortelabs.com/blog/the-weekly-review-is-an-operating-system/][The Weekly Review is an Operating System]]
@@ -6789,96 +6920,6 @@ An example contact entry can look like this:
    "q" #'quit-window))
 #+end_src
 
-** UI
-*** LaTeX fragments
-A function to enable LaTeX native highlighting. Not setting this as default, because it loads LaTeX stuff.
-#+begin_src emacs-lisp
-(defun my/enable-org-latex ()
-  (interactive)
-  (customize-set-variable 'org-highlight-latex-and-related '(native))
-  (add-hook 'org-mode-hook (lambda () (yas-activate-extra-mode 'LaTeX-mode)))
-  (sp-local-pair 'org-mode "$" "$")
-  (sp--remove-local-pair "'"))
-#+end_src
-
-Call the function before opening an org file or reopen a buffer after calling the function.
-
-Scale latex fragments preview.
-#+begin_src emacs-lisp
-(with-eval-after-load-norem 'org
-  (setq my/org-latex-scale 1.75)
-  (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale)))
-#+end_src
-
-Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HEADER= entries. To circumvent this, I add a custom header and modify the ~org-preview-latex-process-alist~ variable
-#+begin_src emacs-lisp
-(with-eval-after-load-norem 'org
-  (setq my/latex-preview-header "\\documentclass{article}
-\\usepackage[usenames]{color}
-\\usepackage{graphicx}
-\\usepackage{grffile}
-\\usepackage{longtable}
-\\usepackage{wrapfig}
-\\usepackage{rotating}
-\\usepackage[normalem]{ulem}
-\\usepackage{amsmath}
-\\usepackage{textcomp}
-\\usepackage{amssymb}
-\\usepackage{capt-of}
-\\usepackage{hyperref}
-\\pagestyle{empty}")
-
-  (setq org-preview-latex-process-alist
-        (mapcar
-         (lambda (item)
-           (cons
-            (car item)
-            (plist-put (cdr item) :latex-header my/latex-preview-header)))
-         org-preview-latex-process-alist)))
-#+end_src
-*** Better headers
-[[https://github.com/integral-dw/org-superstar-mode][org-superstar-mode]] is a package that makes Org heading lines look a bit prettier.
-
-Disabled it for now because of overlapping functionality with org-bars.
-#+begin_src emacs-lisp
-(use-package org-superstar
-  :straight t
-  :disabled
-  :hook (org-mode . org-superstar-mode))
-#+end_src
-
-[[https://github.com/tonyaldon/org-bars][org-bars]] highlights Org indentation with bars.
-#+begin_src emacs-lisp
-(use-package org-bars
-  :straight (:repo "tonyaldon/org-bars" :host github)
-  :if (display-graphic-p)
-  :hook (org-mode . org-bars-mode))
-#+end_src
-
-Fallback to the standard =org-indent-mode= on terminal.
-#+begin_src emacs-lisp
-(unless (display-graphic-p)
-  (add-hook 'org-mode-hook #'org-indent-mode))
-#+end_src
-
-Remove the ellipsis at the end of folded headlines, as it seems unnecessary with =org-bars=.
-#+begin_src emacs-lisp
-(defun my/org-no-ellipsis-in-headlines ()
-  (remove-from-invisibility-spec '(outline . t))
-  (add-to-invisibility-spec 'outline))
-
-(with-eval-after-load 'org-bars
-  (add-hook 'org-mode-hook #'my/org-no-ellipsis-in-headlines)
-  (when (eq major-mode 'org-mode)
-    (my/org-no-ellipsis-in-headlines)))
-#+end_src
-*** Override colors
-#+begin_src emacs-lisp
-(my/use-colors
- (org-block :background (my/color-value 'bg-other))
- (org-block-begin-line :background (my/color-value 'bg-other)
-                       :foreground (my/color-value 'grey)))
-#+end_src
 ** Export
 *** Hugo
 A package for exporting Org to Hugo. That's how I manage my [[https://sqrtminusone.xyz][sqrtminusone.xyz]].
