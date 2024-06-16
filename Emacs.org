@@ -978,9 +978,11 @@ I also want to call =xkb-switch= in EXWM buffers with the same keybindig.
   (interactive)
   (if (derived-mode-p 'exwm-mode)
       (my/run-in-background "xkb-switch -n")
-    (if (equal (string-trim
-                (shell-command-to-string "xkb-switch -p"))
-               "us")
+    (if (or
+         (not (executable-find "xkb-switch"))
+         (equal (string-trim
+                 (shell-command-to-string "xkb-switch -p"))
+                "us"))
         (toggle-input-method)
       (my/run-in-background "xkb-switch -s us"))))
 #+end_src
@@ -10022,6 +10024,14 @@ The default UI is rather rough, but Nicolas Rougier's [[https://github.com/rougi
   :straight t
   :defer t)
 #+end_src
+
+Compatibility with termux.
+#+begin_src emacs-lisp
+(unless (display-graphic-p)
+  (defun image-transforms-p () nil)
+  (setq image-types '(svg png gif tiff jpeg xpm xbm pbm)))
+#+end_src
+
 **** UI and keymaps
 =display-line-numbers-mode= screws the UI for some reason.
 
