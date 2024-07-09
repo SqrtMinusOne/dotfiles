@@ -30,12 +30,6 @@
 (setq my/nested-emacs (and (getenv "IS_EMACS") t))
 (setenv "IS_EMACS" "true")
 
-(defmacro with-eval-after-load-norem (file &rest body)
-  (declare (indent 1) (debug (form def-body)))
-  `(unless my/remote-server
-     (with-eval-after-load ,file
-       ,@body)))
-
 (setq my/emacs-started nil)
 
 (add-hook 'emacs-startup-hook
@@ -110,6 +104,9 @@
   (quit-window t))
 
 (setq confirm-kill-emacs 'y-or-n-p)
+
+(setq initial-major-mode 'fundamental-mode)
+(setq initial-scratch-message "Hello there <3\n\n")
 
 (use-package general
   :straight t
@@ -329,11 +326,18 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
  "u" 'winner-undo
  "U" 'winner-redo)
 
+(defun my/lisp-interaction-buffer ()
+  (interactive)
+  (let ((buf (get-buffer-create "*lisp-interaction*")))
+    (with-current-buffer buf
+      (lisp-interaction-mode))
+    (switch-to-buffer buf)))
+
 (my-leader-def
   :infix "b"
   "" '(:which-key "buffers")
-  "s" '((lambda () (interactive) (switch-to-buffer (persp-scratch-buffer)))
-        :which-key "*scratch*")
+  "s" '(my/lisp-interaction-buffer
+        :which-key "*lisp-interaction*")
   "m" '((lambda () (interactive) (persp-switch-to-buffer "*Messages*"))
         :which-key "*Messages*")
   "l" 'next-buffer
@@ -356,7 +360,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (require 'hideshow)
 (general-define-key
- :keymaps '(hs-minor-mode-map outline-minor-mode-map)
+ :keymaps '(hs-minor-mode-map outline-minor-mode-map outline-mode-map)
  :states '(normal motion)
  "ze" 'hs-hide-level
  "TAB" 'evil-toggle-fold)
@@ -1030,12 +1034,13 @@ Obeys `widen-automatically', which see."
 (use-package olivetti
   :straight t
   :if (display-graphic-p)
+  :commands (olivetti-mode)
   :config
   (setq-default olivetti-body-width 86))
 
 (use-package keycast
   :straight t
-  :config
+  :init
   (define-minor-mode keycast-mode
     "Keycast mode"
     :global t
@@ -1044,10 +1049,12 @@ Obeys `widen-automatically', which see."
           (add-to-list 'global-mode-string '("" keycast-mode-line " "))
           (add-hook 'pre-command-hook 'keycast--update t) )
       (remove-hook 'pre-command-hook 'keycast--update)
-      (setq global-mode-string (delete '("" keycast-mode-line " ") global-mode-string)))))
+      (setq global-mode-string (delete '("" keycast-mode-line " ") global-mode-string))))
+  :commands (keycast--update))
 
 (use-package doom-themes
   :straight t
+  ;; Not deferring becuase I want `doom-themes-visual-bell-config'
   :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
@@ -1227,7 +1234,7 @@ Obeys `widen-automatically', which see."
  (tab-bar-tab :background (my/color-value 'bg)
               :foreground (my/color-value 'yellow)
               :underline (my/color-value 'yellow))
- (tab-bar :background nil :foreground nil)
+ (tab-bar :background 'unspecified :foreground 'unspecified)
  (magit-section-secondary-heading :foreground (my/color-value 'blue)
                                   :weight 'bold))
 
@@ -1245,7 +1252,8 @@ Obeys `widen-automatically', which see."
     (my/regenerate-desktop)))
 
 (if my/is-termux
-    (my/switch-theme 'modus-operandi-tinted)
+    (progn
+      (my/switch-theme 'modus-operandi-tinted))
   (my/switch-theme 'ef-duo-light))
 
 (with-eval-after-load 'transient
@@ -2572,6 +2580,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 ;;   (setq livedown-browser "qutebrowser"))
 
 (use-package adoc-mode
+  :mode (rx (| ".asciidoc") eos)
   :straight t)
 
 (use-package plantuml-mode
@@ -2596,6 +2605,8 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package subed
   :straight (:host github :repo "rndusr/subed" :files ("subed/*.el")
                    :build (:not native-compile))
+  ;; (cons (rx (| "srt" "vtt" "ass") eos) #'subed-mode)
+  :mode ("\\(?:ass\\|\\(?:sr\\|vt\\)t\\)\\'" . subed-mode)
   :config
   (general-define-key
    :keymaps '(subed-mode-map subed-vtt-mode-map)
@@ -2655,6 +2666,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :straight (:host github :repo "SqrtMinusOne/reverso.el")
   :init
   (my-leader-def "ar" #'reverso)
+  :commands (reverso)
   :config
   (setq reverso-languages '(russian english german))
   (reverso-history-mode))
@@ -2739,6 +2751,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (add-hook 'clips-mode 'lispy-mode))
 
 (use-package ein
+  :commands (ein:run)
   :straight t)
 
 (setq my/pipenv-python-alist '())
@@ -2883,6 +2896,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package json-mode
   :straight t
+  :mode "\\.json\\'"
   :config
   (add-hook 'json-mode-hook #'smartparens-mode)
   (add-hook 'json-mode-hook #'hs-minor-mode)
@@ -2918,11 +2932,13 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package jenkinsfile-mode
   :straight t
+  :mode "Jenkinsfile\\'"
   :config
   (add-hook 'jenkinsfile-mode-hook #'smartparens-mode)
   (my/set-smartparens-indent 'jenkinsfile-mode))
 
 (use-package crontab-mode
+  :mode "/crontab\\(\\.X*[[:alnum:]]+\\)?\\'"
   :straight t)
 
 (use-package nginx-mode
@@ -2931,6 +2947,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (my/set-smartparens-indent 'nginx-mode))
 
 (use-package hcl-mode
+  :mode "\\.hcl\\'"
   :straight t)
 
 (add-hook 'sh-mode-hook #'smartparens-mode)
@@ -2961,9 +2978,11 @@ Returns (<buffer> . <workspace-index>) or nil."
   "rr" #'sqlformat-buffer)
 
 (use-package sparql-mode
+  :mode "\\.sparql\\'"
   :straight t)
 
 (use-package graphql-mode
+  :mode (rx (| "gql" "grapql") eos)
   :straight t)
 
 (defun my/doc-view-setup ()
@@ -2997,6 +3016,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (add-hook 'gnuplot-mode-hook #'smartparens-mode))
 
 (use-package x509-mode
+  :commands (x509-dwim)
   :straight (:host github :repo "jobbflykt/x509-mode"
                    :build (:not native-compile)))
 
@@ -3080,7 +3100,7 @@ Returns (<buffer> . <workspace-index>) or nil."
             (lambda ()
               (rainbow-delimiters-mode -1))))
 
-(with-eval-after-load-norem 'org
+(with-eval-after-load 'org
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
   (setq org-tags-exclude-from-inheritance '("crypt"))
@@ -3103,7 +3123,7 @@ Returns (<buffer> . <workspace-index>) or nil."
       keys
     (funcall fun prompt keys)))
 
-(with-eval-after-load-norem 'epa
+(with-eval-after-load 'epa
   (advice-add #'epa--select-keys :around #'my/epa--select-keys-around))
 
 (unless my/remote-server
@@ -3151,7 +3171,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (with-eval-after-load 'org
   (org-link-set-parameters "rel" :follow #'browse-url :export #'my/export-rel-url))
 
-(with-eval-after-load-norem 'org
+(with-eval-after-load 'org
   (general-define-key
    :keymaps 'org-mode-map
    "C-c d" #'org-decrypt-entry
@@ -3190,7 +3210,7 @@ Returns (<buffer> . <workspace-index>) or nil."
     (kill-new url)
     (message (concat "Copied URL: " url))))
 
-(with-eval-after-load-norem 'org
+(with-eval-after-load 'org
   (general-nmap :keymaps 'org-mode-map
     "C-x C-l" 'my/org-link-copy))
 
@@ -3258,11 +3278,11 @@ With ARG, repeats or can move backward if negative."
   (sp-local-pair 'org-mode "$" "$")
   (sp--remove-local-pair "'"))
 
-(with-eval-after-load-norem 'org
+(with-eval-after-load 'org
   (setq my/org-latex-scale 1.75)
   (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale)))
 
-(with-eval-after-load-norem 'org
+(with-eval-after-load 'org
   (setq my/latex-preview-header "\\documentclass{article}
 \\usepackage[usenames]{color}
 \\usepackage{graphicx}
@@ -3375,6 +3395,7 @@ With ARG, repeats or can move backward if negative."
 (use-package restclient
   :if (not my/remote-server)
   :straight t
+  :mode ("\\.http\\'" . restclient-mode)
   :config
   (general-define-key
    :keymaps 'restclient-mode-map
@@ -3393,7 +3414,7 @@ With ARG, repeats or can move backward if negative."
   :if (not my/remote-server)
   :straight t)
 
-(with-eval-after-load-norem 'org
+(with-eval-after-load 'org
   (org-babel-do-load-languages
    'org-babel-load-languages
    `((emacs-lisp . t)
@@ -3680,9 +3701,11 @@ With ARG, repeats or can move backward if negative."
 
 (use-package phscroll
   :straight (:host github :repo "misohena/phscroll")
+  :commands (org-phscroll-mode)
   :config
   (with-eval-after-load 'org
-    (require 'org-phscroll)))
+    (require 'org-phscroll)
+    (org-phscroll-deactivate)))
 
 (defun my/update-org-agenda ()
   (interactive)
@@ -3717,7 +3740,7 @@ With ARG, repeats or can move backward if negative."
       (run-hooks 'my/org-refile-hooks))))
 
 (setq org-roam-directory (concat org-directory "/roam"))
-(with-eval-after-load-norem 'org
+(with-eval-after-load 'org
   (require 'seq)
   (my/update-org-agenda))
 
@@ -3766,7 +3789,7 @@ With ARG, repeats or can move backward if negative."
   (setq org-clock-persist 'clock)
   (org-clock-persistence-insinuate))
 
-(with-eval-after-load-norem 'org
+(with-eval-after-load 'org
   (add-to-list
    'org-global-properties
    '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 4:00 8:00")))
@@ -3908,90 +3931,6 @@ With ARG, repeats or can move backward if negative."
     "v" #'org-ql-view
     "q" #'org-ql-search))
 
-(with-eval-after-load 'org-ql
-  (org-ql-defpred property (property &optional value &key inherit multi)
-    "Return non-nil if current entry has PROPERTY, and optionally VALUE.
-If INHERIT is nil, only match entries with PROPERTY set on the
-entry; if t, also match entries with inheritance.  If INHERIT is
-not specified, use the Boolean value of
-`org-use-property-inheritance', which see (i.e. it is only
-interpreted as nil or non-nil).  If MULTI is non-nil, also check for
-multi-value properties."
-    :normalizers ((`(,predicate-names)
-                   ;; HACK: This clause protects against the case in
-                   ;; which the arguments are nil, which would cause an
-                   ;; error in `rx-to-string' in other clauses.  This
-                   ;; can happen with `org-ql-completing-read',
-                   ;; e.g. when the input is "property:" while the user
-                   ;; is typing.
-                   ;; FIXME: Instead of this being moot, make this
-                   ;; predicate test for whether an entry has local
-                   ;; properties when no arguments are given.
-                   (list 'property ""))
-                  (`(,predicate-names ,property ,value . ,plist)
-                   ;; Convert keyword property arguments to strings.  Non-sexp
-                   ;; queries result in keyword property arguments (because to do
-                   ;; otherwise would require ugly special-casing in the parsing).
-                   (when (keywordp property)
-                     (setf property (substring (symbol-name property) 1)))
-                   (list 'property property value
-                         :inherit (if (plist-member plist :inherit)
-                                      (plist-get plist :inherit)
-                                    org-use-property-inheritance)
-                         :multi (when (plist-member plist :multi)
-                                  (plist-get plist :multi)))))
-    ;; MAYBE: Should case folding be disabled for properties?  What about values?
-    ;; MAYBE: Support (property) without args.
-
-    ;; NOTE: When inheritance is enabled, the preamble can't be used,
-    ;; which will make the search slower.
-    :preambles ((`(,predicate-names ,property ,value ,(map :multi) . ,(map :inherit))
-                 ;; We do NOT return nil, because the predicate still needs to be tested,
-                 ;; because the regexp could match a string not inside a property drawer.
-                 (list :regexp (unless inherit
-                                 (rx-to-string `(seq bol (0+ space) ":" ,property
-                                                     ,@(when multi '((? "+"))) ":"
-                                                     (1+ space) ,value (0+ space) eol)))
-                       :query query))
-                (`(,predicate-names ,property ,(map :multi) . ,(map :inherit))
-                 ;; We do NOT return nil, because the predicate still needs to be tested,
-                 ;; because the regexp could match a string not inside a property drawer.
-                 ;; NOTE: The preamble only matches if there appears to be a value.
-                 ;; A line like ":ID: " without any other text does not match.
-                 (list :regexp (unless inherit
-                                 (rx-to-string `(seq bol (0+ space) ":" ,property
-                                                     ,@(when multi '((? "+")))
-                                                     ":" (1+ space)
-                                                     (minimal-match (1+ not-newline)) eol)))
-                       :query query)))
-    :body
-    (pcase property
-      ('nil (user-error "Property matcher requires a PROPERTY argument"))
-      (_ (pcase value
-           ('nil
-            ;; Check that PROPERTY exists
-            (org-ql--value-at
-             (point) (lambda ()
-                       (org-entry-get (point) property))))
-           (_
-            ;; Check that PROPERTY has VALUE.
-
-            ;; TODO: Since --value-at doesn't account for inheritance,
-            ;; we should generalize --tags-at to also work for property
-            ;; inheritance and use it here, which should be much faster.
-            (if multi
-                (when-let (values (org-ql--value-at
-                                   (point) (lambda ()
-                                             ;; The default separator is space
-                                             (let ((org-property-separators `((,property . "\n"))))
-                                               (org-entry-get (point) property inherit)))))
-                  (seq-some (lambda (v)
-                              (string-equal value v))
-                            (split-string values "\n")))
-              (string-equal value (org-ql--value-at
-                                   (point) (lambda ()
-                                             (org-entry-get (point) property inherit)))))))))))
-
 (cl-defun my/org-ql-view-recent-items
     (&key num-days (type 'ts)
           (files (org-agenda-files))
@@ -4131,77 +4070,6 @@ and lots of comments which are too long for my Emacs config."
 
 (with-eval-after-load 'org-ql
   (advice-add #'org-ql-view--format-element :override #'my/org-ql-view--format-element-override))
-
-(defun my/org-meeting--prompt ()
-  (let* ((meetings (org-ql-query
-                     :select #'element-with-markers
-                     :from (org-agenda-files)
-                     :where '(and (todo) (tags "mt") (ts-active :from today to 31))
-                     :order-by 'scheduled))
-         (data (mapcar
-                (lambda (meeting)
-                  (let ((raw-value (org-element-property :raw-value meeting))
-                        (scheduled (org-format-timestamp
-                                    (org-element-property :scheduled meeting)
-                                    (cdr org-time-stamp-formats))))
-                    (cons (format "%-30s %s" raw-value
-                                  (propertize scheduled 'face 'org-agenda-date))
-                          meeting)))
-                meetings))
-         (ivy-prescient-sort-commands nil))
-    (cdr
-     (assoc
-      (completing-read "Meeting: " data nil t)
-      data))))
-
-(defun my/org-meeting--format-link (meeting)
-  (format "[[file:%s::*%s][%s]]"
-          (buffer-file-name
-           (marker-buffer
-            (org-element-property :org-marker meeting)))
-          (org-element-property :raw-value meeting)
-          (org-element-property :raw-value meeting)))
-
-(defun my/org-meeting-link (&optional arg)
-  (interactive "p")
-  (save-excursion
-    (org-back-to-heading t)
-    (let* ((meeting (my/org-meeting--prompt))
-           (link (my/org-meeting--format-link meeting))
-           (element (org-element-at-point-no-context)))
-      (if (or (not arg) (not (org-element-property :MEETING element)))
-          (org-set-property "MEETING" link)
-        (let ((range (org-get-property-block
-                      (org-element-property :begin element)))
-              (case-fold-search nil))
-          (goto-char (cdr range))
-          (beginning-of-line)
-          (insert-and-inherit ":MEETING+: " link "\n")
-          (org-indent-line))))))
-
-(defun my/org-ql-meeting-tasks (meeting)
-  (interactive (list (my/org-meeting--prompt)))
-  (org-ql-search (org-agenda-files)
-    `(property "MEETING" ,(my/org-meeting--format-link meeting)
-               :multi t)
-    :sort '(date priority todo)
-    :buffer (format "*Meeting Tasks: %s*" (org-element-property :raw-value meeting))
-    :super-groups '((:auto-outline-path t))))
-
-(defun my/org-ql-meeting-tasks-agenda ()
-  (interactive)
-  (let ((meeting (save-window-excursion
-                   (org-agenda-switch-to)
-                   (org-back-to-heading)
-                   (org-ql--add-markers
-                    (org-element-at-point)))))
-    (my/org-ql-meeting-tasks meeting)))
-
-(with-eval-after-load 'org-agenda
-  (general-define-key
-   :keymaps 'org-agenda-mode-map
-   :states '(normal motion)
-   "gm" #'my/org-ql-meeting-tasks-agenda))
 
 (use-package org-habit-stats
   :straight (:host github :repo "ml729/org-habit-stats")
@@ -5010,6 +4878,7 @@ TODO Write something, maybe? "))))
 
 (use-package calfw
   :straight t
+  :defer t
   :config
   (add-hook 'cfw:calendar-mode-hook #'my/calfw-setup-buffer))
 
@@ -5115,7 +4984,7 @@ TODO Write something, maybe? "))))
                   ("\\subsubsection{%s}" . "\\subsubsection*{%s}")))))
 
 ;; Make sure to eval the function when org-latex-classes list already exists
-(with-eval-after-load-norem 'ox-latex
+(with-eval-after-load 'ox-latex
   (my/setup-org-latex))
 
 (with-eval-after-load 'ox
@@ -5307,7 +5176,6 @@ TODO Write something, maybe? "))))
 (use-package dired-recent
   :straight t
   :after dired
-  :commands (dired-recent-open)
   :config
   (dired-recent-mode)
   (general-define-key
@@ -5318,14 +5186,15 @@ TODO Write something, maybe? "))))
 
 (use-package all-the-icons-dired
   :straight t
+  :after (dired)
   :if (display-graphic-p)
   :hook (dired-mode . (lambda ()
                         (unless (string-match-p "/gnu/store" default-directory)
-                          (all-the-icons-dired-mode))))
-  :config)
+                          (all-the-icons-dired-mode)))))
 
 (use-package dired-open
   :straight t
+  :after (dired)
   :commands (dired-open-xdg))
 
 (use-package dired-du
@@ -5440,10 +5309,13 @@ TODO Write something, maybe? "))))
    (list (telega-msg-for-interactive)
          (prefix-numeric-value current-prefix-arg)))
   (if (eq arg 4)
-      (let ((default-directory
-             (with-current-buffer (my/get-good-buffer 'dired-mode "Dired buffer: ")
-               (dired-current-directory))))
+      (progn
+        (setq telega-msg-save-dir
+              (with-current-buffer (my/get-good-buffer 'dired-mode "Dired buffer: ")
+                (dired-current-directory)))
         (telega-msg-save msg))
+    (setq default-directory (expand-file-name "~"))
+    (setq telega-msg-save-dir nil)
     (telega-msg-save msg)))
 
 (defun my/dired-attach-to-notmuch (files notmuch-buffer)
@@ -5987,6 +5859,7 @@ TODO Write something, maybe? "))))
                      ("terminfo/65" "terminfo/65/*")
                      ("integration" "integration/*")
                      (:exclude ".dir-locals.el" "*-tests.el")))
+  :commands (eat eat-shell-mode)
   :config
   (setq eat-shell "/bin/bash"))
 
@@ -6731,6 +6604,7 @@ ENTRY is an instance of `elfeed-entry'."
   :straight t
   :init
   (my-leader-def "au" #'gnus)
+  :commands (gnus)
   :config
   (my/persp-add-rule
     gnus-summary-mode 0 "gnus"
@@ -7782,6 +7656,11 @@ base toot."
   :straight t
   :if (not my/remote-server)
   :functions (my-google-translate-at-point google-translate--search-tkk)
+  :commands (google-translate-at-point
+             google-translate-at-point-reverse
+             google-translate-query-translate
+             google-translate-query-translate-reverse
+             google-translate-smooth-translate)
   :custom
   (google-translate-backend-method 'curl)
   :config
@@ -7878,6 +7757,7 @@ base toot."
 
 (use-package sx
   :straight t
+  :commands (sx-search sx-tab-frontpage)
   :config
   (general-define-key
    :states '(normal)
@@ -7963,6 +7843,7 @@ base toot."
   :straight t
   :init
   (setq ellama-language "English")
+  :defer t
   :config
   (require 'llm-ollama)
   ;; I've looked for this option for 1.5 hours
@@ -7982,7 +7863,7 @@ base toot."
                                  :embedding-model "llama3:instruct")))))
 
 (with-eval-after-load 'ellama
-  (transient-define-prefix my/ellama ()
+  (transient-define-prefix my/ellama-transient ()
     "Ellama actions."
     ["General"
      :class transient-row
@@ -8021,8 +7902,15 @@ base toot."
      ("sp" "Provider" ellama-provider-select)
      ("ss" "Session" ellama-session-switch)
      ("sr" "Rename ression" ellama-session-rename)
-     ("sd" "Delete session" ellama-session-remove)])
-  (my-leader-def "aie" #'my/ellama))
+     ("sd" "Delete session" ellama-session-remove)]))
+
+
+(defun my/ellama ()
+  (interactive)
+  (require 'ellama)
+  (call-interactively #'my/ellama-transient))
+
+(my-leader-def "aie" #'my/ellama)
 
 (defun my/diff-strings (str1 str2)
   (let ((file1 (make-temp-file "diff1"))
@@ -8085,37 +7973,6 @@ base toot."
   (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
   (my/ellama-text-with-diff text is-org-mode my/ellama-improve-concise-prompt))
 
-(with-eval-after-load 'ellama
-  (cl-defstruct (llm-ollama-gradient (:include llm-ollama)) num-ctx)
-
-  (cl-defmethod llm-provider-chat-request ((provider llm-ollama-gradient) prompt _)
-    (let (request-alist messages options)
-      (setq messages
-            (mapcar (lambda (interaction)
-                      `(("role" . ,(symbol-name (llm-chat-prompt-interaction-role interaction)))
-                        ("content" . ,(llm-chat-prompt-interaction-content interaction))))
-                    (llm-chat-prompt-interactions prompt)))
-      (when (llm-chat-prompt-context prompt)
-        (push `(("role" . "system")
-                ("content" . ,(llm-provider-utils-get-system-prompt prompt llm-ollama-example-prelude)))
-              messages))
-      (push `("messages" . ,messages) request-alist)
-      (push `("model" . ,(llm-ollama-chat-model provider)) request-alist)
-      (when (llm-chat-prompt-temperature prompt)
-        (push `("temperature" . ,(llm-chat-prompt-temperature prompt)) options))
-      (when (llm-chat-prompt-max-tokens prompt)
-        (push `("num_predict" . ,(llm-chat-prompt-max-tokens prompt)) options))
-      (when (llm-ollama-gradient-num-ctx provider)
-        (push `("num_ctx" . ,(llm-ollama-gradient-num-ctx provider)) options))
-      (when options (push `("options" . ,options) request-alist))
-      request-alist))
-
-  (push `("llama3-gradient" . ,(make-llm-ollama-gradient
-                                :chat-model "llama3-gradient"
-                                :embedding-model "llama3-gradient"
-                                :num-ctx 48000))
-        ellama-providers))
-
 (with-eval-after-load 'gptel
   (cl-defmethod gptel--request-data :around ((_backend gptel-ollama) prompts)
     (let ((request-alist (cl-call-next-method)))
@@ -8126,6 +7983,7 @@ base toot."
       request-alist)))
 
 (use-package ini
+  :mode "\\.ini\\'"
   :straight (:host github :repo "daniel-ness/ini.el"))
 
 (defvar my/index-root (concat (getenv "HOME") "/"))
@@ -8500,6 +8358,7 @@ prefix."
 
 TREE is a form a defined by `my/index--tree-get'. The return value is
 a list of commands as defined by `my/index--commands-display'."
+  (require 'ini)
   (let* ((map-tree (my/index--wakatime-get-map-tree tree))
          (map-tree-encoding (ini-encode `(("projectmap" . ,map-tree))))
          (map-tree-saved (with-temp-buffer
@@ -8905,6 +8764,7 @@ to `dired' if used interactively."
    "M-o" #'casual-main-menu))
 
 (use-package chess
+  :commands (chess-pgn-mode)
   :straight t)
 
 (setq my/chess-python "/home/pavel/.guix-extra-profiles/dev/dev/bin/python3")
@@ -8992,6 +8852,7 @@ to `dired' if used interactively."
 
 (use-package zone
   :ensure nil
+  :commands (zone)
   :config
   (setq original-zone-programs (copy-sequence zone-programs)))
 
