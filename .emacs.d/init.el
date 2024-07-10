@@ -2684,9 +2684,13 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (use-package flycheck-package
   :straight t
-  :after flycheck
-  :config
-  (flycheck-package-setup))
+  :defer t
+  :init
+  (defun my/flycheck-package-setup ()
+    (require 'flycheck-package)
+    (flycheck-package-setup)
+    (remove-hook 'emacs-lisp-mode-hook #'my/flycheck-package-setup))
+  (add-hook 'emacs-lisp-mode-hook #'my/flycheck-package-setup))
 
 (add-hook 'emacs-lisp-mode-hook #'aggressive-indent-mode)
 ;; (add-hook 'emacs-lisp-mode-hook #'smartparens-strict-mode)
@@ -7742,6 +7746,14 @@ base toot."
 
 (use-package devdocs-browser
   :straight t
+  :commands (devdocs-browser-open
+             devdocs-browser-open-in
+             devdocs-browser-install-doc
+             devdocs-browser-uninstall-doc
+             devdocs-browser-download-offline-data
+             devdocs-browser-remove-offline-data
+             devdocs-browser-upgrade-all-docs
+             devdocs-browser-update-docs)
   :init
   (my-leader-def
     :infix "hd"
