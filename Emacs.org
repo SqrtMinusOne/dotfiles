@@ -6791,6 +6791,15 @@ An example contact entry can look like this:
    "t" #'org-timeblock-todo-set
    "q" #'quit-window))
 #+end_src
+*** org-drill
+Trying to learn stuff with this.
+
+#+begin_src emacs-lisp
+(use-package org-drill
+  :straight t
+  :commands (org-drill)
+  :after (org))
+#+end_src
 
 ** Export
 *** Hugo
@@ -7237,9 +7246,7 @@ I used to use [[https://www.emacswiki.org/emacs/DiredPlus][dired+]], which provi
   (dired-recent-mode)
   (general-define-key
    :keymaps 'dired-recent-mode-map
-   "C-x C-d" nil)
-  (my-leader-def
-    "aD" '(dired-recent-open :wk "dired history")))
+   "C-x C-d" nil))
 #+end_src
 
 Display icons for files.

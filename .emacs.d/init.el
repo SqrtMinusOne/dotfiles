@@ -4915,6 +4915,11 @@ TODO Write something, maybe? "))))
    "t" #'org-timeblock-todo-set
    "q" #'quit-window))
 
+(use-package org-drill
+  :straight t
+  :commands (org-drill)
+  :after (org))
+
 (use-package ox-hugo
   :straight t
   :if (not my/remote-server)
@@ -5184,9 +5189,7 @@ TODO Write something, maybe? "))))
   (dired-recent-mode)
   (general-define-key
    :keymaps 'dired-recent-mode-map
-   "C-x C-d" nil)
-  (my-leader-def
-    "aD" '(dired-recent-open :wk "dired history")))
+   "C-x C-d" nil))
 
 (use-package all-the-icons-dired
   :straight t
