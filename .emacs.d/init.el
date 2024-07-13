@@ -3787,7 +3787,21 @@ With ARG, repeats or can move backward if negative."
   :commands (org-clock-agg)
   :init
   (with-eval-after-load 'org
-    (my-leader-def "ol" #'org-clock-agg)))
+    (my-leader-def "ol" #'org-clock-agg))
+  :config
+  (push
+   (cons "Agenda+Archive"
+         (append
+          (org-agenda-files)
+          (thread-last "/projects/archive"
+                       (concat org-directory)
+                       (directory-files)
+                       (mapcar (lambda (f)
+                                 (concat
+                                  org-directory "/projects/archive/" f)))
+                       (seq-filter (lambda (f)
+                                     (not (file-directory-p f)))))))
+   org-clock-agg-files-preset))
 
 (with-eval-after-load 'org
   (setq org-clock-persist 'clock)
@@ -4006,7 +4020,15 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
                                 (not (property "MEETING"))
                                 (ts :from -7))
                    :super-groups '((:auto-outline-path-file t))))
-       (cons "Review: Meeting" #'my/org-ql-meeting-tasks)))
+       (cons "Review: Meeting" #'my/org-ql-meeting-tasks)
+       (cons "Fix: tasks without TASK_KIND"
+             (lambda ()
+               (interactive)
+               (org-ql-search (current-buffer)
+                 '(and (olp "Tasks")
+                       (not (property "TASK_KIND"))
+                       (clocked))
+                 :super-groups '((:auto-outline-path-file t)))))))
 
 (defun my/org-ql-view--format-element-override (element)
   "Format ELEMENT for `org-ql-view'.
@@ -4322,6 +4344,95 @@ KEYS is a list of cons cells like (<label> . <time>)."
                             (delete-region (match-beginning 1) (match-end 1)))))))
                   (buffer-string)))))
     (goto-char beg)))
+
+(defun my/org--headings-in-outline ()
+  (org-ql-query
+    :select (lambda () (propertize
+                        (substring-no-properties (org-get-heading t t t))
+                        'marker (copy-marker (point))))
+    :from (append
+           (list (buffer-file-name))
+           (let ((archive
+                  (concat (file-name-directory (buffer-file-name))
+                          "archive/"
+                          (file-name-nondirectory (buffer-file-name)))))
+             (when (file-exists-p archive)
+               (list archive))))
+    :where `(and (outline-path ,@(org-get-outline-path))
+                 (level ,(org-current-level)))))
+
+(defun my/org--heading-strip (heading)
+  (thread-last
+    heading
+    (substring-no-properties)
+    (replace-regexp-in-string (rx (| "(" "[") (+ alnum) (| "]" ")")) "")
+    (replace-regexp-in-string (rx " " (+ (or digit "."))) " ")
+    (replace-regexp-in-string (rx (+ " ")) " ")
+    (string-trim)))
+
+(defun my/org--headings-group-seq (headings)
+  (thread-last
+    headings
+    (seq-group-by #'my/org--heading-strip)
+    (seq-sort-by #'car #'string-lessp)
+    (mapcar (lambda (group)
+              (cons (car group)
+                    (seq-sort-by
+                     (lambda (heading)
+                       (save-match-data
+                         (or
+                          (and (string-match (rx (group (+ digit)))
+                                             heading)
+                               (string-to-number (match-string 1 heading)))
+                          -1)))
+                     #'<
+                     (cdr group)))))))
+
+(defun my/org-headings-seq ()
+  (interactive)
+  (let* ((headings (my/org--headings-in-outline))
+         (headings-seq (my/org--headings-group-seq headings))
+         (buffer (generate-new-buffer "*Sequential Headings in Outline*")))
+    (with-current-buffer buffer
+      (outline-mode)
+      (setq-local widget-push-button-prefix "")
+      (setq-local widget-push-button-suffix "")
+      (dolist (group headings-seq)
+        (insert (format "* %s\n" (car group)))
+        (dolist (heading (cdr group))
+          (widget-create 'push-button
+                         :marker (get-text-property 0 'marker heading)
+                         :notify (lambda (widget &rest ignore)
+                                   (let ((marker (widget-get widget :marker)))
+                                     (pop-to-buffer (marker-buffer marker))
+                                     (goto-char marker)))
+                         (concat "** " (substring-no-properties heading)))
+          (insert "\n")))
+      (widget-setup)
+      (setq buffer-read-only t)
+      (goto-char (point-min)))
+    (pop-to-buffer buffer)))
+
+(defun my/org-heading-seq-insert ()
+  (interactive)
+  (let* ((headings (my/org--headings-in-outline))
+         (headings-seq (my/org--headings-group-seq headings))
+         (heading (completing-read "Headings: " headings-seq))
+         (last-number
+          (thread-last headings-seq
+                       (assoc heading)
+                       (cdr)
+                       (mapcar (lambda (x)
+                                 (save-match-data
+                                   (or
+                                    (when (string-match (rx (group (+ digit)))
+                                                        x)
+                                      (string-to-number (match-string 1 x)))
+                                    1))))
+                       (seq-max)
+                       (1+))))
+    (org-insert-heading '(4))
+    (insert (format "FUTURE %s %s" heading last-number))))
 
 (defun my/org-archive--get-file ()
   "Get an archive version of the file."
