@@ -43,6 +43,8 @@
 
 (setq use-package-verbose nil)
 
+(setq use-package-compute-statistics t)
+
 (setq gc-cons-threshold 80000000)
 (setq read-process-output-max (* 1024 1024))
 
@@ -1118,6 +1120,10 @@ Obeys `widen-automatically', which see."
         ((string-match-p (rx bos "light-") color-name)
          (ct-edit-hsl-l-inc (my/doom-color (intern (substring color-name 6)))
                             my/alpha-for-light))
+        ((string-match-p (rx bos "dark-") color-name)
+         (or (doom-color color)
+             (ct-edit-hsl-l-dec (my/doom-color (intern (substring color-name 5)))
+                                my/alpha-for-light)))
         (t (doom-color color)))))))
 
 (defun my/modus-get-base (color)
@@ -1170,9 +1176,10 @@ Obeys `widen-automatically', which see."
 
 (defconst my/test-colors-list
   '(black red green yellow blue magenta cyan white light-black
+          dark-red dark-green dark-yellow dark-blue dark-magenta dark-cyan
           light-red light-green light-yellow light-blue light-magenta
-          light-cyan light-white bg fg violet grey base0 base1 base2
-          base3 base4 base5 base6 base7 base8 border bg-alt))
+          light-cyan light-white bg bg-alt fg fg-alt violet grey base0 base1
+          base2 base3 base4 base5 base6 base7 base8 border))
 
 (defun my/test-colors ()
   (interactive)
@@ -1199,6 +1206,13 @@ Obeys `widen-automatically', which see."
           (if (ct-light-p color)
               (ct-edit-hsl-l-dec color 2)
             (ct-edit-hsl-l-dec color 3)))))
+   ((eq color 'modeline)
+    (or
+     (my/color-value 'bg-mode-line-active)
+     (my/color-value 'bg-mode-line)
+     (if (my/light-p)
+         (ct-edit-hsl-l-dec (my/color-value 'bg-alt) 10)
+       (ct-edit-hsl-l-inc (my/color-value 'bg-alt) 15))))
    ((my/doom-p) (my/doom-color color))
    ((my/modus-p) (my/modus-color color))
    ((my/ef-p) (my/ef-color color))))
@@ -2624,7 +2638,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (interactive)
   (setq lsp-ltex-language (completing-read
                            "Language: "
-                           '("en-US" "ru-RU" "de-DE")))
+                           '("en-GB" "ru-RU" "de-DE")))
   (lsp-workspace-restart (lsp--read-workspace)))
 
 (defun my/ltex-need-p ()
@@ -4478,7 +4492,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
                         (org-get-outline-path nil t))
                        "/")))
     ;; The path is already known
-    (flet ((completing-read (&rest _) refile-path))
+    (cl-letf (((symbol-function 'completing-read)
+               (lambda (&rest _) refile-path)))
       (my/org-refile--assert-path-exists refile-path)
       (org-refile))))
 
@@ -8056,6 +8071,7 @@ base toot."
       (delete-file file2))))
 
 (defun my/ellama-text-with-diff (text is-org-mode prompt)
+  (require 'ellama)
   (llm-chat-async
    ellama-provider
    (llm-make-chat-prompt
@@ -8853,11 +8869,15 @@ to `dired' if used interactively."
   :commands (pomm pomm-third-time)
   :init
   (my-leader-def "ap" #'pomm)
+  ;; (my-leader-def "ap" #'pomm-third-time)
   (setq alert-default-style 'libnotify)
   (setq pomm-audio-enabled t)
   (setq pomm-audio-player-executable (executable-find "mpv"))
   :config
-  (pomm-mode-line-mode))
+  (pomm-mode-line-mode)
+  (add-hook 'pomm-on-status-changed-hook #'pomm--sync-org-clock)
+  (add-hook 'pomm-third-time-on-status-changed-hook
+            #'pomm-third-time--sync-org-clock))
 
 (use-package hledger-mode
   :straight t

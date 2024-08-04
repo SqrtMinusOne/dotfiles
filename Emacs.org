@@ -172,6 +172,10 @@ Set the following to =t= to print debug information during the startup. This wil
 (setq use-package-verbose nil)
 #+end_src
 
+#+begin_src emacs-lisp
+(setq use-package-compute-statistics t)
+#+end_src
+
 *** Garbage collection
 Just setting ~gc-cons-treshold~ to a larger value.
 
@@ -1848,6 +1852,10 @@ Now, let's get the current color from =doom=. =doom-themes= provide =doom-color=
         ((string-match-p (rx bos "light-") color-name)
          (ct-edit-hsl-l-inc (my/doom-color (intern (substring color-name 6)))
                             my/alpha-for-light))
+        ((string-match-p (rx bos "dark-") color-name)
+         (or (doom-color color)
+             (ct-edit-hsl-l-dec (my/doom-color (intern (substring color-name 5)))
+                                my/alpha-for-light)))
         (t (doom-color color)))))))
 #+end_src
 
@@ -1906,9 +1914,10 @@ Test the three functions.
 #+begin_src emacs-lisp
 (defconst my/test-colors-list
   '(black red green yellow blue magenta cyan white light-black
+          dark-red dark-green dark-yellow dark-blue dark-magenta dark-cyan
           light-red light-green light-yellow light-blue light-magenta
-          light-cyan light-white bg fg violet grey base0 base1 base2
-          base3 base4 base5 base6 base7 base8 border bg-alt))
+          light-cyan light-white bg bg-alt fg fg-alt violet grey base0 base1
+          base2 base3 base4 base5 base6 base7 base8 border))
 
 (defun my/test-colors ()
   (interactive)
@@ -1938,6 +1947,13 @@ Finally, one function to get the value of a color in the current theme.
           (if (ct-light-p color)
               (ct-edit-hsl-l-dec color 2)
             (ct-edit-hsl-l-dec color 3)))))
+   ((eq color 'modeline)
+    (or
+     (my/color-value 'bg-mode-line-active)
+     (my/color-value 'bg-mode-line)
+     (if (my/light-p)
+         (ct-edit-hsl-l-dec (my/color-value 'bg-alt) 10)
+       (ct-edit-hsl-l-inc (my/color-value 'bg-alt) 15))))
    ((my/doom-p) (my/doom-color color))
    ((my/modus-p) (my/modus-color color))
    ((my/ef-p) (my/ef-color color))))
@@ -3584,7 +3600,7 @@ A function to switch the current language.
   (interactive)
   (setq lsp-ltex-language (completing-read
                            "Language: "
-                           '("en-US" "ru-RU" "de-DE")))
+                           '("en-GB" "ru-RU" "de-DE")))
   (lsp-workspace-restart (lsp--read-workspace)))
 #+end_src
 
@@ -6141,7 +6157,8 @@ Now we can make a function to archive one record interactively.
                         (org-get-outline-path nil t))
                        "/")))
     ;; The path is already known
-    (flet ((completing-read (&rest _) refile-path))
+    (cl-letf (((symbol-function 'completing-read)
+               (lambda (&rest _) refile-path)))
       (my/org-refile--assert-path-exists refile-path)
       (org-refile))))
 #+end_src
@@ -11044,6 +11061,7 @@ So first, I need to diff two strings.
 And the function to do the prompting iself. Llama tends to output in Markdown, so I use a function from Ellama to convert the output back to Org-mode, if necessary.
 #+begin_src emacs-lisp :noweb yes
 (defun my/ellama-text-with-diff (text is-org-mode prompt)
+  (require 'ellama)
   (llm-chat-async
    ellama-provider
    (llm-make-chat-prompt
@@ -12213,11 +12231,15 @@ My package for doing Pomodoro timer.
   :commands (pomm pomm-third-time)
   :init
   (my-leader-def "ap" #'pomm)
+  ;; (my-leader-def "ap" #'pomm-third-time)
   (setq alert-default-style 'libnotify)
   (setq pomm-audio-enabled t)
   (setq pomm-audio-player-executable (executable-find "mpv"))
   :config
-  (pomm-mode-line-mode))
+  (pomm-mode-line-mode)
+  (add-hook 'pomm-on-status-changed-hook #'pomm--sync-org-clock)
+  (add-hook 'pomm-third-time-on-status-changed-hook
+            #'pomm-third-time--sync-org-clock))
 #+end_src
 *** hledger
 [[hledger.org/][hledger]] is a plain-text double-entry accounting software. I use it for managing my personal finances, and thus far it's great.
