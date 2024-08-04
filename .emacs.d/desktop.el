@@ -367,13 +367,13 @@ DIR is either 'left or 'right."
   "
 ^Apps^
 _t_: Terminal (Alacritty)
-_b_: Browser (Firefox)
+_b_: Browser (qutebrowser)
 _s_: Rocket.Chat
 _e_: Telegram
 _d_: Discord
 "
   ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
-  ("b" (lambda () (interactive) (my/run-in-background "firefox")))
+  ("b" (lambda () (interactive) (my/run-in-background "qutebrowser")))
   ("s" (lambda () (interactive) (my/run-in-background "flatpak run chat.rocket.RocketChat")))
   ("e" (lambda () (interactive) (my/run-in-background "telegram-desktop")))
   ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
