@@ -4967,6 +4967,7 @@ Review checklist:
 - [ ] Clear email inbox
 - [ ] Reconcile ledger
 - [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
+- [ ] Process [[file:30-39 Life/35 Photos/35.00 Inbox/][photo inbox]]
 - [ ] Process [[file:../inbox.org][inbox]]
 - [ ] Create [[file:../recurring.org][recurring tasks]] for next week
 - [ ] Check agenda (-1 / +2 weeks): priorities, deadlines
@@ -5245,8 +5246,7 @@ TODO Write something, maybe? "))))
    "M-r" #'wdired-change-to-wdired-mode
    "<left>" #'dired-up-directory
    "<right>" #'dired-find-file
-   "M-<return>" #'dired-open-xdg)
-   (dired-async-mode))
+   "M-<return>" #'dired-open-xdg))
 
 (defun my/dired-home ()
   "Open dired at $HOME"
@@ -5358,6 +5358,22 @@ TODO Write something, maybe? "))))
   :after (dired)
   :init
   (my-leader-def "aa" #'avy-dired-goto-line))
+
+(use-package dired-rsync
+  :straight t
+  :after (dired)
+  :config
+  (add-to-list 'global-mode-string '(:eval dired-rsync-modeline-status))
+  (general-define-key
+   :states '(normal)
+   :keymaps '(dired-mode-map)
+   "C" #'dired-rsync
+   "gC" #'dired-rsync-transient
+   "gd" #'dired-do-copy))
+
+(use-package dired-rsync-transient
+  :straight t
+  :after (dired))
 
 (defun my/dired-open-this-subdir ()
   (interactive)
@@ -8265,6 +8281,9 @@ See `my/index--tree-get' for the format of TREE."
     (lambda (elem) (my/index--tree-narrow-recursive elem (my/system-name)))
     (copy-tree tree))))
 
+(defvar my/index-keep-files
+  '(".dtrash"))
+
 (defun my/index--filesystem-tree-mapping (full-tree tree &optional active-paths)
   "Return a \"sync state\" between the filesystem and the tree.
 
@@ -8300,10 +8319,15 @@ The return value is a list of alists with the following keys:
                        (has-to-exist . ,folder-has-to-exist)
                        (children . ,(append
                                      (cl-loop for f in extra-folders
-                                              collect `((path . ,f)
-                                                        (exists . t)
-                                                        (has-to-exist . nil)
-                                                        (extra . t)))
+                                              collect
+                                              `((path . ,f)
+                                                (exists . t)
+                                                (has-to-exist
+                                                 . ,(member
+                                                     (file-name-nondirectory
+                                                      (directory-file-name f))
+                                                     my/index-keep-files))
+                                                (extra . t)))
                                      (my/index--filesystem-tree-mapping
                                       (alist-get :children elem) tree active-paths)))))))
 

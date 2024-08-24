@@ -6814,6 +6814,8 @@ I'll use data from git to get the list of what I've been working on. The directo
         ('weekly (- start-of-day (* 7 24 60 60)))))))
 #+end_src
 
+
+
 #+begin_src emacs-lisp
 (defun my/org-review-set-weekly-record ()
   (save-excursion
@@ -6832,6 +6834,7 @@ Review checklist:
 - [ ] Clear email inbox
 - [ ] Reconcile ledger
 - [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
+- [ ] Process [[file:30-39 Life/35 Photos/35.00 Inbox/][photo inbox]]
 - [ ] Process [[file:../inbox.org][inbox]]
 - [ ] Create [[file:../recurring.org][recurring tasks]] for next week
 - [ ] Check agenda (-1 / +2 weeks): priorities, deadlines
@@ -7304,8 +7307,7 @@ My config mostly follows ranger's and vifm's keybindings which I'm used to.
    "M-r" #'wdired-change-to-wdired-mode
    "<left>" #'dired-up-directory
    "<right>" #'dired-find-file
-   "M-<return>" #'dired-open-xdg)
-   (dired-async-mode))
+   "M-<return>" #'dired-open-xdg))
 
 (defun my/dired-home ()
   "Open dired at $HOME"
@@ -7453,6 +7455,25 @@ Display git info, such as the last commit for file and stuff. It's pretty useful
   :after (dired)
   :init
   (my-leader-def "aa" #'avy-dired-goto-line))
+#+end_src
+
+[[https://github.com/stsquad/dired-rsync][dired-rsync]] allows using =rsync= instead of the default synchronous copy operation.
+#+begin_src emacs-lisp
+(use-package dired-rsync
+  :straight t
+  :after (dired)
+  :config
+  (add-to-list 'global-mode-string '(:eval dired-rsync-modeline-status))
+  (general-define-key
+   :states '(normal)
+   :keymaps '(dired-mode-map)
+   "C" #'dired-rsync
+   "gC" #'dired-rsync-transient
+   "gd" #'dired-do-copy))
+
+(use-package dired-rsync-transient
+  :straight t
+  :after (dired))
 #+end_src
 *** Subdirectories
 Subdirectories are one of the interesting features of Dired. It allows displaying multiple folders on the same window.
@@ -11482,6 +11503,9 @@ First, we need to create non-existing folders and remove folders that aren't sup
 
 To do that, we need to find all such folders:
 #+begin_src emacs-lisp
+(defvar my/index-keep-files
+  '(".dtrash"))
+
 (defun my/index--filesystem-tree-mapping (full-tree tree &optional active-paths)
   "Return a \"sync state\" between the filesystem and the tree.
 
@@ -11517,10 +11541,15 @@ The return value is a list of alists with the following keys:
                        (has-to-exist . ,folder-has-to-exist)
                        (children . ,(append
                                      (cl-loop for f in extra-folders
-                                              collect `((path . ,f)
-                                                        (exists . t)
-                                                        (has-to-exist . nil)
-                                                        (extra . t)))
+                                              collect
+                                              `((path . ,f)
+                                                (exists . t)
+                                                (has-to-exist
+                                                 . ,(member
+                                                     (file-name-nondirectory
+                                                      (directory-file-name f))
+                                                     my/index-keep-files))
+                                                (extra . t)))
                                      (my/index--filesystem-tree-mapping
                                       (alist-get :children elem) tree active-paths)))))))
 #+end_src
