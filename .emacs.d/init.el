@@ -572,6 +572,29 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   ;;           (lambda () (setq visual-fill-column-center-text t)))
   )
 
+(defvar my/default-accents
+  '((a . ä)
+    (o . ö)
+    (u . ü)
+    (s . ß)
+    (A . Ä)
+    (O . Ö)
+    (U . Ü)
+    (S . ẞ)))
+
+(defun my/accent (arg)
+  (interactive "P")
+  (message "%s" arg)
+  (let* ((after? (eq accent-position 'after))
+         (char (if after? (char-after) (char-before)))
+         (curr (intern (string char)))
+         (default-diac (cdr (assoc curr my/default-accents))))
+    (if (and default-diac (not arg))
+        (progn
+          (delete-char (if after? 1 -1))
+          (insert (format "%c" default-diac)))
+      (call-interactively #'accent-company))))
+
 (use-package accent
   :straight (:host github :repo "eliascotto/accent")
   :init
@@ -580,7 +603,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
    "gs" #'accent-company)
   (general-define-key
    :states '(normal insert)
-   "M-n" #'accent-company)
+   "M-n" #'my/accent)
   :commands (accent-menu)
   :config
   (general-define-key
@@ -3277,7 +3300,7 @@ With ARG, repeats or can move backward if negative."
   (interactive)
   (let* ((files
           (thread-last
-            '("projects" "misc")
+            '("projects" "misc" "learning")
             (mapcar (lambda (f)
                       (directory-files (concat org-directory "/" f) t (rx ".org" eos))))
             (apply #'append)
@@ -8971,6 +8994,8 @@ to `dired' if used interactively."
   (cond
    ((string-match-p (rx bos (? "CAPTURE-") (= 14 num) "-" (* not-newline) ".org" eos) name)
     "<ORG-ROAM>")
+   ((string-match-p (rx "german" (* not-newline) ".org" eos) name)
+    "<LEARNING>")
    ((string-match-p (rx bos (+ num) "-" (+ num) "-" (+ num) ".org" eos) name)
     "<ORG-JOURNAL>")
    ((string-match-p (rx bos "EXWM") name)
