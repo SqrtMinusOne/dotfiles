@@ -521,6 +521,8 @@ The following formats the tables above to a proper syntax for =setq notmuch-save
          (encrypt))))
 #+end_src
 ** Tuning signature
+Edit <2024-08-19 Mon>: Apparently this was a feature, not a bug. Disabling this.
+
 By default, =message.el= inserts the signature at the bottom of the message, like this:
 
 #+begin_example
@@ -555,9 +557,11 @@ So here I modifiy the citation function to insert the signature like in the seco
 
 Edit <2022-10-27 Thu>: for consistency's sake, I'll make the signature on the top for all cases.
 
+Edit <2024-08-19 Mon>: see above
+
 #+begin_src emacs-lisp
 (defun my/message-insert-signature-need-on-top ()
-  t)
+  nil)
 #+end_src
 
 Then advice the =notmuch-mua-reply= function:
