@@ -174,9 +174,9 @@ x-scheme-handler/https=qutebrowser.desktop
 x-scheme-handler/about=qutebrowser.desktop
 x-scheme-handler/unknown=qutebrowser.desktop
 x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
-image/png=feh.desktop
-image/jpg=feh.desktop
-image/jpeg=feh.desktop
+image/png=com.interversehq.qView.desktop
+image/jpg=com.interversehq.qView.desktop
+image/jpeg=com.interversehq.qView.desktop
 application/pdf=org.pwmt.zathura.desktop
 
 [Added Associations]
@@ -4615,6 +4615,7 @@ Other desktop programs I use are listed below.
 | desktop-misc | fontconfig             |                                           |
 | desktop-misc | polkit-gnome           | Polkit authentication agent               |
 | desktop-misc | feh                    | Image viewer. Used to set background      |
+| desktop-misc | qview                  | Image viewer                              |
 | desktop-misc | copyq                  | Clipboard manager                         |
 | desktop-misc | thunar                 | My preferred GUI file manager             |
 | desktop-misc | xdg-utils              | gives xdg-open and stuff                  |
