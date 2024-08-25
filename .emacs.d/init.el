@@ -584,6 +584,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 
 (defun my/accent (arg)
   (interactive "P")
+  (require 'accent)
   (message "%s" arg)
   (let* ((after? (eq accent-position 'after))
          (char (if after? (char-after) (char-before)))
