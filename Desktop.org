@@ -746,20 +746,12 @@ Not sure about that. The cursor occasionally changes focus when I'm exiting posf
   (advice-add #'ivy-posframe-cleanup :after #'my/restore-posframe))
 #+end_src
 *** Linux app
-=counsel-linux-app= is a counsel interface to select a Linux desktop application.
+I switched to =app-launcher= from =counsel-linux-app= after migrating from Ivy.
 
 By default, it also shows paths from =/gnu/store=, so there is a custom formatter function.
 #+begin_src emacs-lisp
-(defun my/counsel-linux-app-format-function (name comment _exec)
-  (format "% -45s%s"
-          (propertize
-           (ivy--truncate-string name 45)
-           'face 'counsel-application-name)
-          (if comment
-              (concat ": " (ivy--truncate-string comment 100))
-            "")))
-
-(setq counsel-linux-app-format-function #'my/counsel-linux-app-format-function)
+(use-package app-launcher
+  :straight '(app-launcher :host github :repo "SebastienWae/app-launcher"))
 #+end_src
 
 Also, by default it tries to launch stuff with =gtk-launch=, which is in the =gtk+= package.
@@ -767,13 +759,16 @@ Also, by default it tries to launch stuff with =gtk-launch=, which is in the =gt
 | Category     | Guix dependency |
 |--------------+-----------------|
 | desktop-misc | gtk+:bin        |
-*** password-store-ivy
-[[https://github.com/SqrtMinusOne/password-store-ivy][password-store-ivy]] is another package of mine, inspired by [[https://github.com/carnager/rofi-pass][rofi-pass]].
+*** password-store-completion
+[[https://github.com/SqrtMinusOne/password-store-completion][password-store-completion]] is another package of mine, inspired by [[https://github.com/carnager/rofi-pass][rofi-pass]].
 
 #+begin_src emacs-lisp
-(use-package password-store-ivy
-  :straight (:host github :repo "SqrtMinusOne/password-store-ivy")
-  :after (exwm))
+(use-package password-store-completion
+  :straight (:host github :repo "SqrtMinusOne/password-store-completion")
+  :after (exwm)
+  :config
+  (require 'password-store-embark)
+  (password-store-embark-mode))
 #+end_src
 *** emojis
 [[https://github.com/iqbalansari/emacs-emojify][emojify]] is an Emacs package that adds emoji display to Emacs. While its primary capacity is no longer necessary in Emacs 28, it a few functions to insert emojis are still handy.
@@ -781,19 +776,6 @@ Also, by default it tries to launch stuff with =gtk-launch=, which is in the =gt
 #+begin_src emacs-lisp
 (use-package emojify
   :straight t)
-#+end_src
-
-Because I occasionally want to type emojis to other programs, I reuse a function from =password-store-ivy=:
-#+begin_src emacs-lisp
-(defun my/emojify-type ()
-  "Type an emoji."
-  (interactive)
-  (let ((emoji (emojify-completing-read "Type emoji: ")))
-    (kill-new emoji)
-    (password-store-ivy--async-commands
-     (list
-      (password-store-ivy--get-wait-command 10)
-      "xdotool key Shift+Insert"))))
 #+end_src
 ** Keybindings
 *** EXWM keybindings
@@ -819,7 +801,7 @@ Also other local keybindings, that are also available only in =line-mode=:
  "<print>" (my/app-command "flameshot gui")
  "<mode-line> s-<mouse-4>" #'perspective-exwm-cycle-all-buffers-backward
  "<mode-line> s-<mouse-5>" #'perspective-exwm-cycle-all-buffers-forward
- "M-x" #'counsel-M-x
+ "M-x" #'execute-extended-command
  "M-SPC" (general-key "SPC"))
 #+end_src
 
@@ -878,17 +860,17 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "s-.") . persp-next)
 
         ;; Switch buffers
-        (,(kbd "s-e") . persp-ivy-switch-buffer)
-        (,(kbd "s-E") . my/persp-ivy-switch-buffer-other-window)
+        (,(kbd "s-e") . persp-switch-to-buffer*)
+        ;; (,(kbd "s-E") . my/persp-ivy-switch-buffer-other-window)
 
         ;; Resize windows
         (,(kbd "s-r") . my/exwm-resize-hydra/body)
 
         ;; Apps & stuff
-        (,(kbd "s-p") . counsel-linux-app)
+        (,(kbd "s-p") . app-launcher-run-app)
         (,(kbd "s-P") . async-shell-command)
         (,(kbd "s-;") . my/exwm-apps-hydra/body)
-        (,(kbd "s--") . password-store-ivy)
+        (,(kbd "s--") . password-store-completion)
         (,(kbd "s-=") . my/emojify-type)
         (,(kbd "s-i") . ,(my/app-command "copyq menu"))
 

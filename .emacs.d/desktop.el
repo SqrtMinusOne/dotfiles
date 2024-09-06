@@ -321,33 +321,18 @@ DIR is either 'left or 'right."
   (advice-add #'posframe--create-posframe :after #'my/setup-posframe)
   (advice-add #'ivy-posframe-cleanup :after #'my/restore-posframe))
 
-(defun my/counsel-linux-app-format-function (name comment _exec)
-  (format "% -45s%s"
-          (propertize
-           (ivy--truncate-string name 45)
-           'face 'counsel-application-name)
-          (if comment
-              (concat ": " (ivy--truncate-string comment 100))
-            "")))
+(use-package app-launcher
+  :straight '(app-launcher :host github :repo "SebastienWae/app-launcher"))
 
-(setq counsel-linux-app-format-function #'my/counsel-linux-app-format-function)
-
-(use-package password-store-ivy
-  :straight (:host github :repo "SqrtMinusOne/password-store-ivy")
-  :after (exwm))
+(use-package password-store-completion
+  :straight (:host github :repo "SqrtMinusOne/password-store-completion")
+  :after (exwm)
+  :config
+  (require 'password-store-embark)
+  (password-store-embark-mode))
 
 (use-package emojify
   :straight t)
-
-(defun my/emojify-type ()
-  "Type an emoji."
-  (interactive)
-  (let ((emoji (emojify-completing-read "Type emoji: ")))
-    (kill-new emoji)
-    (password-store-ivy--async-commands
-     (list
-      (password-store-ivy--get-wait-command 10)
-      "xdotool key Shift+Insert"))))
 
 (defun my/exwm-quit ()
   (interactive)
@@ -629,7 +614,7 @@ _d_: Discord
    "<print>" (my/app-command "flameshot gui")
    "<mode-line> s-<mouse-4>" #'perspective-exwm-cycle-all-buffers-backward
    "<mode-line> s-<mouse-5>" #'perspective-exwm-cycle-all-buffers-forward
-   "M-x" #'counsel-M-x
+   "M-x" #'execute-extended-command
    "M-SPC" (general-key "SPC"))
   (setq exwm-input-simulation-keys `((,(kbd "M-w") . ,(kbd "C-w"))
                                      (,(kbd "M-c") . ,(kbd "C-c"))))
@@ -671,17 +656,17 @@ _d_: Discord
           (,(kbd "s-.") . persp-next)
   
           ;; Switch buffers
-          (,(kbd "s-e") . persp-ivy-switch-buffer)
-          (,(kbd "s-E") . my/persp-ivy-switch-buffer-other-window)
+          (,(kbd "s-e") . persp-switch-to-buffer*)
+          ;; (,(kbd "s-E") . my/persp-ivy-switch-buffer-other-window)
   
           ;; Resize windows
           (,(kbd "s-r") . my/exwm-resize-hydra/body)
   
           ;; Apps & stuff
-          (,(kbd "s-p") . counsel-linux-app)
+          (,(kbd "s-p") . app-launcher-run-app)
           (,(kbd "s-P") . async-shell-command)
           (,(kbd "s-;") . my/exwm-apps-hydra/body)
-          (,(kbd "s--") . password-store-ivy)
+          (,(kbd "s--") . password-store-completion)
           (,(kbd "s-=") . my/emojify-type)
           (,(kbd "s-i") . ,(my/app-command "copyq menu"))
   

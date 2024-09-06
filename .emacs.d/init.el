@@ -230,7 +230,7 @@
   :after evil
   :config
   (evil-collection-init
-   '(eww devdocs proced emms pass calendar dired ivy debug guix calc
+   '(eww devdocs proced emms pass calendar dired debug guix calc
          docker ibuffer geiser pdf info elfeed edebug bookmark company
          vterm flycheck profiler cider explain-pause-mode notmuch custom
          xref eshell helpful compile comint git-timemachine magit prodigy
@@ -345,7 +345,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "l" 'next-buffer
   "h" 'previous-buffer
   "k" 'kill-buffer
-  "b" 'persp-ivy-switch-buffer
+  ;; "b" 'persp-ivy-switch-buffer
+  "b" #'persp-switch-to-buffer*
   "r" 'revert-buffer
   "u" 'ibuffer)
 
@@ -620,16 +621,15 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (projectile-mode +1)
-  (setq projectile-project-search-path '("~/Code" "~/Documents")))
-
-(use-package counsel-projectile
-  :after (counsel projectile)
-  :straight t)
+  (setq projectile-project-search-path '("~/Code" "~/Documents"))
+  (general-define-key
+    :keymaps 'projectile-command-map
+    "b" #'consult-project-buffer))
 
 (my-leader-def
   "p" '(:keymap projectile-command-map :which-key "projectile"))
 
-(general-nmap "C-p" 'counsel-projectile-find-file)
+(general-nmap "C-p" #'projectile-find-file)
 
 (use-package magit
   :straight t
@@ -788,7 +788,7 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   "o" #'point-to-register
   "c" #'my/register-clear
   "r" #'jump-to-register
-  "R" #'counsel-register
+  "R" #'consult-register
   "w" #'window-configuration-to-register)
 
 (defun my/push-mark-no-activate ()
@@ -802,22 +802,10 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (interactive)
   (setq mark-ring nil))
 
-(defun my/counsel-global-mark-ring ()
-  "Browse `mark-ring' interactively.
-Obeys `widen-automatically', which see."
-  (interactive)
-  (let* ((counsel--mark-ring-calling-point (point))
-         (marks (copy-sequence global-mark-ring))
-         (marks (delete-dups marks))
-         (candidates (counsel-mark--get-candidates marks)))
-    (if candidates
-        (counsel-mark--ivy-read "Mark: " candidates 'my/counsel-global-mark-ring)
-      (message "Mark ring is empty"))))
-
 (my-leader-def
   :infix "g"
-  "g" #'counsel-mark-ring
-  "G" #'my/counsel-global-mark-ring
+  "G" #'consult-global-mark
+  "g" #'consult-mark
   "C" #'my/mark-ring-clear
   "m" #'my/push-mark-no-activate)
 
@@ -841,104 +829,163 @@ Obeys `widen-automatically', which see."
   :straight t
   :commands (ace-link-info ace-link-help ace-link-woman ace-link-eww))
 
-(use-package ivy
+(use-package vertico
   :straight t
   :config
-  (setq ivy-use-virtual-buffers t)
-  (ivy-mode))
+  (setq enable-recursive-minibuffers t)
+  (general-define-key
+   :keymaps '(vertico-map)
+   "M-j" #'vertico-next
+   "M-k" #'vertico-previous
+   "TAB" #'minibuffer-complete)
+  (vertico-mode))
 
-(use-package counsel
-  :straight t
-  :after ivy
+(defun crm-indicator (args)
+  (cons (format "[CRM%s] %s"
+                (replace-regexp-in-string
+                 "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                 crm-separator)
+                (car args))
+        (cdr args)))
+(with-eval-after-load 'crm
+  (advice-add #'completing-read-multiple :filter-args #'crm-indicator))
+
+(use-package savehist
+  :init
+  (savehist-mode))
+
+(use-package vertico-directory
+  :after (vertico)
   :config
-  (counsel-mode))
+  (general-define-key
+   :keymaps '(vertico-map)
+   "RET" #'vertico-directory-enter
+   "DEL" #'vertico-directory-delete-char)
+  (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy))
 
-(use-package swiper
-  :defer t
+(use-package vertico-grid
+  :after (vertico))
+
+(defun my/sort-directories-first (files)
+  (setq files (vertico-sort-alpha files))
+  (nconc (seq-filter (lambda (x) (string-suffix-p "/" x)) files)
+         (seq-remove (lambda (x) (string-suffix-p "/" x)) files)))
+
+(use-package vertico-multiform
+  :after vertico
+  :config
+  (vertico-multiform-mode)
+  (general-define-key
+   :keymap 'vertico-multiform-map
+   "M-b" #'vertico-multiform-buffer
+   "M-g" #'vertico-multiform-grid)
+  (setq vertico-multiform-categories
+        '((file (vertico-sort-function . my/sort-directories-first))
+          (password-store-pass grid)))
+  (setq vertico-multiform-commands
+        '((eshell-atuin-history (vertico-sort-function . nil))
+          (my/index-nav (vertico-sort-function . nil))
+          (org-ql-view (vertico-sort-function . nil))
+          (my/consult-line (vertico-sort-function . nil)))))
+
+(use-package orderless
+  :straight t
+  :config
+  (setq completion-styles '(orderless basic))
+  (setq completion-category-defaults nil)
+  (setq completion-category-overrides
+        '((file (styles partial-completion))))
+  (setq orderless-matching-styles
+        '(orderless-literal orderless-initialism orderless-regexp)))
+
+(defun company-completion-styles (capf-fn &rest args)
+  (let ((completion-styles '(basic partial-completion)))
+    (apply capf-fn args)))
+
+(with-eval-after-load 'company
+  (advice-add 'company-capf :around #'company-completion-styles))
+
+(use-package consult
   :straight t)
 
-(use-package ivy-rich
+(use-package marginalia
   :straight t
-  :after ivy
   :config
-  (ivy-rich-mode 1)
-  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+  (marginalia-mode)
+  (push '(projectile-find-file . file)
+        marginalia-command-categories))
 
-(use-package ivy-prescient
+(use-package embark
   :straight t
-  :after counsel
+  :commands (embark-act embark-dwim embark-bindings)
+  :init
+  (general-define-key
+   "M-e" #'embark-act))
+
+(use-package embark-consult
+  :straight t
+  :after (embark)
   :config
-  (ivy-prescient-mode +1)
-  (setq ivy-prescient-retain-classic-highlighting t)
-  (prescient-persist-mode 1)
-  (setq ivy-prescient-sort-commands
-        '(:not swiper
-               swiper-isearch
-               ivy-switch-buffer
-               ;; ivy-resume
-               ;; ivy--restore-session
-               lsp-ivy-workspace-symbol
-               dap-switch-stack-frame
-               my/dap-switch-stack-frame
-               dap-switch-session
-               dap-switch-thread
-               counsel-grep
-               ;; counsel-find-file
-               counsel-git-grep
-               counsel-rg
-               counsel-ag
-               counsel-ack
-               counsel-fzf
-               counsel-pt
-               counsel-imenu
-               counsel-yank-pop
-               counsel-recentf
-               counsel-buffer-or-recentf
-               proced-filter-interactive
-               proced-sort-interactive
-               perspective-exwm-switch-perspective
-               my/persp-ivy-switch-buffer-other-window
-               lsp-execute-code-action
-               dired-recent-open
-               org-ql-view
-               my/index-nav
-               org-set-effort
-               eshell-atuin-history))
-  ;; Do not use prescient in find-file
-  (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
+  (add-hook 'embark-collect-mode #'consult-preview-at-point-mode))
+
+(defun embark-which-key-indicator ()
+  "An embark indicator that displays keymaps using which-key.
+The which-key help message will show the type and value of the
+current target followed by an ellipsis if there are further
+targets."
+  (lambda (&optional keymap targets prefix)
+    (if (null keymap)
+        (which-key--hide-popup-ignore-command)
+      (which-key--show-keymap
+       (if (eq (plist-get (car targets) :type) 'embark-become)
+           "Become"
+         (format "Act on %s '%s'%s"
+                 (plist-get (car targets) :type)
+                 (embark--truncate-target (plist-get (car targets) :target))
+                 (if (cdr targets) "…" "")))
+       (if prefix
+           (pcase (lookup-key keymap prefix 'accept-default)
+             ((and (pred keymapp) km) km)
+             (_ (key-binding prefix 'accept-default)))
+         keymap)
+       nil nil t (lambda (binding)
+                   (not (string-suffix-p "-argument" (cdr binding))))))))
+
+(defun embark-hide-which-key-indicator (fn &rest args)
+  "Hide the which-key indicator immediately when using the completing-read prompter."
+  (which-key--hide-popup-ignore-command)
+  (let ((embark-indicators
+         (remq #'embark-which-key-indicator embark-indicators)))
+    (apply fn args)))
+
+(with-eval-after-load 'embark
+  (advice-add #'embark-completing-read-prompter
+              :around #'embark-hide-which-key-indicator)
+  (setq embark-indicators (delq #'embark-mixed-indicator embark-indicators))
+  (push #'embark-which-key-indicator embark-indicators))
 
 (my-leader-def
   :infix "f"
   "" '(:which-key "various completions")'
-  ;; "b" 'counsel-switch-buffer
-  "b" 'persp-ivy-switch-buffer
+  "b" #'persp-switch-to-buffer*
   "e" 'micromamba-activate
   "f" 'project-find-file
-  "c" 'counsel-yank-pop
-  "a" 'counsel-rg
-  "d" 'deadgrep
-  "A" 'counsel-ag)
+  "c" 'consult-yank-pop
+  "a" 'consult-ripgrep
+  "d" 'deadgrep)
 
 (general-define-key
  :states '(insert normal)
- "C-y" 'counsel-yank-pop)
+ "C-y" 'consult-yank-pop)
 
-(defun my/swiper-isearch ()
+(defun my/consult-line ()
   (interactive)
   (if current-prefix-arg
-      (swiper-all)
-    (swiper-isearch)))
+      (call-interactively #'consult-line-multi)
+    (consult-line nil t)))
 
-(my-leader-def "SPC SPC" 'ivy-resume)
-(my-leader-def "s" 'my/swiper-isearch)
-
-(general-define-key
- :keymaps '(ivy-minibuffer-map swiper-map)
- "M-j" 'ivy-next-line
- "M-k" 'ivy-previous-line
- "<C-return>" 'ivy-call
- "M-RET" 'ivy-immediate-done
- [escape] 'minibuffer-keyboard-quit)
+;; (my-leader-def "SPC SPC" 'ivy-resume)
+(my-leader-def "s" 'my/consult-line)
 
 (use-package company
   :straight t
@@ -1399,8 +1446,7 @@ Obeys `widen-automatically', which see."
      "//" "///" "/*" "*/" "/=" "//=" "/==" "@_" "__"))
   (global-ligature-mode t))
 
-(use-package all-the-icons
-  :if (display-graphic-p)
+(use-package nerd-icons
   :straight t)
 
 (use-package highlight-indent-guides
@@ -1521,8 +1567,8 @@ Obeys `widen-automatically', which see."
    "gN" 'persp-kill)
   (general-define-key
    :keymaps 'perspective-map
-   "b" 'persp-ivy-switch-buffer
-   "x" 'persp-ivy-switch-buffer
+   "b" 'persp-switch-to-buffer
+   "x" 'persp-switch-to-buffer*
    "u" 'persp-ibuffer))
 
 (defun my/persp-move-window-and-switch ()
@@ -1538,19 +1584,6 @@ Obeys `widen-automatically', which see."
     (call-interactively #'persp-switch)
     (persp-add-buffer (buffer-name buffer))
     (switch-to-buffer buffer)))
-
-(defun my/persp-ivy-switch-buffer-other-window (arg)
-  (interactive "P")
-  (declare-function ivy-switch-buffer-other-window "ivy.el")
-  (persp--switch-buffer-ivy-counsel-helper
-   arg
-   (lambda ()
-     (ivy-read "Switch to buffer in other window: " #'internal-complete-buffer
-               :keymap ivy-switch-buffer-map
-               :preselect (buffer-name (other-buffer (current-buffer)))
-               :action #'ivy--switch-buffer-other-window-action
-               :matcher #'ivy--switch-buffer-matcher
-               :caller 'ivy-switch-buffer))))
 
 (with-eval-after-load 'perspective
   (general-define-key
@@ -4020,7 +4053,7 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
             (set-keymap-parent map crm-local-completion-map)
             (define-key map " " 'self-insert-command)
             map))
-         (ivy-prescient-sort-commands nil)
+         (vertico-sort-function nil)
          (categories (completing-read-multiple
                       "Categories: "
                       '("TEACH" "EDU" "JOB" "LIFE" "COMP"))))
@@ -4615,7 +4648,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
             (set-keymap-parent map crm-local-completion-map)
             (define-key map " " 'self-insert-command)
             map))
-         (ivy-prescient-sort-commands nil))
+         (vertico-sort-function nil))
     (mapconcat
      #'identity
      (completing-read-multiple
@@ -4655,38 +4688,44 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (add-hook 'org-journal-after-entry-create-hook
           #'my/set-journal-header)
 
+(use-package citar
+  :straight t
+  :init
+  (my-leader-def "fB" #'citar-open)
+  :commands (citar-open citar-insert-citation)
+  :config
+  (setq
+   org-cite-global-bibliography '("~/30-39 Life/32 org-mode/library.bib")
+   org-cite-insert-processor 'citar
+   org-cite-follow-processor 'citar
+   org-cite-activate-processor 'citar
+   citar-bibliography org-cite-global-bibliography)
+  (add-hook 'latex-mode #'citar-capf-setup)
+  (add-hook 'org-mode #'citar-capf-setup))
+
+(use-package citar-embark
+  :after (citar embark)
+  :straight t
+  :config
+  (citar-embark-mode))
+
 (use-package org-ref
   :straight (:files (:defaults "citeproc" (:exclude "*helm*")))
   :if (not my/remote-server)
   :init
   (setq bibtex-dialect 'biblatex)
-  (setq bibtex-completion-bibliography '("~/30-39 Life/32 org-mode/library.bib"))
-  (setq bibtex-completion-library-path '("~/30-39 Life/33 Library"))
-  (setq bibtex-completion-notes-path "~/Documents/org-mode/literature-notes")
-  (setq bibtex-completion-display-formats
-        '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}")))
-  (setq bibtex-completion-pdf-open-function
-        (lambda (file)
-          (start-process "dired-open" nil
-                         "xdg-open" (file-truename file))))
+  (add-hook 'bibtex-mode 'smartparens-mode)
   :after (org)
   :config
-  (with-eval-after-load 'ivy-bibtex
-    (require 'org-ref-ivy))
   (general-define-key
    :keymaps 'org-mode-map
    "C-c l" #'org-ref-insert-link-hydra/body)
   (general-define-key
    :keymaps 'bibtex-mode-map
-   "M-RET" 'org-ref-bibtex-hydra/body))
-
-(use-package ivy-bibtex
-  :after (org-ref)
-  :straight t
-  :init
-  (my-leader-def "fB" 'ivy-bibtex))
-
-(add-hook 'bibtex-mode 'smartparens-mode)
+   "M-RET" 'org-ref-bibtex-hydra/body)
+  (setq org-ref-insert-cite-function
+        (lambda ()
+          (call-interactively #'citar-insert-citation))))
 
 (use-package emacsql-sqlite
   :defer t
@@ -4703,7 +4742,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
   :init
   (setq org-roam-file-extensions '("org"))
   (setq org-roam-v2-ack t)
-  (setq orb-insert-interface 'ivy-bibtex)
   (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
   :config
   (org-roam-setup)
@@ -4991,7 +5029,7 @@ Review checklist:
 - [ ] Clear email inbox
 - [ ] Reconcile ledger
 - [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
-- [ ] Process [[file:30-39 Life/35 Photos/35.00 Inbox/][photo inbox]]
+- [ ] Process [[file:~/30-39 Life/35 Photos/35.00 Inbox/][photo inbox]]
 - [ ] Process [[file:../inbox.org][inbox]]
 - [ ] Create [[file:../recurring.org][recurring tasks]] for next week
 - [ ] Check agenda (-1 / +2 weeks): priorities, deadlines
@@ -5343,11 +5381,20 @@ TODO Write something, maybe? "))))
 
 (use-package all-the-icons-dired
   :straight t
+  :disabled t
   :after (dired)
   :if (display-graphic-p)
   :hook (dired-mode . (lambda ()
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode)))))
+
+(use-package nerd-icons-dired
+  :straight t
+  :after (dired)
+  :hook (dired-mode . (lambda ()
+                        (unless (or (file-remote-p default-directory)
+                                    (string-match-p "/gnu/store" default-directory))
+                          (nerd-icons-dired-mode)))))
 
 (use-package dired-open
   :straight t
@@ -8775,7 +8822,7 @@ NAV is a structure as defined by `my/index--nav-get'."
                     (cons (car (last (alist-get :names item)))
                           (alist-get :path item)))
                   nav))
-         (ivy-prescient-sort-commands nil))
+         (vertico-sort-function nil))
     (cdr
      (assoc
       (completing-read "Index: " collection nil t)
@@ -9054,13 +9101,13 @@ to `dired' if used interactively."
 
 (defun my/zone-with-select ()
   (interactive)
-  (ivy-read "Zone programs"
-            (cl-pairlis
-             (cl-mapcar 'symbol-name original-zone-programs)
-             original-zone-programs)
-            :action (lambda (elem)
-                      (setq zone-programs (vector (cdr elem)))
-                      (zone))))
+  (let ((zone-programs
+         (vector
+          (intern
+           (completing-read
+            "Zone programs"
+            (cl-mapcar 'symbol-name original-zone-programs))))))
+    (zone)))
 
 (defun my/gravatar-retrieve-sync (email file-name)
   "Get gravatar for EMAIL and save it to FILE-NAME."

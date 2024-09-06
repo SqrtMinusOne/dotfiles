@@ -479,7 +479,7 @@ Do ex search in other buffer. Like =*=, but switch to other buffer and search th
   :after evil
   :config
   (evil-collection-init
-   '(eww devdocs proced emms pass calendar dired ivy debug guix calc
+   '(eww devdocs proced emms pass calendar dired debug guix calc
          docker ibuffer geiser pdf info elfeed edebug bookmark company
          vterm flycheck profiler cider explain-pause-mode notmuch custom
          xref eshell helpful compile comint git-timemachine magit prodigy
@@ -637,7 +637,8 @@ The following is necessary since my scratch buffer isn't lisp-interaction.
   "l" 'next-buffer
   "h" 'previous-buffer
   "k" 'kill-buffer
-  "b" 'persp-ivy-switch-buffer
+  ;; "b" 'persp-ivy-switch-buffer
+  "b" #'persp-switch-to-buffer*
   "r" 'revert-buffer
   "u" 'ibuffer)
 #+end_src
@@ -1096,16 +1097,15 @@ I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, 
   :straight t
   :config
   (projectile-mode +1)
-  (setq projectile-project-search-path '("~/Code" "~/Documents")))
-
-(use-package counsel-projectile
-  :after (counsel projectile)
-  :straight t)
+  (setq projectile-project-search-path '("~/Code" "~/Documents"))
+  (general-define-key
+    :keymaps 'projectile-command-map
+    "b" #'consult-project-buffer))
 
 (my-leader-def
   "p" '(:keymap projectile-command-map :which-key "projectile"))
 
-(general-nmap "C-p" 'counsel-projectile-find-file)
+(general-nmap "C-p" #'projectile-find-file)
 #+end_src
 *** Git & Magit
 [[https://magit.vc/][Magit]] is a git interface for Emacs.
@@ -1340,7 +1340,7 @@ Somehow there's no built-in function to clear a register.
   "o" #'point-to-register
   "c" #'my/register-clear
   "r" #'jump-to-register
-  "R" #'counsel-register
+  "R" #'consult-register
   "w" #'window-configuration-to-register)
 #+End_src
 
@@ -1367,28 +1367,12 @@ Also a function to clear the current mark ring.
   (setq mark-ring nil))
 #+end_src
 
-A variant of =counsel-mark-ring= to work with =global-mark-ring=:
-
-#+begin_src emacs-lisp
-(defun my/counsel-global-mark-ring ()
-  "Browse `mark-ring' interactively.
-Obeys `widen-automatically', which see."
-  (interactive)
-  (let* ((counsel--mark-ring-calling-point (point))
-         (marks (copy-sequence global-mark-ring))
-         (marks (delete-dups marks))
-         (candidates (counsel-mark--get-candidates marks)))
-    (if candidates
-        (counsel-mark--ivy-read "Mark: " candidates 'my/counsel-global-mark-ring)
-      (message "Mark ring is empty"))))
-#+end_src
-
 Keybindings:
 #+begin_src emacs-lisp
 (my-leader-def
   :infix "g"
-  "g" #'counsel-mark-ring
-  "G" #'my/counsel-global-mark-ring
+  "G" #'consult-global-mark
+  "g" #'consult-mark
   "C" #'my/mark-ring-clear
   "m" #'my/push-mark-no-activate)
 
@@ -1425,90 +1409,191 @@ References:
 #+end_src
 
 ** Completion
-*** Ivy, counsel, swiper
-Minibuffer completion tools for Emacs.
-
-References:
-- [[https://oremacs.com/swiper/][repo]]
-- [[https://oremacs.com/swiper/][User Manual]]
+*** vertico
+[[https://github.com/minad/vertico][vertico]] is a vertical completion framework. I switched to it from [[https://github.com/abo-abo/swiper][Ivy]] (and to Ivy from [[https://github.com/emacs-helm/helm][Helm]]).
 
 #+begin_src emacs-lisp
-(use-package ivy
+(use-package vertico
   :straight t
   :config
-  (setq ivy-use-virtual-buffers t)
-  (ivy-mode))
+  (setq enable-recursive-minibuffers t)
+  (general-define-key
+   :keymaps '(vertico-map)
+   "M-j" #'vertico-next
+   "M-k" #'vertico-previous
+   "TAB" #'minibuffer-complete)
+  (vertico-mode))
+#+end_src
 
-(use-package counsel
-  :straight t
-  :after ivy
+Add prompt indicator to =completing-read-multiple=:
+#+begin_src emacs-lisp
+(defun crm-indicator (args)
+  (cons (format "[CRM%s] %s"
+                (replace-regexp-in-string
+                 "\\`\\[.*?]\\*\\|\\[.*?]\\*\\'" ""
+                 crm-separator)
+                (car args))
+        (cdr args)))
+(with-eval-after-load 'crm
+  (advice-add #'completing-read-multiple :filter-args #'crm-indicator))
+#+end_src
+
+Persist history over Emacs restarts.
+#+begin_src emacs-lisp
+(use-package savehist
+  :init
+  (savehist-mode))
+#+end_src
+
+*** Vertico extensions
+Vertico has a lot of extensions.
+
+[[https://github.com/minad/vertico/blob/main/extensions/vertico-directory.el][vertico-directory]] simplifies directory navigation.
+#+begin_src emacs-lisp
+(use-package vertico-directory
+  :after (vertico)
   :config
-  (counsel-mode))
+  (general-define-key
+   :keymaps '(vertico-map)
+   "RET" #'vertico-directory-enter
+   "DEL" #'vertico-directory-delete-char)
+  (add-hook 'rfn-eshadow-update-overlay-hook #'vertico-directory-tidy))
+#+end_src
 
-(use-package swiper
-  :defer t
+[[https://github.com/minad/vertico/blob/main/extensions/vertico-grid.el][vertico-grid]] enabled grid display. It is useful when there are no annotations in the completion buffer.
+#+begin_src emacs-lisp
+(use-package vertico-grid
+  :after (vertico))
+#+end_src
+
+[[https://github.com/minad/vertico/blob/main/extensions/vertico-multiform.el][vertico-multiform]] enables per-mode configuration.
+#+begin_src emacs-lisp
+(defun my/sort-directories-first (files)
+  (setq files (vertico-sort-alpha files))
+  (nconc (seq-filter (lambda (x) (string-suffix-p "/" x)) files)
+         (seq-remove (lambda (x) (string-suffix-p "/" x)) files)))
+
+(use-package vertico-multiform
+  :after vertico
+  :config
+  (vertico-multiform-mode)
+  (general-define-key
+   :keymap 'vertico-multiform-map
+   "M-b" #'vertico-multiform-buffer
+   "M-g" #'vertico-multiform-grid)
+  (setq vertico-multiform-categories
+        '((file (vertico-sort-function . my/sort-directories-first))
+          (password-store-pass grid)))
+  (setq vertico-multiform-commands
+        '((eshell-atuin-history (vertico-sort-function . nil))
+          (my/index-nav (vertico-sort-function . nil))
+          (org-ql-view (vertico-sort-function . nil))
+          (my/consult-line (vertico-sort-function . nil)))))
+#+end_src
+
+*** orderless
+[[https://github.com/oantolin/orderless][orderless]] is a flexible completion style framework. Completion style refers to the way entries are filtered in the completion buffer.
+
+I used to use [[https://github.com/radian-software/prescient.el][prescient.el]] with Ivy; unlike prescient, orderless doesn't sort completion entries.
+
+#+begin_src emacs-lisp
+(use-package orderless
+  :straight t
+  :config
+  (setq completion-styles '(orderless basic))
+  (setq completion-category-defaults nil)
+  (setq completion-category-overrides
+        '((file (styles partial-completion))))
+  (setq orderless-matching-styles
+        '(orderless-literal orderless-initialism orderless-regexp)))
+#+end_src
+
+Disable orderless for company:
+#+begin_src emacs-lisp
+(defun company-completion-styles (capf-fn &rest args)
+  (let ((completion-styles '(basic partial-completion)))
+    (apply capf-fn args)))
+
+(with-eval-after-load 'company
+  (advice-add 'company-capf :around #'company-completion-styles))
+#+end_src
+
+*** consult
+[[https://github.com/minad/consult][consult]] provides various commands based on the =completing-read= API.
+
+#+begin_src emacs-lisp
+(use-package consult
   :straight t)
 #+end_src
-*** ivy-rich
-[[https://github.com/Yevgnen/ivy-rich][ivy-rich]] provides a more informative interface for ivy.
+
+*** marginalia
+[[https://github.com/minad/marginalia][marginalia]] provides annotations in the completion interface.
+
 #+begin_src emacs-lisp
-(use-package ivy-rich
+(use-package marginalia
   :straight t
-  :after ivy
   :config
-  (ivy-rich-mode 1)
-  (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line))
+  (marginalia-mode)
+  (push '(projectile-find-file . file)
+        marginalia-command-categories))
+#+end_src
+*** embark
+[[https://github.com/oantolin/embark][embark]] provides minibuffer actions.
+
+#+begin_src emacs-lisp
+(use-package embark
+  :straight t
+  :commands (embark-act embark-dwim embark-bindings)
+  :init
+  (general-define-key
+   "M-e" #'embark-act))
+
+(use-package embark-consult
+  :straight t
+  :after (embark)
+  :config
+  (add-hook 'embark-collect-mode #'consult-preview-at-point-mode))
 #+end_src
 
-*** prescient
-A package that enhances sorting & filtering of candidates. =ivy-prescient= adds integration with Ivy.
+Use =which-key= like indicator. Take from the [[https://github.com/oantolin/embark/wiki/Additional-Configuration#use-which-key-like-a-key-menu-prompt][Embark wiki]].
+#+begin_src emacs-lisp
+(defun embark-which-key-indicator ()
+  "An embark indicator that displays keymaps using which-key.
+The which-key help message will show the type and value of the
+current target followed by an ellipsis if there are further
+targets."
+  (lambda (&optional keymap targets prefix)
+    (if (null keymap)
+        (which-key--hide-popup-ignore-command)
+      (which-key--show-keymap
+       (if (eq (plist-get (car targets) :type) 'embark-become)
+           "Become"
+         (format "Act on %s '%s'%s"
+                 (plist-get (car targets) :type)
+                 (embark--truncate-target (plist-get (car targets) :target))
+                 (if (cdr targets) "…" "")))
+       (if prefix
+           (pcase (lookup-key keymap prefix 'accept-default)
+             ((and (pred keymapp) km) km)
+             (_ (key-binding prefix 'accept-default)))
+         keymap)
+       nil nil t (lambda (binding)
+                   (not (string-suffix-p "-argument" (cdr binding))))))))
 
-References:
-- [[https://github.com/raxod502/prescient.el][prescient.el repo]]
-#+begin_src emacs-lisp :noweb yes
-(use-package ivy-prescient
-  :straight t
-  :after counsel
-  :config
-  (ivy-prescient-mode +1)
-  (setq ivy-prescient-retain-classic-highlighting t)
-  (prescient-persist-mode 1)
-  (setq ivy-prescient-sort-commands
-        '(:not swiper
-               swiper-isearch
-               ivy-switch-buffer
-               ;; ivy-resume
-               ;; ivy--restore-session
-               lsp-ivy-workspace-symbol
-               dap-switch-stack-frame
-               my/dap-switch-stack-frame
-               dap-switch-session
-               dap-switch-thread
-               counsel-grep
-               ;; counsel-find-file
-               counsel-git-grep
-               counsel-rg
-               counsel-ag
-               counsel-ack
-               counsel-fzf
-               counsel-pt
-               counsel-imenu
-               counsel-yank-pop
-               counsel-recentf
-               counsel-buffer-or-recentf
-               proced-filter-interactive
-               proced-sort-interactive
-               perspective-exwm-switch-perspective
-               my/persp-ivy-switch-buffer-other-window
-               lsp-execute-code-action
-               dired-recent-open
-               org-ql-view
-               my/index-nav
-               org-set-effort
-               eshell-atuin-history))
-  ;; Do not use prescient in find-file
-  (ivy--alist-set 'ivy-sort-functions-alist #'read-file-name-internal #'ivy-sort-file-function-default))
+(defun embark-hide-which-key-indicator (fn &rest args)
+  "Hide the which-key indicator immediately when using the completing-read prompter."
+  (which-key--hide-popup-ignore-command)
+  (let ((embark-indicators
+         (remq #'embark-which-key-indicator embark-indicators)))
+    (apply fn args)))
+
+(with-eval-after-load 'embark
+  (advice-add #'embark-completing-read-prompter
+              :around #'embark-hide-which-key-indicator)
+  (setq embark-indicators (delq #'embark-mixed-indicator embark-indicators))
+  (push #'embark-which-key-indicator embark-indicators))
 #+end_src
+
 *** keybindings
 Setting up quick access to various completions.
 
@@ -1516,35 +1601,25 @@ Setting up quick access to various completions.
 (my-leader-def
   :infix "f"
   "" '(:which-key "various completions")'
-  ;; "b" 'counsel-switch-buffer
-  "b" 'persp-ivy-switch-buffer
+  "b" #'persp-switch-to-buffer*
   "e" 'micromamba-activate
   "f" 'project-find-file
-  "c" 'counsel-yank-pop
-  "a" 'counsel-rg
-  "d" 'deadgrep
-  "A" 'counsel-ag)
+  "c" 'consult-yank-pop
+  "a" 'consult-ripgrep
+  "d" 'deadgrep)
 
 (general-define-key
  :states '(insert normal)
- "C-y" 'counsel-yank-pop)
+ "C-y" 'consult-yank-pop)
 
-(defun my/swiper-isearch ()
+(defun my/consult-line ()
   (interactive)
   (if current-prefix-arg
-      (swiper-all)
-    (swiper-isearch)))
+      (call-interactively #'consult-line-multi)
+    (consult-line nil t)))
 
-(my-leader-def "SPC SPC" 'ivy-resume)
-(my-leader-def "s" 'my/swiper-isearch)
-
-(general-define-key
- :keymaps '(ivy-minibuffer-map swiper-map)
- "M-j" 'ivy-next-line
- "M-k" 'ivy-previous-line
- "<C-return>" 'ivy-call
- "M-RET" 'ivy-immediate-done
- [escape] 'minibuffer-keyboard-quit)
+;; (my-leader-def "SPC SPC" 'ivy-resume)
+(my-leader-def "s" 'my/consult-line)
 #+end_src
 *** company
 A completion framework for Emacs.
@@ -2192,11 +2267,12 @@ Ligature setup for the JetBrainsMono font.
   (global-ligature-mode t))
 #+end_src
 *** Icons
+I switched to [[https://github.com/rainstormstudio/nerd-icons.el][nerd-icons]] from [[https://github.com/domtronn/all-the-icons.el][all-the-icons]].
+
 Run =M-x all-the-icons-install-fonts= at first setup.
 
 #+begin_src emacs-lisp
-(use-package all-the-icons
-  :if (display-graphic-p)
+(use-package nerd-icons
   :straight t)
 #+end_src
 ** Text highlight
@@ -2349,8 +2425,8 @@ One thing I don't like is that the list perspectives is displayed in the modelin
    "gN" 'persp-kill)
   (general-define-key
    :keymaps 'perspective-map
-   "b" 'persp-ivy-switch-buffer
-   "x" 'persp-ivy-switch-buffer
+   "b" 'persp-switch-to-buffer
+   "x" 'persp-switch-to-buffer*
    "u" 'persp-ibuffer))
 #+end_src
 *** Functions to manage buffers
@@ -2372,22 +2448,6 @@ Copy the current buffer to a perspective and switch to it.
     (call-interactively #'persp-switch)
     (persp-add-buffer (buffer-name buffer))
     (switch-to-buffer buffer)))
-#+end_src
-
-Switch to a perspective buffer in other window.
-#+begin_src emacs-lisp
-(defun my/persp-ivy-switch-buffer-other-window (arg)
-  (interactive "P")
-  (declare-function ivy-switch-buffer-other-window "ivy.el")
-  (persp--switch-buffer-ivy-counsel-helper
-   arg
-   (lambda ()
-     (ivy-read "Switch to buffer in other window: " #'internal-complete-buffer
-               :keymap ivy-switch-buffer-map
-               :preselect (buffer-name (other-buffer (current-buffer)))
-               :action #'ivy--switch-buffer-other-window-action
-               :matcher #'ivy--switch-buffer-matcher
-               :caller 'ivy-switch-buffer))))
 #+end_src
 
 Add keybindings to the default map.
@@ -5577,7 +5637,7 @@ A view to return all TODOs in a category.
             (set-keymap-parent map crm-local-completion-map)
             (define-key map " " 'self-insert-command)
             map))
-         (ivy-prescient-sort-commands nil)
+         (vertico-sort-function nil)
          (categories (completing-read-multiple
                       "Categories: "
                       '("TEACH" "EDU" "JOB" "LIFE" "COMP"))))
@@ -6315,7 +6375,7 @@ Let's also try to log the current mood:
             (set-keymap-parent map crm-local-completion-map)
             (define-key map " " 'self-insert-command)
             map))
-         (ivy-prescient-sort-commands nil))
+         (vertico-sort-function nil))
     (mapconcat
      #'identity
      (completing-read-multiple
@@ -6369,15 +6429,38 @@ And here's the function that creates a drawer with such information. At the mome
 I use [[https://www.zotero.org/][Zotero]] to manage my bibliograhy.
 
 There is a Zotero extension called [[https://retorque.re/zotero-better-bibtex/][better bibtex]], which allows for having one bibtex file that is always syncronized with the library. That comes quite handy for Emacs integration.
+**** citar
+[[https://github.com/emacs-citar/citar][citar]] is a package that works with citations.
+
+#+begin_src emacs-lisp
+(use-package citar
+  :straight t
+  :init
+  (my-leader-def "fB" #'citar-open)
+  :commands (citar-open citar-insert-citation)
+  :config
+  (setq
+   org-cite-global-bibliography '("~/30-39 Life/32 org-mode/library.bib")
+   org-cite-insert-processor 'citar
+   org-cite-follow-processor 'citar
+   org-cite-activate-processor 'citar
+   citar-bibliography org-cite-global-bibliography)
+  (add-hook 'latex-mode #'citar-capf-setup)
+  (add-hook 'org-mode #'citar-capf-setup))
+
+(use-package citar-embark
+  :after (citar embark)
+  :straight t
+  :config
+  (citar-embark-mode))
+#+end_src
 
 **** org-ref
-[[https://github.com/jkitchin/org-ref][org-ref]] is an excellent package by John Kitchin that provides support for managing citations and references in Org Mode.
+[[https://github.com/jkitchin/org-ref][org-ref]] is a package by John Kitchin that provides support for citations and cross-references in Org Mode.
 
-It may have become less relevant since =org-cite= was merged into plain Org, but =org-ref= is still just as usable.
+I've switched to citar for citations because =org-ref= only works with Ivy and Helm. Fortunately, =org-ref= is designed to co-exist with =citar= and =org-cite=.
 
-As of now, this package loads Helm on start. To avoid this, I have to exclude Helm from the =Package-requires= in the [[file:.emacs.d/straight/repos/org-ref/org-ref.el][org-ref.el]] file. I haven't found a way to do this without modifying the package source yet.
-
-There's a package called [[https://github.com/org-roam/org-roam-bibtex][org-roam-bibtex]] that allows to keep literature notes in [[https://github.com/org-roam/org-roam][org-roam]] and access them from =org-ref=, but as for now I store literature notes separately.
+Also, at some point the package loaded Helm on start, so I exclude these files from the recipe.
 
 #+begin_src emacs-lisp
 (use-package org-ref
@@ -6385,39 +6468,20 @@ There's a package called [[https://github.com/org-roam/org-roam-bibtex][org-roam
   :if (not my/remote-server)
   :init
   (setq bibtex-dialect 'biblatex)
-  (setq bibtex-completion-bibliography '("~/30-39 Life/32 org-mode/library.bib"))
-  (setq bibtex-completion-library-path '("~/30-39 Life/33 Library"))
-  (setq bibtex-completion-notes-path "~/Documents/org-mode/literature-notes")
-  (setq bibtex-completion-display-formats
-        '((t . "${author:36} ${title:*} ${note:10} ${year:4} ${=has-pdf=:1}${=type=:7}")))
-  (setq bibtex-completion-pdf-open-function
-        (lambda (file)
-          (start-process "dired-open" nil
-                         "xdg-open" (file-truename file))))
+  (add-hook 'bibtex-mode 'smartparens-mode)
   :after (org)
   :config
-  (with-eval-after-load 'ivy-bibtex
-    (require 'org-ref-ivy))
   (general-define-key
    :keymaps 'org-mode-map
    "C-c l" #'org-ref-insert-link-hydra/body)
   (general-define-key
    :keymaps 'bibtex-mode-map
-   "M-RET" 'org-ref-bibtex-hydra/body))
+   "M-RET" 'org-ref-bibtex-hydra/body)
+  (setq org-ref-insert-cite-function
+        (lambda ()
+          (call-interactively #'citar-insert-citation))))
 #+end_src
 
-**** ivy-bibtex
-[[https://github.com/tmalsburg/helm-bibtex][ivy-bibtex]] is an Ivy interface to bibtex. It uses the same configuration variables as =org-ref=, or rather, both packages use variables from the built-in =bibtex.el=
-
-#+begin_src emacs-lisp
-(use-package ivy-bibtex
-  :after (org-ref)
-  :straight t
-  :init
-  (my-leader-def "fB" 'ivy-bibtex))
-
-(add-hook 'bibtex-mode 'smartparens-mode)
-#+end_src
 *** Org Roam
 [[https://github.com/org-roam/org-roam][org-roam]] is a plain-text knowledge database.
 
@@ -6466,7 +6530,6 @@ References:
   :init
   (setq org-roam-file-extensions '("org"))
   (setq org-roam-v2-ack t)
-  (setq orb-insert-interface 'ivy-bibtex)
   (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
   :config
   (org-roam-setup)
@@ -6858,7 +6921,7 @@ Review checklist:
 - [ ] Clear email inbox
 - [ ] Reconcile ledger
 - [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
-- [ ] Process [[file:30-39 Life/35 Photos/35.00 Inbox/][photo inbox]]
+- [ ] Process [[file:~/30-39 Life/35 Photos/35.00 Inbox/][photo inbox]]
 - [ ] Process [[file:../inbox.org][inbox]]
 - [ ] Create [[file:../recurring.org][recurring tasks]] for next week
 - [ ] Check agenda (-1 / +2 weeks): priorities, deadlines
@@ -7425,11 +7488,22 @@ Display icons for files.
 #+begin_src emacs-lisp
 (use-package all-the-icons-dired
   :straight t
+  :disabled t
   :after (dired)
   :if (display-graphic-p)
   :hook (dired-mode . (lambda ()
                         (unless (string-match-p "/gnu/store" default-directory)
                           (all-the-icons-dired-mode)))))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package nerd-icons-dired
+  :straight t
+  :after (dired)
+  :hook (dired-mode . (lambda ()
+                        (unless (or (file-remote-p default-directory)
+                                    (string-match-p "/gnu/store" default-directory))
+                          (nerd-icons-dired-mode)))))
 #+end_src
 
 Provides stuff like =dired-open-xdg=
@@ -12090,7 +12164,7 @@ NAV is a structure as defined by `my/index--nav-get'."
                     (cons (car (last (alist-get :names item)))
                           (alist-get :path item)))
                   nav))
-         (ivy-prescient-sort-commands nil))
+         (vertico-sort-function nil))
     (cdr
      (assoc
       (completing-read "Index: " collection nil t)
@@ -12526,13 +12600,13 @@ Watch out if you are using EXWM.
 
 (defun my/zone-with-select ()
   (interactive)
-  (ivy-read "Zone programs"
-            (cl-pairlis
-             (cl-mapcar 'symbol-name original-zone-programs)
-             original-zone-programs)
-            :action (lambda (elem)
-                      (setq zone-programs (vector (cdr elem)))
-                      (zone))))
+  (let ((zone-programs
+         (vector
+          (intern
+           (completing-read
+            "Zone programs"
+            (cl-mapcar 'symbol-name original-zone-programs))))))
+    (zone)))
 #+end_src
 
 *** Gource
