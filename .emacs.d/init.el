@@ -169,8 +169,7 @@
     (evil-set-undo-system 'undo-tree))
   (when (fboundp #'general-define-key)
     (general-define-key
-     :states '(motion)
-     "ze" nil)))
+     :states '(motion))))
 
 (use-package evil-surround
   :straight t
@@ -365,7 +364,6 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
 (general-define-key
  :keymaps '(hs-minor-mode-map outline-minor-mode-map outline-mode-map)
  :states '(normal motion)
- "ze" 'hs-hide-level
  "TAB" 'evil-toggle-fold)
 
 (defun my/zoom-in ()
@@ -756,7 +754,8 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   :straight t
   :config
   (add-to-list 'editorconfig-indentation-alist
-               '(emmet-mode emmet-indentation)))
+               '(emmet-mode emmet-indentation))
+  (editorconfig-mode))
 
 (recentf-mode 1)
 
@@ -821,9 +820,19 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         '(image-mode doc-view-mode pdf-view-mode exwm-mode))
   (general-define-key
    :states '(normal motion)
-   "-" nil
-   "--" #'avy-goto-char-2
-   "-=" #'avy-goto-symbol-1))
+   "-" #'avy-goto-char-timer))
+
+(defun avy-action-embark (pt)
+  (unwind-protect
+      (save-excursion
+        (goto-char pt)
+        (embark-act))
+    (select-window
+     (cdr (ring-ref avy-ring 0))))
+  t)
+
+(with-eval-after-load 'avy
+  (setf (alist-get ?. avy-dispatch-alist) 'avy-action-embark))
 
 (use-package ace-link
   :straight t
@@ -886,7 +895,16 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
         '((eshell-atuin-history (vertico-sort-function . nil))
           (my/index-nav (vertico-sort-function . nil))
           (org-ql-view (vertico-sort-function . nil))
-          (my/consult-line (vertico-sort-function . nil)))))
+          (my/consult-line (vertico-sort-function . nil))
+          (telega-msg-add-reaction grid))))
+
+(use-package vertico-quick
+  :after vertico
+  :config
+  (general-define-key
+   :keymaps '(vertico-map)
+   "M-q" #'vertico-quick-insert
+   "C-q" #'vertico-quick-exit))
 
 (use-package orderless
   :straight t
@@ -1449,14 +1467,16 @@ targets."
 (use-package nerd-icons
   :straight t)
 
-(use-package highlight-indent-guides
-  :straight t
+(use-package indent-bars
+  :straight (:host github :repo "jdtsmith/indent-bars")
   :if (not (or my/remote-server))
-  :hook ((prog-mode . highlight-indent-guides-mode)
-         (LaTeX-mode . highlight-indent-guides-mode))
+  :hook ((prog-mode . indent-bars-mode)
+         (LaTeX-mode . indent-bars-mode))
   :config
-  (setq highlight-indent-guides-method 'bitmap)
-  (setq highlight-indent-guides-bitmap-function 'highlight-indent-guides--bitmap-line))
+  (require 'indent-bars-ts)
+  (setopt indent-bars-no-descend-lists t
+          indent-bars-treesit-support t
+          indent-bars-width-frac 0.3))
 
 (use-package rainbow-delimiters
   :straight t
@@ -1708,23 +1728,8 @@ targets."
   (setq lsp-ui-doc-delay 2)
   (setq lsp-ui-sideline-show-hover nil))
 
-;; (use-package helm-lsp
-;;   :straight t
-;;   :commands helm-lsp-workspace-symbol)
-
-;; (use-package origami
-;;   :straight t
-;;   :hook (prog-mode . origami-mode))
-
-;; (use-package lsp-origami
-;;   :straight t
-;;   :config
-;;   (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))
-
-(use-package lsp-treemacs
-  :after (lsp)
-  :straight t
-  :commands lsp-treemacs-errors-list)
+(use-package all-the-icons
+  :straight t)
 
 (my-leader-def
   :infix "l"
@@ -1834,6 +1839,55 @@ targets."
                     (eval `(lambda ()
                              (run-hooks
                               ',(intern (concat (symbol-name old-mode) "-hook")))))))))
+
+(use-package treesit-fold
+  :straight (treesit-fold :type git :host github :repo "emacs-tree-sitter/treesit-fold")
+  :commands (treesit-fold-mode))
+
+(defun my/treesit-fold--get-nodes-to-fold ()
+  (when-let*
+      ((node (ignore-errors (treesit-buffer-root-node)))
+       (patterns (seq-mapcat (lambda (fold-range) `((,(car fold-range)) @name))
+                             (alist-get major-mode treesit-fold-range-alist)))
+       (query (ignore-errors
+                (treesit-query-compile (treesit-node-language node)
+                                       patterns)))
+       (nodes-to-fold (treesit-query-capture node query))
+       (mode-ranges (alist-get major-mode treesit-fold-range-alist))
+       (nodes-to-fold
+        (cl-remove-if (lambda (node)
+                        (treesit-fold--non-foldable-node-p (cdr node) mode-ranges))
+                      nodes-to-fold)))
+    nodes-to-fold))
+
+(defun my/treesit-fold-hide-children ()
+  (interactive)
+  (let* ((current-node (treesit-fold--foldable-node-at-pos))
+         (all-nodes-to-fold (my/treesit-fold--get-nodes-to-fold))
+         ;; Find foldable children of `current-node'
+         (target-nodes-to-fold
+          (seq-filter
+           (lambda (n)
+             (cl-block tree-iter
+               (while n
+                 (setq n (treesit-node-parent n))
+                 (when (equal n current-node)
+                   (cl-return-from tree-iter t)))))
+           (mapcar #'cdr all-nodes-to-fold))))
+    (dolist (node target-nodes-to-fold)
+      (treesit-fold-close node))))
+
+(defun my/evil-fold-hide-level ()
+  (interactive)
+  (cond
+   (hs-minor-mode (hs-hide-level))
+   (treesit-fold-mode (my/treesit-fold-hide-children))))
+
+(with-eval-after-load 'treesit-fold
+  (general-define-key
+   :states '(normal)
+   "ze" #'my/evil-fold-hide-level)
+  (keymap-unset evil-motion-state-map "z e" t))
 
 (use-package dap-mode
   :straight t
@@ -2096,13 +2150,13 @@ Returns (<buffer> . <workspace-index>) or nil."
   (or (copilot-accept-completion)
       (when (my/should-run-emmet-p) (my/emmet-or-tab))
       (when (and (eq evil-state 'normal)
-                 (or hs-minor-mode outline-minor-mode))
+                 (or hs-minor-mode treesit-fold-mode outline-minor-mode))
         (evil-toggle-fold)
         t)
       (indent-for-tab-command)))
 
 (use-package copilot
-  :straight (:host github :repo "copilot/copilot.el")
+  :straight (:host github :repo "copilot-emacs/copilot.el")
   :commands (copilot-mode)
   :if (not (or my/remote-server my/is-termux))
   :init
@@ -2166,12 +2220,12 @@ Returns (<buffer> . <workspace-index>) or nil."
   :init
   (add-hook 'typescript-mode-hook #'smartparens-mode)
   (add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
-  (add-hook 'typescript-mode-hook #'hs-minor-mode)
+  (add-hook 'typescript-mode-hook #'treesit-fold-mode)
   :config
   (my/set-smartparens-indent 'typescript-mode))
 
 (add-hook 'js-mode-hook #'smartparens-mode)
-(add-hook 'js-mode-hook #'hs-minor-mode)
+(add-hook 'js-mode-hook #'treesit-fold-mode)
 (my/set-smartparens-indent 'js-mode)
 
 (use-package jest-test-mode
@@ -2241,14 +2295,14 @@ Returns (<buffer> . <workspace-index>) or nil."
 
 (defun my/web-mode-lsp ()
   (when (seq-some
-         (lambda (regex) (string-match-p regex (buffer-name)))
+         (lambda (regex) (string-match-p regex (buffer-file-name)))
          my/web-mode-lsp-extensions)
     (lsp-deferred)))
 
 (add-hook 'web-mode-hook #'my/web-mode-lsp)
 
 (defun my/web-mode-vue-setup (&rest _)
-  (when (string-match-p (rx ".vue" eos) (buffer-name))
+  (when (string-match-p (rx ".vue" eos) (buffer-file-name))
     (setq-local web-mode-script-padding 0)
     (setq-local web-mode-style-padding 0)
     (setq-local create-lockfiles nil)
@@ -2713,7 +2767,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (when (my/ltex-need-p)
     (lsp)))
 
-(add-hook 'text-mode-hook #'my/text-mode-lsp-maybe)
+;; (add-hook 'text-mode-hook #'my/text-mode-lsp-maybe)
 
 (use-package langtool
   :straight t
@@ -2855,7 +2909,7 @@ Returns (<buffer> . <workspace-index>) or nil."
                          (lsp))))
 
 (add-hook 'python-mode-hook #'smartparens-mode)
-(add-hook 'python-mode-hook #'hs-minor-mode)
+(add-hook 'python-mode-hook #'treesit-fold-mode)
 
 (use-package pipenv
   :straight t
@@ -2974,7 +3028,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :mode "\\.json\\'"
   :config
   (add-hook 'json-mode-hook #'smartparens-mode)
-  (add-hook 'json-mode-hook #'hs-minor-mode)
+  (add-hook 'json-mode-hook #'treesit-fold-mode)
   (my/set-smartparens-indent 'json-mode))
 
 (use-package csv-mode
@@ -2987,7 +3041,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :mode "\\.yml\\'"
   :config
   (add-hook 'yaml-mode-hook 'smartparens-mode)
-  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  ;; (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 
 (use-package dotenv-mode
@@ -3111,7 +3165,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :config
   (my/set-smartparens-indent 'go-mode)
   (add-hook 'go-mode-hook #'smartparens-mode)
-  (add-hook 'go-mode-hook #'hs-minor-mode))
+  (add-hook 'go-mode-hook #'treesit-fold-mode))
 
 (use-package csharp-mode
   :straight t
@@ -3121,7 +3175,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   (setq lsp-csharp-server-path (executable-find "omnisharp-wrapper"))
   (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
   (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
-  (add-hook 'csharp-mode-hook #'hs-minor-mode)
+  (add-hook 'csharp-mode-hook #'treesit-fold-mode)
   (my/set-smartparens-indent 'csharp-tree-sitter-mode))
 
 (use-package csproj-mode
@@ -3514,7 +3568,8 @@ With ARG, repeats or can move backward if negative."
             ;; (hs-minor-mode -1)
             ;; (electric-indent-local-mode -1)
             ;; (rainbow-delimiters-mode -1)
-            (highlight-indent-guides-mode -1)))
+            ;; (highlight-indent-guides-mode -1)
+            ))
 
 (use-package ob-async
   :straight t
@@ -3651,6 +3706,29 @@ With ARG, repeats or can move backward if negative."
                     '(babel-call inline-babel-call))
               (org-babel-lob-execute-maybe)
             (org-babel-execute-src-block arg)))))))
+
+(defun my/org-babel-execute-marked (&optional arg)
+  (interactive "P")
+  (let (markers)
+    (org-element-map (org-element-parse-buffer) 'src-block
+      (lambda (elem)
+        (let ((params (org-element-property :parameters elem)))
+          (when (and params
+                     (string-match-p (rx "startup t") params))
+            (let ((m (make-marker)))
+              (set-marker m (org-element-property :begin elem))
+              (set-marker-insertion-type m t)
+              (push m markers))))))
+    (setq markers (nreverse markers))
+    (when arg
+      (setq markers
+            (seq-filter
+             (lambda (m) (> (marker-position m) (point)))
+             markers)))
+    (dolist (m markers)
+      (goto-char m)
+      (ignore-errors
+        (org-babel-execute-src-block)))))
 
 (with-eval-after-load 'org
   (general-define-key
@@ -7284,7 +7362,7 @@ ENTRY is an instance of `elfeed-entry'."
   :init
   (my-leader-def "an" #'my/mastodon)
   :config
-  (setq mastodon-instance-url "https://emacs.ch")
+  (setq mastodon-instance-url "https://mastodon.bsd.cafe")
   (setq mastodon-active-user "sqrtminusone")
   (my/persp-add-rule mastodon-mode 0 "mastodon")
   ;; Hide spoilers by default
@@ -7772,6 +7850,8 @@ base toot."
   :config
   (setq telega-emoji-use-images nil)
   (setq telega-chat-fill-column 80)
+  (setq telega-completing-read-function #'completing-read)
+  (add-to-list 'savehist-additional-variables 'telega-msg-add-reaction)
   (remove-hook 'telega-chat-mode-hook #'telega-chat-auto-fill-mode)
   (general-define-key
    :keymaps '(telega-root-mode-map telega-chat-mode-map)
@@ -9077,7 +9157,7 @@ to `dired' if used interactively."
   (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)
   (add-to-list 'elcord-mode-text-alist '(telega-chat-mode . "Telega Chat"))
   (add-to-list 'elcord-mode-text-alist '(telega-root-mode . "Telega Root"))
-  (elcord-mode)
+  ;; (elcord-mode)
   (my/elcord-symlink))
 
 (use-package snow

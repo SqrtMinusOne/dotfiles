@@ -390,8 +390,7 @@ Basic evil configuration.
     (evil-set-undo-system 'undo-tree))
   (when (fboundp #'general-define-key)
     (general-define-key
-     :states '(motion)
-     "ze" nil)))
+     :states '(motion))))
 #+end_src
 **** Addons
 [[https://github.com/emacs-evil/evil-surround][evil-surround]] emulates one of my favorite vim plugins, surround.vim. Adds a lot of parentheses management options.
@@ -672,7 +671,6 @@ Evil does a pretty good job of abstracting all these packages with a set of vim-
 (general-define-key
  :keymaps '(hs-minor-mode-map outline-minor-mode-map outline-mode-map)
  :states '(normal motion)
- "ze" 'hs-hide-level
  "TAB" 'evil-toggle-fold)
 #+end_src
 **** Zoom UI
@@ -1283,7 +1281,8 @@ References:
   :straight t
   :config
   (add-to-list 'editorconfig-indentation-alist
-               '(emmet-mode emmet-indentation)))
+               '(emmet-mode emmet-indentation))
+  (editorconfig-mode))
 #+end_src
 
 *** Editing files
@@ -1396,10 +1395,23 @@ References:
         '(image-mode doc-view-mode pdf-view-mode exwm-mode))
   (general-define-key
    :states '(normal motion)
-   "-" nil
-   "--" #'avy-goto-char-2
-   "-=" #'avy-goto-symbol-1))
+   "-" #'avy-goto-char-timer))
 #+End_src
+
+Integrate avy with embark:
+#+begin_src emacs-lisp
+(defun avy-action-embark (pt)
+  (unwind-protect
+      (save-excursion
+        (goto-char pt)
+        (embark-act))
+    (select-window
+     (cdr (ring-ref avy-ring 0))))
+  t)
+
+(with-eval-after-load 'avy
+  (setf (alist-get ?. avy-dispatch-alist) 'avy-action-embark))
+#+end_src
 
 [[https://github.com/abo-abo/ace-link][ace-link]] is a package to jump to links with avy.
 #+begin_src emacs-lisp
@@ -1445,7 +1457,7 @@ Persist history over Emacs restarts.
   (savehist-mode))
 #+end_src
 
-*** Vertico extensions
+*** vertico extensions
 Vertico has a lot of extensions.
 
 [[https://github.com/minad/vertico/blob/main/extensions/vertico-directory.el][vertico-directory]] simplifies directory navigation.
@@ -1488,7 +1500,19 @@ Vertico has a lot of extensions.
         '((eshell-atuin-history (vertico-sort-function . nil))
           (my/index-nav (vertico-sort-function . nil))
           (org-ql-view (vertico-sort-function . nil))
-          (my/consult-line (vertico-sort-function . nil)))))
+          (my/consult-line (vertico-sort-function . nil))
+          (telega-msg-add-reaction grid))))
+#+end_src
+
+[[https://github.com/minad/vertico/blob/main/extensions/vertico-quick.el][vertico-quick]] enables ivy-like bindings to choose candidates.
+#+begin_src emacs-lisp
+(use-package vertico-quick
+  :after vertico
+  :config
+  (general-define-key
+   :keymaps '(vertico-map)
+   "M-q" #'vertico-quick-insert
+   "C-q" #'vertico-quick-exit))
 #+end_src
 
 *** orderless
@@ -2276,16 +2300,18 @@ Run =M-x all-the-icons-install-fonts= at first setup.
   :straight t)
 #+end_src
 ** Text highlight
-Highlight indent guides.
+Highlight indent guides. I used [[https://github.com/DarthFennec/highlight-indent-guides][highlight-indent-guides]] before but [[https://github.com/jdtsmith/indent-bars][indent-bars]] seems to work better, and also doesn't break with =treesit-fold=.
 #+begin_src emacs-lisp
-(use-package highlight-indent-guides
-  :straight t
+(use-package indent-bars
+  :straight (:host github :repo "jdtsmith/indent-bars")
   :if (not (or my/remote-server))
-  :hook ((prog-mode . highlight-indent-guides-mode)
-         (LaTeX-mode . highlight-indent-guides-mode))
+  :hook ((prog-mode . indent-bars-mode)
+         (LaTeX-mode . indent-bars-mode))
   :config
-  (setq highlight-indent-guides-method 'bitmap)
-  (setq highlight-indent-guides-bitmap-function 'highlight-indent-guides--bitmap-line))
+  (require 'indent-bars-ts)
+  (setopt indent-bars-no-descend-lists t
+          indent-bars-treesit-support t
+          indent-bars-width-frac 0.3))
 #+end_src
 
 Rainbow parentheses.
@@ -2617,34 +2643,11 @@ References:
   :config
   (setq lsp-ui-doc-delay 2)
   (setq lsp-ui-sideline-show-hover nil))
+
+(use-package all-the-icons
+  :straight t)
 #+end_src
 
-#+RESULTS:
-: t
-
-**** Integrations
-The only integration left now is treemacs.
-
-Origami should've leveraged LSP folding, but it was too unstable at the moment I tried it.
-#+begin_src emacs-lisp
-;; (use-package helm-lsp
-;;   :straight t
-;;   :commands helm-lsp-workspace-symbol)
-
-;; (use-package origami
-;;   :straight t
-;;   :hook (prog-mode . origami-mode))
-
-;; (use-package lsp-origami
-;;   :straight t
-;;   :config
-;;   (add-hook 'lsp-after-open-hook #'lsp-origami-try-enable))
-
-(use-package lsp-treemacs
-  :after (lsp)
-  :straight t
-  :commands lsp-treemacs-errors-list)
-#+end_src
 **** Keybindings
 #+begin_src emacs-lisp
 (my-leader-def
@@ -2733,7 +2736,8 @@ Override flycheck checker with eslint.
   (setq-local lsp-diagnostic-package :none)
   (setq-local flycheck-checker 'javascript-eslint))
 #+end_src
-*** Tree Sitter
+*** Tree-sitter
+**** treesit.el
 Tree-Sitter integration with Emacs 29.
 
 References:
@@ -2782,6 +2786,73 @@ References:
                              (run-hooks
                               ',(intern (concat (symbol-name old-mode) "-hook")))))))))
 #+end_src
+**** treesit-fold
+[[https://github.com/emacs-tree-sitter/treesit-fold][treesit-fold]] uses treesit.el for folding.
+
+#+begin_src emacs-lisp
+(use-package treesit-fold
+  :straight (treesit-fold :type git :host github :repo "emacs-tree-sitter/treesit-fold")
+  :commands (treesit-fold-mode))
+#+end_src
+
+***** Hide children of current node
+A function to hide children of the current foldable node. This is somewhat similar to =hs-hide-level=, which I got used to.
+
+First, find all foldable nodes:
+#+begin_src emacs-lisp
+(defun my/treesit-fold--get-nodes-to-fold ()
+  (when-let*
+      ((node (ignore-errors (treesit-buffer-root-node)))
+       (patterns (seq-mapcat (lambda (fold-range) `((,(car fold-range)) @name))
+                             (alist-get major-mode treesit-fold-range-alist)))
+       (query (ignore-errors
+                (treesit-query-compile (treesit-node-language node)
+                                       patterns)))
+       (nodes-to-fold (treesit-query-capture node query))
+       (mode-ranges (alist-get major-mode treesit-fold-range-alist))
+       (nodes-to-fold
+        (cl-remove-if (lambda (node)
+                        (treesit-fold--non-foldable-node-p (cdr node) mode-ranges))
+                      nodes-to-fold)))
+    nodes-to-fold))
+#+end_src
+
+Then filter children of the current foldable node and fold them:
+#+begin_src emacs-lisp
+(defun my/treesit-fold-hide-children ()
+  (interactive)
+  (let* ((current-node (treesit-fold--foldable-node-at-pos))
+         (all-nodes-to-fold (my/treesit-fold--get-nodes-to-fold))
+         ;; Find foldable children of `current-node'
+         (target-nodes-to-fold
+          (seq-filter
+           (lambda (n)
+             (cl-block tree-iter
+               (while n
+                 (setq n (treesit-node-parent n))
+                 (when (equal n current-node)
+                   (cl-return-from tree-iter t)))))
+           (mapcar #'cdr all-nodes-to-fold))))
+    (dolist (node target-nodes-to-fold)
+      (treesit-fold-close node))))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/evil-fold-hide-level ()
+  (interactive)
+  (cond
+   (hs-minor-mode (hs-hide-level))
+   (treesit-fold-mode (my/treesit-fold-hide-children))))
+#+end_src
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'treesit-fold
+  (general-define-key
+   :states '(normal)
+   "ze" #'my/evil-fold-hide-level)
+  (keymap-unset evil-motion-state-map "z e" t))
+#+end_src
+
 *** DAP
 An Emacs client for Debugger Adapter Protocol.
 
@@ -3112,13 +3183,13 @@ A general-purpose package to run formatters on files. While the most popular for
   (or (copilot-accept-completion)
       (when (my/should-run-emmet-p) (my/emmet-or-tab))
       (when (and (eq evil-state 'normal)
-                 (or hs-minor-mode outline-minor-mode))
+                 (or hs-minor-mode treesit-fold-mode outline-minor-mode))
         (evil-toggle-fold)
         t)
       (indent-for-tab-command)))
 
 (use-package copilot
-  :straight (:host github :repo "copilot/copilot.el")
+  :straight (:host github :repo "copilot-emacs/copilot.el")
   :commands (copilot-mode)
   :if (not (or my/remote-server my/is-termux))
   :init
@@ -3199,14 +3270,14 @@ My bit of config here:
   :init
   (add-hook 'typescript-mode-hook #'smartparens-mode)
   (add-hook 'typescript-mode-hook #'rainbow-delimiters-mode)
-  (add-hook 'typescript-mode-hook #'hs-minor-mode)
+  (add-hook 'typescript-mode-hook #'treesit-fold-mode)
   :config
   (my/set-smartparens-indent 'typescript-mode))
 #+end_src
 *** JavaScript
 #+begin_src emacs-lisp
 (add-hook 'js-mode-hook #'smartparens-mode)
-(add-hook 'js-mode-hook #'hs-minor-mode)
+(add-hook 'js-mode-hook #'treesit-fold-mode)
 (my/set-smartparens-indent 'js-mode)
 #+end_src
 *** Jest
@@ -3292,7 +3363,7 @@ Hooking this up with lsp.
 
 (defun my/web-mode-lsp ()
   (when (seq-some
-         (lambda (regex) (string-match-p regex (buffer-name)))
+         (lambda (regex) (string-match-p regex (buffer-file-name)))
          my/web-mode-lsp-extensions)
     (lsp-deferred)))
 
@@ -3302,7 +3373,7 @@ Hooking this up with lsp.
 Vue settings
 #+begin_src emacs-lisp
 (defun my/web-mode-vue-setup (&rest _)
-  (when (string-match-p (rx ".vue" eos) (buffer-name))
+  (when (string-match-p (rx ".vue" eos) (buffer-file-name))
     (setq-local web-mode-script-padding 0)
     (setq-local web-mode-style-padding 0)
     (setq-local create-lockfiles nil)
@@ -3708,7 +3779,7 @@ To use it in =text-mode-hook=
   (when (my/ltex-need-p)
     (lsp)))
 
-(add-hook 'text-mode-hook #'my/text-mode-lsp-maybe)
+;; (add-hook 'text-mode-hook #'my/text-mode-lsp-maybe)
 #+end_src
 *** LanguageTool
 LanguageTool is a great offline spell checker. For some reason, the download link is nowhere to be found on the home page, so it is listed in the references as well.
@@ -3907,7 +3978,7 @@ For some reason it doesn't use pipenv python executable, so here is a small work
                          (lsp))))
 
 (add-hook 'python-mode-hook #'smartparens-mode)
-(add-hook 'python-mode-hook #'hs-minor-mode)
+(add-hook 'python-mode-hook #'treesit-fold-mode)
 #+end_src
 *** pipenv
 [[https://github.com/pypa/pipenv][Pipenv]] is a package manager for Python.
@@ -4124,7 +4195,7 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
   :mode "\\.json\\'"
   :config
   (add-hook 'json-mode-hook #'smartparens-mode)
-  (add-hook 'json-mode-hook #'hs-minor-mode)
+  (add-hook 'json-mode-hook #'treesit-fold-mode)
   (my/set-smartparens-indent 'json-mode))
 #+end_src
 *** CSV
@@ -4141,7 +4212,7 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
   :mode "\\.yml\\'"
   :config
   (add-hook 'yaml-mode-hook 'smartparens-mode)
-  (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
+  ;; (add-hook 'yaml-mode-hook 'highlight-indent-guides-mode)
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 #+end_src
 ** Configuration
@@ -4317,7 +4388,7 @@ Emacs integration for [[http://gnuplot.info/][gnuplot]].
   :config
   (my/set-smartparens-indent 'go-mode)
   (add-hook 'go-mode-hook #'smartparens-mode)
-  (add-hook 'go-mode-hook #'hs-minor-mode))
+  (add-hook 'go-mode-hook #'treesit-fold-mode))
 #+end_src
 ** .NET
 *** C#
@@ -4337,7 +4408,7 @@ Disabled that for now because it depends on the old tree sitter.
   (setq lsp-csharp-server-path (executable-find "omnisharp-wrapper"))
   (add-hook 'csharp-mode-hook #'csharp-tree-sitter-mode)
   (add-hook 'csharp-tree-sitter-mode-hook #'smartparens-mode)
-  (add-hook 'csharp-mode-hook #'hs-minor-mode)
+  (add-hook 'csharp-mode-hook #'treesit-fold-mode)
   (my/set-smartparens-indent 'csharp-tree-sitter-mode))
 #+end_src
 *** MSBuild
@@ -4885,7 +4956,8 @@ Turn of some minor modes in source blocks.
             ;; (hs-minor-mode -1)
             ;; (electric-indent-local-mode -1)
             ;; (rainbow-delimiters-mode -1)
-            (highlight-indent-guides-mode -1)))
+            ;; (highlight-indent-guides-mode -1)
+            ))
 #+end_src
 
 Async code blocks evaluations. Jupyter blocks have a built-in async, so they are set as ignored.
@@ -5084,6 +5156,32 @@ First, execute things above and below the point:
                     '(babel-call inline-babel-call))
               (org-babel-lob-execute-maybe)
             (org-babel-execute-src-block arg)))))))
+#+end_src
+
+Execute all code blocks marked with =:startup t=:
+#+begin_src emacs-lisp
+(defun my/org-babel-execute-marked (&optional arg)
+  (interactive "P")
+  (let (markers)
+    (org-element-map (org-element-parse-buffer) 'src-block
+      (lambda (elem)
+        (let ((params (org-element-property :parameters elem)))
+          (when (and params
+                     (string-match-p (rx "startup t") params))
+            (let ((m (make-marker)))
+              (set-marker m (org-element-property :begin elem))
+              (set-marker-insertion-type m t)
+              (push m markers))))))
+    (setq markers (nreverse markers))
+    (when arg
+      (setq markers
+            (seq-filter
+             (lambda (m) (> (marker-position m) (point)))
+             markers)))
+    (dolist (m markers)
+      (goto-char m)
+      (ignore-errors
+        (org-babel-execute-src-block)))))
 #+end_src
 
 Some keybindings:
@@ -10135,7 +10233,7 @@ The default UI is rather rough, but Nicolas Rougier's [[https://github.com/rougi
   :init
   (my-leader-def "an" #'my/mastodon)
   :config
-  (setq mastodon-instance-url "https://emacs.ch")
+  (setq mastodon-instance-url "https://mastodon.bsd.cafe")
   (setq mastodon-active-user "sqrtminusone")
   (my/persp-add-rule mastodon-mode 0 "mastodon")
   ;; Hide spoilers by default
@@ -10718,6 +10816,8 @@ Or you can load up Element for a moment to see what the mention was, if that's e
   :config
   (setq telega-emoji-use-images nil)
   (setq telega-chat-fill-column 80)
+  (setq telega-completing-read-function #'completing-read)
+  (add-to-list 'savehist-additional-variables 'telega-msg-add-reaction)
   (remove-hook 'telega-chat-mode-hook #'telega-chat-auto-fill-mode)
   (general-define-key
    :keymaps '(telega-root-mode-map telega-chat-mode-map)
@@ -12564,7 +12664,7 @@ And the package configuration:
   (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)
   (add-to-list 'elcord-mode-text-alist '(telega-chat-mode . "Telega Chat"))
   (add-to-list 'elcord-mode-text-alist '(telega-root-mode . "Telega Root"))
-  (elcord-mode)
+  ;; (elcord-mode)
   (my/elcord-symlink))
 #+end_src
 *** Snow
