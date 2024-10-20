@@ -169,10 +169,9 @@ Setting the default MIME types
 #+begin_src conf-unix :tangle ~/.config/mimeapps.list
 [Default Applications]
 text/html=qutebrowser.desktop
-x-scheme-handler/http=qutebrowser.desktop
-x-scheme-handler/https=qutebrowser.desktop
-x-scheme-handler/about=qutebrowser.desktop
-x-scheme-handler/unknown=qutebrowser.desktop
+x-scheme-handler/http=io.github.zen_browser.zen.desktop
+x-scheme-handler/https=io.github.zen_browser.zen.desktop
+x-scheme-handler/about=io.github.zen_browser.zen.desktop
 x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
 image/png=com.interversehq.qView.desktop
 image/jpg=com.interversehq.qView.desktop
@@ -767,6 +766,7 @@ Also, by default it tries to launch stuff with =gtk-launch=, which is in the =gt
   :straight (:host github :repo "SqrtMinusOne/password-store-completion")
   :after (exwm)
   :config
+  (add-to-list 'savehist-additional-variables 'password-store-completion)
   (require 'password-store-embark)
   (password-store-embark-mode))
 #+end_src
@@ -807,7 +807,8 @@ Also other local keybindings, that are also available only in =line-mode=:
 
 Simulation keys.
 #+begin_src emacs-lisp :tangle no :noweb-ref exwm-keybindings
-(setq exwm-input-simulation-keys `((,(kbd "M-w") . ,(kbd "C-w"))
+(setopt exwm-input-simulation-keys `(
+                                   ;; (,(kbd "M-w") . ,(kbd "C-w"))
                                    (,(kbd "M-c") . ,(kbd "C-c"))))
 #+end_src
 
@@ -932,13 +933,13 @@ A +transient+ hydra for shortcuts for the most frequent apps.
   "
 ^Apps^
 _t_: Terminal (Alacritty)
-_b_: Browser (qutebrowser)
+_b_: Browser (Zen)
 _s_: Rocket.Chat
 _e_: Telegram
 _d_: Discord
 "
   ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
-  ("b" (lambda () (interactive) (my/run-in-background "qutebrowser")))
+  ("b" (lambda () (interactive) (my/run-in-background "flatpak run io.github.zen_browser.zen")))
   ("s" (lambda () (interactive) (my/run-in-background "flatpak run chat.rocket.RocketChat")))
   ("e" (lambda () (interactive) (my/run-in-background "telegram-desktop")))
   ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
@@ -2150,7 +2151,7 @@ font-4 = JetBrains Mono Nerd Font:monospace:size=17;4
 
 Modules. Because I sometimes set up different blocks on different monitors, they are set via environment variables.
 #+begin_src conf-windows
-modules-left = i3
+modules-left = i3 c-g glyph-left-light-background--blue
 ; modules-center = test
 modules-right = ${env:RIGHT_BLOCKS}
 
@@ -2831,6 +2832,55 @@ interval = 1
 format-underline = ${colors.light-green}
 format-foreground = ${colors.foreground}
 #+end_src
+*** C-g
+#+begin_src bash :tangle ./bin/polybar/c-g.sh
+EMACS_FLAG="-l /home/pavel/.emacs.d/desktop.el"
+EXCLUDE_PATTERN="dbus-launch --exit-with-session emacs"
+EMACS_PIDS=$(pgrep -f "emacs.*${EMACS_FLAG}")
+SIGNAL_SENT=false
+
+for PID in $EMACS_PIDS; d   o
+    CMDLINE=$(ps -p "$PID" -o args=)
+
+    if [[ "$CMDLINE" == *"$EXCLUDE_PATTERN"* ]]; then
+        continue
+    fi
+
+    kill -SIGUSR2 "$PID" 2>/dev/null
+
+    if [ $? -eq 0 ]; then
+        echo "Sent SIGUSR2 to Emacs (PID: $PID)"
+        SIGNAL_SENT=true
+    else
+        echo "Failed to send SIGUSR2 to Emacs (PID: $PID)"
+    fi
+done
+
+if [ "$SIGNAL_SENT" = false ]; then
+    echo "Emacs process not found or already handled."
+    exit 1
+fi
+
+exit 0
+#+end_src
+
+#+begin_src conf-windows
+[module/c-g]
+type = custom/text
+content = " C-g"
+click-left = bash ~/bin/polybar/c-g.sh
+content-background = ${colors.blue}
+#+end_src
+
+#+begin_src conf-windows
+[module/glyph-left-light-background--blue]
+type = custom/text
+content-background = ${colors.backround}
+content-foreground = ${colors.blue}
+content = ${glyph.gleft}
+content-font = 5
+#+end_src
+
 *** SEP
 A simple separator
 #+begin_src conf-windows

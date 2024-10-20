@@ -328,6 +328,7 @@ DIR is either 'left or 'right."
   :straight (:host github :repo "SqrtMinusOne/password-store-completion")
   :after (exwm)
   :config
+  (add-to-list 'savehist-additional-variables 'password-store-completion)
   (require 'password-store-embark)
   (password-store-embark-mode))
 
@@ -352,13 +353,13 @@ DIR is either 'left or 'right."
   "
 ^Apps^
 _t_: Terminal (Alacritty)
-_b_: Browser (qutebrowser)
+_b_: Browser (Zen)
 _s_: Rocket.Chat
 _e_: Telegram
 _d_: Discord
 "
   ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
-  ("b" (lambda () (interactive) (my/run-in-background "qutebrowser")))
+  ("b" (lambda () (interactive) (my/run-in-background "flatpak run io.github.zen_browser.zen")))
   ("s" (lambda () (interactive) (my/run-in-background "flatpak run chat.rocket.RocketChat")))
   ("e" (lambda () (interactive) (my/run-in-background "telegram-desktop")))
   ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
@@ -616,7 +617,8 @@ _d_: Discord
    "<mode-line> s-<mouse-5>" #'perspective-exwm-cycle-all-buffers-forward
    "M-x" #'execute-extended-command
    "M-SPC" (general-key "SPC"))
-  (setq exwm-input-simulation-keys `((,(kbd "M-w") . ,(kbd "C-w"))
+  (setopt exwm-input-simulation-keys `(
+                                     ;; (,(kbd "M-w") . ,(kbd "C-w"))
                                      (,(kbd "M-c") . ,(kbd "C-c"))))
   (setq exwm-input-global-keys
         `(

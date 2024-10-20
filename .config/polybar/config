@@ -193,7 +193,7 @@ font-4 = JetBrains Mono Nerd Font:monospace:size=17;4
 ; Global bar config:3 ends here
 
 ; [[file:../../Desktop.org::*Global bar config][Global bar config:4]]
-modules-left = i3
+modules-left = i3 c-g glyph-left-light-background--blue
 ; modules-center = test
 modules-right = ${env:RIGHT_BLOCKS}
 
@@ -515,6 +515,23 @@ interval = 1
 format-underline = ${colors.light-green}
 format-foreground = ${colors.foreground}
 ; pomm:2 ends here
+
+; [[file:../../Desktop.org::*C-g][C-g:2]]
+[module/c-g]
+type = custom/text
+content = " C-g"
+click-left = bash ~/bin/polybar/c-g.sh
+content-background = ${colors.blue}
+; C-g:2 ends here
+
+; [[file:../../Desktop.org::*C-g][C-g:3]]
+[module/glyph-left-light-background--blue]
+type = custom/text
+content-background = ${colors.backround}
+content-foreground = ${colors.blue}
+content = ${glyph.gleft}
+content-font = 5
+; C-g:3 ends here
 
 ; [[file:../../Desktop.org::*SEP][SEP:1]]
 [module/SEP]
