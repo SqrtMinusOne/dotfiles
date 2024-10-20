@@ -2833,6 +2833,8 @@ format-underline = ${colors.light-green}
 format-foreground = ${colors.foreground}
 #+end_src
 *** C-g
+Sometimes Emacs hangs, and something in EXWM prevents it from receiving the =C-g= keystroke.
+
 #+begin_src bash :tangle ./bin/polybar/c-g.sh
 EMACS_FLAG="-l /home/pavel/.emacs.d/desktop.el"
 EXCLUDE_PATTERN="dbus-launch --exit-with-session emacs"
