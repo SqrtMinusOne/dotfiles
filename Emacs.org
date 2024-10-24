@@ -2736,7 +2736,12 @@ Override flycheck checker with eslint.
   (setq-local lsp-diagnostic-package :none)
   (setq-local flycheck-checker 'javascript-eslint))
 #+end_src
+
 *** Tree-sitter
+References:
+- [[https://tree-sitter.github.io/tree-sitter/using-parsers#query-syntax][Tree sitter query syntax]]
+- [[https://www.gnu.org/software/emacs//manual/html_node/elisp/Parsing-Program-Source.html][treesit.el documentation]]
+
 **** treesit.el
 Tree-Sitter integration with Emacs 29.
 
@@ -2853,6 +2858,16 @@ Then filter children of the current foldable node and fold them:
   (keymap-unset evil-motion-state-map "z e" t))
 #+end_src
 
+**** combobulate
+[[https://github.com/mickeynp/combobulate][combobulate]] is Mickey Peterson's package that uses =tree-sitter= for structural navigation.
+
+I'm not actually using that, but its query editor is pretty useful to debug =tree-sitter= queries.
+
+#+begin_src emacs-lisp
+(use-package combobulate
+  :straight (:host github :repo "mickeynp/combobulate")
+  :commands (combobulate))
+#+end_src
 *** DAP
 An Emacs client for Debugger Adapter Protocol.
 
@@ -11336,55 +11351,6 @@ Also, a prompt to make a text more concise.
 
 **** Other thoughts
 - =ellama-code-complete= is pretty good to write migrations
-*** Model settings
-**** llama3-gradient
-[[https://ollama.com/library/llama3-gradient][llama3-gradient]] is a version of LLaMA 3 with an extended context size. It requires setting the =num_ctx= parameter to work correctly. For ellama, the following works.
-
-It's problematic to load this so I'm commenting this out for now.
-#+begin_src emacs-lisp :tangle no
-(with-eval-after-load 'ellama
-  (cl-defstruct (llm-ollama-gradient (:include llm-ollama)) num-ctx)
-
-  (cl-defmethod llm-provider-chat-request ((provider llm-ollama-gradient) prompt _)
-    (let (request-alist messages options)
-      (setq messages
-            (mapcar (lambda (interaction)
-                      `(("role" . ,(symbol-name (llm-chat-prompt-interaction-role interaction)))
-                        ("content" . ,(llm-chat-prompt-interaction-content interaction))))
-                    (llm-chat-prompt-interactions prompt)))
-      (when (llm-chat-prompt-context prompt)
-        (push `(("role" . "system")
-                ("content" . ,(llm-provider-utils-get-system-prompt prompt llm-ollama-example-prelude)))
-              messages))
-      (push `("messages" . ,messages) request-alist)
-      (push `("model" . ,(llm-ollama-chat-model provider)) request-alist)
-      (when (llm-chat-prompt-temperature prompt)
-        (push `("temperature" . ,(llm-chat-prompt-temperature prompt)) options))
-      (when (llm-chat-prompt-max-tokens prompt)
-        (push `("num_predict" . ,(llm-chat-prompt-max-tokens prompt)) options))
-      (when (llm-ollama-gradient-num-ctx provider)
-        (push `("num_ctx" . ,(llm-ollama-gradient-num-ctx provider)) options))
-      (when options (push `("options" . ,options) request-alist))
-      request-alist))
-
-  (push `("llama3-gradient" . ,(make-llm-ollama-gradient
-                                :chat-model "llama3-gradient"
-                                :embedding-model "llama3-gradient"
-                                :num-ctx 48000))
-        ellama-providers))
-#+end_src
-
-For gptel, this approach doesn't work and I've got no clue why. So...
-#+begin_src emacs-lisp
-(with-eval-after-load 'gptel
-  (cl-defmethod gptel--request-data :around ((_backend gptel-ollama) prompts)
-    (let ((request-alist (cl-call-next-method)))
-      (when (equal gptel-model "llama3-gradient")
-        (plist-put request-alist :options
-                   `(:num_ctx 48000
-                              ,@(plist-get request-alist :options))))
-      request-alist)))
-#+end_src
 ** Declarative filesystem management
 My filesystem is, shall we say, not the most orderly place.
 

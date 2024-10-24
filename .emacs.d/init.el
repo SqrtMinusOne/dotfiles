@@ -1889,6 +1889,10 @@ targets."
    "ze" #'my/evil-fold-hide-level)
   (keymap-unset evil-motion-state-map "z e" t))
 
+(use-package combobulate
+  :straight (:host github :repo "mickeynp/combobulate")
+  :commands (combobulate))
+
 (use-package dap-mode
   :straight t
   :if (not (or my/remote-server my/is-termux))
@@ -8281,15 +8285,6 @@ base toot."
 (defun my/ellama-improve-concise (text is-org-mode)
   (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
   (my/ellama-text-with-diff text is-org-mode my/ellama-improve-concise-prompt))
-
-(with-eval-after-load 'gptel
-  (cl-defmethod gptel--request-data :around ((_backend gptel-ollama) prompts)
-    (let ((request-alist (cl-call-next-method)))
-      (when (equal gptel-model "llama3-gradient")
-        (plist-put request-alist :options
-                   `(:num_ctx 48000
-                              ,@(plist-get request-alist :options))))
-      request-alist)))
 
 (use-package ini
   :mode "\\.ini\\'"
