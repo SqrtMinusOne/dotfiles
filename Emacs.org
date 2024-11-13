@@ -1547,7 +1547,11 @@ Disable orderless for company:
 
 #+begin_src emacs-lisp
 (use-package consult
-  :straight t)
+  :straight t
+  :config
+  (setq consult-preview-excluded-files
+        `("\\`/[^/|:]+:"
+          ,(rx "html" eos))))
 #+end_src
 
 *** marginalia
@@ -6542,6 +6546,10 @@ And here's the function that creates a drawer with such information. At the mome
 I use [[https://www.zotero.org/][Zotero]] to manage my bibliograhy.
 
 There is a Zotero extension called [[https://retorque.re/zotero-better-bibtex/][better bibtex]], which allows for having one bibtex file that is always syncronized with the library. That comes quite handy for Emacs integration.
+
+Resources:
+- [[https://blog.tecosaur.com/tmio/2021-07-31-citations.html][Introducing citations!]]
+
 **** citar
 [[https://github.com/emacs-citar/citar][citar]] is a package that works with citations.
 
@@ -6558,6 +6566,10 @@ There is a Zotero extension called [[https://retorque.re/zotero-better-bibtex/][
    org-cite-follow-processor 'citar
    org-cite-activate-processor 'citar
    citar-bibliography org-cite-global-bibliography)
+  (setq org-cite-export-processors
+        '((latex bibtex "numeric")))
+  (setq citar-library-paths
+        '("~/30-39 Life/33 Library/33.01 Documents/"))
   (add-hook 'latex-mode #'citar-capf-setup)
   (add-hook 'org-mode #'citar-capf-setup))
 
@@ -6579,6 +6591,8 @@ Also, at some point the package loaded Helm on start, so I exclude these files f
 (use-package org-ref
   :straight (:files (:defaults "citeproc" (:exclude "*helm*")))
   :if (not my/remote-server)
+  :commands (org-ref-insert-link-hydra/body
+             org-ref-bibtex-hydra/body)
   :init
   (setq bibtex-dialect 'biblatex)
   (add-hook 'bibtex-mode 'smartparens-mode)
@@ -9330,253 +9344,6 @@ by the `my/elfeed-youtube-subtitles' function."
 #+end_src
 
 Keep in mind that this function has to be launched inside the buffer opened by the =my/elfeed-youtube-subtitles= function.
-*** Podcast transcripts
-In my experience, finding something in a podcast can be particularly troublesome. For instance, at times, I want to refer to a specific line in the podcast to make an [[https://github.com/org-roam/org-roam][org-roam]] node, and I need to check if I got that part right. And I have no reasonable way to get there because audio files, in themselves, don't allow for [[https://en.wikipedia.org/wiki/Random_access][random access]], i.e. there are no "landmarks" that point to a particular portion of the file. At least if nothing like a transcript is available.
-
-For obvious reasons, podcasts rarely ship with transcripts. So in this +post+ section I'll be using a speech recognition engine to make up for that. The general idea is to obtain the podcast information from [[https://github.com/skeeto/elfeed][elfeed]], process it with [[https://github.com/openai/whisper][OpenAI Whisper]] and feed it to [[https://github.com/sachac/subed][subed]] to control the playback in [[https://mpv.io/][MPV]].
-
-Edit <2022-10-08 Sat>: Changed [[https://github.com/alphacep/vosk-api][vosk-api]] to OpenAI Whisper.
-
-**** Whisper
-[[https://github.com/openai/whisper][OpenAI Whisper]] is an amazing speech recognition toolkit.
-
-The implementation by OpenAI is rather slow on my PC (speed around 0.75 on tiny.en), but [[https://github.com/ggerganov/whisper.cpp][whisper.cpp]] by Georgi Gerganov works much faster (5.9x). I've packaged the latter for Guix.
-
-| Guix dependency |
-|-----------------|
-| whisper-cpp     |
-
-**** Running it from Emacs
-Running the program from Emacs is rather straightforward with [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Asynchronous-Processes.html][asyncronous processes]].
-
-I'm using an English-language-only model because that's the only language I need at the moment.
-
-#+begin_src emacs-lisp
-(defun my/invoke-whisper--direct (input output-dir &optional remove-wav)
-  "Extract subtitles from a WAV audio file.
-
-INPUT is the absolute path to audio file, OUTPUT-DIR is the path to
-the directory with resulting files."
-  (let* ((default-directory output-dir)
-         (buffer (generate-new-buffer "whisper"))
-         (proc (start-process
-                "whisper" buffer
-                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-medium.bin"
-                "-otxt" "-ovtt" "-osrt" "-l" "auto" input)))
-    (set-process-sentinel
-     proc
-     (lambda (process _msg)
-       (let ((status (process-status process))
-             (code (process-exit-status process)))
-         (cond ((and (eq status 'exit) (= code 0))
-                (notifications-notify :body "Audio conversion completed"
-                                      :title "Whisper")
-                (when remove-wav
-                  (delete-file input))
-                (dolist (extension '(".txt" ".vtt" ".srt"))
-                  (rename-file (concat input extension)
-                               (concat (file-name-sans-extension input) extension)))
-                (kill-buffer (process-buffer process)))
-               ((or (and (eq status 'exit) (> code 0))
-                    (eq status 'signal))
-                (let ((err (with-current-buffer (process-buffer process)
-                             (buffer-string))))
-                  (user-error "Error in Whisper: %s" err)))))))))
-
-(defun my/invoke-whisper (input output-dir)
-  "Extract subtitles from the audio file.
-
-INPUT is the absolute path to the audio file, OUTPUT-DIR is the path
-to the directory with resulting files.
-
-Run ffmpeg if the file is not WAV."
-  (interactive
-   (list
-    (read-file-name "Input file: " nil nil t)
-    (read-directory-name "Output directory: ")))
-  (if (string-match-p (rx ".wav" eos) input)
-      (my/invoke-whisper--direct input output-dir)
-    (let* ((ffmpeg-proc
-            (start-process
-             "ffmpef" nil "ffmpeg" "-i" input "-ar" "16000" "-ac" "1" "-c:a"
-             "pcm_s16le" (concat (file-name-sans-extension input) ".wav"))))
-      (set-process-sentinel
-       ffmpeg-proc
-       (lambda (process _msg)
-         (let ((status (process-status process))
-               (code (process-exit-status process)))
-           (cond ((and (eq status 'exit) (= code 0))
-                  (my/invoke-whisper--direct
-                   (concat (file-name-sans-extension input) ".wav") output-dir t))
-                 ((or (and (eq status 'exit) (> code 0))
-                      (eq status 'signal))
-                  (let ((err (with-current-buffer (process-buffer process)
-                               (buffer-string))))
-                    (user-error "Error in running ffmpeg: %s" err))))))))))
-#+end_src
-
-If run interactively, the defined function prompts for paths to both files.
-
-The process sentinel sends a [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Desktop-Notifications.html][desktop notification]] because it's a bit more noticeable than =message=, and the process is expected to take some time.
-
-**** Integrating with elfeed
-To actually run the function from the section above, we need to download the file in question.
-
-The =whisper= executable, given the file =<file>.<extension>=, creates files named =<file>.vtt=, =<file>.srt=, =<file>.txt=. So first we need to save the file under the correct name.
-
-I use a library called [[https://github.com/tkf/emacs-request][request.el]] to download files elsewhere, so I'll re-use it here. You can just as well invoke =curl= or =wget= via a asynchronous process.
-
-This function downloads the file to a non-temporary folder, which is =~/.elfeed/podcast-files/= if you didn't move the elfeed database. That is so because a permanently downloaded file works better for the next section.
-
-#+begin_src emacs-lisp
-(with-eval-after-load 'elfeed
-  (defvar my/elfeed-whisper-podcast-files-directory
-    (concat elfeed-db-directory "/podcast-files/")))
-
-(defun my/elfeed-whisper-get-transcript-new (entry)
-  (interactive (list elfeed-show-entry))
-  (let* ((url (caar (elfeed-entry-enclosures entry)))
-         (file-name (concat
-                     (elfeed-ref-id (elfeed-entry-content entry))
-                     "."
-                     (file-name-extension url)))
-         (file-path (expand-file-name
-                     (concat
-                      my/elfeed-whisper-podcast-files-directory
-                      file-name))))
-    (message "Download started")
-    (unless (file-exists-p my/elfeed-whisper-podcast-files-directory)
-      (mkdir my/elfeed-whisper-podcast-files-directory))
-    (request url
-      :type "GET"
-      :encoding 'binary
-      :complete
-      (cl-function
-       (lambda (&key data &allow-other-keys)
-         (let ((coding-system-for-write 'binary)
-               (write-region-annotate-functions nil)
-               (write-region-post-annotation-function nil))
-           (write-region data nil file-path nil :silent))
-         (message "Conversion started")
-         (my/invoke-whisper file-path my/elfeed-srt-dir)))
-      :error
-      (cl-function
-       (lambda (&key error-thrown &allow-other-keys)
-         (message "Error!: %S" error-thrown))))))
-#+end_src
-
-I also experimented with a bunch of options to write binary data in Emacs, of which the way with =write-region= (as implemented in [[https://github.com/rejeep/f.el][f.el]]) seems to be the fastest. [[https://emacs.stackexchange.com/questions/59449/how-do-i-save-raw-bytes-into-a-file][This thread on StackExchange]] suggests that it may screw some bytes towards the end, but whether or not this is the case, mp3 files survive the procedure. The proposed solution with =seq-doseq= takes at least a few seconds.
-
-As =my/invoke-whisper= creates multiple files, here's a function to select related files:
-#+begin_src emacs-lisp
-(defun my/elfeed-show-related-files (entry)
-  (interactive (list elfeed-show-entry))
-  (let* ((files
-          (mapcar
-           (lambda (file) (cons (file-name-extension file) file))
-           (seq-filter
-            (lambda (file)
-              (string-match-p
-               (rx bos (literal (elfeed-ref-id (elfeed-entry-content entry))) ".")
-               file))
-            (directory-files my/elfeed-srt-dir))))
-         (buffer
-          (find-file-other-window
-           (concat
-            my/elfeed-srt-dir
-            (alist-get
-             (completing-read "File: " files)
-             files nil nil #'equal)))))
-    (with-current-buffer buffer
-      (setq-local elfeed-show-entry entry))))
-#+end_src
-
-Finally, we need a function to show the transcript if it exists or invoke =my/elfeed-whisper-get-transcript-new= if it doesn't. And this is the function that we'll call from an =elfeed-entry= buffer.
-
-#+begin_src emacs-lisp
-(defun my/elfeed-whisper-get-transcript (entry)
-  "Retrieve transcript for the enclosure of the current elfeed ENTRY."
-  (interactive (list elfeed-show-entry))
-  (let ((enclosure (caar (elfeed-entry-enclosures entry))))
-    (unless enclosure
-      (user-error "No enclosure found!"))
-    (let ((srt-path (concat my/elfeed-srt-dir
-                            (elfeed-ref-id (elfeed-entry-content entry))
-                            ".srt")))
-      (if (file-exists-p srt-path)
-          (let ((buffer (find-file-other-window srt-path)))
-            (with-current-buffer buffer
-              (setq-local elfeed-show-entry entry)))
-        (my/elfeed-whisper-get-transcript-new entry)))))
-#+end_src
-
-**** Integrating with subed
-Now that we've produced a =.srt= file, we can use a package called [[https://github.com/sachac/subed][subed]] to control the playback, as I had done in the previous post.
-
-By the way, this wasn't the most straightforward thing to figure out, because the MPV window doesn't show up for an audio file, and the player itself starts in the paused state. So I thought nothing was happening until I enabled the debug log.
-
-With that in mind, here's a function to launch MPV from the buffer generated by =my/elfeed-whisper-get-transcript=:
-#+begin_src emacs-lisp
-(defun my/elfeed-whisper-subed (entry)
-  "Run MPV for the current Whisper-generated subtitles file.
-
-ENTRY is an instance of `elfeed-entry'."
-  (interactive (list elfeed-show-entry))
-  (unless entry
-    (user-error "No entry!"))
-  (unless (derived-mode-p 'subed-mode)
-    (user-error "Not subed mode!"))
-  (setq-local subed-mpv-video-file
-              (expand-file-name
-               (concat my/elfeed-whisper-podcast-files-directory
-                       (my/get-file-name-from-url
-                        (caar (elfeed-entry-enclosures entry))))))
-  (subed-mpv--play subed-mpv-video-file))
-#+end_src
-
-After running =M-x my/elfeed-whisper-subed=, run =M-x subed-toggle-loop-over-current-subtitle= (=C-c C-l=), because somehow it's turned on by default, and =M-x subed-toggle-pause-while-typing= (=C-c C-p=), because sometimes this made my instance of MPV lag.
-
-After that, =M-x subed-mpv-toggle-pause= should start the playback, which you can control by moving the cursor in the buffer.
-
-You can also run =M-x subed-toggle-sync-point-to-player= (=C-c .=) to toggle syncing the point in the buffer to the currently played subtitle (this automatically gets disabled when you switch buffers).
-
-Running =M-x subed-toggle-sync-player-to-point= (=C-c ,=) does the opposite, i.e. sets the player position to the subtitle under point. These two functions are useful since the MPV window controls aren't available.
-
-**** Running it for random files
-Apparently I also need to run whisper for random files from the Internet.
-
-#+begin_src emacs-lisp
-(defun my/whisper-url (url file-name output-dir)
-  (interactive
-   (list (read-from-minibuffer "URL: ")
-         (read-from-minibuffer "File name: ")
-         (read-directory-name "Output directory: ")))
-  (let ((file-path
-         (concat output-dir file-name "." (file-name-extension url))))
-    (message "Download started")
-    (request url
-      :type "GET"
-      :encoding 'binary
-      :complete
-      (cl-function
-       (lambda (&key data &allow-other-keys)
-         (let ((coding-system-for-write 'binary)
-               (write-region-annotate-functions nil)
-               (write-region-post-annotation-function nil))
-           (write-region data nil file-path nil :silent))
-         (message "Conversion started")
-         (my/invoke-whisper file-path output-dir)))
-      :error
-      (cl-function
-       (lambda (&key error-thrown &allow-other-keys)
-         (message "Error!: %S" error-thrown))))))
-#+end_src
-**** Some observations
-So, the functions above work for my purposes.
-
-Vosk API works much faster than Whisper. The smallest Vosk model requires ~10 times less than the playback time, and even the =tiny.en= Whisper model on my PC requires maybe 1.2x playback time.
-
-However, the quality of the output for Whisper is just so much better so I consider it to be worth the wait. Even with the =tiny= model, the transcript is almost perfect, provided that the audio is of reasonable quality.
 ** Internet & Multimedia
 *** Notmuch
 My notmuch config now resides in [[file:Mail.org][Mail.org]].
@@ -11146,12 +10913,15 @@ There is a package called =devdocs= that does more or less the same, but I like 
   (add-hook 'sx-question-mode-hook #'doom-modeline-mode)
   (add-hook 'sx-question-list-mode-hook #'doom-modeline-mode))
 #+end_src
-** LLM
-Trying out LLM integrations.
+** Not-an-AI
+Workflows, which are sometimes referred as "AI", go in here.
 
-I don't have access to any proprietary APIs, but LLaMA 3 8b with [[https://ollama.com/][ollama]] works for some purposes.
+I'm technically writing a PhD on a related topic, so I'm a bit more receptive towards the whole thing than most of the community. But I'm still not calling it AI.
 
-*** gptel
+*** LLMs
+I don't have access to any proprietary APIs, but LLaMA 3.1 8b with [[https://ollama.com/][ollama]] works for some purposes.
+
+**** gptel
 [[https://github.com/karthink/gptel][gtpel]] is a package that provides an interface to chat with LLMs.
 
 #+begin_src emacs-lisp
@@ -11169,10 +10939,9 @@ I don't have access to any proprietary APIs, but LLaMA 3 8b with [[https://ollam
   (setq gptel-backend (gptel-make-ollama "Ollama"
                         :host "localhost:11434"
                         :stream t
-                        :models '("llama3:latest" "llama3-gradient"
-                                  "llama3:instruct")))
+                        :models '("llama3.1:latest" "llama3.1:instruct")))
 
-  (my/gptel-switch-backend "llama3:latest")
+  ;; (my/gptel-switch-backend "llama3.1:latest")
   (general-define-key
    :keymaps '(gptel-mode-map)
    :states '(insert normal)
@@ -11186,7 +10955,7 @@ I don't have access to any proprietary APIs, but LLaMA 3 8b with [[https://ollam
     :stream t))
 #+end_src
 
-*** ellama
+**** ellama
 [[https://github.com/s-kostyaev/ellama][ellama]] provides commands that feed things from Emacs buffers into LLMs with various prompts.
 
 #+begin_src emacs-lisp
@@ -11203,15 +10972,15 @@ I don't have access to any proprietary APIs, but LLaMA 3 8b with [[https://ollam
     "aie" '(:wk "ellama" :keymap ellama-command-map))
 
   (setq ellama-provider (make-llm-ollama
-                         :chat-model "llama3:instruct"
-                         :embedding-model "llama3:instruct"))
+                         :chat-model "llama3.1:instruct"
+                         :embedding-model "llama3.1:instruct"))
   (setq ellama-providers
-        `(("llama3:8b" . ,(make-llm-ollama
-                           :chat-model "llama3:latest"
-                           :embedding-model "llama3:latest"))
-          ("llama3:instruct" . ,(make-llm-ollama
-                                 :chat-model "llama3:instruct"
-                                 :embedding-model "llama3:instruct")))))
+        `(("llama3.1:8b" . ,(make-llm-ollama
+                           :chat-model "llama3.1:latest"
+                           :embedding-model "llama3.1:latest"))
+          ("llama3.1:instruct" . ,(make-llm-ollama
+                                 :chat-model "llama3.1:instruct"
+                                 :embedding-model "llama3.1:instruct")))))
 #+end_src
 
 The keybindings are a bit crazy to use even with =which-key=, so here goes transient.el.
@@ -11349,8 +11118,319 @@ Also, a prompt to make a text more concise.
   (my/ellama-text-with-diff text is-org-mode my/ellama-improve-concise-prompt))
 #+end_src
 
-**** Other thoughts
-- =ellama-code-complete= is pretty good to write migrations
+*** Podcast transcripts
+In my experience, finding something in a podcast can be particularly troublesome. For instance, at times, I want to refer to a specific line in the podcast to make an [[https://github.com/org-roam/org-roam][org-roam]] node, and I need to check if I got that part right. And I have no reasonable way to get there because audio files, in themselves, don't allow for [[https://en.wikipedia.org/wiki/Random_access][random access]], i.e. there are no "landmarks" that point to a particular portion of the file. At least if nothing like a transcript is available.
+
+For obvious reasons, podcasts rarely ship with transcripts. So in this +post+ section I'll be using a speech recognition engine to make up for that. The general idea is to obtain the podcast information from [[https://github.com/skeeto/elfeed][elfeed]], process it with [[https://github.com/openai/whisper][OpenAI Whisper]] and feed it to [[https://github.com/sachac/subed][subed]] to control the playback in [[https://mpv.io/][MPV]].
+
+Edit <2022-10-08 Sat>: Changed [[https://github.com/alphacep/vosk-api][vosk-api]] to OpenAI Whisper.
+
+Edit <2024-11-10 Sun>: Moved from elfeed to Not-an-AI, reworked to use [[https://github.com/Vaibhavs10/insanely-fast-whisper][insanely-fast-whisper]].
+
+**** Whisper
+[[https://github.com/openai/whisper][OpenAI Whisper]] is an amazing speech recognition toolkit.
+
+I previously used [[https://github.com/ggerganov/whisper.cpp][whisper.cpp]] by Georgi Gerganov, but have switched to [[https://github.com/Vaibhavs10/insanely-fast-whisper][insanely-fast-whisper]] since it's easier to run on GPU, it doesn't require converting everything to WAV, and it includes speaker diarization capabilities.
+
+One disadvantage is that it doesn't produce human-readable output by default, so I make my own.
+
+| Guix dependency | Disabled |
+|-----------------+----------|
+| whisper-cpp     | t        |
+
+**** Running it from Emacs
+First, some functions to process the output. These take a JSON formed by =insanely-fast-whisper= and create a set of files:
+- a TXT file with the full text;
+- a VTT file;
+- if speaker info is available:
+  - a TXT file with speaker tags;
+  - a VTT file with speaker tags.
+
+#+begin_src emacs-lisp
+(defun my/whisper--format-vtt-seconds (seconds)
+  (let* ((hours (/ (floor seconds) (* 60 60)))
+         (minutes (/ (- (floor seconds) (* hours 60 60)) 60))
+         (sec (% (floor seconds) 60))
+         (ms (floor (* 1000 (- seconds (floor seconds))))))
+    (format "%.2d:%.2d:%.2d.%.3d" hours minutes sec ms)))
+
+(defun my/whisper--save-chucks-vtt (path data)
+  (with-temp-file path
+    (insert "WEBVTT\n\n")
+    (cl-loop for chunk across (alist-get 'chunks data)
+             for start = (my/whisper--format-vtt-seconds
+                          (aref (alist-get 'timestamp chunk) 0))
+             for end = (my/whisper--format-vtt-seconds
+                        (aref (alist-get 'timestamp chunk) 1))
+             do (insert (format "%s --> %s" start end) "\n")
+             do (insert (string-trim (alist-get 'text chunk)) "\n\n"))))
+
+(defun my/whisper--save-speakers-vtt (path data)
+  (with-temp-file path
+    (insert "WEBVTT\n\n")
+    (cl-loop for chunk across (alist-get 'speakers data)
+             for start = (my/whisper--format-vtt-seconds
+                          (aref (alist-get 'timestamp chunk) 0))
+             for end = (my/whisper--format-vtt-seconds
+                        (aref (alist-get 'timestamp chunk) 1))
+             do (insert (format "%s --> %s" start end) "\n")
+             do (insert
+                 (format "<v %s>" (alist-get 'speaker chunk))
+                 (string-trim (alist-get 'text chunk)) "\n\n"))))
+
+(defun my/whisper--save-speakers-txt (path data)
+  (with-temp-file path
+    (cl-loop with prev-speaker
+             for chunk across (alist-get 'speakers data)
+             for speaker = (alist-get 'speaker chunk)
+             if (not (equal speaker prev-speaker))
+             do (progn
+                  (when prev-speaker
+                    (fill-region
+                     (line-beginning-position)
+                     (line-end-position))
+                    (insert "\n\n"))
+                  (insert (format "[%s]" speaker) "\n")
+                  (setq prev-speaker speaker))
+             do (insert (string-trim (alist-get 'text chunk)) " "))
+    (fill-region
+     (line-beginning-position)
+     (line-end-position))))
+
+(defun my/whisper--process-output (transcript-path)
+  (let ((data (json-read-file transcript-path)))
+    (when (alist-get 'text data)
+      (with-temp-file (concat
+                       (file-name-sans-extension transcript-path)
+                       ".txt")
+        (insert (string-trim (alist-get 'text data)))
+        (do-auto-fill)))
+    (unless (seq-empty-p (alist-get 'speakers data))
+      (my/whisper--save-speakers-vtt
+       (concat (file-name-sans-extension transcript-path) "-spk.vtt")
+       data)
+      (my/whisper--save-speakers-txt
+       (concat (file-name-sans-extension transcript-path) "-spk.txt")
+       data))
+    (my/whisper--save-chucks-vtt
+     (concat (file-name-sans-extension transcript-path) ".vtt")
+     data)))
+#+end_src
+
+Then run the program itself with [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Asynchronous-Processes.html][asyncronous processes]].
+
+#+begin_src emacs-lisp
+(defvar my/whisper-path
+  "/home/pavel/micromamba/envs/insanely-fast-whisper/bin/insanely-fast-whisper")
+
+(defun my/invoke-whisper (input output-dir &optional language num-speakers)
+  (interactive
+   (list
+    (read-file-name "Input file:" nil nil t)
+    (read-directory-name "Output-directory: ")
+    (let ((lang (read-string "Language (optional): ")))
+      (if (string-empty-p lang) nil lang))
+    (let ((num (read-number "Number of speakers (optional): " 0)))
+      (when (> num 0)
+        (number-to-string num)))))
+  (let* ((transcript-path (concat
+                           (expand-file-name (file-name-as-directory output-dir))
+                           (file-name-base input)
+                           ".json"))
+         (args
+          `("--file-name" ,(expand-file-name input)
+            "--transcript-path" ,transcript-path
+            "--hf-token" ,(my/password-store-get-field "My_Online/Accounts/huggingface.co" "token")
+            ,@(when language
+                `("--language" ,language))
+            ,@(when num-speakers
+                `("--num-speakers" ,num-speakers))))
+         (buffer (generate-new-buffer "*whisper*"))
+         (proc (apply #'start-process "whisper" buffer my/whisper-path args)))
+    (set-process-sentinel
+     proc
+     (lambda (process _msg)
+       (let ((status (process-status process))
+             (code (process-exit-status process)))
+         (cond ((and (eq status 'exit) (= code 0))
+                (my/whisper--process-output transcript-path)
+                (notifications-notify :body "Audio conversion completed"
+                                      :title "Whisper")
+                (kill-buffer (process-buffer process)))
+               ((or (and (eq status 'exit) (> code 0))
+                    (eq status 'signal))
+                (let ((err (with-current-buffer (process-buffer process)
+                             (buffer-string))))
+                  (user-error "Error in Whisper: %s" err)))))))))
+#+end_src
+
+If run interactively, the defined function prompts for paths to both files.
+
+The process sentinel sends a [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Desktop-Notifications.html][desktop notification]] because it's a bit more noticeable than =message=, and the process is expected to take some time.
+
+**** Integrating with elfeed
+To actually run the function from the section above, we need to download the file in question.
+
+The =whisper= executable, given the file =<file>.<extension>=, creates files named =<file>.vtt=, =<file>.srt=, =<file>.txt=. So first we need to save the file under the correct name.
+
+I use a library called [[https://github.com/tkf/emacs-request][request.el]] to download files elsewhere, so I'll re-use it here. You can just as well invoke =curl= or =wget= via a asynchronous process.
+
+This function downloads the file to a non-temporary folder, which is =~/.elfeed/podcast-files/= if you didn't move the elfeed database. That is so because a permanently downloaded file works better for the next section.
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'elfeed
+  (defvar my/elfeed-whisper-podcast-files-directory
+    (concat elfeed-db-directory "/podcast-files/")))
+
+(defun my/elfeed-whisper-get-transcript-new (entry)
+  (interactive (list elfeed-show-entry))
+  (let* ((url (caar (elfeed-entry-enclosures entry)))
+         (file-name (concat
+                     (elfeed-ref-id (elfeed-entry-content entry))
+                     "."
+                     (file-name-extension url)))
+         (file-path (expand-file-name
+                     (concat
+                      my/elfeed-whisper-podcast-files-directory
+                      file-name))))
+    (message "Download started")
+    (unless (file-exists-p my/elfeed-whisper-podcast-files-directory)
+      (mkdir my/elfeed-whisper-podcast-files-directory))
+    (request url
+      :type "GET"
+      :encoding 'binary
+      :complete
+      (cl-function
+       (lambda (&key data &allow-other-keys)
+         (let ((coding-system-for-write 'binary)
+               (write-region-annotate-functions nil)
+               (write-region-post-annotation-function nil))
+           (write-region data nil file-path nil :silent))
+         (message "Conversion started")
+         (my/invoke-whisper file-path my/elfeed-srt-dir)))
+      :error
+      (cl-function
+       (lambda (&key error-thrown &allow-other-keys)
+         (message "Error!: %S" error-thrown))))))
+#+end_src
+
+I also experimented with a bunch of options to write binary data in Emacs, of which the way with =write-region= (as implemented in [[https://github.com/rejeep/f.el][f.el]]) seems to be the fastest. [[https://emacs.stackexchange.com/questions/59449/how-do-i-save-raw-bytes-into-a-file][This thread on StackExchange]] suggests that it may screw some bytes towards the end, but whether or not this is the case, mp3 files survive the procedure. The proposed solution with =seq-doseq= takes at least a few seconds.
+
+As =my/invoke-whisper= creates multiple files, here's a function to select related files:
+#+begin_src emacs-lisp
+(defun my/elfeed-show-related-files (entry)
+  (interactive (list elfeed-show-entry))
+  (let* ((files
+          (mapcar
+           (lambda (file) (cons (file-name-extension file) file))
+           (seq-filter
+            (lambda (file)
+              (string-match-p
+               (rx bos (literal (elfeed-ref-id (elfeed-entry-content entry))) ".")
+               file))
+            (directory-files my/elfeed-srt-dir))))
+         (buffer
+          (find-file-other-window
+           (concat
+            my/elfeed-srt-dir
+            (alist-get
+             (completing-read "File: " files)
+             files nil nil #'equal)))))
+    (with-current-buffer buffer
+      (setq-local elfeed-show-entry entry))))
+#+end_src
+
+Finally, we need a function to show the transcript if it exists or invoke =my/elfeed-whisper-get-transcript-new= if it doesn't. And this is the function that we'll call from an =elfeed-entry= buffer.
+
+#+begin_src emacs-lisp
+(defun my/elfeed-whisper-get-transcript (entry)
+  "Retrieve transcript for the enclosure of the current elfeed ENTRY."
+  (interactive (list elfeed-show-entry))
+  (let ((enclosure (caar (elfeed-entry-enclosures entry))))
+    (unless enclosure
+      (user-error "No enclosure found!"))
+    (let ((srt-path (concat my/elfeed-srt-dir
+                            (elfeed-ref-id (elfeed-entry-content entry))
+                            ".srt")))
+      (if (file-exists-p srt-path)
+          (let ((buffer (find-file-other-window srt-path)))
+            (with-current-buffer buffer
+              (setq-local elfeed-show-entry entry)))
+        (my/elfeed-whisper-get-transcript-new entry)))))
+#+end_src
+
+**** Integrating with subed
+Now that we've produced a =.srt= file, we can use a package called [[https://github.com/sachac/subed][subed]] to control the playback, as I have done in the YouTube section.
+
+By the way, this wasn't the most straightforward thing to figure out, because the MPV window doesn't show up for an audio file, and the player itself starts in the paused state. So I thought nothing was happening until I enabled the debug log.
+
+With that in mind, here's a function to launch MPV from the buffer generated by =my/elfeed-whisper-get-transcript=:
+#+begin_src emacs-lisp
+(defun my/elfeed-whisper-subed (entry)
+  "Run MPV for the current Whisper-generated subtitles file.
+
+ENTRY is an instance of `elfeed-entry'."
+  (interactive (list elfeed-show-entry))
+  (unless entry
+    (user-error "No entry!"))
+  (unless (derived-mode-p 'subed-mode)
+    (user-error "Not subed mode!"))
+  (setq-local subed-mpv-video-file
+              (expand-file-name
+               (concat my/elfeed-whisper-podcast-files-directory
+                       (my/get-file-name-from-url
+                        (caar (elfeed-entry-enclosures entry))))))
+  (subed-mpv--play subed-mpv-video-file))
+#+end_src
+
+After running =M-x my/elfeed-whisper-subed=, run =M-x subed-toggle-loop-over-current-subtitle= (=C-c C-l=), because somehow it's turned on by default, and =M-x subed-toggle-pause-while-typing= (=C-c C-p=), because sometimes this made my instance of MPV lag.
+
+After that, =M-x subed-mpv-toggle-pause= should start the playback, which you can control by moving the cursor in the buffer.
+
+You can also run =M-x subed-toggle-sync-point-to-player= (=C-c .=) to toggle syncing the point in the buffer to the currently played subtitle (this automatically gets disabled when you switch buffers).
+
+Running =M-x subed-toggle-sync-player-to-point= (=C-c ,=) does the opposite, i.e. sets the player position to the subtitle under point. These two functions are useful since the MPV window controls aren't available.
+
+**** Running it for Internet Files
+And since lately I don't listen to podcasts via elfeed that much, I also want a function that runs whisper on random Internet files.
+
+#+begin_src emacs-lisp
+(defun my/whisper-url (url file-name output-dir &optional language num-speakers)
+  (interactive
+   (list (read-from-minibuffer "URL: ")
+         (read-from-minibuffer "File name: ")
+         (read-directory-name "Output directory: ")
+         (let ((lang (read-string "Language (optional): ")))
+           (if (string-empty-p lang) nil lang))
+         (let ((num (read-number "Number of speakers (optional): " 0)))
+           (when (> num 0)
+             (number-to-string num)))))
+  (let ((file-path
+         (concat output-dir file-name "." (file-name-extension url))))
+    (message "Download started")
+    (request url
+      :type "GET"
+      :encoding 'binary
+      :complete
+      (cl-function
+       (lambda (&key data &allow-other-keys)
+         (let ((coding-system-for-write 'binary)
+               (write-region-annotate-functions nil)
+               (write-region-post-annotation-function nil))
+           (write-region data nil file-path nil :silent))
+         (message "Conversion started")
+         (my/invoke-whisper file-path output-dir language num-speakers)))
+      :error
+      (cl-function
+       (lambda (&key error-thrown &allow-other-keys)
+         (message "Error!: %S" error-thrown))))))
+#+end_src
+**** Some observations
+So, the functions above work for my purposes.
+
+Vosk API works much faster than Whisper. The smallest Vosk model requires ~10 times less than the playback time, and even the =tiny.en= Whisper model on my PC requires maybe 1.2x playback time.
+
+However, the quality of the output for Whisper is just so much better so I consider it to be worth the wait. Even with the =tiny= model, the transcript is almost perfect, provided that the audio is of reasonable quality.
 ** Declarative filesystem management
 My filesystem is, shall we say, not the most orderly place.
 

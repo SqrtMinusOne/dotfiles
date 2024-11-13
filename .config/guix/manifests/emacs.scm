@@ -11,7 +11,6 @@
    "tdlib-1.8.16"
    "yt-dlp"
    "mpv"
-   "whisper-cpp"
    "python-youtube-transcript-api"
    "rdrview"
    "graphviz"

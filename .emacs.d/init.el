@@ -924,7 +924,11 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (advice-add 'company-capf :around #'company-completion-styles))
 
 (use-package consult
-  :straight t)
+  :straight t
+  :config
+  (setq consult-preview-excluded-files
+        `("\\`/[^/|:]+:"
+          ,(rx "html" eos))))
 
 (use-package marginalia
   :straight t
@@ -4782,6 +4786,10 @@ KEYS is a list of cons cells like (<label> . <time>)."
    org-cite-follow-processor 'citar
    org-cite-activate-processor 'citar
    citar-bibliography org-cite-global-bibliography)
+  (setq org-cite-export-processors
+        '((latex bibtex "numeric")))
+  (setq citar-library-paths
+        '("~/30-39 Life/33 Library/33.01 Documents/"))
   (add-hook 'latex-mode #'citar-capf-setup)
   (add-hook 'org-mode #'citar-capf-setup))
 
@@ -4794,6 +4802,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (use-package org-ref
   :straight (:files (:defaults "citeproc" (:exclude "*helm*")))
   :if (not my/remote-server)
+  :commands (org-ref-insert-link-hydra/body
+             org-ref-bibtex-hydra/body)
   :init
   (setq bibtex-dialect 'biblatex)
   (add-hook 'bibtex-mode 'smartparens-mode)
@@ -6722,180 +6732,6 @@ by the `my/elfeed-youtube-subtitles' function."
   (setq-local subed-mpv-video-file (elfeed-entry-link entry))
   (subed-mpv--play subed-mpv-video-file))
 
-(defun my/invoke-whisper--direct (input output-dir &optional remove-wav)
-  "Extract subtitles from a WAV audio file.
-
-INPUT is the absolute path to audio file, OUTPUT-DIR is the path to
-the directory with resulting files."
-  (let* ((default-directory output-dir)
-         (buffer (generate-new-buffer "whisper"))
-         (proc (start-process
-                "whisper" buffer
-                "whisper-cpp" "--model" "/home/pavel/.whisper/ggml-medium.bin"
-                "-otxt" "-ovtt" "-osrt" "-l" "auto" input)))
-    (set-process-sentinel
-     proc
-     (lambda (process _msg)
-       (let ((status (process-status process))
-             (code (process-exit-status process)))
-         (cond ((and (eq status 'exit) (= code 0))
-                (notifications-notify :body "Audio conversion completed"
-                                      :title "Whisper")
-                (when remove-wav
-                  (delete-file input))
-                (dolist (extension '(".txt" ".vtt" ".srt"))
-                  (rename-file (concat input extension)
-                               (concat (file-name-sans-extension input) extension)))
-                (kill-buffer (process-buffer process)))
-               ((or (and (eq status 'exit) (> code 0))
-                    (eq status 'signal))
-                (let ((err (with-current-buffer (process-buffer process)
-                             (buffer-string))))
-                  (user-error "Error in Whisper: %s" err)))))))))
-
-(defun my/invoke-whisper (input output-dir)
-  "Extract subtitles from the audio file.
-
-INPUT is the absolute path to the audio file, OUTPUT-DIR is the path
-to the directory with resulting files.
-
-Run ffmpeg if the file is not WAV."
-  (interactive
-   (list
-    (read-file-name "Input file: " nil nil t)
-    (read-directory-name "Output directory: ")))
-  (if (string-match-p (rx ".wav" eos) input)
-      (my/invoke-whisper--direct input output-dir)
-    (let* ((ffmpeg-proc
-            (start-process
-             "ffmpef" nil "ffmpeg" "-i" input "-ar" "16000" "-ac" "1" "-c:a"
-             "pcm_s16le" (concat (file-name-sans-extension input) ".wav"))))
-      (set-process-sentinel
-       ffmpeg-proc
-       (lambda (process _msg)
-         (let ((status (process-status process))
-               (code (process-exit-status process)))
-           (cond ((and (eq status 'exit) (= code 0))
-                  (my/invoke-whisper--direct
-                   (concat (file-name-sans-extension input) ".wav") output-dir t))
-                 ((or (and (eq status 'exit) (> code 0))
-                      (eq status 'signal))
-                  (let ((err (with-current-buffer (process-buffer process)
-                               (buffer-string))))
-                    (user-error "Error in running ffmpeg: %s" err))))))))))
-
-(with-eval-after-load 'elfeed
-  (defvar my/elfeed-whisper-podcast-files-directory
-    (concat elfeed-db-directory "/podcast-files/")))
-
-(defun my/elfeed-whisper-get-transcript-new (entry)
-  (interactive (list elfeed-show-entry))
-  (let* ((url (caar (elfeed-entry-enclosures entry)))
-         (file-name (concat
-                     (elfeed-ref-id (elfeed-entry-content entry))
-                     "."
-                     (file-name-extension url)))
-         (file-path (expand-file-name
-                     (concat
-                      my/elfeed-whisper-podcast-files-directory
-                      file-name))))
-    (message "Download started")
-    (unless (file-exists-p my/elfeed-whisper-podcast-files-directory)
-      (mkdir my/elfeed-whisper-podcast-files-directory))
-    (request url
-      :type "GET"
-      :encoding 'binary
-      :complete
-      (cl-function
-       (lambda (&key data &allow-other-keys)
-         (let ((coding-system-for-write 'binary)
-               (write-region-annotate-functions nil)
-               (write-region-post-annotation-function nil))
-           (write-region data nil file-path nil :silent))
-         (message "Conversion started")
-         (my/invoke-whisper file-path my/elfeed-srt-dir)))
-      :error
-      (cl-function
-       (lambda (&key error-thrown &allow-other-keys)
-         (message "Error!: %S" error-thrown))))))
-
-(defun my/elfeed-show-related-files (entry)
-  (interactive (list elfeed-show-entry))
-  (let* ((files
-          (mapcar
-           (lambda (file) (cons (file-name-extension file) file))
-           (seq-filter
-            (lambda (file)
-              (string-match-p
-               (rx bos (literal (elfeed-ref-id (elfeed-entry-content entry))) ".")
-               file))
-            (directory-files my/elfeed-srt-dir))))
-         (buffer
-          (find-file-other-window
-           (concat
-            my/elfeed-srt-dir
-            (alist-get
-             (completing-read "File: " files)
-             files nil nil #'equal)))))
-    (with-current-buffer buffer
-      (setq-local elfeed-show-entry entry))))
-
-(defun my/elfeed-whisper-get-transcript (entry)
-  "Retrieve transcript for the enclosure of the current elfeed ENTRY."
-  (interactive (list elfeed-show-entry))
-  (let ((enclosure (caar (elfeed-entry-enclosures entry))))
-    (unless enclosure
-      (user-error "No enclosure found!"))
-    (let ((srt-path (concat my/elfeed-srt-dir
-                            (elfeed-ref-id (elfeed-entry-content entry))
-                            ".srt")))
-      (if (file-exists-p srt-path)
-          (let ((buffer (find-file-other-window srt-path)))
-            (with-current-buffer buffer
-              (setq-local elfeed-show-entry entry)))
-        (my/elfeed-whisper-get-transcript-new entry)))))
-
-(defun my/elfeed-whisper-subed (entry)
-  "Run MPV for the current Whisper-generated subtitles file.
-
-ENTRY is an instance of `elfeed-entry'."
-  (interactive (list elfeed-show-entry))
-  (unless entry
-    (user-error "No entry!"))
-  (unless (derived-mode-p 'subed-mode)
-    (user-error "Not subed mode!"))
-  (setq-local subed-mpv-video-file
-              (expand-file-name
-               (concat my/elfeed-whisper-podcast-files-directory
-                       (my/get-file-name-from-url
-                        (caar (elfeed-entry-enclosures entry))))))
-  (subed-mpv--play subed-mpv-video-file))
-
-(defun my/whisper-url (url file-name output-dir)
-  (interactive
-   (list (read-from-minibuffer "URL: ")
-         (read-from-minibuffer "File name: ")
-         (read-directory-name "Output directory: ")))
-  (let ((file-path
-         (concat output-dir file-name "." (file-name-extension url))))
-    (message "Download started")
-    (request url
-      :type "GET"
-      :encoding 'binary
-      :complete
-      (cl-function
-       (lambda (&key data &allow-other-keys)
-         (let ((coding-system-for-write 'binary)
-               (write-region-annotate-functions nil)
-               (write-region-post-annotation-function nil))
-           (write-region data nil file-path nil :silent))
-         (message "Conversion started")
-         (my/invoke-whisper file-path output-dir)))
-      :error
-      (cl-function
-       (lambda (&key error-thrown &allow-other-keys)
-         (message "Error!: %S" error-thrown))))))
-
 (unless (or my/remote-server)
   (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
     (if (file-exists-p mail-file)
@@ -8135,10 +7971,9 @@ base toot."
   (setq gptel-backend (gptel-make-ollama "Ollama"
                         :host "localhost:11434"
                         :stream t
-                        :models '("llama3:latest" "llama3-gradient"
-                                  "llama3:instruct")))
+                        :models '("llama3.1:latest" "llama3.1:instruct")))
 
-  (my/gptel-switch-backend "llama3:latest")
+  ;; (my/gptel-switch-backend "llama3.1:latest")
   (general-define-key
    :keymaps '(gptel-mode-map)
    :states '(insert normal)
@@ -8164,15 +7999,15 @@ base toot."
     "aie" '(:wk "ellama" :keymap ellama-command-map))
 
   (setq ellama-provider (make-llm-ollama
-                         :chat-model "llama3:instruct"
-                         :embedding-model "llama3:instruct"))
+                         :chat-model "llama3.1:instruct"
+                         :embedding-model "llama3.1:instruct"))
   (setq ellama-providers
-        `(("llama3:8b" . ,(make-llm-ollama
-                           :chat-model "llama3:latest"
-                           :embedding-model "llama3:latest"))
-          ("llama3:instruct" . ,(make-llm-ollama
-                                 :chat-model "llama3:instruct"
-                                 :embedding-model "llama3:instruct")))))
+        `(("llama3.1:8b" . ,(make-llm-ollama
+                           :chat-model "llama3.1:latest"
+                           :embedding-model "llama3.1:latest"))
+          ("llama3.1:instruct" . ,(make-llm-ollama
+                                 :chat-model "llama3.1:instruct"
+                                 :embedding-model "llama3.1:instruct")))))
 
 (with-eval-after-load 'ellama
   (transient-define-prefix my/ellama-transient ()
@@ -8285,6 +8120,235 @@ base toot."
 (defun my/ellama-improve-concise (text is-org-mode)
   (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
   (my/ellama-text-with-diff text is-org-mode my/ellama-improve-concise-prompt))
+
+(defun my/whisper--format-vtt-seconds (seconds)
+  (let* ((hours (/ (floor seconds) (* 60 60)))
+         (minutes (/ (- (floor seconds) (* hours 60 60)) 60))
+         (sec (% (floor seconds) 60))
+         (ms (floor (* 1000 (- seconds (floor seconds))))))
+    (format "%.2d:%.2d:%.2d.%.3d" hours minutes sec ms)))
+
+(defun my/whisper--save-chucks-vtt (path data)
+  (with-temp-file path
+    (insert "WEBVTT\n\n")
+    (cl-loop for chunk across (alist-get 'chunks data)
+             for start = (my/whisper--format-vtt-seconds
+                          (aref (alist-get 'timestamp chunk) 0))
+             for end = (my/whisper--format-vtt-seconds
+                        (aref (alist-get 'timestamp chunk) 1))
+             do (insert (format "%s --> %s" start end) "\n")
+             do (insert (string-trim (alist-get 'text chunk)) "\n\n"))))
+
+(defun my/whisper--save-speakers-vtt (path data)
+  (with-temp-file path
+    (insert "WEBVTT\n\n")
+    (cl-loop for chunk across (alist-get 'speakers data)
+             for start = (my/whisper--format-vtt-seconds
+                          (aref (alist-get 'timestamp chunk) 0))
+             for end = (my/whisper--format-vtt-seconds
+                        (aref (alist-get 'timestamp chunk) 1))
+             do (insert (format "%s --> %s" start end) "\n")
+             do (insert
+                 (format "<v %s>" (alist-get 'speaker chunk))
+                 (string-trim (alist-get 'text chunk)) "\n\n"))))
+
+(defun my/whisper--save-speakers-txt (path data)
+  (with-temp-file path
+    (cl-loop with prev-speaker
+             for chunk across (alist-get 'speakers data)
+             for speaker = (alist-get 'speaker chunk)
+             if (not (equal speaker prev-speaker))
+             do (progn
+                  (when prev-speaker
+                    (fill-region
+                     (line-beginning-position)
+                     (line-end-position))
+                    (insert "\n\n"))
+                  (insert (format "[%s]" speaker) "\n")
+                  (setq prev-speaker speaker))
+             do (insert (string-trim (alist-get 'text chunk)) " "))
+    (fill-region
+     (line-beginning-position)
+     (line-end-position))))
+
+(defun my/whisper--process-output (transcript-path)
+  (let ((data (json-read-file transcript-path)))
+    (when (alist-get 'text data)
+      (with-temp-file (concat
+                       (file-name-sans-extension transcript-path)
+                       ".txt")
+        (insert (string-trim (alist-get 'text data)))
+        (do-auto-fill)))
+    (unless (seq-empty-p (alist-get 'speakers data))
+      (my/whisper--save-speakers-vtt
+       (concat (file-name-sans-extension transcript-path) "-spk.vtt")
+       data)
+      (my/whisper--save-speakers-txt
+       (concat (file-name-sans-extension transcript-path) "-spk.txt")
+       data))
+    (my/whisper--save-chucks-vtt
+     (concat (file-name-sans-extension transcript-path) ".vtt")
+     data)))
+
+(defvar my/whisper-path
+  "/home/pavel/micromamba/envs/insanely-fast-whisper/bin/insanely-fast-whisper")
+
+(defun my/invoke-whisper (input output-dir &optional language num-speakers)
+  (interactive
+   (list
+    (read-file-name "Input file:" nil nil t)
+    (read-directory-name "Output-directory: ")
+    (let ((lang (read-string "Language (optional): ")))
+      (if (string-empty-p lang) nil lang))
+    (let ((num (read-number "Number of speakers (optional): " 0)))
+      (when (> num 0)
+        (number-to-string num)))))
+  (let* ((transcript-path (concat
+                           (expand-file-name (file-name-as-directory output-dir))
+                           (file-name-base input)
+                           ".json"))
+         (args
+          `("--file-name" ,(expand-file-name input)
+            "--transcript-path" ,transcript-path
+            "--hf-token" ,(my/password-store-get-field "My_Online/Accounts/huggingface.co" "token")
+            ,@(when language
+                `("--language" ,language))
+            ,@(when num-speakers
+                `("--num-speakers" ,num-speakers))))
+         (buffer (generate-new-buffer "*whisper*"))
+         (proc (apply #'start-process "whisper" buffer my/whisper-path args)))
+    (set-process-sentinel
+     proc
+     (lambda (process _msg)
+       (let ((status (process-status process))
+             (code (process-exit-status process)))
+         (cond ((and (eq status 'exit) (= code 0))
+                (my/whisper--process-output transcript-path)
+                (notifications-notify :body "Audio conversion completed"
+                                      :title "Whisper")
+                (kill-buffer (process-buffer process)))
+               ((or (and (eq status 'exit) (> code 0))
+                    (eq status 'signal))
+                (let ((err (with-current-buffer (process-buffer process)
+                             (buffer-string))))
+                  (user-error "Error in Whisper: %s" err)))))))))
+
+(with-eval-after-load 'elfeed
+  (defvar my/elfeed-whisper-podcast-files-directory
+    (concat elfeed-db-directory "/podcast-files/")))
+
+(defun my/elfeed-whisper-get-transcript-new (entry)
+  (interactive (list elfeed-show-entry))
+  (let* ((url (caar (elfeed-entry-enclosures entry)))
+         (file-name (concat
+                     (elfeed-ref-id (elfeed-entry-content entry))
+                     "."
+                     (file-name-extension url)))
+         (file-path (expand-file-name
+                     (concat
+                      my/elfeed-whisper-podcast-files-directory
+                      file-name))))
+    (message "Download started")
+    (unless (file-exists-p my/elfeed-whisper-podcast-files-directory)
+      (mkdir my/elfeed-whisper-podcast-files-directory))
+    (request url
+      :type "GET"
+      :encoding 'binary
+      :complete
+      (cl-function
+       (lambda (&key data &allow-other-keys)
+         (let ((coding-system-for-write 'binary)
+               (write-region-annotate-functions nil)
+               (write-region-post-annotation-function nil))
+           (write-region data nil file-path nil :silent))
+         (message "Conversion started")
+         (my/invoke-whisper file-path my/elfeed-srt-dir)))
+      :error
+      (cl-function
+       (lambda (&key error-thrown &allow-other-keys)
+         (message "Error!: %S" error-thrown))))))
+
+(defun my/elfeed-show-related-files (entry)
+  (interactive (list elfeed-show-entry))
+  (let* ((files
+          (mapcar
+           (lambda (file) (cons (file-name-extension file) file))
+           (seq-filter
+            (lambda (file)
+              (string-match-p
+               (rx bos (literal (elfeed-ref-id (elfeed-entry-content entry))) ".")
+               file))
+            (directory-files my/elfeed-srt-dir))))
+         (buffer
+          (find-file-other-window
+           (concat
+            my/elfeed-srt-dir
+            (alist-get
+             (completing-read "File: " files)
+             files nil nil #'equal)))))
+    (with-current-buffer buffer
+      (setq-local elfeed-show-entry entry))))
+
+(defun my/elfeed-whisper-get-transcript (entry)
+  "Retrieve transcript for the enclosure of the current elfeed ENTRY."
+  (interactive (list elfeed-show-entry))
+  (let ((enclosure (caar (elfeed-entry-enclosures entry))))
+    (unless enclosure
+      (user-error "No enclosure found!"))
+    (let ((srt-path (concat my/elfeed-srt-dir
+                            (elfeed-ref-id (elfeed-entry-content entry))
+                            ".srt")))
+      (if (file-exists-p srt-path)
+          (let ((buffer (find-file-other-window srt-path)))
+            (with-current-buffer buffer
+              (setq-local elfeed-show-entry entry)))
+        (my/elfeed-whisper-get-transcript-new entry)))))
+
+(defun my/elfeed-whisper-subed (entry)
+  "Run MPV for the current Whisper-generated subtitles file.
+
+ENTRY is an instance of `elfeed-entry'."
+  (interactive (list elfeed-show-entry))
+  (unless entry
+    (user-error "No entry!"))
+  (unless (derived-mode-p 'subed-mode)
+    (user-error "Not subed mode!"))
+  (setq-local subed-mpv-video-file
+              (expand-file-name
+               (concat my/elfeed-whisper-podcast-files-directory
+                       (my/get-file-name-from-url
+                        (caar (elfeed-entry-enclosures entry))))))
+  (subed-mpv--play subed-mpv-video-file))
+
+(defun my/whisper-url (url file-name output-dir &optional language num-speakers)
+  (interactive
+   (list (read-from-minibuffer "URL: ")
+         (read-from-minibuffer "File name: ")
+         (read-directory-name "Output directory: ")
+         (let ((lang (read-string "Language (optional): ")))
+           (if (string-empty-p lang) nil lang))
+         (let ((num (read-number "Number of speakers (optional): " 0)))
+           (when (> num 0)
+             (number-to-string num)))))
+  (let ((file-path
+         (concat output-dir file-name "." (file-name-extension url))))
+    (message "Download started")
+    (request url
+      :type "GET"
+      :encoding 'binary
+      :complete
+      (cl-function
+       (lambda (&key data &allow-other-keys)
+         (let ((coding-system-for-write 'binary)
+               (write-region-annotate-functions nil)
+               (write-region-post-annotation-function nil))
+           (write-region data nil file-path nil :silent))
+         (message "Conversion started")
+         (my/invoke-whisper file-path output-dir language num-speakers)))
+      :error
+      (cl-function
+       (lambda (&key error-thrown &allow-other-keys)
+         (message "Error!: %S" error-thrown))))))
 
 (use-package ini
   :mode "\\.ini\\'"
