@@ -90,7 +90,7 @@
          (encrypt))))
 
 (defun my/message-insert-signature-need-on-top ()
-  nil)
+  t)
 
 (defun my/message-maybe-fix-signature (&rest _)
   (when (my/message-insert-signature-need-on-top)

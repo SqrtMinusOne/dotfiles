@@ -561,7 +561,7 @@ Edit <2024-08-19 Mon>: see above
 
 #+begin_src emacs-lisp
 (defun my/message-insert-signature-need-on-top ()
-  nil)
+  t)
 #+end_src
 
 Then advice the =notmuch-mua-reply= function:
