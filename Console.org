@@ -960,6 +960,7 @@ keymap_mode = "vim-insert"
 | megacmd         | mega.nz client                              |
 | ncdu            | disk usage analyzer                         |
 | openssl         |                                             |
+| aria2           | Download tool                               |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.

@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "aria2"
    "openssl"
    "ncdu"
    "megacmd"
