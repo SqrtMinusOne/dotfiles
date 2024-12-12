@@ -169,9 +169,8 @@ Setting the default MIME types
 #+begin_src conf-unix :tangle ~/.config/mimeapps.list
 [Default Applications]
 text/html=qutebrowser.desktop
-x-scheme-handler/http=io.github.zen_browser.zen.desktop
-x-scheme-handler/https=io.github.zen_browser.zen.desktop
-x-scheme-handler/about=io.github.zen_browser.zen.desktop
+x-scheme-handler/http=firefox.desktop
+x-scheme-handler/https=firefox.desktop
 x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
 image/png=com.interversehq.qView.desktop
 image/jpg=com.interversehq.qView.desktop
@@ -933,15 +932,15 @@ A +transient+ hydra for shortcuts for the most frequent apps.
   "
 ^Apps^
 _t_: Terminal (Alacritty)
-_b_: Browser (Zen)
+_b_: Browser (Firefox)
 _s_: Rocket.Chat
-_e_: Telegram
+_e_: Element
 _d_: Discord
 "
   ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
-  ("b" (lambda () (interactive) (my/run-in-background "flatpak run io.github.zen_browser.zen")))
+  ("b" (lambda () (interactive) (my/run-in-background "firefox")))
   ("s" (lambda () (interactive) (my/run-in-background "flatpak run chat.rocket.RocketChat")))
-  ("e" (lambda () (interactive) (my/run-in-background "telegram-desktop")))
+  ("e" (lambda () (interactive) (my/run-in-background "flatpak run im.riot.Riot")))
   ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
 #+end_src
 *** Locking up
@@ -4579,7 +4578,7 @@ nix-env -I opensnitchd opensnitch-ui
   (make <service>
     #:provides '(ollama)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/bin/ollama" "serve"))
+    #:start (make-forkexec-constructor '("ollama" "serve"))
     #:stop (make-kill-destructor)))
 #+end_src
 

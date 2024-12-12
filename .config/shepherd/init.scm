@@ -122,7 +122,7 @@
   (make <service>
     #:provides '(ollama)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/bin/ollama" "serve"))
+    #:start (make-forkexec-constructor '("ollama" "serve"))
     #:stop (make-kill-destructor)))
 
 (register-services
