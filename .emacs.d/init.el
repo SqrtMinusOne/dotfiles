@@ -1723,6 +1723,7 @@ targets."
   (setq lsp-headerline-breadcrumb-enable nil)
   (setq lsp-modeline-code-actions-enable nil)
   (setq lsp-modeline-diagnostics-enable nil)
+  (setq lsp-volar-take-over-mode nil)
   (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
 
 (use-package lsp-ui
@@ -2166,7 +2167,7 @@ Returns (<buffer> . <workspace-index>) or nil."
 (use-package copilot
   :straight (:host github :repo "copilot-emacs/copilot.el")
   :commands (copilot-mode)
-  :if (not (or my/remote-server my/is-termux))
+  :disabled t
   :init
   (add-hook 'emacs-startup-hook
             (lambda ()
@@ -2310,11 +2311,13 @@ Returns (<buffer> . <workspace-index>) or nil."
 (add-hook 'web-mode-hook #'my/web-mode-lsp)
 
 (defun my/web-mode-vue-setup (&rest _)
-  (when (string-match-p (rx ".vue" eos) (buffer-file-name))
-    (setq-local web-mode-script-padding 0)
-    (setq-local web-mode-style-padding 0)
-    (setq-local create-lockfiles nil)
-    (setq-local web-mode-enable-auto-pairing nil)))
+  (let ((filename (buffer-file-name)))
+    (when (and (stringp filename)
+               (string-match-p (rx ".vue" eos) filename))
+      (setq-local web-mode-script-padding 0)
+      (setq-local web-mode-style-padding 0)
+      (setq-local create-lockfiles nil)
+      (setq-local web-mode-enable-auto-pairing nil))))
 
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 (add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
@@ -2783,7 +2786,7 @@ Returns (<buffer> . <workspace-index>) or nil."
   :config
   (setq langtool-language-tool-server-jar "/home/pavel/bin/LanguageTool-6.4/languagetool-server.jar")
   (setq langtool-mother-tongue "ru")
-  (setq langtool-default-language "en-US"))
+  (setq langtool-default-language "ru-RU"))
 
 (my-leader-def
   :infix "L"
@@ -3557,6 +3560,7 @@ With ARG, repeats or can move backward if negative."
    `((emacs-lisp . t)
      (python . t)
      (sql . t)
+     (sqlite . t)
      ;; (typescript .t)
      (hy . t)
      (shell . t)
@@ -3946,6 +3950,9 @@ With ARG, repeats or can move backward if negative."
   (with-eval-after-load 'org
     (my-leader-def "ol" #'org-clock-agg))
   :config
+  (setq org-clock-agg-node-format
+    "%-%(+ title-width)t %20c %8z %s/%S")
+  (setq org-clock-agg-node-title-width-delta 47)
   (push
    (cons "Agenda+Archive"
          (append
@@ -4063,6 +4070,21 @@ With ARG, repeats or can move backward if negative."
     :infix "SPC"
     "C" #'my/org-clock-recent))
 
+(defun my/org-fix-task-kind ()
+  (interactive)
+  (let ((entries (org-ql-query
+                   :select #'element-with-markers
+                   :from (current-buffer)
+                   :where '(and (olp "Tasks")
+                                (not (property "TASK_KIND"))
+                                (clocked)))))
+    (org-fold-show-all)
+    (dolist (entry entries)
+      (let ((marker (org-element-property :org-marker entry)))
+        (org-with-point-at marker
+          (let ((value (org-read-property-value "TASK_KIND")))
+            (org-set-property "TASK_KIND" value)))))))
+
 (use-package org-super-agenda
   :straight t
   :after (org)
@@ -4150,6 +4172,30 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
       :sort '(priority todo deadline)
       :super-groups '((:auto-outline-path-file t)))))
 
+(defun my/org-ql-clocked-today ()
+  (interactive)
+  (let ((today (format-time-string
+                "%Y-%m-%d"
+                (days-to-time
+                 (- (org-today) (time-to-days 0))))))
+    (org-ql-search (org-agenda-files) `(clocked :from ,today)
+      :title "Clocked today"
+      :sort '(todo priority date)
+      :super-groups '((:auto-outline-path-file t)
+                      (:auto-todo t)))))
+
+(defun my/org-ql-closed-today ()
+  (interactive)
+  (let ((today (format-time-string
+                "%Y-%m-%d"
+                (days-to-time
+                 (- (org-today) (time-to-days 0))))))
+    (org-ql-search (org-agenda-files) `(closed :from ,today)
+      :title "Closed today"
+      :sort '(todo priority date)
+      :super-groups '((:auto-outline-path-file t)
+                      (:auto-todo t)))))
+
 (setq org-ql-views
       (list
        (cons "Overview: All TODO" #'my/org-ql-all-todo)
@@ -4171,13 +4217,8 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
                    :sort '(todo priority date)
                    :super-groups '((:auto-outline-path-file t))))
        (cons "Review: Recently timestamped" #'my/org-ql-view-recent-items)
-       (cons "Review: Unlinked to meetings"
-             (list :buffers-files #'org-agenda-files
-                   :query '(and (todo "DONE" "NO")
-                                (not (property "MEETING"))
-                                (ts :from -7))
-                   :super-groups '((:auto-outline-path-file t))))
-       (cons "Review: Meeting" #'my/org-ql-meeting-tasks)
+       (cons "Review: Clocked today" #'my/org-ql-clocked-today)
+       (cons "Review: Closed today" #'my/org-ql-closed-today)
        (cons "Fix: tasks without TASK_KIND"
              (lambda ()
                (interactive)
@@ -4522,7 +4563,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (thread-last
     heading
     (substring-no-properties)
-    (replace-regexp-in-string (rx (| "(" "[") (+ alnum) (| "]" ")")) "")
+    (replace-regexp-in-string (rx (| "(" "[") (+ nonl) (| "]" ")")) "")
     (replace-regexp-in-string (rx " " (+ (or digit "."))) " ")
     (replace-regexp-in-string (rx (+ " ")) " ")
     (string-trim)))
@@ -4774,6 +4815,11 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (add-hook 'org-journal-after-entry-create-hook
           #'my/set-journal-header)
 
+(defun my/org-journal-decrypt ()
+  "Decrypt the current org journal file."
+  (interactive)
+  (org-journal-tags--ensure-decrypted))
+
 (use-package citar
   :straight t
   :init
@@ -4841,21 +4887,61 @@ KEYS is a list of cons cells like (<label> . <time>)."
 
 (setq org-roam-capture-templates
       `(("d" "default" plain "%?"
-         :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+         :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+         :unnarrowed t)
+        ("f" "fleeting" plain "%?"
+         :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n#+filetags: :fleeting:\n")
          :unnarrowed t)
         ("e" "encrypted" plain "%?"
-         :if-new (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
+         :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org.gpg" "#+title: ${title}\n")
          :unnarrowed t)))
+
+(use-package org-roam-ql
+  :straight t
+  :after (org-roam)
+  :config
+  (general-define-key
+   :states '(normal visual)
+   :keymaps '(org-roam-ql-mode-map)
+   "s" #'org-roam-ql-buffer-dispatch))
+
+(defun my/org-roam-node-find-permanent (&optional other-window)
+  (interactive current-prefix-arg)
+  (org-roam-node-find
+   other-window
+   nil
+   (lambda (node)
+     (not
+      (seq-contains-p
+       "fleeting"
+       (org-roam-node-tags node))))))
+
+(defun my/org-roam-node-insert-permanent ()
+  (interactive)
+  (org-roam-node-insert
+   (lambda (node)
+     (not
+      (seq-contains-p
+       (org-roam-node-tags node)
+       "fleeting")))))
+
+(defun my/org-roam-ql-fleeting ()
+  (interactive)
+  (org-roam-ql-search
+   '(tags "fleeting")
+   "Fleeting notes"))
 
 (with-eval-after-load 'org-roam
   (my-leader-def
     :infix "or"
     "" '(:which-key "org-roam")
-    "i" #'org-roam-node-insert
-    "r" #'org-roam-node-find
+    "i" #'my/org-roam-node-insert-permanent
+    "r" #'my/org-roam-node-find-permanent
     "g" #'org-roam-graph
     "c" #'org-roam-capture
-    "b" #'org-roam-buffer-toggle)
+    "b" #'org-roam-buffer-toggle
+    "q" #'org-roam-ql-search
+    "f" #'my/org-roam-ql-fleeting)
   (general-define-key
    :keymaps 'org-roam-mode-map
    :states '(normal)
@@ -4876,7 +4962,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
     "a" #'org-roam-alias-add)
   (general-define-key
    :keymap 'org-mode-map
-   "C-c i" 'org-roam-node-insert))
+   "C-c i" #'my/org-roam-node-insert-permanent
+   "C-c I" #'org-roam-node-insert))
 
 (defface my/org-roam-count-overlay-face
   '((t :inherit tooltip))
@@ -5122,6 +5209,8 @@ Review checklist:
 - [ ] Reconcile ledger
 - [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
 - [ ] Process [[file:~/30-39 Life/35 Photos/35.00 Inbox/][photo inbox]]
+- [ ] Process new [[elisp:(my/org-roam-ql-fleeting)][fleeting notes]] (skip if tired)
+- [ ] Process new [[https://wallabag.sqrtminusone.xyz/tag/list/t:zk-inbox][zk-inbox]] (skip if tired)
 - [ ] Process [[file:../inbox.org][inbox]]
 - [ ] Create [[file:../recurring.org][recurring tasks]] for next week
 - [ ] Check agenda (-1 / +2 weeks): priorities, deadlines
@@ -5129,6 +5218,7 @@ Review checklist:
   - [[org-ql-search:todo%3A?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: All TODOs]]
   - [[org-ql-search:(and (todo) (not (tags \"nots\")) (not (ts :from -14)))?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: Stale tasks]]
   - [[org-ql-search:todo%3AWAIT?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: WAIT]]
+  - [[org-ql-search:todo%3AMAYBE?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: MAYBE]]
 - [ ] Run auto-archiving
 - [ ] Review journal records
 ")
@@ -5149,6 +5239,58 @@ TODO Write something, maybe? "))))
 
 (with-eval-after-load 'org-journal
   (my-leader-def "ojw" #'my/org-review-weekly))
+
+(defun my/kill-messengers ()
+  (interactive)
+  (when (get-buffer telega-root-buffer-name)
+    (telega-kill t))
+  (call-process-shell-command "pkill -f rocketchat-desktop")
+  (call-process-shell-command "pkill -f 'bwrap --args 36 element'")
+  (call-process-shell-command "pkill -f element-desktop"))
+
+(defun my/org-review-set-daily-record ()
+  (save-excursion
+    (org-journal-tags-prop-apply-delta :add '("review.daily"))
+    (insert "Daily Review")
+    (goto-char (point-max))
+
+    (insert "
+Maintenance checklist (/delete this/):
+- [ ] [[elisp:(my/kill-messengers)][Close all messengers]]
+- [ ] Process [[file:../inbox.org][inbox]]
+- [ ] Check if clocked tasks are properly annotated
+  - [[elisp:(my/org-ql-clocked-today)][Tasks clocked today]]
+  - [[elisp:(my/org-ql-closed-today)][Tasks closed today]]
+- [ ] Check agenda for the current week
+
+/Remember, all of the following headers are optional./
+
+*** Happened today
+Happened to me:
+- /Anything interesting?/
+Happened to the world:
+- /Anything important?/
+
+*** New ideas
+/Write them down in org-roam with the \"fleeting\" tag; leave links here. Perhaps note what sparked that idea?/
+
+*** Interactions today
+/Any meaninginful interactions, conflicts or tensions?/
+
+*** Emotions today
+/How did I feel?/
+")))
+
+(defun my/org-review-daily ()
+  (interactive)
+  (let ((org-journal-after-entry-create-hook
+         `(,@org-journal-after-entry-create-hook
+           my/org-review-set-daily-record)))
+    (org-journal-new-entry nil)
+    (org-fold-show-subtree)))
+
+(with-eval-after-load 'org-journal
+  (my-leader-def "ojd" #'my/org-review-daily))
 
 (use-package org-contacts
   :straight (:type git :repo "https://repo.or.cz/org-contacts.git")
@@ -5400,7 +5542,7 @@ TODO Write something, maybe? "))))
    "M-r" #'wdired-change-to-wdired-mode
    "<left>" #'dired-up-directory
    "<right>" #'dired-find-file
-   "M-<return>" #'dired-open-xdg))
+   "M-<return>" #'my/dired-open-xdg))
 
 (defun my/dired-home ()
   "Open dired at $HOME"
@@ -5486,7 +5628,9 @@ TODO Write something, maybe? "))))
   :hook (dired-mode . (lambda ()
                         (unless (or (file-remote-p default-directory)
                                     (string-match-p "/gnu/store" default-directory))
-                          (nerd-icons-dired-mode)))))
+                          (nerd-icons-dired-mode))))
+  :config
+  (advice-add #'dired-create-empty-file :around #'nerd-icons-dired--refresh-advice))
 
 (use-package dired-open
   :straight t
@@ -5522,11 +5666,18 @@ TODO Write something, maybe? "))))
   :init
   (my-leader-def "aa" #'avy-dired-goto-line))
 
+(defun my/dired-rsync--refresh ()
+  (cl-loop for window being the windows
+           do (with-current-buffer (window-buffer window)
+                (when (derived-mode-p 'dired-mode)
+                  (revert-buffer)))))
+
 (use-package dired-rsync
   :straight t
   :after (dired)
   :config
   (add-to-list 'global-mode-string '(:eval dired-rsync-modeline-status))
+  (add-hook 'dired-rsync-success-hook #'my/dired-rsync--refresh)
   (general-define-key
    :states '(normal)
    :keymaps '(dired-mode-map)
@@ -5571,6 +5722,14 @@ TODO Write something, maybe? "))))
    :states '(normal)
    :keymaps 'dired-mode-map
    "H" #'my/dired-goto-project-root))
+
+(defun my/dired-open-xdg ()
+  "Try to run `xdg-open' to open the file under point."
+  (interactive)
+  (when (executable-find "xdg-open")
+    (let ((file (ignore-errors (dired-get-file-for-visit))))
+      (start-process "dired-open" nil
+                     "xdg-open" (file-truename file)))))
 
 (defun my/dired-bookmark-open ()
   (interactive)
@@ -6994,109 +7153,6 @@ by the `my/elfeed-youtube-subtitles' function."
 (setq emms-volume-change-function #'my/set-volume)
 (setq emms-volume-change-amount 5)
 
-(use-package ytel
-  :straight t
-  :commands (ytel)
-  :config
-  (setq ytel-invidious-api-url "https://invidio.xamh.de/")
-  (general-define-key
-   :states '(normal)
-   :keymaps 'ytel-mode-map
-   "q" #'ytel-quit
-   "s" #'ytel-search
-   "L" #'ytel-search-next-page
-   "H" #'ytel-search-previous-page
-   "RET" #'my/ytel-add-emms))
-
-(with-eval-after-load 'emms
-  (define-emms-source ytel (video)
-    (let ((track (emms-track
-                  'url (concat "https://www.youtube.com/watch?v="
-                               (ytel-video-id video)))))
-      (emms-track-set track 'info-title (ytel-video-title video))
-      (emms-track-set track 'info-artist (ytel-video-author video))
-      (emms-playlist-insert-track track))))
-
-(defun my/ytel-add-emms ()
-  (interactive)
-  (emms-add-ytel (ytel-get-current-video)))
-
-(setq my/invidious-instances-url
-      "https://api.invidious.io/instances.json?pretty=1&sort_by=health")
-
-(defun my/ytel-instances-fetch-json ()
-  "Fetch list of invidious instances as json, sorted by health."
-  (let
-      ((url-request-method "GET")
-       (url-request-extra-headers
-        '(("Accept" . "application/json"))))
-    (with-current-buffer
-        (url-retrieve-synchronously my/invidious-instances-url)
-      (goto-char (point-min))
-      (re-search-forward "^$")
-      (let* ((json-object-type 'alist)
-             (json-array-type 'list)
-             (json-key-type 'string))
-        (json-read)))))
-
-(defun my/ytel-instances-alist-from-json ()
-  "Make the json of invidious instances into an alist."
-  (let ((jsonlist (my/ytel-instances-fetch-json))
-        (inst ()))
-    (while jsonlist
-      (push (concat "https://" (caar jsonlist)) inst)
-      (setq jsonlist (cdr jsonlist)))
-    (nreverse inst)))
-
-(defun my/ytel-choose-instance ()
-  "Prompt user to choose an invidious instance to use."
-  (interactive)
-  (setq ytel-invidious-api-url
-        (or (condition-case nil
-                (completing-read "Using instance: "
-                                 (cl-subseq (my/ytel-instances-alist-from-json) 0 11) nil "confirm" "https://")
-              (error nil))
-            "https://invidious.synopyta.org")))
-
-(defun my/ytel-draw--buffer-nil-videos-fix ()
-  (let ((inhibit-read-only t)
-        (current-line      (line-number-at-pos)))
-    (erase-buffer)
-    (setf header-line-format
-          (concat "Search results for "
-                  (propertize ytel-search-term 'face 'ytel-video-published-face)
-                  ", page "
-                  (number-to-string ytel-current-page)))
-    (seq-do
-     (lambda (v)
-       (ytel--insert-video v)
-       (insert "\n"))
-     (seq-filter
-      (lambda (v)
-        (ytel-video-title v))
-      ytel-videos))
-    (goto-char (point-min))))
-
-(with-eval-after-load 'ytel
-  (advice-add #'ytel--draw-buffer :override #'my/ytel-draw--buffer-nil-videos-fix))
-
-(defun my/ytel--format-unknown-fix (fun &rest args)
-  (if (car args)
-      (apply fun args)
-    "unknown   "))
-
-(with-eval-after-load 'ytel
-  (advice-add #'ytel--format-video-length :around #'my/ytel--format-unknown-fix)
-  (advice-add #'ytel--format-video-published :around #'my/ytel--format-unknown-fix)
-  (advice-add #'ytel--format-video-views :around #'my/ytel--format-unknown-fix))
-
-(defun my/ytel-kill-url ()
-  (interactive)
-  (kill-new
-   (concat
-    "https://www.youtube.com/watch?v="
-    (ytel-video-id (ytel-get-current-video)))))
-
 (defun my/toggle-shr-use-fonts ()
   "Toggle the shr-use-fonts variable in buffer"
   (interactive)
@@ -7206,25 +7262,31 @@ by the `my/elfeed-youtube-subtitles' function."
   (setq mastodon-active-user "sqrtminusone")
   (my/persp-add-rule mastodon-mode 0 "mastodon")
   ;; Hide spoilers by default
-  (setq-default mastodon-toot--content-warning t)
+  ;; (setq-default mastodon-toot--content-warning nil)
   (setq mastodon-media--avatar-height 40)
   (setq mastodon-tl--timeline-posts-count "40")
   (setq mastodon-tl--show-avatars t)
+  (setq mastodon-tl--horiz-bar
+        (make-string shr-max-width
+                     (if (char-displayable-p ?―) ?― ?-)))
   ;; The default emojis take two characters for me
-  (setq mastodon-tl--symbols
-        '((reply "" . "R")
-          (boost "" . "B")
-          (favourite "" . "F")
-          (bookmark "" . "K")
-          (media "" . "[media]")
-          (verified "" . "V")
-          (locked "" . "[locked]")
-          (private "" . "[followers]")
-          (direct "" . "[direct]")
-          (edited "" . "[edited]"))))
+  (mapcar (lambda (item)
+            (setf (alist-get (car item) mastodon-tl--symbols)
+                  (cdr item)))
+          '((reply "" . "R")
+            (boost "" . "B")
+            (favourite "" . "F")
+            (bookmark "" . "K")
+            (media "" . "[media]")
+            (verified "" . "V")
+            (locked "" . "[locked]")
+            (private "" . "[followers]")
+            (direct "" . "[direct]")
+            (edited "" . "[edited]"))))
 
 (use-package mastodon-alt
   :straight (:host github :repo "rougier/mastodon-alt")
+  :disabled t
   :after (mastodon)
   :config
   (mastodon-alt-tl-activate))
@@ -7362,12 +7424,15 @@ by the `my/elfeed-youtube-subtitles' function."
                    (lambda (toot)
                      (and
                       (or (not hide-replies)
-                          ;; Why is the original function inverted??
-                          (mastodon-tl--is-reply toot))
+                          (not (mastodon-tl--is-reply toot)))
                       (or (not hide-boosts)
                           (not (alist-get 'reblog toot)))))
-                   toots)))
-      (mapc #'mastodon-tl--toot toots))))
+                   toots))
+           (start-pos (point)))
+      (mapc #'mastodon-tl--toot toots)
+      (when mastodon-tl--display-media-p
+        (save-excursion
+          (mastodon-media--inline-images start-pos (point)))))))
 
 (defun my/mastodon-tl--get-home (hide-replies hide-boosts)
   (mastodon-tl--init
@@ -7474,8 +7539,8 @@ base toot."
      ("o" "Thread" mastodon-tl--thread)
      ("w" "Browser" my/mastodon-toot--browse)
      ("le" "List edits" mastodon-toot--view-toot-edits)
-     ("lf" "List favouriters" mastodon-toot--list-toot-favouriters)
-     ("lb" "List boosters" mastodon-toot--list-toot-boosters)]
+     ("lf" "List favouriters" mastodon-toot--list-favouriters)
+     ("lb" "List boosters" mastodon-toot--list-boosters)]
     ["Toot Actions"
      :class transient-row
      ("r" "Reply" mastodon-toot--reply)
@@ -7677,6 +7742,8 @@ base toot."
         (message "Scrolled %s" scrolled)))))
 
 (use-package telega
+  ;; :straight (:type built-in)
+  ;; For now emacs-telega-server is compatible with the latest telega.el
   :straight t
   :if (not (or my/remote-server))
   :commands (telega)
@@ -7688,6 +7755,10 @@ base toot."
    (telega-webpage-chat-link :foreground (my/color-value 'base0)
                              :background (my/color-value 'fg)))
   :config
+  (when (file-directory-p "~/.guix-extra-profiles/emacs/")
+    (setq telega-server-command
+          (expand-file-name
+           "~/.guix-extra-profiles/emacs/emacs/bin/telega-server")))
   (setq telega-emoji-use-images nil)
   (setq telega-chat-fill-column 80)
   (setq telega-completing-read-function #'completing-read)
@@ -7744,7 +7815,7 @@ base toot."
   (company-mode 1)
   (setopt visual-fill-column-width
           (+ telega-chat-fill-column
-             (if (display-graphic-p) 4 5)))
+             (if (display-graphic-p) 5 6)))
   (setq-local split-width-threshold 1))
 (add-hook 'telega-chat-mode-hook #'my/telega-chat-setup)
 
@@ -7839,7 +7910,7 @@ base toot."
     (setq biome-api-try-parse-error-as-response t))
   :config
   (add-to-list 'biome-query-coords
-               '("Saint-Petersburg, Russia" 59.93863 30.31413))
+               '("Saint-Petersburg, Russia" 59.942651 30.229930))
   (add-to-list 'biome-query-coords
                '("Tyumen, Russia" 57.15222 65.52722)))
 
@@ -7971,20 +8042,31 @@ base toot."
   (setq gptel-backend (gptel-make-ollama "Ollama"
                         :host "localhost:11434"
                         :stream t
-                        :models '("llama3.1:latest" "llama3.1:instruct")))
+                        :models '("llama3.1:8b" "deepseek-r1:32b"
+                                  "qwen2.5:32b" "qwen2.5-coder:32b"
+                                  "eva-qwen2.5-q4_k_l-32b:latest"
+                                  "t-pro-1.0-q4_k_m:latest")))
+  (gptel-make-openai "OpenRouter"
+    :host "openrouter.ai/api"
+    :key (lambda () (my/password-store-get-field
+                     "My_Online/Accounts/openrouter" "api-key"))
+    :stream t
+    :models '("anthropic/claude-3.5-haiku"))
+  (setq gptel--known-backends
+        (seq-filter
+         (lambda (cell)
+           (not (equal (car cell) "ChatGPT")))
+         gptel--known-backends))
+  (setq gptel-response-prefix-alist
+        '((markdown-mode . "[Response] ")
+          (org-mode . "*** Response: ")
+          (text-mode . "[Response]")))
 
-  ;; (my/gptel-switch-backend "llama3.1:latest")
   (general-define-key
    :keymaps '(gptel-mode-map)
    :states '(insert normal)
-   "C-<return>" 'gptel-send)
-  (general-define-key
-   :keymaps '(gptel-mode-map)
-   :states '(normal)
-   "?" #'gptel-menu)
-  (gptel-make-gemini "Gemini"
-    :key (my/password-store-get-field "My_Online/Accounts/google-gemini" "api")
-    :stream t))
+   "C-<return>" 'gptel-send
+   "M-o" #'gptel-menu))
 
 (use-package ellama
   :straight t
@@ -7995,19 +8077,26 @@ base toot."
   (require 'llm-ollama)
   ;; I've looked for this option for 1.5 hours
   (setq ellama-long-lines-length 100000)
-  (my-leader-def
-    "aie" '(:wk "ellama" :keymap ellama-command-map))
 
   (setq ellama-provider (make-llm-ollama
-                         :chat-model "llama3.1:instruct"
-                         :embedding-model "llama3.1:instruct"))
+                         :chat-model "qwen2.5:32b"
+                         :embedding-model "qwen2.5:32b"))
+  (setq ellama-coding-provider (make-llm-ollama
+                                :chat-model "qwen2.5-coder:32b"
+                                :embedding-model "qwen2.5-coder:32b"))
   (setq ellama-providers
         `(("llama3.1:8b" . ,(make-llm-ollama
-                           :chat-model "llama3.1:latest"
-                           :embedding-model "llama3.1:latest"))
-          ("llama3.1:instruct" . ,(make-llm-ollama
-                                 :chat-model "llama3.1:instruct"
-                                 :embedding-model "llama3.1:instruct")))))
+                             :chat-model "llama3.1:latest"
+                             :embedding-model "llama3.1:latest"))
+          ("phi4:latest" . ,(make-llm-ollama
+                             :chat-model "phi4:latest"
+                             :embedding-model "phi4:latest"))
+          ("qwen2.5:32b" . ,(make-llm-ollama
+                             :chat-model "qwen2.5:32b"
+                             :embedding-model "qwen2.5:32b"))
+          ("qwen2.5-coder:32b" . ,(make-llm-ollama
+                                   :chat-model "qwen2.5-coder:32b"
+                                   :embedding-model "qwen2.5-coder:32b")))))
 
 (with-eval-after-load 'ellama
   (transient-define-prefix my/ellama-transient ()
@@ -8024,9 +8113,7 @@ base toot."
      ("ci" "Improve" ellama-code-improve)]
     ["Natural Language"
      :class transient-row
-     ("np" "Proof-read" my/ellama-proof-read)
-     ("nw" "Improve wording" my/ellama-improve-wording)
-     ("nc" "Improve conciseness" my/ellama-improve-concise)]
+     ("np" "Proof-read" my/ellama-proof-read)]
     ["Formatting"
      :class transient-row
      ("ff" "Format" ellama-make-format)
@@ -8050,7 +8137,6 @@ base toot."
      ("ss" "Session" ellama-session-switch)
      ("sr" "Rename ression" ellama-session-rename)
      ("sd" "Delete session" ellama-session-remove)]))
-
 
 (defun my/ellama ()
   (interactive)
@@ -8076,27 +8162,46 @@ base toot."
       (delete-file file1)
       (delete-file file2))))
 
-(defun my/ellama-text-with-diff (text is-org-mode prompt)
-  (require 'ellama)
+(defun my/ellama-proof-read--display (text is-org-mode prompt)
   (llm-chat-async
    ellama-provider
    (llm-make-chat-prompt
     (format prompt text))
-   (lambda (changed-text)
-     (when is-org-mode
-       (setq changed-text (ellama--translate-markdown-to-org-filter changed-text)))
-     (let ((buffer (generate-new-buffer "*ellama-diff*")))
+   (lambda (response)
+     (let* ((parts (split-string response "-FIXED TEXT ENDS-"))
+            (changed-text (nth 0 parts))
+            (comments (nth 1 parts))
+            (buffer (generate-new-buffer "*ellama-diff*")))
+       (when is-org-mode
+         (setq changed-text (ellama--translate-markdown-to-org-filter changed-text)))
        (with-current-buffer buffer
          (text-mode)
-         (insert changed-text)
-         (insert "\n\n")
-         (insert (my/diff-strings text changed-text)))
+         (insert
+          (propertize "Changed text:\n" 'face 'transient-heading)
+          (string-trim changed-text)
+          "\n\n"
+          (propertize "Comments:\n" 'face 'transient-heading)
+          (string-trim comments)
+          "\n\n"
+          (propertize "Diff:\n" 'face 'transient-heading)
+          (my/diff-strings text changed-text)))
        (display-buffer buffer)))
    (lambda (&rest err)
      (message "Error: %s" err))))
 
 (setq my/ellama-proof-read-prompt
-      "Proof-read the following text. Fix any errors but keep the original style and punctuation, including linebreaks. Print the changed text and nothing else, not even \"Here's the proof-read text\".\n\n %s")
+      "Proof-read the following text. Follow these rules:
+- Fix all grammar errors
+- Keep the original style and punctuation, including linebreaks.
+- Use British spelling
+- Do not replace ' with ’, and do not touch other such symbols
+
+Output the following and nothing else:
+- The fixed text
+- The string -FIXED TEXT ENDS-
+- List of found errors
+- List of style suggestions
+%s")
 
 (defun my/ellama--text ()
   (if (region-active-p)
@@ -8105,28 +8210,17 @@ base toot."
 
 (defun my/ellama-proof-read (text is-org-mode)
   (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
-  (my/ellama-text-with-diff text is-org-mode my/ellama-proof-read-prompt))
-
-(setq my/ellama-improve-wording-prompt
-      "Proof-read the following text. Fix any errors and improve wording. Print the changed text and nothing else, not even \"Here's the improved text\".\n\n %s")
-
-(defun my/ellama-improve-wording (text is-org-mode)
-  (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
-  (my/ellama-text-with-diff text is-org-mode my/ellama-improve-wording-prompt))
-
-(setq my/ellama-improve-concise-prompt
-      "Make the following text more concise. Print the changed text and nothing else, not even \"Here's the improved text\".\n\n %s")
-
-(defun my/ellama-improve-concise (text is-org-mode)
-  (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
-  (my/ellama-text-with-diff text is-org-mode my/ellama-improve-concise-prompt))
+  (require 'ellama)
+  (my/ellama-proof-read--display text is-org-mode my/ellama-proof-read-prompt))
 
 (defun my/whisper--format-vtt-seconds (seconds)
-  (let* ((hours (/ (floor seconds) (* 60 60)))
-         (minutes (/ (- (floor seconds) (* hours 60 60)) 60))
-         (sec (% (floor seconds) 60))
-         (ms (floor (* 1000 (- seconds (floor seconds))))))
-    (format "%.2d:%.2d:%.2d.%.3d" hours minutes sec ms)))
+  (if (numberp seconds)
+      (let* ((hours (/ (floor seconds) (* 60 60)))
+             (minutes (/ (- (floor seconds) (* hours 60 60)) 60))
+             (sec (% (floor seconds) 60))
+             (ms (floor (* 1000 (- seconds (floor seconds))))))
+        (format "%.2d:%.2d:%.2d.%.3d" hours minutes sec ms))
+    ""))
 
 (defun my/whisper--save-chucks-vtt (path data)
   (with-temp-file path

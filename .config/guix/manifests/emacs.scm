@@ -8,7 +8,7 @@
    "imagemagick"
    "font-gnu-freefont"
    "font-gnu-unifont"
-   "tdlib-1.8.16"
+   "emacs-telega-sever"
    "yt-dlp"
    "mpv"
    "python-youtube-transcript-api"
