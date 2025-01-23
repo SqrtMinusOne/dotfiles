@@ -590,7 +590,7 @@ _d_: Discord
   (add-hook 'exwm-update-class-hook #'my/exwm-update-class)
 
   (require 'exwm-randr)
-  (exwm-randr-enable)
+  (exwm-randr-mode 1)
   (start-process-shell-command "xrandr" nil "~/bin/scripts/screen-layout")
   (when (string= (system-name) "violet")
     (setq my/exwm-another-monitor "DP-1")
@@ -669,7 +669,7 @@ _d_: Discord
           (,(kbd "s-P") . async-shell-command)
           (,(kbd "s-;") . my/exwm-apps-hydra/body)
           (,(kbd "s--") . password-store-completion)
-          (,(kbd "s-=") . my/emojify-type)
+          (,(kbd "s-=") . emoji-insert)
           (,(kbd "s-i") . ,(my/app-command "copyq menu"))
   
           ;; Basic controls

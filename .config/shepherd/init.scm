@@ -13,6 +13,16 @@
     #:stop (make-kill-destructor)
     #:requires '(mpd)))
 
+(define deterred-mpd
+  (make <service>
+    #:provides '(deterred-mpd)
+    #:respawn? #t
+    #:start (make-forkexec-constructor
+             '("python" "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/watchers/deterred-mpd.py"
+               "--db" "/home/pavel/.deterred/database.db"))
+    #:stop (make-kill-destructor)
+    #:requires '(mpd)))
+
 (define mcron
   (make <service>
     #:provides '(mcron)
@@ -128,6 +138,7 @@
 (register-services
  mpd
  sqrt-data-agent-mpd
+ deterred-mpd
  mcron
  aw-server
  aw-watcher-afk
@@ -149,6 +160,7 @@
 
 (for-each start '(mpd
                   sqrt-data-agent-mpd
+                  deterred-mpd
                   mcron
                   aw-server
                   aw-watcher-afk
