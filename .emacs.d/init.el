@@ -5209,14 +5209,12 @@ Review checklist:
 - [ ] Reconcile ledger
 - [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
 - [ ] Process [[file:~/30-39 Life/35 Photos/35.00 Inbox/][photo inbox]]
-- [ ] Process new [[elisp:(my/org-roam-ql-fleeting)][fleeting notes]] (skip if tired)
-- [ ] Process new [[https://wallabag.sqrtminusone.xyz/tag/list/t:zk-inbox][zk-inbox]] (skip if tired)
 - [ ] Process [[file:../inbox.org][inbox]]
 - [ ] Create [[file:../recurring.org][recurring tasks]] for next week
 - [ ] Check agenda (-1 / +2 weeks): priorities, deadlines
 - [ ] Check TODOs: priorities, deadlines
   - [[org-ql-search:todo%3A?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: All TODOs]]
-  - [[org-ql-search:(and (todo) (not (tags \"nots\")) (not (ts :from -14)))?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: Stale tasks]]
+  - [[org-ql-search:(and (todo) (not (tags \"nots\")) (not (ts :from -14)) (not (todo \"MAYBE\")))?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: Stale tasks]]
   - [[org-ql-search:todo%3AWAIT?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: WAIT]]
   - [[org-ql-search:todo%3AMAYBE?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: MAYBE]]
 - [ ] Run auto-archiving
