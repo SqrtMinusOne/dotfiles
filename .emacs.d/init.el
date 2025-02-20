@@ -7753,7 +7753,7 @@ base toot."
    (telega-webpage-chat-link :foreground (my/color-value 'base0)
                              :background (my/color-value 'fg)))
   :config
-  (when (file-directory-p "~/.guix-extra-profiles/emacs/")
+  (when (file-exists-p "~/.guix-extra-profiles/emacs/emacs/bin/telega-server")
     (setq telega-server-command
           (expand-file-name
            "~/.guix-extra-profiles/emacs/emacs/bin/telega-server")))
@@ -8670,16 +8670,16 @@ Which creates the following output:
 The functions also skips lines in [square brackets] and ones that
 start with more than 3 spaces."
   (when-let* ((lines (seq-filter
-                 (lambda (s) (not (or (string-empty-p s)
-                                      (string-match-p (rx bos "[" (* nonl) "]") s)
-                                      (string-match-p (rx bos (>= 3 " ")) s))))
-                 (split-string string "\n")))
-         (first-line (car lines))
-         (headers (split-string first-line))
-         (header-indices (mapcar
-                          (lambda (header)
-                            (cl-search header first-line))
-                          headers)))
+                      (lambda (s) (not (or (string-empty-p s)
+                                           (string-match-p (rx bos "[" (* nonl) "]") s)
+                                           (string-match-p (rx bos (>= 3 " ")) s))))
+                      (split-string string "\n")))
+              (first-line (car lines))
+              (headers (split-string first-line))
+              (header-indices (mapcar
+                               (lambda (header)
+                                 (cl-search header first-line))
+                               headers)))
     (cl-loop for line in (cdr lines)
              collect (cl-loop for header in headers
                               for start in header-indices
@@ -8703,8 +8703,9 @@ The return value is a list of alists with the following keys:
              collect `((path . ,(if (file-directory-p localpath)
                                     (concat localpath "/")
                                   localpath))
-                       (enabled . ,(string-equal (alist-get 'ACTIVE value)
-                                                 "Enabled"))))))
+                       (enabled . ,(seq-contains-p
+                                    '("Pending" "Loading" "Running")
+                                    (alist-get 'RUN_STATE value)))))))
 
 (defun my/index--tree-get-paths (tree &optional kind)
   "Get paths from TREE.
@@ -8746,7 +8747,7 @@ The return value is a list of commands as defined by
     (append
      (cl-loop for path in (seq-difference mega-paths-to-enable mega-paths-enabled)
               if (seq-contains-p mega-paths-disabled path)
-              collect (list (format "mega-sync -e \"%s\"" path) "Mega enable sync" 5)
+              collect (list (format "mega-sync -r \"%s\"" path) "Mega enable sync" 5)
               else append (list
                            (list (format "mega-mkdir -p \"%s\""
                                          (my/index--mega-local-path path))
