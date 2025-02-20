@@ -52,10 +52,10 @@ fi
 
 # [[file:Console.org::*ssh-agent][ssh-agent:1]]
 if ! pgrep -u "$USER" ssh-agent > /dev/null; then
-    ssh-agent -t 1h > "$XDG_RUNTIME_DIR/ssh-agent.env"
+    ssh-agent -t 1h > "/tmp/ssh-agent.env"
 fi
 if [[ ! -f "$SSH_AUTH_SOCK" ]]; then
-    source "$XDG_RUNTIME_DIR/ssh-agent.env" >/dev/null
+    source "/tmp/ssh-agent.env" >/dev/null
 fi
 # ssh-agent:1 ends here
 
@@ -69,7 +69,7 @@ if [ -z "$IS_ANDROID" ] && [ -z "$NO_GUIX" ] ; then
             . "$GUIX_PROFILE"/etc/profile
         fi
         if [ -d "$profile"/share/man ]; then
-            if command -v manpath; then
+            if command -v manpath >/dev/null 2>/dev/null; then
                 export MANPATH="${MANPATH:-$(manpath)}:$profile/share/man"
             else
                 export MANPATH="${MANPATH}:$profile/share/man"

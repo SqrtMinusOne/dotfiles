@@ -129,7 +129,7 @@ if [ -z "$IS_ANDROID" ] && [ -z "$NO_GUIX" ] ; then
             . "$GUIX_PROFILE"/etc/profile
         fi
         if [ -d "$profile"/share/man ]; then
-            if command -v manpath; then
+            if command -v manpath >/dev/null 2>/dev/null; then
                 export MANPATH="${MANPATH:-$(manpath)}:$profile/share/man"
             else
                 export MANPATH="${MANPATH}:$profile/share/man"
