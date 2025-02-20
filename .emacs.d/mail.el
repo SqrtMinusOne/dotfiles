@@ -54,7 +54,8 @@
   notmuch-hello-mode 0 "mail"
   notmuch-search-mode 0 "mail"
   notmuch-tree-mode 0 "mail"
-  notmuch-message-mode 0 "mail")
+  notmuch-message-mode 0 "mail"
+  notmuch-show-mode 0 "mail")
 
 (setq notmuch-saved-searches
       '((:name "drafts" :query "tag:draft" :key "d")

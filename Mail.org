@@ -455,7 +455,8 @@ Root keybindings:
   notmuch-hello-mode 0 "mail"
   notmuch-search-mode 0 "mail"
   notmuch-tree-mode 0 "mail"
-  notmuch-message-mode 0 "mail")
+  notmuch-message-mode 0 "mail"
+  notmuch-show-mode 0 "mail")
 #+end_src
 
 #+NAME: root_tags
