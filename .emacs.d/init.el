@@ -3311,6 +3311,12 @@ Returns (<buffer> . <workspace-index>) or nil."
 (with-eval-after-load 'org
   (org-link-set-parameters "rel" :follow #'browse-url :export #'my/export-rel-url))
 
+(defun my/outline-prev-or-up-heading ()
+  (interactive)
+  (if (outline-on-heading-p)
+      (outline-up-heading 1)
+    (outline-previous-visible-heading 1)))
+
 (with-eval-after-load 'org
   (general-define-key
    :keymaps 'org-mode-map
@@ -3330,6 +3336,7 @@ Returns (<buffer> . <workspace-index>) or nil."
    "M-9" #'org-previous-visible-heading
    "C-0" #'org-forward-heading-same-level
    "C-9" #'org-backward-heading-same-level
+   "(" #'my/outline-prev-or-up-heading
    "M-]" #'org-babel-next-src-block
    "M-[" #'org-babel-previous-src-block)
 
@@ -5128,23 +5135,59 @@ KEYS is a list of cons cells like (<label> . <time>)."
   (let ((default-directory org-directory))
     (my/get-files-status (format "@{%s}" date))))
 
-(defun my/org-review-format-org-roam (date)
+(defun my/org-review--org-roam-get-changes (date)
   (let ((changes (my/org-changed-files-since-date date))
         (nodes (org-roam-node-list))
         (nodes-by-file (make-hash-table :test #'equal)))
     (cl-loop for node in nodes
              for file = (org-roam-node-file node)
              do (puthash file node nodes-by-file))
+    (let* ((changed-nodes
+            (thread-last
+              changes
+              (mapcar (lambda (c)
+                        (cons (car c)
+                              (gethash
+                               (concat org-directory "/" (cdr c))
+                               nodes-by-file))))
+              (seq-filter #'cdr)))
+           (changed-inbox
+            (thread-last
+              changes
+              (seq-filter
+               (lambda (file) (string-match-p (rx bos "inbox-notes") (cdr file))))))
+           (changed-fleeting
+            (thread-last
+              changed-nodes
+              (seq-filter (lambda (c)
+                            (seq-contains-p (org-roam-node-tags (cdr c))
+                                            "fleeting")))
+              (seq-sort-by (lambda (c) (concat (symbol-name (car c))
+                                               (org-roam-node-title (cdr c))))
+                           #'string-lessp)))
+           (changed-permanent
+            (thread-last
+              changed-nodes
+              (seq-filter (lambda (c)
+                            (not (seq-contains-p (org-roam-node-tags (cdr c))
+                                                 "fleeting"))))
+              (seq-sort-by (lambda (c) (concat (symbol-name (car c))
+                                               (org-roam-node-title (cdr c))))
+                           #'string-lessp))))
+      (list
+       changed-inbox
+       changed-fleeting
+       changed-permanent))))
+
+(defun my/org-review-org-roam-format (date)
+  (let* ((data (my/org-review--org-roam-get-changes date))
+         (changed-inbox (nth 0 data))
+         (changed-fleeting (nth 1 data))
+         (changed-permanent (nth 2 data)))
     (concat
-     "*** Zettelkasten Updates\n"
-     "TODO Sort the updates by topics\n\n"
      "Changes in inbox:\n"
      (thread-last
-       changes
-       (seq-filter
-        (lambda (file) (string-match-p (rx bos "inbox-notes") (cdr file))))
-       (seq-sort-by (lambda (s) (symbol-name (car s)))
-                    #'string-lessp)
+       changed-inbox
        (mapcar (lambda (change)
                  (format "- %s :: %s\n"
                          (cond
@@ -5154,18 +5197,18 @@ KEYS is a list of cons cells like (<label> . <time>)."
                           (t (capitalize (symbol-name (car change)))))
                          (cdr change))))
        (apply #'concat))
-     "\nChanges in notes:\n"
+     "\nChanges in fleeting notes:\n"
      (thread-last
-       changes
+       changed-fleeting
        (mapcar (lambda (c)
-                 (cons (car c)
-                       (gethash
-                        (concat org-directory "/" (cdr c))
-                        nodes-by-file))))
-       (seq-filter #'cdr)
-       (seq-sort-by (lambda (c) (concat (symbol-name (car c))
-                                        (org-roam-node-title (cdr c))))
-                    #'string-lessp)
+                 (format "- %s :: [[id:%s][%s]]\n"
+                         (capitalize (symbol-name (car c)))
+                         (org-roam-node-id (cdr c))
+                         (org-roam-node-title (cdr c)))))
+       (apply #'concat))
+     "\nChanges in permanent notes:\n"
+     (thread-last
+       changed-permanent
        (mapcar (lambda (c)
                  (format "- %s :: [[id:%s][%s]]\n"
                          (capitalize (symbol-name (car c)))
@@ -5183,13 +5226,17 @@ KEYS is a list of cons cells like (<label> . <time>)."
                                    ('weekly
                                     (- start-of-day
                                        (* 21 24 60 60)))
+                                   ('zk
+                                    (- start-of-day
+                                       (* 45 24 60 60)))
                                    (_ (error "Unsupported kind: %s" kind)))
                      :location 'section
                      :order 'descending)))
     (if query-res
         (org-journal-tag-reference-date (car query-res))
       (pcase kind
-        ('weekly (- start-of-day (* 7 24 60 60)))))))
+        ('weekly (- start-of-day (* 7 24 60 60)))
+        ('zk (- start-of-day (* 45 24 60 60)))))))
 
 (defun my/org-review-set-weekly-record ()
   (save-excursion
@@ -5204,7 +5251,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
                (seconds-to-time last-review-date)))
       (insert "
 
-Review checklist:
+Review checklist (/delete this/):
 - [ ] Clear email inbox
 - [ ] Reconcile ledger
 - [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
@@ -5221,8 +5268,6 @@ Review checklist:
 - [ ] Review journal records
 ")
 
-      (insert (my/org-review-format-org-roam
-               (format-time-string "%Y-%m-%d" (seconds-to-time last-review-date))))
       (insert "
 *** Summary
 TODO Write something, maybe? "))))
@@ -5247,12 +5292,17 @@ TODO Write something, maybe? "))))
   (call-process-shell-command "pkill -f element-desktop"))
 
 (defun my/org-review-set-daily-record ()
-  (save-excursion
-    (org-journal-tags-prop-apply-delta :add '("review.daily"))
-    (insert "Daily Review")
-    (goto-char (point-max))
+  (let* ((today (format-time-string
+                 "%Y-%m-%d"
+                 (days-to-time
+                  (- (org-today) (time-to-days 0)))))
+         (roam-changes (my/org-review--org-roam-get-changes today)))
+    (save-excursion
+      (org-journal-tags-prop-apply-delta :add '("review.daily"))
+      (insert "Daily Review")
+      (goto-char (point-max))
 
-    (insert "
+      (insert "
 Maintenance checklist (/delete this/):
 - [ ] [[elisp:(my/kill-messengers)][Close all messengers]]
 - [ ] Process [[file:../inbox.org][inbox]]
@@ -5271,13 +5321,22 @@ Happened to the world:
 
 *** New ideas
 /Write them down in org-roam with the \"fleeting\" tag; leave links here. Perhaps note what sparked that idea?/
-
+"
+              (thread-last
+                (nth 1 roam-changes)
+                (seq-filter (lambda (c) (eq 'added (car c))))
+                (mapcar (lambda (c)
+                          (format "- [[id:%s][%s]]\n"
+                                  (org-roam-node-id (cdr c))
+                                  (org-roam-node-title (cdr c)))))
+                (apply #'concat))
+              "
 *** Interactions today
 /Any meaninginful interactions, conflicts or tensions?/
 
 *** Emotions today
 /How did I feel?/
-")))
+"))))
 
 (defun my/org-review-daily ()
   (interactive)
@@ -5289,6 +5348,93 @@ Happened to the world:
 
 (with-eval-after-load 'org-journal
   (my-leader-def "ojd" #'my/org-review-daily))
+
+(defun my/org-review-org-roam-format-zk-before (date)
+  (let* ((data (my/org-review--org-roam-get-changes date))
+         (changed-inbox (nth 0 data))
+         (changed-fleeting (nth 1 data))
+         (changed-permanent (nth 2 data)))
+    (concat
+     (when changed-inbox
+       (concat
+        "Process these changes in inbox:\n"
+        (thread-last
+          changed-inbox
+          (mapcar (lambda (change)
+                    (format "- [ ] %s :: %s\n"
+                            (cond
+                             ((or (member (car change) '(deleted moved))
+                                  (string-match-p "figured-out" (cdr change)))
+                              "Processed")
+                             (t (capitalize (symbol-name (car change)))))
+                            (cdr change))))
+          (apply #'concat))
+        "\n"))
+     (when changed-fleeting
+       (concat
+        "Process these fleeting notes:\n"
+        (thread-last
+          changed-fleeting
+          (mapcar (lambda (c)
+                    (format "- [ ] %s :: [[id:%s][%s]]\n"
+                            (capitalize (symbol-name (car c)))
+                            (org-roam-node-id (cdr c))
+                            (org-roam-node-title (cdr c)))))
+          (apply #'concat))
+        "\n"))
+     (when changed-permanent
+       (concat
+        "Check these changes in permanent notes:\n"
+        (thread-last
+          changed-permanent
+          (mapcar (lambda (c)
+                    (format "- [ ] %s :: [[id:%s][%s]]\n"
+                            (capitalize (symbol-name (car c)))
+                            (org-roam-node-id (cdr c))
+                            (org-roam-node-title (cdr c)))))
+          (apply #'concat)))))))
+
+(defun my/org-review-org-roam-finish (date)
+  (org-roam-db-sync)
+  (save-excursion
+    (org-back-to-heading)
+    (replace-regexp
+     (rx
+      ":BEGIN_REVIEW:" (* anything) ":END_REVIEW:")
+     (string-trim
+      (my/org-review-org-roam-format date)))))
+
+(defun my/org-review-set-zk-record ()
+  (save-excursion
+    (let ((last-review-date (my/org-review-get-last-review-date 'zk)))
+      (org-journal-tags-prop-apply-delta :add '("review.zk"))
+      (insert "Zettelkasten Review")
+      (goto-char (point-max))
+
+      (insert "Last review date: "
+              (format-time-string
+               "[%Y-%m-%d]"
+               (seconds-to-time last-review-date)))
+
+      (insert "\n\n:BEGIN_REVIEW:\n"
+              "Process all the required categories in this block, then execute \"Finish review\".\n\n"
+              (string-trim
+               (my/org-review-org-roam-format-zk-before last-review-date))
+              "\n\n[[elisp:(my/org-review-org-roam-finish \""
+              (format-time-string "%Y-%m-%d" last-review-date)
+              "\")][Finish review]]"
+              "\n:END_REVIEW:\n"))))
+
+(defun my/org-review-zk ()
+  (interactive)
+  (let ((org-journal-after-entry-create-hook
+         `(,@org-journal-after-entry-create-hook
+           my/org-review-set-zk-record)))
+    (org-journal-new-entry nil)
+    (org-fold-show-subtree)))
+
+(with-eval-after-load 'org-journal
+  (my-leader-def "ojz" #'my/org-review-zk))
 
 (use-package org-contacts
   :straight (:type git :repo "https://repo.or.cz/org-contacts.git")
@@ -8037,13 +8183,18 @@ base toot."
   :commands (gptel gptel-send gptel-menu)
   :config
   (setq gptel-mode "llama3:latest")
-  (setq gptel-backend (gptel-make-ollama "Ollama"
-                        :host "localhost:11434"
-                        :stream t
-                        :models '("llama3.1:8b" "deepseek-r1:32b"
-                                  "qwen2.5:32b" "qwen2.5-coder:32b"
-                                  "eva-qwen2.5-q4_k_l-32b:latest"
-                                  "t-pro-1.0-q4_k_m:latest")))
+  (setq gptel-track-media t)
+  (setq gptel-backend
+        (gptel-make-ollama "Ollama"
+          :host "localhost:11434"
+          :stream t
+          :models '("llama3.1:8b" "deepseek-r1:32b"
+                    "qwen2.5:32b" "qwen2.5-coder:32b"
+                    "eva-qwen2.5-q4_k_l-32b:latest"
+                    "t-pro-1.0-q4_k_m:latest"
+                    (llava-phi3:latest
+                     :capabilities (media)
+                     :mime-types ("image/jpeg" "image/png")))))
   (gptel-make-openai "OpenRouter"
     :host "openrouter.ai/api"
     :key (lambda () (my/password-store-get-field
