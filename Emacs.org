@@ -1083,6 +1083,28 @@ Input accented characters.
   (setq accent-custom '((a (ā))
                         (A (Ā)))))
 #+end_src
+*** Random editing tricks
+**** Round number at point
+#+begin_src emacs-lisp
+(defun my/round-number-at-point (word signs)
+  (interactive
+   (list (or (when (region-active-p)
+               (buffer-substring-no-properties
+                (region-beginning)
+                (region-end)))
+             (thing-at-point 'number 'no-properties))
+         (read-number "Decimal signs: " 2)))
+  (when (stringp word)
+    (setq word (string-to-number word)))
+  (let ((number (/ (float (round (* (expt 10 signs) word)))
+                   (expt 10 signs))))
+    (save-excursion
+      (replace-string-in-region
+       (number-to-string word)
+       (number-to-string number)
+       (line-beginning-position)
+       (line-end-position)))))
+#+end_src
 ** Working with projects
 Packages related to managing projects.
 
@@ -10835,6 +10857,7 @@ Or you can load up Element for a moment to see what the mention was, if that's e
   (setq telega-emoji-use-images nil)
   (setq telega-chat-fill-column 80)
   (setq telega-completing-read-function #'completing-read)
+  (setq telega-sticker-size '(12 . 24))
   (add-to-list 'savehist-additional-variables 'telega-msg-add-reaction)
   (remove-hook 'telega-chat-mode-hook #'telega-chat-auto-fill-mode)
   (general-define-key
@@ -11180,6 +11203,7 @@ I don't have access to any proprietary APIs, but LLaMA 3.1 8b with [[https://oll
                     "qwen2.5:32b" "qwen2.5-coder:32b"
                     "eva-qwen2.5-q4_k_l-32b:latest"
                     "t-pro-1.0-q4_k_m:latest"
+                    "t-lite-it-1.0-q4_k_m:latest"
                     (llava-phi3:latest
                      :capabilities (media)
                      :mime-types ("image/jpeg" "image/png")))))

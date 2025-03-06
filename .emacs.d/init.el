@@ -615,6 +615,25 @@ then it takes a second \\[keyboard-quit] to abort the minibuffer."
   (setq accent-custom '((a (ā))
                         (A (Ā)))))
 
+(defun my/round-number-at-point (word signs)
+  (interactive
+   (list (or (when (region-active-p)
+               (buffer-substring-no-properties
+                (region-beginning)
+                (region-end)))
+             (thing-at-point 'number 'no-properties))
+         (read-number "Decimal signs: " 2)))
+  (when (stringp word)
+    (setq word (string-to-number word)))
+  (let ((number (/ (float (round (* (expt 10 signs) word)))
+                   (expt 10 signs))))
+    (save-excursion
+      (replace-string-in-region
+       (number-to-string word)
+       (number-to-string number)
+       (line-beginning-position)
+       (line-end-position)))))
+
 (use-package projectile
   :straight t
   :config
@@ -8192,6 +8211,7 @@ base toot."
                     "qwen2.5:32b" "qwen2.5-coder:32b"
                     "eva-qwen2.5-q4_k_l-32b:latest"
                     "t-pro-1.0-q4_k_m:latest"
+                    "t-lite-it-1.0-q4_k_m:latest"
                     (llava-phi3:latest
                      :capabilities (media)
                      :mime-types ("image/jpeg" "image/png")))))
