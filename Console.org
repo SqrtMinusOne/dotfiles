@@ -345,7 +345,7 @@ xhost +local:root > /dev/null 2>&1
 
 Set manpager to bat
 #+begin_src bash
-export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
+# export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
 #+end_src
 
 [[https://codeberg.org/akib/emacs-eat][eat]] integration
@@ -974,6 +974,8 @@ keymap_mode = "vim-insert"
 | ncdu            | disk usage analyzer                         |
 | openssl         |                                             |
 | aria2           | Download tool                               |
+| man-db          |                                             |
+| pv              |                                             |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.

@@ -1,5 +1,6 @@
 (specifications->manifest
  '(
+   "man-db"
    "aria2"
    "openssl"
    "ncdu"
