@@ -109,11 +109,18 @@ I'm paranoid so I encrypt my SSH keys.
 Got the idea for below from [[https://wiki.archlinux.org/title/SSH_keys#SSH_agents][ArchWiki]]:
 
 #+begin_src bash
+SSH_AGENT_DIR="/tmp"
+
+if [ "$IS_ANDROID" == "true" ]; then
+    SSH_AGENT_DIR="/data/data/com.termux/files/tmp"
+    mkdir -p $SSH_AGENT_DIR
+fi
+
 if ! pgrep -u "$USER" ssh-agent > /dev/null; then
-    ssh-agent -t 1h > "$XDG_RUNTIME_DIR/ssh-agent.env"
+    ssh-agent -t 1h > "$SSH_AGENT_DIR/ssh-agent.env"
 fi
 if [[ ! -f "$SSH_AUTH_SOCK" ]]; then
-    source "$XDG_RUNTIME_DIR/ssh-agent.env" >/dev/null
+    source "$SSH_AGENT_DIR/ssh-agent.env" >/dev/null
 fi
 #+end_src
 ** Guix settings

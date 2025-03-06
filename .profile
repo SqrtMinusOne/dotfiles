@@ -51,11 +51,18 @@ fi
 # SSL Certs:1 ends here
 
 # [[file:Console.org::*ssh-agent][ssh-agent:1]]
+SSH_AGENT_DIR="/tmp"
+
+if [ "$IS_ANDROID" == "true" ]; then
+    SSH_AGENT_DIR="/data/data/com.termux/files/tmp"
+    mkdir -p $SSH_AGENT_DIR
+fi
+
 if ! pgrep -u "$USER" ssh-agent > /dev/null; then
-    ssh-agent -t 1h > "/tmp/ssh-agent.env"
+    ssh-agent -t 1h > "$SSH_AGENT_DIR/ssh-agent.env"
 fi
 if [[ ! -f "$SSH_AUTH_SOCK" ]]; then
-    source "/tmp/ssh-agent.env" >/dev/null
+    source "$SSH_AGENT_DIR/ssh-agent.env" >/dev/null
 fi
 # ssh-agent:1 ends here
 
