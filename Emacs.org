@@ -116,7 +116,7 @@ References:
 ** Variables & environment
 This section is about optioning the Emacs config.
 
-The following is true is Emacs is run on a remote server where I don't need stuff like my org workflow
+The following is true is Emacs is run on a remote server where I don't need stuff like my org workflow.
 #+begin_src emacs-lisp
 (setq my/remote-server
       (or (string= (getenv "IS_REMOTE") "true")
@@ -124,9 +124,14 @@ The following is true is Emacs is run on a remote server where I don't need stuf
           (string= (system-name) "viridian")))
 #+end_src
 
-And the following is true if Emacs is run from termux on Android.
+The following is true if Emacs is run from termux on Android.
 #+begin_src emacs-lisp
 (setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
+#+end_src
+
+The following is true if Emacs is run on my uConsole.
+#+begin_src emacs-lisp
+(setq my/is-uconsole (string= (system-name) "amaranth"))
 #+end_src
 
 Custom system name logic because on termux it's always "localhost".
@@ -170,7 +175,7 @@ A small function to print out the loading time and number of GCs during the load
 
 Set the following to =t= to print debug information during the startup. This will include package loading order and time.
 #+begin_src emacs-lisp
-(setq use-package-verbose nil)
+(setq use-package-verbose t)
 #+end_src
 
 #+begin_src emacs-lisp
@@ -2242,6 +2247,12 @@ References:
     (message "Install JetBrainsMono Nerd Font!")))
 #+end_src
 
+Increase font size for my uConsole:
+#+begin_src emacs-lisp
+(when my/is-uconsole
+  (set-face-attribute 'default nil :height 140))
+#+end_src
+
 To make the icons work (e.g. in the Doom Modeline), run =M-x all-the-icons-install-fonts=. The package definition is somewhere later in the config.
 *** Other fonts
 #+begin_src emacs-lisp
@@ -2428,6 +2439,22 @@ References:
     (setenv "POLYBAR_BOTTOM" "true")
     (when (fboundp #'my/exwm-run-polybar)
       (my/exwm-run-polybar))))
+#+end_src
+*** Doom Modeline on uConsole
+My uConsole has a rather small screen, so here are some tweaks.
+
+What this does is:
+- Force a smaller height (see [[https://github.com/seagle0128/doom-modeline/issues/187][this issue]])
+- Force display =mode-line-misc-info=, which includes EXWM workspace list and perspectives list.
+#+begin_src emacs-lisp
+(defun my/doom-modeline-uconsole--font-height ()
+  20)
+
+(when my/is-uconsole
+  (with-eval-after-load 'doom-modeline
+    (advice-add #'doom-modeline--font-height :override #'my-doom-modeline--font-height))
+  (setq doom-modeline-window-width-limit 70)
+  (setq doom-modeline-major-mode-icon nil))
 #+end_src
 
 ** perspective.el

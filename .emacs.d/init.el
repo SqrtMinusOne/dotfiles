@@ -23,6 +23,8 @@
 
 (setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
 
+(setq my/is-uconsole (string= (system-name) "amaranth"))
+
 (defun my/system-name ()
   (or (getenv "ANDROID_NAME")
       (system-name)))
@@ -41,7 +43,7 @@
                      gcs-done)
             (setq my/emacs-started t)))
 
-(setq use-package-verbose nil)
+(setq use-package-verbose t)
 
 (setq use-package-compute-statistics t)
 
@@ -1421,6 +1423,9 @@ targets."
         (add-to-list 'default-frame-alist `(font . ,font)))
     (message "Install JetBrainsMono Nerd Font!")))
 
+(when my/is-uconsole
+  (set-face-attribute 'default nil :height 140))
+
 (when (display-graphic-p)
   (set-face-attribute 'variable-pitch nil :family "Cantarell" :height 1.0)
   (set-face-attribute
@@ -1572,6 +1577,15 @@ targets."
     (setenv "POLYBAR_BOTTOM" "true")
     (when (fboundp #'my/exwm-run-polybar)
       (my/exwm-run-polybar))))
+
+(defun my/doom-modeline-uconsole--font-height ()
+  20)
+
+(when my/is-uconsole
+  (with-eval-after-load 'doom-modeline
+    (advice-add #'doom-modeline--font-height :override #'my-doom-modeline--font-height))
+  (setq doom-modeline-window-width-limit 70)
+  (setq doom-modeline-major-mode-icon nil))
 
 (use-package perspective
   :straight t

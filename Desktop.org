@@ -38,13 +38,16 @@ To use them, let's define a noweb block:
     color))
 #+end_src
 
+#+RESULTS: get-color
+: #222222
+
 Test:
 #+begin_src emacs-lisp :noweb yes
 <<get-color(name="red", quote=1)>>
 #+end_src
 
 #+RESULTS:
-: #f07178
+: #cc3333
 
 Also, get a foreground for the current color:
 #+NAME: get-fg-for-color
@@ -57,13 +60,16 @@ Also, get a foreground for the current color:
     val))
 #+end_src
 
+#+RESULTS: get-fg-for-color
+: #fff8f0
+
 Test;
 #+begin_src emacs-lisp :noweb yes
 <<get-fg-for-color(name="red", quote=1)>>
 #+end_src
 
 #+RESULTS:
-: #fafafa
+: #fff8f0
 
 This table used to have values, now it has only keys:
 #+tblname: colors
@@ -102,6 +108,26 @@ Some programs get their colors from =XResources=. Let's generate that file.
  "\n")
 #+end_src
 
+#+RESULTS: get-xresources
+#+begin_example
+,*color0: #222222
+,*color1: #cc3333
+,*color2: #217a3c
+,*color3: #8a5d00
+,*color4: #375cd8
+,*color5: #ba35af
+,*color6: #1f6fbf
+,*color7: #fff8f0
+,*color8: #484848
+,*color9: #ff8f88
+,*color10: #8adf80
+,*color11: #fac200
+,*color12: #cbcfff
+,*color13: #df8fff
+,*color14: #88c8ff
+,*color15: #ffffff
+#+end_example
+
 #+begin_src conf-xdefaults :noweb yes :tangle ~/.Xresources
 <<get-xresources()>>
 
@@ -120,6 +146,7 @@ Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting 
         ((string-equal hostname "eminence") 120)
         ((string-equal hostname "violet") 120)
         ((string-equal hostname "iris") 120)
+        ((string-equal hostname "amaranth") 140)
         (t 96)))
 #+end_src
 
@@ -295,7 +322,7 @@ The GUI pinentry doesn't work too well with EXWM because of issues with popup wi
 #+end_src
 
 #+RESULTS: find-pinentry
-: /home/pavel/.guix-profile/bin/pinentry
+: /usr/bin/pinentry
 
 #+begin_src conf-space :tangle ~/.gnupg/gpg-agent.conf :noweb yes
 default-cache-ttl 3600
@@ -539,9 +566,6 @@ Here is a snippet of code that does it:
   (setq my/exwm-last-workspaces
         (seq-uniq (cons exwm-workspace-current-index
                         my/exwm-last-workspaces))))
-
-(add-hook 'exwm-workspace-switch-hook
-          #'my/exwm-store-last-workspace)
 #+end_src
 
 The variable =my/exwm-last-workspaces= stores the workspace indices; the first item is the index of the current workspace, the second item is the index of the previous workspace, and so on.
@@ -912,6 +936,16 @@ And keybindings that are available in both =char-mode= and =line-mode=:
                         (when (or (< ,i (exwm-workspace--count))
                                   (y-or-n-p (format "Create workspace %d" ,i)))
                           (exwm-workspace-switch-create ,i) ))))
+                  (number-sequence 0 9))
+        ,@(mapcar (lambda (i)
+                    (when (= i 0)
+                      (setq i 10))
+                    `(,(kbd (format "s-<f%d>" i)) .
+                      (lambda ()
+                        (interactive)
+                        (when (or (< ,i (exwm-workspace--count))
+                                  (y-or-n-p (format "Create workspace %d" ,i)))
+                          (exwm-workspace-switch-create ,i) ))))
                   (number-sequence 0 9))))
 #+end_src
 
@@ -1167,8 +1201,9 @@ It seems like this strange commit: [[https://github.com/ch11ng/exwm/commit/ce219
       (exwm--log "Unhandled: %s(%d)"
                  (x-get-atom-name type exwm-workspace--current) type)))))
 
-(with-eval-after-load 'exwm
-  (advice-add 'exwm--on-ClientMessage :override #'exwm--on-ClientMessage-old))
+(unless my/is-uconsole
+  (with-eval-after-load 'exwm
+    (advice-add 'exwm--on-ClientMessage :override #'exwm--on-ClientMessage-old)))
 #+end_src
 
 ** Application-specific settings
@@ -1190,8 +1225,11 @@ And the EXWM config itself.
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
   (my/run-in-background "gpgconf --reload gpg-agent")
-  (when (my/is-arch)
-    (my/run-in-background "set_layout")))
+  (when (or (my/is-arch)
+            (equal (system-name) "amaranth"))
+    (my/run-in-background "set_layout"))
+  (add-hook 'exwm-workspace-switch-hook
+            #'my/exwm-store-last-workspace))
 
 (defun my/exwm-update-class ()
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))
@@ -1922,6 +1960,7 @@ As we want to interweave polybar modules with these glyphs in the right order an
 |     1 | pulseaudio  | light-magenta | +     |
 |     2 | mpd         | magenta       | +     |
 |    16 | nvidia      | light-cyan    | +     |
+|    17 | backlight   | light-cyan    | +     |
 |     3 | cpu         | cyan          | +     |
 |    15 | temperature | cyan          | +     |
 |     9 | battery     | cyan          | +     |
@@ -1938,17 +1977,25 @@ As we want to interweave polybar modules with these glyphs in the right order an
 Also excluding some modules from certain monitors, which for now is about excluding =battery= from the monitors of my desktop PC:
 
 #+NAME: polybar_modules_exclude
-| Monitor  | Exclude |
-|----------+---------|
-| DVI-D-0  | battery |
-| HDMI-A-0 | battery |
-| HDMI-0   | battery |
-| DP-1     | battery |
-| eDP      | nvidia  |
-| eDP-1    | nvidia  |
-| DVI-D-0  | nvidia  |
-| HDMI-A-0 | nvidia  |
-| HDMI-1   | nvidia  |
+| Monitor  | Hostname | Exclude     |
+|----------+----------+-------------|
+| HDMI-0   | violet   | battery     |
+| HDMI-0   | violet   | backlight   |
+| DP-1     | violet   | battery     |
+| DP-1     | violet   | backlight   |
+| HDMI-A-0 | eminence | battery     |
+| HDMI-A-0 | eminence | nvidia      |
+| eDP      | eminence | nvidia      |
+| HDMI-1   | iris     | nvidia      |
+| HDMI-1   | iris     | backlight   |
+| DSI-1    | amaranth | nvidia      |
+| DSI-1    | amaranth | mpd         |
+| DSI-1    | amaranth | openvpn     |
+| DSI-1    | amaranth | swap-memory |
+| DSI-1    | amaranth | bandwidth   |
+| DSI-1    | amaranth | temperature |
+| DSI-1    | amaranth | weather     |
+| DSI-1    | amaranth | sun         |
 
 Another thing we need to do is to set the color of modules in accordance with the =polybar_modules= table. The background can be determined from the =Color= column with the following code block:
 #+NAME: get-polybar-bg
@@ -1977,21 +2024,27 @@ Most of these combinations can be inferred from the =polybar_modules= table, the
 
 #+NAME: polybar-generate-glyphs
 #+begin_src emacs-lisp :var table=polybar_modules exclude-table=polybar_modules_exclude extra=polybar_extra_colors
-(let* ((monitors
+(let* ((monitor-hostnames
         (thread-last
           exclude-table
-          (seq-map (lambda (el) (nth 0 el)))
+          (seq-map (lambda (el) (concat (nth 0 el) ":" (nth 1 el))))
           (seq-uniq)))
        (exclude-combinations
-        (seq-map
-         (lambda (monitor)
-           (seq-map
-            (lambda (el) (nth 1 el))
-            (seq-filter
-             (lambda (el) (and (string-equal (nth 0 el) monitor)
-                               (nth 1 el)))
-             exclude-table)))
-         `(,@monitors "")))
+        (seq-uniq
+         (seq-map
+          (lambda (monitor-hostname)
+            (let* ((split (string-split monitor-hostname ":"))
+                   (monitor (nth 0 split))
+                   (hostname (nth 1 split)))
+              (seq-map
+               (lambda (el) (nth 2 el))
+               (seq-filter
+                (lambda (el)
+                  (and (string-equal (nth 0 el) monitor)
+                       (string-equal (nth 1 el) hostname)
+                       (nth 2 el)))
+                exclude-table))))
+          `(,@monitor-hostnames ""))))
        (module-glyph-combinations
         (thread-last
           exclude-combinations
@@ -2007,16 +2060,16 @@ Most of these combinations can be inferred from the =polybar_modules= table, the
           (seq-uniq)))
        (color-changes nil))
   (dolist (e extra)
-    (add-to-list
-     'color-changes
-     (concat (nth 0 e) "--" (nth 1 e))))
+    (push (concat (nth 0 e) "--" (nth 1 e))
+          color-changes))
   (dolist (comb module-glyph-combinations)
     (dotimes (i (1- (length comb)))
-      (add-to-list
-       'color-changes
+      (push
        (concat (nth 2 (nth i comb))
                "--"
-               (nth 2 (nth (1+ i) comb))))))
+               (nth 2 (nth (1+ i) comb)))
+       color-changes)))
+  (setq color-changes (seq-uniq color-changes))
   (mapconcat
    (lambda (el)
      (let ((colors (split-string el "--")))
@@ -2036,10 +2089,10 @@ content-font = 5"
 #+end_src
 
 Here's a rough outline of how the code works:
-- =monitors= is a list of unique monitors in =exclude-table=
-- =exclude-combilnations= is a list of lists of module names to be excluded for each monitor
-- =module-glyphs-combinations= is a list of lists of actual modules for each monitor
-- =color-changes= is a list of unique adjacent colors across modules in all monitors
+- =monitor-hostnames= is a list of unique monitor-hostname combination in =exclude-table=
+- =exclude-combilnations= is a list of lists of module names to be excluded for each combinations
+- =module-glyphs-combinations= is a list of lists of actual modules for each combination
+- =color-changes= is a list of unique adjacent colors across modules in all combinations
 
 Finally, =color-changes= is used to generate glyph modules that look like this:
 #+begin_src conf-windows :tangle no
@@ -2066,12 +2119,13 @@ The parameters here, excluding the two required tables, are:
 - =last-color= - the second color of the last glyph.
 
 #+NAME: polybar-generate-modules
-#+begin_src emacs-lisp :var table=polybar_modules exclude-table=polybar_modules_exclude monitor="DVI-D-0" first-color="background" last-color="background"
+#+begin_src emacs-lisp :var table=polybar_modules exclude-table=polybar_modules_exclude monitor="DSI-1" first-color="background" last-color="background" hostname="amaranth"
 (let* ((exclude-modules
         (thread-last
           exclude-table
-          (seq-filter (lambda (el) (string-equal (nth 0 el) monitor)))
-          (seq-map (lambda (el) (nth 1 el)))))
+          (seq-filter (lambda (el) (and (string-equal (nth 0 el) monitor)
+                                        (string-equal (nth 1 el) hostname))))
+          (seq-map (lambda (el) (nth 2 el)))))
        (modules
         (thread-last
           table
@@ -2169,6 +2223,12 @@ scroll-down = i3wm-wsprev
 ; cursor-scroll = ns-resize
 #+end_src
 
+DPI:
+#+begin_src conf-windows
+dpi-x = ${env:DPI}
+dpi-y = ${env:DPI}
+#+end_src
+
 Misc settings.
 #+begin_src conf-windows
 [settings]
@@ -2191,6 +2251,9 @@ The script below allows me to:
 #+begin_src bash :tangle ./bin/polybar.sh :noweb yes
 hostname=$(hostname)
 # Settings varying on the hostname
+DPI=96
+BAR_HEIGHT=29
+
 if [ "$hostname" = "azure" ]; then
     TRAY_MONITOR="eDP-1"
 elif [ "$hostname" = "eminence" ]; then
@@ -2201,52 +2264,45 @@ elif [ "$hostname" = "eminence" ]; then
     fi
 elif [ "$hostname" = "iris" ]; then
     TRAY_MONITOR="HDMI-1"
+elif [ "$hostname" = "amaranth" ]; then
+    export BATTERY="axp20x-battery"
+    export ADAPTER="axp22x-ac"
+    TRAY_MONITOR="DSI-1"
 else
     TRAY_MONITOR="DP-1"
 fi
 
 # Setting varying on the monitor
-declare -A FONT_SIZES=(
-    ["eDP"]="13"
-    ["eDP-1"]="13"
-    ["DVI-D-0"]="13"
-    ["HDMI-A-0"]="13"
-    ["HDMI-1"]="13"
-    ["HDMI-0"]="13"
-    ["DP-1"]="13"
+declare -A FONT_SIZE_OVERRIDE=(
+    ["amaranth:DSI-1"]="13"
 )
-declare -A EMOJI_SCALE=(
-    ["eDP"]="9"
-    ["eDP-1"]="9"
-    ["DVI-D-0"]="10"
-    ["HDMI-A-0"]="10"
-    ["HDMI-1"]="10"
-    ["HDMI-0"]="10"
-    ["DP-1"]="10"
+declare -A EMOJI_SCALE_OVERRIDE=(
+    ["amaranth:DSI-1"]="13"
 )
-declare -A BAR_HEIGHT=(
-    ["eDP"]="29"
-    ["eDP-1"]="29"
-    ["DVI-D-0"]="29"
-    ["HDMI-A-0"]="29"
-    ["HDMI-1"]="29"
-    ["HDMI-0"]="29"
-    ["DP-1"]="29"
+declare -A DPI_OVERRIDE=(
+    ["amaranth:DSI-1"]="140"
+)
+declare -A BAR_HEIGHT_OVERRIDE=(
+    ["amaranth:DSI-1"]="40"
 )
 declare -A BLOCKS=(
-    ["eDP"]="<<polybar-generate-modules(monitor="eDP")>>"
-    ["eDP-1"]="<<polybar-generate-modules(monitor="eDP-1")>>"
-    ["DVI-D-0"]="<<polybar-generate-modules(monitor="DVI-D-0")>>"
-    ["HDMI-A-0"]="<<polybar-generate-modules(monitor="HDMI-A-0")>>"
-    ["HDMI-1"]="<<polybar-generate-modules(monitor="HDMI-1")>>"
-    ["HDMI-0"]="<<polybar-generate-modules(monitor="HDMI-0")>>"
-    ["DP-1"]="<<polybar-generate-modules(monitor="DP-1")>>"
+    ["violet:HDMI-0"]="<<polybar-generate-modules(monitor="HDMI-0" hostname="violet")>>"
+    ["violet:DP-1"]="<<polybar-generate-modules(monitor="DP-1" hostname="violet")>>"
+    ["eminence:eDP"]="<<polybar-generate-modules(monitor="HDMI-A-0" hostname="eminence")>>"
+    ["eminence:HDMI-A-0"]="<<polybar-generate-modules(monitor="HDMI-A-0" hostname="eminence")>>"
+    ["iris:HDMI-1"]="<<polybar-generate-modules(monitor="HDMI-1" hostname="iris")>>"
+    ["amaranth:DSI-1"]="<<polybar-generate-modules(monitor="DSI-1" hostname="amaranth")>>"
 )
 
 declare -A TEMP_HWMON_PATHS=(
     ["eminence"]="/sys/devices/pci0000:00/0000:00:18.3/hwmon/hwmon2/temp1_input"
     ["indigo"]="/sys/devices/platform/coretemp.0/hwmon/hwmon2/temp1_input"
     ["violet"]="/sys/devices/platform/coretemp.0/hwmon/hwmon2/temp1_input"
+    ["amaranth"]="/sys/devices/virtual/thermal/thermal_zone0/hwmon0/temp1_input"
+)
+
+declare -A BACKLIGHT_CARDS=(
+    ["amaranth"]="backlight@0"
 )
 
 # Geolocation for some modules
@@ -2262,19 +2318,19 @@ for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     else
         export TRAY="none"
     fi
-    SIZE=${FONT_SIZES[$MONITOR]}
-    SCALE=${EMOJI_SCALE[$MONITOR]}
-    TEMP=${TEMP_HWMON_PATHS[$(hostname)]}
-    if [[ -z "$SCALE" ]]; then
+
+    KEY="$(hostname):${m}"
+
+    export HEIGHT=${BAR_HEIGHT_OVERRIDE[$KEY]:-$BAR_HEIGHT}
+    export DPI=${DPI_OVERRIDE[$KEY]:-$DPI}
+    export RIGHT_BLOCKS=${BLOCKS[$KEY]}
+    if [[ -z "$RIGHT_BLOCKS" ]]; then
         continue
     fi
-    # export FONT0="pango:monospace:size=$SIZE;1"
-    # export FONT1="NotoEmoji:scale=$SCALE:antialias=false;1"
-    # export FONT2="fontawesome:pixelsize=$SIZE;1"
-    # export FONT3="JetBrains Mono Nerd Font:monospace:size=15;1"
-    export HEIGHT=${BAR_HEIGHT[$MONITOR]}
-    export RIGHT_BLOCKS=${BLOCKS[$MONITOR]}
-    export TEMP_HWMON_PATH=${TEMP}
+
+    export TEMP_HWMON_PATH=${TEMP_HWMON_PATHS[$(hostname)]}
+    export BACKLIGHT_CARD=${BACKLIGHT_CARDS[$(hostname)]}
+
     polybar mybar &
 done
 #+end_src
@@ -2396,7 +2452,72 @@ format =  <label>
 format-background = <<get-polybar-bg(module="nvidia")>>
 format-foreground = ${colors.foreground}
 #+end_src
+*** backlight
+The built-in backlight module doesn't work for me for some reason.
 
+#+begin_src bash :tangle ~/bin/polybar/backlight.sh
+if [ -z "$BACKLIGHT_CARD" ]; then
+    exit 0
+fi
+
+BRIGHTNESS_PATH="/sys/class/backlight/$BACKLIGHT_CARD/brightness"
+MAX_BRIGHTNESS_PATH="/sys/class/backlight/$BACKLIGHT_CARD/max_brightness"
+
+if [ ! -f "$BRIGHTNESS_PATH" ] || [ ! -f "$MAX_BRIGHTNESS_PATH" ]; then
+    echo "Brightness files not found :c"
+    exit 1
+fi
+
+current_brightness=$(cat "$BRIGHTNESS_PATH")
+max_brightness=$(cat "$MAX_BRIGHTNESS_PATH")
+
+print_brightness() {
+    local brightness=$1
+    local max=$2
+    local ramp_chars=("▁" "▂" "▃" "▄" "▅" "▆" "▇" "█")
+
+    local ramp_index=$(( (brightness * 7) / max ))
+    echo -n " ${ramp_chars[$ramp_index]} $brightness"
+}
+
+case "$1" in
+    "up")
+        new_brightness=$((current_brightness + 1))
+        if [ $new_brightness -gt $max_brightness ]; then
+            new_brightness=$max_brightness
+        fi
+        ;;
+    "down")
+        new_brightness=$((current_brightness - 1))
+        if [ $new_brightness -lt 1 ]; then
+            new_brightness=1
+        fi
+        ;;
+    ,*)
+        new_brightness=$current_brightness
+        ;;
+esac
+
+if [ $new_brightness -ne $current_brightness ]; then
+    echo $new_brightness > "$BRIGHTNESS_PATH"
+fi
+
+print_brightness $new_brightness $max_brightness
+#+end_src
+
+#+begin_src conf-windows :noweb yes
+[module/backlight]
+type = custom/script
+exec = /home/pavel/bin/polybar/backlight.sh
+scroll-up = /home/pavel/bin/polybar/backlight.sh up
+click-left = /home/pavel/bin/polybar/backlight.sh up
+scroll-down = /home/pavel/bin/polybar/backlight.sh down
+click-right = /home/pavel/bin/polybar/backlight.sh down
+interval = 1
+
+format-background = <<get-polybar-bg(module="backlight")>>
+format-foreground = ${colors.foreground}
+#+end_src
 *** ram-memory
 RAM usage
 #+begin_src conf-windows :noweb yes
@@ -2660,8 +2781,8 @@ layout-icon-1 = us;US
 #+begin_src conf-windows :noweb yes
 [module/battery]
 type = internal/battery
-battery = BAT0
-adapter = ADP0
+battery = ${env:BATTERY:BAT0}
+adapter = ${env:ADAPTER:ADP0}
 
 time-format = %H:%M
 format-discharging = <ramp-capacity> <label-discharging>
@@ -2778,7 +2899,13 @@ afk_event=$(curl -s -X GET "http://localhost:5600/api/0/buckets/aw-watcher-afk_$
 status=$(echo ${afk_event} | jq -r '.[0].data.status')
 afk_time=$(echo "${afk_event}" | jq -r '.[0].duration' | xargs -I !  date -u -d @! +"%H:%M")
 
-uptime=$(uptime | awk '{ print substr($3, 0, length($3) - 1) }' | xargs -I ! date -d ! +"%H:%M")
+if uptime --version 2>&1 | grep -q "GNU coreutils"; then
+    uptime=$(uptime | awk '{ print substr($3, 0, length($3) - 1) }' | xargs -I ! date -d ! +"%H:%M")
+else
+    startup_seconds=$(date -d "$(uptime -s)" +%s)
+    current_seconds=$(date +%s)
+    uptime=$(date -d "@$((current_seconds - startup_seconds))" -u +"%H:%M")
+fi
 res="${afk_time} / ${uptime}"
 if [[ $status == 'afk' ]]; then
     # echo "%{u<<get-color(name="red")>>}%{+u} [AFK] $res %{u-}"
@@ -2876,7 +3003,7 @@ content-background = ${colors.blue}
 #+begin_src conf-windows
 [module/glyph-left-light-background--blue]
 type = custom/text
-content-background = ${colors.backround}
+content-background = ${colors.background}
 content-foreground = ${colors.blue}
 content = ${glyph.gleft}
 content-font = 5
@@ -4374,6 +4501,10 @@ I previously used supervisor, but shepherd also seems pretty capable.
 |-----------------|
 | shepherd        |
 
+#+begin_src scheme
+(use-modules (shepherd service timer))
+#+end_src
+
 ** Music
 | Category | Guix dependency |
 |----------+-----------------|
@@ -4388,8 +4519,7 @@ I previously used supervisor, but shepherd also seems pretty capable.
 Music player daemon
 #+begin_src scheme
 (define mpd
-  (make <service>
-    #:provides '(mpd)
+  (service '(mpd)
     #:respawn? #t
     #:start (make-forkexec-constructor '("mpd" "--no-daemon"))
     #:stop (make-kill-destructor)))
@@ -4398,30 +4528,27 @@ Music player daemon
 MPD watcher
 #+begin_src scheme
 (define sqrt-data-agent-mpd
-  (make <service>
-    #:provides '(sqrt-data-agent-mpd)
+  (service '(sqrt-data-agent-mpd)
     #:respawn? #t
     #:start (make-forkexec-constructor '("sqrt_data_agent_mpd"))
     #:stop (make-kill-destructor)
-    #:requires '(mpd)))
+    #:requirement '(mpd)))
 
 (define deterred-mpd
-  (make <service>
-    #:provides '(deterred-mpd)
+  (service '(deterred-mpd)
     #:respawn? #t
     #:start (make-forkexec-constructor
              '("python" "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/watchers/deterred-mpd.py"
                "--db" "/home/pavel/.deterred/database.db"))
     #:stop (make-kill-destructor)
-    #:requires '(mpd)))
+    #:requirement '(mpd)))
 #+end_src
 ** GNU Mcron
 [[https://www.gnu.org/software/mcron/][GNU Mcron]] is a replacement for cron, written in Scheme.
 
 #+begin_src scheme
 (define mcron
-  (make <service>
-    #:provides '(mcron)
+  (service '(mcron)
     #:respawn? #t
     #:start (make-forkexec-constructor '("mcron"))
     #:stop (make-kill-destructor)))
@@ -4433,49 +4560,46 @@ MPD watcher
 |-------------------|
 | activitywatch-bin |
 
+#+begin_src sh :tangle ~/bin/scripts/aw-run
+PATH=/home/pavel/micromamba/envs/aw/bin:$PATH
+if [ "$1" = "aw-watcher-afk" ]; then
+    sleep 5
+fi
+$@
+#+end_src
+
 aw-server
 #+begin_src scheme
 (define aw-server
-  (make <service>
-    #:provides '(aw-server)
+  (service '(aw-server)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("aw-server"))
+    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/aw-run" "aw-server"))
     #:stop (make-kill-destructor)))
-#+end_src
-
-=aw-watcher-afk= has some problems with statup, so there is a wrapper script
-
-#+begin_src sh :tangle ~/bin/scripts/aw-watcher-afk-wrapper
-sleep 5
-aw-watcher-afk
 #+end_src
 
 aw-watcher-afk
 #+begin_src scheme
 (define aw-watcher-afk
-  (make <service>
-    #:provides '(aw-watcher-afk)
-    #:requires '(aw-server)
+  (service '(aw-watcher-afk)
+    #:requirement '(aw-server)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/aw-watcher-afk-wrapper"))
+    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/aw-run" "aw-watcher-afk"))
     #:stop (make-kill-destructor)))
 #+end_src
 
 aw-watcher-window
 #+begin_src scheme
 (define aw-watcher-window
-  (make <service>
-    #:provides '(aw-watcher-window)
-    #:requires '(aw-server)
+  (service '(aw-watcher-window)
+    #:requirement '(aw-server)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("aw-watcher-window"))
+    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/aw-run" "aw-watcher-window"))
     #:stop (make-kill-destructor)))
 #+end_src
 ** PulseEffects
 #+begin_src scheme
 (define pulseeffects
-  (make <service>
-    #:provides '(pulseeffects)
+  (service '(pulseeffects)
     #:respawn? #t
     #:start (make-forkexec-constructor '("flatpak" "run" "com.github.wwmm.pulseeffects" "--gapplication-service"))
     #:stop (make-kill-destructor)))
@@ -4483,8 +4607,7 @@ aw-watcher-window
 ** xsettingsd
 #+begin_src scheme
 (define xsettingsd
-  (make <service>
-    #:provides '(xsettingsd)
+  (service '(xsettingsd)
     #:respawn? #t
     #:start (make-forkexec-constructor '("xsettingsd"))
     #:stop (make-kill-destructor)))
@@ -4492,8 +4615,7 @@ aw-watcher-window
 ** nm-applet
 #+begin_src scheme
 (define nm-applet
-  (make <service>
-    #:provides '(nm-applet)
+  (service '(nm-applet)
     #:respawn? #t
     #:start (make-forkexec-constructor '("nm-applet"))
     #:stop (make-kill-destructor)))
@@ -4505,8 +4627,7 @@ References:
 
 #+begin_src scheme
 (define discord-rich-presence
-  (make <service>
-    #:provides '(discord-rich-presence)
+  (service '(discord-rich-presence)
     #:one-shot? #t
     #:start (make-system-constructor "ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0")))
 #+end_src
@@ -4515,17 +4636,18 @@ Launch an authentication agent. Necessary for stuff like =pkexec=. I suspect I'm
 
 #+begin_src scheme
 (define polkit-gnome
-  (make <service>
-    #:provides '(polkit-gnome)
+  (service '(polkit-gnome)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/.guix-extra-profiles/desktop-misc/desktop-misc/libexec/polkit-gnome-authentication-agent-1"))
+    #:start (make-forkexec-constructor
+             (if (file-exists? "/home/pavel/.guix-extra-profiles/")
+                 '("/home/pavel/.guix-extra-profiles/desktop-misc/desktop-misc/libexec/polkit-gnome-authentication-agent-1")
+                 '("/usr/libexec/polkit-agent-helper-1")))
     #:stop (make-kill-destructor)))
 #+end_src
 ** Xmodmap
 #+begin_src scheme
 (define xmodmap
-  (make <service>
-    #:provides '(xmodmap)
+  (service '(xmodmap)
     #:one-shot? #t
     #:start (make-system-constructor "xmodmap /home/pavel/.Xmodmap")))
 #+end_src
@@ -4534,8 +4656,7 @@ Run my [[file:Guix.org::*OpenVPN][OpenVPN setup]]. Not lauching this automatiall
 
 #+begin_src scheme
 (define vpn
-  (make <service>
-    #:provides '(vpn)
+  (service '(vpn)
     #:respawn? #t
     #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/vpn-start"))
     #:stop (make-kill-destructor)))
@@ -4543,8 +4664,7 @@ Run my [[file:Guix.org::*OpenVPN][OpenVPN setup]]. Not lauching this automatiall
 ** Davmail
 #+begin_src scheme
 (define davmail
-  (make <service>
-    #:provides '(davmail)
+  (service '(davmail)
     #:respawn? #t
     #:start (make-forkexec-constructor '("/home/pavel/bin/davmail"))
     #:stop (make-kill-destructor)))
@@ -4552,8 +4672,7 @@ Run my [[file:Guix.org::*OpenVPN][OpenVPN setup]]. Not lauching this automatiall
 ** vnstatd
 #+begin_src scheme
 (define vnstatd
-  (make <service>
-    #:provides '(vnstatd)
+  (service '(vnstatd)
     #:respawn? #t
     #:start (make-forkexec-constructor '("vnstatd" "-n"))
     #:stop (make-kill-destructor)))
@@ -4569,15 +4688,13 @@ nix-env -I opensnitchd opensnitch-ui
 =sudoers= has to be modified this to work.
 #+begin_src scheme
 (define opensnitchd
-  (make <service>
-    #:provides '(opensnitchd)
+  (service '(opensnitchd)
     #:respawn? #t
     #:start (make-forkexec-constructor '("sudo" "opensnitchd"))
     #:stop (make-kill-destructor)))
 
 (define opensnitch-ui
-  (make <service>
-    #:provides '(opensnitch-ui)
+  (service '(opensnitch-ui)
     #:respawn? #t
     #:start (make-forkexec-constructor '("sudo" "opensnitch-ui"))
     #:stop (make-kill-destructor)))
@@ -4585,8 +4702,7 @@ nix-env -I opensnitchd opensnitch-ui
 ** ollama
 #+begin_src scheme
 (define ollama
-  (make <service>
-    #:provides '(ollama)
+  (service '(ollama)
     #:respawn? #t
     #:start (make-forkexec-constructor '("ollama" "serve"))
     #:stop (make-kill-destructor)))
@@ -4621,29 +4737,31 @@ Register services:
 
 Daemonize shepherd
 #+begin_src scheme
-(action 'shepherd 'daemonize)
+(perform-service-action root-service 'daemonize)
 #+end_src
 
 Run services
 #+begin_src scheme
-(for-each start '(mpd
-                  sqrt-data-agent-mpd
-                  deterred-mpd
-                  mcron
-                  aw-server
-                  aw-watcher-afk
-                  aw-watcher-window
-                  pulseeffects
-                  xsettingsd
-                  ;; discord-rich-presence
-                  ;; polkit-gnome
-                  davmail
-                  ;; ; xmodmap
-                  ;; nm-applet
-                  vnstatd
-                  ;; opensnitchd
-                  ;; opensnitch-ui
-                  ))
+(for-each start-service
+          (list
+           mpd
+           sqrt-data-agent-mpd
+           deterred-mpd
+           mcron
+           aw-server
+           aw-watcher-afk
+           aw-watcher-window
+           pulseeffects
+           xsettingsd
+           ;; discord-rich-presence
+           ;; polkit-gnome
+           davmail
+           ;; ; xmodmap
+           ;; nm-applet
+           vnstatd
+           ;; opensnitchd
+           ;; opensnitch-ui
+           ))
 #+end_src
 * Guix settings
 Other desktop programs I use are listed below.

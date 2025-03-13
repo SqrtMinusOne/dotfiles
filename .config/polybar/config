@@ -35,20 +35,6 @@ gright = 
 ; Glyph settings:1 ends here
 
 ; [[file:../../Desktop.org::*Generating glyphs][Generating glyphs:3]]
-[module/glyph-light-cyan--cyan]
-type = custom/text
-content-background = ${colors.light-cyan}
-content-foreground = ${colors.cyan}
-content = ${glyph.gright}
-content-font = 5
-
-[module/glyph-magenta--light-cyan]
-type = custom/text
-content-background = ${colors.magenta}
-content-foreground = ${colors.light-cyan}
-content = ${glyph.gright}
-content-font = 5
-
 [module/glyph-light-blue--blue]
 type = custom/text
 content-background = ${colors.light-blue}
@@ -112,10 +98,24 @@ content-foreground = ${colors.cyan}
 content = ${glyph.gright}
 content-font = 5
 
-[module/glyph-magenta--cyan]
+[module/glyph-light-cyan--cyan]
+type = custom/text
+content-background = ${colors.light-cyan}
+content-foreground = ${colors.cyan}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-light-cyan--light-cyan]
+type = custom/text
+content-background = ${colors.light-cyan}
+content-foreground = ${colors.light-cyan}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-magenta--light-cyan]
 type = custom/text
 content-background = ${colors.magenta}
-content-foreground = ${colors.cyan}
+content-foreground = ${colors.light-cyan}
 content = ${glyph.gright}
 content-font = 5
 
@@ -123,6 +123,34 @@ content-font = 5
 type = custom/text
 content-background = ${colors.light-magenta}
 content-foreground = ${colors.magenta}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-red--light-blue]
+type = custom/text
+content-background = ${colors.red}
+content-foreground = ${colors.light-blue}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-light-green--red]
+type = custom/text
+content-background = ${colors.light-green}
+content-foreground = ${colors.red}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-light-magenta--light-cyan]
+type = custom/text
+content-background = ${colors.light-magenta}
+content-foreground = ${colors.light-cyan}
+content = ${glyph.gright}
+content-font = 5
+
+[module/glyph-magenta--cyan]
+type = custom/text
+content-background = ${colors.magenta}
+content-foreground = ${colors.cyan}
 content = ${glyph.gright}
 content-font = 5
 
@@ -213,6 +241,11 @@ scroll-down = i3wm-wsprev
 ; Global bar config:4 ends here
 
 ; [[file:../../Desktop.org::*Global bar config][Global bar config:5]]
+dpi-x = ${env:DPI}
+dpi-y = ${env:DPI}
+; Global bar config:5 ends here
+
+; [[file:../../Desktop.org::*Global bar config][Global bar config:6]]
 [settings]
 screenchange-reload = true
 compositing-background = source
@@ -224,7 +257,7 @@ compositing-border = over
 [global/wm]
 margin-top = 0
 margin-bottom = 0
-; Global bar config:5 ends here
+; Global bar config:6 ends here
 
 ; [[file:../../Desktop.org::*pulseaudio][pulseaudio:1]]
 [module/pulseaudio]
@@ -326,6 +359,20 @@ format =  <label>
 format-background = ${colors.light-cyan}
 format-foreground = ${colors.foreground}
 ; nvidia:2 ends here
+
+; [[file:../../Desktop.org::*backlight][backlight:2]]
+[module/backlight]
+type = custom/script
+exec = /home/pavel/bin/polybar/backlight.sh
+scroll-up = /home/pavel/bin/polybar/backlight.sh up
+click-left = /home/pavel/bin/polybar/backlight.sh up
+scroll-down = /home/pavel/bin/polybar/backlight.sh down
+click-right = /home/pavel/bin/polybar/backlight.sh down
+interval = 1
+
+format-background = ${colors.light-cyan}
+format-foreground = ${colors.foreground}
+; backlight:2 ends here
 
 ; [[file:../../Desktop.org::*ram-memory][ram-memory:1]]
 [module/ram-memory]
@@ -429,8 +476,8 @@ layout-icon-1 = us;US
 ; [[file:../../Desktop.org::*battery][battery:1]]
 [module/battery]
 type = internal/battery
-battery = BAT0
-adapter = ADP0
+battery = ${env:BATTERY:BAT0}
+adapter = ${env:ADAPTER:ADP0}
 
 time-format = %H:%M
 format-discharging = <ramp-capacity> <label-discharging>
@@ -527,7 +574,7 @@ content-background = ${colors.blue}
 ; [[file:../../Desktop.org::*C-g][C-g:3]]
 [module/glyph-left-light-background--blue]
 type = custom/text
-content-background = ${colors.backround}
+content-background = ${colors.background}
 content-foreground = ${colors.blue}
 content = ${glyph.gleft}
 content-font = 5

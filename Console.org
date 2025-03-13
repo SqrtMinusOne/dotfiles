@@ -80,6 +80,14 @@ if [ -f "/home/pavel/.no-guix" ]; then
 fi
 #+end_src
 
+Fix =XDG_DATA_DIRS= on Raspberry. Not sure what's going on.
+
+#+begin_src bash
+if [ "$(hostname)" = "amaranth" ]; then
+    export XDG_DATA_DIRS=/usr/share/fkms:/usr/local/share:/usr/share/raspi-ui-overrides:/usr/share:/usr/share/gdm:/var/lib/menu-xdg:$XDG_DATA_DIRS
+fi
+#+end_src
+
 ** My paths
 My script folders
 #+begin_src sh
@@ -161,12 +169,33 @@ Somehow LibreOffice doesn't work without the following:
 export GIO_EXTRA_MODULES=""
 #+end_src
 ** Other package managers
-Using other package managers with Guix requires some extra work.
+Using other package managers with Guix requires some extra work; this section is also relevant for my non-guix setup.
 
 Cask
 #+begin_src sh
 if [ -d "$HOME/.cask" ]; then
     export PATH="/home/pavel/.cask/bin:$PATH"
+fi
+#+end_src
+
+Golang:
+#+begin_src sh
+if [ -d "/usr/local/go/" ]; then
+    export PATH="/usr/local/go/bin:$PATH"
+fi
+#+end_src
+
+Cargo:
+#+begin_src sh
+if [ -d "$HOME/.cargo" ] ; then
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
+#+end_src
+
+Guile:
+#+begin_src sh
+if [ -d "/opt/guile" ]; then
+    export PATH="/opt/guile/bin:$PATH"
 fi
 #+end_src
 
@@ -196,11 +225,13 @@ fi
 #+end_src
 
 Make nix apps visible to launchers:
+
 #+begin_src sh
 if [ -d "$HOME/.nix-profile" ] && [ -z "$NO_GUIX" ]; then
     export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
 fi
 #+end_src
+
 
 *** npm
 npm is especially cumbersome, for instance because by default it tries to install packages to =/gnu/store/=.
@@ -244,13 +275,6 @@ if [ -d "/usr/local/texlive/2020" ]; then
     export MANPATH="/usr/local/texlive/2020/texmf-dist/doc/man:$MANPATH"
     export INFOPATH="/usr/local/texlive/2020/texmf-dist/doc/info:$INFOPATH"
     export PATH="/usr/local/texlive/2020/bin/x86_64-linux:$PATH"
-fi
-#+end_src
-
-Cargo (Rust)
-#+begin_src sh :tangle no
-if [ -d "$HOME/.cargo" ] ; then
-    export PATH="$HOME/.cargo/bin:$PATH"
 fi
 #+end_src
 
@@ -474,9 +498,13 @@ Yeah, tell this to yourself
 
 #+begin_src bash
 init_mamba () {
-    export MAMBA_EXE="/home/pavel/.guix-extra-profiles/dev/dev/bin/micromamba";
+    export MAMBA_EXE=$(which micromamba);
     export MAMBA_ROOT_PREFIX="/home/pavel/micromamba";
-    __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+    if [[ "$(micromamba --version)" > "2.0.0" ]]; then
+        __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+    else
+        __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+    fi
     if [ $? -eq 0 ]; then
         eval "$__mamba_setup"
     else
@@ -564,6 +592,7 @@ end
 #+end_src
 
 Suppress fish greeting
+
 #+begin_src fish
 set fish_greeting
 #+end_src
@@ -571,9 +600,13 @@ set fish_greeting
 First, a function to initialize micromamba.
 #+begin_src fish
 function init_mamba
-    set -gx MAMBA_EXE "/home/pavel/.guix-extra-profiles/dev/dev/bin/micromamba"
+    set -gx MAMBA_EXE (which micromamba)
     set -gx MAMBA_ROOT_PREFIX "/home/pavel/micromamba"
-    $MAMBA_EXE shell hook --shell fish --prefix $MAMBA_ROOT_PREFIX | source
+    if test (string replace -a '.' '' -- (micromamba --version)) -gt 200
+        $MAMBA_EXE shell hook --shell fish --root-prefix $MAMBA_ROOT_PREFIX | source &> /dev/null
+    else
+        $MAMBA_EXE shell hook --shell fish --prefix $MAMBA_ROOT_PREFIX | source
+    end
 end
 
 if test -n "$INIT_MAMBA";

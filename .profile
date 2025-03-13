@@ -30,6 +30,12 @@ if [ -f "/home/pavel/.no-guix" ]; then
 fi
 # Environment:6 ends here
 
+# [[file:Console.org::*Environment][Environment:7]]
+if [ "$(hostname)" = "amaranth" ]; then
+    export XDG_DATA_DIRS=/usr/share/fkms:/usr/local/share:/usr/share/raspi-ui-overrides:/usr/share:/usr/share/gdm:/var/lib/menu-xdg:$XDG_DATA_DIRS
+fi
+# Environment:7 ends here
+
 # [[file:Console.org::*My paths][My paths:1]]
 if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin:$PATH"
@@ -52,10 +58,10 @@ fi
 
 # [[file:Console.org::*ssh-agent][ssh-agent:1]]
 if ! pgrep -u "$USER" ssh-agent > /dev/null; then
-    ssh-agent -t 1h > "/tmp/ssh-agent.env"
+    ssh-agent -t 1h > "$XDG_RUNTIME_DIR/ssh-agent.env"
 fi
 if [[ ! -f "$SSH_AUTH_SOCK" ]]; then
-    source "/tmp/ssh-agent.env" >/dev/null
+    source "$XDG_RUNTIME_DIR/ssh-agent.env" >/dev/null
 fi
 # ssh-agent:1 ends here
 
@@ -104,30 +110,48 @@ fi
 # Other package managers:1 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:2]]
-if [ -d "$HOME/.local/share/flatpak" ]; then
-    export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
+if [ -d "/usr/local/go/" ]; then
+    export PATH="/usr/local/go/bin:$PATH"
 fi
 # Other package managers:2 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:3]]
+if [ -d "$HOME/.cargo" ] ; then
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
+# Other package managers:3 ends here
+
+# [[file:Console.org::*Other package managers][Other package managers:4]]
+if [ -d "/opt/guile" ]; then
+    export PATH="/opt/guile/bin:$PATH"
+fi
+# Other package managers:4 ends here
+
+# [[file:Console.org::*Other package managers][Other package managers:5]]
+if [ -d "$HOME/.local/share/flatpak" ]; then
+    export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.local/share/flatpak/exports/share"
+fi
+# Other package managers:5 ends here
+
+# [[file:Console.org::*Other package managers][Other package managers:6]]
 if [ -f /run/current-system/profile/etc/profile.d/nix.sh ] && [ -z "$NO_GUIX" ] ; then
   . /run/current-system/profile/etc/profile.d/nix.sh
 fi
 
 if [ -e /home/pavel/.nix-profile/etc/profile.d/nix.sh ] && [ -z "$NO_GUIX" ] ; then . /home/pavel/.nix-profile/etc/profile.d/nix.sh; fi
-# Other package managers:3 ends here
+# Other package managers:6 ends here
 
-# [[file:Console.org::*Other package managers][Other package managers:4]]
+# [[file:Console.org::*Other package managers][Other package managers:7]]
 if [ -d "$HOME/.guix-extra-profiles/desktop-misc" ] && [ -z "$NO_GUIX" ] ; then
     export FONTCONFIG_PATH="$HOME/.guix-extra-profiles/desktop-misc/desktop-misc/etc/fonts"
 fi
-# Other package managers:4 ends here
+# Other package managers:7 ends here
 
-# [[file:Console.org::*Other package managers][Other package managers:5]]
+# [[file:Console.org::*Other package managers][Other package managers:8]]
 if [ -d "$HOME/.nix-profile" ] && [ -z "$NO_GUIX" ]; then
     export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
 fi
-# Other package managers:5 ends here
+# Other package managers:8 ends here
 
 # [[file:Console.org::*npm][npm:2]]
 export NPM_CONFIG_USERCONFIG=$HOME/._npmrc

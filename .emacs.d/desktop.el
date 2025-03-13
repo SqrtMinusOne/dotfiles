@@ -177,9 +177,6 @@ _=_: Balance          "
         (seq-uniq (cons exwm-workspace-current-index
                         my/exwm-last-workspaces))))
 
-(add-hook 'exwm-workspace-switch-hook
-          #'my/exwm-store-last-workspace)
-
 (defun my/exwm-last-workspaces-clear ()
   "Clean `my/exwm-last-workspaces' from deleted workspaces."
   (setq my/exwm-last-workspaces
@@ -556,8 +553,9 @@ _d_: Discord
       (exwm--log "Unhandled: %s(%d)"
                  (x-get-atom-name type exwm-workspace--current) type)))))
 
-(with-eval-after-load 'exwm
-  (advice-add 'exwm--on-ClientMessage :override #'exwm--on-ClientMessage-old))
+(unless my/is-uconsole
+  (with-eval-after-load 'exwm
+    (advice-add 'exwm--on-ClientMessage :override #'exwm--on-ClientMessage-old)))
 
 (setq exwm-manage-configurations
    '(((member exwm-class-name '("Nyxt"))
@@ -570,8 +568,11 @@ _d_: Discord
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
   (my/run-in-background "gpgconf --reload gpg-agent")
-  (when (my/is-arch)
-    (my/run-in-background "set_layout")))
+  (when (or (my/is-arch)
+            (equal (system-name) "amaranth"))
+    (my/run-in-background "set_layout"))
+  (add-hook 'exwm-workspace-switch-hook
+            #'my/exwm-store-last-workspace))
 
 (defun my/exwm-update-class ()
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))
@@ -705,6 +706,16 @@ _d_: Discord
           ;; 's-N': Switch to certain workspace with Super (Win) plus a number key (0 - 9)
           ,@(mapcar (lambda (i)
                       `(,(kbd (format "s-%d" i)) .
+                        (lambda ()
+                          (interactive)
+                          (when (or (< ,i (exwm-workspace--count))
+                                    (y-or-n-p (format "Create workspace %d" ,i)))
+                            (exwm-workspace-switch-create ,i) ))))
+                    (number-sequence 0 9))
+          ,@(mapcar (lambda (i)
+                      (when (= i 0)
+                        (setq i 10))
+                      `(,(kbd (format "s-<f%d>" i)) .
                         (lambda ()
                           (interactive)
                           (when (or (< ,i (exwm-workspace--count))
