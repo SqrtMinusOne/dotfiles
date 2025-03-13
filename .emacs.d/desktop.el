@@ -572,7 +572,9 @@ _d_: Discord
             (equal (system-name) "amaranth"))
     (my/run-in-background "set_layout"))
   (add-hook 'exwm-workspace-switch-hook
-            #'my/exwm-store-last-workspace))
+            #'my/exwm-store-last-workspace)
+  (when my/is-uconsole
+    (set-face-attribute 'default nil :height 140)))
 
 (defun my/exwm-update-class ()
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))
@@ -712,16 +714,35 @@ _d_: Discord
                                     (y-or-n-p (format "Create workspace %d" ,i)))
                             (exwm-workspace-switch-create ,i) ))))
                     (number-sequence 0 9))
-          ,@(mapcar (lambda (i)
-                      (when (= i 0)
-                        (setq i 10))
-                      `(,(kbd (format "s-<f%d>" i)) .
-                        (lambda ()
-                          (interactive)
-                          (when (or (< ,i (exwm-workspace--count))
-                                    (y-or-n-p (format "Create workspace %d" ,i)))
-                            (exwm-workspace-switch-create ,i) ))))
-                    (number-sequence 0 9))))
+  
+          ,@(when my/is-uconsole
+              `(
+                ,@(mapcar (lambda (i)
+                            (when (= i 0)
+                              (setq i 10))
+                            `(,(kbd (format "s-<f%d>" i)) .
+                              (lambda ()
+                                (interactive)
+                                (when (or (< ,i (exwm-workspace--count))
+                                          (y-or-n-p (format "Create workspace %d" ,i)))
+                                  (exwm-workspace-switch-create ,i) ))))
+                          (number-sequence 0 9))
+  
+                (,(kbd "M-<left>") . (lambda () (interactive) (my/exwm-windmove 'left)))
+                (,(kbd "M-<right>") . (lambda () (interactive) (my/exwm-windmove 'right)))
+                (,(kbd "M-<up>") . (lambda () (interactive) (my/exwm-windmove 'up)))
+                (,(kbd "M-<down>") . (lambda () (interactive) (my/exwm-windmove 'down)))
+  
+                (,(kbd "M-,") . persp-prev)
+                (,(kbd "M-.") . persp-next)
+  
+                (,(kbd "M-r") . my/exwm-resize-hydra/body)
+  
+                (,(kbd "M-p") . app-launcher-run-app)
+                (,(kbd "M-P") . async-shell-command)
+                (,(kbd "M-;") . my/exwm-apps-hydra/body)
+                (,(kbd "M--") . password-store-completion)
+                ))))
   
   (defun exwm-input--fake-last-command ()
     "Fool some packages into thinking there is a change in the buffer."
