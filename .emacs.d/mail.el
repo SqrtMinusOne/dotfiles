@@ -26,6 +26,9 @@
   (my/use-colors
    (notmuch-wash-cited-text :foreground (doom-color 'yellow)))
   :config
+  (setq notmuch-fcc-dirs
+        '(("pvkorytov@etu.ru" . "pvkorytov_etu_mbox/Sent")
+          (".*" . "sent")))
   (setq mail-specify-envelope-from t)
   (setq message-sendmail-envelope-from 'header)
   (setq mail-envelope-from 'header)

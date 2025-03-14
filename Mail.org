@@ -92,11 +92,15 @@ pass show Job/Digital/Email/pvkorytov@etu.ru | head -n 1
 
 #+begin_src conf-unix :tangle ~/.offlineimaprc :noweb yes
 [general]
-accounts = pvkorytov
+accounts = pvkorytov,pvkorytov-mbox
 
 [Account pvkorytov]
 localrepository = pvkorytov-local
 remoterepository = pvkorytov-remote
+
+[Account pvkorytov-mbox]
+localrepository = pvkorytov-mbox-local
+remoterepository = pvkorytov-mbox-remote
 
 [Repository pvkorytov-local]
 type = Maildir
@@ -111,6 +115,18 @@ remoteport = 1143
 starttls = no
 ssl = no
 sslcacertfile = /etc/ssl/certs/ca-certificates.crt
+
+[Repository pvkorytov-mbox-local]
+type = Maildir
+localfolders = ~/Mail/pvkorytov_etu_mbox/
+
+[Repository pvkorytov-mbox-remote]
+type = IMAP
+remotehost = mbox.etu.ru
+remoteuser = <<mail-username()>>
+remotepass = <<mail-password()>>
+remoteport = 993
+cert_fingerprint = 07bdfab4eaa79f5fc8ab93cd9ad0ba025ea0b4e5
 #+end_src
 * Notmuch
 | Guix dependency |
@@ -194,6 +210,8 @@ So, here are the rules which match tags & folders:
 | etu                      | Etu                      |
 | etu.grad-school          | Etu.Grad_School          |
 
+&BCMENAQwBDsENQQ9BD0ESwQ1-
+
 And below is a noweb function, which generates the following commands for notmuch to execute:
 - /before/ sync:
   - =notmuch search --output files "NOT path:[PATH] AND tag:[TAG] AND tag:[ROOT_TAG]" | xargs -I ! mv ! [PATH]=
@@ -225,23 +243,24 @@ These rules are getting included in the respective hooks.
       (unless (string-empty-p remove)
         (add-to-list
          'rules
-         (format "notmuch tag -%s \"NOT path:%s/%s/cur/** AND tag:%s AND tag:%s\""
-                 tag root folder tag root_tag)
+         (format
+          "notmuch tag -%s \"NOT path:%s/%s/cur/** AND path:%s/** AND tag:%s AND tag:%s\""
+          tag root folder root tag root_tag)
          t))
       (unless (string-empty-p move)
         (add-to-list
          'rules
          (concat
-          (format "notmuch search --output=files \"NOT path:%s/%s/cur/** AND tag:%s AND tag:%s\""
-                  root folder tag root_tag)
+          (format "notmuch search --output=files \"NOT path:%s/%s/cur/** AND path:%s/** AND tag:%s AND tag:%s\""
+                  root folder root tag root_tag)
           (format " | xargs -I ! mv ! %s/%s/%s/cur/" my/maildir-root root folder))
          t))))
   (unless (string-empty-p archive_root)
     (add-to-list
      'rules
      (concat
-      (format "notmuch search --output=files \"NOT path:%s/%s/cur/** AND %s AND tag:%s\""
-              root archive_root
+      (format "notmuch search --output=files \"NOT path:%s/%s/cur/** AND path:%s/** AND %s AND tag:%s\""
+              root archive_root root
               (mapconcat
                (lambda (row)
                  (format "NOT tag:%s" (car row)))
@@ -264,11 +283,13 @@ It isn't necessary to run =cd= for offlineimap, but it's easier to write that wa
 #+end_src
 
 #+begin_src bash :tangle ~/Mail/.notmuch/hooks/pre-new :noweb yes
-# GMI="/home/pavel/Programs/miniconda3/envs/mail/bin/gmi"
+GMI="/home/pavel/Programs/miniconda3/envs/mail/bin/gmi"
 GMI="gmi"
 
 echo "Running pre-new filters"
 <<mail-tags(move="t",archive_root="Archive")>>
+
+<<mail-tags(move="t",archive_root="Archive",root="pvkorytov_etu_mbox")>>
 echo "Pre-new filters done"
 
 parallel --link -j0 "(cd /home/pavel/Mail/{1}/ && {2} {3})" ::: thexcloud progin6304 pvkorytov_etu ::: "$GMI" "$GMI" "offlineimap" ::: sync sync ""
@@ -286,9 +307,14 @@ And this hook tags different mailboxes with different tags.
 notmuch tag +main "path:thexcloud/** AND tag:new"
 notmuch tag +progin "path:progin6304/** AND tag:new"
 notmuch tag +pvkorytov "path:pvkorytov_etu/** AND tag:new"
+notmuch tag +pvkorytov "path:pvkorytov_etu_mbox/** AND tag:new"
+notmuch tag +mbox "path:pvkorytov_etu_mbox/** AND tag:new"
 
 echo "Running post-new filters"
 <<mail-tags(make_tag="t",remove="t")>>
+
+<<mail-tags(make_tag="t",remove="t",root="pvkorytov_etu_mbox")>>
+
 echo "Post-new filters done"
 notmuch tag -new "tag:new"
 #+end_src
@@ -359,10 +385,11 @@ user progin6304@gmail.com
 passwordeval "pass show My_Online/ETU/progin6304@gmail.com | head -n 1"
 
 account pvkorytov
-tls off
-auth plain
-host localhost
-port 1025
+host mbox.etu.ru
+port 465
+tls on
+tls_starttls off
+tls_fingerprint 87:1F:17:1C:12:A4:DE:82:6F:CF:E5:E6:9C:EE:F8:0B:D1:7D:B2:00:F9:7B:2C:96:21:65:FA:0A:F5:24:8E:0E
 from pvkorytov@etu.ru
 user pvkorytov
 passwordeval "pass show Job/Digital/Email/pvkorytov@etu.ru | head -n 1"
@@ -417,6 +444,9 @@ And notmuch settings:
   (my/use-colors
    (notmuch-wash-cited-text :foreground (doom-color 'yellow)))
   :config
+  (setq notmuch-fcc-dirs
+        '(("pvkorytov@etu.ru" . "pvkorytov_etu_mbox/Sent")
+          (".*" . "sent")))
   (setq mail-specify-envelope-from t)
   (setq message-sendmail-envelope-from 'header)
   (setq mail-envelope-from 'header)
