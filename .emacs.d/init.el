@@ -1793,6 +1793,27 @@ targets."
 (with-eval-after-load 'lsp-mode
   (advice-add 'lsp--progress-status :override #'my/lsp--progress-status))
 
+(setq my/lsp--vue-diagnostics-last-update (make-hash-table :test #'equal))
+
+(defun my/lsp--on-diagnostics (fn workspace params)
+  (if (equal (gethash 'vue-semantic-server lsp-clients)
+             (lsp--workspace-client workspace))
+      (progn
+        (let* ((is-empty (seq-empty-p (gethash "diagnostics" params)))
+               (uri (gethash "uri" params))
+               (last-update (gethash uri my/lsp--vue-diagnostics-last-update))
+               (current-update (time-convert nil #'integer)))
+          (unless is-empty
+            (puthash uri current-update my/lsp--vue-diagnostics-last-update))
+          (when (or (not is-empty)
+                    (not last-update)
+                    (> (- current-update (or last-update 0)) 5))
+            (funcall fn workspace params))))
+    (funcall fn workspace params)))
+
+(with-eval-after-load 'lsp
+  (advice-add #'lsp--on-diagnostics :around #'my/lsp--on-diagnostics))
+
 (use-package flycheck
   :straight t
   :config
@@ -2315,6 +2336,10 @@ Returns (<buffer> . <workspace-index>) or nil."
   (add-hook 'web-mode-hook 'smartparens-mode)
   (add-hook 'web-mode-hook 'hs-minor-mode)
   (my/set-smartparens-indent 'web-mode)
+  (with-eval-after-load 'editorconfig
+    (push
+     'standard-indent
+     (alist-get 'web-mode editorconfig-indentation-alist)))
   (setq web-mode-auto-pairs nil))
 
 (setq my/web-mode-lsp-extensions
@@ -3432,7 +3457,7 @@ With ARG, repeats or can move backward if negative."
             (mapcar (lambda (file)
                       (string-replace (concat org-directory "/") "" file)))
             (append
-             '("inbox.org" "contacts.org")))))
+             '("inbox.org" "contacts.org" "recurring.org")))))
     (find-file
      (concat org-directory "/"
              (completing-read "Org file: " files)))))
@@ -3849,7 +3874,9 @@ With ARG, repeats or can move backward if negative."
 
 (use-package org-attach-screenshot
   :commands (org-attach-screenshot)
-  :straight t)
+  :straight t
+  :config
+  (setq org-attach-screenshot-auto-refresh 'never))
 
 (use-package org-transclusion
   :after org
@@ -5894,6 +5921,24 @@ Happened to the world:
       (start-process "dired-open" nil
                      "xdg-open" (file-truename file)))))
 
+(defun my/dired-do-async-shell-command (command &optional arg file-list)
+  (interactive
+   (let ((files (dired-get-marked-files t current-prefix-arg nil nil t)))
+     (list
+      ;; Want to give feedback whether this file or marked files are used:
+      (dired-read-shell-command "& on %s: " current-prefix-arg files)
+      current-prefix-arg
+      files)))
+  (start-process-shell-command
+   "*Dired Command*" nil
+   (dired-shell-stuff-it command file-list arg)))
+
+(with-eval-after-load 'dired
+  (general-define-key
+   :states '(normal insert)
+   :keymaps '(dired-mode-map)
+   "&" #'my/dired-do-async-shell-command))
+
 (defun my/dired-bookmark-open ()
   (interactive)
   (let ((bookmarks
@@ -6006,7 +6051,7 @@ Happened to the world:
     (user-error "No (non-directory) files selected"))
   (with-current-buffer mastodon-buffer
     (dolist (file files)
-      (mastodon-toot--attach-media
+      (mastodon-toot-attach-media
        file
        (read-from-minibuffer (format "Description for %s: " file))))))
 
@@ -7477,15 +7522,15 @@ by the `my/elfeed-youtube-subtitles' function."
   (general-define-key
    :states '(normal motion)
    :keymaps '(mastodon-mode-map)
-   "J" #'mastodon-tl--goto-next-item
-   "K" #'mastodon-tl--goto-prev-item
-   "M-j" #'mastodon-tl--next-tab-item
-   "M-k" #'mastodon-tl--prev-tab-item
-   "<tab>" #'mastodon-tl--next-tab-item
-   "<backtab>" #'mastodon-tl--previous-tab-item
+   "J" #'mastodon-tl-goto-next-item
+   "K" #'mastodon-tl-goto-prev-item
+   "M-j" #'mastodon-tl-next-tab-item
+   "M-k" #'mastodon-tl-prev-tab-item
+   "<tab>" #'mastodon-tl-next-tab-item
+   "<backtab>" #'mastodon-tl-previous-tab-item
    "o" #'my/mastodon-toot
-   "r" 'mastodon-tl--update
-   "c" #'mastodon-tl--toggle-spoiler-text-in-toot
+   "r" 'mastodon-tl-update
+   "c" #'mastodon-tl-toggle-spoiler-text-in-toot
    "q" #'kill-current-buffer))
 
 (defvar my/mastodon-mode-string "")
@@ -7621,11 +7666,11 @@ by the `my/elfeed-youtube-subtitles' function."
                    (my/mastodon-tl--get-home
                     (seq-contains-p args "--hide-replies")
                     (seq-contains-p args "--hide-boosts"))))
-     ("l" "Local" mastodon-tl--get-local-timeline)
-     ("f" "Federated" mastodon-tl--get-federated-timeline)
-     ("g" "One tag" mastodon-tl--get-tag-timeline)
-     ("a" "Followed tags" mastodon-tl--followed-tags-timeline)
-     ("s" "Some followed tags" mastodon-tl--some-followed-tags-timeline)]
+     ("l" "Local" mastodon-tl-get-local-timeline)
+     ("f" "Federated" mastodon-tl-get-federated-timeline)
+     ("g" "One tag" mastodon-tl-get-tag-timeline)
+     ("a" "Followed tags" mastodon-tl-followed-tags-timeline)
+     ("s" "Some followed tags" mastodon-tl-some-followed-tags-timeline)]
     ["Misc"
      :class transient-row
      ("q" "Quit" transient-quit-one)]))
@@ -7639,26 +7684,26 @@ by the `my/elfeed-youtube-subtitles' function."
      ("m" "Mastodon" mastodon)
      ("t" "Timelines" my/mastodon-tl)
      ("n" "Notifications" mastodon-notifications-get)
-     ("s" "Search query" mastodon-search--query)]
+     ("s" "Search query" mastodon-search-query)]
     ["Tags"
      :class transient-row
-     ("aa" "Followed tags" mastodon-tl--list-followed-tags)
-     ("af" "Follow tag" mastodon-tl--follow-tag)
-     ("aF" "Unfollow tag" mastodon-tl--unfollow-tag)]
+     ("aa" "Followed tags" mastodon-tl-list-followed-tags)
+     ("af" "Follow tag" mastodon-tl-follow-tag)
+     ("aF" "Unfollow tag" mastodon-tl-unfollow-tag)]
     ["Own profile"
      :class transient-row
      ("c" "Toot" mastodon-toot)
-     ("o" "My profile" mastodon-profile--my-profile)
-     ("u" "Update profile note" mastodon-profile--update-user-profile-note)
-     ("f" "Favourites" mastodon-profile--view-favourites)
-     ("b" "Bookmarks" mastodon-profile--view-bookmarks)]
+     ("o" "My profile" mastodon-profile-my-profile)
+     ("u" "Update profile note" mastodon-profile-update-user-profile-note)
+     ("f" "Favourites" mastodon-profile-view-favourites)
+     ("b" "Bookmarks" mastodon-profile-view-bookmarks)]
     ["Minor views"
      :class transient-row
-     ("F" "Follow requests" mastodon-views--view-follow-requests)
-     ("S" "Scheduled toots" mastodon-views--view-scheduled-toots)
-     ("I" "Filters" mastodon-views--view-filters)
-     ("G" "Follow suggestions" mastodon-views--view-follow-suggestions)
-     ("L" "Lists" mastodon-views--view-lists)]
+     ("F" "Follow requests" mastodon-views-view-follow-requests)
+     ("S" "Scheduled toots" mastodon-views-view-scheduled-toots)
+     ("I" "Filters" mastodon-views-view-filters)
+     ("G" "Follow suggestions" mastodon-views-view-follow-suggestions)
+     ("L" "Lists" mastodon-views-view-lists)]
     ["Misc"
      :class transient-row
      ("/" "Switch to buffer" mastodon-switch-to-buffer)
@@ -7684,53 +7729,53 @@ base toot."
     (browse-url url)))
 
 (with-eval-after-load 'mastodon
-  (my/def-confirmer mastodon-toot--toggle-boost "Toggle boost for this post? ")
-  (my/def-confirmer mastodon-toot--toggle-favourite "Toggle favourite this post? ")
-  (my/def-confirmer mastodon-toot--toggle-bookmark "Toggle bookmark this post? ")
-  (my/def-confirmer mastodon-tl--follow-user "Follow this user? ")
-  (my/def-confirmer mastodon-tl--unfollow-user "Unfollow this user? ")
-  (my/def-confirmer mastodon-tl--block-user "Block this user? ")
-  (my/def-confirmer mastodon-tl--unblock-user "Unblock this user? ")
-  (my/def-confirmer mastodon-tl--mute-user "Mute this user? ")
-  (my/def-confirmer mastodon-tl--unmute-user "Unmute this user? ")
-  (my/def-confirmer mastodon-tl--unmute-user "Unmute this user? ")
+  (my/def-confirmer mastodon-toot-toggle-boost "Toggle boost for this post? ")
+  (my/def-confirmer mastodon-toot-toggle-favourite "Toggle favourite this post? ")
+  (my/def-confirmer mastodon-toot-toggle-bookmark "Toggle bookmark this post? ")
+  (my/def-confirmer mastodon-tl-follow-user "Follow this user? ")
+  (my/def-confirmer mastodon-tl-unfollow-user "Unfollow this user? ")
+  (my/def-confirmer mastodon-tl-block-user "Block this user? ")
+  (my/def-confirmer mastodon-tl-unblock-user "Unblock this user? ")
+  (my/def-confirmer mastodon-tl-mute-user "Mute this user? ")
+  (my/def-confirmer mastodon-tl-unmute-user "Unmute this user? ")
+  (my/def-confirmer mastodon-tl-unmute-user "Unmute this user? ")
 
   (transient-define-prefix my/mastodon-toot ()
     "Mastodon toot actions."
     ["View"
      :class transient-row
-     ("o" "Thread" mastodon-tl--thread)
+     ("o" "Thread" mastodon-tl-thread)
      ("w" "Browser" my/mastodon-toot--browse)
-     ("le" "List edits" mastodon-toot--view-toot-edits)
-     ("lf" "List favouriters" mastodon-toot--list-favouriters)
-     ("lb" "List boosters" mastodon-toot--list-boosters)]
+     ("le" "List edits" mastodon-toot-view-toot-edits)
+     ("lf" "List favouriters" mastodon-toot-list-favouriters)
+     ("lb" "List boosters" mastodon-toot-list-boosters)]
     ["Toot Actions"
      :class transient-row
-     ("r" "Reply" mastodon-toot--reply)
-     ("v" "Vote" mastodon-tl--poll-vote)
+     ("r" "Reply" mastodon-toot-reply)
+     ("v" "Vote" mastodon-tl-poll-vote)
      ("b" "Boost" my/mastodon-toot--toggle-boost-confirm)
      ("f" "Favourite" my/mastodon-toot--toggle-favourite-confirm)
      ("k" "Bookmark" my/mastodon-toot--toggle-bookmark-confirm)]
     ["My Toot Actions"
      :class transient-row
-     ("md" "Delete" mastodon-toot--delete-toot)
-     ("mD" "Delete and redraft" mastodon-toot--delete-and-redraft-toot)
-     ("mp" "Pin" mastodon-toot--pin-toot-toggle)
-     ("me" "Edit" mastodon-toot--edit-toot-at-point)]
+     ("md" "Delete" mastodon-toot-delete-toot)
+     ("mD" "Delete and redraft" mastodon-toot-delete-and-redraft-toot)
+     ("mp" "Pin" mastodon-toot-pin-toot-toggle)
+     ("me" "Edit" mastodon-toot-edit-toot-at-point)]
     ["Profile Actions"
      :class transient-row
-     ("pp" "Profile" mastodon-profile--show-user)
-     ("pf" "List followers" mastodon-profile--open-followers)
-     ("pF" "List following" mastodon-profile--open-following)
-     ("ps" "List statues (no reblogs)" mastodon-profile--open-statuses-no-reblogs)]
+     ("pp" "Profile" mastodon-profile-show-user)
+     ("pf" "List followers" mastodon-profile-open-followers)
+     ("pF" "List following" mastodon-profile-open-following)
+     ("ps" "List statues (no reblogs)" mastodon-profile-open-statuses-no-reblogs)]
     ["User Actions"
      :class transient-row
-     ("uf" "Follow user" my/mastodon-tl--follow-user-confirm)
-     ("uF" "Unfollow user" my/mastodon-tl--unfollow-user-confirm)
-     ("ub" "Block user" my/mastodon-tl--block-user-confirm)
-     ("uB" "Unblock user" my/mastodon-tl--unblock-user-confirm)
-     ("um" "Mute user" my/mastodon-tl--mute-user-confirm)
-     ("uB" "Unmute user" my/mastodon-tl--unmute-user-confirm)]
+     ("uf" "Follow user" my/mastodon-tl-follow-user-confirm)
+     ("uF" "Unfollow user" my/mastodon-tl-unfollow-user-confirm)
+     ("ub" "Block user" my/mastodon-tl-block-user-confirm)
+     ("uB" "Unblock user" my/mastodon-tl-unblock-user-confirm)
+     ("um" "Mute user" my/mastodon-tl-mute-user-confirm)
+     ("uB" "Unmute user" my/mastodon-tl-unmute-user-confirm)]
     ["Misc"
      :class transient-row
      ("q" "Quit" transient-quit-one)]))
@@ -7916,7 +7961,8 @@ base toot."
    (telega-button-active :foreground (my/color-value 'base0)
                          :background (my/color-value 'cyan))
    (telega-webpage-chat-link :foreground (my/color-value 'base0)
-                             :background (my/color-value 'fg)))
+                             :background (my/color-value 'fg))
+   (telega-entity-type-spoiler :background (my/color-value 'base8)))
   :config
   (when (file-exists-p "~/.guix-extra-profiles/emacs/emacs/bin/telega-server")
     (setq telega-server-command
@@ -7925,6 +7971,7 @@ base toot."
   (setq telega-emoji-use-images nil)
   (setq telega-chat-fill-column 80)
   (setq telega-completing-read-function #'completing-read)
+  (setq telega-sticker-size '(12 . 24))
   (add-to-list 'savehist-additional-variables 'telega-msg-add-reaction)
   (remove-hook 'telega-chat-mode-hook #'telega-chat-auto-fill-mode)
   (general-define-key
@@ -8211,8 +8258,8 @@ base toot."
                     "qwen2.5:32b" "qwen2.5-coder:32b"
                     "eva-qwen2.5-q4_k_l-32b:latest"
                     "t-pro-1.0-q4_k_m:latest"
-                    "t-lite-it-1.0-q4_k_m:latest"
-                    (llava-phi3:latest
+                    "qwq:32b"
+                    (gemma3:32b
                      :capabilities (media)
                      :mime-types ("image/jpeg" "image/png")))))
   (gptel-make-openai "OpenRouter"
