@@ -6,7 +6,7 @@ on:
     branches: [ master ]
 jobs:
   trigger_update:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Trigger site update
         run: |
