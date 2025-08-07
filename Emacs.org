@@ -1,4 +1,4 @@
-#+PROPERTY: heaaer-args :mkdirp yes
+#+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:bash       :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el :mkdirp yes :eval never-export :exports both
 #+TODO: CHECK(s) | OFF(o)
@@ -69,6 +69,13 @@ I decided not to keep configs for features that I do not use anymore because thi
 | eshell-info-banner       | 4ccc0bbc412b68e1401533264d801d86b1fc8cc7 |
 | aweshell                 | 4ccc0bbc412b68e1401533264d801d86b1fc8cc7 |
 | link tasks to meetings   | 23496bfacc31ffedf2092da04e4e602b71373425 |
+| forge and code-review    | bb1365d9a026cefb7051992a68176ea00f041abd |
+| phscroll                 | bb1365d9a026cefb7051992a68176ea00f041abd |
+| org-make-toc             | bb1365d9a026cefb7051992a68176ea00f041abd |
+| edraw-org                | bb1365d9a026cefb7051992a68176ea00f041abd |
+| sx.el                    | bb1365d9a026cefb7051992a68176ea00f041abd |
+| atomic-chrome            | bb1365d9a026cefb7051992a68176ea00f041abd |
+| screenshot.el            | bb1365d9a026cefb7051992a68176ea00f041abd |
 
 * Initial setup
 Setting up the environment, performance tuning and a few basic settings.
@@ -113,20 +120,34 @@ References:
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
 #+end_src
-** Variables & environment
-This section is about optioning the Emacs config.
+** Modular configuration & environments
+I've made the config sort of modular because I need different parts in different environments. With such a large config as mine, this is important.
 
-The following is true is Emacs is run on a remote server where I don't need stuff like my org workflow
+The problem with one large =init.el= is it's evaluated fully in every envronment, which means =use-package= will try to download, compile, etc. every package, which takes a lot of time on termux.
+
+So this isn't about separation of concerns or something like that. Modules aren't independent; they're loaded in the same order as they are specified in this file; further modules may depend on previously loaded modules.
+
+Also, the modules are basically as large or small as they need to be required on each system.
+
+Obviously, there are a lot of compromises in this approach, but it works for me. For a more careful approach to modules, take a look, e.g., at [[https://protesilaos.com/emacs/dotemacs][Protesilaos']] config.
+
+First, I need to get the current environment:
 #+begin_src emacs-lisp
-(setq my/remote-server
-      (or (string= (getenv "IS_REMOTE") "true")
-          (string= (system-name) "dev-digital")
-          (string= (system-name) "viridian")))
+(defun my/get-env ()
+  (or (getenv "EMACS_ENV")
+      (when (member (system-name) '("dev-digital" "viridian"))
+        "remote")
+      (when (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME"))
+        "termux")
+      "normal"))
+
+(setq my/env (my/get-env))
 #+end_src
 
-And the following is true if Emacs is run from termux on Android.
+Also, I sometimes need to know if a program is running inside Emacs (say, inside a terminal emulator). And sometimes I need to know if I'm running a nested Emacs session. To do that, I set the following environment variable:
 #+begin_src emacs-lisp
-(setq my/is-termux (string-match-p (rx (* nonl) "com.termux" (* nonl)) (getenv "HOME")))
+(setq my/nested-emacs (and (getenv "IS_EMACS") t))
+(setenv "IS_EMACS" "true")
 #+end_src
 
 Custom system name logic because on termux it's always "localhost".
@@ -136,23 +157,347 @@ Custom system name logic because on termux it's always "localhost".
       (system-name)))
 #+end_src
 
-Also, I sometimes need to know if a program is running inside Emacs (say, inside a terminal emulator). And sometimes I need to know if I'm running a nested Emacs session. To do that, I set the following environment variable:
+And a few legacy variables, which is true on termux.
 #+begin_src emacs-lisp
-(setq my/nested-emacs (and (getenv "IS_EMACS") t))
-(setenv "IS_EMACS" "true")
+(setq my/is-termux (equal (my/get-env) "termux"))
+(setq my/remote-server (equal (my/get-env) "remote"))
 #+end_src
 
-Finally, I want to have a minimal Emacs config for debugging purposes. This has just straight.el, use-packages, and evil.
-#+begin_src emacs-lisp :tangle ~/.emacs.d/init-minimal.el :noweb yes
-<<minimal>>
+Below is the configuration table that shows which module is activated in which environment.
+#+NAME: modules-settings
+| Module name       | normal | termux | remote |
+|-------------------+--------+--------+--------|
+| performance       | +      | +      | +      |
+| micromamba        | +      |        |        |
+| misc-initial      | +      | +      | +      |
+| keybindings       | +      | +      | +      |
+| termux            |        | +      |        |
+| i3                | +      |        |        |
+| general-config    | +      | +      | +      |
+| wakatime          | +      | +      |        |
+| activitywatch     | +      |        |        |
+| general-ui        | +      | +      | +      |
+| doom-modeline     | +      | +      | +      |
+| perspective       | +      | +      | +      |
+| treemacs          | +      | +      |        |
+| lsp               | +      |        |        |
+| flycheck          | +      | +      | +      |
+| tree-sitter       | +      | +      | +      |
+| dap               |        |        |        |
+| reformatter       | +      |        |        |
+| copilot           |        |        |        |
+| web               | +      |        |        |
+| latex             | +      | +      |        |
+| markup            | +      | +      | +      |
+| lisp              | +      | +      | +      |
+| misc-programming  | +      |        |        |
+| general-org       | +      | +      |        |
+| org-literate      | +      |        |        |
+| org-productivity  | +      | +      |        |
+| org-export        | +      |        |        |
+| dired             | +      | +      | +      |
+| tramp             | +      |        |        |
+| terms             | +      | +      | +      |
+| dotfiles          | +      | +      | +      |
+| elfeed            | +      |        |        |
+| mail              | +      |        |        |
+| gnus              | +      |        |        |
+| emms              | +      |        |        |
+| misc-internet     | +      | +      | +      |
+| erc               | +      |        |        |
+| mastodon          | +      |        |        |
+| wallabag          |        |        |        |
+| ement             | +      |        |        |
+| telega            | +      | +      |        |
+| docs              | +      | +      |        |
+| ai                | +      |        |        |
+| index             | +      | +      |        |
+| pass              | +      | +      |        |
+| docker            | +      |        |        |
+| misc-apps         | +      | +      |        |
+| guix              | +      |        |        |
+| emacs-pinentry    |        | +      |        |
+| productivity-apps | +      | +      |        |
+| chess             | +      |        |        |
+| discord           |        |        |        |
+| gource            | +      |        |        |
+
+I want this table to be updated automatically based on this file.
+
+So, first, specify how the modules are stored:
+#+begin_src emacs-lisp
+(setq my/modules-dir (file-name-as-directory
+                      (expand-file-name "modules" user-emacs-directory)))
+
+(setq my/modules-prefix "sqrt-")
 #+end_src
 
-To launch Emacs with this config, run
-#+begin_src bash :eval no :tangle no
-emacs -q -l ~/.emacs.d/init-minimal.el
+Then, scan =Emacs.org= for headings with the =MODULE_NAME= property and set the tangle property:
+#+begin_src emacs-lisp
+(defun my/modules--refresh-and-list ()
+  (let (modules-list
+        headlines)
+    (org-element-map (org-element-parse-buffer) 'headline
+      (lambda (elem) (push elem headlines)))
+    (mapc
+     (lambda (elem)
+       (when-let ((module-name (org-element-property :MODULE_NAME elem)))
+         (save-excursion
+           (goto-char (org-element-property :begin elem))
+           (org-set-property
+            "header-args:emacs-lisp"
+            (concat ":tangle " my/modules-dir my/modules-prefix module-name ".el"
+                    " :comments links"))
+           (push module-name modules-list))))
+     headlines)
+    (seq-uniq modules-list)))
+#+end_src
+
+Then, read and update the settings table:
+#+begin_src emacs-lisp
+(defun my/modules--read-table ()
+  (save-excursion
+    (goto-char (point-min))
+    (re-search-forward (rx bol "#+NAME: modules-settings"))
+    (forward-line)
+    (let* ((table (org-element-at-point))
+           (table-contents
+            (mapcar
+             (lambda (elem)
+               (if (listp elem)
+                   (mapcar #'substring-no-properties elem)
+                 elem))
+             (org-table-to-lisp)))
+           (envs-list (cdar table-contents)))
+      (mapcar
+       (lambda (elem)
+         (cons (car elem)
+               (cl-loop for sign in (cdr elem)
+                        for env in envs-list
+                        collect (cons env (not (string-empty-p sign))))))
+       (cddr table-contents)))))
+
+(defun my/modules--refresh-table (modules-list)
+  (save-excursion
+    (goto-char (point-min))
+    (search-forward "#+NAME: modules-settings")
+    (let* ((table (org-element-at-point))
+           (table-contents
+            (my/modules--read-table))
+           (envs-list (mapcar #'car (cdar table-contents))))
+      (delete-region (org-element-property :contents-begin table)
+                     (org-element-property :contents-end table))
+      (insert
+       "\n"
+       (string-trim
+        (with-temp-buffer
+          (insert "| Module name |"
+                  (mapconcat #'identity envs-list " | ")
+                  "\n")
+          (insert "|--|\n")
+          (dolist (module modules-list)
+            (insert "| " module " | "
+                    (cl-loop
+                     for env in envs-list
+                     if (alist-get
+                         env
+                         (alist-get module table-contents nil nil #'equal)
+                         nil nil #'equal)
+                     concat " + |"
+                     else
+                     concat " |")
+                     "\n"))
+          (goto-char (point-min))
+          (org-table-align)
+          (buffer-substring-no-properties (point-min) (point-max))))))))
+#+end_src
+
+Then, update the loading code that requires the necessary modules based on the environment:
+#+begin_src emacs-lisp
+(defun my/modules--refresh-loading ()
+  (let* ((modules-table (my/modules--read-table))
+         (envs-list (mapcar #'car (cdar modules-table))))
+    (save-excursion
+      (goto-char (point-min))
+      (re-search-forward (rx bol "#+NAME: modules-loading"))
+      (beginning-of-line 3)
+      (delete-region
+       (point)
+       (save-excursion
+         (re-search-forward (rx bol "#+end_src"))
+         (end-of-line 0)
+         (point)))
+      (insert
+       (pp-to-string
+        `(pcase my/env
+           ,@(mapcar
+              (lambda (env)
+                `(,env
+                  ,@(seq-filter
+                     #'identity
+                     (mapcar
+                      (lambda (elem)
+                        (when (alist-get env (cdr elem) nil nil #'equal)
+                          `(require ',(intern (concat my/modules-prefix (car elem))))))
+                      modules-table))))
+              envs-list)))))))
+#+end_src
+
+Also delete unnecessary modules:
+#+begin_src emacs-lisp
+(defun my/modules--cleanup-folder (modules-list)
+  (let ((source-files (seq-filter
+                       (lambda (f)
+                         (equal (file-name-extension f) "el"))
+                       (directory-files my/modules-dir)))
+        (target-files
+         (mapcar (lambda (m)
+                   (concat my/modules-prefix m ".el"))
+                 modules-list)))
+    (dolist (extra-file (seq-difference source-files target-files))
+      (delete-file (concat my/modules-dir extra-file)))))
+#+end_src
+
+And a function that combines all of the above:
+#+begin_src emacs-lisp
+(defun my/modules-settings-refresh ()
+  (interactive)
+  (org-fold-show-all)
+  (let ((modules-list (my/modules--refresh-and-list)))
+    (my/modules--refresh-table modules-list)
+    (my/modules--refresh-loading)
+    (my/modules--cleanup-folder modules-list)
+    (setq my/modules-list modules-list)))
+#+end_src
+
+Now, add the modules directory to the =load-path= variable:
+#+begin_src emacs-lisp
+(push my/modules-dir load-path)
+#+end_src
+
+And require the necessary modules with the autogenerated code:
+#+NAME: modules-loading
+#+begin_src emacs-lisp
+(pcase my/env
+  ("normal"
+   (require 'sqrt-performance)
+   (require 'sqrt-micromamba)
+   (require 'sqrt-misc-initial)
+   (require 'sqrt-keybindings)
+   (require 'sqrt-i3)
+   (require 'sqrt-general-config)
+   (require 'sqrt-wakatime)
+   (require 'sqrt-activitywatch)
+   (require 'sqrt-general-ui)
+   (require 'sqrt-doom-modeline)
+   (require 'sqrt-perspective)
+   (require 'sqrt-treemacs)
+   (require 'sqrt-lsp)
+   (require 'sqrt-flycheck)
+   (require 'sqrt-tree-sitter)
+   (require 'sqrt-reformatter)
+   (require 'sqrt-web)
+   (require 'sqrt-latex)
+   (require 'sqrt-markup)
+   (require 'sqrt-lisp)
+   (require 'sqrt-misc-programming)
+   (require 'sqrt-general-org)
+   (require 'sqrt-org-literate)
+   (require 'sqrt-org-productivity)
+   (require 'sqrt-org-export)
+   (require 'sqrt-dired)
+   (require 'sqrt-tramp)
+   (require 'sqrt-terms)
+   (require 'sqrt-dotfiles)
+   (require 'sqrt-elfeed)
+   (require 'sqrt-mail)
+   (require 'sqrt-gnus)
+   (require 'sqrt-emms)
+   (require 'sqrt-misc-internet)
+   (require 'sqrt-erc)
+   (require 'sqrt-mastodon)
+   (require 'sqrt-ement)
+   (require 'sqrt-telega)
+   (require 'sqrt-docs)
+   (require 'sqrt-ai)
+   (require 'sqrt-index)
+   (require 'sqrt-pass)
+   (require 'sqrt-docker)
+   (require 'sqrt-misc-apps)
+   (require 'sqrt-guix)
+   (require 'sqrt-productivity-apps)
+   (require 'sqrt-chess)
+   (require 'sqrt-gource))
+  ("termux"
+   (require 'sqrt-performance)
+   (require 'sqrt-misc-initial)
+   (require 'sqrt-keybindings)
+   (require 'sqrt-termux)
+   (require 'sqrt-general-config)
+   (require 'sqrt-wakatime)
+   (require 'sqrt-general-ui)
+   (require 'sqrt-doom-modeline)
+   (require 'sqrt-perspective)
+   (require 'sqrt-treemacs)
+   (require 'sqrt-flycheck)
+   (require 'sqrt-tree-sitter)
+   (require 'sqrt-latex)
+   (require 'sqrt-markup)
+   (require 'sqrt-lisp)
+   (require 'sqrt-general-org)
+   (require 'sqrt-org-productivity)
+   (require 'sqrt-dired)
+   (require 'sqrt-terms)
+   (require 'sqrt-dotfiles)
+   (require 'sqrt-misc-internet)
+   (require 'sqrt-telega)
+   (require 'sqrt-docs)
+   (require 'sqrt-index)
+   (require 'sqrt-pass)
+   (require 'sqrt-misc-apps)
+   (require 'sqrt-emacs-pinentry)
+   (require 'sqrt-productivity-apps))
+  ("remote"
+   (require 'sqrt-performance)
+   (require 'sqrt-misc-initial)
+   (require 'sqrt-keybindings)
+   (require 'sqrt-general-config)
+   (require 'sqrt-general-ui)
+   (require 'sqrt-doom-modeline)
+   (require 'sqrt-perspective)
+   (require 'sqrt-flycheck)
+   (require 'sqrt-tree-sitter)
+   (require 'sqrt-markup)
+   (require 'sqrt-lisp)
+   (require 'sqrt-dired)
+   (require 'sqrt-terms)
+   (require 'sqrt-dotfiles)
+   (require 'sqrt-misc-internet)))
+
+#+end_src
+
+Finally, some post-processing of the tangled files:
+#+begin_src emacs-lisp
+(defun my/modules--post-tangle ()
+  (when (string-match-p (rx bos (literal my/modules-dir)
+                            (* nonl) ".el")
+                        (buffer-file-name))
+    (goto-char (point-min))
+    (insert ";;; -*- lexical-binding: t -*-\n")
+    (goto-char (point-max))
+    (insert "\n(provide '" (file-name-base
+                            (buffer-file-name)) ")")
+    (save-buffer)
+    (message "Processed %s as emacs config module" (buffer-file-name))))
+
+(add-hook 'org-babel-post-tangle-hook #'my/modules--post-tangle)
 #+end_src
 
 ** Performance
+:PROPERTIES:
+:MODULE_NAME: performance
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-performance.el :comments links
+:END:
 *** Measure startup speed
 A small function to print out the loading time and number of GCs during the loading. Can be useful as a point of data for optimizing Emacs startup time.
 #+begin_src emacs-lisp
@@ -187,7 +532,7 @@ Just setting ~gc-cons-treshold~ to a larger value.
 *** Run garbage collection when Emacs is unfocused
 Run GC when Emacs loses focus. +Time will tell if that's a good idea.+
 
- I still don't know if there is any quantifiable advantage to this, but it doesn't hurt.
+I still don't know if there is any quantifiable advantage to this, but it doesn't hurt.
 
 #+begin_src emacs-lisp
 (add-hook 'emacs-startup-hook
@@ -227,6 +572,10 @@ I have some concerns that =ps -o rss= may be unrepresentative because of [[https
      (message "%f Gb" (/ (float data) 1024 1024)))))
 #+end_src
 ** Micromamba
+:PROPERTIES:
+:MODULE_NAME: micromamba
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-micromamba.el :comments links
+:END:
 [[https://github.com/mamba-org/mamba][mamba]] is a faster alternative to [[https://www.anaconda.com/][Anaconda]], a package and environment manager. =micromamba= is a tiny version that provides a subset of mamba commands.
 
 [[https://github.com/SqrtMinusOne/micromamba.el][micromamba.el]] is my package to interact with the latter.
@@ -236,9 +585,14 @@ I have some concerns that =ps -o rss= may be unrepresentative because of [[https
   :straight t
   :if (executable-find "micromamba")
   :config
-  (micromamba-activate "general"))
+  (ignore-errors
+    (micromamba-activate "general")))
 #+end_src
 ** Config files
+:PROPERTIES:
+:MODULE_NAME: misc-initial
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-initial.el :comments links
+:END:
 *** Custom file location
 By default, =custom= writes stuff to =init.el=, which is somewhat annoying. The following makes it write to a separate file =custom.el=
 
@@ -268,6 +622,10 @@ By default Emacs and its packages create a lot files in =.emacs.d= and in other 
   :straight t)
 #+end_src
 ** Helper functions
+:PROPERTIES:
+:MODULE_NAME: misc-initial
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-initial.el :comments links
+:END:
 *** Run command in background
 I think I've copied it from somewhere.
 
@@ -283,13 +641,11 @@ I think I've copied it from somewhere.
   (quit-window t))
 #+end_src
 
-** Prevent Emacs from closing
-This adds a confirmation to avoid accidental Emacs closing.
-
-#+begin_src emacs-lisp
-(setq confirm-kill-emacs 'y-or-n-p)
-#+end_src
 ** Scratch buffer
+:PROPERTIES:
+:MODULE_NAME: misc-initial
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-initial.el :comments links
+:END:
 I have a problem with =emacs-lisp-mode= as =initial-major-mode= because in my config it loads =lispy=, which loads =org-mode=.
 
 So until I've made a better loading screen, this will do.
@@ -300,6 +656,10 @@ So until I've made a better loading screen, this will do.
 #+end_src
 * General settings
 ** Keybindings
+:PROPERTIES:
+:MODULE_NAME: keybindings
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-keybindings.el :comments links
+:END:
 *** general.el
 general.el provides a convenient interface to manage Emacs keybindings.
 
@@ -694,7 +1054,11 @@ Evil does a pretty good job of abstracting all these packages with a set of vim-
 (global-set-key (kbd "C-+") 'my/zoom-in)
 (global-set-key (kbd "C-=") 'my/zoom-out)
 #+end_src
-*** Termux
+** Termux settings
+:PROPERTIES:
+:MODULE_NAME: termux
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-termux.el :comments links
+:END:
 For some reason my ONYX device has the tilde and escape wrong.
 
 #+begin_src emacs-lisp
@@ -709,6 +1073,10 @@ And the screen is less wide.
   (setq split-width-threshold 90))
 #+end_src
 ** i3 integration
+:PROPERTIES:
+:MODULE_NAME: i3
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-i3.el :comments links
+:END:
 UPD <2021-11-27 Sat>. I have finally switched to EXWM as my window manager, but as long as I keep i3 as a backup solution, this section persists. Check out the [[https://sqrtminusone.xyz/posts/2021-10-04-emacs-i3/][post]] for a somewhat better presentation.
 
 One advantage of EXWM for an Emacs user is that EXWM gives one set of keybindings to manage both Emacs windows and X windows. In every other WM, like my preferred [[https://i3wm.org][i3wm]], two orthogonal keymaps seem to be necessary. But, as both programs are quite customizable, I want to see whether I can replicate at least some part of the EXWM goodness in i3.
@@ -854,6 +1222,10 @@ Finally, the entrypoint for the Emacs integration. In addition to the commands d
     (- (i3-msg command))))
 #+end_src
 ** Editing text
+:PROPERTIES:
+:MODULE_NAME: general-config
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-general-config.el :comments links
+:END:
 Various packages, tricks, and settings that help with the central task of Emacs - editing text.
 *** Indentation & whitespace
 **** Aggressive Indent
@@ -1024,6 +1396,15 @@ References:
 (use-package smartparens
   :straight t)
 #+end_src
+
+The function below make smartparens behave the way I like for C-like languages:
+#+begin_src emacs-lisp
+(defun my/set-smartparens-indent (mode)
+  (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
+  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
+#+end_src
+
 **** Visual fill column mode
 #+begin_src emacs-lisp
 (use-package visual-fill-column
@@ -1106,6 +1487,10 @@ Input accented characters.
        (line-end-position)))))
 #+end_src
 ** Working with projects
+:PROPERTIES:
+:MODULE_NAME: general-config
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-general-config.el :comments links
+:END:
 Packages related to managing projects.
 
 I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, but in the end decided that dired with [[https://github.com/jojojames/dired-sidebar][dired-sidebar]] does a better job. Dired has its separate section in "Applications".
@@ -1113,12 +1498,15 @@ I used to have [[https://github.com/Alexander-Miller/treemacs][Treemacs]] here, 
 *** Projectile
 [[https://github.com/bbatsov/projectile][Projectile]] gives a bunch of useful functions for managing projects, like finding files within a project, fuzzy-find, replace, etc.
 
+| Type | Note                                                                  |
+|------+-----------------------------------------------------------------------|
+| TODO | Maybe set =projectile-project-search-path= based on the folder index? |
+
 #+begin_src emacs-lisp
 (use-package projectile
   :straight t
   :config
   (projectile-mode +1)
-  (setq projectile-project-search-path '("~/Code" "~/Documents"))
   (general-define-key
     :keymaps 'projectile-command-map
     "b" #'consult-project-buffer))
@@ -1219,80 +1607,6 @@ And I suspect the built-in window width function doesn't work as intended becaus
       (lambda () (- (frame-width) 4)))
 #+end_src
 
-*** Forge and code-review
-[[https://github.com/magit/forge][forge]] provides integration with forges, such as GitHub and GitLab.
-#+begin_src emacs-lisp
-(use-package forge
-  :after magit
-  :straight t
-  :config
-  (add-to-list 'forge-alist '("gitlab.etu.ru"
-                              "gitlab.etu.ru/api/v4"
-                              "gitlab.etu.ru"
-                              forge-gitlab-repository)))
-#+end_src
-
-=forge= depends on a package called [[https://github.com/magit/ghub][ghub]]. I don't like that it uses =auth-source= to store the token so I'll advise it to use =password-store=.
-
-#+begin_src emacs-lisp
-(defun my/password-store-get-field (entry field)
-  (if-let (field (password-store-get-field entry field))
-      field
-    (my/password-store-get-field entry field)))
-
-(defun my/ghub--token (host username package &optional nocreate forge)
-  (cond ((and (or (equal host "gitlab.etu.ru/api/v4")
-                  (equal host "gitlab.etu.ru/api"))
-              (equal username "pvkorytov"))
-         (my/password-store-get-field
-          "Job/Digital/Infrastructure/gitlab.etu.ru"
-          (format "%s-token" package)))
-        (t (error "Don't know token: %s %s %s" host username package))))
-
-(with-eval-after-load 'ghub
-  (advice-add #'ghub--token :override #'my/ghub--token))
-#+end_src
-
-[[https://github.com/wandersoncferreira/code-review][code-review]] is a package that implements code review in Emacs. The main branch is broken, [[https://github.com/wandersoncferreira/code-review/pull/246][but this PR]] works.
-
-#+begin_src emacs-lisp
-(use-package code-review
-  :straight (:host github :repo "phelrine/code-review" :branch "fix/closql-update")
-  :after forge
-  :config
-  (setq code-review-auth-login-marker 'forge)
-  (setq code-review-gitlab-base-url "gitlab.etu.ru")
-  (setq code-review-gitlab-host "gitlab.etu.ru/api")
-  (setq code-review-gitlab-graphql-host "gitlab.etu.ru/api")
-  (general-define-key
-   :states '(normal visual)
-   :keymaps '(code-review-mode-map)
-   "RET" #'code-review-comment-add-or-edit
-   "gr" #'code-review-reload
-   "r" #'code-review-transient-api
-   "s" #'code-review-comment-code-suggestion
-   "d" #'code-review-submit-single-diff-comment-at-point
-   "TAB" #'magit-section-toggle)
-  (general-define-key
-   :states '(normal)
-   :keymaps '(forge-topic-mode-map)
-   "M-RET" #'code-review-forge-pr-at-point))
-#+end_src
-
-Fix issue [[https://github.com/wandersoncferreira/code-review/issues/253][253]]:
-#+begin_src emacs-lisp
-(defun my/code-review-comment-quit ()
-  "Quit the comment window."
-  (interactive)
-  (magit-mode-quit-window t)
-  (with-current-buffer (get-buffer code-review-buffer-name)
-    (goto-char code-review-comment-cursor-pos)
-    (code-review-comment-reset-global-vars)))
-
-(with-eval-after-load 'code-review
-  (advice-add #'code-review-comment-quit :override #'my/code-review-comment-quit))
-#+end_src
-
 *** Editorconfig
 Editorconfig support for Emacs.
 
@@ -1337,6 +1651,10 @@ Somehow I couldn't hook =toogle-truncate-lines= into the existing package hooks,
   (advice-add #'deadgrep--buffer :around #'my/deadgrep-fix-buffer-advice))
 #+end_src
 ** Navigation
+:PROPERTIES:
+:MODULE_NAME: general-config
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-general-config.el :comments links
+:END:
 Things to navigate in Emacs.
 
 *** Registers
@@ -1444,6 +1762,11 @@ Integrate avy with embark:
 #+end_src
 
 ** Completion
+:PROPERTIES:
+:MODULE_NAME: general-config
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-general-config.el :comments links
+:END:
+
 *** vertico
 [[https://github.com/minad/vertico][vertico]] is a vertical completion framework. I switched to it from [[https://github.com/abo-abo/swiper][Ivy]] (and to Ivy from [[https://github.com/emacs-helm/helm][Helm]]).
 
@@ -1702,6 +2025,10 @@ A company frontend with nice icons.
   :hook (company-mode . company-box-mode))
 #+end_src
 ** Help
+:PROPERTIES:
+:MODULE_NAME: general-config
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-general-config.el :comments links
+:END:
 - *CREDIT*: Thanks @phundrak on the System Crafters Discord for suggesting =help-map=
 
 [[https://github.com/Wilfred/helpful][helpful]] package improves the =*help*= buffer.
@@ -1746,6 +2073,10 @@ References:
 - [[https://activitywatch.net/][ActivityWatch]]
 
 *** WakaTime
+:PROPERTIES:
+:MODULE_NAME: wakatime
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-wakatime.el :comments links
+:END:
 Before I figure out how to package this for Guix:
 - Clone [[https://github.com/wakatime/wakatime-cli][the repo]]
 - Run ~go build~
@@ -1754,7 +2085,6 @@ Before I figure out how to package this for Guix:
 #+begin_src emacs-lisp :noweb yes
 (use-package wakatime-mode
   :straight (:host github :repo "SqrtMinusOne/wakatime-mode")
-  :if (not (or my/remote-server))
   :config
   (setq wakatime-ignore-exit-codes '(0 1 102 112))
   (advice-add 'wakatime-init :after
@@ -1771,6 +2101,10 @@ Before I figure out how to package this for Guix:
 #+end_src
 
 *** ActivityWatch
+:PROPERTIES:
+:MODULE_NAME: activitywatch
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-activitywatch.el :comments links
+:END:
 #+begin_src emacs-lisp
 (use-package request
   :straight t
@@ -1778,14 +2112,16 @@ Before I figure out how to package this for Guix:
 
 (use-package activity-watch-mode
   :straight t
-  :if (not (or my/is-termux my/remote-server))
   :config
   (global-activity-watch-mode))
 #+end_src
 * UI settings
 ** General settings
+:PROPERTIES:
+:MODULE_NAME: general-ui
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-general-ui.el :comments links
+:END:
 *** Miscellaneous
-
 Disable GUI elements
 #+begin_src emacs-lisp
 (unless my/is-termux
@@ -1801,6 +2137,11 @@ Transparency. Not setting it here, as I used to use [[file:Desktop.org::*Picom][
 #+begin_src emacs-lisp
 ;; (set-frame-parameter (selected-frame) 'alpha '(90 . 90))
 ;; (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
+#+end_src
+
+This adds a confirmation to avoid accidental Emacs closing.
+#+begin_src emacs-lisp
+(setq confirm-kill-emacs 'y-or-n-p)
 #+end_src
 
 Prettify symbols. Also not setting it, ligatures seem to be enough for me.
@@ -1907,6 +2248,10 @@ Showing the last pressed key. Occasionally useful.
   :commands (keycast--update))
 #+end_src
 ** Themes and colors
+:PROPERTIES:
+:MODULE_NAME: general-ui
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-general-ui.el :comments links
+:END:
 *** Theme packages
 My colorschemes of choice.
 #+begin_src emacs-lisp
@@ -2247,6 +2592,10 @@ It is used by many other packages but doesn't seem to have an integration with =
     :foreground (my/color-value 'fg) :background (my/color-value 'fg))))
 #+end_src
 ** Fonts
+:PROPERTIES:
+:MODULE_NAME: general-ui
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-general-ui.el :comments links
+:END:
 *** Frame font
 To install a font, download the font and unpack it into the =.local/share/fonts= directory. Create one if it doesn't exist.
 
@@ -2327,11 +2676,15 @@ Run =M-x all-the-icons-install-fonts= at first setup.
   :straight t)
 #+end_src
 ** Text highlight
+:PROPERTIES:
+:MODULE_NAME: general-ui
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-general-ui.el :comments links
+:END:
 Highlight indent guides. I used [[https://github.com/DarthFennec/highlight-indent-guides][highlight-indent-guides]] before but [[https://github.com/jdtsmith/indent-bars][indent-bars]] seems to work better, and it doesn't break with =treesit-fold=.
 #+begin_src emacs-lisp
 (use-package indent-bars
   :straight (:host github :repo "jdtsmith/indent-bars")
-  :if (not (or my/remote-server))
+  :if (display-graphic-p)
   :hook ((prog-mode . indent-bars-mode)
          (LaTeX-mode . indent-bars-mode))
   :config
@@ -2362,6 +2715,10 @@ Highlight TODOs and stuff
   :straight t)
 #+end_src
 ** Doom Modeline
+:PROPERTIES:
+:MODULE_NAME: doom-modeline
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-doom-modeline.el :comments links
+:END:
 A modeline from Doom Emacs. A big advantage of this package is that it just works out of the box and does not require much customization.
 
 I tried a bunch of other options, including [[https://github.com/TheBB/spaceline][spaceline]], but in the end, decided that Doom Modeline works best for me.
@@ -2453,6 +2810,11 @@ References:
 #+end_src
 
 ** perspective.el
+:PROPERTIES:
+:MODULE_NAME: perspective
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-perspective.el :comments links
+:END:
+
 [[https://github.com/nex3/perspective-el][perspective.el]] is a package that groups buffers in "perspectives".
 
 =tab-bar.el= can be configured to behave in a similar way, but I'm too invested in this package already.
@@ -2599,6 +2961,10 @@ This is meant to be used in the definitions of =general.el=.
 * Programming
 ** General setup
 *** Treemacs
+:PROPERTIES:
+:MODULE_NAME: treemacs
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-treemacs.el :comments links
+:END:
 [[https://github.com/Alexander-Miller/treemacs][Treemacs]] is a rather large & powerful package, but as of now I've replaced it with dired. I still have a small configuration because lsp-mode and dap-mode depend on it.
 
 #+begin_src emacs-lisp
@@ -2627,6 +2993,10 @@ This is meant to be used in the definitions of =general.el=.
   :straight t)
 #+end_src
 *** LSP
+:PROPERTIES:
+:MODULE_NAME: lsp
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-lsp.el :comments links
+:END:
 LSP-mode provides an IDE-like experience for Emacs - real-time diagnostics, code actions, intelligent autocompletion, etc.
 
 References:
@@ -2636,7 +3006,6 @@ References:
 #+begin_src emacs-lisp
 (use-package lsp-mode
   :straight t
-  :if (not (or my/is-termux my/remote-server))
   :hook (
          (typescript-mode . lsp)
          (js-mode . lsp)
@@ -2748,6 +3117,10 @@ For now, I've advised this away by ignoring empty messages unless they show up m
   (advice-add #'lsp--on-diagnostics :around #'my/lsp--on-diagnostics))
 #+end_src
 *** Flycheck
+:PROPERTIES:
+:MODULE_NAME: flycheck
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-flycheck.el :comments links
+:END:
 A syntax checking extension for Emacs. Integrates with LSP-mode, but can also use various standalone checkers.
 
 References:
@@ -2759,11 +3132,6 @@ References:
   :config
   (global-flycheck-mode)
   (setq flycheck-check-syntax-automatically '(save idle-buffer-switch mode-enabled))
-  ;; (add-hook 'evil-insert-state-exit-hook
-  ;;           (lambda ()
-  ;;             (if flycheck-checker
-  ;;                 (flycheck-buffer))
-  ;;             ))
   (advice-add 'flycheck-eslint-config-exists-p :override (lambda() t))
   (add-to-list 'display-buffer-alist
                `(,(rx bos "*Flycheck errors*" eos)
@@ -2773,26 +3141,11 @@ References:
                  (reusable-frames . visible)
                  (window-height   . 0.33))))
 #+end_src
-*** General additional config
-Have to put this before tree-sitter because I need =my/set-smartparens-indent= there.
-
-Make smartparens behave the way I like for C-like languages.
-#+begin_src emacs-lisp
-(defun my/set-smartparens-indent (mode)
-  (sp-local-pair mode "{" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-  (sp-local-pair mode "[" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET")))
-  (sp-local-pair mode "(" nil :post-handlers '(("|| " "SPC") ("||\n[i]" "RET"))))
-#+end_src
-
-Override flycheck checker with eslint.
-#+begin_src emacs-lisp
-(defun my/set-flycheck-eslint()
-  "Override flycheck checker with eslint."
-  (setq-local lsp-diagnostic-package :none)
-  (setq-local flycheck-checker 'javascript-eslint))
-#+end_src
-
 *** Tree-sitter
+:PROPERTIES:
+:MODULE_NAME: tree-sitter
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-tree-sitter.el :comments links
+:END:
 References:
 - [[https://tree-sitter.github.io/tree-sitter/using-parsers#query-syntax][Tree sitter query syntax]]
 - [[https://www.gnu.org/software/emacs//manual/html_node/elisp/Parsing-Program-Source.html][treesit.el documentation]]
@@ -2924,6 +3277,10 @@ I'm not actually using that, but its query editor is pretty useful to debug =tre
   :commands (combobulate))
 #+end_src
 *** DAP
+:PROPERTIES:
+:MODULE_NAME: dap
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-dap.el :comments links
+:END:
 An Emacs client for Debugger Adapter Protocol.
 
 Okay, so, I tried to use it many times... Chrome DevTools and ipdb / pudb are just better for me. Maybe I'll check out RealGUD instead... Will see.
@@ -3238,6 +3595,10 @@ Some debug templates I frequently use.
          :program "${workspaceFolder}/dist/bin/www.js")))
 #+end_src
 *** Reformatter
+:PROPERTIES:
+:MODULE_NAME: reformatter
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-reformatter.el :comments links
+:END:
 A general-purpose package to run formatters on files. While the most popular formatters are already packaged for Emacs, those that aren't can be invoked with this package.
 
 #+begin_src emacs-lisp
@@ -3245,7 +3606,15 @@ A general-purpose package to run formatters on files. While the most popular for
   :straight t)
 #+end_src
 *** copilot
-[[https://copilot.github.com/][GitHub Copilot]] is a project of GitHub and OpenAI that provides code completions. It's somewhat controversial in the Emacs community but I opt in for now.
+:PROPERTIES:
+:MODULE_NAME: copilot
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-copilot.el :comments links
+:END:
+[[https://copilot.github.com/][GitHub Copilot]] is a project of GitHub and OpenAI that provides code completions.
+
+| Type   | Note                                          |
+|--------+-----------------------------------------------|
+| *TODO* | Figure out how to bypass U.S. export controls |
 
 #+begin_src emacs-lisp
 (defun my/copilot-tab ()
@@ -3279,6 +3648,10 @@ A general-purpose package to run formatters on files. While the most popular for
    "M-l" #'copilot-accept-completion-by-word))
 #+end_src
 ** Web development
+:PROPERTIES:
+:MODULE_NAME: web
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-web.el :comments links
+:END:
 Configs for various web development technologies I'm using.
 *** Emmet
 [[Https://emmet.io/][Emmet]] is a toolkit which greatly speeds up typing HTML & CSS.
@@ -3475,6 +3848,10 @@ Vue settings
   (my/set-smartparens-indent 'php-mode))
 #+end_src
 ** LaTeX
+:PROPERTIES:
+:MODULE_NAME: latex
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-latex.el :comments links
+:END:
 *** AUCTeX
 The best LaTeX editing environment I've found so far.
 
@@ -3734,6 +4111,10 @@ Section snippets. The code turned out to be more complicated than just writing t
  my/latex-section-snippets)
 #+end_src
 ** Markup & natural languages
+:PROPERTIES:
+:MODULE_NAME: markup
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-markup.el :comments links
+:END:
 *** Markdown
 #+begin_src emacs-lisp
 (use-package markdown-mode
@@ -3896,6 +4277,10 @@ References:
   (reverso-history-mode))
 #+end_src
 ** Lisp
+:PROPERTIES:
+:MODULE_NAME: lisp
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-lisp.el :comments links
+:END:
 [[file:dot-imgs/lisp_cycles.png]]
 
 *** Meta Lisp
@@ -4017,6 +4402,10 @@ An honorary Lisp.
   (add-hook 'clips-mode 'lispy-mode))
 #+end_src
 ** Python
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 *** ein
 [[https://github.com/millejoh/emacs-ipython-notebook][ein]] is a package that allows for running Jupyter notebooks in Emacs.
 
@@ -4187,7 +4576,7 @@ References:
   :commands (python-pytest-dispatch)
   :init
   (my-leader-def
-    :keymaps 'python-mode-map
+    :keymaps '(python-mode-map python-ts-mode-map)
     :infix "t"
     "t" 'python-pytest-dispatch)
   :config
@@ -4264,6 +4653,10 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
   (display-buffer my/tensorboard-buffer))
 #+end_src
 ** Data serialization
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 *** JSON
 #+begin_src emacs-lisp
 (use-package json-mode
@@ -4292,6 +4685,11 @@ A function to start up [[https://www.tensorflow.org/tensorboard][TensorBoard]].
   (add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode)))
 #+end_src
 ** Configuration
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
+
 *** .env
 #+begin_src emacs-lisp
 (use-package dotenv-mode
@@ -4344,6 +4742,11 @@ A package to quickly create =.gitignore= files.
   :straight t)
 #+end_src
 ** Shell
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
+
 *** sh
 #+begin_src emacs-lisp
 (add-hook 'sh-mode-hook #'smartparens-mode)
@@ -4357,6 +4760,10 @@ A package to quickly create =.gitignore= files.
  (add-hook 'fish-mode-hook #'smartparens-mode))
 #+end_src
 ** Query languages
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 *** SQL
 [[https://github.com/zeroturnaround/sql-formatter][sql-formatter]] is a nice JavaScript package for pretty-printing SQL queries. It is not packaged for Emacs, so the easiest way to use it seems to be to define a custom formatter via [[https://github.com/purcell/emacs-reformatter][reformatter]].
 
@@ -4397,6 +4804,10 @@ So far I didn't find a nice SQL client for Emacs, but I occasionally run SQL que
   :straight t)
 #+end_src
 ** Documents
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 *** DocView
 Don't know about this.
 
@@ -4419,6 +4830,10 @@ Don't know about this.
    "k" #'doc-view-previous-line-or-previous-page))
 #+end_src
 ** Gnuplot
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 Emacs integration for [[http://gnuplot.info/][gnuplot]].
 
 #+begin_src emacs-lisp
@@ -4438,6 +4853,10 @@ Emacs integration for [[http://gnuplot.info/][gnuplot]].
   (add-hook 'gnuplot-mode-hook #'smartparens-mode))
 #+end_src
 ** x509
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 #+begin_src emacs-lisp
 (use-package x509-mode
   :commands (x509-dwim)
@@ -4445,18 +4864,26 @@ Emacs integration for [[http://gnuplot.info/][gnuplot]].
                    :build (:not native-compile)))
 #+end_src
 ** Java
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 #+begin_src emacs-lisp
 (use-package lsp-java
   :straight t
   :after (lsp)
   :config
-  (setq lsp-java-jdt-download-url "https://download.eclipse.org/jdtls/milestones/0.57.0/jdt-language-server-0.57.0-202006172108.tar.gz"))
+  (setq lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.23.0/jdt-language-server-1.23.0-202304271346.tar.gz"))
 
 (add-hook 'java-mode-hook #'smartparens-mode)
 ;; (add-hook 'java-mode-hook #'hs-minor-mode)
 (my/set-smartparens-indent 'java-mode)
 #+end_src
 ** Go
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 #+begin_src emacs-lisp
 (use-package go-mode
   :straight t
@@ -4467,6 +4894,10 @@ Emacs integration for [[http://gnuplot.info/][gnuplot]].
   (add-hook 'go-mode-hook #'treesit-fold-mode))
 #+end_src
 ** .NET
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 *** C#
 | Guix dependencies | Disabled |
 |-------------------+----------|
@@ -4496,6 +4927,10 @@ Disabled that for now because it depends on the old tree sitter.
   (add-hook 'csproj-mode #'smartparens-mode))
 #+end_src
 ** Haskell
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 #+begin_src emacs-lisp
 (use-package haskell-mode
   :straight t
@@ -4506,6 +4941,10 @@ Disabled that for now because it depends on the old tree sitter.
   :after (lsp haskell-mode))
 #+end_src
 ** nix
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 #+begin_src emacs-lisp
 (use-package nix-mode
   :straight t
@@ -4515,6 +4954,10 @@ Disabled that for now because it depends on the old tree sitter.
   (my/set-smartparens-indent 'nix-mode))
 #+end_src
 ** Lua
+:PROPERTIES:
+:MODULE_NAME: misc-programming
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
+:END:
 #+begin_src emacs-lisp
 (use-package lua-mode
   :straight t
@@ -4524,6 +4967,10 @@ Disabled that for now because it depends on the old tree sitter.
 (my/set-smartparens-indent 'lua-mode)
 #+end_src
 * Org Mode
+:PROPERTIES:
+:MODULE_NAME: general-org
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-general-org.el :comments links
+:END:
 *Org mode* is a tool that leverages plain-text files for tasks like making notes, literate programming, task management, etc.
 
 References:
@@ -4538,7 +4985,6 @@ Use the built-in org mode (=:type built-in=).
 
 (use-package org
   :straight (:type built-in)
-  :if (not my/remote-server)
   :defer t
   :init
   (unless (file-exists-p org-directory)
@@ -4615,15 +5061,6 @@ This used to have =org-contacts= and =ol-notmuch= at some point, but they have s
   :config
   (require 'ox-extra)
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
-#+end_src
-*** ol-notmuch
-[[https://git.sr.ht/~tarsius/ol-notmuch][ol-notmuch]] is a package that adds Org links to notmuch messages.
-
-#+begin_src emacs-lisp
-(unless (or my/remote-server my/is-termux)
-  (use-package ol-notmuch
-    :straight t
-    :after (org notmuch)))
 #+end_src
 *** org-tempo
 =org-tempo= is a convinient package that provides snippets for various org blocks.
@@ -4895,6 +5332,10 @@ Remove the ellipsis at the end of folded headlines, as it seems unnecessary with
   :straight t)
 #+end_src
 ** Literate programing
+:PROPERTIES:
+:MODULE_NAME: org-literate
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-org-literate.el :comments links
+:END:
 *** Python & Jupyter
 Use jupyter kernels for Org Mode.
 
@@ -5364,23 +5805,6 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
                 (olivetti-mode -1)
                 (setq-local olivetti-body-width (default-value 'olivetti-body-width))))))
 #+end_src
-*** TOC
-Make a TOC inside the org file.
-
-References:
-- [[https://github.com/alphapapa/org-make-toc][alphapapa/org-make-toc]]
-
-#+begin_src emacs-lisp
-(use-package org-make-toc
-  :after (org)
-  :if (not my/remote-server)
-  :commands
-  (org-make-toc
-   org-make-toc-insert
-   org-make-toc-set
-   org-make-toc-at-point)
-  :straight t)
-#+end_src
 *** Screenshots
 A nice package to make screenshots and insert them to the Org document.
 
@@ -5413,17 +5837,6 @@ A package that implements transclusions in Org Mode, i.e. rendering part of one 
    "C-c t A" #'org-transclusion-add-all
    "C-c t t" #'org-transclusion-mode))
 #+end_src
-*** Drawing
-This package is unbelievably good. I would have never thought it's even possible to have this in Emacs.
-
-#+begin_src emacs-lisp
-(use-package edraw-org
-  :straight (:host github :repo "misohena/el-easydraw")
-  :if (and (not my/is-termux) (not my/remote-server))
-  :after (org)
-  :config
-  (edraw-org-setup-default))
-#+end_src
 *** Managing tables
 I use Org to manage some small tables which I want to process further. So here is a function that saves each table to a CSV file.
 
@@ -5442,18 +5855,11 @@ I use Org to manage some small tables which I want to process further. So here i
          name ".csv")
         "orgtbl-to-csv")))))
 #+end_src
-*** Partial scrolling
-#+begin_src emacs-lisp
-(use-package phscroll
-  :straight (:host github :repo "misohena/phscroll")
-  :commands (org-phscroll-mode)
-  :config
-  (with-eval-after-load 'org
-    (require 'org-phscroll)
-    (org-phscroll-deactivate)))
-#+end_src
-
 ** Productivity & Knowledge management
+:PROPERTIES:
+:MODULE_NAME: org-productivity
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-org-productivity.el :comments links
+:END:
 My ongoing effort to +get a productivity setup+ manage something in my life in Org.
 
 Initial inspirations (<2021-06-30 Wed>):
@@ -7549,6 +7955,10 @@ Trying to learn stuff with this.
 #+end_src
 
 ** Export
+:PROPERTIES:
+:MODULE_NAME: org-export
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-org-export.el :comments links
+:END:
 *** Hugo
 A package for exporting Org to Hugo. That's how I manage my [[https://sqrtminusone.xyz][sqrtminusone.xyz]].
 
@@ -7873,6 +8283,10 @@ Somewhat similar to the previous one... Occasinally I want to re-tangle all desk
 
 * Applications
 ** Dired
+:PROPERTIES:
+:MODULE_NAME: dired
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-dired.el :comments links
+:END:
 Dired is the built-in Emacs file manager. It's so good that it's strange that, to my knowledge, no one tried to replicate it outside of Emacs.
 
 I currently use it as my primary file manager.
@@ -8357,6 +8771,10 @@ And the keybindings:
    ". s" #'my/notmuch-save-to-dired))
 #+end_src
 ** TRAMP
+:PROPERTIES:
+:MODULE_NAME: tramp
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-tramp.el :comments links
+:END:
 TRAMP is a package that provides remote editing capacities. It is particularly useful for remote server management.
 
 *** General settings
@@ -8472,6 +8890,10 @@ And advice to disable a function for TRAMP-related buffers:
 #+end_src
 
 ** Shells / Terminals
+:PROPERTIES:
+:MODULE_NAME: terms
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-terms.el :comments links
+:END:
 *** vterm
 [[https://github.com/akermu/emacs-libvterm][vterm]] is a terminal emulator for Emacs.
 
@@ -9046,6 +9468,10 @@ Interactive subshell (=M-x shell=) is a way to run commands with input and outpu
 (add-hook 'shell-mode-hook #'my/setup-shell)
 #+end_src
 ** Managing dotfiles
+:PROPERTIES:
+:MODULE_NAME: dotfiles
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-dotfiles.el :comments links
+:END:
 A bunch of functions for managing dotfiles with yadm.
 
 *** Open Emacs config
@@ -9104,6 +9530,10 @@ Open a file managed by yadm.
   "cf" '(my/open-yadm-file :wk "yadm file"))
 #+end_src
 ** Elfeed
+:PROPERTIES:
+:MODULE_NAME: elfeed
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-elfeed.el :comments links
+:END:
 [[https://github.com/skeeto/elfeed][elfeed]] is one of the most popular Emacs packages, and it's also one in which I ended up investing a lot of effort.
 
 There's a lot of stuff in this section, so it's here and not in "Internet and Multimedia".
@@ -9779,6 +10209,10 @@ by the `my/elfeed-youtube-subtitles' function."
 Keep in mind that this function has to be launched inside the buffer opened by the =my/elfeed-youtube-subtitles= function.
 ** Internet & Multimedia
 *** Notmuch
+:PROPERTIES:
+:MODULE_NAME: mail
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-mail.el :comments links
+:END:
 My notmuch config now resides in [[file:Mail.org][Mail.org]].
 
 #+begin_src emacs-lisp
@@ -9789,6 +10223,10 @@ My notmuch config now resides in [[file:Mail.org][Mail.org]].
       (message "Can't load mail.el"))))
 #+end_src
 *** Gnus
+:PROPERTIES:
+:MODULE_NAME: gnus
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-gnus.el :comments links
+:END:
 [[https://www.gnu.org/software/emacs/manual/html_node/gnus/index.html][Gnus]] is an Emacs newsreader.
 
 I'll try to use it for NTTP for now. Will see if I can do more with it.
@@ -9866,6 +10304,10 @@ Custom keybindings.
   (setq gnus-sum-thread-tree-vertical "| "))
 #+end_src
 *** EMMS
+:PROPERTIES:
+:MODULE_NAME: emms
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-emms.el :comments links
+:END:
 EMMS is the Emacs Multi-Media System. I use it to control MPD & MPV.
 
 References:
@@ -10170,6 +10612,10 @@ The list will be in reverse order."
       alists)))
 #+end_src
 *** EWW
+:PROPERTIES:
+:MODULE_NAME: misc-internet
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-internet.el :comments links
+:END:
 Emacs built-in web browser. +I wonder if anyone actually uses it.+
 
 I use it occasionally to open links in elfeed.
@@ -10227,6 +10673,10 @@ Setting the default font.
    "-" 'text-scale-decrease))
 #+end_src
 *** ERC
+:PROPERTIES:
+:MODULE_NAME: erc
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-erc.el :comments links
+:END:
 ERC is a built-it Emacs IRC client.
 
 #+begin_src emacs-lisp
@@ -10298,6 +10748,10 @@ Send =/detach= to all servers. Kinda strange that there's no such function alrea
 
 #+end_src
 *** Mastodon
+:PROPERTIES:
+:MODULE_NAME: mastodon
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-mastodon.el :comments links
+:END:
 Mastodon is a decentralized social media network. I use an instance called [[https://emacs.ch/][emacs.ch]].
 
 **** Package configuration
@@ -10648,9 +11102,9 @@ And the prefix itself:
      :class transient-row
      ("r" "Reply" mastodon-toot-reply)
      ("v" "Vote" mastodon-tl-poll-vote)
-     ("b" "Boost" my/mastodon-toot--toggle-boost-confirm)
-     ("f" "Favourite" my/mastodon-toot--toggle-favourite-confirm)
-     ("k" "Bookmark" my/mastodon-toot--toggle-bookmark-confirm)]
+     ("b" "Boost" my/mastodon-toot-toggle-boost-confirm)
+     ("f" "Favourite" my/mastodon-toot-toggle-favourite-confirm)
+     ("k" "Bookmark" my/mastodon-toot-toggle-bookmark-confirm)]
     ["My Toot Actions"
      :class transient-row
      ("md" "Delete" mastodon-toot-delete-toot)
@@ -10676,6 +11130,10 @@ And the prefix itself:
      ("q" "Quit" transient-quit-one)]))
 #+end_src
 *** wallabag
+:PROPERTIES:
+:MODULE_NAME: wallabag
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-wallabag.el :comments links
+:END:
 [[https://github.com/wallabag/wallabag][wallabag]] is a self-hosted "read it later" app.
 
 This might be the best online reading advice I've heard:
@@ -10700,6 +11158,10 @@ Source: [[https://fortelabs.com/blog/the-secret-power-of-read-it-later-apps/][Ti
 #+end_src
 
 *** ement.el
+:PROPERTIES:
+:MODULE_NAME: ement
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-ement.el :comments links
+:END:
 [[https://github.com/alphapapa/ement.el][ement.el]] is a Matrix client for Emacs. This package turned out to be somewhat complicated to setup.
 
 **** General config
@@ -10882,6 +11344,10 @@ Or you can load up Element for a moment to see what the mention was, if that's e
         (message "Scrolled %s" scrolled)))))
 #+end_src
 *** Telega
+:PROPERTIES:
+:MODULE_NAME: telega
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-telega.el :comments links
+:END:
 [[https://github.com/zevlg/telega.el/][telega.el]] is a Telegam client for Emacs.
 
 | Guix dependency    |
@@ -11032,6 +11498,10 @@ Switch to topic in forum chats.
 #+end_src
 
 *** Google Translate
+:PROPERTIES:
+:MODULE_NAME: misc-internet
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-internet.el :comments links
+:END:
 Emacs interface to Google Translate.
 
 Can't make it load lazily for some strange reason.
@@ -11079,6 +11549,10 @@ References:
   "t" 'google-translate-smooth-translate)
 #+end_src
 *** biome
+:PROPERTIES:
+:MODULE_NAME: misc-internet
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-internet.el :comments links
+:END:
 [[https://github.com/SqrtMinusOne/biome][biome]] is my [[https://open-meteo.com/][open-meteo]] client.
 
 #+begin_src emacs-lisp
@@ -11097,6 +11571,10 @@ References:
                '("Tyumen, Russia" 57.15222 65.52722)))
 #+end_src
 ** Reading documentation
+:PROPERTIES:
+:MODULE_NAME: docs
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-docs.el :comments links
+:END:
 *** tldr
 [[https://tldr.sh/][tldr]] is a collaborative project providing cheatsheets for various console commands. For some reason, the built-in download in the package is broken, so I use my own function.
 
@@ -11169,65 +11647,11 @@ There is a package called =devdocs= that does more or less the same, but I like 
     "u" #'devdocs-browser-upgrade-all-docs
     "r" #'devdocs-browser-update-docs))
 #+End_src
-*** StackExchange
-[[https://github.com/vermiculus/sx.el][sx.el]] is a StackExchange client for Emacs.
-
-#+begin_src emacs-lisp
-(use-package sx
-  :straight t
-  :commands (sx-search sx-tab-frontpage)
-  :config
-  (general-define-key
-   :states '(normal)
-   :keymaps '(sx-question-mode-map sx-question-list-mode-map)
-   "go" #'sx-visit-externally
-   "q" #'quit-window
-   "s*" #'sx-tab-starred
-   "sU" #'sx-tab-unanswered-my-tags
-   "sa" #'sx-ask
-   "sf" #'sx-tab-featured
-   "sh" #'sx-tab-frontpage
-   "si" #'sx-inbox
-   "sm" #'sx-tab-meta-or-main
-   "sn" #'sx-tab-newest
-   "su" #'sx-tab-unanswered
-   "sv" #'sx-tab-topvoted
-   "sw" #'sx-tab-week
-   "u" #'sx-upvote
-   "d" #'sx-downvote
-   "j" nil
-   "k" nil)
-  (general-define-key
-   :states '(normal)
-   :keymaps '(sx-question-mode-map)
-   "gr" #'sx-question-mode-refresh
-   "J" #'sx-question-mode-next-section
-   "K" #'sx-question-mode-previous-section
-   "a" #'sx-answer
-   "e" #'sx-edit
-   "D" #'sx-delete
-   "c" #'sx-comment)
-  (general-define-key
-   :states '(normal)
-   :keymaps '(sx-question-list-mode-map)
-   "RET" 'sx-display
-   "j" #'sx-question-list-next
-   "k" #'sx-question-list-previous
-   "S" #'sx-search
-   "m" #'sx-question-list-mark-read
-   "O" #'sx-question-list-order-by
-   "t" #'sx-tab-switch)
-  (my-leader-def
-   "hs" #'sx-search
-   "hS" #'sx-tab-frontpage)
-  (my/use-colors
-   (sx-question-mode-accepted :foreground (my/color-value 'green)
-                              :weight 'bold)
-   (sx-question-mode-content :background nil))
-  (add-hook 'sx-question-mode-hook #'doom-modeline-mode)
-  (add-hook 'sx-question-list-mode-hook #'doom-modeline-mode))
-#+end_src
 ** Not-an-AI
+:PROPERTIES:
+:MODULE_NAME: ai
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-ai.el :comments links
+:END:
 Workflows, which are sometimes referred to as "AI", go in here.
 
 I'm technically writing a PhD on a related topic, so I'm a bit more receptive towards the whole thing than most of the community. But I'm still not calling it AI.
@@ -11257,10 +11681,10 @@ I don't have access to any proprietary APIs, but LLaMA 3.1 8b with [[https://oll
           :stream t
           :models '("llama3.1:8b" "deepseek-r1:32b"
                     "qwen2.5:32b" "qwen2.5-coder:32b"
+                    "qwen3:30b" "qwen3:32b"
                     "eva-qwen2.5-q4_k_l-32b:latest"
-                    "t-pro-1.0-q4_k_m:latest"
-                    "qwq:32b"
-                    (gemma3:32b
+                    "gpt-oss"
+                    (gemma3:27b
                      :capabilities (media)
                      :mime-types ("image/jpeg" "image/png")))))
   (gptel-make-openai "OpenRouter"
@@ -11268,7 +11692,9 @@ I don't have access to any proprietary APIs, but LLaMA 3.1 8b with [[https://oll
     :key (lambda () (my/password-store-get-field
                      "My_Online/Accounts/openrouter" "api-key"))
     :stream t
-    :models '("anthropic/claude-3.5-haiku"))
+    :models '("anthropic/claude-sonnet-4"
+              "qwen/qwen3-coder"
+              "qwen/qwen3-coder:free"))
   (setq gptel--known-backends
         (seq-filter
          (lambda (cell)
@@ -11769,6 +12195,10 @@ Vosk API works much faster than Whisper. The smallest Vosk model requires ~10 ti
 
 However, the quality of the output for Whisper is just so much better so I consider it to be worth the wait. Even with the =tiny= model, the transcript is almost perfect, provided that the audio is of reasonable quality.
 ** Declarative filesystem management
+:PROPERTIES:
+:MODULE_NAME: index
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-index.el :comments links
+:END:
 My filesystem is, shall we say, not the most orderly place.
 
 #+begin_export html
@@ -12727,6 +13157,10 @@ I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
 #+end_src
 ** Utilities
 *** pass
+:PROPERTIES:
+:MODULE_NAME: pass
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-pass.el :comments links
+:END:
 I use [[https://www.passwordstore.org/][pass]] as my password manager. Expectedly, there is an Emacs frontend for it.
 
 This package is pretty good to manage the password database. I use [[https://github.com/SqrtMinusOne/password-store-ivy][password-store-ivy]] (another package of mine) to actually type passwords. [[https://github.com/carnager/rofi-pass][rofi-pass]] is another good option.
@@ -12747,37 +13181,32 @@ Also I use =password-store-get= in a few places in my config, and by default it 
   (if-let ((res (password-store-get entry)))
       res
     (my/password-store-get entry)))
+
+(defun my/password-store-get-field (entry field)
+  (if-let (field (password-store-get-field entry field))
+      field
+    (my/password-store-get-field entry field)))
 #+end_src
 *** Docker
+:PROPERTIES:
+:MODULE_NAME: docker
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-docker.el :comments links
+:END:
 A package to manage docker containers from Emacs.
 
 #+begin_src emacs-lisp
 (use-package docker
   :straight t
-  :if (not (or my/remote-server my/is-termux))
   :commands (docker)
   :init
   (my-leader-def "ao" 'docker))
 #+end_src
 
-*** screenshot.el
-Tecosaur's plugin to make beautiful code screenshots.
-
-| Guix dependency |
-|-----------------|
-| imagemagick     |
-
-#+begin_src emacs-lisp
-(use-package screenshot
-  :straight (:repo "tecosaur/screenshot"
-                   :host github
-                   :build (:not compile))
-  :if (display-graphic-p)
-  :commands (screenshot)
-  :init
-  (my-leader-def "S" 'screenshot))
-#+end_src
 *** proced
+:PROPERTIES:
+:MODULE_NAME: misc-apps
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-apps.el :comments links
+:END:
 proced is an Emacs built-it process viewer, like top.
 
 #+begin_src emacs-lisp
@@ -12789,12 +13218,16 @@ proced is an Emacs built-it process viewer, like top.
                               (proced-toggle-auto-update 1)))
 #+end_src
 *** Guix
+:PROPERTIES:
+:MODULE_NAME: guix
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-guix.el :comments links
+:END:
 An Emacs package to help managing GNU Guix.
 
 #+begin_src emacs-lisp
 (use-package guix
   :straight t
-  :if (not (or my/remote-server my/is-termux))
+  :if (executable-find "guix")
   :commands (guix)
   :init
   (my-leader-def "ag" 'guix)
@@ -12803,17 +13236,11 @@ An Emacs package to help managing GNU Guix.
   (defvar geiser-repl-company-p nil
     "A dummy variable."))
 #+end_src
-*** Atomic Chrome
-[[https://github.com/alpha22jp/atomic-chrome][Atomic Chrome]] is an extension that allows to edit browser text fields in Emacs. Despite its name, it also works for Firefox with [[https://ghosttext.fregante.com/welcome/][GhostText]], which is what I use.
-
-#+begin_src emacs-lisp
-(use-package atomic-chrome
-  :if (not (or my/remote-server my/is-termux))
-  :commands (atomic-chrome-start-server)
-  :straight t)
-#+end_src
-
 *** Pinentry
+:PROPERTIES:
+:MODULE_NAME: emacs-pinentry
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-emacs-pinentry.el :comments links
+:END:
 Emacs-based pinentry works great on Termux.
 
 #+begin_src emacs-lisp
@@ -12832,6 +13259,10 @@ Emacs-based pinentry works great on Termux.
   (pinentry-start))
 #+end_src
 ** Productivity
+:PROPERTIES:
+:MODULE_NAME: productivity-apps
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-productivity-apps.el :comments links
+:END:
 *** pomm
 My package for doing Pomodoro timer.
 
@@ -12900,6 +13331,10 @@ Emacs' built-in calendar. Can even calculate sunrise and sunset times.
 (setq calendar-longitude 30.308611)
 #+end_src
 ** Calc
+:PROPERTIES:
+:MODULE_NAME: misc-apps
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-apps.el :comments links
+:END:
 [[https://github.com/kickingvegas/Casual][casual]] is a transient interface for the built-in calc.el
 
 #+begin_src emacs-lisp
@@ -12913,6 +13348,10 @@ Emacs' built-in calendar. Can even calculate sunrise and sunset times.
    "M-o" #'casual-main-menu))
 #+end_src
 ** Chess
+:PROPERTIES:
+:MODULE_NAME: chess
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-chess.el :comments links
+:END:
 *** chess.el
 chess.el is a package by John Wiegley.
 
@@ -12996,7 +13435,15 @@ An =org-babel= block:
 #+end_src
 
 ** Fun
+:PROPERTIES:
+:MODULE_NAME: misc-apps
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-apps.el :comments links
+:END:
 *** Discord integration
+:PROPERTIES:
+:MODULE_NAME: discord
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-discord.el :comments links
+:END:
 Integration with Discord. Shows which file is being edited in Emacs.
 
 In order for this to work in Guix, a service is necessary - [[file:Desktop.org::*Discord rich presence][Discord rich presence]].
@@ -13057,17 +13504,6 @@ And the package configuration:
   :straight (:repo "alphapapa/snow.el" :host github)
   :commands (snow))
 #+end_src
-*** Power mode
-When Emacs doesn't feel powerful enough.
-
-Watch out if you are using EXWM.
-
-#+begin_src emacs-lisp
-(use-package power-mode
-  :straight (:host github :repo "elizagamedev/power-mode.el")
-  :disabled
-  :commands (power-mode))
-#+end_src
 *** Redacted
 #+begin_src emacs-lisp
 (use-package redacted
@@ -13094,6 +13530,10 @@ Watch out if you are using EXWM.
 #+end_src
 
 *** Gource
+:PROPERTIES:
+:MODULE_NAME: gource
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-gource.el :comments links
+:END:
 [[https://gource.io/][Gource]] is a program that draws an animated graph of users changing the repository over time.
 
 Although it can work without extra effort (just run =gource= in a [[https://git-scm.com/][git]] repo), there are some tweaks that can be done:
