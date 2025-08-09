@@ -136,6 +136,12 @@ if [ -d "$HOME/.nix-profile" ] && [ -z "$NO_GUIX" ]; then
 fi
 # Other package managers:5 ends here
 
+# [[file:Console.org::*Other package managers][Other package managers:6]]
+if [ -d "$HOME/bin/gradle/gradle-9.0.0" ]; then
+    export PATH="$HOME/bin/gradle/gradle-9.0.0/bin:$PATH"
+fi
+# Other package managers:6 ends here
+
 # [[file:Console.org::*npm][npm:2]]
 export NPM_CONFIG_USERCONFIG=$HOME/._npmrc
 # npm:2 ends here

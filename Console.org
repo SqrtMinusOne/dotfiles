@@ -209,6 +209,13 @@ if [ -d "$HOME/.nix-profile" ] && [ -z "$NO_GUIX" ]; then
 fi
 #+end_src
 
+Gradle:
+#+begin_src sh
+if [ -d "$HOME/bin/gradle/gradle-9.0.0" ]; then
+    export PATH="$HOME/bin/gradle/gradle-9.0.0/bin:$PATH"
+fi
+#+end_src
+
 *** npm
 npm is especially cumbersome, for instance because by default it tries to install packages to =/gnu/store/=.
 
