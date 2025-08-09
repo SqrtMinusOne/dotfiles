@@ -1,19 +1,16 @@
 ;;; -*- lexical-binding: t -*-
 (use-package ox-hugo
   :straight t
-  :if (not my/remote-server)
   :after ox)
 
 (use-package ox-ipynb
   :straight (:host github :repo "jkitchin/ox-ipynb")
-  :if (not my/remote-server)
   :disabled t
   :after ox)
 
 (use-package htmlize
   :straight t
   :after ox
-  :if (not my/remote-server)
   :config
   (setq org-html-htmlize-output-type 'css))
 

@@ -56,7 +56,6 @@
              :repo "https://git.sr.ht/~bzg/org-contrib"
              :build t)
   :after (org)
-  :if (not my/remote-server)
   :config
   (require 'ox-extra)
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
@@ -280,7 +279,6 @@ With ARG, repeats or can move backward if negative."
 
 (use-package org-present
   :straight (:host github :repo "rlister/org-present")
-  :if (not my/remote-server)
   :commands (org-present)
   :config
   (general-define-key

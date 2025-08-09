@@ -19,6 +19,7 @@
                     "qwen2.5:32b" "qwen2.5-coder:32b"
                     "qwen3:30b" "qwen3:32b"
                     "eva-qwen2.5-q4_k_l-32b:latest"
+                    "gpt-oss"
                     (gemma3:27b
                      :capabilities (media)
                      :mime-types ("image/jpeg" "image/png")))))
@@ -45,6 +46,10 @@
    :states '(insert normal)
    "C-<return>" 'gptel-send
    "M-o" #'gptel-menu))
+
+(defun my/gptel-add-current-file ()
+  (interactive)
+  (gptel-context-add-file (buffer-file-name)))
 
 (use-package ellama
   :straight t

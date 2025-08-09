@@ -2261,9 +2261,6 @@ My colorschemes of choice.
   :config
   (setq doom-themes-enable-bold t
         doom-themes-enable-italic t)
-  ;; (if my/remote-server
-  ;;     (load-theme 'doom-gruvbox t)
-  ;;   (load-theme 'doom-palenight t))
   (doom-themes-visual-bell-config)
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
@@ -3290,7 +3287,6 @@ References:
 #+begin_src emacs-lisp
 (use-package dap-mode
   :straight t
-  :if (not (or my/remote-server my/is-termux))
   :commands (dap-debug)
   :init
   (setq lsp-enable-dap-auto-configure nil)
@@ -5057,7 +5053,6 @@ This used to have =org-contacts= and =ol-notmuch= at some point, but they have s
              :repo "https://git.sr.ht/~bzg/org-contrib"
              :build t)
   :after (org)
-  :if (not my/remote-server)
   :config
   (require 'ox-extra)
   (ox-extras-activate '(latex-header-blocks ignore-headlines)))
@@ -5346,8 +5341,7 @@ References:
 #+begin_src emacs-lisp
 (use-package jupyter
   :straight t
-  :after (org)
-  :if (not (or my/remote-server my/is-termux)))
+  :after (org))
 #+end_src
 
 Refresh kernelspecs.
@@ -5384,7 +5378,6 @@ A function to load =jupyter=. The problem with doing that on startup is that it 
 #+begin_src emacs-lisp
 (use-package ob-hy
   :after (org)
-  :if (not my/remote-server)
   :straight t)
 #+end_src
 *** View HTML in browser
@@ -5425,7 +5418,6 @@ References:
 
 #+begin_src emacs-lisp
 (use-package restclient
-  :if (not my/remote-server)
   :straight t
   :mode ("\\.http\\'" . restclient-mode)
   :config
@@ -5443,7 +5435,6 @@ References:
 
 (use-package ob-restclient
   :after (org restclient)
-  :if (not my/remote-server)
   :straight t)
 #+end_src
 *** Org Babel Setup
@@ -5766,7 +5757,6 @@ Doing presentations with [[https://github.com/rlister/org-present][org-present]]
 
 (use-package org-present
   :straight (:host github :repo "rlister/org-present")
-  :if (not my/remote-server)
   :commands (org-present)
   :config
   (general-define-key
@@ -6192,7 +6182,6 @@ It doesn't look great with org-bars mode, so...
 #+begin_src emacs-lisp
 (use-package org-ql
   :after (org)
-  :if (not my/remote-server)
   :straight t
   :config
   (setq org-ql-ask-unsafe-queries nil)
@@ -6944,7 +6933,6 @@ And it was interesting to find the reinforcement effect of checked dates on the 
 #+begin_src emacs-lisp
 (use-package org-journal
   :straight t
-  :if (not my/remote-server)
   :init
   (my-leader-def
     :infix "oj"
@@ -6967,7 +6955,6 @@ So, [[https://github.com/SqrtMinusOne/org-journal-tags][org-journal-tags]] is my
 (use-package org-journal-tags
   :straight (:host github :repo "SqrtMinusOne/org-journal-tags")
   :after (org-journal)
-  :if (not my/remote-server)
   :config
   (org-journal-tags-autosync-mode)
   (general-define-key
@@ -7118,7 +7105,6 @@ Also, at some point the package loaded Helm on start, so I exclude these files f
 #+begin_src emacs-lisp
 (use-package org-ref
   :straight (:files (:defaults "citeproc" (:exclude "*helm*")))
-  :if (not my/remote-server)
   :commands (org-ref-insert-link-hydra/body
              org-ref-bibtex-hydra/body)
   :init
@@ -7172,15 +7158,12 @@ References:
 #+begin_src emacs-lisp
 (use-package emacsql-sqlite
   :defer t
-  :if (not my/remote-server)
   :straight (:type built-in))
 
 (use-package org-roam
   :straight (:host github :repo "org-roam/org-roam"
                    :files (:defaults "extensions/*.el"))
-  :if (and
-       (not my/remote-server)
-       (file-directory-p org-roam-directory))
+  :if (file-directory-p org-roam-directory)
   :after org
   :init
   (setq org-roam-file-extensions '("org"))
@@ -7408,7 +7391,6 @@ Actually, I don't find this quite as useful as structure nodes, because over tim
 #+begin_src emacs-lisp
 (use-package org-roam-ui
   :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
-  :if (not my/remote-server)
   :after org-roam
   ;; :hook (org-roam . org-roam-ui-mode)
   :init
@@ -7420,7 +7402,6 @@ Actually, I don't find this quite as useful as structure nodes, because over tim
 #+begin_src emacs-lisp
 (use-package deft
   :straight t
-  :if (not my/remote-server)
   :commands (deft)
   :after (org)
   :init
@@ -7883,7 +7864,6 @@ It seems the package has been somewhat revived in the recent months. It used thi
 #+begin_src emacs-lisp
 (use-package org-contacts
   :straight (:type git :repo "https://repo.or.cz/org-contacts.git")
-  :if (not my/remote-server)
   :after (org)
   :config
   (setq org-contacts-files (list
@@ -7969,14 +7949,12 @@ References:
 #+begin_src emacs-lisp
 (use-package ox-hugo
   :straight t
-  :if (not my/remote-server)
   :after ox)
 #+end_src
 *** Jupyter Notebook
 #+begin_src emacs-lisp
 (use-package ox-ipynb
   :straight (:host github :repo "jkitchin/ox-ipynb")
-  :if (not my/remote-server)
   :disabled t
   :after ox)
 #+end_src
@@ -7985,7 +7963,6 @@ References:
 (use-package htmlize
   :straight t
   :after ox
-  :if (not my/remote-server)
   :config
   (setq org-html-htmlize-output-type 'css))
 #+end_src
@@ -8743,6 +8720,17 @@ Attach files to mastodon.
        (read-from-minibuffer (format "Description for %s: " file))))))
 #+end_src
 
+Attach files to gptel.
+#+begin_src emacs-lisp
+(defun my/dired-attach-to-gptel (files)
+  (interactive
+   (list (dired-get-marked-files nil nil #'dired-nondirectory-p)))
+  (unless files
+    (user-error "No (non-directory) files selected"))
+  (dolist (file files)
+    (gptel-context-add-file file)))
+#+end_src
+
 And the keybindings:
 #+begin_src emacs-lisp
 (with-eval-after-load 'dired
@@ -8752,7 +8740,8 @@ And the keybindings:
    "a" nil
    "at" #'my/dired-attach-to-telega
    "am" #'my/dired-attach-to-notmuch
-   "ai" #'my/dired-attach-to-ement
+   "ae" #'my/dired-attach-to-ement
+   "ai" #'my/dired-attach-to-gptel
    "an" #'my/dired-attach-to-mastodon))
 #+end_src
 
@@ -8797,7 +8786,7 @@ Also, a hack to make TRAMP find =ls= on Guix:
 
 Set the default shell to =bin/bash= for TRAMP or on a remote server.
 #+begin_src emacs-lisp
-(when (or my/remote-server)
+(when my/remote-server
   (setq explicit-shell-file-name "/bin/bash"))
 #+end_src
 
@@ -9546,7 +9535,6 @@ Using my own fork until the modifications are merged into master.
 #+begin_src emacs-lisp
 (use-package elfeed
   :straight (:repo "SqrtMinusOne/elfeed" :host github)
-  :if (not (or my/is-termux my/remote-server))
   :commands (elfeed)
   :init
   (my-leader-def "ae" #'elfeed-summary)
@@ -9676,7 +9664,6 @@ The default interface of elfeed is just a list of all entries, so it gets hard t
 #+begin_src emacs-lisp
 (use-package elfeed-sync
   :straight (:host github :repo "SqrtMinusOne/elfeed-sync")
-  :if (not my/remote-server)
   :after elfeed
   :config
   (elfeed-sync-mode)
@@ -10216,11 +10203,10 @@ Keep in mind that this function has to be launched inside the buffer opened by t
 My notmuch config now resides in [[file:Mail.org][Mail.org]].
 
 #+begin_src emacs-lisp
-(unless (or my/remote-server)
-  (let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
-    (if (file-exists-p mail-file)
-        (load-file mail-file)
-      (message "Can't load mail.el"))))
+(let ((mail-file (expand-file-name "mail.el" user-emacs-directory)))
+  (if (file-exists-p mail-file)
+      (load-file mail-file)
+    (message "Can't load mail.el")))
 #+end_src
 *** Gnus
 :PROPERTIES:
@@ -10317,7 +10303,6 @@ References:
 #+begin_src emacs-lisp :noweb yes
 (use-package emms
   :straight t
-  :if (not (or my/remote-server my/is-termux))
   :commands (emms-smart-browse
              emms-browser
              emms-add-url
@@ -11361,7 +11346,6 @@ Or you can load up Element for a moment to see what the mention was, if that's e
   ;; :straight (:type built-in)
   ;; For now emacs-telega-server is compatible with the latest telega.el
   :straight t
-  :if (not (or my/remote-server))
   :commands (telega)
   :init
   (my-leader-def "a l" (my/command-in-persp "telega" "telega" 3 (telega)))
@@ -11513,7 +11497,6 @@ References:
 #+begin_src emacs-lisp
 (use-package google-translate
   :straight t
-  :if (not my/remote-server)
   :functions (my-google-translate-at-point google-translate--search-tkk)
   :commands (google-translate-at-point
              google-translate-at-point-reverse
@@ -11710,6 +11693,12 @@ I don't have access to any proprietary APIs, but LLaMA 3.1 8b with [[https://oll
    :states '(insert normal)
    "C-<return>" 'gptel-send
    "M-o" #'gptel-menu))
+#+end_src
+***** Add files to context
+#+begin_src emacs-lisp
+(defun my/gptel-add-current-file ()
+  (interactive)
+  (gptel-context-add-file (buffer-file-name)))
 #+end_src
 
 **** ellama
@@ -13488,8 +13477,8 @@ And the package configuration:
             (string= (system-name) "violet")
             (string= (system-name) "eminence")
             (string= (system-name) "iris"))
-           (not my/remote-server)
            (not my/nested-emacs))
+  :disabled t
   :config
   (setq elcord-buffer-details-format-function #'my/elcord-buffer-details-format-functions)
   (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)

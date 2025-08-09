@@ -3,7 +3,6 @@
   ;; :straight (:type built-in)
   ;; For now emacs-telega-server is compatible with the latest telega.el
   :straight t
-  :if (not (or my/remote-server))
   :commands (telega)
   :init
   (my-leader-def "a l" (my/command-in-persp "telega" "telega" 3 (telega)))

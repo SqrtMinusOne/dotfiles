@@ -46,7 +46,6 @@
 
 (use-package google-translate
   :straight t
-  :if (not my/remote-server)
   :functions (my-google-translate-at-point google-translate--search-tkk)
   :commands (google-translate-at-point
              google-translate-at-point-reverse

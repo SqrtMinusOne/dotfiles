@@ -1,7 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 (use-package elfeed
   :straight (:repo "SqrtMinusOne/elfeed" :host github)
-  :if (not (or my/is-termux my/remote-server))
   :commands (elfeed)
   :init
   (my-leader-def "ae" #'elfeed-summary)
@@ -108,7 +107,6 @@
 
 (use-package elfeed-sync
   :straight (:host github :repo "SqrtMinusOne/elfeed-sync")
-  :if (not my/remote-server)
   :after elfeed
   :config
   (elfeed-sync-mode)

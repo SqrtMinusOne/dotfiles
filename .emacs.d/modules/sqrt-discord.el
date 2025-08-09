@@ -31,8 +31,8 @@
             (string= (system-name) "violet")
             (string= (system-name) "eminence")
             (string= (system-name) "iris"))
-           (not my/remote-server)
            (not my/nested-emacs))
+  :disabled t
   :config
   (setq elcord-buffer-details-format-function #'my/elcord-buffer-details-format-functions)
   (advice-add 'elcord--try-update-presence :filter-args #'my/elcord-update-presence-mask-advice)

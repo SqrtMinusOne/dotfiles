@@ -1,7 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 (use-package dap-mode
   :straight t
-  :if (not (or my/remote-server my/is-termux))
   :commands (dap-debug)
   :init
   (setq lsp-enable-dap-auto-configure nil)

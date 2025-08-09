@@ -10,7 +10,7 @@
         (append tramp-remote-path
                 '(tramp-own-remote-path))))
 
-(when (or my/remote-server)
+(when my/remote-server
   (setq explicit-shell-file-name "/bin/bash"))
 
 (setq tramp-verbose 0)

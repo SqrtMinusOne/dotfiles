@@ -5,7 +5,6 @@
    "ripgrep"
    "emacs-vterm"
    "hledger"
-   "imagemagick"
    "font-gnu-freefont"
    "font-gnu-unifont"
    "emacs-telega-sever"

@@ -1,8 +1,7 @@
 ;;; -*- lexical-binding: t -*-
 (use-package jupyter
   :straight t
-  :after (org)
-  :if (not (or my/remote-server my/is-termux)))
+  :after (org))
 
 (defun my/jupyter-refresh-kernelspecs ()
   "Refresh Jupyter kernelspecs"
@@ -23,7 +22,6 @@
 
 (use-package ob-hy
   :after (org)
-  :if (not my/remote-server)
   :straight t)
 
 (setq my/org-view-html-tmp-dir "/tmp/org-html-preview/")
@@ -51,7 +49,6 @@
   (add-to-list 'org-src-lang-modes '("plantuml" . plantuml)))
 
 (use-package restclient
-  :if (not my/remote-server)
   :straight t
   :mode ("\\.http\\'" . restclient-mode)
   :config
@@ -69,7 +66,6 @@
 
 (use-package ob-restclient
   :after (org restclient)
-  :if (not my/remote-server)
   :straight t)
 
 (with-eval-after-load 'org

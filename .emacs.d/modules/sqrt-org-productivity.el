@@ -241,7 +241,6 @@
 
 (use-package org-ql
   :after (org)
-  :if (not my/remote-server)
   :straight t
   :config
   (setq org-ql-ask-unsafe-queries nil)
@@ -844,7 +843,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
 
 (use-package org-journal
   :straight t
-  :if (not my/remote-server)
   :init
   (my-leader-def
     :infix "oj"
@@ -864,7 +862,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
 (use-package org-journal-tags
   :straight (:host github :repo "SqrtMinusOne/org-journal-tags")
   :after (org-journal)
-  :if (not my/remote-server)
   :config
   (org-journal-tags-autosync-mode)
   (general-define-key
@@ -974,7 +971,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
 
 (use-package org-ref
   :straight (:files (:defaults "citeproc" (:exclude "*helm*")))
-  :if (not my/remote-server)
   :commands (org-ref-insert-link-hydra/body
              org-ref-bibtex-hydra/body)
   :init
@@ -994,15 +990,12 @@ KEYS is a list of cons cells like (<label> . <time>)."
 
 (use-package emacsql-sqlite
   :defer t
-  :if (not my/remote-server)
   :straight (:type built-in))
 
 (use-package org-roam
   :straight (:host github :repo "org-roam/org-roam"
                    :files (:defaults "extensions/*.el"))
-  :if (and
-       (not my/remote-server)
-       (file-directory-p org-roam-directory))
+  :if (file-directory-p org-roam-directory)
   :after org
   :init
   (setq org-roam-file-extensions '("org"))
@@ -1164,7 +1157,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
 
 (use-package org-roam-ui
   :straight (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
-  :if (not my/remote-server)
   :after org-roam
   ;; :hook (org-roam . org-roam-ui-mode)
   :init
@@ -1172,7 +1164,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
 
 (use-package deft
   :straight t
-  :if (not my/remote-server)
   :commands (deft)
   :after (org)
   :init
@@ -1558,7 +1549,6 @@ Happened to the world:
 
 (use-package org-contacts
   :straight (:type git :repo "https://repo.or.cz/org-contacts.git")
-  :if (not my/remote-server)
   :after (org)
   :config
   (setq org-contacts-files (list

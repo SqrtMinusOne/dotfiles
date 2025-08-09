@@ -1,7 +1,6 @@
 ;;; -*- lexical-binding: t -*-
 (use-package emms
   :straight t
-  :if (not (or my/remote-server my/is-termux))
   :commands (emms-smart-browse
              emms-browser
              emms-add-url

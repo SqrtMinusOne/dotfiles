@@ -351,6 +351,14 @@
        file
        (read-from-minibuffer (format "Description for %s: " file))))))
 
+(defun my/dired-attach-to-gptel (files)
+  (interactive
+   (list (dired-get-marked-files nil nil #'dired-nondirectory-p)))
+  (unless files
+    (user-error "No (non-directory) files selected"))
+  (dolist (file files)
+    (gptel-context-add-file file)))
+
 (with-eval-after-load 'dired
   (general-define-key
    :states '(normal)
@@ -358,7 +366,8 @@
    "a" nil
    "at" #'my/dired-attach-to-telega
    "am" #'my/dired-attach-to-notmuch
-   "ai" #'my/dired-attach-to-ement
+   "ae" #'my/dired-attach-to-ement
+   "ai" #'my/dired-attach-to-gptel
    "an" #'my/dired-attach-to-mastodon))
 
 (with-eval-after-load 'telega
