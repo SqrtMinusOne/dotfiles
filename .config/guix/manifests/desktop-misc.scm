@@ -15,7 +15,7 @@
    "xdg-utils"
    "thunar"
    "copyq"
-   "qview"
+   "geeqie"
    "feh"
    "polkit-gnome"
    "fontconfig"

@@ -172,9 +172,9 @@ text/html=qutebrowser.desktop
 x-scheme-handler/http=firefox.desktop
 x-scheme-handler/https=firefox.desktop
 x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
-image/png=com.interversehq.qView.desktop
-image/jpg=com.interversehq.qView.desktop
-image/jpeg=com.interversehq.qView.desktop
+image/png=feh.desktop
+image/jpg=feh.desktop
+image/jpeg=feh.desktop
 application/pdf=org.pwmt.zathura.desktop
 
 [Added Associations]
@@ -561,24 +561,32 @@ The second piece of the puzzle is getting the monitor list in the right order.
 
 While it is possible to retrieve the monitor list from =exwm-randr-workspace-monitor-plist=, this won't scale well beyond two monitors, mainly because changing this variable may screw up the order.
 
+#+begin_src emacs-lisp
+(defun my/exwm-xrandr-monitor-list ()
+  (split-string
+   (string-trim
+    (shell-command-to-string "xrandr --listmonitors | grep '+' | awk {'print $4'}
+"))))
+#+end_src
+
 So the easiest way is to just define the variable like that:
 #+begin_src emacs-lisp :eval no
 (setq my/exwm-monitor-list
       (pcase (system-name)
         ("indigo" '(nil "DVI-D-0"))
-        ("violet" '(nil "DP-1"))
+        ("violet" (my/exwm-xrandr-monitor-list))
         (_ '(nil))))
 #+end_src
-
-If you are changing the RandR configuration on the fly, this variable will also need to be changed, but for now, I don't have such a necessity.
 
 A function to get the current monitor:
 #+begin_src emacs-lisp :eval no
 (defun my/exwm-get-current-monitor ()
   "Return the current monitor name or nil."
-  (plist-get exwm-randr-workspace-monitor-plist
-             (cl-position (selected-frame)
-                          exwm-workspace--list)))
+  (or
+   (plist-get exwm-randr-workspace-monitor-plist
+              (cl-position (selected-frame)
+                           exwm-workspace--list))
+   (car my/exwm-monitor-list)))
 #+end_src
 
 And a function to cycle the monitor list in either direction:
@@ -610,16 +618,17 @@ One caveat here is that on the startup the =my/exwm-last-workspaces= variable wo
   (my/exwm-last-workspaces-clear)
   (let ((mouse-autoselect-window nil))
     (exwm-workspace-switch
-     (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
-              for i in (append my/exwm-last-workspaces
-                               (cl-loop for i from 0
-                                        for _ in exwm-workspace--list
-                                        collect i))
-              if (if other-monitor
-                     (string-equal (plist-get exwm-randr-workspace-monitor-plist i)
-                                   other-monitor)
-                   (not (plist-get exwm-randr-workspace-monitor-plist i)))
-              return i))))
+     (or
+      (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
+               for i in (append my/exwm-last-workspaces
+                                (cl-loop for i from 0
+                                         for _ in exwm-workspace--list
+                                         collect i))
+               if (if other-monitor
+                      (string-equal (plist-get exwm-randr-workspace-monitor-plist i)
+                                    other-monitor)
+                    (not (plist-get exwm-randr-workspace-monitor-plist i)))
+               return i)))))
 #+end_src
 
 I bind this function to =s-q=, as I'm used from i3.
@@ -670,6 +679,21 @@ So here is my implementation of that. It always does =windmove-do-select-window=
           (my/exwm-switch-to-other-monitor dir))
         (cl-loop while (windmove-find-other-window opposite-dir)
                  do (windmove-do-window-select opposite-dir))))))
+#+end_src
+*** Update the monitor list
+
+#+begin_src emacs-lisp
+(defun my/exwm-refresh-monitors ()
+  (interactive)
+  (setq my/exwm-monitor-list (my/exwm-xrandr-monitor-list))
+  (cl-loop for i from 0 to (1- exwm-workspace-number)
+           for monitor = (plist-get exwm-randr-workspace-monitor-plist
+                                    i)
+           if (not (member monitor my/exwm-monitor-list))
+           do
+           (setf (plist-get exwm-randr-workspace-monitor-plist i)
+                 (car my/exwm-monitor-list)))
+  (exwm-randr-refresh))
 #+end_src
 ** Completions
 Setting up some completion interfaces that fit particularly well to use with EXWM. While rofi also works, I want to use Emacs functionality wherever possible to have one completion interface everywhere.
@@ -1214,7 +1238,8 @@ And the EXWM config itself.
   (start-process-shell-command "xrandr" nil "~/bin/scripts/screen-layout")
   (when (string= (system-name) "violet")
     (setq my/exwm-another-monitor "DP-1")
-    (setq exwm-randr-workspace-monitor-plist `(2 ,my/exwm-another-monitor 3 ,my/exwm-another-monitor)))
+    (setq exwm-randr-workspace-monitor-plist `(2 ,my/exwm-another-monitor 3 ,my/exwm-another-monitor))
+    (my/exwm-refresh-monitors))
 
   (setq exwm-workspace-warp-cursor t)
   (setq mouse-autoselect-window t)
@@ -4660,7 +4685,7 @@ Other desktop programs I use are listed below.
 | desktop-misc | fontconfig             |                                           |
 | desktop-misc | polkit-gnome           | Polkit authentication agent               |
 | desktop-misc | feh                    | Image viewer. Used to set background      |
-| desktop-misc | qview                  | Image viewer                              |
+| desktop-misc | geeqie                 | Image viewer                              |
 | desktop-misc | copyq                  | Clipboard manager                         |
 | desktop-misc | thunar                 | My preferred GUI file manager             |
 | desktop-misc | xdg-utils              | gives xdg-open and stuff                  |

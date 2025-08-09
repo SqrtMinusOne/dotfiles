@@ -4,9 +4,9 @@ text/html=qutebrowser.desktop
 x-scheme-handler/http=firefox.desktop
 x-scheme-handler/https=firefox.desktop
 x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
-image/png=com.interversehq.qView.desktop
-image/jpg=com.interversehq.qView.desktop
-image/jpeg=com.interversehq.qView.desktop
+image/png=feh.desktop
+image/jpg=feh.desktop
+image/jpeg=feh.desktop
 application/pdf=org.pwmt.zathura.desktop
 
 [Added Associations]

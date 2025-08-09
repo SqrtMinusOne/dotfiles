@@ -187,17 +187,25 @@ _=_: Balance          "
          (lambda (i) (nth i exwm-workspace--list))
          my/exwm-last-workspaces)))
 
+(defun my/exwm-xrandr-monitor-list ()
+  (split-string
+   (string-trim
+    (shell-command-to-string "xrandr --listmonitors | grep '+' | awk {'print $4'}
+"))))
+
 (setq my/exwm-monitor-list
       (pcase (system-name)
         ("indigo" '(nil "DVI-D-0"))
-        ("violet" '(nil "DP-1"))
+        ("violet" (my/exwm-xrandr-monitor-list))
         (_ '(nil))))
 
 (defun my/exwm-get-current-monitor ()
   "Return the current monitor name or nil."
-  (plist-get exwm-randr-workspace-monitor-plist
-             (cl-position (selected-frame)
-                          exwm-workspace--list)))
+  (or
+   (plist-get exwm-randr-workspace-monitor-plist
+              (cl-position (selected-frame)
+                           exwm-workspace--list))
+   (car my/exwm-monitor-list)))
 
 (defun my/exwm-get-other-monitor (dir)
   "Cycle the monitor list in the direction DIR.
@@ -221,16 +229,17 @@ DIR is either 'left or 'right."
   (my/exwm-last-workspaces-clear)
   (let ((mouse-autoselect-window nil))
     (exwm-workspace-switch
-     (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
-              for i in (append my/exwm-last-workspaces
-                               (cl-loop for i from 0
-                                        for _ in exwm-workspace--list
-                                        collect i))
-              if (if other-monitor
-                     (string-equal (plist-get exwm-randr-workspace-monitor-plist i)
-                                   other-monitor)
-                   (not (plist-get exwm-randr-workspace-monitor-plist i)))
-              return i))))
+     (or
+      (cl-loop with other-monitor = (my/exwm-get-other-monitor (or dir 'right))
+               for i in (append my/exwm-last-workspaces
+                                (cl-loop for i from 0
+                                         for _ in exwm-workspace--list
+                                         collect i))
+               if (if other-monitor
+                      (string-equal (plist-get exwm-randr-workspace-monitor-plist i)
+                                    other-monitor)
+                    (not (plist-get exwm-randr-workspace-monitor-plist i)))
+               return i)))))
 
 (defun my/exwm-workspace-switch-monitor ()
   "Move the current workspace to another monitor."
@@ -267,6 +276,18 @@ DIR is either 'left or 'right."
           (my/exwm-switch-to-other-monitor dir))
         (cl-loop while (windmove-find-other-window opposite-dir)
                  do (windmove-do-window-select opposite-dir))))))
+
+(defun my/exwm-refresh-monitors ()
+  (interactive)
+  (setq my/exwm-monitor-list (my/exwm-xrandr-monitor-list))
+  (cl-loop for i from 0 to (1- exwm-workspace-number)
+           for monitor = (plist-get exwm-randr-workspace-monitor-plist
+                                    i)
+           if (not (member monitor my/exwm-monitor-list))
+           do
+           (setf (plist-get exwm-randr-workspace-monitor-plist i)
+                 (car my/exwm-monitor-list)))
+  (exwm-randr-refresh))
 
 (use-package ivy-posframe
   :straight t
@@ -594,7 +615,8 @@ _d_: Discord
   (start-process-shell-command "xrandr" nil "~/bin/scripts/screen-layout")
   (when (string= (system-name) "violet")
     (setq my/exwm-another-monitor "DP-1")
-    (setq exwm-randr-workspace-monitor-plist `(2 ,my/exwm-another-monitor 3 ,my/exwm-another-monitor)))
+    (setq exwm-randr-workspace-monitor-plist `(2 ,my/exwm-another-monitor 3 ,my/exwm-another-monitor))
+    (my/exwm-refresh-monitors))
 
   (setq exwm-workspace-warp-cursor t)
   (setq mouse-autoselect-window t)
