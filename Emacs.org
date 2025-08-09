@@ -85,16 +85,19 @@ First things first, lexical binding.
 ;;; -*- lexical-binding: t -*-
 #+end_src
 
-** Packages
-*** straight.el
-Straight.el is my Emacs package manager of choice. Its advantages & disadvantages over other options are listed pretty thoroughly in the README file in the repo.
-
-The following is the bootstrap script of =straight.el=.
+** straight.el
+Straight.el is my Emacs package manager of choice. The following is its bootstrap script.
 
 References:
 - [[https://github.com/raxod502/straight.el][straight.el repo]]
 
-#+begin_src emacs-lisp :noweb-ref minimal
+The following is set to ~t~ to support multiple Emacs versions working at the same time. In particular, the Termux and the Android version.
+
+#+begin_src emacs-lisp
+(setq straight-use-version-specific-build-dir t)
+#+end_src
+
+#+begin_src emacs-lisp
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
@@ -108,6 +111,7 @@ References:
       (eval-print-last-sexp)))
       (load bootstrap-file nil 'nomessage))
 #+end_src
+
 *** use-package
 A macro to simplify package specification & configuration. Integrates with straight.el.
 
@@ -116,7 +120,7 @@ Set ~use-package-verbose~ to ~t~ to print out loading times for individual packa
 References:
 - [[https://github.com/jwiegley/use-package][use-package repo]]
 
-#+begin_src emacs-lisp :noweb-ref minimal
+#+begin_src emacs-lisp
 (straight-use-package 'use-package)
 (eval-when-compile (require 'use-package))
 #+end_src
@@ -732,7 +736,7 @@ References:
 **** Evil-mode
 Basic evil configuration.
 
-#+begin_src emacs-lisp :noweb-ref minimal
+#+begin_src emacs-lisp
 (use-package evil
   :straight t
   :init
@@ -833,7 +837,7 @@ Do ex search in other buffer. Like =*=, but switch to other buffer and search th
 **** evil-collection
 [[https://github.com/emacs-evil/evil-collection][evil-collection]] is a package that provides evil bindings for a lot of different packages. One can see the complete list in the [[https://github.com/emacs-evil/evil-collection/tree/master/modes][modes]] folder.
 
-#+begin_src emacs-lisp :noweb-ref minimal
+#+begin_src emacs-lisp
 (use-package evil-collection
   :straight t
   :after evil
