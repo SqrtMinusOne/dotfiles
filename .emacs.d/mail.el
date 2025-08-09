@@ -19,8 +19,6 @@
   (evil-collection-notmuch-toggle-tag "unread" "search" #'ignore))
 
 (use-package notmuch
-  :if (not my/is-termux)
-  ;; :ensure nil
   :commands (notmuch notmuch-search)
   :init
   (my/use-colors
@@ -156,3 +154,7 @@
   (my/password-store-get "Job/Digital/Email/pvkorytov@etu.ru"))
 
 (add-hook 'notmuch-mua-send-hook #'my/ensure-password)
+
+(use-package ol-notmuch
+  :straight t
+  :after (org notmuch))

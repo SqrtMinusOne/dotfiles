@@ -126,7 +126,7 @@ remotehost = mbox.etu.ru
 remoteuser = <<mail-username()>>
 remotepass = <<mail-password()>>
 remoteport = 993
-cert_fingerprint = 07bdfab4eaa79f5fc8ab93cd9ad0ba025ea0b4e5
+cert_fingerprint = 416b1f7f18d68a65f5e75bb1af5d65ea5e20739e
 #+end_src
 * Notmuch
 | Guix dependency |
@@ -389,11 +389,17 @@ host mbox.etu.ru
 port 465
 tls on
 tls_starttls off
-tls_fingerprint 87:1F:17:1C:12:A4:DE:82:6F:CF:E5:E6:9C:EE:F8:0B:D1:7D:B2:00:F9:7B:2C:96:21:65:FA:0A:F5:24:8E:0E
+tls_fingerprint 69:E9:61:A0:DE:8B:AD:F2:C0:90:2F:55:F9:D6:80:7F:0B:AB:7E:1B:FD:56:C0:EE:35:ED:E2:EB:DD:80:AD:C3
 from pvkorytov@etu.ru
 user pvkorytov
 passwordeval "pass show Job/Digital/Email/pvkorytov@etu.ru | head -n 1"
 #+end_src
+
+To get a fingerprint:
+#+begin_src bash :tangle no
+msmtp --serverinfo --tls --tls-certcheck=off -a pvkorytov
+#+end_src
+
 * Emacs
 :PROPERTIES:
 :header-args+: :tangle ~/.emacs.d/mail.el
@@ -437,8 +443,6 @@ Some functions to toggle tags:
 And notmuch settings:
 #+begin_src emacs-lisp
 (use-package notmuch
-  :if (not my/is-termux)
-  ;; :ensure nil
   :commands (notmuch notmuch-search)
   :init
   (my/use-colors
@@ -665,6 +669,14 @@ Otherwise =msmtp= may call =pinentry= while Emacs is locked, which means EXWM ca
   (my/password-store-get "Job/Digital/Email/pvkorytov@etu.ru"))
 
 (add-hook 'notmuch-mua-send-hook #'my/ensure-password)
+#+end_src
+** Org intergration
+[[https://git.sr.ht/~tarsius/ol-notmuch][ol-notmuch]] is a package that adds Org links to notmuch messages.
+
+#+begin_src emacs-lisp
+(use-package ol-notmuch
+  :straight t
+  :after (org notmuch))
 #+end_src
 
 * mailcap
