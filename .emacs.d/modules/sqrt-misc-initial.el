@@ -21,6 +21,6 @@
   (quit-window t))
 
 (setq initial-major-mode 'fundamental-mode)
-(setq initial-scratch-message "Hello there <3\n\n")
+(setq initial-scratch-message "Hallo Leben")
 
 (provide 'sqrt-misc-initial)

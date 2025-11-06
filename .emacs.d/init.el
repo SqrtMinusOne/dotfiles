@@ -277,3 +277,8 @@
     (message "Processed %s as emacs config module" (buffer-file-name))))
 
 (add-hook 'org-babel-post-tangle-hook #'my/modules--post-tangle)
+
+(defun my/emacs-tramp ()
+  (interactive)
+  (with-environment-variables (("EMACS_ENV" "remote"))
+    (start-process "emacs-tramp" nil "emacs")))

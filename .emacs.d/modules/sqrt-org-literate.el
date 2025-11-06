@@ -265,7 +265,8 @@
   (my-leader-def
     :keymaps 'org-mode-map
     "SPC b" '(:wk "org-babel")
-    "SPC b" org-babel-map))
+    "SPC b" org-babel-map
+    "SPC h" #'consult-org-heading))
 
 (defun my/org-prj-dir (path)
   (expand-file-name path (org-entry-get nil "PRJ-DIR" t)))

@@ -169,6 +169,61 @@
        (line-beginning-position)
        (line-end-position)))))
 
+(defvar my/edit-elisp-string--window-config nil)
+
+(defun my/edit-elisp-string ()
+  (interactive)
+  (if (org-src-edit-buffer-p)
+      (org-edit-src-exit)
+    (let* ((bounds (bounds-of-thing-at-point 'string))
+           (orig-buf (current-buffer))
+           (orig-str (when bounds
+                       (buffer-substring-no-properties (car bounds) (cdr bounds)))))
+      (unless bounds
+        (user-error "No string under cursor"))
+      ;; Not sure if there's a better way
+      (let* ((mode (intern
+                    (completing-read
+                     "Major mode: " obarray
+                     (lambda (sym)
+                       (and (commandp sym)
+                            (string-suffix-p "-mode" (symbol-name sym))))
+                     t)))
+             (edit-buf (generate-new-buffer "*string-edit*")))
+        (setq edit-elisp-string--window-config (current-window-configuration))
+        (with-current-buffer edit-buf
+          (insert (string-replace
+                   "\\\"" "\"" (substring orig-str 1 -1)))
+          (funcall mode)
+          (use-local-map (copy-keymap (current-local-map)))
+          ;; Confirm edit
+          (local-set-key
+           (kbd "C-c '")
+           (lambda ()
+             (interactive)
+             (let ((new-str (buffer-substring-no-properties
+                             (point-min) (point-max))))
+               (with-current-buffer orig-buf
+                 (delete-region (car bounds) (cdr bounds))
+                 (goto-char (car bounds))
+                 (insert (prin1-to-string new-str))))
+             (kill-buffer edit-buf)
+             (when edit-elisp-string--window-config
+               (set-window-configuration edit-elisp-string--window-config))))
+          ;; Cancel edit
+          (local-set-key
+           (kbd "C-c C-k")
+           (lambda ()
+             (interactive)
+             (kill-buffer edit-buf)
+             (when edit-elisp-string--window-config
+               (set-window-configuration edit-elisp-string--window-config)))))
+        (pop-to-buffer edit-buf)))))
+
+(general-define-key
+ :keymaps '(emacs-lisp-mode-map lisp-interaction-mode-map)
+ "C-c '" #'my/edit-elisp-string)
+
 (use-package projectile
   :straight t
   :config

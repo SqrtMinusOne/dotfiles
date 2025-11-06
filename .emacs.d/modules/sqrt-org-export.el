@@ -66,7 +66,10 @@
                  ("beamer" "\\documentclass[presentation]{beamer}"
                   ("\\section{%s}" . "\\section*{%s}")
                   ("\\subsection{%s}" . "\\subsection*{%s}")
-                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")))))
+                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))))
+  (with-eval-after-load 'ox-beamer
+    (add-to-list 'org-beamer-environments-extra
+                 '("dummy" "d" "\\begin{dummyenv}" "\\end{dummyenv}"))))
 
 ;; Make sure to eval the function when org-latex-classes list already exists
 (with-eval-after-load 'ox-latex

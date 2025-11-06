@@ -497,6 +497,14 @@ Finally, some post-processing of the tangled files:
 (add-hook 'org-babel-post-tangle-hook #'my/modules--post-tangle)
 #+end_src
 
+Launch Emacs with the =remote= env (for TRAMP):
+#+begin_src emacs-lisp
+(defun my/emacs-tramp ()
+  (interactive)
+  (with-environment-variables (("EMACS_ENV" "remote"))
+    (start-process "emacs-tramp" nil "emacs")))
+#+end_src
+
 ** Performance
 :PROPERTIES:
 :MODULE_NAME: performance
@@ -656,7 +664,7 @@ So until I've made a better loading screen, this will do.
 
 #+begin_src emacs-lisp
 (setq initial-major-mode 'fundamental-mode)
-(setq initial-scratch-message "Hello there <3\n\n")
+(setq initial-scratch-message "Hallo Leben")
 #+end_src
 * General settings
 ** Keybindings
@@ -1490,6 +1498,66 @@ Input accented characters.
        (line-beginning-position)
        (line-end-position)))))
 #+end_src
+**** Edit string a point
+A function to edit the string at point in a temporary buffer with chosen major mode. Somewhat like =org-edit-special=.
+
+#+begin_src emacs-lisp
+(defvar my/edit-elisp-string--window-config nil)
+
+(defun my/edit-elisp-string ()
+  (interactive)
+  (if (org-src-edit-buffer-p)
+      (org-edit-src-exit)
+    (let* ((bounds (bounds-of-thing-at-point 'string))
+           (orig-buf (current-buffer))
+           (orig-str (when bounds
+                       (buffer-substring-no-properties (car bounds) (cdr bounds)))))
+      (unless bounds
+        (user-error "No string under cursor"))
+      ;; Not sure if there's a better way
+      (let* ((mode (intern
+                    (completing-read
+                     "Major mode: " obarray
+                     (lambda (sym)
+                       (and (commandp sym)
+                            (string-suffix-p "-mode" (symbol-name sym))))
+                     t)))
+             (edit-buf (generate-new-buffer "*string-edit*")))
+        (setq edit-elisp-string--window-config (current-window-configuration))
+        (with-current-buffer edit-buf
+          (insert (string-replace
+                   "\\\"" "\"" (substring orig-str 1 -1)))
+          (funcall mode)
+          (use-local-map (copy-keymap (current-local-map)))
+          ;; Confirm edit
+          (local-set-key
+           (kbd "C-c '")
+           (lambda ()
+             (interactive)
+             (let ((new-str (buffer-substring-no-properties
+                             (point-min) (point-max))))
+               (with-current-buffer orig-buf
+                 (delete-region (car bounds) (cdr bounds))
+                 (goto-char (car bounds))
+                 (insert (prin1-to-string new-str))))
+             (kill-buffer edit-buf)
+             (when edit-elisp-string--window-config
+               (set-window-configuration edit-elisp-string--window-config))))
+          ;; Cancel edit
+          (local-set-key
+           (kbd "C-c C-k")
+           (lambda ()
+             (interactive)
+             (kill-buffer edit-buf)
+             (when edit-elisp-string--window-config
+               (set-window-configuration edit-elisp-string--window-config)))))
+        (pop-to-buffer edit-buf)))))
+
+(general-define-key
+ :keymaps '(emacs-lisp-mode-map lisp-interaction-mode-map)
+ "C-c '" #'my/edit-elisp-string)
+#+end_src
+
 ** Working with projects
 :PROPERTIES:
 :MODULE_NAME: general-config
@@ -5715,7 +5783,8 @@ Some keybindings:
   (my-leader-def
     :keymaps 'org-mode-map
     "SPC b" '(:wk "org-babel")
-    "SPC b" org-babel-map))
+    "SPC b" org-babel-map
+    "SPC h" #'consult-org-heading))
 #+end_src
 
 *** Managing a literate programming project
@@ -6993,31 +7062,12 @@ Also, I want to add some extra information to the journal. Here's a functionalit
   my/weather-value)
 #+end_src
 
-Let's also try to log the current mood:
-#+begin_src emacs-lisp
-(defun my/get-mood ()
-  (let* ((crm-separator " ")
-         (crm-local-completion-map
-          (let ((map (make-sparse-keymap)))
-            (set-keymap-parent map crm-local-completion-map)
-            (define-key map " " 'self-insert-command)
-            map))
-         (vertico-sort-function nil))
-    (mapconcat
-     #'identity
-     (completing-read-multiple
-      "How do you feel: "
-      my/mood-list)
-     " ")))
-#+end_src
-
 And here's the function that creates a drawer with such information. At the moment, it's:
 - Emacs version
 - Hostname
 - Location
 - Weather
 - Current EMMS track
-- Current mood
 
 #+begin_src emacs-lisp
 (defun my/set-journal-header ()
@@ -7045,9 +7095,7 @@ And here's the function that creates a drawer with such information. At the mome
           (when title
             (setq string (concat string title)))
           (when (> (length string) 0)
-            (org-set-property "EMMS_Track" string))))))
-  (when-let (mood (my/get-mood))
-    (org-set-property "Mood" mood)))
+            (org-set-property "EMMS_Track" string)))))))
 
 (add-hook 'org-journal-after-entry-create-hook
           #'my/set-journal-header)
@@ -8027,7 +8075,10 @@ Add a custom LaTeX template without default packages. Packages are indented to b
                  ("beamer" "\\documentclass[presentation]{beamer}"
                   ("\\section{%s}" . "\\section*{%s}")
                   ("\\subsection{%s}" . "\\subsection*{%s}")
-                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}")))))
+                  ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))))
+  (with-eval-after-load 'ox-beamer
+    (add-to-list 'org-beamer-environments-extra
+                 '("dummy" "d" "\\begin{dummyenv}" "\\end{dummyenv}"))))
 
 ;; Make sure to eval the function when org-latex-classes list already exists
 (with-eval-after-load 'ox-latex
@@ -12268,14 +12319,15 @@ Perhaps this is too verbose (=10.03.R.01=), but it works for now.
 **** Tools choice
 As I mentioned earlier, my current options to manage a particular node are:
 - [[https://git-scm.com/][git]];
-- [[https://mega.nz/][MEGA]] - for files that don't fit into git, such as DOCX documents, photos, etc.;
+- [[https://mega.nz/][MEGA]] - for files that don't fit into git, such as DOCX documents, photos, etc. (*UPD 2025.10.22* - MEGA has been banned in Russia, of course...);
+- [[https://owncloud.dev/ocis/][ownCloud Infinite Scale]] (self-hosted by me) via [[https://rclone.org/docs/][rclone]] - instead of MEGA.
 - "nothing" - for something that I don't need to sync across machines, e.g. database dumps.
 
-Another tool I considered was [[https://github.com/restic/restic][restic]]. It's an interesting backup & sync solution with built-in encryption, snapshots, etc.
+=rclone= is nice because it provides a single interface for multiple services like Google Drive, Dropbox, S3, WebDAV. It also supported MEGA, but it required turning off 2FA, which I didn't want.
 
-However, a challenge I encountered is that its repositories are only accessible via restic. So, even if I use something like MEGA as a backend, I won't be able to use the MEGA file-sharing features, which I occasionally want for document or photo folders. Hence, for now, I'm more interested in synchronizing the file tree in MEGA with [[https://github.com/meganz/MEGAcmd][MEGAcmd]] (and also clean up the mess up there).
+So the MEGA functionality used [[https://github.com/meganz/MEGAcmd][MEGAcmd]]. I'll keep it for now.
 
-Another interesting tool is [[https://rclone.org/][rclone]], which provides a single interface for multiple services like Google Drive, Dropbox, S3, WebDAV. It also supports MEGA, but it requires turning off the two-factor authentication, which I don't want.
+Another tool I considered was [[https://github.com/restic/restic][restic]]. It's an interesting backup & sync solution with built-in encryption, snapshots, etc., but the repositories are only accessible via restic, which prevents using file-sharing features.
 
 *** Implementation
 **** Dependencies
@@ -12304,7 +12356,7 @@ The org tree is located in my =org-mode= folder in a file called =index.org=:
 
 Each "area" is an Org header with the =folder= tag; the Org hierarchy forms the file tree. A header can have the following properties:
 - =machine= - a list of hostnames for which the node is active (or =nil=)
-- =kind= - =mega=, =git=, or =dummy=
+- =kind= - =mega=, =rclone:<remote>=, =git=, or =dummy=. For now, only one option per node; I'll probably change that in the future.
 - =remote= - remote URL for =git=
 - =symlink= - in case the folder has to be symlinked somewhere else
 
@@ -12319,16 +12371,16 @@ E.g. a part of the tree above:
 :END:
 ,**** 10.03.A Artifacts
 :PROPERTIES:
-:kind:     mega
+:kind:     rclone:ocis
 :END:
 ,**** 10.03.D Documents
 :PROPERTIES:
-:kind:     mega
+:kind:     rclone:ocis
 :END:
 ,**** 10.03.R Repos
 ,***** 10.03.R.00 digital-trajectories-deploy
 :PROPERTIES:
-:kind:     mega
+:kind:     rclone:ocis
 :END:
 ,***** 10.03.R.01 digital-trajectories-backend
 :PROPERTIES:
@@ -12374,14 +12426,17 @@ The return value is an alist; see `my/index--tree-get' for details."
         (setf (alist-get :symlink val) symlink))
       (when (org-element-property :PROJECT heading)
         (setf (alist-get :project val) t))
-      (when-let* ((kind-str (org-element-property :KIND heading))
-                  (kind (intern kind-str)))
-        (setf (alist-get :kind val) kind)
-        (when (equal kind 'git)
+      (when-let* ((kind-str (org-element-property :KIND heading)))
+        (when (string-match-p (rx bos "rclone:") kind-str)
+          (setf (alist-get :remote val)
+                (substring kind-str 7))
+          (setq kind-str "rclone"))
+        (when (equal kind-str "git")
           (let ((remote (org-element-property :REMOTE heading)))
             (unless remote
               (user-error "No remote for %s" (alist-get :name val)))
-            (setf (alist-get :remote val) remote))))
+            (setf (alist-get :remote val) remote)))
+        (setf (alist-get :kind val) (intern kind-str)))
       (setf (alist-get :name val) (org-element-property :raw-value heading)
             (alist-get :path val) new-path)
       val)))
@@ -12714,6 +12769,288 @@ The return value is a list of commands as defined by
 
 #+RESULTS:
 : my/index--mega-commands
+**** rclone
+This section wraps the [[https://rclone.org/bisync/][bisync]] command for rclone, which implements two-way sync.
+
+The general approach is:
+- Consider the directory unsynced if it doesn't have the =.rclone-test-<remote>= file, which is used with the [[https://rclone.org/bisync/#check-access][--check-access]] and [[https://rclone.org/bisync/#check-filename][--check-filename]] path. =--check-access= prevents rclone from running unless the check file exists in both places (i.e., locally and remotely).
+- For unsynced directories, run =rclone mkdir= to create remote directory, =touch= and =rclone touch= to create the check file.
+- For unsynced directories, run the sync command with the [[https://rclone.org/bisync/#resync][--resync]] flag for initial sync.
+- For all directories, create a bash script that would run the sync command normally.
+
+First, default options for =rclone bisync=:
+#+NAME: rclone-options
+#+begin_src emacs-lisp
+(defconst my/index--rclone-options
+  `("--create-empty-src-dirs"
+    "--resilient"
+    "--metadata"
+    "--filters-file"
+    ,(expand-file-name "~/.config/rclone/filters-bisync")))
+#+end_src
+
+A [[https://rclone.org/bisync/#filtering][filters file]] for rclone:
+#+begin_src text :tangle ~/.config/rclone/filters-bisync
+- .*
+- ~*
+- .debris
+#+end_src
+Not yet sure what's that supposed to be.
+
+#+begin_src emacs-lisp
+(defconst my/index--rclone-script-path "~/bin/rclone-scripts/")
+#+end_src
+
+First, get folders to be synced from the tree:
+#+begin_src emacs-lisp
+(defun my/index--rclone-get-folders (tree)
+  "Get TREE nodes to be synced with rclone.
+
+Return a list of alists with the following keys:
+- `:local-path' - path in the local filesystem
+- `:remote-path' - path in the remote
+- `:remote' - name of the remote."
+  (cl-loop for node in tree
+           if (eq (alist-get :kind node) 'rclone)
+           collect
+           `((:local-path . ,(file-name-as-directory (alist-get :path node)))
+             (:remote-path
+              . ,(concat (alist-get :remote node)
+                         ":" (my/index--mega-local-path
+                              (file-name-as-directory (alist-get :path node)))))
+             (:remote . ,(alist-get :remote node)))
+           append (my/index--rclone-get-folders
+                   (alist-get :children node))))
+#+end_src
+
+Then, get the sync command:
+#+begin_src emacs-lisp
+(defun my/index--rclone-make-command (local-path remote-path remote)
+  "Make a bisync command to sync LOCAL-PATH and REMOTE-PATH.
+
+REMOTE is the name of the remote."
+  (string-join
+   `("rclone"
+     "bisync"
+     ,(format "\"%s\"" local-path)
+     ,(format "\"%s\"" remote-path)
+     ,@my/index--rclone-options
+     "--check-filename"
+     ,(format ".rclone-test-%s" remote))
+   " "))
+#+end_src
+
+A python script to run rclone.
+#+NAME: rclone-sync-script
+#+begin_src python :tangle no
+import subprocess
+import json
+import sys
+
+REMOTE = '<rclone-remote>'
+FOLDERS = json.loads('<rclone-folders-json>')
+OPTIONS = json.loads('<rclone-options>')
+
+
+def rclone_make_command(local_path, remote_path, remote):
+    return [
+        'rclone',
+        'bisync',
+        local_path,
+        remote_path,
+        ,*OPTIONS,
+        '--check-filename',
+        f'.rclone-test-{REMOTE}',
+        '--verbose',
+        '--color',
+        'NEVER',
+        '--use-json-log',
+        '--stats',
+        '9999m'
+    ]
+
+
+def parse_rclone_stats(log_output):
+    log = log_output.splitlines()
+    log.reverse()
+    for line in log:
+        try:
+            log_entry = json.loads(line)
+            if 'stats' in log_entry:
+                return log_entry['stats']
+        except json.JSONDecodeError:
+            continue
+
+    return None
+
+
+def process_output(output):
+    if output is None:
+        print('(empty)')
+    for line in output.splitlines():
+        try:
+            datum = json.loads(line)
+            print(datum['msg'])
+        except Exception:
+            print(line)
+
+def rclone_run(folder):
+    command = rclone_make_command(
+        folder['local-path'], folder['remote-path'], folder['remote']
+    )
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        print(f'=== Error syncing {folder['local-path']} ===')
+        print(f'Command: {' '.join(command)}')
+        print(f'--- STDOUT ---')
+        process_output(e.stdout)
+        print(f'--- STDERR ---')
+        process_output(e.stderr)
+        return {'success': False, 'stats': {}}
+    return {'success': True, 'stats': parse_rclone_stats(result.stderr)}
+
+
+def notify(summary, body, level='normal', expire_time=5000):
+    subprocess.run(['notify-send', '-u', level, '-t', str(expire_time), summary, body])
+
+# Source: https://stackoverflow.com/questions/1094841/get-a-human-readable-version-of-a-file-size
+def sizeof_fmt(num, suffix='B'):
+    for unit in ('', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi'):
+        if abs(num) < 1024.0:
+            return f'{num:3.1f}{unit}{suffix}'
+        num /= 1024.0
+    return f'{num:.1f}Yi{suffix}'
+
+
+def rclone_run_all(folders):
+    error_folders = []
+    total_bytes = 0
+    total_transfers = 0
+    total_deleted = 0
+    total_renamed = 0
+    for folder in folders:
+        print(f'Running rclone for {folder}')
+        res = rclone_run(folder)
+        if not res['success']:
+            error_folders.append(folder['local-path'])
+        else:
+            total_bytes += res.get('stats', {}).get('bytes', 0)
+            total_transfers += res.get('stats', {}).get('transfers', 0)
+            total_deleted += res.get('stats', {}).get('deletes', 0)
+            total_renamed += res.get('stats', {}).get('renames', 0)
+    if len(error_folders) > 0:
+        error_msg = f'Sync error for remote {REMOTE}!'
+        for folder in error_folders:
+            error_msg += '''\n- ''' + folder
+        notify(f'rclone sync {REMOTE}', error_msg, level='critical')
+    else:
+        msg = ''
+        if total_transfers > 0:
+            msg += f'''Transferred {total_transfers} files ({sizeof_fmt(total_bytes)})\n'''
+        if total_deleted > 0:
+            msg += f'''Deleted {total_transfers} files\n'''
+        if total_renamed > 0:
+            msg += f'''Renamed {total_renamed} files\n'''
+        if len(msg) > 0:
+            notify(f'rclone sync {REMOTE}', msg)
+
+if __name__ == '__main__':
+    rclone_run_all(FOLDERS)
+#+end_src
+
+A function that templates the script above:
+#+begin_src emacs-lisp :noweb yes
+(defun my/index--rclone-script (remote folders)
+  (let ((script "
+<<rclone-sync-script>>
+"))
+    (setq script
+          (thread-last script
+                       (string-trim)
+                       (string-replace "<rclone-remote>" remote)
+                       (string-replace "<rclone-folders-json>"
+                                       (json-encode folders))
+                       (string-replace "<rclone-options>"
+                                       (json-encode my/index--rclone-options))))
+    script))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/index--rclone-script-loc (remote)
+  (concat (file-name-as-directory
+           (expand-file-name my/index--rclone-script-path))
+          (format "rclone_%s.py" remote)))
+#+end_src
+
+And checks if the script needs to be updated:
+#+begin_src emacs-lisp :noweb yes
+(defun my/index--rclone-script-saved-p (remote folders)
+  (let* ((script (my/index--rclone-script remote folders))
+         (script-loc (my/index--rclone-script-loc remote)))
+    (when (file-exists-p script-loc)
+      (with-temp-buffer
+        (insert-file-contents script-loc)
+        (equal (string-trim (buffer-string)) script)))))
+#+end_src
+
+Putting everything together:
+#+begin_src emacs-lisp
+(defun my/index--rclone-commands (tree)
+  "Get commands to set up sync with rclone in TREE.
+
+TREE is a form a defined by `my/index--tree-get'.  This is supposed to
+be the tree narrowed to the current machine (`my/index--tree-narrow').
+
+The return value is a list of commands as defined by
+`my/index--commands-display'."
+  (let ((folders (my/index--rclone-get-folders tree))
+        commands
+        sync-items-per-remote)
+    (dolist (folder folders)
+      (pcase-let*
+          ((`((:local-path . ,local-path) (:remote-path . ,remote-path)
+              (:remote . ,remote))
+            folder)
+           (test-file-name (format ".rclone-test-%s" remote))
+           (test-file-local (concat local-path test-file-name))
+           (test-file-remote (concat remote-path test-file-name)))
+        (unless (file-exists-p test-file-local)
+          (push
+           (list (format "touch \"%s\"" test-file-local) "Create local test files" 3)
+           commands)
+          (push
+           (list (format "rclone mkdir \"%s\"" remote-path)
+                 "Create remote directories" 3)
+           commands)
+          (push
+           (list (format "rclone touch \"%s\"" test-file-remote) "Create remote test-file" 4)
+           commands)
+          (push
+           (list
+            (concat (my/index--rclone-make-command local-path remote-path remote)
+                    " --resync")
+            (format "Initial sync for %s" remote) 8)
+           commands))
+        (push folder
+              (alist-get remote sync-items-per-remote nil nil #'equal))))
+    (unless (file-exists-p my/index--rclone-script-path)
+      (push (list (format "mkdir -p \"%s\"" (expand-file-name
+                                             my/index--rclone-script-path))
+                  "Create rclone sync scripts directory" 9)
+            commands))
+    (cl-loop for (remote . folders) in sync-items-per-remote
+             unless (my/index--rclone-script-saved-p remote folders)
+             do (push
+                 (list
+                  (format "cat <<EOF > %s\n%s\nEOF"
+                          (my/index--rclone-script-loc remote)
+                          (my/index--rclone-script remote (nreverse folders)))
+                  "Update rclone sync script" 10)
+                 commands))
+    (nreverse commands)))
+#+end_src
+
 **** Git repos
 To sync git, we just need to clone the required git repos. Removing the repos is handled by the folder sync commands.
 
@@ -12936,13 +13273,14 @@ With that, we can make the main entrypoint.
   (let* ((full-tree (my/index--tree-retrive)))
     (my/index--tree-verify full-tree)
     (let* ((tree (my/index--tree-narrow full-tree))
-           (mega-commands (my/index--mega-commands full-tree tree))
+           ;; (mega-commands (my/index--mega-commands full-tree tree))
+           (rclone-commands (my/index--rclone-commands tree))
            (mapping (my/index--filesystem-tree-mapping full-tree tree))
            (folder-commands (my/index--filesystem-commands mapping))
            (git-commands (my/index--git-commands tree))
            (waka-commands (my/index--wakatime-commands tree))
            (symlink-commands (my/index-get-symlink-commands tree)))
-      (my/index--commands-display (append mega-commands folder-commands git-commands
+      (my/index--commands-display (append rclone-commands folder-commands git-commands
                                           waka-commands symlink-commands)))))
 #+end_src
 *** Navigation

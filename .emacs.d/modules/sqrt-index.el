@@ -37,14 +37,17 @@ The return value is an alist; see `my/index--tree-get' for details."
         (setf (alist-get :symlink val) symlink))
       (when (org-element-property :PROJECT heading)
         (setf (alist-get :project val) t))
-      (when-let* ((kind-str (org-element-property :KIND heading))
-                  (kind (intern kind-str)))
-        (setf (alist-get :kind val) kind)
-        (when (equal kind 'git)
+      (when-let* ((kind-str (org-element-property :KIND heading)))
+        (when (string-match-p (rx bos "rclone:") kind-str)
+          (setf (alist-get :remote val)
+                (substring kind-str 7))
+          (setq kind-str "rclone"))
+        (when (equal kind-str "git")
           (let ((remote (org-element-property :REMOTE heading)))
             (unless remote
               (user-error "No remote for %s" (alist-get :name val)))
-            (setf (alist-get :remote val) remote))))
+            (setf (alist-get :remote val) remote)))
+        (setf (alist-get :kind val) (intern kind-str)))
       (setf (alist-get :name val) (org-element-property :raw-value heading)
             (alist-get :path val) new-path)
       val)))
@@ -320,6 +323,232 @@ The return value is a list of commands as defined by
                                (substring path 0 (1- (length path))))
                        "Mega remove sync" 4)))))
 
+(defconst my/index--rclone-options
+  `("--create-empty-src-dirs"
+    "--resilient"
+    "--metadata"
+    "--filters-file"
+    ,(expand-file-name "~/.config/rclone/filters-bisync")))
+
+(defconst my/index--rclone-script-path "~/bin/rclone-scripts/")
+
+(defun my/index--rclone-get-folders (tree)
+  "Get TREE nodes to be synced with rclone.
+
+Return a list of alists with the following keys:
+- `:local-path' - path in the local filesystem
+- `:remote-path' - path in the remote
+- `:remote' - name of the remote."
+  (cl-loop for node in tree
+           if (eq (alist-get :kind node) 'rclone)
+           collect
+           `((:local-path . ,(file-name-as-directory (alist-get :path node)))
+             (:remote-path
+              . ,(concat (alist-get :remote node)
+                         ":" (my/index--mega-local-path
+                              (file-name-as-directory (alist-get :path node)))))
+             (:remote . ,(alist-get :remote node)))
+           append (my/index--rclone-get-folders
+                   (alist-get :children node))))
+
+(defun my/index--rclone-make-command (local-path remote-path remote)
+  "Make a bisync command to sync LOCAL-PATH and REMOTE-PATH.
+
+REMOTE is the name of the remote."
+  (string-join
+   `("rclone"
+     "bisync"
+     ,(format "\"%s\"" local-path)
+     ,(format "\"%s\"" remote-path)
+     ,@my/index--rclone-options
+     "--check-filename"
+     ,(format ".rclone-test-%s" remote))
+   " "))
+
+(defun my/index--rclone-script (remote folders)
+  (let ((script "
+import subprocess
+import json
+import sys
+
+REMOTE = '<rclone-remote>'
+FOLDERS = json.loads('<rclone-folders-json>')
+OPTIONS = json.loads('<rclone-options>')
+
+
+def rclone_make_command(local_path, remote_path, remote):
+    return [
+        'rclone',
+        'bisync',
+        local_path,
+        remote_path,
+        *OPTIONS,
+        '--check-filename',
+        f'.rclone-test-{REMOTE}',
+        '--verbose',
+        '--color',
+        'NEVER',
+        '--use-json-log',
+        '--stats',
+        '9999m'
+    ]
+
+
+def parse_rclone_stats(log_output):
+    log = log_output.splitlines()
+    log.reverse()
+    for line in log:
+        try:
+            log_entry = json.loads(line)
+            if 'stats' in log_entry:
+                return log_entry['stats']
+        except json.JSONDecodeError:
+            continue
+
+    return None
+
+
+def rclone_run(folder):
+    command = rclone_make_command(
+        folder['local-path'], folder['remote-path'], folder['remote']
+    )
+    try:
+        result = subprocess.run(command, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        print(f'=== Error syncing {folder['local-path']} ===')
+        print(f'Command: {' '.join(command)}')
+        print(f'--- STDOUT ---')
+        print(e.stdout if e.stdout else '(empty)')
+        print(f'--- STDERR ---')
+        print(e.stderr if e.stderr else '(empty)')
+        return {'success': False, 'stats': {}}
+    return {'success': True, 'stats': parse_rclone_stats(result.stderr)}
+
+
+def notify(summary, body, level='normal', expire_time=5000):
+    subprocess.run(['notify-send', '-u', level, '-t', str(expire_time), summary, body])
+
+# Source: https://stackoverflow.com/questions/1094841/get-a-human-readable-version-of-a-file-size
+def sizeof_fmt(num, suffix='B'):
+    for unit in ('', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi'):
+        if abs(num) < 1024.0:
+            return f'{num:3.1f}{unit}{suffix}'
+        num /= 1024.0
+    return f'{num:.1f}Yi{suffix}'
+
+
+def rclone_run_all(folders):
+    error_folders = []
+    total_bytes = 0
+    total_transfers = 0
+    total_deleted = 0
+    total_renamed = 0
+    for folder in folders:
+        print(f'Running rclone for {folder}')
+        res = rclone_run(folder)
+        if not res['success']:
+            error_folders.append(folder['local-path'])
+        else:
+            total_bytes += res.get('stats', {}).get('bytes', 0)
+            total_transfers += res.get('stats', {}).get('transfers', 0)
+            total_deleted += res.get('stats', {}).get('deletes', 0)
+            total_renamed += res.get('stats', {}).get('renames', 0)
+    if len(error_folders) > 0:
+        error_msg = f'Sync error for remote {REMOTE}!'
+        for folder in error_folders:
+            error_msg += '''\n- ''' + folder
+        notify(f'rclone sync {REMOTE}', error_msg, level='error')
+    else:
+        msg = ''
+        if total_transfers > 0:
+            msg += f'''Transferred {total_transfers} files ({sizeof_fmt(total_bytes)})\n'''
+        if total_deleted > 0:
+            msg += f'''Deleted {total_transfers} files\n'''
+        if total_renamed > 0:
+            msg += f'''Renamed {total_renamed} files\n'''
+        if len(msg) > 0:
+            notify(f'rclone sync {REMOTE}', msg)
+
+if __name__ == '__main__':
+    rclone_run_all(FOLDERS)
+"))
+    (setq script
+          (thread-last script
+                       (string-trim)
+                       (string-replace "<rclone-remote>" remote)
+                       (string-replace "<rclone-folders-json>"
+                                       (json-encode folders))
+                       (string-replace "<rclone-options>"
+                                       (json-encode my/index--rclone-options))))
+    script))
+
+(defun my/index--rclone-script-loc (remote)
+  (concat (file-name-as-directory
+           (expand-file-name my/index--rclone-script-path))
+          (format "rclone_%s.py" remote)))
+
+(defun my/index--rclone-script-saved-p (remote folders)
+  (let* ((script (my/index--rclone-script remote folders))
+         (script-loc (my/index--rclone-script-loc remote)))
+    (when (file-exists-p script-loc)
+      (with-temp-buffer
+        (insert-file-contents script-loc)
+        (equal (string-trim (buffer-string)) script)))))
+
+(defun my/index--rclone-commands (tree)
+  "Get commands to set up sync with rclone in TREE.
+
+TREE is a form a defined by `my/index--tree-get'.  This is supposed to
+be the tree narrowed to the current machine (`my/index--tree-narrow').
+
+The return value is a list of commands as defined by
+`my/index--commands-display'."
+  (let ((folders (my/index--rclone-get-folders tree))
+        commands
+        sync-items-per-remote)
+    (dolist (folder folders)
+      (pcase-let*
+          ((`((:local-path . ,local-path) (:remote-path . ,remote-path)
+              (:remote . ,remote))
+            folder)
+           (test-file-name (format ".rclone-test-%s" remote))
+           (test-file-local (concat local-path test-file-name))
+           (test-file-remote (concat remote-path test-file-name)))
+        (unless (file-exists-p test-file-local)
+          (push
+           (list (format "touch \"%s\"" test-file-local) "Create local test files" 3)
+           commands)
+          (push
+           (list (format "rclone mkdir \"%s\"" remote-path)
+                 "Create remote directories" 3)
+           commands)
+          (push
+           (list (format "rclone touch \"%s\"" test-file-remote) "Create remote test-file" 4)
+           commands)
+          (push
+           (list
+            (concat (my/index--rclone-make-command local-path remote-path remote)
+                    " --resync")
+            (format "Initial sync for %s" remote) 8)
+           commands))
+        (push folder
+              (alist-get remote sync-items-per-remote nil nil #'equal))))
+    (unless (file-exists-p my/index--rclone-script-path)
+      (push (list (format "mkdir -p \"%s\"" (expand-file-name
+                                             my/index--rclone-script-path))
+                  "Create rclone sync scripts directory" 9)
+            commands))
+    (cl-loop for (remote . folders) in sync-items-per-remote
+             unless (my/index--rclone-script-saved-p remote folders)
+             do (push
+                 (list
+                  (format "cat <<EOF > %s\n%s\nEOF"
+                          (my/index--rclone-script-loc remote)
+                          (my/index--rclone-script remote folders))
+                  "Update rclone sync script" 10)
+                 commands))
+    (nreverse commands)))
+
 (defun my/index--git-commands (tree)
   "Get commands to clone the yet uncloned git repos in TREE.
 
@@ -500,13 +729,14 @@ is still valid. Otherwise, it re-parses the index file."
   (let* ((full-tree (my/index--tree-retrive)))
     (my/index--tree-verify full-tree)
     (let* ((tree (my/index--tree-narrow full-tree))
-           (mega-commands (my/index--mega-commands full-tree tree))
+           ;; (mega-commands (my/index--mega-commands full-tree tree))
+           (rclone-commands (my/index--rclone-commands tree))
            (mapping (my/index--filesystem-tree-mapping full-tree tree))
            (folder-commands (my/index--filesystem-commands mapping))
            (git-commands (my/index--git-commands tree))
            (waka-commands (my/index--wakatime-commands tree))
            (symlink-commands (my/index-get-symlink-commands tree)))
-      (my/index--commands-display (append mega-commands folder-commands git-commands
+      (my/index--commands-display (append rclone-commands folder-commands git-commands
                                           waka-commands symlink-commands)))))
 
 (defun my/index--nav-extend (name path)
