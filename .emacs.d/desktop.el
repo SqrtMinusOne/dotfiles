@@ -277,8 +277,8 @@ DIR is either 'left or 'right."
         (cl-loop while (windmove-find-other-window opposite-dir)
                  do (windmove-do-window-select opposite-dir))))))
 
-(defun my/exwm-refresh-monitors ()
-  (interactive)
+(defun my/exwm-refresh-monitors (&optional refresh)
+  (interactive (list t))
   (setq my/exwm-monitor-list (my/exwm-xrandr-monitor-list))
   (cl-loop for i from 0 to (1- exwm-workspace-number)
            for monitor = (plist-get exwm-randr-workspace-monitor-plist
@@ -287,7 +287,8 @@ DIR is either 'left or 'right."
            do
            (setf (plist-get exwm-randr-workspace-monitor-plist i)
                  (car my/exwm-monitor-list)))
-  (exwm-randr-refresh))
+  (when refresh
+    (exwm-randr-refresh)))
 
 (use-package ivy-posframe
   :straight t
