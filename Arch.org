@@ -77,7 +77,6 @@ git clone git@github.com:SqrtMinusOne/dotfiles.git "/home/pavel/30-39 Life/32 or
 #+end_src
 
 Install wakatime:
-
 #+begin_src bash
 cd ~/00-Scratch/
 git clone https://github.com/wakatime/wakatime-cli.git
@@ -92,7 +91,11 @@ And create the =~/.wakatime.cfg= file with the following contents:
 api_key = <api-key>
 #+end_src
 
-Then run =emacs= and make sure it starts.
+Then run =emacs= and make sure it starts. Run:
+- =M-x nerd-icons-install-fonts=
+- =M-x all-the-icons-install-fonts=
+
+If everything works, login into EXWM.
 
 * Metapac configuration
 [[https://github.com/ripytide/metapac][metapac]] is a declarative wrapper around different package managers, including [[https://wiki.archlinux.org/title/Pacman][pacman]] and [[https://github.com/Morganamilo/paru][paru]]. This means the required packages can be listed in configuration files and checked into version control.

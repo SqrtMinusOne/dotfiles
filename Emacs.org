@@ -1116,8 +1116,10 @@ This script is being run from the [[file:Desktop.org::*i3wm][i3 configuration]].
 For this to work, we need to make sure that Emacs starts a server, so here is an expression to do just that:
 #+BEGIN_SRC emacs-lisp
 (unless (or my/remote-server my/nested-emacs)
-  (add-hook 'after-init-hook #'server-start))
+  ;; (add-hook 'after-init-hook #'server-start)
+  )
 #+END_SRC
+Edit [2025-11-12 Wed]: This has stopped working with EXWM.
 
 And here is a simple macro to do the Emacs -> i3 part:
 #+begin_src emacs-lisp

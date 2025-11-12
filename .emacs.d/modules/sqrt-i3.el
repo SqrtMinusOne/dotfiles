@@ -1,6 +1,7 @@
 ;;; -*- lexical-binding: t -*-
 (unless (or my/remote-server my/nested-emacs)
-  (add-hook 'after-init-hook #'server-start))
+  ;; (add-hook 'after-init-hook #'server-start)
+  )
 
 (defmacro i3-msg (&rest args)
   `(start-process "emacs-i3-windmove" nil "i3-msg" ,@args))

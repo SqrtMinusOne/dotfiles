@@ -6,7 +6,8 @@
   (call-process-shell-command "feh --bg-fill ~/Pictures/wallpaper.jpg"))
 
 (defun my/exwm-run-shepherd ()
-  (when (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
+  (when (and (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
+             (executable-find "shepherd"))
     (call-process "shepherd")))
 
 (use-package pinentry

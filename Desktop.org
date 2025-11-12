@@ -31,6 +31,7 @@ I used to define color codes here (see [[https://github.com/SqrtMinusOne/dotfile
 
 To use them, let's define a noweb block:
 #+NAME: get-color
+
 #+begin_src emacs-lisp :var name="black" quote=0
 (let ((color (or (my/color-value name))))
   (if (> quote 0)
@@ -267,7 +268,8 @@ As of now, these are polybar, feh and, shepherd:
   (call-process-shell-command "feh --bg-fill ~/Pictures/wallpaper.jpg"))
 
 (defun my/exwm-run-shepherd ()
-  (when (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
+  (when (and (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
+             (executable-find "shepherd"))
     (call-process "shepherd")))
 #+end_src
 *** Pinentry
@@ -1709,6 +1711,7 @@ bindsym XF86MonBrightnessUp exec light -A 5
 bindsym XF86MonBrightnessDown exec light -U 5
 #+end_src
 *** Screenshots
+
 #+begin_src conf-space
 # Screenshots
 bindsym --release Print exec "flameshot gui"
