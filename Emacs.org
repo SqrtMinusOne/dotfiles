@@ -11730,7 +11730,7 @@ I don't have access to any proprietary APIs, but LLaMA 3.1 8b with [[https://oll
     :key (lambda () (my/password-store-get-field
                      "My_Online/Accounts/openrouter" "api-key"))
     :stream t
-    :models '("anthropic/claude-sonnet-4"
+    :models '("anthropic/claude-sonnet-4.5"
               "qwen/qwen3-coder"
               "qwen/qwen3-coder:free"))
   (setq gptel--known-backends
@@ -12939,21 +12939,24 @@ def rclone_run_all(folders):
             total_transfers += res.get('stats', {}).get('transfers', 0)
             total_deleted += res.get('stats', {}).get('deletes', 0)
             total_renamed += res.get('stats', {}).get('renames', 0)
+
+    msg = ''
+    level = 'normal'
+    if total_transfers > 0:
+        msg += f'''Transferred {total_transfers} files ({sizeof_fmt(total_bytes)})\n'''
+    if total_deleted > 0:
+        msg += f'''Deleted {total_transfers} files\n'''
+    if total_renamed > 0:
+        msg += f'''Renamed {total_renamed} files\n'''
+
     if len(error_folders) > 0:
-        error_msg = f'Sync error for remote {REMOTE}!'
+        msg += '''\nSync errors for the following folders:'''
         for folder in error_folders:
-            error_msg += '''\n- ''' + folder
-        notify(f'rclone sync {REMOTE}', error_msg, level='critical')
-    else:
-        msg = ''
-        if total_transfers > 0:
-            msg += f'''Transferred {total_transfers} files ({sizeof_fmt(total_bytes)})\n'''
-        if total_deleted > 0:
-            msg += f'''Deleted {total_transfers} files\n'''
-        if total_renamed > 0:
-            msg += f'''Renamed {total_renamed} files\n'''
-        if len(msg) > 0:
-            notify(f'rclone sync {REMOTE}', msg)
+            msg += '''\n- ''' + folder
+        level = 'critical'
+
+    if len(msg) > 0:
+        notify(f'rclone sync {REMOTE}', msg, level=level)
 
 if __name__ == '__main__':
     rclone_run_all(FOLDERS)
@@ -13086,7 +13089,7 @@ I use [[https://wakatime.com/][WakaTime]] to track my coding activity, and I don
 
 E.g. 10.03.R.01 Project Name -> Project Name."
   (replace-regexp-in-string
-   (rx bos (+ (| num alpha "." "-")) space) "" name))
+   (rx bos (+ num) (? "." (+ (| num alpha "." "-"))) space) "" name))
 
 (defun my/index--wakatime-escape (string)
   "Escape STRING for use in a WakaTime config file."
@@ -13289,20 +13292,17 @@ The last piece is the navigation interface.
 Of course, plain dired does the job fine, thanks to the relatively low-depth filesystem structure. But I still want a navigation interface like =M-x projectile-switch-project=.
 
 **** Navigation data
-There are two slight problems with that.
+One problem is that the index tree does not always have the full info. E.g., I have the =10.03.A Artifacts= folder, which I sync with MEGA and which has child folders like =10.03.A.01 smth= and so on. Names of the latter are not stored anywhere because I don't see the point, which means we have to extract that from the filesystem.
 
-First, the index tree does not always have the full info. For instance, I have the =10.03.A Artifacts= folder, which I sync with MEGA and which has child folders like =10.03.A.01 smth= and so on. Names of the latter are not stored anywhere because I don't see the point, which means we have to extract that from the filesystem.
-
-Second, as it turns out, there have to be two levels for navigation, which are delimited by the =project= property. I'm not sure if that the optimal way to implement Jonny.Decimal, but it works for me.
-
-So, a function to tackle the first problem:
+So, a function to tackle this:
 #+begin_src emacs-lisp
-(defun my/index--nav-extend (name path)
+(defun my/index--nav-extend (name path &optional project)
   "Find all index-related files in PATH.
 
 NAME is the name of the root index entry, e.g. \"10.01
 Something\".  If PATH containts folders like \"10.01.01
-Something\", \"10.01.02 ...\", they will be returned.
+Something\", \"10.01.02 ...\", they will be returned.  PROJECT is the
+project name.
 
 The return value is a form as defined by `my/index--nav-get'."
   (when (file-directory-p path)
@@ -13332,7 +13332,7 @@ The return value is a form as defined by `my/index--nav-get'."
 
 And one to get the navigation data structure.
 #+begin_src emacs-lisp
-(defun my/index--nav-get (tree &optional names)
+(defun my/index--nav-get (tree &optional names project)
   "Get the navigation structure from TREE.
 
 TREE is a form as defined by `my/index--tree-get'.  NAMES is a
@@ -13344,7 +13344,7 @@ The result is a list of alists with the following keys:
   (\"10.01 Something\" \"10.01.01 Something\")
 - `:path` - path to the folder, e.g.
   \"/path/10 stuff/10.01 Something/10.01.01 Something/\"
-- `:child-navs` - list of child navigation structures (optional)"
+- `:project` - project name."
   (seq-sort-by
    (lambda (item) (alist-get :path item))
    #'string-lessp
@@ -13352,28 +13352,24 @@ The result is a list of alists with the following keys:
     (lambda (acc elem)
       (let* ((name (alist-get :name elem))
              (path (alist-get :path elem)))
-        (cond ((alist-get :project elem)
-               (let ((current-nav `((:names . (,@names ,name))
-                                    (:path . ,path))))
-                 (when-let (child-navs
-                            (and (alist-get :children elem)
-                                 (my/index--nav-get (alist-get :children elem))))
-                   (setf (alist-get :child-navs current-nav) child-navs))
-                 (push current-nav acc)))
-              ((alist-get :children elem)
+        (cond ((alist-get :children elem)
                (when-let (child-navs (my/index--nav-get
                                       (alist-get :children elem)
-                                      `(,@names ,name)))
+                                      `(,@names ,name)
+                                      (or (when (alist-get :project elem)
+                                            name)
+                                          project)))
                  (cl-loop for child-nav in child-navs
                           do (push child-nav acc))))
-              (t (if-let ((extended-nav (my/index--nav-extend name path)))
+              (t (if-let ((extended-nav (my/index--nav-extend name path project)))
                      (cl-loop for child-nav in extended-nav
                               do (setf (alist-get :names child-nav)
                                        (append names (list name)
                                                (alist-get :names child-nav)))
                               do (push child-nav acc))
                    (push `((:names . (,@names ,name))
-                           (:path . ,path))
+                           (:path . ,path)
+                           (:project . ,project))
                          acc))))
         acc))
     tree
@@ -13406,7 +13402,10 @@ As for Emacs interface, =completing-read= is sufficient, except that I don't wan
 NAV is a structure as defined by `my/index--nav-get'."
   (let* ((collection
           (mapcar (lambda (item)
-                    (cons (car (last (alist-get :names item)))
+                    (cons (let ((name (car (last (alist-get :names item)))))
+                            (if (alist-get :project item)
+                                (format "%s / %s" (alist-get :project item) name)
+                              name))
                           (alist-get :path item)))
                   nav))
          (vertico-sort-function nil))
@@ -13424,39 +13423,24 @@ NAV is a structure as defined by `my/index--nav-get'."
      (string-prefix-p (alist-get :path item) path))
    nav))
 
-(defun my/index-nav (arg &optional func)
+(defun my/index-nav (&optional func)
   "Navigate the filesystem index.
-
-If ARG is nil, navigate all levels sequentially from the top one.
-
-If ARG is '(4), select another directory from the same level.
 
 FUNC is the function to call with the selected path.  It defaults
 to `dired' if used interactively."
-  (interactive (list current-prefix-arg #'dired))
+  (interactive (list #'dired))
   (let* ((nav (my/index--nav-retrive))
-         (current-nav (my/index--nav-find-path
-                       nav (expand-file-name default-directory)))
-         (current-child-navs (alist-get :child-navs current-nav)))
-    (cond ((null arg)
-           (let ((selected (my/index--nav-find-path
-                            nav
-                            (my/index--nav-prompt nav))))
-             (if-let (child-navs (alist-get :child-navs selected))
-                 (funcall func (my/index--nav-prompt child-navs))
-               (funcall func (alist-get :path selected)))))
-          ((and (equal arg '(4)) current-child-navs)
-           (funcall func (my/index--nav-prompt current-child-navs)))
-          ((and (equal arg '(4)) (null current-child-navs))
-           (funcall func (my/index--nav-prompt nav))))))
+         (selected (my/index--nav-find-path
+                    nav
+                    (my/index--nav-prompt nav))))
+    (funcall func (alist-get :path selected))))
 #+end_src
 
 Finally, something that I can bind to a key.
 #+begin_src emacs-lisp
-(defun my/index-nav-with-select-file (arg)
-  (interactive (list current-prefix-arg))
+(defun my/index-nav-with-select-file ()
+  (interactive)
   (my/index-nav
-   arg
    (lambda (dir)
      (let ((default-directory dir))
        (projectile-find-file)))))
