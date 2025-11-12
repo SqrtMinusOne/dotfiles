@@ -406,27 +406,28 @@ With ARG, repeats or can move backward if negative."
                   (or
                    (not disabled-name-index)
                    (string-empty-p (nth disabled-name-index elem))))
-               (add-to-list
-                'dependencies
-                (cons
-                 (substring-no-properties (nth dep-name-index elem))
-                 (when source-index
-                   (let ((source (nth source-index elem)))
-                     (unless (string-empty-p source)
-                       source)))))))))))
+               (let ((source
+                      (or
+                       (when (and source-index
+                                  (not (string-empty-p (nth source-index elem))))
+                         (substring-no-properties
+                          (nth source-index elem)))
+                       "arch")))
+                 (push
+                  (substring-no-properties (nth dep-name-index elem))
+                  (alist-get source dependencies nil nil #'equal)))))))))
     dependencies))
 
 (defun my/format-arch-dependencies (&optional category)
   (let ((data (my/extract-arch-dependencies category)))
     (with-temp-buffer
-      (insert
-       (json-encode
-        (mapcar
-         (lambda (group)
-           (cons (car group)
-                 (mapcar #'car (cdr group))))
-         (seq-group-by #'cdr data))))
-      (json-pretty-print-buffer)
+      (cl-loop for (backend . packages) in data
+               do (insert (format "%s = [\n" backend)
+                          (mapconcat (lambda (package)
+                                       (format "\"%s\"," package))
+                                     packages
+                                     "\n")
+                          "]"))
       (buffer-string))))
 
 (setq my/org-config-files
@@ -435,6 +436,7 @@ With ARG, repeats or can move backward if negative."
        '("~/Emacs.org"
          "~/Desktop.org"
          "~/Console.org"
+         "~/Arch.org"
          "~/Guix.org"
          "~/Mail.org")))
 

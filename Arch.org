@@ -39,6 +39,7 @@ makepkg -si
 #+end_src
 
 Install [[https://github.com/ripytide/metapac][metapac]]:
+
 #+begin_src bash
 paru -Syyu metapac
 #+end_src
@@ -70,8 +71,25 @@ yadm clone git@github.com:SqrtMinusOne/dotfiles.git
 Checkout the changed files.
 
 Clone the org-mode repo:
+
 #+begin_src bash
 git clone git@github.com:SqrtMinusOne/dotfiles.git "/home/pavel/30-39 Life/32 org-mode"
+#+end_src
+
+Install wakatime:
+
+#+begin_src bash
+cd ~/00-Scratch/
+git clone https://github.com/wakatime/wakatime-cli.git
+cd ./wakatime-cli
+go build
+mv wakatime-cli ~/bin
+#+end_src
+
+And create the =~/.wakatime.cfg= file with the following contents:
+#+begin_src
+[settings]
+api_key = <api-key>
 #+end_src
 
 Then run =emacs= and make sure it starts.

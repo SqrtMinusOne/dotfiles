@@ -8,7 +8,7 @@
 ;; Do not ask to confirm evaluations
 (setq org-confirm-babel-evaluate nil)
 
-(defun my/extract-guix-dependencies (&optional category)
+(defun my/extract-arch-dependencies (&optional category)
   (let ((dependencies '()))
     (org-table-map-tables
      (lambda ()
@@ -21,7 +21,7 @@
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p "[G|g]uix.*dep" elem))))
+                        (string-match-p "[A|a]rch.*dep" elem))))
               (category-name-index
                (cl-position
                 nil
@@ -33,7 +33,13 @@
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p ".*[D|d]isabled.*" elem)))))
+                        (string-match-p ".*[D|d]isabled.*" elem))))
+              (source-index
+               (cl-position
+                nil
+                (mapcar #'substring-no-properties (nth 0 table))
+                :test (lambda (_ elem)
+                        (string-match-p ".*[S|s]ource.*" elem)))))
          (when dep-name-index
            (dolist (elem (cdr table))
              (when
@@ -53,15 +59,28 @@
                   (or
                    (not disabled-name-index)
                    (string-empty-p (nth disabled-name-index elem))))
-               (add-to-list
-                'dependencies
-                (substring-no-properties (nth dep-name-index elem)))))))))
+               (let ((source
+                      (or
+                       (when (and source-index
+                                  (not (string-empty-p (nth source-index elem))))
+                         (substring-no-properties
+                          (nth source-index elem)))
+                       "arch")))
+                 (push
+                  (substring-no-properties (nth dep-name-index elem))
+                  (alist-get source dependencies nil nil #'equal)))))))))
     dependencies))
-(defun my/format-guix-dependencies (&optional category)
-  (mapconcat
-   (lambda (e) (concat "\"" e "\""))
-   (my/extract-guix-dependencies category)
-   "\n"))
+(defun my/format-arch-dependencies (&optional category)
+  (let ((data (my/extract-arch-dependencies category)))
+    (with-temp-buffer
+      (cl-loop for (backend . packages) in data
+               do (insert (format "%s = [\n" backend)
+                          (mapconcat (lambda (package)
+                                       (format "\"%s\"," package))
+                                     packages
+                                     "\n")
+                          "]"))
+      (buffer-string))))
 
 ;; A few dummy modes to avoid being prompted for comment systax
 (define-derived-mode fish-mode prog-mode "Fish"

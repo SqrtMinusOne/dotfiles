@@ -242,6 +242,7 @@ So, first, specify how the modules are stored:
 #+end_src
 
 Then, scan =Emacs.org= for headings with the =MODULE_NAME= property and set the tangle property:
+
 #+begin_src emacs-lisp
 (defun my/modules--refresh-and-list ()
   (let (modules-list
@@ -1541,7 +1542,7 @@ A few CLI alternatives:
     "m" 'magit
     "M" 'magit-file-dispatch)
   :config
-  (require 'forge)
+  ;; (require 'forge)
   (setq magit-blame-styles
         '((headings
            (heading-format . "%-20a %C %s\n"))
@@ -2099,6 +2100,7 @@ Before I figure out how to package this for +Guix+ Arch:
   (advice-add 'wakatime-init :after
               (lambda ()
                 (setq wakatime-cli-path (or
+                                         (executable-find "wakatime")
                                          (executable-find "wakatime-cli")
                                          (expand-file-name "~/bin/wakatime-cli")))))
   (when (file-exists-p "~/.wakatime.cfg")
@@ -2276,8 +2278,8 @@ My colorschemes of choice.
 #+end_src
 
 #+begin_src emacs-lisp
-(use-package modus-themes
-  :straight t)
+;; (use-package modus-themes
+;;   :straight (:build (:not native-compile)))
 #+end_src
 
 Let's see...
@@ -2364,8 +2366,8 @@ And the same for =modus-themes=. =my/modus-color= has to accept the same argumen
 #+begin_src emacs-lisp
 (defun my/modus-get-base (color)
   (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
-        (base-start (cadr (assoc 'bg-main (modus-themes--current-theme-palette))))
-        (base-end (cadr (assoc 'fg-dim (modus-themes--current-theme-palette)))))
+        (base-start (cadr (assoc 'bg-main (modus-themes-get-theme-palette))))
+        (base-end (cadr (assoc 'fg-dim (modus-themes-get-theme-palette)))))
     (nth base-value (ct-gradient 9 base-start base-end t))))
 
 (defun my/prot-color (color palette)
@@ -2405,10 +2407,10 @@ And the same for =modus-themes=. =my/modus-color= has to accept the same argumen
      (t (cadr (assoc color palette))))))
 
 (defun my/modus-color (color)
-  (my/prot-color color (modus-themes--current-theme-palette)))
+  (my/prot-color color (modus-themes-get-theme-palette)))
 
 (defun my/ef-color (color)
-  (my/prot-color color (ef-themes--current-theme-palette)))
+  (my/prot-color color (modus-themes-get-theme-palette)))
 #+end_src
 
 Test the three functions.
@@ -2493,9 +2495,13 @@ This macro puts lambdas to =my/my-theme-update-colors-hook= that updates faces i
                                       collect (eval value)))))))
   (enable-theme 'my-theme-1))
 
+(defun my/advice-my-theme ()
+  (advice-add 'load-theme :after #'my/update-my-theme))
+
 (unless my/is-termux
-  (advice-add 'load-theme :after #'my/update-my-theme)
-  (add-hook 'emacs-startup-hook #'my/update-my-theme))
+  (add-hook 'emacs-startup-hook #'my/update-my-theme)
+ ;; (add-hook 'emacs-startup-hook #'my/advice-my-theme)
+)
 #+end_src
 
 Defining colors for =tab-bar.el=:
@@ -2522,6 +2528,7 @@ The built-in =load-theme= does not deactivate the previous theme, so here's a fu
                        (eq enabled-theme theme)))
            do (disable-theme enabled-theme))
   (load-theme theme t)
+  (my/update-my-theme)
   (when current-prefix-arg
     (my/regenerate-desktop)))
 #+end_src
@@ -3280,6 +3287,7 @@ I'm not actually using that, but its query editor is pretty useful to debug =tre
 #+begin_src emacs-lisp
 (use-package combobulate
   :straight (:host github :repo "mickeynp/combobulate")
+  :disabled
   :commands (combobulate))
 #+end_src
 *** DAP
@@ -8429,7 +8437,8 @@ Display icons for files.
                                     (string-match-p "/gnu/store" default-directory))
                           (nerd-icons-dired-mode))))
   :config
-  (advice-add #'dired-create-empty-file :around #'nerd-icons-dired--refresh-advice))
+  ;; (advice-add #'dired-create-empty-file :around #'nerd-icons-dired--refresh-advice)
+  )
 #+end_src
 
 Provides stuff like =dired-open-xdg=
@@ -9388,6 +9397,7 @@ Finally, a function that inserts the overlay in buffer if it's available and cal
 #+begin_src emacs-lisp
 (use-package eshell-atuin
   :straight (:host github :repo "SqrtMinusOne/eshell-atuin")
+  :when (executable-find "atuin")
   :after eshell
   :config
   (eshell-atuin-mode)

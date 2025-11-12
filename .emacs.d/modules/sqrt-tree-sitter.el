@@ -92,6 +92,7 @@
 
 (use-package combobulate
   :straight (:host github :repo "mickeynp/combobulate")
+  :disabled
   :commands (combobulate))
 
 (provide 'sqrt-tree-sitter)
