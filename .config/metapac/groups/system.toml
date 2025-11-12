@@ -24,6 +24,7 @@ arch = [
 "openssh",
 "metapac",
 "nano",
+"inetutils",
 "linux-firmware",
 "linux",
 "lightdm-gtk-greeter",

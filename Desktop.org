@@ -30,8 +30,8 @@ Removed features:
 I used to define color codes here (see [[https://github.com/SqrtMinusOne/dotfiles/commit/2dbf1cdd008ec0061456782cca3ebd76e603b31e][previous version of the file]]), now I just get colors from the current Emacs theme.
 
 To use them, let's define a noweb block:
-#+NAME: get-color
 
+#+NAME: get-color
 #+begin_src emacs-lisp :var name="black" quote=0
 (let ((color (or (my/color-value name))))
   (if (> quote 0)
@@ -1966,17 +1966,19 @@ As we want to interweave polybar modules with these glyphs in the right order an
 Also excluding some modules from certain monitors, which for now is about excluding =battery= from the monitors of my desktop PC:
 
 #+NAME: polybar_modules_exclude
-| Monitor  | Exclude |
-|----------+---------|
-| DVI-D-0  | battery |
-| HDMI-A-0 | battery |
-| HDMI-0   | battery |
-| DP-1     | battery |
-| eDP      | nvidia  |
-| eDP-1    | nvidia  |
-| DVI-D-0  | nvidia  |
-| HDMI-A-0 | nvidia  |
-| HDMI-1   | nvidia  |
+| Monitor   | Exclude |
+|-----------+---------|
+| DVI-D-0   | battery |
+| HDMI-A-0  | battery |
+| HDMI-0    | battery |
+| DP-1      | battery |
+| Virtual-1 | battery |
+| eDP       | nvidia  |
+| eDP-1     | nvidia  |
+| DVI-D-0   | nvidia  |
+| HDMI-A-0  | nvidia  |
+| HDMI-1    | nvidia  |
+| Virtual-1 | nvidia |
 
 Another thing we need to do is to set the color of modules in accordance with the =polybar_modules= table. The background can be determined from the =Color= column with the following code block:
 #+NAME: get-polybar-bg
@@ -2242,6 +2244,7 @@ declare -A FONT_SIZES=(
     ["HDMI-1"]="13"
     ["HDMI-0"]="13"
     ["DP-1"]="13"
+    ["Virtual-1"]="13"
 )
 declare -A EMOJI_SCALE=(
     ["eDP"]="9"
@@ -2251,6 +2254,7 @@ declare -A EMOJI_SCALE=(
     ["HDMI-1"]="10"
     ["HDMI-0"]="10"
     ["DP-1"]="10"
+    ["Virtual-1"]="13"
 )
 declare -A BAR_HEIGHT=(
     ["eDP"]="29"
@@ -2260,6 +2264,7 @@ declare -A BAR_HEIGHT=(
     ["HDMI-1"]="29"
     ["HDMI-0"]="29"
     ["DP-1"]="29"
+    ["Virtual-1"]="29"
 )
 declare -A BLOCKS=(
     ["eDP"]="<<polybar-generate-modules(monitor="eDP")>>"
@@ -2269,6 +2274,7 @@ declare -A BLOCKS=(
     ["HDMI-1"]="<<polybar-generate-modules(monitor="HDMI-1")>>"
     ["HDMI-0"]="<<polybar-generate-modules(monitor="HDMI-0")>>"
     ["DP-1"]="<<polybar-generate-modules(monitor="DP-1")>>"
+    ["Virtual-1"]="<<polybar-generate-modules(monitor="Virtual-1")>>"
 )
 
 declare -A TEMP_HWMON_PATHS=(
@@ -4372,6 +4378,10 @@ flatpak install -y --user flathub chat.rocket.RocketChat
 :END:
 [[https://www.gnu.org/software/shepherd/manual/html_node/index.html][GNU Shepherd]] is a service management system for GNU Guix. I'll probably migrate to systemd since I'm not on Guix anymore.
 
+| Arch dependency | Disabled |
+|-----------------+----------|
+| shepherd        | t        |
+
 ** Music
 | Category | Arch dependency |
 |----------+-----------------|
@@ -4415,6 +4425,10 @@ MPD watcher
 #+end_src
 ** GNU Mcron
 [[https://www.gnu.org/software/mcron/][GNU Mcron]] is a replacement for cron, written in Scheme.
+
+| Arch dependency | Disabled |
+|-----------------+----------|
+| mcron           | t        |
 
 #+begin_src scheme
 (define mcron
@@ -4638,7 +4652,7 @@ Run services
                   ;; opensnitch-ui
                   ))
 #+end_src
-* Acch settings
+* Arch settings
 Other desktop programs I use are listed below.
 
 | Category     | Arch dependency        | Description                               |
