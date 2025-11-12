@@ -7,7 +7,7 @@
    "ffmpeg"
    "krita"
    "gimp"
-   "libreoffice"
+   "libreoffice-fresh"
    "zathura-djvu"
    "zathura-pdf-mupdf"
    "zathura-ps"

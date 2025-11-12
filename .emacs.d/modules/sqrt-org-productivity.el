@@ -892,21 +892,6 @@ KEYS is a list of cons cells like (<label> . <time>)."
                      (message "Got error: %S" error-thrown)))))
   my/weather-value)
 
-(defun my/get-mood ()
-  (let* ((crm-separator " ")
-         (crm-local-completion-map
-          (let ((map (make-sparse-keymap)))
-            (set-keymap-parent map crm-local-completion-map)
-            (define-key map " " 'self-insert-command)
-            map))
-         (vertico-sort-function nil))
-    (mapconcat
-     #'identity
-     (completing-read-multiple
-      "How do you feel: "
-      my/mood-list)
-     " ")))
-
 (defun my/set-journal-header ()
   (org-set-property "Emacs" emacs-version)
   (org-set-property "Hostname" (my/system-name))
@@ -932,9 +917,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
           (when title
             (setq string (concat string title)))
           (when (> (length string) 0)
-            (org-set-property "EMMS_Track" string))))))
-  (when-let (mood (my/get-mood))
-    (org-set-property "Mood" mood)))
+            (org-set-property "EMMS_Track" string)))))))
 
 (add-hook 'org-journal-after-entry-create-hook
           #'my/set-journal-header)

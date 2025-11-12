@@ -685,8 +685,8 @@ So here is my implementation of that. It always does =windmove-do-select-window=
 *** Update the monitor list
 
 #+begin_src emacs-lisp
-(defun my/exwm-refresh-monitors ()
-  (interactive)
+(defun my/exwm-refresh-monitors (&optional refresh)
+  (interactive (list t))
   (setq my/exwm-monitor-list (my/exwm-xrandr-monitor-list))
   (cl-loop for i from 0 to (1- exwm-workspace-number)
            for monitor = (plist-get exwm-randr-workspace-monitor-plist
@@ -695,7 +695,8 @@ So here is my implementation of that. It always does =windmove-do-select-window=
            do
            (setf (plist-get exwm-randr-workspace-monitor-plist i)
                  (car my/exwm-monitor-list)))
-  (exwm-randr-refresh))
+  (when refresh
+    (exwm-randr-refresh)))
 #+end_src
 ** Completions
 Setting up some completion interfaces that fit particularly well to use with EXWM. While rofi also works, I want to use Emacs functionality wherever possible to have one completion interface everywhere.
