@@ -129,13 +129,13 @@ Xft.dpi: <<get-dpi()>>
 ** Themes
 A few programs I use to customize the apperance are listed below.
 
-| Guix dependency       | Description             |
-|-----------------------+-------------------------|
-| matcha-theme          | My preferred GTK theme  |
-| papirus-icon-theme    | My preferred Icon theme |
-| gnome-themes-standard |                         |
-| xsettingsd            | X11 settings daemon     |
-| gnome-themes-extra    |                         |
+| Arch dependency    | Description             |
+|--------------------+-------------------------|
+| gtk-engine-murrine | My preferred GTK theme  |
+| gtk-engines        |                         |
+| papirus-icon-theme | My preferred Icon theme |
+| xsettingsd         | X11 settings daemon     |
+| gnome-themes-extra |                         |
 
 [[https://github.com/derat/xsettingsd][xsettingsd]] is a lightweight daemon which configures X11 applications. It is launched with shepherd in the [[*Services][Services]] section.
 
@@ -182,11 +182,11 @@ x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop;
 application/pdf=org.pwmt.zathura.desktop
 #+end_src
 ** Device-specific settings
-| Guix dependency | Description                                |
+| Arch dependency | Description                                |
 |-----------------+--------------------------------------------|
-| xrandr          | X11 CLI to RandR                           |
-| xgamma          | A tool to alter monitor's gamma correction |
-| xinput          | Configure input devices                    |
+| xorg-xrandr     | X11 CLI to RandR                           |
+| xorg-xgamma     | A tool to alter monitor's gamma correction |
+| xorg-xinput     | Configure input devices                    |
 
 Set screen layout & other params depending on hostname
 #+begin_src sh :tangle ~/bin/scripts/screen-layout
@@ -214,9 +214,9 @@ References:
 *** Xsession
 First things first, Emacs has to be launched as a window manager. On a more conventional system I'd create a .desktop file in some system folder that can be seen by a login manager, but in the case of Guix it's a bit more complicated, because all such folders are not meant to be changed manually.
 
-| Category     | Guix dependency |
+| Category     | Arch dependency |
 |--------------+-----------------|
-| desktop-misc | xinit           |
+| desktop-misc | xorg-xinit      |
 | desktop-misc | xss-lock        |
 
 However, GDM, the login manager that seems to be the default on Guix, launches =~/.xsession= on the startup if it's present, which is just fine for my purposes.
@@ -778,9 +778,9 @@ By default, it also shows paths from =/gnu/store=, so there is a custom formatte
 
 Also, by default it tries to launch stuff with =gtk-launch=, which is in the =gtk+= package.
 
-| Category     | Guix dependency |
-|--------------+-----------------|
-| desktop-misc | gtk+:bin        |
+| Category     | Arch dependency | Disabled |
+|--------------+-----------------+----------|
+| desktop-misc | gtk+:bin        | t        |
 *** password-store-completion
 [[https://github.com/SqrtMinusOne/password-store-completion][password-store-completion]] is another package of mine, inspired by [[https://github.com/carnager/rofi-pass][rofi-pass]].
 
@@ -1262,12 +1262,10 @@ And the EXWM config itself.
 :header-args+: :tangle ./.config/i3/config
 :END:
 
-| Guix dependency | Disabled |
+| Arch dependency | Disabled |
 |-----------------+----------|
-| i3-gaps         |          |
-| i3lock          | true     |
-
-=i3lock= is disabled because the global one has to be used.
+| i3-wm           |          |
+| i3lock          |          |
 
 [[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], +but i3 seems to fit my workflow best+ and decided to switch to EXWM. This section is kept for a few cases when I need to be extra sure that my WM doesn't fail.
 
@@ -1306,9 +1304,9 @@ bindsym $mod+Shift+r restart
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
 #+end_src
 ** Managing windows
-| Guix dependency     |
-|---------------------|
-| rust-i3-switch-tabs |
+| Guix dependency | Disabled |
+|-----------------+----------|
+| i3-switch-tabs  | t        |
 
 Some keybindings for managing windows.
 
@@ -1552,9 +1550,9 @@ bindsym $mod+g mode "inner gaps"
 bindsym $mod+Shift+g mode "outer gaps"
 #+end_src
 ** Move & resize windows
-| Guix dependency             |
-|-----------------------------|
-| python-i3-balance-workspace |
+| Arch dependency      | Disabled |
+|----------------------+----------|
+| i3-balance-workspace | t        |
 
 A more or less standard set of keybindings to move & resize floating windows. Just be careful to always make a way to return from these new modes, otherwise you'd end up in a rather precarious situation.
 
@@ -1825,9 +1823,10 @@ exec "xmodmap ~/.Xmodmap"
 :header-args:conf-windows: :tangle ./.config/polybar/config :comments link
 :END:
 
-| Category        | Guix dependency | Description |
-|-----------------+-----------------+-------------|
-| desktop-polybar | polybar         | statusbar   |
+| Category        | Arch dependency  | Description |
+|-----------------+------------------+-------------|
+| desktop-polybar | polybar          | statusbar   |
+| desktop-polybar | noto-fonts-emoji |             |
 
 [[https://github.com/polybar/polybar][Polybar]] is a nice-looking, WM-agnostic statusbar program.
 
@@ -2608,11 +2607,11 @@ BEGIN{old_received='"$init_received"';old_sent='"$init_sent"'}
 #+end_src
 
 *** ipstack-vpn
-| Category        | Guix dependency | Description             |
-|-----------------+-----------------+-------------------------|
-| desktop-polybar | bind:utils      | Provides dig            |
-| desktop-polybar | curl            |                         |
-| desktop-polybar | jq              | util to work with JSONs |
+| Category        | Arch dependency | Description                |
+|-----------------+-----------------+----------------------------|
+| desktop-polybar | bind            | Provides dig               |
+| desktop-polybar | curl            |                            |
+| desktop-polybar | jq              | An util to work with JSONs |
 
 A module to get a country of the current IP and openvpn status. Uses [[https://ipstack.com/][ipstack]] API.
 
@@ -2748,7 +2747,7 @@ format-foreground = ${colors.foreground}
 interval = 1200
 #+end_src
 *** sun
-| Category        | Guix dependency |
+| Category        | Arch dependency |
 |-----------------+-----------------|
 | desktop-polybar | sunwait         |
 
@@ -2794,7 +2793,7 @@ interval = 60
 *** aw-afk
 Prints out a current uptime and non-AFK time from [[https://github.com/ActivityWatch][ActivityWatch]] server
 
-| Category        | Guix dependency |
+| Category        | Arch dependency |
 |-----------------+-----------------|
 | desktop-polybar | dateutils       |
 
@@ -2976,7 +2975,7 @@ label-urgent-padding = 1
 #+end_src
 
 * Rofi
-| Category     | Guix dependency |
+| Category     | Arch dependency |
 |--------------+-----------------|
 | desktop-rofi | rofi            |
 
@@ -3147,14 +3146,14 @@ if [[ ! -z $SELECTED ]]; then
 fi
 #+end_src
 *** Emojis
-| Category     | Guix dependency |
+| Category     | Arch dependency |
 |--------------+-----------------|
-| desktop-rofi | python-rofimoji |
+| desktop-rofi | rofimoji  |
 *** pass
-| Category     | Guix dependency |
+| Category     | Arch dependency |
 |--------------+-----------------|
 | desktop-rofi | rofi-pass       |
-| desktop-rofi | xset            |
+| desktop-rofi | xorg-xset       |
 
 A nice [[https://github.com/carnager/rofi-pass][pass frontend for Rofi]], which is even packaged for Guix.
 
@@ -3165,7 +3164,7 @@ default_autotype='username :tab pass'
 clip=both
 #+end_src
 * Flameshot
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | flameshot       |
 
@@ -3217,7 +3216,7 @@ TYPE_TOGGLE_PANEL=Space
 TYPE_UNDO=Ctrl+Z
 #+end_src
 * dunst
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | dunst           |
 | libnotify       |
@@ -3618,9 +3617,9 @@ Which I then can use to create the URL.
 : https://color.firefox.com/?theme=XQAAAAJFAQAAAAAAAABAqYhm849SCia3ftKEGccwS-xMDPsqcRvjh8JMhYPDf9_kNjVRdqrKsHr5AamG1FlOJ8DH_BqRXLhVF02YoR2FXVUIEYoXiV-3q19EVo-NqESyeWWEIwj-0QxR3X-JxWYJLJYc6tAeNGGDXNNrM0pNWpwesvR43yXL_fJfr9Q919y2QwP0cK7ZXO1lRou4HkpwWW4LWdO3V6ox_BN9yA
 
 * keynav
-| Guix dependency |
-|-----------------|
-| keynav          |
+| Arch dependency | Disabled |
+|-----------------+----------|
+| keynav          | t        |
 
 | Type    | Note                           |
 |---------+--------------------------------|
@@ -3697,7 +3696,7 @@ fade-exclude = [
 :header-args+: :tangle ./.config/picom.conf
 :END:
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | picom           |
 
@@ -3792,7 +3791,7 @@ wintypes:
 };
 #+end_src
 * Zathura
-| Category | Guix dependency   |
+| Category | Arch dependency   |
 |----------+-------------------|
 | office   | zathura           |
 | office   | zathura-ps        |
@@ -4208,126 +4207,127 @@ c.tabs.favicons.scale = 1
 This section generates manifests for various desktop software that I'm using.
 
 ** Browsers
-| Category | Guix dependency    |
-|----------+--------------------|
-| browsers | ungoogled-chromium |
-| browsers | firefox            |
+| Category | Arch dependency        |
+|----------+------------------------|
+| browsers | ungoogled-chromium-bin |
+| browsers | firefox                |
 ** Office & Multimedia
-| Category | Guix dependency |
+| Category | Arch dependency |
 |----------+-----------------|
-| office   | libreoffice     |
+| office   | libreoffice-fresh |
 | office   | gimp            |
 | office   | krita           |
 | office   | ffmpeg          |
 | office   | kdenlive        |
 | office   | inkscape        |
 | office   | okular          |
-| office   | obs             |
+| office   | obs-studio      |
 ** LaTeX
-| Category | Guix dependency               |
-|----------+-------------------------------|
-| latex    | texlive                       |
-| latex    | texlab-bin                    |
-| latex    | biber                         |
-| latex    | python-pygments               |
-| latex    | font-microsoft-web-core-fonts |
+| Category | Arch dependency          | Disabled |
+|----------+--------------------------+----------|
+| latex    | texlive-basic            |          |
+| latex    | texlive-bibtexextra      |          |
+| latex    | texlive-binextra         |          |
+| latex    | texlive-fontsextra       | t        |
+| latex    | texlive-fontutils        |          |
+| latex    | texlive-formatsextra     |          |
+| latex    | texlive-games            |          |
+| latex    | texlive-humanities       |          |
+| latex    | texlive-latex            |          |
+| latex    | texlive-latexextra       |          |
+| latex    | texlive-latexrecommended |          |
+| latex    | texlive-mathscience      |          |
+| latex    | texlive-metapost         |          |
+| latex    | texlive-pictures         |          |
+| latex    | texlive-plaingeneric     |          |
+| latex    | texlive-pstricks         |          |
+| latex    | texlive-publishers       |          |
+| latex    | texlive-xetex            |          |
+| latex    | texlab                   |          |
+| latex    | biber                    |          |
+| latex    | python-pygments          |          |
+| latex    | ttf-ms-fonts             |          |
 ** Dev
-| Category | Guix dependency   | Disabled |
+| Category | Arch dependency   | Disabled |
 |----------+-------------------+----------|
 | dev      | micromamba-bin    |          |
-| dev      | pandoc            |          |
-| dev      | docker-compose    |          |
+| dev      | pandoc-cli        |          |
+| dev      | docker            |          |
 | dev      | postgresql        |          |
 | dev      | virt-manager      |          |
-| dev      | dnsmasq           |          |
+| dev      | libvirt           |          |
 | dev      | git-filter-repo   |          |
-| dev      | node              |          |
-| dev      | openjdk:jdk       |          |
+| dev      | nodejs            |          |
+| dev      | jdk21-openjdk     |          |
 | dev      | go                |          |
 | dev      | gopls             |          |
-| dev      | pkg-config        |          |
-| dev      | gcc-toolchain     |          |
+| dev      | pkgconf           |          |
+| dev      | gcc               |          |
+| dev      | cmake             |          |
 | dev      | lua               |          |
 | dev      | libfaketime       |          |
-| dev      | hugo-extended     |          |
+| dev      | hugo              |          |
 | dev      | make              |          |
-| dev      | sbcl              | t        |
 | dev      | git-lfs           |          |
-| dev      | mysql             | t        |
 | dev      | gource            |          |
 | dev      | php               |          |
 | dev      | python            |          |
+| dev      | python-pip        |          |
 | dev      | python-virtualenv |          |
-| dev      | leiningen         |          |
+| dev      | python-build   |          |
 | dev      | socat             |          |
-| dev      | wireshark         |          |
-| dev      | python-chess      |          |
-| dev      | python-cairosvg   |          |
+| dev      | wireshark-qt      |          |
+| dev      | git               |          |
+| dev      | rust              |          |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
-(my/format-guix-dependencies category)
+(my/format-arch-dependencies category)
 #+end_src
 
 Dev
-#+begin_src scheme :tangle .config/guix/manifests/dev.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("dev")>>))
+#+begin_src scheme :tangle .config/metapac/groups/dev.toml :noweb yes
+<<packages("dev")>>
 #+end_src
 
 Browsers
-#+begin_src scheme :tangle .config/guix/manifests/browsers.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("browsers")>>))
+#+begin_src scheme :tangle .config/metapac/groups/browsers.toml :noweb yes
+<<packages("browsers")>>
 #+end_src
 
 Music
-#+begin_src scheme :tangle .config/guix/manifests/music.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("music")>>))
+#+begin_src scheme :tangle .config/metapac/groups/music.toml :noweb yes
+<<packages("music")>>
 #+end_src
 
 Office
-#+begin_src scheme :tangle .config/guix/manifests/office.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("office")>>))
+#+begin_src scheme :tangle .config/metapac/groups/office.toml :noweb yes
+<<packages("office")>>
 #+end_src
 
 LaTeX
-#+begin_src scheme :tangle .config/guix/manifests/latex.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("latex")>>))
+#+begin_src scheme :tangle .config/metapac/groups/latex.toml :noweb yes
+<<packages("latex")>>
 #+end_src
 
 Desktop Misc
-#+begin_src scheme :tangle .config/guix/manifests/desktop-misc.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("desktop-misc")>>))
+#+begin_src scheme :tangle .config/metapac/groups/desktop-misc.toml :noweb yes
+<<packages("desktop-misc")>>
 #+end_src
 
 Desktop polybar
-#+begin_src scheme :tangle .config/guix/manifests/desktop-polybar.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("desktop-polybar")>>))
+#+begin_src scheme :tangle .config/metapac/groups/desktop-polybar.toml :noweb yes
+<<packages("desktop-polybar")>>
 #+end_src
 
 Desktop rofi
-#+begin_src scheme :tangle .config/guix/manifests/desktop-rofi.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("desktop-rofi")>>))
+#+begin_src scheme :tangle .config/metapac/groups/desktop-rofi.toml :noweb yes
+<<packages("desktop-rofi")>>
 #+end_src
 ** Flatpak
 A lot of proprietary desktop applications can be installed most easily with flatpak & flathub.
 
-| Guix dependency    |
+| Arch dependency    |
 |--------------------|
 | flatpak            |
 | xdg-desktop-portal |
@@ -4348,8 +4348,6 @@ Packages to install:
 | Flatpak dependency           | Channel |
 |------------------------------+---------|
 | com.github.wwmm.pulseeffects | flathub |
-| com.discordapp.Discord       | flathub |
-| com.jetbrains.DataGrip       | flathub |
 | chat.rocket.RocketChat       | flathub |
 
 #+begin_src emacs-lisp :var table=flatpak-deps :wrap example
@@ -4362,50 +4360,21 @@ Packages to install:
 #+RESULTS:
 #+begin_example
 flatpak install -y --user flathub com.github.wwmm.pulseeffects
-flatpak install -y --user flathub com.discordapp.Discord
-flatpak install -y --user flathub us.zoom.Zoom
-flatpak install -y --user flathub com.slack.Slack
+flatpak install -y --user flathub chat.rocket.RocketChat
 #+end_example
-** Nix
-| Type | Description        |
-|------+--------------------|
-| TODO | Make nix manifest? |
-
-I probably should've used nix, as almost every program I packaged so far exists in the Nix repo.
-
-But it's easy enough to use Nix on Guix.
-#+begin_src conf :tangle ~/.nix-channels
-https://nixos.org/channels/nixpkgs-unstable nixpkgs
-#+end_src
-
-Don't forget to run the following after the first installation:
-#+begin_src sh
-nix-channel --update
-#+end_src
-
-Installing packages:
-#+begin_src
-nix-env -i slack
-#+end_src
 * Services
 :PROPERTIES:
 :header-args+: :tangle ~/.config/shepherd/init.scm
 :END:
-[[https://www.gnu.org/software/shepherd/manual/html_node/index.html][GNU Shepherd]] is a service management system for GNU Guix.
-
-I previously used supervisor, but shepherd also seems pretty capable.
-
-| Guix dependency |
-|-----------------|
-| shepherd        |
+[[https://www.gnu.org/software/shepherd/manual/html_node/index.html][GNU Shepherd]] is a service management system for GNU Guix. I'll probably migrate to systemd since I'm not on Guix anymore.
 
 ** Music
-| Category | Guix dependency |
+| Category | Arch dependency |
 |----------+-----------------|
 | music    | mpd             |
 | music    | ncmpcpp         |
 | music    | picard          |
-| music    | mpd-mpc         |
+| music    | mpc             |
 | music    | shntool         |
 | music    | cuetools        |
 | music    | flac            |
@@ -4454,7 +4423,7 @@ MPD watcher
 ** ActivityWatch
 [[https://activitywatch.net/][ActivityWatch]] is a FOSS time tracker. It tracks screen and application usage and has integrations with browsers, Emacs, etc.
 
-| Guix dependency   |
+| Arch dependency   |
 |-------------------|
 | activitywatch-bin |
 
@@ -4543,7 +4512,7 @@ Launch an authentication agent. Necessary for stuff like =pkexec=. I suspect I'm
   (make <service>
     #:provides '(polkit-gnome)
     #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/.guix-extra-profiles/desktop-misc/desktop-misc/libexec/polkit-gnome-authentication-agent-1"))
+    #:start (make-forkexec-constructor '("/lib/polkit-gnome/polkit-gnome-authentication-agent-1"))
     #:stop (make-kill-destructor)))
 #+end_src
 ** Xmodmap
@@ -4585,11 +4554,6 @@ Run my [[file:Guix.org::*OpenVPN][OpenVPN setup]]. Not lauching this automatiall
 #+end_src
 ** opensnitch
 [[https://github.com/evilsocket/opensnitch][opensnitch]] is a linux firewall.
-
-Install it via nix:
-#+begin_src bash :tangle no
-nix-env -I opensnitchd opensnitch-ui
-#+end_src
 
 =sudoers= has to be modified this to work.
 #+begin_src scheme
@@ -4670,45 +4634,40 @@ Run services
                   ;; opensnitch-ui
                   ))
 #+end_src
-* Guix settings
+* Acch settings
 Other desktop programs I use are listed below.
 
-| Category     | Guix dependency        | Description                               |
+| Category     | Arch dependency        | Description                               |
 |--------------+------------------------+-------------------------------------------|
-| desktop-misc | xprop                  | Tool to display properties of X windows   |
+| desktop-misc | xorg-xprop             | Tool to display properties of X windows   |
 | desktop-misc | arandr                 | GUI to xrandr                             |
 | desktop-misc | light                  | Control screen brightness                 |
-| desktop-misc | ponymix                | Control PulseAudio CLI                    |
 | desktop-misc | pavucontrol            | Control PulseAudio GUI                    |
 | desktop-misc | network-manager-applet | Applet to manage network connections      |
-| desktop-misc | xmodmap                | Program to modify keybindings on X server |
+| desktop-misc | xorg-xmodmap           | Program to modify keybindings on X server |
 | desktop-misc | fontconfig             |                                           |
 | desktop-misc | polkit-gnome           | Polkit authentication agent               |
 | desktop-misc | feh                    | Image viewer. Used to set background      |
-| desktop-misc | geeqie                 | Image viewer                              |
 | desktop-misc | copyq                  | Clipboard manager                         |
 | desktop-misc | thunar                 | My preferred GUI file manager             |
 | desktop-misc | xdg-utils              | gives xdg-open and stuff                  |
 | desktop-misc | gnome-font-viewer      | view fonts                                |
 | desktop-misc | qbittorrent            | torrent client                            |
-| desktop-misc | anydesk                | Remote desktop software                   |
+| desktop-misc | anydesk-bin            | Remote desktop software                   |
 | desktop-misc | gnome-disk-utility     | Manage disks                              |
 | desktop-misc | gparted                | Manage partitions                         |
-| desktop-misc | xev                    | Test input                                |
+| desktop-misc | xorg-xev               | Test input                                |
 | desktop-misc | bluez                  | Provides bluetoothctl                     |
 | desktop-misc | telegram-desktop       |                                           |
-| desktop-misc | font-google-noto-emoji |                                           |
+| desktop-misc | noto-fonts-emoji       |                                           |
 | desktop-misc | remmina                |                                           |
 | desktop-misc | android-file-transfer  |                                           |
-| desktop-misc | mcron                  |                                           |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
-(my/format-guix-dependencies)
+(my/format-arch-dependencies)
 #+end_src
 
-#+begin_src scheme :tangle .config/guix/manifests/desktop.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages()>>))
+#+begin_src scheme :tangle .config/metapac/groups/desktop.toml :noweb yes
+<<packages()>>
 #+end_src

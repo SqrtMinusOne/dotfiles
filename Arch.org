@@ -1,0 +1,184 @@
+#+PROPERTY: header-args :mkdirp yes
+#+TITLE: Arch Linux
+
+I've decided to switch to [[https://archlinux.org/][Arch Linux]] and configure it declaratively with [[https://github.com/ripytide/metapac][metapac]].
+
+* System installation
+** Installation
+On installation, see https://wiki.archlinux.org/title/Installation_guide and/or use =archinstall=.
+
+** After installation
+Update everything:
+#+begin_src bash
+sudo pacman -Syyu
+#+end_src
+
+Install git, python and yadm:
+#+begin_src bash
+sudo pacman -Syu python git pacman-contrib yadm
+#+end_src
+
+Select top-6 fastest mirrors to work with. Generate a mirrorlist file using this service: https://archlinux.org/mirrorlist/, then use =rankmirrors= from =pacman-contrib= (see [[https://wiki.archlinux.org/title/Mirrors][Mirrors]] on Arch Wiki).
+#+begin_src bash
+sudo -i
+cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+rankmirrors -n 6 /etc/pacman.d/mirrorlist.backup > /etc/pacman.d/mirrorlist
+#+end_src
+
+If there isn't enough RAM (e.g. running in a VM), turn off mounting =/tmp= as [[https://wiki.archlinux.org/title/Tmpfs#Disable_automatic_mount][tmpfs]]:
+#+begin_src basd
+sudo systemctl mask tmp.mount
+#+end_src
+
+Install [[https://github.com/Morganamilo/paru][paru]]:
+#+begin_src bash
+sudo pacman -S --needed base-devel
+git clone https://aur.archlinux.org/paru.git
+cd paru
+makepkg -si
+#+end_src
+
+Install [[https://github.com/ripytide/metapac][metapac]]:
+#+begin_src bash
+paru -Syyu metapac
+#+end_src
+
+Then install Arch packages with =metapac=:
+#+begin_src bash
+mkdir ~/00-Scratch/
+git clone https://github.com/SqrtMinusOne/dotfiles.git ~/00-Scratch/dotfiles/
+cp -r ~/00-Scratch/dotfiles/.config/metapac ~/.config/
+metapac s
+#+end_src
+
+Then, install the ssh and gpg keys (put them into the =~/.ssh= folder). To export gpg keys:
+#+begin_src bash
+gpg --output private.pgp --armor --export-secret-keys <keyname>
+#+end_src
+
+And to import:
+#+begin_src bash
+gpg --import private.pgp
+gpg --edit-key <keyname>
+trust
+#+end_src
+
+Then, clone the dotfiles repo with =yadm=:
+#+begin_src bash
+yadm clone git@github.com:SqrtMinusOne/dotfiles.git
+#+end_src
+Checkout the changed files.
+
+Clone the org-mode repo:
+#+begin_src bash
+git clone git@github.com:SqrtMinusOne/dotfiles.git "/home/pavel/30-39 Life/32 org-mode"
+#+end_src
+
+Then run =emacs= and make sure it starts.
+
+* Metapac configuration
+[[https://github.com/ripytide/metapac][metapac]] is a declarative wrapper around different package managers, including [[https://wiki.archlinux.org/title/Pacman][pacman]] and [[https://github.com/Morganamilo/paru][paru]]. This means the required packages can be listed in configuration files and checked into version control.
+
+I've also tried [[https://github.com/kiviktnm/decman][decman]], but it turned out to be too unstable because it ships its own logic for building AUR packages, which doesn't always work. So wrapping =paru= seems like a saner approach. Also, sometimes AUR drops packets, and =decman= can't handle it gracefully.
+
+In =metapac=, packages are listed in "groups", each group being a TOML file stating which package has to be installed by which package manager. I declare groups as Org tables, see the "System configuration" section in Emacs.org.
+
+Below is the table enabling different groups on different hostnames:
+#+NAME: metapac-groups
+| Profile         | archlinux | kek |
+| browsers        | +         | +   |
+| console         | +         |     |
+| desktop         | +         |     |
+| desktop-misc    | +         |     |
+| desktop-polybar | +         |     |
+| desktop-rofi    | +         |     |
+| dev             | +         |     |
+| emacs           | +         |     |
+| latex           | +         |     |
+| mail            | +         |     |
+| music           | +         |     |
+| office          | +         |     |
+| system          | +         |     |
+
+And the code to format it as TOML:
+#+NAME: metapac-groups-format
+#+begin_src emacs-lisp :var groups=metapac-groups
+(let* ((hostnames (cdr (nth 0 groups)))
+       groups-by-hostname)
+  (cl-loop for row in (cdr groups)
+           for group = (nth 0 row)
+           do (cl-loop for i from 0
+                       for sign in (cdr row)
+                       for hostname = (nth i hostnames)
+                       if (not (string-empty-p sign))
+                       do (push group (alist-get hostname groups-by-hostname
+                                                 nil nil #'equal))))
+  (cl-loop for (hostname . groups) in groups-by-hostname
+           concat (format "%s = [%s]\n" hostname
+                          (mapconcat (lambda (g) (format "\"%s\"" g)) groups ","))))
+#+end_src
+
+Which is used in the config:
+#+begin_src toml :tangle .config/metapac/config.toml :noweb yes
+hostname_enabled_backends_enabled = false
+enabled_backends = ["arch"]
+hostname_groups_enabled = true
+
+[hostname_groups]
+<<metapac-groups-format()>>
+
+[arch]
+package_manager = "paru"
+#+end_src
+
+* System packages
+Some necessary Arch packages:
+| Arch dependency     |
+|---------------------|
+| base                |
+| base-devel          |
+| decman              |
+| grub                |
+| iwd                 |
+| lightdm             |
+| lightdm-gtk-greeter |
+| linux               |
+| linux-firmware      |
+| nano                |
+| metapac             |
+| openssh             |
+| pacman-contrib      |
+| paru                |
+| pipewire            |
+| pipewire-audio      |
+| pipewire-alsa       |
+| pipewire-pulse      |
+| pipewire-jack       |
+| smartmontools       |
+| vim                 |
+| xterm               |
+| wget                |
+| wireless_tools      |
+| wpa_supplicant      |
+| yadm                |
+| zram-generator      |
+
+Various drivers, I'm not sure which I actually need, so...
+| Arch dependency    |
+|--------------------|
+| libva-intel-driver |
+| intel-media-driver |
+| vulkan-intel       |
+| nvidia-utils       |
+| vulkan-radeon      |
+| xf86-video-amdgpu  |
+| xf86-video-ati     |
+
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no :var category=""
+(my/format-arch-dependencies category)
+#+end_src
+
+#+begin_src scheme :tangle .config/metapac/groups/system.toml :noweb yes
+<<packages()>>
+#+end_src

@@ -1,0 +1,13 @@
+arch = [
+"obs-studio",
+"okular",
+"inkscape",
+"kdenlive",
+"ffmpeg",
+"krita",
+"gimp",
+"libreoffice-fresh",
+"zathura-djvu",
+"zathura-pdf-mupdf",
+"zathura-ps",
+"zathura",]

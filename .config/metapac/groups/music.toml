@@ -1,0 +1,8 @@
+arch = [
+"flac",
+"cuetools",
+"shntool",
+"mpc",
+"picard",
+"ncmpcpp",
+"mpd",]

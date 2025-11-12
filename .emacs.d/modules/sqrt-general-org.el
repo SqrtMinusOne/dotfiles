@@ -355,7 +355,7 @@ With ARG, repeats or can move backward if negative."
          name ".csv")
         "orgtbl-to-csv")))))
 
-(defun my/extract-guix-dependencies (&optional category)
+(defun my/extract-arch-dependencies (&optional category)
   (let ((dependencies '()))
     (org-table-map-tables
      (lambda ()
@@ -368,7 +368,7 @@ With ARG, repeats or can move backward if negative."
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p "[G|g]uix.*dep" elem))))
+                        (string-match-p "[A|a]rch.*dep" elem))))
               (category-name-index
                (cl-position
                 nil
@@ -380,7 +380,13 @@ With ARG, repeats or can move backward if negative."
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p ".*[D|d]isabled.*" elem)))))
+                        (string-match-p ".*[D|d]isabled.*" elem))))
+              (source-index
+               (cl-position
+                nil
+                (mapcar #'substring-no-properties (nth 0 table))
+                :test (lambda (_ elem)
+                        (string-match-p ".*[S|s]ource.*" elem)))))
          (when dep-name-index
            (dolist (elem (cdr table))
              (when
@@ -402,14 +408,26 @@ With ARG, repeats or can move backward if negative."
                    (string-empty-p (nth disabled-name-index elem))))
                (add-to-list
                 'dependencies
-                (substring-no-properties (nth dep-name-index elem)))))))))
+                (cons
+                 (substring-no-properties (nth dep-name-index elem))
+                 (when source-index
+                   (let ((source (nth source-index elem)))
+                     (unless (string-empty-p source)
+                       source)))))))))))
     dependencies))
 
-(defun my/format-guix-dependencies (&optional category)
-  (mapconcat
-   (lambda (e) (concat "\"" e "\""))
-   (my/extract-guix-dependencies category)
-   "\n"))
+(defun my/format-arch-dependencies (&optional category)
+  (let ((data (my/extract-arch-dependencies category)))
+    (with-temp-buffer
+      (insert
+       (json-encode
+        (mapcar
+         (lambda (group)
+           (cons (car group)
+                 (mapcar #'car (cdr group))))
+         (seq-group-by #'cdr data))))
+      (json-pretty-print-buffer)
+      (buffer-string))))
 
 (setq my/org-config-files
       (mapcar

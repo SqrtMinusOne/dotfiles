@@ -85,6 +85,11 @@ First things first, lexical binding.
 ;;; -*- lexical-binding: t -*-
 #+end_src
 
+Adding =emacs= to the package list.
+| Arch dependency |
+|-----------------|
+| emacs           |
+
 ** straight.el
 Straight.el is my Emacs package manager of choice. The following is its bootstrap script.
 
@@ -1363,7 +1368,7 @@ References:
 
 I also want to call =xkb-switch= in EXWM buffers with the same keybindig.
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | xkb-switch      |
 
@@ -1562,9 +1567,9 @@ A few CLI alternatives:
   :commands (git-timemachine))
 #+end_src
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
-| difftastic-bin  |
+| difftastic      |
 
 [[https://github.com/pkryger/difftastic.el][difftastic.el]] is a wrapper package for [[https://difftastic.wilfred.me.uk/][difftastic]].
 #+begin_src emacs-lisp
@@ -2081,7 +2086,7 @@ References:
 :MODULE_NAME: wakatime
 :header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-wakatime.el :comments links
 :END:
-Before I figure out how to package this for Guix:
+Before I figure out how to package this for +Guix+ Arch:
 - Clone [[https://github.com/wakatime/wakatime-cli][the repo]]
 - Run ~go build~
 - Copy the binary to the =~/bin= folder
@@ -4152,7 +4157,7 @@ Section snippets. The code turned out to be more complicated than just writing t
   :straight t)
 #+end_src
 *** PlantUML
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | plantuml        |
 
@@ -4462,9 +4467,9 @@ Automatically creates & manages virtualenvs and stores data in =Pipfile= and =Pi
 *** OFF (OFF) yapf
 [[https://github.com/google/yapf][yapf]] is a formatter for Python files.
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
-| python-yapf     |
+| yapf            |
 
 References:
 - [[https://github.com/google/yapf][yapf repo]]
@@ -4488,7 +4493,7 @@ column_limit = 80
 *** black
 [[https://github.com/psf/black][black]] is a formatter for Python files.
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | python-black    |
 
@@ -4503,7 +4508,7 @@ column_limit = 80
 *** isort
 [[https://github.com/PyCQA/isort][isort]] is a Python package to sort Python imports.
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | python-isort    |
 
@@ -4626,7 +4631,7 @@ To fix that, I've modified the following function in the =python-pytest= package
 *** code-cells
 Support for text with magic comments.
 
-| Guix dependency | Disabled |
+| Arch dependency | Disabled |
 |-----------------+----------|
 | python-jupytext | t        |
 
@@ -4899,7 +4904,7 @@ Emacs integration for [[http://gnuplot.info/][gnuplot]].
 :header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
 :END:
 *** C#
-| Guix dependencies | Disabled |
+| Arch dependencies | Disabled |
 |-------------------+----------|
 | omnisharp         | t        |
 | dotnet            | t        |
@@ -7143,9 +7148,8 @@ Some resources that helped me along the way (and still help):
 - [[https://www.youtube.com/watch?v=-TpWahIzueg][System Crafters Live! - Can You Apply Zettelkasten in Emacs?]]
 
 **** Basic package configuration
-| Guix dependency       | Disabled |
+| Arch dependency       | Disabled |
 |-----------------------+----------|
-| emacs-emacsql-sqlite3 | t        |
 | graphviz              |          |
 
 About installing the package on Guix (*CREDIT*: thanks @Ashraz on the SystemCrafters discord)
@@ -8053,10 +8057,10 @@ No idea why, but somehow the exported file uses english words if there isn't =:d
 ** System configuration
 Functions related to literate configuration.
 
-*** Tables for Guix Dependencies
-This section deals with using [[https://guix.gnu.org/en/cookbook/en/html_node/Advanced-package-management.html#Advanced-package-management][using profiles in GNU Guix]].
+*** Tables for Arch Dependencies
+I used to use [[https://guix.gnu.org/en/cookbook/en/html_node/Advanced-package-management.html#Advanced-package-management][profiles in GNU Guix]]. Now that I've switched to [[https://github.com/ripytide/metapac][metapac]], I want to keep the same approach.
 
-A "profile" in Guix is a way to group package installations. For instance, I have a "music" profile that has software like [[https://www.musicpd.org/][MPD]], [[https://github.com/ncmpcpp/ncmpcpp][ncmpcpp]] that I'm still occasionally using because of its tag editor, etc. Corresponding to that profile, there's a manifest named =music.scm= that looks like this:
+A "profile" (metapac calls them "groups") is a way to group package installations. For instance, I have a "music" profile that has software like [[https://www.musicpd.org/][MPD]], [[https://github.com/ncmpcpp/ncmpcpp][ncmpcpp]] that I'm still occasionally using because of its tag editor, etc. In Guix, corresponding to that profile, there's a manifest named =music.scm= that looks like this:
 #+begin_src scheme
 (specifications->manifest
  '(
@@ -8070,12 +8074,12 @@ A "profile" in Guix is a way to group package installations. For instance, I hav
    "mpd"))
 #+end_src
 
-I could generate this file with =org-babel= as any other, but that is often not so convenient. For example, I have a [[https://github.com/polybar/polybar][polybar]] module that uses [[https://github.com/risacher/sunwait][sunwait]] to show sunset and sunrise times, and ideally, I want to declare =sunwait= to be in the "desktop-polybar" profile in the same section that has the polybar module definition and the bash script.
+Metapac stores the same info in TOML. I could generate this file with =org-babel= as any other, but that is often not so convenient. For example, I have a [[https://github.com/polybar/polybar][polybar]] module that uses [[https://github.com/risacher/sunwait][sunwait]] to show sunset and sunrise times, and ideally, I want to declare =sunwait= to be in the "desktop-polybar" profile in the same section that has the polybar module definition and the bash script.
 
 So here's an approach I came up with. The relevant section of the config looks like this:
 #+begin_example
 ,*** sun
-| Category        | Guix dependency |
+| Category        | Arch dependency |
 |-----------------+-----------------|
 | desktop-polybar | sunwait         |
 
@@ -8090,17 +8094,18 @@ Prints out the time of sunrise/sunset. Uses [[https://github.com/risacher/sunwai
 ,#+end_src
 #+end_example
 
-So =sunwait= is declared in an Org table with =Guix dependency= in the header. Such tables are spread through my configuration files.
+So =sunwait= is declared in an Org table with =Arch dependency= in the header. Such tables are spread through my configuration files.
 
 Thus I made a function that extracts packages from all such tables from the current Org buffer. The rules are as follows:
-- If a column name matches =[G|g]uix.*dep=, its contents are added to the result.
+- If a column name matches =[A|a]rch.*dep=, its contents are added to the result.
 - If =CATEGORY= is passed, a column with name =[C|c]ategory= is used to filter results. That way, one Org file can be used to produce multiple manifests.
 - If =CATEGORY= is not passed, entries with the non-empty category are filtered out
 - If there is a =[D|d]isabled= column, entries that have a non-empty value in this column are filtered out.
+- If there is a =[S|s]ource= column, it selects the backend for metapac, which is =arch= by default.
 
 And here is the implementation:
 #+begin_src emacs-lisp :noweb-ref guix-tables
-(defun my/extract-guix-dependencies (&optional category)
+(defun my/extract-arch-dependencies (&optional category)
   (let ((dependencies '()))
     (org-table-map-tables
      (lambda ()
@@ -8113,7 +8118,7 @@ And here is the implementation:
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p "[G|g]uix.*dep" elem))))
+                        (string-match-p "[A|a]rch.*dep" elem))))
               (category-name-index
                (cl-position
                 nil
@@ -8125,7 +8130,13 @@ And here is the implementation:
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p ".*[D|d]isabled.*" elem)))))
+                        (string-match-p ".*[D|d]isabled.*" elem))))
+              (source-index
+               (cl-position
+                nil
+                (mapcar #'substring-no-properties (nth 0 table))
+                :test (lambda (_ elem)
+                        (string-match-p ".*[S|s]ource.*" elem)))))
          (when dep-name-index
            (dolist (elem (cdr table))
              (when
@@ -8145,47 +8156,48 @@ And here is the implementation:
                   (or
                    (not disabled-name-index)
                    (string-empty-p (nth disabled-name-index elem))))
-               (add-to-list
-                'dependencies
-                (substring-no-properties (nth dep-name-index elem)))))))))
+               (let ((source
+                      (or
+                       (when (and source-index
+                                  (not (string-empty-p (nth source-index elem))))
+                         (substring-no-properties
+                          (nth source-index elem)))
+                       "arch")))
+                 (push
+                  (substring-no-properties (nth dep-name-index elem))
+                  (alist-get source dependencies nil nil #'equal)))))))))
     dependencies))
 #+end_src
 
-To make it work in the configuration, it is necessary to format the list so that Scheme could read it:
+To make it work in the configuration, it is necessary to format the list in the TOML format. Unfortunately, there doesn't seems to be a TOML generator for Elisp.
 #+begin_src emacs-lisp :noweb-ref guix-tables
-(defun my/format-guix-dependencies (&optional category)
-  (mapconcat
-   (lambda (e) (concat "\"" e "\""))
-   (my/extract-guix-dependencies category)
-   "\n"))
+(defun my/format-arch-dependencies (&optional category)
+  (let ((data (my/extract-arch-dependencies category)))
+    (with-temp-buffer
+      (cl-loop for (backend . packages) in data
+               do (insert (format "%s = [\n" backend)
+                          (mapconcat (lambda (package)
+                                       (format "\"%s\"," package))
+                                     packages
+                                     "\n")
+                          "]"))
+      (buffer-string))))
 #+end_src
 
 And we need an Org snippet such as this:
 #+begin_example
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
-(my/format-guix-dependencies category)
+(my/format-arch-dependencies category)
 #+end_src
 #+end_example
 
 Now, creating a manifest, for example, for the =desktop-polybar= profile is as simple as:
 #+begin_example
-#+begin_src scheme :tangle ~/.config/guix/manifests/desktop-polybar.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("desktop-polybar")>>))
+#+begin_src scheme :tangle ~/.config/metapac/groups/desktop-polybar.toml :noweb yes
+<<packages("desktop-polybar")>>
 #+end_src
 #+end_example
-
-There's a newline symbol between "(" and =<<packages("desktop-polybar")>>= because whenever a noweb expression expands into multiple lines, for each new line noweb duplicates contents between the start of the line and the start of the expression.
-
-One reason this is so is to support languages where indentation is a part of the syntax, for instance, Python:
-#+begin_src python
-class TestClass:
-    <<class-contents>>
-#+end_src
-
-So every line of =<<class-contents>>= will be indented appropriately. In our case though, it is a minor inconvenience to be aware of.
 *** Noweb evaluations
 One note is that by default running these commands will require the user to confirm evaluation of each code block. To avoid that, I set =org-confirm-babel-evaluate= to =nil=:
 
@@ -8196,6 +8208,7 @@ One note is that by default running these commands will require the user to conf
        '("~/Emacs.org"
          "~/Desktop.org"
          "~/Console.org"
+         "~/Arch.org"
          "~/Guix.org"
          "~/Mail.org")))
 
@@ -9739,7 +9752,7 @@ Now, a function to add a YouTube link with metadata from elfeed to EMMS.
 *** rdrview
 [[https://github.com/eafer/rdrview][rdrview]] is a command-line tool to strip webpages from clutter, extracting only parts related to the actual content. It's a standalone port of the corresponding feature of Firefox, called [[https://support.mozilla.org/en-US/kb/firefox-reader-view-clutter-free-web-pages][Reader View]].
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | rdrview         |
 
@@ -10086,7 +10099,7 @@ However, sans the pictures issue, for certain sites like Wikipedia this is usabl
 **** Getting subtitles
 Finally, let's get to transcripts.
 
-| Guix dependency               |
+| Arch dependency               |
 |-------------------------------|
 | python-youtube-transcript-api |
 
@@ -10394,7 +10407,7 @@ After all this is done, run =M-x emms-cache-set-from-mpd-all= to set cache from 
 :PROPERTIES:
 :header-args:emacs-lisp: :tangle no :noweb-ref emms-mpv-setup
 :END:
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | mpv             |
 | yt-dlp          |
@@ -11339,16 +11352,14 @@ Or you can load up Element for a moment to see what the mention was, if that's e
 :END:
 [[https://github.com/zevlg/telega.el/][telega.el]] is a Telegam client for Emacs.
 
-| Guix dependency    |
-|--------------------|
-| emacs-telega-sever |
-| font-gnu-unifont   |
-| font-gnu-freefont  |
+| Arch dependency    | Disabled |
+|--------------------+----------|
+| emacs-telega-sever | t        |
+| ttf-unifont        |          |
+| gnu-free-fonts     |          |
 
 #+begin_src emacs-lisp
 (use-package telega
-  ;; :straight (:type built-in)
-  ;; For now emacs-telega-server is compatible with the latest telega.el
   :straight t
   :commands (telega)
   :init
@@ -11888,7 +11899,7 @@ I previously used [[https://github.com/ggerganov/whisper.cpp][whisper.cpp]] by G
 
 One disadvantage is that it doesn't produce human-readable output by default, so I make my own.
 
-| Guix dependency | Disabled |
+| Arch dependency | Disabled |
 |-----------------+----------|
 | whisper-cpp     | t        |
 
@@ -13279,7 +13290,7 @@ My package for doing Pomodoro timer.
 *** hledger
 [[hledger.org/][hledger]] is a plain-text double-entry accounting software. I use it for managing my personal finances, and thus far it's great.
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | hledger         |
 
@@ -13818,22 +13829,19 @@ My text editor isn't old enough.
   :straight (:host github :repo "ryanprior/ed-mode")
   :commands (ed))
 #+end_src
-* Guix settings
-| Guix dependency     | Description                   |
+* Arch settings
+| Arch dependency     | Description                   |
 |---------------------+-------------------------------|
-| emacs-vterm         | The vterm package             |
 | ripgrep             | A recursive search tool       |
-| the-silver-searcher | Another recursive search tool |
+| the_silver_searcher | Another recursive search tool |
 | texinfo             |                               |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
-(when (fboundp #'my/format-guix-dependencies)
-  (my/format-guix-dependencies))
+(when (fboundp #'my/format-arch-dependencies)
+  (my/format-arch-dependencies))
 #+end_src
 
-#+begin_src scheme :tangle .config/guix/manifests/emacs.scm :noweb yes
-(specifications->manifest
- '("emacs"
-   <<packages()>>))
+#+begin_src scheme :tangle .config/metapac/groups/emacs.toml :noweb yes
+<<packages()>>
 #+end_src

@@ -1,7 +1,5 @@
 ;;; -*- lexical-binding: t -*-
 (use-package telega
-  ;; :straight (:type built-in)
-  ;; For now emacs-telega-server is compatible with the latest telega.el
   :straight t
   :commands (telega)
   :init
