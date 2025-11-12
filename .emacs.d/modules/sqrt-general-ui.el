@@ -138,8 +138,10 @@
 
 (defun my/modus-get-base (color)
   (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
-        (base-start (cadr (assoc 'bg-main (modus-themes-get-theme-palette))))
-        (base-end (cadr (assoc 'fg-dim (modus-themes-get-theme-palette)))))
+        (base-start (cadr (assoc 'bg-main (modus-themes-get-theme-palette
+                                           (or (my/modus-p) (my/ef-p))))))
+        (base-end (cadr (assoc 'fg-dim (modus-themes-get-theme-palette
+                                        (or (my/modus-p) (my/ef-p)))))))
     (nth base-value (ct-gradient 9 base-start base-end t))))
 
 (defun my/prot-color (color palette)
@@ -179,10 +181,10 @@
      (t (cadr (assoc color palette))))))
 
 (defun my/modus-color (color)
-  (my/prot-color color (modus-themes-get-theme-palette)))
+  (my/prot-color color (modus-themes-get-theme-palette (my/modus-p))))
 
 (defun my/ef-color (color)
-  (my/prot-color color (modus-themes-get-theme-palette)))
+  (my/prot-color color (modus-themes-get-theme-palette (my/ef-p))))
 
 (defconst my/test-colors-list
   '(black red green yellow blue magenta cyan white light-black
@@ -276,6 +278,7 @@
                        (eq enabled-theme theme)))
            do (disable-theme enabled-theme))
   (load-theme theme t)
+  (my/update-my-theme)
   (when current-prefix-arg
     (my/regenerate-desktop)))
 
