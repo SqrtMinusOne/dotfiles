@@ -408,6 +408,16 @@ def parse_rclone_stats(log_output):
     return None
 
 
+def process_output(output):
+    if output is None:
+        print('(empty)')
+    for line in output.splitlines():
+        try:
+            datum = json.loads(line)
+            print(datum['msg'])
+        except Exception:
+            print(line)
+
 def rclone_run(folder):
     command = rclone_make_command(
         folder['local-path'], folder['remote-path'], folder['remote']
@@ -418,9 +428,9 @@ def rclone_run(folder):
         print(f'=== Error syncing {folder['local-path']} ===')
         print(f'Command: {' '.join(command)}')
         print(f'--- STDOUT ---')
-        print(e.stdout if e.stdout else '(empty)')
+        process_output(e.stdout)
         print(f'--- STDERR ---')
-        print(e.stderr if e.stderr else '(empty)')
+        process_output(e.stderr)
         return {'success': False, 'stats': {}}
     return {'success': True, 'stats': parse_rclone_stats(result.stderr)}
 
@@ -457,7 +467,7 @@ def rclone_run_all(folders):
         error_msg = f'Sync error for remote {REMOTE}!'
         for folder in error_folders:
             error_msg += '''\n- ''' + folder
-        notify(f'rclone sync {REMOTE}', error_msg, level='error')
+        notify(f'rclone sync {REMOTE}', error_msg, level='critical')
     else:
         msg = ''
         if total_transfers > 0:
@@ -544,7 +554,7 @@ The return value is a list of commands as defined by
                  (list
                   (format "cat <<EOF > %s\n%s\nEOF"
                           (my/index--rclone-script-loc remote)
-                          (my/index--rclone-script remote folders))
+                          (my/index--rclone-script remote (nreverse folders)))
                   "Update rclone sync script" 10)
                  commands))
     (nreverse commands)))
@@ -739,12 +749,13 @@ is still valid. Otherwise, it re-parses the index file."
       (my/index--commands-display (append rclone-commands folder-commands git-commands
                                           waka-commands symlink-commands)))))
 
-(defun my/index--nav-extend (name path)
+(defun my/index--nav-extend (name path &optional project)
   "Find all index-related files in PATH.
 
 NAME is the name of the root index entry, e.g. \"10.01
 Something\".  If PATH containts folders like \"10.01.01
-Something\", \"10.01.02 ...\", they will be returned.
+Something\", \"10.01.02 ...\", they will be returned.  PROJECT is the
+project name.
 
 The return value is a form as defined by `my/index--nav-get'."
   (when (file-directory-p path)
@@ -771,7 +782,7 @@ The return value is a form as defined by `my/index--nav-get'."
                         `(((:names . (,name-1))
                            (:path . ,(concat path-1 "/")))))))))
 
-(defun my/index--nav-get (tree &optional names)
+(defun my/index--nav-get (tree &optional names project)
   "Get the navigation structure from TREE.
 
 TREE is a form as defined by `my/index--tree-get'.  NAMES is a
@@ -783,7 +794,7 @@ The result is a list of alists with the following keys:
   (\"10.01 Something\" \"10.01.01 Something\")
 - `:path` - path to the folder, e.g.
   \"/path/10 stuff/10.01 Something/10.01.01 Something/\"
-- `:child-navs` - list of child navigation structures (optional)"
+- `:project` - project name."
   (seq-sort-by
    (lambda (item) (alist-get :path item))
    #'string-lessp
@@ -791,28 +802,24 @@ The result is a list of alists with the following keys:
     (lambda (acc elem)
       (let* ((name (alist-get :name elem))
              (path (alist-get :path elem)))
-        (cond ((alist-get :project elem)
-               (let ((current-nav `((:names . (,@names ,name))
-                                    (:path . ,path))))
-                 (when-let (child-navs
-                            (and (alist-get :children elem)
-                                 (my/index--nav-get (alist-get :children elem))))
-                   (setf (alist-get :child-navs current-nav) child-navs))
-                 (push current-nav acc)))
-              ((alist-get :children elem)
+        (cond ((alist-get :children elem)
                (when-let (child-navs (my/index--nav-get
                                       (alist-get :children elem)
-                                      `(,@names ,name)))
+                                      `(,@names ,name)
+                                      (or (when (alist-get :project elem)
+                                            name)
+                                          project)))
                  (cl-loop for child-nav in child-navs
                           do (push child-nav acc))))
-              (t (if-let ((extended-nav (my/index--nav-extend name path)))
+              (t (if-let ((extended-nav (my/index--nav-extend name path project)))
                      (cl-loop for child-nav in extended-nav
                               do (setf (alist-get :names child-nav)
                                        (append names (list name)
                                                (alist-get :names child-nav)))
                               do (push child-nav acc))
                    (push `((:names . (,@names ,name))
-                           (:path . ,path))
+                           (:path . ,path)
+                           (:project . ,project))
                          acc))))
         acc))
     tree
@@ -838,7 +845,10 @@ The return value is a form as defined by `my/index--nav-get'."
 NAV is a structure as defined by `my/index--nav-get'."
   (let* ((collection
           (mapcar (lambda (item)
-                    (cons (car (last (alist-get :names item)))
+                    (cons (let ((name (car (last (alist-get :names item)))))
+                            (if (alist-get :project item)
+                                (format "%s / %s" (alist-get :project item) name)
+                              name))
                           (alist-get :path item)))
                   nav))
          (vertico-sort-function nil))
@@ -856,36 +866,21 @@ NAV is a structure as defined by `my/index--nav-get'."
      (string-prefix-p (alist-get :path item) path))
    nav))
 
-(defun my/index-nav (arg &optional func)
+(defun my/index-nav (&optional func)
   "Navigate the filesystem index.
-
-If ARG is nil, navigate all levels sequentially from the top one.
-
-If ARG is '(4), select another directory from the same level.
 
 FUNC is the function to call with the selected path.  It defaults
 to `dired' if used interactively."
-  (interactive (list current-prefix-arg #'dired))
+  (interactive (list #'dired))
   (let* ((nav (my/index--nav-retrive))
-         (current-nav (my/index--nav-find-path
-                       nav (expand-file-name default-directory)))
-         (current-child-navs (alist-get :child-navs current-nav)))
-    (cond ((null arg)
-           (let ((selected (my/index--nav-find-path
-                            nav
-                            (my/index--nav-prompt nav))))
-             (if-let (child-navs (alist-get :child-navs selected))
-                 (funcall func (my/index--nav-prompt child-navs))
-               (funcall func (alist-get :path selected)))))
-          ((and (equal arg '(4)) current-child-navs)
-           (funcall func (my/index--nav-prompt current-child-navs)))
-          ((and (equal arg '(4)) (null current-child-navs))
-           (funcall func (my/index--nav-prompt nav))))))
+         (selected (my/index--nav-find-path
+                    nav
+                    (my/index--nav-prompt nav))))
+    (funcall func (alist-get :path selected))))
 
-(defun my/index-nav-with-select-file (arg)
-  (interactive (list current-prefix-arg))
+(defun my/index-nav-with-select-file ()
+  (interactive)
   (my/index-nav
-   arg
    (lambda (dir)
      (let ((default-directory dir))
        (projectile-find-file)))))
