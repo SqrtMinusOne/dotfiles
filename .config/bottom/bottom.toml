@@ -1,7 +1,9 @@
 [flags]
 hide_table_gap = true  # Remove space in tables
-color = "default-light"
 process_command = true
+
+[styles]
+theme = "default-light"
 
 [processes]
 columns = ["PID", "State", "Name", "CPU%", "Mem%", "R/s", "W/s", "User"]

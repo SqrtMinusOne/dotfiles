@@ -46,6 +46,10 @@ export JUPYTER_CONFIG_DIR=$HOME/.config/jupyter
 export GIO_EXTRA_MODULES=""
 # Misc settings:2 ends here
 
+# [[file:Console.org::*Misc settings][Misc settings:3]]
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+# Misc settings:3 ends here
+
 # [[file:Console.org::*Other package managers][Other package managers:1]]
 if [ -d "$HOME/.cask" ]; then
     export PATH="/home/pavel/.cask/bin:$PATH"

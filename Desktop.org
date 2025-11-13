@@ -1217,11 +1217,12 @@ And the EXWM config itself.
 (defun my/exwm-init ()
   (exwm-workspace-switch 1)
 
-  (my/exwm-run-polybar)
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
   (my/exwm-run-systemd)
   (my/run-in-background "gpgconf --reload gpg-agent")
+  (my/exwm-run-polybar)
+  (setenv "DBUS_SESSION_BUS_ADDRESS" "unix:path=/run/user/1000/bus")
   (when (my/is-arch)
     (my/run-in-background "set_layout")))
 
@@ -2815,7 +2816,7 @@ afk_event=$(curl -s -X GET "http://localhost:5600/api/0/buckets/aw-watcher-afk_$
 status=$(echo ${afk_event} | jq -r '.[0].data.status')
 afk_time=$(echo "${afk_event}" | jq -r '.[0].duration' | xargs -I !  date -u -d @! +"%H:%M")
 
-uptime=$(uptime | awk '{ print substr($3, 0, length($3) - 1) }' | xargs -I ! date -d ! +"%H:%M")
+uptime=$(date -ud @$(uptime -r | awk '{print $2}') +%H:%M)
 res="${afk_time} / ${uptime}"
 if [[ $status == 'afk' ]]; then
     # echo "%{u<<get-color(name="red")>>}%{+u} [AFK] $res %{u-}"
@@ -4225,6 +4226,7 @@ This section generates manifests for various desktop software that I'm using.
 |----------+------------------------|
 | browsers | ungoogled-chromium-bin |
 | browsers | firefox                |
+| browsers | firefox-tridactyl      |
 ** Office & Multimedia
 | Category | Arch dependency |
 |----------+-----------------|

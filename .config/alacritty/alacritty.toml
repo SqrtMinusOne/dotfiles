@@ -1,24 +1,23 @@
-# decorations = "none"
-
+# [[file:../../Console.org::*Alacritty][Alacritty:1]]
 [colors.bright]
 black = "#484848"
-blue = "#cbcfff"
-cyan = "#88c8ff"
-green = "#8adf80"
-magenta = "#df8fff"
-red = "#ff8f88"
+red = "#d00000"
+green = "#008900"
+yellow = "#808000"
+blue = "#0000ff"
+magenta = "#dd22dd"
+cyan = "#008899"
 white = "#ffffff"
-yellow = "#fac200"
 
 [colors.normal]
 black = "#222222"
-blue = "#375cd8"
-cyan = "#1f6fbf"
-green = "#217a3c"
-magenta = "#ba35af"
 red = "#cc3333"
-white = "#fff8f0"
+green = "#217a3c"
 yellow = "#8a5d00"
+blue = "#375cd8"
+magenta = "#ba35af"
+cyan = "#1f6fbf"
+white = "#fff8f0"
 
 [colors.primary]
 background = "#fff8f0"
@@ -150,3 +149,4 @@ x = 0
 y = 0
 
 [keyboard]
+# Alacritty:1 ends here

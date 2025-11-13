@@ -8,12 +8,13 @@ arch = [
 "libva-intel-driver",
 "zram-generator",
 "yadm",
-"wpa_supplicant",
+"wireplumber",
 "wireless_tools",
 "wget",
 "xterm",
 "vim",
 "smartmontools",
+"sof-firmware",
 "pipewire-jack",
 "pipewire-pulse",
 "pipewire-alsa",
@@ -34,4 +35,5 @@ arch = [
 "grub",
 "decman",
 "base-devel",
-"base",]
+"base",
+"amneziavpn-bin",]

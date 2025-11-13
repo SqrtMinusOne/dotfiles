@@ -123,6 +123,13 @@ Somehow LibreOffice doesn't work without the following:
 #+begin_src sh
 export GIO_EXTRA_MODULES=""
 #+end_src
+
+Not sure why this is necessary.
+
+#+begin_src sh
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+#+end_src
+
 ** Other package managers
 Using other package managers requires some extra work.
 
@@ -504,6 +511,11 @@ if type -q direnv
 end
 #+end_src
 ** atuin
+
+| Arch dependency |
+|-----------------|
+| atuin           |
+
 #+begin_src fish
 if type -q atuin
     set -gx ATUIN_NOBIND "true"
@@ -743,8 +755,8 @@ cyan = "<<get-color(name="cyan")>>"
 white = "<<get-color(name="white")>>"
 
 [colors.primary]
-background: "<<get-color(name="bg")>>"
-foreground: "<<get-color(name="fg")>>"
+background = "<<get-color(name="bg")>>"
+foreground = "<<get-color(name="fg")>>"
 
 [env]
 TERM = "xterm-256color"
@@ -890,8 +902,10 @@ See the [[https://github.com/ClementTsang/bottom/blob/master/sample_configs/defa
 #+begin_src toml :tangle .config/bottom/bottom.toml :noweb yes
 [flags]
 hide_table_gap = true  # Remove space in tables
-color = "<<bottom-theme()>>"
 process_command = true
+
+[styles]
+theme = "<<bottom-theme()>>"
 
 [processes]
 columns = ["PID", "State", "Name", "CPU%", "Mem%", "R/s", "W/s", "User"]
@@ -1061,6 +1075,26 @@ fi
 (job "0 * * * *" "autocommit /home/pavel/30-39\\ Life/32\\ org-mode/")
 (job "0,15,30,45 * * * *" "autocommit ~/.password-store")
 #+end_src
+
+Systemd timers:
+#+begin_src conf :tangle .config/systemd/user/autocommit-org-mode.service
+[Unit]
+Description=Autocommit org-mode
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /home/pavel/bin/scripts/autocommit "/home/pavel/30-39 Life/32 org-mode"
+#+end_src
+
+#+begin_src conf :tangle .config/systemd/user/autocommit-password-store.service
+[Unit]
+Description=Autocommit .password-store
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /home/pavel/bin/scripts/autocommit "/home/pavel/.password-store"
+#+end_src
+
 * Arch settings
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no

@@ -180,11 +180,6 @@ radius = 0.0
 ; Global bar config:2 ends here
 
 ; [[file:../../Desktop.org::*Global bar config][Global bar config:3]]
-; font-0 = ${env:FONT0:pango:monospace:size=10;1}
-; font-1 = ${env:FONT1:NotoEmoji:scale=10:antialias=false;0}
-; font-2 = ${env:FONT2:fontawesome:pixelsize=10;1}
-; font-3 = ${env:FONT3:JetBrains Mono Nerd Font:monospace:size=10;1}
-
 font-0 = pango:monospace:size=13;2
 font-1 = NotoEmoji:scale=10:antialias=false;1
 font-2 = fontawesome:pixelsize=13;3

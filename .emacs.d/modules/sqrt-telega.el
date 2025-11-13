@@ -11,10 +11,8 @@
                              :background (my/color-value 'fg))
    (telega-entity-type-spoiler :background (my/color-value 'base8)))
   :config
-  (when (file-exists-p "~/.guix-extra-profiles/emacs/emacs/bin/telega-server")
-    (setq telega-server-command
-          (expand-file-name
-           "~/.guix-extra-profiles/emacs/emacs/bin/telega-server")))
+  (setq telega-server-libs-prefix "/usr")
+
   (setq telega-emoji-use-images nil)
   (setq telega-chat-fill-column 80)
   (setq telega-completing-read-function #'completing-read)
@@ -36,15 +34,6 @@
     telega-chat-mode 3 "telega"
     telega-image-mode 3 "telega"
     telega-webpage-mode 3 "telega"))
-
-(defun my/telega-server-build ()
-  (interactive)
-  (setq telega-server-libs-prefix
-        (if (executable-find "guix")
-            (string-trim
-             (shell-command-to-string "guix build tdlib"))
-          (expand-file-name "~/bin/td/build/res/usr/local")))
-  (telega-server-build "CC=gcc"))
 
 (add-hook 'telega-load-hook #'telega-mode-line-mode)
 (setq telega-mode-line-string-format

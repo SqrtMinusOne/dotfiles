@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-# [[file:../../Guix.org::*Slack][Slack:2]]
-echo "LSB Version:    Hey. I spent an hour figuring out why Slack doesn't launch."
-echo "Distributor ID: It seems like it requires an lsb_release."
-echo "Description:    But GNU Guix doesn't have one."
-echo "Release:        42.2"
-echo "Codename:       n/a"
-# Slack:2 ends here

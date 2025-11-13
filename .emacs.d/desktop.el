@@ -592,11 +592,12 @@ _d_: Discord
 (defun my/exwm-init ()
   (exwm-workspace-switch 1)
 
-  (my/exwm-run-polybar)
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
   (my/exwm-run-systemd)
   (my/run-in-background "gpgconf --reload gpg-agent")
+  (my/exwm-run-polybar)
+  (setenv "DBUS_SESSION_BUS_ADDRESS" "unix:path=/run/user/1000/bus")
   (when (my/is-arch)
     (my/run-in-background "set_layout")))
 

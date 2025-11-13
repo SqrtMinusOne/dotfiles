@@ -137,11 +137,12 @@
         (t (doom-color color)))))))
 
 (defun my/modus-get-base (color)
-  (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
-        (base-start (cadr (assoc 'bg-main (modus-themes-get-theme-palette
-                                           (or (my/modus-p) (my/ef-p))))))
-        (base-end (cadr (assoc 'fg-dim (modus-themes-get-theme-palette
-                                        (or (my/modus-p) (my/ef-p)))))))
+  (let* ((base-value (string-to-number (substring (symbol-name color) 4 5)))
+         (palette (modus-themes-get-theme-palette
+                   (or (my/modus-p) (my/ef-p))
+                   :with-overrides :with-user-palette))
+         (base-start (cadr (assoc 'bg-main palette)))
+         (base-end (cadr (assoc 'fg-dim palette))))
     (nth base-value (ct-gradient 9 base-start base-end t))))
 
 (defun my/prot-color (color palette)
@@ -181,10 +182,11 @@
      (t (cadr (assoc color palette))))))
 
 (defun my/modus-color (color)
-  (my/prot-color color (modus-themes-get-theme-palette (my/modus-p))))
+  (my/prot-color color (modus-themes-get-theme-palette
+                        (or (my/modus-p) (my/ef-p))
+                        :with-overrides :with-user-palette)))
 
-(defun my/ef-color (color)
-  (my/prot-color color (modus-themes-get-theme-palette (my/ef-p))))
+(defalias 'my/ef-color 'my/modus-color)
 
 (defconst my/test-colors-list
   '(black red green yellow blue magenta cyan white light-black

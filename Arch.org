@@ -110,6 +110,7 @@ api_key = <api-key>
 Then run =emacs= and make sure it starts. Run:
 - =M-x nerd-icons-install-fonts=
 - =M-x all-the-icons-install-fonts=
+- =M-x treesit-install-language-grammar=
 
 Run =rclone config=, configure the remotes. Then =M-x my/index-commands-sync=.
 
@@ -118,6 +119,11 @@ If everything works, login into EXWM.
 Create some directories:
 #+begin_src bash
 mkdir -p /home/pavel/Pictures/screenshots/
+#+end_src
+
+Also run:
+#+begin_src bash
+sudo chmod +s /usr/bin/light
 #+end_src
 
 * Metapac configuration
@@ -179,6 +185,7 @@ package_manager = "paru"
 Some necessary Arch packages:
 | Arch dependency     |
 |---------------------|
+| amneziavpn-bin      |
 | base                |
 | base-devel          |
 | decman              |
@@ -200,12 +207,13 @@ Some necessary Arch packages:
 | pipewire-alsa       |
 | pipewire-pulse      |
 | pipewire-jack       |
+| sof-firmware        |
 | smartmontools       |
 | vim                 |
 | xterm               |
 | wget                |
 | wireless_tools      |
-| wpa_supplicant      |
+| wireplumber         |
 | yadm                |
 | zram-generator      |
 
@@ -226,5 +234,5 @@ Various drivers, I'm not sure which I actually need, so...
 #+end_src
 
 #+begin_src scheme :tangle .config/metapac/groups/system.toml :noweb yes
-<<packages()>ger>
+<<packages()>>
 #+end_src

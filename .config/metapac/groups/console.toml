@@ -28,6 +28,7 @@ arch = [
 "tmux",
 "starship",
 "nushell",
+"atuin",
 "shell-color-scripts-git",
 "fish",
 "xorg-xhost",

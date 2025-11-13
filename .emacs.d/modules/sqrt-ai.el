@@ -28,7 +28,7 @@
     :key (lambda () (my/password-store-get-field
                      "My_Online/Accounts/openrouter" "api-key"))
     :stream t
-    :models '("anthropic/claude-sonnet-4"
+    :models '("anthropic/claude-sonnet-4.5"
               "qwen/qwen3-coder"
               "qwen/qwen3-coder:free"))
   (setq gptel--known-backends

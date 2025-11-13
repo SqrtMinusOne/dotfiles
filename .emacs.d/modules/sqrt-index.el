@@ -463,21 +463,24 @@ def rclone_run_all(folders):
             total_transfers += res.get('stats', {}).get('transfers', 0)
             total_deleted += res.get('stats', {}).get('deletes', 0)
             total_renamed += res.get('stats', {}).get('renames', 0)
+
+    msg = ''
+    level = 'normal'
+    if total_transfers > 0:
+        msg += f'''Transferred {total_transfers} files ({sizeof_fmt(total_bytes)})\n'''
+    if total_deleted > 0:
+        msg += f'''Deleted {total_transfers} files\n'''
+    if total_renamed > 0:
+        msg += f'''Renamed {total_renamed} files\n'''
+
     if len(error_folders) > 0:
-        error_msg = f'Sync error for remote {REMOTE}!'
+        msg += '''\nSync errors for the following folders:'''
         for folder in error_folders:
-            error_msg += '''\n- ''' + folder
-        notify(f'rclone sync {REMOTE}', error_msg, level='critical')
-    else:
-        msg = ''
-        if total_transfers > 0:
-            msg += f'''Transferred {total_transfers} files ({sizeof_fmt(total_bytes)})\n'''
-        if total_deleted > 0:
-            msg += f'''Deleted {total_transfers} files\n'''
-        if total_renamed > 0:
-            msg += f'''Renamed {total_renamed} files\n'''
-        if len(msg) > 0:
-            notify(f'rclone sync {REMOTE}', msg)
+            msg += '''\n- ''' + folder
+        level = 'critical'
+
+    if len(msg) > 0:
+        notify(f'rclone sync {REMOTE}', msg, level=level)
 
 if __name__ == '__main__':
     rclone_run_all(FOLDERS)
@@ -583,7 +586,7 @@ The return value is a list of commands as defined by
 
 E.g. 10.03.R.01 Project Name -> Project Name."
   (replace-regexp-in-string
-   (rx bos (+ (| num alpha "." "-")) space) "" name))
+   (rx bos (+ num) (? "." (+ (| num alpha "." "-"))) space) "" name))
 
 (defun my/index--wakatime-escape (string)
   "Escape STRING for use in a WakaTime config file."

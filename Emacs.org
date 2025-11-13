@@ -2435,11 +2435,12 @@ Now, let's get the current color from =doom=. =doom-themes= provide =doom-color=
 And the same for =modus-themes=. =my/modus-color= has to accept the same arguments as I use for =my/doom-color= for backward compatibility, which requires a bit more tuning.
 #+begin_src emacs-lisp
 (defun my/modus-get-base (color)
-  (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
-        (base-start (cadr (assoc 'bg-main (modus-themes-get-theme-palette
-                                           (or (my/modus-p) (my/ef-p))))))
-        (base-end (cadr (assoc 'fg-dim (modus-themes-get-theme-palette
-                                        (or (my/modus-p) (my/ef-p)))))))
+  (let* ((base-value (string-to-number (substring (symbol-name color) 4 5)))
+         (palette (modus-themes-get-theme-palette
+                   (or (my/modus-p) (my/ef-p))
+                   :with-overrides :with-user-palette))
+         (base-start (cadr (assoc 'bg-main palette)))
+         (base-end (cadr (assoc 'fg-dim palette))))
     (nth base-value (ct-gradient 9 base-start base-end t))))
 
 (defun my/prot-color (color palette)
@@ -2479,10 +2480,11 @@ And the same for =modus-themes=. =my/modus-color= has to accept the same argumen
      (t (cadr (assoc color palette))))))
 
 (defun my/modus-color (color)
-  (my/prot-color color (modus-themes-get-theme-palette (my/modus-p))))
+  (my/prot-color color (modus-themes-get-theme-palette
+                        (or (my/modus-p) (my/ef-p))
+                        :with-overrides :with-user-palette)))
 
-(defun my/ef-color (color)
-  (my/prot-color color (modus-themes-get-theme-palette (my/ef-p))))
+(defalias 'my/ef-color 'my/modus-color)
 #+end_src
 
 Test the three functions.
@@ -6163,6 +6165,8 @@ We can get the clocked value in minutes with =org-clock-sum=. This weird functio
              (org-element-property :end element))))
     (with-temp-buffer
       (insert s)
+      (let (org-mode-hook)
+        (org-mode))
       (org-clock-sum)
       org-clock-file-total-minutes)))
 #+end_src

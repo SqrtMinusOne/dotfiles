@@ -53,7 +53,7 @@
 
     ### Misc/Advanced ###
     dmenu = /usr/bin/dmenu -p dunst:
-    browser = /home/pavel/.guix-extra-profiles/browsers/browsers/bin/firefox
+    browser = /user/bin/firefox
     always_run_script = true
     title = Dunst
     class = Dunst
@@ -69,14 +69,15 @@
     mouse_middle_click = do_action
     mouse_right_click = close_all
 
-[experimental]
-    per_monitor_dpi = false
-
-[shortcuts]
+    ### Shortcuts
     close = ctrl+space
     close_all = ctrl+shift+space
     history = ctrl+grave
     context = ctrl+shift+period
+
+[experimental]
+    per_monitor_dpi = false
+
 
 [urgency_low]
     background = "#f6ece8"

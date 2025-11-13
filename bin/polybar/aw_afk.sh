@@ -4,7 +4,7 @@ afk_event=$(curl -s -X GET "http://localhost:5600/api/0/buckets/aw-watcher-afk_$
 status=$(echo ${afk_event} | jq -r '.[0].data.status')
 afk_time=$(echo "${afk_event}" | jq -r '.[0].duration' | xargs -I !  date -u -d @! +"%H:%M")
 
-uptime=$(uptime | awk '{ print substr($3, 0, length($3) - 1) }' | xargs -I ! date -d ! +"%H:%M")
+uptime=$(date -ud @$(uptime -r | awk '{print $2}') +%H:%M)
 res="${afk_time} / ${uptime}"
 if [[ $status == 'afk' ]]; then
     # echo "%{u#cc3333}%{+u} [AFK] $res %{u-}"
