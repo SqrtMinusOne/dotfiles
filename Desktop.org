@@ -2171,16 +2171,12 @@ radius = 0.0
 
 Fonts
 #+begin_src conf-windows
-; font-0 = ${env:FONT0:pango:monospace:size=10;1}
-; font-1 = ${env:FONT1:NotoEmoji:scale=10:antialias=false;0}
-; font-2 = ${env:FONT2:fontawesome:pixelsize=10;1}
-; font-3 = ${env:FONT3:JetBrains Mono Nerd Font:monospace:size=10;1}
-
 font-0 = pango:monospace:size=13;2
 font-1 = NotoEmoji:scale=10:antialias=false;1
 font-2 = fontawesome:pixelsize=13;3
-font-3 = JetBrains Mono Nerd Font:monospace:size=13;4
-font-4 = JetBrains Mono Nerd Font:monospace:size=17;4
+font-3 = JetBrainsMono Nerd Font:style=Medium,Regular:size=13;4
+font-4 = JetBrainsMono Nerd Font:style=Medium,Regular:size=17;4
+font-5 = Adwaita Mono:style=Regular:size=13;3
 #+end_src
 
 Modules. Because I sometimes set up different blocks on different monitors, they are set via environment variables.
