@@ -1,0 +1,8 @@
+[Unit]
+Description=Network Manager Applet
+
+[Service]
+ExecStart=/usr/bin/nm-applet
+
+[Install]
+WantedBy=wm-session.target

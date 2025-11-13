@@ -116,7 +116,8 @@
                                     (string-match-p "/gnu/store" default-directory))
                           (nerd-icons-dired-mode))))
   :config
-  (advice-add #'dired-create-empty-file :around #'nerd-icons-dired--refresh-advice))
+  ;; (advice-add #'dired-create-empty-file :around #'nerd-icons-dired--refresh-advice)
+  )
 
 (use-package dired-open
   :straight t

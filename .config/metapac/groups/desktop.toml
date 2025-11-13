@@ -1,4 +1,5 @@
 arch = [
+"vnstat",
 "activitywatch-bin",
 "xdg-desktop-portal",
 "flatpak",
@@ -14,5 +15,4 @@ arch = [
 "gnome-themes-extra",
 "xsettingsd",
 "papirus-icon-theme",
-"gtk-engines",
-"gtk-engine-murrine",]
+"gtk-engines",]

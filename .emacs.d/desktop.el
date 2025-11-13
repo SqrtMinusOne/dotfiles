@@ -10,6 +10,9 @@
              (executable-find "shepherd"))
     (call-process "shepherd")))
 
+(defun my/exwm-run-systemd ()
+  (call-process "systemctl" nil nil nil "--user" "start" "wm-session.target"))
+
 (use-package pinentry
   :straight t
   :after (exwm)
@@ -592,6 +595,7 @@ _d_: Discord
   (my/exwm-run-polybar)
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
+  (my/exwm-run-systemd)
   (my/run-in-background "gpgconf --reload gpg-agent")
   (when (my/is-arch)
     (my/run-in-background "set_layout")))

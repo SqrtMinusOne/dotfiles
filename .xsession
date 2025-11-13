@@ -21,7 +21,7 @@ xss-lock -- i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png &
 # Some apps that have to be launched only once.
 picom &
 # nm-applet &
-dunst &
+# dunst &
 copyq &
 
 # Run the Emacs startup script as a session.

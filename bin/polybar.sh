@@ -12,6 +12,8 @@ elif [ "$hostname" = "eminence" ]; then
     fi
 elif [ "$hostname" = "iris" ]; then
     TRAY_MONITOR="HDMI-1"
+elif [ "$hostname" = "weiss" ]; then
+    TRAY_MONITOR="eDP-1"
 else
     TRAY_MONITOR="DP-1"
 fi

@@ -1,14 +1,14 @@
-decorations = "none"
+# decorations = "none"
 
 [colors.bright]
-Black = "#484848"
-Blue = "#cbcfff"
-Cyan = "#88c8ff"
-Green = "#8adf80"
-Magenta = "#df8fff"
-Red = "#ff8f88"
-White = "#ffffff"
-Yellow = "#fac200"
+black = "#484848"
+blue = "#cbcfff"
+cyan = "#88c8ff"
+green = "#8adf80"
+magenta = "#df8fff"
+red = "#ff8f88"
+white = "#ffffff"
+yellow = "#fac200"
 
 [colors.normal]
 black = "#222222"

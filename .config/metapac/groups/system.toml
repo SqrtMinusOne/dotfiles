@@ -23,6 +23,7 @@ arch = [
 "pacman-contrib",
 "openssh",
 "metapac",
+"networkmanager",
 "nano",
 "inetutils",
 "linux-firmware",

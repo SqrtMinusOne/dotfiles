@@ -1,5 +1,5 @@
-#+PROPERTY: header-args :mkdirp yes
 #+TITLE: Arch Linux
+#+PROPERTY: header-args :mkdirp yes
 
 I've decided to switch to [[https://archlinux.org/][Arch Linux]] and configure it declaratively with [[https://github.com/ripytide/metapac][metapac]].
 
@@ -70,13 +70,23 @@ yadm clone git@github.com:SqrtMinusOne/dotfiles.git
 #+end_src
 Checkout the changed files.
 
-Clone the org-mode repo:
+Clone org-mode and passwords repos:
 #+begin_src bash
-git clone git@github.com:SqrtMinusOne/dotfiles.git "/home/pavel/30-39 Life/32 org-mode"
+git clone ssh://git@git.sqrtminusone.xyz:222/sqrtminusone/org-mode.git "/home/pavel/30-39 Life/32 org-mode"
+git clone ssh://git@git.sqrtminusone.xyz:222/sqrtminusone/passwords.git "/home/pavel/.password-store"
+#+end_src
+
+And don't forget to configure git:
+#+begin_src bash
+git config --global user.email "thexcloud@gmail.com"
+git config --global user.name "SqrtMinusOne"
+#+end_src
+
+#+begin_src bash
+sudo systemctl enable --now NetworkManager
 #+end_src
 
 Install wakatime:
-
 #+begin_src bash
 cd ~/00-Scratch/
 git clone https://github.com/wakatime/wakatime-cli.git
@@ -95,7 +105,14 @@ Then run =emacs= and make sure it starts. Run:
 - =M-x nerd-icons-install-fonts=
 - =M-x all-the-icons-install-fonts=
 
+Run =rclone config=, configure the remotes. Then =M-x my/index-commands-sync=.
+
 If everything works, login into EXWM.
+
+Create some directories:
+#+begin_src bash
+mkdir -p /home/pavel/Pictures/screenshots/
+#+end_src
 
 * Metapac configuration
 [[https://github.com/ripytide/metapac][metapac]] is a declarative wrapper around different package managers, including [[https://wiki.archlinux.org/title/Pacman][pacman]] and [[https://github.com/Morganamilo/paru][paru]]. This means the required packages can be listed in configuration files and checked into version control.
@@ -106,20 +123,20 @@ In =metapac=, packages are listed in "groups", each group being a TOML file stat
 
 Below is the table enabling different groups on different hostnames:
 #+NAME: metapac-groups
-| Profile         | archlinux | kek |
-| browsers        | +         | +   |
-| console         | +         |     |
-| desktop         | +         |     |
-| desktop-misc    | +         |     |
-| desktop-polybar | +         |     |
-| desktop-rofi    | +         |     |
-| dev             | +         |     |
-| emacs           | +         |     |
-| latex           | +         |     |
-| mail            | +         |     |
-| music           | +         |     |
-| office          | +         |     |
-| system          | +         |     |
+| Profile         | archlinux | weiss |
+| browsers        | +         | +     |
+| console         | +         | +     |
+| desktop         | +         | +     |
+| desktop-misc    | +         | +     |
+| desktop-polybar | +         | +     |
+| desktop-rofi    | +         | +     |
+| dev             | +         | +     |
+| emacs           | +         | +     |
+| latex           | +         | +     |
+| mail            | +         | +     |
+| music           | +         | +     |
+| office          | +         | +     |
+| system          | +         | +     |
 
 And the code to format it as TOML:
 #+NAME: metapac-groups-format
@@ -167,6 +184,7 @@ Some necessary Arch packages:
 | linux-firmware      |
 | inetutils           |
 | nano                |
+| networkmanager      |
 | metapac             |
 | openssh             |
 | pacman-contrib      |
@@ -202,5 +220,5 @@ Various drivers, I'm not sure which I actually need, so...
 #+end_src
 
 #+begin_src scheme :tangle .config/metapac/groups/system.toml :noweb yes
-<<packages()>>
+<<packages()>ger>
 #+end_src

@@ -11420,6 +11420,7 @@ Or you can load up Element for a moment to see what the mention was, if that's e
 | Arch dependency    | Disabled |
 |--------------------+----------|
 | emacs-telega-sever | t        |
+| telegram-tdlib     |          |
 | ttf-unifont        |          |
 | gnu-free-fonts     |          |
 
@@ -11436,10 +11437,8 @@ Or you can load up Element for a moment to see what the mention was, if that's e
                              :background (my/color-value 'fg))
    (telega-entity-type-spoiler :background (my/color-value 'base8)))
   :config
-  (when (file-exists-p "~/.guix-extra-profiles/emacs/emacs/bin/telega-server")
-    (setq telega-server-command
-          (expand-file-name
-           "~/.guix-extra-profiles/emacs/emacs/bin/telega-server")))
+  (setq telega-server-libs-prefix "/usr")
+
   (setq telega-emoji-use-images nil)
   (setq telega-chat-fill-column 80)
   (setq telega-completing-read-function #'completing-read)
@@ -11461,18 +11460,6 @@ Or you can load up Element for a moment to see what the mention was, if that's e
     telega-chat-mode 3 "telega"
     telega-image-mode 3 "telega"
     telega-webpage-mode 3 "telega"))
-#+end_src
-
-Building =telega-server= can create problems. On Guix I can use the Guix package definition, on termux just build manually.
-#+begin_src emacs-lisp
-(defun my/telega-server-build ()
-  (interactive)
-  (setq telega-server-libs-prefix
-        (if (executable-find "guix")
-            (string-trim
-             (shell-command-to-string "guix build tdlib"))
-          (expand-file-name "~/bin/td/build/res/usr/local")))
-  (telega-server-build "CC=gcc"))
 #+end_src
 
 Setting up the modeline. The default mode string doesn't look great with my other modeline modules, so I override that.
@@ -12795,6 +12782,10 @@ The return value is a list of commands as defined by
 #+RESULTS:
 : my/index--mega-commands
 **** rclone
+| Arch dependency |
+|-----------------|
+| rclone          |
+
 This section wraps the [[https://rclone.org/bisync/][bisync]] command for rclone, which implements two-way sync.
 
 The general approach is:

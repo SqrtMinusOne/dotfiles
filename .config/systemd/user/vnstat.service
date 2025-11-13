@@ -1,0 +1,8 @@
+[Unit]
+Description=vnStat network monitor
+
+[Service]
+ExecStart=/usr/bin/vnstatd
+
+[Install]
+WantedBy=wm-session.target

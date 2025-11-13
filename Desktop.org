@@ -121,6 +121,7 @@ Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting 
         ((string-equal hostname "eminence") 120)
         ((string-equal hostname "violet") 120)
         ((string-equal hostname "iris") 120)
+        ((string-equal hostname "weiss") 120)
         (t 96)))
 #+end_src
 
@@ -130,13 +131,13 @@ Xft.dpi: <<get-dpi()>>
 ** Themes
 A few programs I use to customize the apperance are listed below.
 
-| Arch dependency    | Description             |
-|--------------------+-------------------------|
-| gtk-engine-murrine | My preferred GTK theme  |
-| gtk-engines        |                         |
-| papirus-icon-theme | My preferred Icon theme |
-| xsettingsd         | X11 settings daemon     |
-| gnome-themes-extra |                         |
+| Arch dependency    | Description             | Disabled |
+|--------------------+-------------------------+----------|
+| gtk-engine-murrine | My preferred GTK theme  | t        |
+| gtk-engines        |                         |          |
+| papirus-icon-theme | My preferred Icon theme |          |
+| xsettingsd         | X11 settings daemon     |          |
+| gnome-themes-extra |                         |          |
 
 [[https://github.com/derat/xsettingsd][xsettingsd]] is a lightweight daemon which configures X11 applications. It is launched with shepherd in the [[*Services][Services]] section.
 
@@ -244,7 +245,7 @@ xss-lock -- i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png &
 # Some apps that have to be launched only once.
 picom &
 # nm-applet &
-dunst &
+# dunst &
 copyq &
 
 # Run the Emacs startup script as a session.
@@ -271,6 +272,9 @@ As of now, these are polybar, feh and, shepherd:
   (when (and (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
              (executable-find "shepherd"))
     (call-process "shepherd")))
+
+(defun my/exwm-run-systemd ()
+  (call-process "systemctl" nil nil nil "--user" "start" "wm-session.target"))
 #+end_src
 *** Pinentry
 The GUI pinentry doesn't work too well with EXWM because of issues with popup windows, so we will use the Emacs one.
@@ -1216,6 +1220,7 @@ And the EXWM config itself.
   (my/exwm-run-polybar)
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
+  (my/exwm-run-systemd)
   (my/run-in-background "gpgconf --reload gpg-agent")
   (when (my/is-arch)
     (my/run-in-background "set_layout")))
@@ -2231,6 +2236,8 @@ elif [ "$hostname" = "eminence" ]; then
     fi
 elif [ "$hostname" = "iris" ]; then
     TRAY_MONITOR="HDMI-1"
+elif [ "$hostname" = "weiss" ]; then
+    TRAY_MONITOR="eDP-1"
 else
     TRAY_MONITOR="DP-1"
 fi
@@ -3293,7 +3300,7 @@ References:
 
     ### Misc/Advanced ###
     dmenu = /usr/bin/dmenu -p dunst:
-    browser = /home/pavel/.guix-extra-profiles/browsers/browsers/bin/firefox
+    browser = /user/bin/firefox
     always_run_script = true
     title = Dunst
     class = Dunst
@@ -3309,14 +3316,15 @@ References:
     mouse_middle_click = do_action
     mouse_right_click = close_all
 
-[experimental]
-    per_monitor_dpi = false
-
-[shortcuts]
+    ### Shortcuts
     close = ctrl+space
     close_all = ctrl+shift+space
     history = ctrl+grave
     context = ctrl+shift+period
+
+[experimental]
+    per_monitor_dpi = false
+
 
 [urgency_low]
     background = <<get-color(name="bg-other", quote=1)>>
@@ -4373,14 +4381,33 @@ flatpak install -y --user flathub com.github.wwmm.pulseeffects
 flatpak install -y --user flathub chat.rocket.RocketChat
 #+end_example
 * Services
-:PROPERTIES:
-:header-args+: :tangle ~/.config/shepherd/init.scm
-:END:
-[[https://www.gnu.org/software/shepherd/manual/html_node/index.html][GNU Shepherd]] is a service management system for GNU Guix. I'll probably migrate to systemd since I'm not on Guix anymore.
+See [[https://wiki.archlinux.org/title/Systemd/User][systemd/User]] on Arch Wiki how to create user services.
 
-| Arch dependency | Disabled |
-|-----------------+----------|
-| shepherd        | t        |
+After editing the services, run:
+#+begin_src bash
+systemctl --user daemon-reload
+#+end_src
+
+It's required to enable them manually for now:
+#+begin_src bash
+systemctl --user enable --now nm-applet
+systemctl --user enable --now aw-qt
+systemctl --user enable --now deterred-mpd
+systemctl --user enable --now vnstat
+systemctl --user enable --now xsettingsd
+systemctl --user enable --now flameshot
+#+end_src
+
+#+RESULTS:
+
+** Custom target
+Creating a custom target because otherwise systemd tries to launch everything before the WM is loaded.
+
+#+begin_src conf :tangle .config/systemd/user/wm-session.target
+[Unit]
+Description=Window Manager Session
+After=graphical-session.target
+#+end_src
 
 ** Music
 | Category | Arch dependency |
@@ -4393,51 +4420,29 @@ flatpak install -y --user flathub chat.rocket.RocketChat
 | music    | cuetools        |
 | music    | flac            |
 
-Music player daemon
-#+begin_src scheme
-(define mpd
-  (make <service>
-    #:provides '(mpd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("mpd" "--no-daemon"))
-    #:stop (make-kill-destructor)))
+#+begin_src conf :tangle .config/systemd/user/mpd.service
+[Unit]
+Description=Music Player Daemon
+
+[Service]
+ExecStart=/usr/bin/mpd --no-daemon
+
+[Install]
+WantedBy=graphical-session.target
 #+end_src
 
-MPD watcher
-#+begin_src scheme
-(define sqrt-data-agent-mpd
-  (make <service>
-    #:provides '(sqrt-data-agent-mpd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("sqrt_data_agent_mpd"))
-    #:stop (make-kill-destructor)
-    #:requires '(mpd)))
+#+begin_src conf :tangle .config/systemd/user/deterred-mpd.service
+[Unit]
+Description=DETERRED MPD Watcher
+ConditionPathExists=/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/watchers/deterred-mpd.py
 
-(define deterred-mpd
-  (make <service>
-    #:provides '(deterred-mpd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor
-             '("python" "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/watchers/deterred-mpd.py"
-               "--db" "/home/pavel/.deterred/database.db"))
-    #:stop (make-kill-destructor)
-    #:requires '(mpd)))
+[Service]
+ExecStart=/usr/bin/python "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/watchers/deterred-mpd.py" "--db" "/home/pavel/.deterred/database.db"
+
+[Install]
+WantedBy=wm-session.target
 #+end_src
-** GNU Mcron
-[[https://www.gnu.org/software/mcron/][GNU Mcron]] is a replacement for cron, written in Scheme.
 
-| Arch dependency | Disabled |
-|-----------------+----------|
-| mcron           | t        |
-
-#+begin_src scheme
-(define mcron
-  (make <service>
-    #:provides '(mcron)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("mcron"))
-    #:stop (make-kill-destructor)))
-#+end_src
 ** ActivityWatch
 [[https://activitywatch.net/][ActivityWatch]] is a FOSS time tracker. It tracks screen and application usage and has integrations with browsers, Emacs, etc.
 
@@ -4445,212 +4450,65 @@ MPD watcher
 |-------------------|
 | activitywatch-bin |
 
-aw-server
-#+begin_src scheme
-(define aw-server
-  (make <service>
-    #:provides '(aw-server)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("aw-server"))
-    #:stop (make-kill-destructor)))
+#+begin_src conf :tangle .config/systemd/user/aw-qt.service
+[Unit]
+Description=ActivityWatch
+
+[Service]
+ExecStart=/usr/bin/aw-qt
+
+[Install]
+WantedBy=wm-session.target
 #+end_src
 
-=aw-watcher-afk= has some problems with statup, so there is a wrapper script
-
-#+begin_src sh :tangle ~/bin/scripts/aw-watcher-afk-wrapper
-sleep 5
-aw-watcher-afk
-#+end_src
-
-aw-watcher-afk
-#+begin_src scheme
-(define aw-watcher-afk
-  (make <service>
-    #:provides '(aw-watcher-afk)
-    #:requires '(aw-server)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/aw-watcher-afk-wrapper"))
-    #:stop (make-kill-destructor)))
-#+end_src
-
-aw-watcher-window
-#+begin_src scheme
-(define aw-watcher-window
-  (make <service>
-    #:provides '(aw-watcher-window)
-    #:requires '(aw-server)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("aw-watcher-window"))
-    #:stop (make-kill-destructor)))
-#+end_src
-** PulseEffects
-#+begin_src scheme
-(define pulseeffects
-  (make <service>
-    #:provides '(pulseeffects)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("flatpak" "run" "com.github.wwmm.pulseeffects" "--gapplication-service"))
-    #:stop (make-kill-destructor)))
-#+end_src
 ** xsettingsd
-#+begin_src scheme
-(define xsettingsd
-  (make <service>
-    #:provides '(xsettingsd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("xsettingsd"))
-    #:stop (make-kill-destructor)))
+#+begin_src conf :tangle .config/systemd/user/xsettingsd.service
+[Unit]
+Description=X Settings Daemon
+
+[Service]
+ExecStart=/usr/bin/xsettingsd
+
+[Install]
+WantedBy=wm-session.target
 #+end_src
 ** nm-applet
-#+begin_src scheme
-(define nm-applet
-  (make <service>
-    #:provides '(nm-applet)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("nm-applet"))
-    #:stop (make-kill-destructor)))
-#+end_src
-** Discord rich presence
+#+begin_src conf :tangle .config/systemd/user/nm-applet.service
+[Unit]
+Description=Network Manager Applet
 
-References:
-- [[https://github.com/flathub/com.discordapp.Discord/wiki/Rich-Precense-(discord-rpc)][Rich Precense (discord rpc)]]
+[Service]
+ExecStart=/usr/bin/nm-applet
 
-#+begin_src scheme
-(define discord-rich-presence
-  (make <service>
-    #:provides '(discord-rich-presence)
-    #:one-shot? #t
-    #:start (make-system-constructor "ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0")))
-#+end_src
-** Polkit Authentication agent
-Launch an authentication agent. Necessary for stuff like =pkexec=. I suspect I'm not doing that the intended way, but it seems to work.
-
-#+begin_src scheme
-(define polkit-gnome
-  (make <service>
-    #:provides '(polkit-gnome)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("/lib/polkit-gnome/polkit-gnome-authentication-agent-1"))
-    #:stop (make-kill-destructor)))
-#+end_src
-** Xmodmap
-#+begin_src scheme
-(define xmodmap
-  (make <service>
-    #:provides '(xmodmap)
-    #:one-shot? #t
-    #:start (make-system-constructor "xmodmap /home/pavel/.Xmodmap")))
-#+end_src
-** VPN
-Run my [[file:Guix.org::*OpenVPN][OpenVPN setup]]. Not lauching this automatially, as it requires an active connection.
-
-#+begin_src scheme
-(define vpn
-  (make <service>
-    #:provides '(vpn)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/vpn-start"))
-    #:stop (make-kill-destructor)))
-#+end_src
-** Davmail
-#+begin_src scheme
-(define davmail
-  (make <service>
-    #:provides '(davmail)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/bin/davmail"))
-    #:stop (make-kill-destructor)))
+[Install]
+WantedBy=wm-session.target
 #+end_src
 ** vnstatd
-#+begin_src scheme
-(define vnstatd
-  (make <service>
-    #:provides '(vnstatd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("vnstatd" "-n"))
-    #:stop (make-kill-destructor)))
+
+| Arch dependency |
+|-----------------|
+| vnstat          |
+
+#+begin_src conf :tangle .config/systemd/user/vnstat.service
+[Unit]
+Description=vnStat network monitor
+
+[Service]
+ExecStart=/usr/bin/vnstatd
+
+[Install]
+WantedBy=wm-session.target
 #+end_src
-** opensnitch
-[[https://github.com/evilsocket/opensnitch][opensnitch]] is a linux firewall.
+** flameshot
+#+begin_src conf :tangle .config/systemd/user/flameshot.service
+[Unit]
+Description=Flameshot
 
-=sudoers= has to be modified this to work.
-#+begin_src scheme
-(define opensnitchd
-  (make <service>
-    #:provides '(opensnitchd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("sudo" "opensnitchd"))
-    #:stop (make-kill-destructor)))
+[Service]
+ExecStart=/usr/bin/flameshot
 
-(define opensnitch-ui
-  (make <service>
-    #:provides '(opensnitch-ui)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("sudo" "opensnitch-ui"))
-    #:stop (make-kill-destructor)))
-#+end_src
-** ollama
-#+begin_src scheme
-(define ollama
-  (make <service>
-    #:provides '(ollama)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("ollama" "serve"))
-    #:stop (make-kill-destructor)))
-#+end_src
-
-** Shepherd config
-For some reason, running start on a one-shot service started to hang shepherd, not sure why... Turining these off for now.
-
-Register services:
-#+begin_src scheme
-(register-services
- mpd
- sqrt-data-agent-mpd
- deterred-mpd
- mcron
- aw-server
- aw-watcher-afk
- aw-watcher-window
- pulseeffects
- xsettingsd
- ;; discord-rich-presence
- polkit-gnome
- vpn
- davmail
- ;; xmodmap
- nm-applet
- vnstatd
- ;; opensnitchd
- ;; opensnitch-ui
- ollama)
-#+end_src
-
-Daemonize shepherd
-#+begin_src scheme
-(action 'shepherd 'daemonize)
-#+end_src
-
-Run services
-#+begin_src scheme
-(for-each start '(mpd
-                  sqrt-data-agent-mpd
-                  deterred-mpd
-                  mcron
-                  aw-server
-                  aw-watcher-afk
-                  aw-watcher-window
-                  pulseeffects
-                  xsettingsd
-                  ;; discord-rich-presence
-                  ;; polkit-gnome
-                  davmail
-                  ;; ; xmodmap
-                  ;; nm-applet
-                  vnstatd
-                  ;; opensnitchd
-                  ;; opensnitch-ui
-                  ))
+[Install]
+WantedBy=wm-session.target
 #+end_src
 * Arch settings
 Other desktop programs I use are listed below.
