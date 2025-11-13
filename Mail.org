@@ -298,7 +298,7 @@ echo "Running pre-new filters"
 <<mail-tags(move="t",archive_root="Archive",root="pvkorytov_etu_mbox")>>
 echo "Pre-new filters done"
 
-parallel --link -j0 "(cd /home/pavel/Mail/{1}/ && {2} {3})" ::: thexcloud progin6304 pvkorytov_etu ::: "$GMI" "$GMI" "offlineimap" ::: sync sync ""
+parallel --link -j0 "(cd /home/pavel/Mail/{1}/ && {2} {3})" ::: thexcloud progin6304 pvkorytov_etu ::: "$GMI" "$GMI" "offlineimap" ::: sync sync "-a pvkorytov-mbox"
 #+end_src
 
 *** =post_new=

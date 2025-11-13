@@ -35,5 +35,5 @@ notmuch search --output=files "NOT path:pvkorytov_etu_mbox/Etu.Grad_School/cur/*
 notmuch search --output=files "NOT path:pvkorytov_etu_mbox/Archive/cur/** AND path:pvkorytov_etu_mbox/** AND NOT tag:inbox AND NOT tag:sent AND NOT tag:spam AND NOT tag:trash AND NOT tag:job.digital AND NOT tag:job.digital.docs AND NOT tag:job.digital.support AND NOT tag:job.digital.superservice AND NOT tag:job.digital.applicants AND NOT tag:job.digital.testers AND NOT tag:job.moevm AND NOT tag:etu AND NOT tag:etu.grad-school AND tag:pvkorytov" | xargs -I ! mv ! ~/Mail/pvkorytov_etu_mbox/Archive/cur/
 echo "Pre-new filters done"
 
-parallel --link -j0 "(cd /home/pavel/Mail/{1}/ && {2} {3})" ::: thexcloud progin6304 pvkorytov_etu ::: "$GMI" "$GMI" "offlineimap" ::: sync sync ""
+parallel --link -j0 "(cd /home/pavel/Mail/{1}/ && {2} {3})" ::: thexcloud progin6304 pvkorytov_etu ::: "$GMI" "$GMI" "offlineimap" ::: sync sync "-a pvkorytov-mbox"
 # =pre_new=:2 ends here
