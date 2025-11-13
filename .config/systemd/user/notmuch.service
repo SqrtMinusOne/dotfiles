@@ -1,0 +1,6 @@
+[Unit]
+Description=Update notmuch mail index
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /home/pavel/bin/scripts/check-email

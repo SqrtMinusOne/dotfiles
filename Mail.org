@@ -358,10 +358,33 @@ fi
 echo "$(date +%s)" > $CHECK_FILE
 #+end_src
 
-The script is ran via GNU Mcron every 5 minutes.
-#+begin_src scheme :tangle ~/.config/cron/mail.guile
-(job "*/5 * * * * " "~/bin/scripts/check-email")
+The script is ran via systemd every 5 minutes.
+#+begin_src conf :tangle .config/systemd/user/notmuch.service
+[Unit]
+Description=Update notmuch mail index
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /home/pavel/bin/scripts/check-email
 #+end_src
+
+#+begin_src conf :tangle .config/systemd/user/notmuch.timer
+[Unit]
+Description=Run notmuch sync script every 5 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target
+#+end_src
+
+Don't forget to run:
+#+begin_src bash
+systemctl --user enable --now notmuch.timer
+#+end_src
+
 * MSMTP
 | Arch dependency |
 |-----------------|
