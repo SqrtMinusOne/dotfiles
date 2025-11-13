@@ -64,6 +64,12 @@ gpg --edit-key <keyname>
 trust
 #+end_src
 
+Also the following to =~/.ssh/config=:
+#+begin_src conf-space
+Host *
+    AddKeysToAgent yes
+#+end_src
+
 Then, clone the dotfiles repo with =yadm=:
 #+begin_src bash
 yadm clone git@github.com:SqrtMinusOne/dotfiles.git

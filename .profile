@@ -34,21 +34,9 @@ fi
 # My paths:1 ends here
 
 #!/usr/bin/env bash
-# [[file:Console.org::*ssh-agent][ssh-agent:1]]
-SSH_AGENT_DIR="/tmp"
-
-if [ "$IS_ANDROID" == "true" ]; then
-    SSH_AGENT_DIR="/data/data/com.termux/files/tmp"
-    mkdir -p $SSH_AGENT_DIR
-fi
-
-if ! pgrep -u "$USER" ssh-agent > /dev/null; then
-    ssh-agent -t 1h > "$SSH_AGENT_DIR/ssh-agent.env"
-fi
-if [[ ! -f "$SSH_AUTH_SOCK" ]]; then
-    source "$SSH_AGENT_DIR/ssh-agent.env" >/dev/null
-fi
-# ssh-agent:1 ends here
+# [[file:Console.org::*ssh-agent][ssh-agent:3]]
+export SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
+# ssh-agent:3 ends here
 
 # [[file:Console.org::*Misc settings][Misc settings:1]]
 export JUPYTER_CONFIG_DIR=$HOME/.config/jupyter

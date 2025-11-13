@@ -87,9 +87,8 @@ fi
 ** ssh-agent
 I'm paranoid so I encrypt my SSH keys.
 
-Got the idea for below from [[https://wiki.archlinux.org/title/SSH_keys#SSH_agents][ArchWiki]]:
-
-#+begin_src bash
+I used to do the below, as instructed by [[https://wiki.archlinux.org/title/SSH_keys#SSH_agents][ArchWiki]]:
+#+begin_src bash :tangle no
 SSH_AGENT_DIR="/tmp"
 
 if [ "$IS_ANDROID" == "true" ]; then
@@ -104,6 +103,16 @@ if [[ ! -f "$SSH_AUTH_SOCK" ]]; then
     source "$SSH_AGENT_DIR/ssh-agent.env" >/dev/null
 fi
 #+end_src
+
+But for now switched to the [[https://wiki.archlinux.org/title/SSH_keys#Start_ssh-agent_with_systemd_user][systemd unit]], which requires:
+#+begin_src bash :tangle no
+systemctl --user enable --now ssh-agent.service
+#+end_src
+
+#+begin_src bash
+export SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
+#+end_src
+
 ** Misc settings
 Set Jupyter config PATH. I keep it from my Guix config where it defaulted to some readonly folder.
 #+begin_src sh
@@ -713,17 +722,15 @@ References:
 - [[https://github.com/alacritty/alacritty/blob/master/alacritty.yml][default config]]
 
 #+begin_src toml :noweb yes
-decorations = "none"
-
 [colors.bright]
-Black = "<<get-color(name="light-black")>>"
-Red = "<<get-color(name="light-red")>>"
-Green = "<<get-color(name="light-green")>>"
-Yellow = "<<get-color(name="light-yellow")>>"
-Blue = "<<get-color(name="light-blue")>>"
-Magenta = "<<get-color(name="light-magenta")>>"
-Cyan = "<<get-color(name="light-cyan")>>"
-White = "<<get-color(name="light-white")>>"
+black = "<<get-color(name="light-black")>>"
+red = "<<get-color(name="light-red")>>"
+green = "<<get-color(name="light-green")>>"
+yellow = "<<get-color(name="light-yellow")>>"
+blue = "<<get-color(name="light-blue")>>"
+magenta = "<<get-color(name="light-magenta")>>"
+cyan = "<<get-color(name="light-cyan")>>"
+white = "<<get-color(name="light-white")>>"
 
 [colors.normal]
 black = "<<get-color(name="black")>>"
