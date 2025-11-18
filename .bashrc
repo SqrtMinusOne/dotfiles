@@ -129,9 +129,9 @@ fi
 
 # [[file:Console.org::*Micromamba][Micromamba:1]]
 init_mamba () {
-    export MAMBA_EXE="/home/pavel/.guix-extra-profiles/dev/dev/bin/micromamba";
+    export MAMBA_EXE="/usr/bin/micromamba";
     export MAMBA_ROOT_PREFIX="/home/pavel/micromamba";
-    __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+    __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
     if [ $? -eq 0 ]; then
         eval "$__mamba_setup"
     else

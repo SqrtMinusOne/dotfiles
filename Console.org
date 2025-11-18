@@ -358,9 +358,9 @@ Yeah, tell this to yourself
 
 #+begin_src bash
 init_mamba () {
-    export MAMBA_EXE="/home/pavel/.guix-extra-profiles/dev/dev/bin/micromamba";
+    export MAMBA_EXE="/usr/bin/micromamba";
     export MAMBA_ROOT_PREFIX="/home/pavel/micromamba";
-    __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+    __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
     if [ $? -eq 0 ]; then
         eval "$__mamba_setup"
     else
@@ -455,9 +455,9 @@ set fish_greeting
 First, a function to initialize micromamba.
 #+begin_src fish
 function init_mamba
-    set -gx MAMBA_EXE "/home/pavel/.guix-extra-profiles/dev/dev/bin/micromamba"
+    set -gx MAMBA_EXE "/usr/bin/micromamba"
     set -gx MAMBA_ROOT_PREFIX "/home/pavel/micromamba"
-    $MAMBA_EXE shell hook --shell fish --prefix $MAMBA_ROOT_PREFIX | source
+    $MAMBA_EXE shell hook --shell fish --root-prefix $MAMBA_ROOT_PREFIX | source
 end
 
 if test -n "$INIT_MAMBA";

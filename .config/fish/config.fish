@@ -38,9 +38,9 @@ set fish_greeting
 
 # [[file:../../Console.org::*Micromamba][Micromamba:1]]
 function init_mamba
-    set -gx MAMBA_EXE "/home/pavel/.guix-extra-profiles/dev/dev/bin/micromamba"
+    set -gx MAMBA_EXE "/usr/bin/micromamba"
     set -gx MAMBA_ROOT_PREFIX "/home/pavel/micromamba"
-    $MAMBA_EXE shell hook --shell fish --prefix $MAMBA_ROOT_PREFIX | source
+    $MAMBA_EXE shell hook --shell fish --root-prefix $MAMBA_ROOT_PREFIX | source
 end
 
 if test -n "$INIT_MAMBA";
