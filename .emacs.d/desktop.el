@@ -381,14 +381,14 @@ DIR is either 'left or 'right."
 _t_: Terminal (Alacritty)
 _b_: Browser (Firefox)
 _s_: Rocket.Chat
-_e_: Element
-_d_: Discord
+_d_: DBeaver
+_c_: Chromium
 "
   ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
   ("b" (lambda () (interactive) (my/run-in-background "firefox")))
-  ("s" (lambda () (interactive) (my/run-in-background "flatpak run chat.rocket.RocketChat")))
-  ("e" (lambda () (interactive) (my/run-in-background "flatpak run im.riot.Riot")))
-  ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
+  ("s" (lambda () (interactive) (my/run-in-background "rocketchat-desktop")))
+  ("d" (lambda () (interactive) (my/run-in-background "dbeaver")))
+  ("c" (lambda () (interactive) (my/run-in-background "chromium"))))
 
 (defun my/exwm-lock ()
   (interactive)
@@ -594,10 +594,10 @@ _d_: Discord
 
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
-  (my/exwm-run-systemd)
   (my/run-in-background "gpgconf --reload gpg-agent")
   (my/exwm-run-polybar)
   (setenv "DBUS_SESSION_BUS_ADDRESS" "unix:path=/run/user/1000/bus")
+  (my/exwm-run-systemd)
   (when (my/is-arch)
     (my/run-in-background "set_layout")))
 

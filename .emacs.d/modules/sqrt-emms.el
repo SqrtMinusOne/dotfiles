@@ -82,6 +82,8 @@
   ;; I have everything I need in polybar
   (emms-mode-line-mode -1)
   (emms-playing-time-display-mode -1)
+  (delq 'emms-mark-mode evil-emacs-state-modes)
+  (delq 'emms-browser-mode evil-emacs-state-modes)
   (defun emms-info-mpd-process (track info)
     (dolist (data info)
       (let ((name (car data))
