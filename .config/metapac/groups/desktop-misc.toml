@@ -1,4 +1,5 @@
 arch = [
+"veracrypt",
 "android-file-transfer",
 "remmina",
 "noto-fonts-emoji",

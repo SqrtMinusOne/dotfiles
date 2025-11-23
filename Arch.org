@@ -70,6 +70,12 @@ Host *
     AddKeysToAgent yes
 #+end_src
 
+And run:
+#+begin_src bash
+systemctl enable --user --now ssh-agent
+#+end_src
+It looks like it is necessary to run at least once.
+
 Then, clone the dotfiles repo with =yadm=:
 #+begin_src bash
 yadm clone git@github.com:SqrtMinusOne/dotfiles.git
@@ -134,6 +140,8 @@ sudo systemctl disable --now systemd-networkd
 #+end_src
 And reboot. After the reboot, =NetworkManager= should run using =wpa_supplicant= as backend for Wi-Fi.
 
+Don't forget to sync mail and enable the sync timer.
+
 * Metapac configuration
 [[https://github.com/ripytide/metapac][metapac]] is a declarative wrapper around different package managers, including [[https://wiki.archlinux.org/title/Pacman][pacman]] and [[https://github.com/Morganamilo/paru][paru]]. This means the required packages can be listed in configuration files and checked into version control.
 
@@ -143,20 +151,21 @@ In =metapac=, packages are listed in "groups", each group being a TOML file stat
 
 Below is the table enabling different groups on different hostnames:
 #+NAME: metapac-groups
-| Profile         | archlinux | weiss |
-| browsers        | +         | +     |
-| console         | +         | +     |
-| desktop         | +         | +     |
-| desktop-misc    | +         | +     |
-| desktop-polybar | +         | +     |
-| desktop-rofi    | +         | +     |
-| dev             | +         | +     |
-| emacs           | +         | +     |
-| latex           | +         | +     |
-| mail            | +         | +     |
-| music           | +         | +     |
-| office          | +         | +     |
-| system          | +         | +     |
+| Profile         | archlinux | weiss | violet |
+| browsers        | +         | +     | +      |
+| console         | +         | +     | +      |
+| desktop         | +         | +     | +      |
+| desktop-misc    | +         | +     | +      |
+| desktop-polybar | +         | +     | +      |
+| desktop-rofi    | +         | +     | +      |
+| dev             | +         | +     | +      |
+| emacs           | +         | +     | +      |
+| latex           | +         | +     | +      |
+| mail            | +         | +     | +      |
+| music           | +         | +     | +      |
+| nvidia          |           |       | +      |
+| office          | +         | +     | +      |
+| system          | +         | +     | +      |
 
 And the code to format it as TOML:
 #+NAME: metapac-groups-format
@@ -231,14 +240,24 @@ Various drivers, I'm not sure which I actually need, so...
 | libva-intel-driver |
 | intel-media-driver |
 | vulkan-intel       |
-| nvidia-utils       |
 | vulkan-radeon      |
 | xf86-video-amdgpu  |
 | xf86-video-ati     |
 
+NVIDIA drivers for violet
+| Category | Arch dependency |
+|----------+-----------------|
+| nvidia   | cuda            |
+| nvidia   | nvidia-utils    |
+| nvidia   | nvidia          |
+
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
 (my/format-arch-dependencies category)
+#+end_src
+
+#+begin_src scheme :tangle .config/metapac/groups/nvidia.toml :noweb yes
+<<packages("nvidia")>>
 #+end_src
 
 #+begin_src scheme :tangle .config/metapac/groups/system.toml :noweb yes

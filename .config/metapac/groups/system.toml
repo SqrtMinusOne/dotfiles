@@ -2,7 +2,6 @@ arch = [
 "xf86-video-ati",
 "xf86-video-amdgpu",
 "vulkan-radeon",
-"nvidia-utils",
 "vulkan-intel",
 "intel-media-driver",
 "libva-intel-driver",

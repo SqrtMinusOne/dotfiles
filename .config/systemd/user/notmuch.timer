@@ -1,5 +1,5 @@
 [Unit]
-Description=Run notmuch new every 5 minutes
+Description=Run notmuch sync script every 5 minutes
 
 [Timer]
 OnBootSec=1min
