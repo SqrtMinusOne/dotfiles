@@ -4228,16 +4228,17 @@ This section generates manifests for various desktop software that I'm using.
 | browsers | firefox                |
 | browsers | firefox-tridactyl      |
 ** Office & Multimedia
-| Category | Arch dependency |
-|----------+-----------------|
-| office   | libreoffice-fresh |
-| office   | gimp            |
-| office   | krita           |
-| office   | ffmpeg          |
-| office   | kdenlive        |
-| office   | inkscape        |
-| office   | okular          |
-| office   | obs-studio      |
+| Category | Arch dependency    |
+|----------+--------------------|
+| office   | libreoffice-fresh  |
+| office   | gimp               |
+| office   | krita              |
+| office   | ffmpeg             |
+| office   | kdenlive           |
+| office   | inkscape           |
+| office   | okular             |
+| office   | obs-studio         |
+| office   | rocketchat-desktop |
 ** LaTeX
 | Category | Arch dependency          | Disabled |
 |----------+--------------------------+----------|
@@ -4263,12 +4264,14 @@ This section generates manifests for various desktop software that I'm using.
 | latex    | biber                    |          |
 | latex    | python-pygments          |          |
 | latex    | ttf-ms-fonts             |          |
+| latex    | ttf-dejavu               |          |
 ** Dev
 | Category | Arch dependency   | Disabled |
 |----------+-------------------+----------|
 | dev      | micromamba-bin    |          |
 | dev      | pandoc-cli        |          |
 | dev      | docker            |          |
+| dev      | docker-compose    |          |
 | dev      | postgresql        |          |
 | dev      | virt-manager      |          |
 | dev      | libvirt           |          |
@@ -4290,11 +4293,12 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | python            |          |
 | dev      | python-pip        |          |
 | dev      | python-virtualenv |          |
-| dev      | python-build   |          |
+| dev      | python-build      |          |
 | dev      | socat             |          |
 | dev      | wireshark-qt      |          |
 | dev      | git               |          |
 | dev      | rust              |          |
+| dev      | dbeaver           |          |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""

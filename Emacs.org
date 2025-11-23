@@ -12811,7 +12811,6 @@ First, default options for =rclone bisync=:
 
 A [[https://rclone.org/bisync/#filtering][filters file]] for rclone:
 #+begin_src text :tangle ~/.config/rclone/filters-bisync
-- .*
 - ~*
 - .debris
 #+end_src

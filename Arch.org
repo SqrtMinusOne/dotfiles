@@ -119,12 +119,20 @@ If everything works, login into EXWM.
 Create some directories:
 #+begin_src bash
 mkdir -p /home/pavel/Pictures/screenshots/
+mkdir -p /home/pavel/.mpd/
 #+end_src
 
 Also run:
 #+begin_src bash
 sudo chmod +s /usr/bin/light
 #+end_src
+
+For I've decided to use =NetworkManager=, but Arch Linux uses =iwd= by default, which causes issues. Disable it by:
+#+begin_src bash
+sudo systemctl disable --now iwd
+sudo systemctl disable --now systemd-networkd
+#+end_src
+And reboot. After the reboot, =NetworkManager= should run using =wpa_supplicant= as backend for Wi-Fi.
 
 * Metapac configuration
 [[https://github.com/ripytide/metapac][metapac]] is a declarative wrapper around different package managers, including [[https://wiki.archlinux.org/title/Pacman][pacman]] and [[https://github.com/Morganamilo/paru][paru]]. This means the required packages can be listed in configuration files and checked into version control.

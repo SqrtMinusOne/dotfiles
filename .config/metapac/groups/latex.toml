@@ -1,4 +1,5 @@
 arch = [
+"ttf-dejavu",
 "ttf-ms-fonts",
 "python-pygments",
 "biber",

@@ -1,4 +1,5 @@
 arch = [
+"rocketchat-desktop",
 "obs-studio",
 "okular",
 "inkscape",
