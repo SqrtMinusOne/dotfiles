@@ -85,6 +85,11 @@ First things first, lexical binding.
 ;;; -*- lexical-binding: t -*-
 #+end_src
 
+Adding =emacs= to the package list.
+| Arch dependency |
+|-----------------|
+| emacs           |
+
 ** straight.el
 Straight.el is my Emacs package manager of choice. The following is its bootstrap script.
 
@@ -237,6 +242,7 @@ So, first, specify how the modules are stored:
 #+end_src
 
 Then, scan =Emacs.org= for headings with the =MODULE_NAME= property and set the tangle property:
+
 #+begin_src emacs-lisp
 (defun my/modules--refresh-and-list ()
   (let (modules-list
@@ -1118,8 +1124,10 @@ This script is being run from the [[file:Desktop.org::*i3wm][i3 configuration]].
 For this to work, we need to make sure that Emacs starts a server, so here is an expression to do just that:
 #+BEGIN_SRC emacs-lisp
 (unless (or my/remote-server my/nested-emacs)
-  (add-hook 'after-init-hook #'server-start))
+  ;; (add-hook 'after-init-hook #'server-start)
+  )
 #+END_SRC
+Edit [2025-11-12 Wed]: This has stopped working with EXWM.
 
 And here is a simple macro to do the Emacs -> i3 part:
 #+begin_src emacs-lisp
@@ -1371,7 +1379,7 @@ References:
 
 I also want to call =xkb-switch= in EXWM buffers with the same keybindig.
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | xkb-switch      |
 
@@ -1604,7 +1612,7 @@ A few CLI alternatives:
     "m" 'magit
     "M" 'magit-file-dispatch)
   :config
-  (require 'forge)
+  ;; (require 'forge)
   (setq magit-blame-styles
         '((headings
            (heading-format . "%-20a %C %s\n"))
@@ -1630,9 +1638,9 @@ A few CLI alternatives:
   :commands (git-timemachine))
 #+end_src
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
-| difftastic-bin  |
+| difftastic      |
 
 [[https://github.com/pkryger/difftastic.el][difftastic.el]] is a wrapper package for [[https://difftastic.wilfred.me.uk/][difftastic]].
 #+begin_src emacs-lisp
@@ -2149,7 +2157,7 @@ References:
 :MODULE_NAME: wakatime
 :header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-wakatime.el :comments links
 :END:
-Before I figure out how to package this for Guix:
+Before I figure out how to package this for +Guix+ Arch:
 - Clone [[https://github.com/wakatime/wakatime-cli][the repo]]
 - Run ~go build~
 - Copy the binary to the =~/bin= folder
@@ -2162,6 +2170,7 @@ Before I figure out how to package this for Guix:
   (advice-add 'wakatime-init :after
               (lambda ()
                 (setq wakatime-cli-path (or
+                                         (executable-find "wakatime")
                                          (executable-find "wakatime-cli")
                                          (expand-file-name "~/bin/wakatime-cli")))))
   (when (file-exists-p "~/.wakatime.cfg")
@@ -2339,8 +2348,8 @@ My colorschemes of choice.
 #+end_src
 
 #+begin_src emacs-lisp
-(use-package modus-themes
-  :straight t)
+;; (use-package modus-themes
+;;   :straight (:build (:not native-compile)))
 #+end_src
 
 Let's see...
@@ -2426,9 +2435,12 @@ Now, let's get the current color from =doom=. =doom-themes= provide =doom-color=
 And the same for =modus-themes=. =my/modus-color= has to accept the same arguments as I use for =my/doom-color= for backward compatibility, which requires a bit more tuning.
 #+begin_src emacs-lisp
 (defun my/modus-get-base (color)
-  (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
-        (base-start (cadr (assoc 'bg-main (modus-themes--current-theme-palette))))
-        (base-end (cadr (assoc 'fg-dim (modus-themes--current-theme-palette)))))
+  (let* ((base-value (string-to-number (substring (symbol-name color) 4 5)))
+         (palette (modus-themes-get-theme-palette
+                   (or (my/modus-p) (my/ef-p))
+                   :with-overrides :with-user-palette))
+         (base-start (cadr (assoc 'bg-main palette)))
+         (base-end (cadr (assoc 'fg-dim palette))))
     (nth base-value (ct-gradient 9 base-start base-end t))))
 
 (defun my/prot-color (color palette)
@@ -2468,10 +2480,11 @@ And the same for =modus-themes=. =my/modus-color= has to accept the same argumen
      (t (cadr (assoc color palette))))))
 
 (defun my/modus-color (color)
-  (my/prot-color color (modus-themes--current-theme-palette)))
+  (my/prot-color color (modus-themes-get-theme-palette
+                        (or (my/modus-p) (my/ef-p))
+                        :with-overrides :with-user-palette)))
 
-(defun my/ef-color (color)
-  (my/prot-color color (ef-themes--current-theme-palette)))
+(defalias 'my/ef-color 'my/modus-color)
 #+end_src
 
 Test the three functions.
@@ -2556,9 +2569,13 @@ This macro puts lambdas to =my/my-theme-update-colors-hook= that updates faces i
                                       collect (eval value)))))))
   (enable-theme 'my-theme-1))
 
+(defun my/advice-my-theme ()
+  (advice-add 'load-theme :after #'my/update-my-theme))
+
 (unless my/is-termux
-  (advice-add 'load-theme :after #'my/update-my-theme)
-  (add-hook 'emacs-startup-hook #'my/update-my-theme))
+  (add-hook 'emacs-startup-hook #'my/update-my-theme)
+ ;; (add-hook 'emacs-startup-hook #'my/advice-my-theme)
+)
 #+end_src
 
 Defining colors for =tab-bar.el=:
@@ -2585,6 +2602,7 @@ The built-in =load-theme= does not deactivate the previous theme, so here's a fu
                        (eq enabled-theme theme)))
            do (disable-theme enabled-theme))
   (load-theme theme t)
+  (my/update-my-theme)
   (when current-prefix-arg
     (my/regenerate-desktop)))
 #+end_src
@@ -3343,6 +3361,7 @@ I'm not actually using that, but its query editor is pretty useful to debug =tre
 #+begin_src emacs-lisp
 (use-package combobulate
   :straight (:host github :repo "mickeynp/combobulate")
+  :disabled
   :commands (combobulate))
 #+end_src
 *** DAP
@@ -4220,7 +4239,7 @@ Section snippets. The code turned out to be more complicated than just writing t
   :straight t)
 #+end_src
 *** PlantUML
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | plantuml        |
 
@@ -4530,9 +4549,9 @@ Automatically creates & manages virtualenvs and stores data in =Pipfile= and =Pi
 *** OFF (OFF) yapf
 [[https://github.com/google/yapf][yapf]] is a formatter for Python files.
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
-| python-yapf     |
+| yapf            |
 
 References:
 - [[https://github.com/google/yapf][yapf repo]]
@@ -4556,7 +4575,7 @@ column_limit = 80
 *** black
 [[https://github.com/psf/black][black]] is a formatter for Python files.
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | python-black    |
 
@@ -4571,7 +4590,7 @@ column_limit = 80
 *** isort
 [[https://github.com/PyCQA/isort][isort]] is a Python package to sort Python imports.
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | python-isort    |
 
@@ -4694,7 +4713,7 @@ To fix that, I've modified the following function in the =python-pytest= package
 *** code-cells
 Support for text with magic comments.
 
-| Guix dependency | Disabled |
+| Arch dependency | Disabled |
 |-----------------+----------|
 | python-jupytext | t        |
 
@@ -4967,7 +4986,7 @@ Emacs integration for [[http://gnuplot.info/][gnuplot]].
 :header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
 :END:
 *** C#
-| Guix dependencies | Disabled |
+| Arch dependencies | Disabled |
 |-------------------+----------|
 | omnisharp         | t        |
 | dotnet            | t        |
@@ -6146,6 +6165,8 @@ We can get the clocked value in minutes with =org-clock-sum=. This weird functio
              (org-element-property :end element))))
     (with-temp-buffer
       (insert s)
+      (let (org-mode-hook)
+        (org-mode))
       (org-clock-sum)
       org-clock-file-total-minutes)))
 #+end_src
@@ -7191,9 +7212,8 @@ Some resources that helped me along the way (and still help):
 - [[https://www.youtube.com/watch?v=-TpWahIzueg][System Crafters Live! - Can You Apply Zettelkasten in Emacs?]]
 
 **** Basic package configuration
-| Guix dependency       | Disabled |
+| Arch dependency       | Disabled |
 |-----------------------+----------|
-| emacs-emacsql-sqlite3 | t        |
 | graphviz              |          |
 
 About installing the package on Guix (*CREDIT*: thanks @Ashraz on the SystemCrafters discord)
@@ -8104,10 +8124,10 @@ No idea why, but somehow the exported file uses english words if there isn't =:d
 ** System configuration
 Functions related to literate configuration.
 
-*** Tables for Guix Dependencies
-This section deals with using [[https://guix.gnu.org/en/cookbook/en/html_node/Advanced-package-management.html#Advanced-package-management][using profiles in GNU Guix]].
+*** Tables for Arch Dependencies
+I used to use [[https://guix.gnu.org/en/cookbook/en/html_node/Advanced-package-management.html#Advanced-package-management][profiles in GNU Guix]]. Now that I've switched to [[https://github.com/ripytide/metapac][metapac]], I want to keep the same approach.
 
-A "profile" in Guix is a way to group package installations. For instance, I have a "music" profile that has software like [[https://www.musicpd.org/][MPD]], [[https://github.com/ncmpcpp/ncmpcpp][ncmpcpp]] that I'm still occasionally using because of its tag editor, etc. Corresponding to that profile, there's a manifest named =music.scm= that looks like this:
+A "profile" (metapac calls them "groups") is a way to group package installations. For instance, I have a "music" profile that has software like [[https://www.musicpd.org/][MPD]], [[https://github.com/ncmpcpp/ncmpcpp][ncmpcpp]] that I'm still occasionally using because of its tag editor, etc. In Guix, corresponding to that profile, there's a manifest named =music.scm= that looks like this:
 #+begin_src scheme
 (specifications->manifest
  '(
@@ -8121,12 +8141,12 @@ A "profile" in Guix is a way to group package installations. For instance, I hav
    "mpd"))
 #+end_src
 
-I could generate this file with =org-babel= as any other, but that is often not so convenient. For example, I have a [[https://github.com/polybar/polybar][polybar]] module that uses [[https://github.com/risacher/sunwait][sunwait]] to show sunset and sunrise times, and ideally, I want to declare =sunwait= to be in the "desktop-polybar" profile in the same section that has the polybar module definition and the bash script.
+Metapac stores the same info in TOML. I could generate this file with =org-babel= as any other, but that is often not so convenient. For example, I have a [[https://github.com/polybar/polybar][polybar]] module that uses [[https://github.com/risacher/sunwait][sunwait]] to show sunset and sunrise times, and ideally, I want to declare =sunwait= to be in the "desktop-polybar" profile in the same section that has the polybar module definition and the bash script.
 
 So here's an approach I came up with. The relevant section of the config looks like this:
 #+begin_example
 ,*** sun
-| Category        | Guix dependency |
+| Category        | Arch dependency |
 |-----------------+-----------------|
 | desktop-polybar | sunwait         |
 
@@ -8141,17 +8161,18 @@ Prints out the time of sunrise/sunset. Uses [[https://github.com/risacher/sunwai
 ,#+end_src
 #+end_example
 
-So =sunwait= is declared in an Org table with =Guix dependency= in the header. Such tables are spread through my configuration files.
+So =sunwait= is declared in an Org table with =Arch dependency= in the header. Such tables are spread through my configuration files.
 
 Thus I made a function that extracts packages from all such tables from the current Org buffer. The rules are as follows:
-- If a column name matches =[G|g]uix.*dep=, its contents are added to the result.
+- If a column name matches =[A|a]rch.*dep=, its contents are added to the result.
 - If =CATEGORY= is passed, a column with name =[C|c]ategory= is used to filter results. That way, one Org file can be used to produce multiple manifests.
 - If =CATEGORY= is not passed, entries with the non-empty category are filtered out
 - If there is a =[D|d]isabled= column, entries that have a non-empty value in this column are filtered out.
+- If there is a =[S|s]ource= column, it selects the backend for metapac, which is =arch= by default.
 
 And here is the implementation:
 #+begin_src emacs-lisp :noweb-ref guix-tables
-(defun my/extract-guix-dependencies (&optional category)
+(defun my/extract-arch-dependencies (&optional category)
   (let ((dependencies '()))
     (org-table-map-tables
      (lambda ()
@@ -8164,7 +8185,7 @@ And here is the implementation:
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p "[G|g]uix.*dep" elem))))
+                        (string-match-p "[A|a]rch.*dep" elem))))
               (category-name-index
                (cl-position
                 nil
@@ -8176,7 +8197,13 @@ And here is the implementation:
                 nil
                 (mapcar #'substring-no-properties (nth 0 table))
                 :test (lambda (_ elem)
-                        (string-match-p ".*[D|d]isabled.*" elem)))))
+                        (string-match-p ".*[D|d]isabled.*" elem))))
+              (source-index
+               (cl-position
+                nil
+                (mapcar #'substring-no-properties (nth 0 table))
+                :test (lambda (_ elem)
+                        (string-match-p ".*[S|s]ource.*" elem)))))
          (when dep-name-index
            (dolist (elem (cdr table))
              (when
@@ -8196,47 +8223,48 @@ And here is the implementation:
                   (or
                    (not disabled-name-index)
                    (string-empty-p (nth disabled-name-index elem))))
-               (add-to-list
-                'dependencies
-                (substring-no-properties (nth dep-name-index elem)))))))))
+               (let ((source
+                      (or
+                       (when (and source-index
+                                  (not (string-empty-p (nth source-index elem))))
+                         (substring-no-properties
+                          (nth source-index elem)))
+                       "arch")))
+                 (push
+                  (substring-no-properties (nth dep-name-index elem))
+                  (alist-get source dependencies nil nil #'equal)))))))))
     dependencies))
 #+end_src
 
-To make it work in the configuration, it is necessary to format the list so that Scheme could read it:
+To make it work in the configuration, it is necessary to format the list in the TOML format. Unfortunately, there doesn't seems to be a TOML generator for Elisp.
 #+begin_src emacs-lisp :noweb-ref guix-tables
-(defun my/format-guix-dependencies (&optional category)
-  (mapconcat
-   (lambda (e) (concat "\"" e "\""))
-   (my/extract-guix-dependencies category)
-   "\n"))
+(defun my/format-arch-dependencies (&optional category)
+  (let ((data (my/extract-arch-dependencies category)))
+    (with-temp-buffer
+      (cl-loop for (backend . packages) in data
+               do (insert (format "%s = [\n" backend)
+                          (mapconcat (lambda (package)
+                                       (format "\"%s\"," package))
+                                     packages
+                                     "\n")
+                          "]"))
+      (buffer-string))))
 #+end_src
 
 And we need an Org snippet such as this:
 #+begin_example
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
-(my/format-guix-dependencies category)
+(my/format-arch-dependencies category)
 #+end_src
 #+end_example
 
 Now, creating a manifest, for example, for the =desktop-polybar= profile is as simple as:
 #+begin_example
-#+begin_src scheme :tangle ~/.config/guix/manifests/desktop-polybar.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("desktop-polybar")>>))
+#+begin_src scheme :tangle ~/.config/metapac/groups/desktop-polybar.toml :noweb yes
+<<packages("desktop-polybar")>>
 #+end_src
 #+end_example
-
-There's a newline symbol between "(" and =<<packages("desktop-polybar")>>= because whenever a noweb expression expands into multiple lines, for each new line noweb duplicates contents between the start of the line and the start of the expression.
-
-One reason this is so is to support languages where indentation is a part of the syntax, for instance, Python:
-#+begin_src python
-class TestClass:
-    <<class-contents>>
-#+end_src
-
-So every line of =<<class-contents>>= will be indented appropriately. In our case though, it is a minor inconvenience to be aware of.
 *** Noweb evaluations
 One note is that by default running these commands will require the user to confirm evaluation of each code block. To avoid that, I set =org-confirm-babel-evaluate= to =nil=:
 
@@ -8247,6 +8275,7 @@ One note is that by default running these commands will require the user to conf
        '("~/Emacs.org"
          "~/Desktop.org"
          "~/Console.org"
+         "~/Arch.org"
          "~/Guix.org"
          "~/Mail.org")))
 
@@ -8467,7 +8496,8 @@ Display icons for files.
                                     (string-match-p "/gnu/store" default-directory))
                           (nerd-icons-dired-mode))))
   :config
-  (advice-add #'dired-create-empty-file :around #'nerd-icons-dired--refresh-advice))
+  ;; (advice-add #'dired-create-empty-file :around #'nerd-icons-dired--refresh-advice)
+  )
 #+end_src
 
 Provides stuff like =dired-open-xdg=
@@ -9426,6 +9456,7 @@ Finally, a function that inserts the overlay in buffer if it's available and cal
 #+begin_src emacs-lisp
 (use-package eshell-atuin
   :straight (:host github :repo "SqrtMinusOne/eshell-atuin")
+  :when (executable-find "atuin")
   :after eshell
   :config
   (eshell-atuin-mode)
@@ -9790,7 +9821,7 @@ Now, a function to add a YouTube link with metadata from elfeed to EMMS.
 *** rdrview
 [[https://github.com/eafer/rdrview][rdrview]] is a command-line tool to strip webpages from clutter, extracting only parts related to the actual content. It's a standalone port of the corresponding feature of Firefox, called [[https://support.mozilla.org/en-US/kb/firefox-reader-view-clutter-free-web-pages][Reader View]].
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | rdrview         |
 
@@ -10137,7 +10168,7 @@ However, sans the pictures issue, for certain sites like Wikipedia this is usabl
 **** Getting subtitles
 Finally, let's get to transcripts.
 
-| Guix dependency               |
+| Arch dependency               |
 |-------------------------------|
 | python-youtube-transcript-api |
 
@@ -10402,6 +10433,8 @@ References:
   ;; I have everything I need in polybar
   (emms-mode-line-mode -1)
   (emms-playing-time-display-mode -1)
+  (delq 'emms-mark-mode evil-emacs-state-modes)
+  (delq 'emms-browser-mode evil-emacs-state-modes)
   <<emms-fixes>>)
 #+end_src
 **** MPD
@@ -10445,7 +10478,7 @@ After all this is done, run =M-x emms-cache-set-from-mpd-all= to set cache from 
 :PROPERTIES:
 :header-args:emacs-lisp: :tangle no :noweb-ref emms-mpv-setup
 :END:
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | mpv             |
 | yt-dlp          |
@@ -11390,16 +11423,15 @@ Or you can load up Element for a moment to see what the mention was, if that's e
 :END:
 [[https://github.com/zevlg/telega.el/][telega.el]] is a Telegam client for Emacs.
 
-| Guix dependency    |
-|--------------------|
-| emacs-telega-sever |
-| font-gnu-unifont   |
-| font-gnu-freefont  |
+| Arch dependency    | Disabled |
+|--------------------+----------|
+| emacs-telega-sever | t        |
+| telegram-tdlib     |          |
+| ttf-unifont        |          |
+| gnu-free-fonts     |          |
 
 #+begin_src emacs-lisp
 (use-package telega
-  ;; :straight (:type built-in)
-  ;; For now emacs-telega-server is compatible with the latest telega.el
   :straight t
   :commands (telega)
   :init
@@ -11411,10 +11443,8 @@ Or you can load up Element for a moment to see what the mention was, if that's e
                              :background (my/color-value 'fg))
    (telega-entity-type-spoiler :background (my/color-value 'base8)))
   :config
-  (when (file-exists-p "~/.guix-extra-profiles/emacs/emacs/bin/telega-server")
-    (setq telega-server-command
-          (expand-file-name
-           "~/.guix-extra-profiles/emacs/emacs/bin/telega-server")))
+  (setq telega-server-libs-prefix "/usr")
+
   (setq telega-emoji-use-images nil)
   (setq telega-chat-fill-column 80)
   (setq telega-completing-read-function #'completing-read)
@@ -11436,18 +11466,6 @@ Or you can load up Element for a moment to see what the mention was, if that's e
     telega-chat-mode 3 "telega"
     telega-image-mode 3 "telega"
     telega-webpage-mode 3 "telega"))
-#+end_src
-
-Building =telega-server= can create problems. On Guix I can use the Guix package definition, on termux just build manually.
-#+begin_src emacs-lisp
-(defun my/telega-server-build ()
-  (interactive)
-  (setq telega-server-libs-prefix
-        (if (executable-find "guix")
-            (string-trim
-             (shell-command-to-string "guix build tdlib"))
-          (expand-file-name "~/bin/td/build/res/usr/local")))
-  (telega-server-build "CC=gcc"))
 #+end_src
 
 Setting up the modeline. The default mode string doesn't look great with my other modeline modules, so I override that.
@@ -11939,7 +11957,7 @@ I previously used [[https://github.com/ggerganov/whisper.cpp][whisper.cpp]] by G
 
 One disadvantage is that it doesn't produce human-readable output by default, so I make my own.
 
-| Guix dependency | Disabled |
+| Arch dependency | Disabled |
 |-----------------+----------|
 | whisper-cpp     | t        |
 
@@ -12770,6 +12788,10 @@ The return value is a list of commands as defined by
 #+RESULTS:
 : my/index--mega-commands
 **** rclone
+| Arch dependency |
+|-----------------|
+| rclone          |
+
 This section wraps the [[https://rclone.org/bisync/][bisync]] command for rclone, which implements two-way sync.
 
 The general approach is:
@@ -12791,7 +12813,6 @@ First, default options for =rclone bisync=:
 
 A [[https://rclone.org/bisync/#filtering][filters file]] for rclone:
 #+begin_src text :tangle ~/.config/rclone/filters-bisync
-- .*
 - ~*
 - .debris
 #+end_src
@@ -12851,8 +12872,11 @@ REMOTE = '<rclone-remote>'
 FOLDERS = json.loads('<rclone-folders-json>')
 OPTIONS = json.loads('<rclone-options>')
 
+for folder, i in zip(FOLDERS, range(len(FOLDERS))):
+    folder['id'] = i
 
-def rclone_make_command(local_path, remote_path, remote):
+
+def rclone_make_command(local_path, remote_path, remote, extra_args=[]):
     return [
         'rclone',
         'bisync',
@@ -12866,7 +12890,8 @@ def rclone_make_command(local_path, remote_path, remote):
         'NEVER',
         '--use-json-log',
         '--stats',
-        '9999m'
+        '9999m',
+        ,*extra_args
     ]
 
 
@@ -12894,22 +12919,32 @@ def process_output(output):
         except Exception:
             print(line)
 
-def rclone_run(folder):
+def process_command_for_print(command):
+    res = []
+    for c in command:
+        if ' ' in c:
+            res.append(f'\\'{c}\\'')
+        else:
+            res.append(c)
+    return ' '.join(res)
+
+
+def rclone_run(folder, extra_args=[]):
     command = rclone_make_command(
-        folder['local-path'], folder['remote-path'], folder['remote']
+        folder['local-path'], folder['remote-path'], folder['remote'], extra_args
     )
     try:
+        print(str(folder['id']) + '. ' + process_command_for_print(command))
         result = subprocess.run(command, check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
         print(f'=== Error syncing {folder['local-path']} ===')
-        print(f'Command: {' '.join(command)}')
+        print(f'Command: {process_command_for_print(command)}')
         print(f'--- STDOUT ---')
         process_output(e.stdout)
         print(f'--- STDERR ---')
         process_output(e.stderr)
         return {'success': False, 'stats': {}}
     return {'success': True, 'stats': parse_rclone_stats(result.stderr)}
-
 
 def notify(summary, body, level='normal', expire_time=5000):
     subprocess.run(['notify-send', '-u', level, '-t', str(expire_time), summary, body])
@@ -12923,17 +12958,16 @@ def sizeof_fmt(num, suffix='B'):
     return f'{num:.1f}Yi{suffix}'
 
 
-def rclone_run_all(folders):
+def rclone_run_all(folders, extra_args=[]):
     error_folders = []
     total_bytes = 0
     total_transfers = 0
     total_deleted = 0
     total_renamed = 0
     for folder in folders:
-        print(f'Running rclone for {folder}')
-        res = rclone_run(folder)
+        res = rclone_run(folder, extra_args)
         if not res['success']:
-            error_folders.append(folder['local-path'])
+            error_folders.append(folder)
         else:
             total_bytes += res.get('stats', {}).get('bytes', 0)
             total_transfers += res.get('stats', {}).get('transfers', 0)
@@ -12945,21 +12979,44 @@ def rclone_run_all(folders):
     if total_transfers > 0:
         msg += f'''Transferred {total_transfers} files ({sizeof_fmt(total_bytes)})\n'''
     if total_deleted > 0:
-        msg += f'''Deleted {total_transfers} files\n'''
+        msg += f'''Deleted {total_deleted} files\n'''
     if total_renamed > 0:
         msg += f'''Renamed {total_renamed} files\n'''
 
     if len(error_folders) > 0:
         msg += '''\nSync errors for the following folders:'''
         for folder in error_folders:
-            msg += '''\n- ''' + folder
+            msg += '''\n- ''' + str(folder['id']) + '. ' + folder['local-path']
         level = 'critical'
 
     if len(msg) > 0:
         notify(f'rclone sync {REMOTE}', msg, level=level)
 
+def parse_arguments():
+    if len(sys.argv) < 2:
+        return None, []
+
+    id_arg = sys.argv[1]
+    folder_ids = [int(x.strip()) for x in id_arg.split(',')]
+
+    extra_args = sys.argv[2:]
+
+    return folder_ids, extra_args
+
+
 if __name__ == '__main__':
-    rclone_run_all(FOLDERS)
+    folder_ids, extra_args = parse_arguments()
+
+    if folder_ids is None:
+        selected_folders = FOLDERS
+    else:
+        selected_folders = [f for f in FOLDERS if f['id'] in folder_ids]
+        found_ids = {f['id'] for f in selected_folders}
+        missing_ids = set(folder_ids) - found_ids
+        if missing_ids:
+            print(f'Warning: folder IDs not found: {sorted(missing_ids)}')
+
+    rclone_run_all(selected_folders, extra_args)
 #+end_src
 
 A function that templates the script above:
@@ -13052,6 +13109,26 @@ The return value is a list of commands as defined by
                   "Update rclone sync script" 10)
                  commands))
     (nreverse commands)))
+#+end_src
+
+Also, a command to remove all =.rclone-test-*= files. This is necessary, e.g. after a change in the filter file.
+#+begin_src emacs-lisp
+(defun my/index-rclone-reset ()
+  "Delete all rclone test files."
+  (interactive)
+  (let* ((tree (my/index--tree-retrive))
+         (folders (my/index--rclone-get-folders tree))
+         files-to-delete)
+    (dolist (folder folders)
+      (let ((test-file-path
+             (concat
+              (alist-get :local-path folder)
+              (format ".rclone-test-%s" (alist-get :remote folder)))))
+        (when (file-exists-p test-file-path)
+          (push test-file-path files-to-delete))))
+    (when (y-or-n-p (format "Delete %d files" (seq-length files-to-delete)))
+      (dolist (file files-to-delete)
+        (delete-file file)))))
 #+end_src
 
 **** Git repos
@@ -13601,7 +13678,7 @@ My package for doing Pomodoro timer.
 *** hledger
 [[hledger.org/][hledger]] is a plain-text double-entry accounting software. I use it for managing my personal finances, and thus far it's great.
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | hledger         |
 
@@ -14140,22 +14217,19 @@ My text editor isn't old enough.
   :straight (:host github :repo "ryanprior/ed-mode")
   :commands (ed))
 #+end_src
-* Guix settings
-| Guix dependency     | Description                   |
+* Arch settings
+| Arch dependency     | Description                   |
 |---------------------+-------------------------------|
-| emacs-vterm         | The vterm package             |
 | ripgrep             | A recursive search tool       |
-| the-silver-searcher | Another recursive search tool |
+| the_silver_searcher | Another recursive search tool |
 | texinfo             |                               |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
-(when (fboundp #'my/format-guix-dependencies)
-  (my/format-guix-dependencies))
+(when (fboundp #'my/format-arch-dependencies)
+  (my/format-arch-dependencies))
 #+end_src
 
-#+begin_src scheme :tangle .config/guix/manifests/emacs.scm :noweb yes
-(specifications->manifest
- '("emacs"
-   <<packages()>>))
+#+begin_src scheme :tangle .config/metapac/groups/emacs.toml :noweb yes
+<<packages()>>
 #+end_src

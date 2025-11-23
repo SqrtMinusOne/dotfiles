@@ -1,0 +1,8 @@
+arch = [
+"dateutils",
+"sunwait",
+"jq",
+"curl",
+"bind",
+"noto-fonts-emoji",
+"polybar",]

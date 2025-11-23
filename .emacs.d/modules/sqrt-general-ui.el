@@ -77,8 +77,8 @@
   (setq doom-themes-treemacs-theme "doom-colors")
   (doom-themes-treemacs-config))
 
-(use-package modus-themes
-  :straight t)
+;; (use-package modus-themes
+;;   :straight (:build (:not native-compile)))
 
 (use-package ef-themes
   :straight t
@@ -137,9 +137,12 @@
         (t (doom-color color)))))))
 
 (defun my/modus-get-base (color)
-  (let ((base-value (string-to-number (substring (symbol-name color) 4 5)))
-        (base-start (cadr (assoc 'bg-main (modus-themes--current-theme-palette))))
-        (base-end (cadr (assoc 'fg-dim (modus-themes--current-theme-palette)))))
+  (let* ((base-value (string-to-number (substring (symbol-name color) 4 5)))
+         (palette (modus-themes-get-theme-palette
+                   (or (my/modus-p) (my/ef-p))
+                   :with-overrides :with-user-palette))
+         (base-start (cadr (assoc 'bg-main palette)))
+         (base-end (cadr (assoc 'fg-dim palette))))
     (nth base-value (ct-gradient 9 base-start base-end t))))
 
 (defun my/prot-color (color palette)
@@ -179,10 +182,11 @@
      (t (cadr (assoc color palette))))))
 
 (defun my/modus-color (color)
-  (my/prot-color color (modus-themes--current-theme-palette)))
+  (my/prot-color color (modus-themes-get-theme-palette
+                        (or (my/modus-p) (my/ef-p))
+                        :with-overrides :with-user-palette)))
 
-(defun my/ef-color (color)
-  (my/prot-color color (ef-themes--current-theme-palette)))
+(defalias 'my/ef-color 'my/modus-color)
 
 (defconst my/test-colors-list
   '(black red green yellow blue magenta cyan white light-black
@@ -250,9 +254,13 @@
                                       collect (eval value)))))))
   (enable-theme 'my-theme-1))
 
+(defun my/advice-my-theme ()
+  (advice-add 'load-theme :after #'my/update-my-theme))
+
 (unless my/is-termux
-  (advice-add 'load-theme :after #'my/update-my-theme)
-  (add-hook 'emacs-startup-hook #'my/update-my-theme))
+  (add-hook 'emacs-startup-hook #'my/update-my-theme)
+ ;; (add-hook 'emacs-startup-hook #'my/advice-my-theme)
+)
 
 (my/use-colors
  (tab-bar-tab :background (my/color-value 'bg)
@@ -272,6 +280,7 @@
                        (eq enabled-theme theme)))
            do (disable-theme enabled-theme))
   (load-theme theme t)
+  (my/update-my-theme)
   (when current-prefix-arg
     (my/regenerate-desktop)))
 

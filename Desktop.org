@@ -30,6 +30,7 @@ Removed features:
 I used to define color codes here (see [[https://github.com/SqrtMinusOne/dotfiles/commit/2dbf1cdd008ec0061456782cca3ebd76e603b31e][previous version of the file]]), now I just get colors from the current Emacs theme.
 
 To use them, let's define a noweb block:
+
 #+NAME: get-color
 #+begin_src emacs-lisp :var name="black" quote=0
 (let ((color (or (my/color-value name))))
@@ -120,6 +121,7 @@ Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting 
         ((string-equal hostname "eminence") 120)
         ((string-equal hostname "violet") 120)
         ((string-equal hostname "iris") 120)
+        ((string-equal hostname "weiss") 120)
         (t 96)))
 #+end_src
 
@@ -129,13 +131,13 @@ Xft.dpi: <<get-dpi()>>
 ** Themes
 A few programs I use to customize the apperance are listed below.
 
-| Guix dependency       | Description             |
-|-----------------------+-------------------------|
-| matcha-theme          | My preferred GTK theme  |
-| papirus-icon-theme    | My preferred Icon theme |
-| gnome-themes-standard |                         |
-| xsettingsd            | X11 settings daemon     |
-| gnome-themes-extra    |                         |
+| Arch dependency    | Description             | Disabled |
+|--------------------+-------------------------+----------|
+| gtk-engine-murrine | My preferred GTK theme  | t        |
+| gtk-engines        |                         |          |
+| papirus-icon-theme | My preferred Icon theme |          |
+| xsettingsd         | X11 settings daemon     |          |
+| gnome-themes-extra |                         |          |
 
 [[https://github.com/derat/xsettingsd][xsettingsd]] is a lightweight daemon which configures X11 applications. It is launched with shepherd in the [[*Services][Services]] section.
 
@@ -182,11 +184,11 @@ x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop;
 application/pdf=org.pwmt.zathura.desktop
 #+end_src
 ** Device-specific settings
-| Guix dependency | Description                                |
+| Arch dependency | Description                                |
 |-----------------+--------------------------------------------|
-| xrandr          | X11 CLI to RandR                           |
-| xgamma          | A tool to alter monitor's gamma correction |
-| xinput          | Configure input devices                    |
+| xorg-xrandr     | X11 CLI to RandR                           |
+| xorg-xgamma     | A tool to alter monitor's gamma correction |
+| xorg-xinput     | Configure input devices                    |
 
 Set screen layout & other params depending on hostname
 #+begin_src sh :tangle ~/bin/scripts/screen-layout
@@ -214,9 +216,9 @@ References:
 *** Xsession
 First things first, Emacs has to be launched as a window manager. On a more conventional system I'd create a .desktop file in some system folder that can be seen by a login manager, but in the case of Guix it's a bit more complicated, because all such folders are not meant to be changed manually.
 
-| Category     | Guix dependency |
+| Category     | Arch dependency |
 |--------------+-----------------|
-| desktop-misc | xinit           |
+| desktop-misc | xorg-xinit      |
 | desktop-misc | xss-lock        |
 
 However, GDM, the login manager that seems to be the default on Guix, launches =~/.xsession= on the startup if it's present, which is just fine for my purposes.
@@ -243,7 +245,7 @@ xss-lock -- i3lock -f -i /home/pavel/Pictures/lock-wallpaper.png &
 # Some apps that have to be launched only once.
 picom &
 # nm-applet &
-dunst &
+# dunst &
 copyq &
 
 # Run the Emacs startup script as a session.
@@ -267,8 +269,12 @@ As of now, these are polybar, feh and, shepherd:
   (call-process-shell-command "feh --bg-fill ~/Pictures/wallpaper.jpg"))
 
 (defun my/exwm-run-shepherd ()
-  (when (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
+  (when (and (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
+             (executable-find "shepherd"))
     (call-process "shepherd")))
+
+(defun my/exwm-run-systemd ()
+  (call-process "systemctl" nil nil nil "--user" "start" "wm-session.target"))
 #+end_src
 *** Pinentry
 The GUI pinentry doesn't work too well with EXWM because of issues with popup windows, so we will use the Emacs one.
@@ -779,9 +785,9 @@ By default, it also shows paths from =/gnu/store=, so there is a custom formatte
 
 Also, by default it tries to launch stuff with =gtk-launch=, which is in the =gtk+= package.
 
-| Category     | Guix dependency |
-|--------------+-----------------|
-| desktop-misc | gtk+:bin        |
+| Category     | Arch dependency | Disabled |
+|--------------+-----------------+----------|
+| desktop-misc | gtk+:bin        | t        |
 *** password-store-completion
 [[https://github.com/SqrtMinusOne/password-store-completion][password-store-completion]] is another package of mine, inspired by [[https://github.com/carnager/rofi-pass][rofi-pass]].
 
@@ -900,11 +906,11 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "s-i") . ,(my/app-command "copyq menu"))
 
         ;; Basic controls
-        (,(kbd "<XF86AudioRaiseVolume>") . ,(my/app-command "ponymix increase 5 --max-volume 150"))
-        (,(kbd "<XF86AudioLowerVolume>") . ,(my/app-command "ponymix decrease 5 --max-volume 150"))
+        (,(kbd "<XF86AudioRaiseVolume>") . ,(my/app-command "wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+"))
+        (,(kbd "<XF86AudioLowerVolume>") . ,(my/app-command "wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%-"))
         (,(kbd "<XF86MonBrightnessUp>") . ,(my/app-command "light -A 5"))
         (,(kbd "<XF86MonBrightnessDown>") . ,(my/app-command "light -U 5"))
-        (,(kbd "<XF86AudioMute>") . ,(my/app-command "ponymix toggle"))
+        (,(kbd "<XF86AudioMute>") . ,(my/app-command "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
 
         (,(kbd "<XF86AudioPlay>") . ,(my/app-command "mpc toggle"))
         (,(kbd "<XF86AudioPause>") . ,(my/app-command "mpc pause"))
@@ -959,14 +965,14 @@ A +transient+ hydra for shortcuts for the most frequent apps.
 _t_: Terminal (Alacritty)
 _b_: Browser (Firefox)
 _s_: Rocket.Chat
-_e_: Element
-_d_: Discord
+_d_: DBeaver
+_c_: Chromium
 "
   ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
   ("b" (lambda () (interactive) (my/run-in-background "firefox")))
-  ("s" (lambda () (interactive) (my/run-in-background "flatpak run chat.rocket.RocketChat")))
-  ("e" (lambda () (interactive) (my/run-in-background "flatpak run im.riot.Riot")))
-  ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
+  ("s" (lambda () (interactive) (my/run-in-background "rocketchat-desktop")))
+  ("d" (lambda () (interactive) (my/run-in-background "dbeaver")))
+  ("c" (lambda () (interactive) (my/run-in-background "chromium"))))
 #+end_src
 *** Locking up
 Run i3lock.
@@ -1211,10 +1217,12 @@ And the EXWM config itself.
 (defun my/exwm-init ()
   (exwm-workspace-switch 1)
 
-  (my/exwm-run-polybar)
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
   (my/run-in-background "gpgconf --reload gpg-agent")
+  (my/exwm-run-polybar)
+  (setenv "DBUS_SESSION_BUS_ADDRESS" "unix:path=/run/user/1000/bus")
+  (my/exwm-run-systemd)
   (when (my/is-arch)
     (my/run-in-background "set_layout")))
 
@@ -1263,12 +1271,10 @@ And the EXWM config itself.
 :header-args+: :tangle ./.config/i3/config
 :END:
 
-| Guix dependency | Disabled |
+| Arch dependency | Disabled |
 |-----------------+----------|
-| i3-gaps         |          |
-| i3lock          | true     |
-
-=i3lock= is disabled because the global one has to be used.
+| i3-wm           |          |
+| i3lock          |          |
 
 [[https://i3wm.org/][i3wm]] is a manual tiling window manager, which is currently my window manager of choice. I've tried several alternatives, including [[https://xmonad.org/][xmonad]] & [[https://github.com/ch11ng/exwm][EXWM]], +but i3 seems to fit my workflow best+ and decided to switch to EXWM. This section is kept for a few cases when I need to be extra sure that my WM doesn't fail.
 
@@ -1307,9 +1313,9 @@ bindsym $mod+Shift+r restart
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
 #+end_src
 ** Managing windows
-| Guix dependency     |
-|---------------------|
-| rust-i3-switch-tabs |
+| Guix dependency | Disabled |
+|-----------------+----------|
+| i3-switch-tabs  | t        |
 
 Some keybindings for managing windows.
 
@@ -1553,9 +1559,9 @@ bindsym $mod+g mode "inner gaps"
 bindsym $mod+Shift+g mode "outer gaps"
 #+end_src
 ** Move & resize windows
-| Guix dependency             |
-|-----------------------------|
-| python-i3-balance-workspace |
+| Arch dependency      | Disabled |
+|----------------------+----------|
+| i3-balance-workspace | t        |
 
 A more or less standard set of keybindings to move & resize floating windows. Just be careful to always make a way to return from these new modes, otherwise you'd end up in a rather precarious situation.
 
@@ -1712,6 +1718,7 @@ bindsym XF86MonBrightnessUp exec light -A 5
 bindsym XF86MonBrightnessDown exec light -U 5
 #+end_src
 *** Screenshots
+
 #+begin_src conf-space
 # Screenshots
 bindsym --release Print exec "flameshot gui"
@@ -1826,9 +1833,10 @@ exec "xmodmap ~/.Xmodmap"
 :header-args:conf-windows: :tangle ./.config/polybar/config :comments link
 :END:
 
-| Category        | Guix dependency | Description |
-|-----------------+-----------------+-------------|
-| desktop-polybar | polybar         | statusbar   |
+| Category        | Arch dependency  | Description |
+|-----------------+------------------+-------------|
+| desktop-polybar | polybar          | statusbar   |
+| desktop-polybar | noto-fonts-emoji |             |
 
 [[https://github.com/polybar/polybar][Polybar]] is a nice-looking, WM-agnostic statusbar program.
 
@@ -1964,17 +1972,19 @@ As we want to interweave polybar modules with these glyphs in the right order an
 Also excluding some modules from certain monitors, which for now is about excluding =battery= from the monitors of my desktop PC:
 
 #+NAME: polybar_modules_exclude
-| Monitor  | Exclude |
-|----------+---------|
-| DVI-D-0  | battery |
-| HDMI-A-0 | battery |
-| HDMI-0   | battery |
-| DP-1     | battery |
-| eDP      | nvidia  |
-| eDP-1    | nvidia  |
-| DVI-D-0  | nvidia  |
-| HDMI-A-0 | nvidia  |
-| HDMI-1   | nvidia  |
+| Monitor   | Exclude |
+|-----------+---------|
+| DVI-D-0   | battery |
+| HDMI-A-0  | battery |
+| HDMI-0    | battery |
+| DP-1      | battery |
+| Virtual-1 | battery |
+| eDP       | nvidia  |
+| eDP-1     | nvidia  |
+| DVI-D-0   | nvidia  |
+| HDMI-A-0  | nvidia  |
+| HDMI-1    | nvidia  |
+| Virtual-1 | nvidia |
 
 Another thing we need to do is to set the color of modules in accordance with the =polybar_modules= table. The background can be determined from the =Color= column with the following code block:
 #+NAME: get-polybar-bg
@@ -2162,16 +2172,12 @@ radius = 0.0
 
 Fonts
 #+begin_src conf-windows
-; font-0 = ${env:FONT0:pango:monospace:size=10;1}
-; font-1 = ${env:FONT1:NotoEmoji:scale=10:antialias=false;0}
-; font-2 = ${env:FONT2:fontawesome:pixelsize=10;1}
-; font-3 = ${env:FONT3:JetBrains Mono Nerd Font:monospace:size=10;1}
-
 font-0 = pango:monospace:size=13;2
 font-1 = NotoEmoji:scale=10:antialias=false;1
 font-2 = fontawesome:pixelsize=13;3
-font-3 = JetBrains Mono Nerd Font:monospace:size=13;4
-font-4 = JetBrains Mono Nerd Font:monospace:size=17;4
+font-3 = JetBrainsMono Nerd Font:style=Medium,Regular:size=13;4
+font-4 = JetBrainsMono Nerd Font:style=Medium,Regular:size=17;4
+font-5 = Adwaita Mono:style=Regular:size=13;3
 #+end_src
 
 Modules. Because I sometimes set up different blocks on different monitors, they are set via environment variables.
@@ -2227,6 +2233,8 @@ elif [ "$hostname" = "eminence" ]; then
     fi
 elif [ "$hostname" = "iris" ]; then
     TRAY_MONITOR="HDMI-1"
+elif [ "$hostname" = "weiss" ]; then
+    TRAY_MONITOR="eDP-1"
 else
     TRAY_MONITOR="DP-1"
 fi
@@ -2240,6 +2248,7 @@ declare -A FONT_SIZES=(
     ["HDMI-1"]="13"
     ["HDMI-0"]="13"
     ["DP-1"]="13"
+    ["Virtual-1"]="13"
 )
 declare -A EMOJI_SCALE=(
     ["eDP"]="9"
@@ -2249,6 +2258,7 @@ declare -A EMOJI_SCALE=(
     ["HDMI-1"]="10"
     ["HDMI-0"]="10"
     ["DP-1"]="10"
+    ["Virtual-1"]="13"
 )
 declare -A BAR_HEIGHT=(
     ["eDP"]="29"
@@ -2258,6 +2268,7 @@ declare -A BAR_HEIGHT=(
     ["HDMI-1"]="29"
     ["HDMI-0"]="29"
     ["DP-1"]="29"
+    ["Virtual-1"]="29"
 )
 declare -A BLOCKS=(
     ["eDP"]="<<polybar-generate-modules(monitor="eDP")>>"
@@ -2267,6 +2278,7 @@ declare -A BLOCKS=(
     ["HDMI-1"]="<<polybar-generate-modules(monitor="HDMI-1")>>"
     ["HDMI-0"]="<<polybar-generate-modules(monitor="HDMI-0")>>"
     ["DP-1"]="<<polybar-generate-modules(monitor="DP-1")>>"
+    ["Virtual-1"]="<<polybar-generate-modules(monitor="Virtual-1")>>"
 )
 
 declare -A TEMP_HWMON_PATHS=(
@@ -2609,11 +2621,11 @@ BEGIN{old_received='"$init_received"';old_sent='"$init_sent"'}
 #+end_src
 
 *** ipstack-vpn
-| Category        | Guix dependency | Description             |
-|-----------------+-----------------+-------------------------|
-| desktop-polybar | bind:utils      | Provides dig            |
-| desktop-polybar | curl            |                         |
-| desktop-polybar | jq              | util to work with JSONs |
+| Category        | Arch dependency | Description                |
+|-----------------+-----------------+----------------------------|
+| desktop-polybar | bind            | Provides dig               |
+| desktop-polybar | curl            |                            |
+| desktop-polybar | jq              | An util to work with JSONs |
 
 A module to get a country of the current IP and openvpn status. Uses [[https://ipstack.com/][ipstack]] API.
 
@@ -2749,7 +2761,7 @@ format-foreground = ${colors.foreground}
 interval = 1200
 #+end_src
 *** sun
-| Category        | Guix dependency |
+| Category        | Arch dependency |
 |-----------------+-----------------|
 | desktop-polybar | sunwait         |
 
@@ -2795,7 +2807,7 @@ interval = 60
 *** aw-afk
 Prints out a current uptime and non-AFK time from [[https://github.com/ActivityWatch][ActivityWatch]] server
 
-| Category        | Guix dependency |
+| Category        | Arch dependency |
 |-----------------+-----------------|
 | desktop-polybar | dateutils       |
 
@@ -2804,7 +2816,7 @@ afk_event=$(curl -s -X GET "http://localhost:5600/api/0/buckets/aw-watcher-afk_$
 status=$(echo ${afk_event} | jq -r '.[0].data.status')
 afk_time=$(echo "${afk_event}" | jq -r '.[0].duration' | xargs -I !  date -u -d @! +"%H:%M")
 
-uptime=$(uptime | awk '{ print substr($3, 0, length($3) - 1) }' | xargs -I ! date -d ! +"%H:%M")
+uptime=$(date -ud @$(uptime -r | awk '{print $2}') +%H:%M)
 res="${afk_time} / ${uptime}"
 if [[ $status == 'afk' ]]; then
     # echo "%{u<<get-color(name="red")>>}%{+u} [AFK] $res %{u-}"
@@ -2977,7 +2989,7 @@ label-urgent-padding = 1
 #+end_src
 
 * Rofi
-| Category     | Guix dependency |
+| Category     | Arch dependency |
 |--------------+-----------------|
 | desktop-rofi | rofi            |
 
@@ -3148,14 +3160,14 @@ if [[ ! -z $SELECTED ]]; then
 fi
 #+end_src
 *** Emojis
-| Category     | Guix dependency |
+| Category     | Arch dependency |
 |--------------+-----------------|
-| desktop-rofi | python-rofimoji |
+| desktop-rofi | rofimoji  |
 *** pass
-| Category     | Guix dependency |
+| Category     | Arch dependency |
 |--------------+-----------------|
 | desktop-rofi | rofi-pass       |
-| desktop-rofi | xset            |
+| desktop-rofi | xorg-xset       |
 
 A nice [[https://github.com/carnager/rofi-pass][pass frontend for Rofi]], which is even packaged for Guix.
 
@@ -3166,7 +3178,7 @@ default_autotype='username :tab pass'
 clip=both
 #+end_src
 * Flameshot
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | flameshot       |
 
@@ -3218,7 +3230,7 @@ TYPE_TOGGLE_PANEL=Space
 TYPE_UNDO=Ctrl+Z
 #+end_src
 * dunst
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | dunst           |
 | libnotify       |
@@ -3285,7 +3297,7 @@ References:
 
     ### Misc/Advanced ###
     dmenu = /usr/bin/dmenu -p dunst:
-    browser = /home/pavel/.guix-extra-profiles/browsers/browsers/bin/firefox
+    browser = /user/bin/firefox
     always_run_script = true
     title = Dunst
     class = Dunst
@@ -3301,14 +3313,15 @@ References:
     mouse_middle_click = do_action
     mouse_right_click = close_all
 
-[experimental]
-    per_monitor_dpi = false
-
-[shortcuts]
+    ### Shortcuts
     close = ctrl+space
     close_all = ctrl+shift+space
     history = ctrl+grave
     context = ctrl+shift+period
+
+[experimental]
+    per_monitor_dpi = false
+
 
 [urgency_low]
     background = <<get-color(name="bg-other", quote=1)>>
@@ -3619,9 +3632,9 @@ Which I then can use to create the URL.
 : https://color.firefox.com/?theme=XQAAAAJFAQAAAAAAAABAqYhm849SCia3ftKEGccwS-xMDPsqcRvjh8JMhYPDf9_kNjVRdqrKsHr5AamG1FlOJ8DH_BqRXLhVF02YoR2FXVUIEYoXiV-3q19EVo-NqESyeWWEIwj-0QxR3X-JxWYJLJYc6tAeNGGDXNNrM0pNWpwesvR43yXL_fJfr9Q919y2QwP0cK7ZXO1lRou4HkpwWW4LWdO3V6ox_BN9yA
 
 * keynav
-| Guix dependency |
-|-----------------|
-| keynav          |
+| Arch dependency | Disabled |
+|-----------------+----------|
+| keynav          | t        |
 
 | Type    | Note                           |
 |---------+--------------------------------|
@@ -3698,7 +3711,7 @@ fade-exclude = [
 :header-args+: :tangle ./.config/picom.conf
 :END:
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | picom           |
 
@@ -3793,7 +3806,7 @@ wintypes:
 };
 #+end_src
 * Zathura
-| Category | Guix dependency   |
+| Category | Arch dependency   |
 |----------+-------------------|
 | office   | zathura           |
 | office   | zathura-ps        |
@@ -4209,126 +4222,133 @@ c.tabs.favicons.scale = 1
 This section generates manifests for various desktop software that I'm using.
 
 ** Browsers
-| Category | Guix dependency    |
-|----------+--------------------|
-| browsers | ungoogled-chromium |
-| browsers | firefox            |
+| Category | Arch dependency        |
+|----------+------------------------|
+| browsers | ungoogled-chromium-bin |
+| browsers | firefox                |
+| browsers | firefox-tridactyl      |
 ** Office & Multimedia
-| Category | Guix dependency |
-|----------+-----------------|
-| office   | libreoffice-fresh |
-| office   | gimp            |
-| office   | krita           |
-| office   | ffmpeg          |
-| office   | kdenlive        |
-| office   | inkscape        |
-| office   | okular          |
-| office   | obs             |
+| Category | Arch dependency    |
+|----------+--------------------|
+| office   | libreoffice-fresh  |
+| office   | gimp               |
+| office   | krita              |
+| office   | ffmpeg             |
+| office   | kdenlive           |
+| office   | inkscape           |
+| office   | okular             |
+| office   | obs-studio         |
+| office   | rocketchat-desktop |
+
 ** LaTeX
-| Category | Guix dependency               |
-|----------+-------------------------------|
-| latex    | texlive                       |
-| latex    | texlab-bin                    |
-| latex    | biber                         |
-| latex    | python-pygments               |
-| latex    | font-microsoft-web-core-fonts |
+| Category | Arch dependency          | Disabled |
+|----------+--------------------------+----------|
+| latex    | texlive-basic            |          |
+| latex    | texlive-bibtexextra      |          |
+| latex    | texlive-binextra         |          |
+| latex    | texlive-fontsextra       | t        |
+| latex    | texlive-fontutils        |          |
+| latex    | texlive-formatsextra     |          |
+| latex    | texlive-games            |          |
+| latex    | texlive-humanities       |          |
+| latex    | texlive-latex            |          |
+| latex    | texlive-latexextra       |          |
+| latex    | texlive-latexrecommended |          |
+| latex    | texlive-mathscience      |          |
+| latex    | texlive-metapost         |          |
+| latex    | texlive-pictures         |          |
+| latex    | texlive-plaingeneric     |          |
+| latex    | texlive-pstricks         |          |
+| latex    | texlive-publishers       |          |
+| latex    | texlive-xetex            |          |
+| latex    | texlab                   |          |
+| latex    | biber                    |          |
+| latex    | python-pygments          |          |
+| latex    | ttf-ms-fonts             |          |
+| latex    | ttf-dejavu               |          |
 ** Dev
-| Category | Guix dependency   | Disabled |
+| Category | Arch dependency   | Disabled |
 |----------+-------------------+----------|
 | dev      | micromamba-bin    |          |
-| dev      | pandoc            |          |
+| dev      | pandoc-cli        |          |
+| dev      | docker            |          |
 | dev      | docker-compose    |          |
 | dev      | postgresql        |          |
 | dev      | virt-manager      |          |
-| dev      | dnsmasq           |          |
+| dev      | libvirt           |          |
 | dev      | git-filter-repo   |          |
-| dev      | node              |          |
-| dev      | openjdk:jdk       |          |
+| dev      | nodejs            |          |
+| dev      | jdk21-openjdk     |          |
 | dev      | go                |          |
 | dev      | gopls             |          |
-| dev      | pkg-config        |          |
-| dev      | gcc-toolchain     |          |
+| dev      | pkgconf           |          |
+| dev      | gcc               |          |
+| dev      | cmake             |          |
 | dev      | lua               |          |
 | dev      | libfaketime       |          |
-| dev      | hugo-extended     |          |
+| dev      | hugo              |          |
 | dev      | make              |          |
-| dev      | sbcl              | t        |
 | dev      | git-lfs           |          |
-| dev      | mysql             | t        |
 | dev      | gource            |          |
 | dev      | php               |          |
 | dev      | python            |          |
+| dev      | python-pip        |          |
 | dev      | python-virtualenv |          |
-| dev      | leiningen         |          |
+| dev      | python-build      |          |
 | dev      | socat             |          |
-| dev      | wireshark         |          |
-| dev      | python-chess      |          |
-| dev      | python-cairosvg   |          |
+| dev      | wireshark-qt      |          |
+| dev      | git               |          |
+| dev      | rust              |          |
+| dev      | dbeaver           |          |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
-(my/format-guix-dependencies category)
+(my/format-arch-dependencies category)
 #+end_src
 
 Dev
-#+begin_src scheme :tangle .config/guix/manifests/dev.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("dev")>>))
+#+begin_src scheme :tangle .config/metapac/groups/dev.toml :noweb yes
+<<packages("dev")>>
 #+end_src
 
 Browsers
-#+begin_src scheme :tangle .config/guix/manifests/browsers.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("browsers")>>))
+#+begin_src scheme :tangle .config/metapac/groups/browsers.toml :noweb yes
+<<packages("browsers")>>
 #+end_src
 
 Music
-#+begin_src scheme :tangle .config/guix/manifests/music.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("music")>>))
+#+begin_src scheme :tangle .config/metapac/groups/music.toml :noweb yes
+<<packages("music")>>
 #+end_src
 
 Office
-#+begin_src scheme :tangle .config/guix/manifests/office.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("office")>>))
+#+begin_src scheme :tangle .config/metapac/groups/office.toml :noweb yes
+<<packages("office")>>
 #+end_src
 
 LaTeX
-#+begin_src scheme :tangle .config/guix/manifests/latex.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("latex")>>))
+#+begin_src scheme :tangle .config/metapac/groups/latex.toml :noweb yes
+<<packages("latex")>>
 #+end_src
 
 Desktop Misc
-#+begin_src scheme :tangle .config/guix/manifests/desktop-misc.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("desktop-misc")>>))
+#+begin_src scheme :tangle .config/metapac/groups/desktop-misc.toml :noweb yes
+<<packages("desktop-misc")>>
 #+end_src
 
 Desktop polybar
-#+begin_src scheme :tangle .config/guix/manifests/desktop-polybar.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("desktop-polybar")>>))
+#+begin_src scheme :tangle .config/metapac/groups/desktop-polybar.toml :noweb yes
+<<packages("desktop-polybar")>>
 #+end_src
 
 Desktop rofi
-#+begin_src scheme :tangle .config/guix/manifests/desktop-rofi.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages("desktop-rofi")>>))
+#+begin_src scheme :tangle .config/metapac/groups/desktop-rofi.toml :noweb yes
+<<packages("desktop-rofi")>>
 #+end_src
 ** Flatpak
 A lot of proprietary desktop applications can be installed most easily with flatpak & flathub.
 
-| Guix dependency    |
+| Arch dependency    |
 |--------------------|
 | flatpak            |
 | xdg-desktop-portal |
@@ -4349,8 +4369,6 @@ Packages to install:
 | Flatpak dependency           | Channel |
 |------------------------------+---------|
 | com.github.wwmm.pulseeffects | flathub |
-| com.discordapp.Discord       | flathub |
-| com.jetbrains.DataGrip       | flathub |
 | chat.rocket.RocketChat       | flathub |
 
 #+begin_src emacs-lisp :var table=flatpak-deps :wrap example
@@ -4363,353 +4381,173 @@ Packages to install:
 #+RESULTS:
 #+begin_example
 flatpak install -y --user flathub com.github.wwmm.pulseeffects
-flatpak install -y --user flathub com.discordapp.Discord
-flatpak install -y --user flathub us.zoom.Zoom
-flatpak install -y --user flathub com.slack.Slack
+flatpak install -y --user flathub chat.rocket.RocketChat
 #+end_example
-** Nix
-| Type | Description        |
-|------+--------------------|
-| TODO | Make nix manifest? |
-
-I probably should've used nix, as almost every program I packaged so far exists in the Nix repo.
-
-But it's easy enough to use Nix on Guix.
-#+begin_src conf :tangle ~/.nix-channels
-https://nixos.org/channels/nixpkgs-unstable nixpkgs
-#+end_src
-
-Don't forget to run the following after the first installation:
-#+begin_src sh
-nix-channel --update
-#+end_src
-
-Installing packages:
-#+begin_src
-nix-env -i slack
-#+end_src
 * Services
-:PROPERTIES:
-:header-args+: :tangle ~/.config/shepherd/init.scm
-:END:
-[[https://www.gnu.org/software/shepherd/manual/html_node/index.html][GNU Shepherd]] is a service management system for GNU Guix.
+See [[https://wiki.archlinux.org/title/Systemd/User][systemd/User]] on Arch Wiki how to create user services.
 
-I previously used supervisor, but shepherd also seems pretty capable.
+After editing the services, run:
+#+begin_src bash
+systemctl --user daemon-reload
+#+end_src
 
-| Guix dependency |
-|-----------------|
-| shepherd        |
+It's required to enable them manually for now:
+#+begin_src bash
+systemctl --user enable --now nm-applet
+systemctl --user enable --now aw-qt
+systemctl --user enable --now deterred-mpd
+systemctl --user enable --now vnstat
+systemctl --user enable --now xsettingsd
+systemctl --user enable --now flameshot
+#+end_src
+
+#+RESULTS:
+
+** Custom target
+Creating a custom target because otherwise systemd tries to launch everything before the WM is loaded.
+
+#+begin_src conf :tangle .config/systemd/user/wm-session.target
+[Unit]
+Description=Window Manager Session
+After=graphical-session.target
+#+end_src
 
 ** Music
-| Category | Guix dependency |
+| Category | Arch dependency |
 |----------+-----------------|
 | music    | mpd             |
 | music    | ncmpcpp         |
 | music    | picard          |
-| music    | mpd-mpc         |
+| music    | mpc             |
 | music    | shntool         |
 | music    | cuetools        |
 | music    | flac            |
 
-Music player daemon
-#+begin_src scheme
-(define mpd
-  (make <service>
-    #:provides '(mpd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("mpd" "--no-daemon"))
-    #:stop (make-kill-destructor)))
+#+begin_src conf :tangle .config/systemd/user/mpd.service
+[Unit]
+Description=Music Player Daemon
+
+[Service]
+ExecStart=/usr/bin/mpd --no-daemon
+
+[Install]
+WantedBy=graphical-session.target
 #+end_src
 
-MPD watcher
-#+begin_src scheme
-(define sqrt-data-agent-mpd
-  (make <service>
-    #:provides '(sqrt-data-agent-mpd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("sqrt_data_agent_mpd"))
-    #:stop (make-kill-destructor)
-    #:requires '(mpd)))
+#+begin_src conf :tangle .config/systemd/user/deterred-mpd.service
+[Unit]
+Description=DETERRED MPD Watcher
+ConditionPathExists=/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/watchers/deterred-mpd.py
 
-(define deterred-mpd
-  (make <service>
-    #:provides '(deterred-mpd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor
-             '("python" "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/watchers/deterred-mpd.py"
-               "--db" "/home/pavel/.deterred/database.db"))
-    #:stop (make-kill-destructor)
-    #:requires '(mpd)))
-#+end_src
-** GNU Mcron
-[[https://www.gnu.org/software/mcron/][GNU Mcron]] is a replacement for cron, written in Scheme.
+[Service]
+ExecStart=/usr/bin/python "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/watchers/deterred-mpd.py" "--db" "/home/pavel/.deterred/database.db"
 
-#+begin_src scheme
-(define mcron
-  (make <service>
-    #:provides '(mcron)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("mcron"))
-    #:stop (make-kill-destructor)))
+[Install]
+WantedBy=wm-session.target
 #+end_src
+
 ** ActivityWatch
 [[https://activitywatch.net/][ActivityWatch]] is a FOSS time tracker. It tracks screen and application usage and has integrations with browsers, Emacs, etc.
 
-| Guix dependency   |
+| Arch dependency   |
 |-------------------|
 | activitywatch-bin |
 
-aw-server
-#+begin_src scheme
-(define aw-server
-  (make <service>
-    #:provides '(aw-server)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("aw-server"))
-    #:stop (make-kill-destructor)))
+#+begin_src conf :tangle .config/systemd/user/aw-qt.service
+[Unit]
+Description=ActivityWatch
+
+[Service]
+ExecStart=/usr/bin/aw-qt
+
+[Install]
+WantedBy=wm-session.target
 #+end_src
 
-=aw-watcher-afk= has some problems with statup, so there is a wrapper script
-
-#+begin_src sh :tangle ~/bin/scripts/aw-watcher-afk-wrapper
-sleep 5
-aw-watcher-afk
-#+end_src
-
-aw-watcher-afk
-#+begin_src scheme
-(define aw-watcher-afk
-  (make <service>
-    #:provides '(aw-watcher-afk)
-    #:requires '(aw-server)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/aw-watcher-afk-wrapper"))
-    #:stop (make-kill-destructor)))
-#+end_src
-
-aw-watcher-window
-#+begin_src scheme
-(define aw-watcher-window
-  (make <service>
-    #:provides '(aw-watcher-window)
-    #:requires '(aw-server)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("aw-watcher-window"))
-    #:stop (make-kill-destructor)))
-#+end_src
-** PulseEffects
-#+begin_src scheme
-(define pulseeffects
-  (make <service>
-    #:provides '(pulseeffects)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("flatpak" "run" "com.github.wwmm.pulseeffects" "--gapplication-service"))
-    #:stop (make-kill-destructor)))
-#+end_src
 ** xsettingsd
-#+begin_src scheme
-(define xsettingsd
-  (make <service>
-    #:provides '(xsettingsd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("xsettingsd"))
-    #:stop (make-kill-destructor)))
+#+begin_src conf :tangle .config/systemd/user/xsettingsd.service
+[Unit]
+Description=X Settings Daemon
+
+[Service]
+ExecStart=/usr/bin/xsettingsd
+
+[Install]
+WantedBy=wm-session.target
 #+end_src
 ** nm-applet
-#+begin_src scheme
-(define nm-applet
-  (make <service>
-    #:provides '(nm-applet)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("nm-applet"))
-    #:stop (make-kill-destructor)))
-#+end_src
-** Discord rich presence
+#+begin_src conf :tangle .config/systemd/user/nm-applet.service
+[Unit]
+Description=Network Manager Applet
 
-References:
-- [[https://github.com/flathub/com.discordapp.Discord/wiki/Rich-Precense-(discord-rpc)][Rich Precense (discord rpc)]]
+[Service]
+ExecStart=/usr/bin/nm-applet
 
-#+begin_src scheme
-(define discord-rich-presence
-  (make <service>
-    #:provides '(discord-rich-presence)
-    #:one-shot? #t
-    #:start (make-system-constructor "ln -sf {app/com.discordapp.Discord,$XDG_RUNTIME_DIR}/discord-ipc-0")))
-#+end_src
-** Polkit Authentication agent
-Launch an authentication agent. Necessary for stuff like =pkexec=. I suspect I'm not doing that the intended way, but it seems to work.
-
-#+begin_src scheme
-(define polkit-gnome
-  (make <service>
-    #:provides '(polkit-gnome)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/.guix-extra-profiles/desktop-misc/desktop-misc/libexec/polkit-gnome-authentication-agent-1"))
-    #:stop (make-kill-destructor)))
-#+end_src
-** Xmodmap
-#+begin_src scheme
-(define xmodmap
-  (make <service>
-    #:provides '(xmodmap)
-    #:one-shot? #t
-    #:start (make-system-constructor "xmodmap /home/pavel/.Xmodmap")))
-#+end_src
-** VPN
-Run my [[file:Guix.org::*OpenVPN][OpenVPN setup]]. Not lauching this automatially, as it requires an active connection.
-
-#+begin_src scheme
-(define vpn
-  (make <service>
-    #:provides '(vpn)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/bin/scripts/vpn-start"))
-    #:stop (make-kill-destructor)))
-#+end_src
-** Davmail
-#+begin_src scheme
-(define davmail
-  (make <service>
-    #:provides '(davmail)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("/home/pavel/bin/davmail"))
-    #:stop (make-kill-destructor)))
+[Install]
+WantedBy=wm-session.target
 #+end_src
 ** vnstatd
-#+begin_src scheme
-(define vnstatd
-  (make <service>
-    #:provides '(vnstatd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("vnstatd" "-n"))
-    #:stop (make-kill-destructor)))
-#+end_src
-** opensnitch
-[[https://github.com/evilsocket/opensnitch][opensnitch]] is a linux firewall.
 
-Install it via nix:
-#+begin_src bash :tangle no
-nix-env -I opensnitchd opensnitch-ui
-#+end_src
+| Arch dependency |
+|-----------------|
+| vnstat          |
 
-=sudoers= has to be modified this to work.
-#+begin_src scheme
-(define opensnitchd
-  (make <service>
-    #:provides '(opensnitchd)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("sudo" "opensnitchd"))
-    #:stop (make-kill-destructor)))
+#+begin_src conf :tangle .config/systemd/user/vnstat.service
+[Unit]
+Description=vnStat network monitor
 
-(define opensnitch-ui
-  (make <service>
-    #:provides '(opensnitch-ui)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("sudo" "opensnitch-ui"))
-    #:stop (make-kill-destructor)))
-#+end_src
-** ollama
-#+begin_src scheme
-(define ollama
-  (make <service>
-    #:provides '(ollama)
-    #:respawn? #t
-    #:start (make-forkexec-constructor '("ollama" "serve"))
-    #:stop (make-kill-destructor)))
-#+end_src
+[Service]
+ExecStart=/usr/bin/vnstatd
 
-** Shepherd config
-For some reason, running start on a one-shot service started to hang shepherd, not sure why... Turining these off for now.
-
-Register services:
-#+begin_src scheme
-(register-services
- mpd
- sqrt-data-agent-mpd
- deterred-mpd
- mcron
- aw-server
- aw-watcher-afk
- aw-watcher-window
- pulseeffects
- xsettingsd
- ;; discord-rich-presence
- polkit-gnome
- vpn
- davmail
- ;; xmodmap
- nm-applet
- vnstatd
- ;; opensnitchd
- ;; opensnitch-ui
- ollama)
+[Install]
+WantedBy=wm-session.target
 #+end_src
+** flameshot
+#+begin_src conf :tangle .config/systemd/user/flameshot.service
+[Unit]
+Description=Flameshot
 
-Daemonize shepherd
-#+begin_src scheme
-(action 'shepherd 'daemonize)
-#+end_src
+[Service]
+ExecStart=/usr/bin/flameshot
 
-Run services
-#+begin_src scheme
-(for-each start '(mpd
-                  sqrt-data-agent-mpd
-                  deterred-mpd
-                  mcron
-                  aw-server
-                  aw-watcher-afk
-                  aw-watcher-window
-                  pulseeffects
-                  xsettingsd
-                  ;; discord-rich-presence
-                  ;; polkit-gnome
-                  davmail
-                  ;; ; xmodmap
-                  ;; nm-applet
-                  vnstatd
-                  ;; opensnitchd
-                  ;; opensnitch-ui
-                  ))
+[Install]
+WantedBy=wm-session.target
 #+end_src
-* Guix settings
+* Arch settings
 Other desktop programs I use are listed below.
 
-| Category     | Guix dependency        | Description                               |
+| Category     | Arch dependency        | Description                               |
 |--------------+------------------------+-------------------------------------------|
-| desktop-misc | xprop                  | Tool to display properties of X windows   |
+| desktop-misc | xorg-xprop             | Tool to display properties of X windows   |
 | desktop-misc | arandr                 | GUI to xrandr                             |
 | desktop-misc | light                  | Control screen brightness                 |
-| desktop-misc | ponymix                | Control PulseAudio CLI                    |
 | desktop-misc | pavucontrol            | Control PulseAudio GUI                    |
 | desktop-misc | network-manager-applet | Applet to manage network connections      |
-| desktop-misc | xmodmap                | Program to modify keybindings on X server |
+| desktop-misc | xorg-xmodmap           | Program to modify keybindings on X server |
 | desktop-misc | fontconfig             |                                           |
 | desktop-misc | polkit-gnome           | Polkit authentication agent               |
 | desktop-misc | feh                    | Image viewer. Used to set background      |
-| desktop-misc | geeqie                 | Image viewer                              |
 | desktop-misc | copyq                  | Clipboard manager                         |
 | desktop-misc | thunar                 | My preferred GUI file manager             |
 | desktop-misc | xdg-utils              | gives xdg-open and stuff                  |
 | desktop-misc | gnome-font-viewer      | view fonts                                |
 | desktop-misc | qbittorrent            | torrent client                            |
-| desktop-misc | anydesk                | Remote desktop software                   |
+| desktop-misc | anydesk-bin            | Remote desktop software                   |
 | desktop-misc | gnome-disk-utility     | Manage disks                              |
 | desktop-misc | gparted                | Manage partitions                         |
-| desktop-misc | xev                    | Test input                                |
+| desktop-misc | xorg-xev               | Test input                                |
 | desktop-misc | bluez                  | Provides bluetoothctl                     |
 | desktop-misc | telegram-desktop       |                                           |
-| desktop-misc | font-google-noto-emoji |                                           |
+| desktop-misc | noto-fonts-emoji       |                                           |
 | desktop-misc | remmina                |                                           |
 | desktop-misc | android-file-transfer  |                                           |
-| desktop-misc | mcron                  |                                           |
+| desktop-misc | veracrypt              |                                           |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
-(my/format-guix-dependencies)
+(my/format-arch-dependencies)
 #+end_src
 
-#+begin_src scheme :tangle .config/guix/manifests/desktop.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages()>>))
+#+begin_src scheme :tangle .config/metapac/groups/desktop.toml :noweb yes
+<<packages()>>
 #+end_src

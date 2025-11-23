@@ -152,6 +152,8 @@
              (org-element-property :end element))))
     (with-temp-buffer
       (insert s)
+      (let (org-mode-hook)
+        (org-mode))
       (org-clock-sum)
       org-clock-file-total-minutes)))
 

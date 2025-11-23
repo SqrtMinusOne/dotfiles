@@ -22,14 +22,6 @@ fi
 # TZ='Asia/Karachi'; export TZ
 # Environment:5 ends here
 
-#!/usr/bin/env bash
-# [[file:Console.org::*Environment][Environment:6]]
-if [ -f "/home/pavel/.no-guix" ]; then
-    export NO_GUIX=true
-    export PATH=$(echo $PATH | tr ":" "\n" | grep -vE "guix|nix|gnu" | tr "\n" ":")
-fi
-# Environment:6 ends here
-
 # [[file:Console.org::*My paths][My paths:1]]
 if [ -d "$HOME/bin" ] ; then
     export PATH="$HOME/bin:$PATH"
@@ -41,68 +33,22 @@ if [ -d "$HOME/.local/bin" ] ; then
 fi
 # My paths:1 ends here
 
-# [[file:Console.org::*SSL Certs][SSL Certs:1]]
-if [ -d "$HOME/.guix-extra-profiles" ] ; then
-    export SSL_CERT_DIR="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/"
-    export SSL_CERT_FILE="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/ca-certificates.crt"
-    export GIT_SSL_CAINFO="$SSL_CERT_FILE"
-    export CURL_CA_BUNDLE="$SSL_CERT_FILE"
-fi
-# SSL Certs:1 ends here
+#!/usr/bin/env bash
+# [[file:Console.org::*ssh-agent][ssh-agent:3]]
+export SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
+# ssh-agent:3 ends here
 
-# [[file:Console.org::*ssh-agent][ssh-agent:1]]
-SSH_AGENT_DIR="/tmp"
-
-if [ "$IS_ANDROID" == "true" ]; then
-    SSH_AGENT_DIR="/data/data/com.termux/files/tmp"
-    mkdir -p $SSH_AGENT_DIR
-fi
-
-if ! pgrep -u "$USER" ssh-agent > /dev/null; then
-    ssh-agent -t 1h > "$SSH_AGENT_DIR/ssh-agent.env"
-fi
-if [[ ! -f "$SSH_AUTH_SOCK" ]]; then
-    source "$SSH_AGENT_DIR/ssh-agent.env" >/dev/null
-fi
-# ssh-agent:1 ends here
-
-# [[file:Console.org::*Guix settings][Guix settings:1]]
-if [ -z "$IS_ANDROID" ] && [ -z "$NO_GUIX" ] ; then
-    GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
-    for i in $GUIX_EXTRA_PROFILES/*; do
-        profile=$i/$(basename "$i")
-        if [ -f "$profile"/etc/profile ]; then
-            GUIX_PROFILE="$profile"
-            . "$GUIX_PROFILE"/etc/profile
-        fi
-        if [ -d "$profile"/share/man ]; then
-            if command -v manpath >/dev/null 2>/dev/null; then
-                export MANPATH="${MANPATH:-$(manpath)}:$profile/share/man"
-            else
-                export MANPATH="${MANPATH}:$profile/share/man"
-            fi
-        fi
-        export XDG_DATA_DIRS="$XDG_DATA_DIRS:$profile/share"
-        unset profile
-    done
-fi
-# Guix settings:1 ends here
-
-# [[file:Console.org::*Guix settings][Guix settings:2]]
+# [[file:Console.org::*Misc settings][Misc settings:1]]
 export JUPYTER_CONFIG_DIR=$HOME/.config/jupyter
-# Guix settings:2 ends here
+# Misc settings:1 ends here
 
-# [[file:Console.org::*Guix settings][Guix settings:3]]
-export GUIX_PACKAGE_PATH=~/guix-packages
-# Guix settings:3 ends here
-
-# [[file:Console.org::*Guix settings][Guix settings:4]]
-export GUIX_LOCPATH=$HOME/.guix-extra-profiles/console/console/lib/locale
-# Guix settings:4 ends here
-
-# [[file:Console.org::*Guix settings][Guix settings:5]]
+# [[file:Console.org::*Misc settings][Misc settings:2]]
 export GIO_EXTRA_MODULES=""
-# Guix settings:5 ends here
+# Misc settings:2 ends here
+
+# [[file:Console.org::*Misc settings][Misc settings:3]]
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+# Misc settings:3 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:1]]
 if [ -d "$HOME/.cask" ]; then
@@ -125,33 +71,10 @@ if [ -e /home/pavel/.nix-profile/etc/profile.d/nix.sh ] && [ -z "$NO_GUIX" ] ; t
 # Other package managers:3 ends here
 
 # [[file:Console.org::*Other package managers][Other package managers:4]]
-if [ -d "$HOME/.guix-extra-profiles/desktop-misc" ] && [ -z "$NO_GUIX" ] ; then
-    export FONTCONFIG_PATH="$HOME/.guix-extra-profiles/desktop-misc/desktop-misc/etc/fonts"
-fi
-# Other package managers:4 ends here
-
-# [[file:Console.org::*Other package managers][Other package managers:5]]
-if [ -d "$HOME/.nix-profile" ] && [ -z "$NO_GUIX" ]; then
-    export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
-fi
-# Other package managers:5 ends here
-
-# [[file:Console.org::*Other package managers][Other package managers:6]]
 if [ -d "$HOME/bin/gradle/gradle-9.0.0" ]; then
     export PATH="$HOME/bin/gradle/gradle-9.0.0/bin:$PATH"
 fi
-# Other package managers:6 ends here
-
-# [[file:Console.org::*npm][npm:2]]
-export NPM_CONFIG_USERCONFIG=$HOME/._npmrc
-# npm:2 ends here
-
-# [[file:Console.org::*npm][npm:3]]
-NPM_PACKAGES="${HOME}/.npm-packages"
-
-export PATH="$PATH:$NPM_PACKAGES/bin"
-export MANPATH="${MANPATH:-$(manpath)}:$NPM_PACKAGES/share/man"
-# npm:3 ends here
+# Other package managers:4 ends here
 
 # [[file:Console.org::*XResources][XResources:1]]
 if [ -z "$IS_ANDROID" ]; then

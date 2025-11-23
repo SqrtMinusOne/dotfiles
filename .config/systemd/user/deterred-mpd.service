@@ -1,0 +1,9 @@
+[Unit]
+Description=DETERRED MPD Watcher
+ConditionPathExists=/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/watchers/deterred-mpd.py
+
+[Service]
+ExecStart=/usr/bin/python "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/watchers/deterred-mpd.py" "--db" "/home/pavel/.deterred/database.db"
+
+[Install]
+WantedBy=wm-session.target

@@ -1,0 +1,4 @@
+arch = [
+"firefox-tridactyl",
+"firefox",
+"ungoogled-chromium-bin",]

@@ -346,6 +346,7 @@
 
 (use-package eshell-atuin
   :straight (:host github :repo "SqrtMinusOne/eshell-atuin")
+  :when (executable-find "atuin")
   :after eshell
   :config
   (eshell-atuin-mode)

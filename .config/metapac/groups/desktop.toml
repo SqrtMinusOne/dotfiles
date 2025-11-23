@@ -1,0 +1,18 @@
+arch = [
+"vnstat",
+"activitywatch-bin",
+"xdg-desktop-portal",
+"flatpak",
+"picom",
+"libnotify",
+"dunst",
+"flameshot",
+"i3lock",
+"i3-wm",
+"xorg-xinput",
+"xorg-xgamma",
+"xorg-xrandr",
+"gnome-themes-extra",
+"xsettingsd",
+"papirus-icon-theme",
+"gtk-engines",]

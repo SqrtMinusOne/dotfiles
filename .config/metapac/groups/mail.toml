@@ -1,0 +1,7 @@
+arch = [
+"notmuch",
+"msmtp",
+"parallel",
+"notmuch",
+"offlineimap",
+"lieer-git",]

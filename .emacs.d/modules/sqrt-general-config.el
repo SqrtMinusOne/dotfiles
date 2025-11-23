@@ -245,7 +245,7 @@
     "m" 'magit
     "M" 'magit-file-dispatch)
   :config
-  (require 'forge)
+  ;; (require 'forge)
   (setq magit-blame-styles
         '((headings
            (heading-format . "%-20a %C %s\n"))

@@ -6,6 +6,7 @@
   (advice-add 'wakatime-init :after
               (lambda ()
                 (setq wakatime-cli-path (or
+                                         (executable-find "wakatime")
                                          (executable-find "wakatime-cli")
                                          (expand-file-name "~/bin/wakatime-cli")))))
   (when (file-exists-p "~/.wakatime.cfg")

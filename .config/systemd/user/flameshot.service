@@ -1,0 +1,8 @@
+[Unit]
+Description=Flameshot
+
+[Service]
+ExecStart=/usr/bin/flameshot
+
+[Install]
+WantedBy=wm-session.target

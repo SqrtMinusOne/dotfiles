@@ -6,8 +6,12 @@
   (call-process-shell-command "feh --bg-fill ~/Pictures/wallpaper.jpg"))
 
 (defun my/exwm-run-shepherd ()
-  (when (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
+  (when (and (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
+             (executable-find "shepherd"))
     (call-process "shepherd")))
+
+(defun my/exwm-run-systemd ()
+  (call-process "systemctl" nil nil nil "--user" "start" "wm-session.target"))
 
 (use-package pinentry
   :straight t
@@ -377,14 +381,14 @@ DIR is either 'left or 'right."
 _t_: Terminal (Alacritty)
 _b_: Browser (Firefox)
 _s_: Rocket.Chat
-_e_: Element
-_d_: Discord
+_d_: DBeaver
+_c_: Chromium
 "
   ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
   ("b" (lambda () (interactive) (my/run-in-background "firefox")))
-  ("s" (lambda () (interactive) (my/run-in-background "flatpak run chat.rocket.RocketChat")))
-  ("e" (lambda () (interactive) (my/run-in-background "flatpak run im.riot.Riot")))
-  ("d" (lambda () (interactive) (my/run-in-background "flatpak run com.discordapp.Discord"))))
+  ("s" (lambda () (interactive) (my/run-in-background "rocketchat-desktop")))
+  ("d" (lambda () (interactive) (my/run-in-background "dbeaver")))
+  ("c" (lambda () (interactive) (my/run-in-background "chromium"))))
 
 (defun my/exwm-lock ()
   (interactive)
@@ -588,10 +592,12 @@ _d_: Discord
 (defun my/exwm-init ()
   (exwm-workspace-switch 1)
 
-  (my/exwm-run-polybar)
   (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
   (my/run-in-background "gpgconf --reload gpg-agent")
+  (my/exwm-run-polybar)
+  (setenv "DBUS_SESSION_BUS_ADDRESS" "unix:path=/run/user/1000/bus")
+  (my/exwm-run-systemd)
   (when (my/is-arch)
     (my/run-in-background "set_layout")))
 
@@ -696,11 +702,11 @@ _d_: Discord
           (,(kbd "s-i") . ,(my/app-command "copyq menu"))
   
           ;; Basic controls
-          (,(kbd "<XF86AudioRaiseVolume>") . ,(my/app-command "ponymix increase 5 --max-volume 150"))
-          (,(kbd "<XF86AudioLowerVolume>") . ,(my/app-command "ponymix decrease 5 --max-volume 150"))
+          (,(kbd "<XF86AudioRaiseVolume>") . ,(my/app-command "wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+"))
+          (,(kbd "<XF86AudioLowerVolume>") . ,(my/app-command "wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%-"))
           (,(kbd "<XF86MonBrightnessUp>") . ,(my/app-command "light -A 5"))
           (,(kbd "<XF86MonBrightnessDown>") . ,(my/app-command "light -U 5"))
-          (,(kbd "<XF86AudioMute>") . ,(my/app-command "ponymix toggle"))
+          (,(kbd "<XF86AudioMute>") . ,(my/app-command "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"))
   
           (,(kbd "<XF86AudioPlay>") . ,(my/app-command "mpc toggle"))
           (,(kbd "<XF86AudioPause>") . ,(my/app-command "mpc pause"))

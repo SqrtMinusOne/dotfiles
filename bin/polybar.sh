@@ -12,6 +12,8 @@ elif [ "$hostname" = "eminence" ]; then
     fi
 elif [ "$hostname" = "iris" ]; then
     TRAY_MONITOR="HDMI-1"
+elif [ "$hostname" = "weiss" ]; then
+    TRAY_MONITOR="eDP-1"
 else
     TRAY_MONITOR="DP-1"
 fi
@@ -25,6 +27,7 @@ declare -A FONT_SIZES=(
     ["HDMI-1"]="13"
     ["HDMI-0"]="13"
     ["DP-1"]="13"
+    ["Virtual-1"]="13"
 )
 declare -A EMOJI_SCALE=(
     ["eDP"]="9"
@@ -34,6 +37,7 @@ declare -A EMOJI_SCALE=(
     ["HDMI-1"]="10"
     ["HDMI-0"]="10"
     ["DP-1"]="10"
+    ["Virtual-1"]="13"
 )
 declare -A BAR_HEIGHT=(
     ["eDP"]="29"
@@ -43,6 +47,7 @@ declare -A BAR_HEIGHT=(
     ["HDMI-1"]="29"
     ["HDMI-0"]="29"
     ["DP-1"]="29"
+    ["Virtual-1"]="29"
 )
 declare -A BLOCKS=(
     ["eDP"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--cyan battery glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
@@ -52,6 +57,7 @@ declare -A BLOCKS=(
     ["HDMI-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--cyan battery glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
     ["HDMI-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan nvidia glyph-light-cyan--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
     ["DP-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan nvidia glyph-light-cyan--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["Virtual-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
 )
 
 declare -A TEMP_HWMON_PATHS=(

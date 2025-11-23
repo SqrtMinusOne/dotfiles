@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-# [[file:../../Desktop.org::*ActivityWatch][ActivityWatch:2]]
-sleep 5
-aw-watcher-afk
-# ActivityWatch:2 ends here

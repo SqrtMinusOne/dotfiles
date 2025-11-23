@@ -19,9 +19,9 @@ References:
 - [[https://sqrtminusone.xyz/posts/2021-02-27-gmail/][My post]] about email configuration. I wrote it some time ago, but the general idea remains.
 
 * Lieer
-| Guix dependency |
+| Arch dependency |
 |-----------------|
-| python-lieer    |
+| lieer-git       |
 
 Lieer is a program to link up Gmail and notmuch. Basically, it downloads mail from Gmail via API, stores them in Maildir, and synchronizes labels with notmuch.
 
@@ -40,7 +40,13 @@ gmi set --ignore-tags-local new
 
 Running =gmi sync= in the required directory performs the synchronization. The first sync takes a while, the subsequent syncs are pretty fast.
 * DavMail
-[[davmail.sourceforge.net][DavMail]] is a gateway between MS Exchange and the rest of the world, which uses IMAP/SMTP/LDAP/etc. As I have one corporate MS Exchange address, this is just the program I need. As of yet, it isn't packaged for Guix, but it's easy enough to download.
+[[davmail.sourceforge.net][DavMail]] is a gateway between MS Exchange and the rest of the world, which uses IMAP/SMTP/LDAP/etc. As I have one corporate MS Exchange address, this is just the program I need.
+
+Edit [2025-11-11 Tue]: We've moved from MS Exhange, disabling this.
+
+| Arch dependency | Disabled |
+|-----------------+----------|
+| davmail         | t        |
 
 It has a GUI mode, but I prefer headless config.
 #+begin_src conf-unix :tangle ~/bin/davmail-6.0.0-3375/davmail.properties
@@ -68,7 +74,7 @@ cd $HOME/bin/davmail-6.0.0-3375
 
 Shepherd service is defined in [[file:Desktop.org::*Davmail][Desktop.org]].
 * OfflineIMAP
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | offlineimap     |
 
@@ -129,7 +135,7 @@ remoteport = 993
 cert_fingerprint = 20bbfdcb617e4695c47a90af96e40d72a57adee4
 #+end_src
 * Notmuch
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | notmuch         |
 | parallel        |
@@ -292,7 +298,7 @@ echo "Running pre-new filters"
 <<mail-tags(move="t",archive_root="Archive",root="pvkorytov_etu_mbox")>>
 echo "Pre-new filters done"
 
-parallel --link -j0 "(cd /home/pavel/Mail/{1}/ && {2} {3})" ::: thexcloud progin6304 pvkorytov_etu ::: "$GMI" "$GMI" "offlineimap" ::: sync sync ""
+parallel --link -j0 "(cd /home/pavel/Mail/{1}/ && {2} {3})" ::: thexcloud progin6304 pvkorytov_etu ::: "$GMI" "$GMI" "offlineimap" ::: sync sync "-a pvkorytov-mbox"
 #+end_src
 
 *** =post_new=
@@ -352,12 +358,35 @@ fi
 echo "$(date +%s)" > $CHECK_FILE
 #+end_src
 
-The script is ran via GNU Mcron every 5 minutes.
-#+begin_src scheme :tangle ~/.config/cron/mail.guile
-(job "*/5 * * * * " "~/bin/scripts/check-email")
+The script is ran via systemd every 5 minutes.
+#+begin_src conf :tangle .config/systemd/user/notmuch.service
+[Unit]
+Description=Update notmuch mail index
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /home/pavel/bin/scripts/check-email
 #+end_src
+
+#+begin_src conf :tangle .config/systemd/user/notmuch.timer
+[Unit]
+Description=Run notmuch sync script every 5 minutes
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target
+#+end_src
+
+Don't forget to run:
+#+begin_src bash
+systemctl --user enable --now notmuch.timer
+#+end_src
+
 * MSMTP
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | msmtp           |
 
@@ -405,15 +434,17 @@ msmtp --serverinfo --tls --tls-certcheck=off -a pvkorytov
 :header-args+: :tangle ~/.emacs.d/mail.el
 :END:
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
-| emacs-notmuch   |
+| notmuch    |
 
 Finally, Emacs configuration. Let's start with some variables:
 #+begin_src emacs-lisp
 (setq user-mail-address "thexcloud@gmail.com")
 (setq user-full-name "Pavel Korytov")
 #+end_src
+
+TODO fix for Arch
 
 Then, the problem with my Guix setup is that Emacs by default doesn't see the elisp files of notmuch, so here is a small workaround:
 #+begin_src emacs-lisp
@@ -693,14 +724,12 @@ application/postscript ; zathura %s
 
 text/html; firefox %s
 #+end_src
-* Guix settings
+* Arch settings
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
-(my/format-guix-dependencies)
+(my/format-arch-dependencies)
 #+end_src
 
-#+begin_src scheme :tangle .config/guix/manifests/mail.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages()>>))
+#+begin_src scheme :tangle .config/metapac/groups/mail.toml :noweb yes
+<<packages()>>
 #+end_src

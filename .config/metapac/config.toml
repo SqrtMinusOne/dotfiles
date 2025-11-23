@@ -1,0 +1,12 @@
+hostname_enabled_backends_enabled = false
+enabled_backends = ["arch"]
+hostname_groups_enabled = true
+
+[hostname_groups]
+violet = ["system","office","nvidia","music","mail","latex","emacs","dev","desktop-rofi","desktop-polybar","desktop-misc","desktop","console","browsers"]
+weiss = ["system","office","music","mail","latex","emacs","dev","desktop-rofi","desktop-polybar","desktop-misc","desktop","console","browsers"]
+archlinux = ["system","office","music","mail","latex","emacs","dev","desktop-rofi","desktop-polybar","desktop-misc","desktop","console","browsers"]
+
+
+[arch]
+package_manager = "paru"

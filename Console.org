@@ -72,14 +72,6 @@ Timezone
 # TZ='Asia/Karachi'; export TZ
 #+end_src
 
-Turn off Guix
-#+begin_src bash
-if [ -f "/home/pavel/.no-guix" ]; then
-    export NO_GUIX=true
-    export PATH=$(echo $PATH | tr ":" "\n" | grep -vE "guix|nix|gnu" | tr "\n" ":")
-fi
-#+end_src
-
 ** My paths
 My script folders
 #+begin_src sh
@@ -92,23 +84,11 @@ if [ -d "$HOME/.local/bin" ] ; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 #+end_src
-** SSL Certs
-This seems necessary when running Guix on a foreign distro.
-
-#+begin_src bash
-if [ -d "$HOME/.guix-extra-profiles" ] ; then
-    export SSL_CERT_DIR="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/"
-    export SSL_CERT_FILE="$HOME/.guix-extra-profiles/system/system/etc/ssl/certs/ca-certificates.crt"
-    export GIT_SSL_CAINFO="$SSL_CERT_FILE"
-    export CURL_CA_BUNDLE="$SSL_CERT_FILE"
-fi
-#+end_src
 ** ssh-agent
 I'm paranoid so I encrypt my SSH keys.
 
-Got the idea for below from [[https://wiki.archlinux.org/title/SSH_keys#SSH_agents][ArchWiki]]:
-
-#+begin_src bash
+I used to do the below, as instructed by [[https://wiki.archlinux.org/title/SSH_keys#SSH_agents][ArchWiki]]:
+#+begin_src bash :tangle no
 SSH_AGENT_DIR="/tmp"
 
 if [ "$IS_ANDROID" == "true" ]; then
@@ -123,52 +103,35 @@ if [[ ! -f "$SSH_AUTH_SOCK" ]]; then
     source "$SSH_AGENT_DIR/ssh-agent.env" >/dev/null
 fi
 #+end_src
-** Guix settings
-Enable extra profiles
 
-#+begin_src sh
-if [ -z "$IS_ANDROID" ] && [ -z "$NO_GUIX" ] ; then
-    GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
-    for i in $GUIX_EXTRA_PROFILES/*; do
-        profile=$i/$(basename "$i")
-        if [ -f "$profile"/etc/profile ]; then
-            GUIX_PROFILE="$profile"
-            . "$GUIX_PROFILE"/etc/profile
-        fi
-        if [ -d "$profile"/share/man ]; then
-            if command -v manpath >/dev/null 2>/dev/null; then
-                export MANPATH="${MANPATH:-$(manpath)}:$profile/share/man"
-            else
-                export MANPATH="${MANPATH}:$profile/share/man"
-            fi
-        fi
-        export XDG_DATA_DIRS="$XDG_DATA_DIRS:$profile/share"
-        unset profile
-    done
-fi
+But for now switched to the [[https://wiki.archlinux.org/title/SSH_keys#Start_ssh-agent_with_systemd_user][systemd unit]], which requires:
+#+begin_src bash :tangle no
+systemctl --user enable --now ssh-agent.service
 #+end_src
 
-Set Jupyter config PATH. It defaults to readonly directory somewhere in Guix profile.
+#+begin_src bash
+export SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
+#+end_src
+
+** Misc settings
+Set Jupyter config PATH. I keep it from my Guix config where it defaulted to some readonly folder.
 #+begin_src sh
 export JUPYTER_CONFIG_DIR=$HOME/.config/jupyter
-#+end_src
-
-Set a folder for my packages.
-#+begin_src sh
-export GUIX_PACKAGE_PATH=~/guix-packages
-#+end_src
-
-Locale settings
-#+begin_src sh
-export GUIX_LOCPATH=$HOME/.guix-extra-profiles/console/console/lib/locale
 #+end_src
 
 Somehow LibreOffice doesn't work without the following:
 #+begin_src sh
 export GIO_EXTRA_MODULES=""
 #+end_src
+
+Not sure why this is necessary.
+
+#+begin_src sh
+export DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+#+end_src
+
 ** Other package managers
-Using other package managers with Guix requires some extra work.
+Using other package managers requires some extra work.
 
 Cask
 #+begin_src sh
@@ -195,20 +158,6 @@ if [ -e /home/pavel/.nix-profile/etc/profile.d/nix.sh ] && [ -z "$NO_GUIX" ] ; t
 
 #+RESULTS:
 
-Use Guix fontconfig. Necessary for nix apps
-#+begin_src sh
-if [ -d "$HOME/.guix-extra-profiles/desktop-misc" ] && [ -z "$NO_GUIX" ] ; then
-    export FONTCONFIG_PATH="$HOME/.guix-extra-profiles/desktop-misc/desktop-misc/etc/fonts"
-fi
-#+end_src
-
-Make nix apps visible to launchers:
-#+begin_src sh
-if [ -d "$HOME/.nix-profile" ] && [ -z "$NO_GUIX" ]; then
-    export XDG_DATA_DIRS="$XDG_DATA_DIRS:$HOME/.nix-profile/share/applications"
-fi
-#+end_src
-
 Gradle:
 #+begin_src sh
 if [ -d "$HOME/bin/gradle/gradle-9.0.0" ]; then
@@ -216,88 +165,14 @@ if [ -d "$HOME/bin/gradle/gradle-9.0.0" ]; then
 fi
 #+end_src
 
-*** npm
-npm is especially cumbersome, for instance because by default it tries to install packages to =/gnu/store/=.
-
-In principle, one can set a prefix like this:
-#+begin_src conf :tangle ~/._npmrc
-prefix=/home/pavel/.npm-packages
-#+end_src
-
-But I also want to use node from conda occasionally, where prefix is already set correctly. So instead of tangling the above to the =~/.npmrc= directly, I set an environment variable in the profile:
-
-#+begin_src sh
-export NPM_CONFIG_USERCONFIG=$HOME/._npmrc
-#+end_src
-
-The variable is unset in a script in [[file:Guix.org::*micromamba][Guix.org]].
-
-Set PATH & MANPATH
-#+begin_src sh
-NPM_PACKAGES="${HOME}/.npm-packages"
-
-export PATH="$PATH:$NPM_PACKAGES/bin"
-export MANPATH="${MANPATH:-$(manpath)}:$NPM_PACKAGES/share/man"
-#+end_src
 ** XResources
-| Guix dependency |
+| Arch dependency |
 |-----------------|
-| xrdb            |
+| xorg-xrdb       |
 
 #+begin_src sh
 if [ -z "$IS_ANDROID" ]; then
     xrdb ~/.Xresources
-fi
-#+end_src
-** OFF (OFF) Package manager paths
-Turned off for now, because probably it won't be necessary in Guix.
-
-LaTeX
-#+begin_src sh :tangle no
-if [ -d "/usr/local/texlive/2020" ]; then
-    export MANPATH="/usr/local/texlive/2020/texmf-dist/doc/man:$MANPATH"
-    export INFOPATH="/usr/local/texlive/2020/texmf-dist/doc/info:$INFOPATH"
-    export PATH="/usr/local/texlive/2020/bin/x86_64-linux:$PATH"
-fi
-#+end_src
-
-Cargo (Rust)
-#+begin_src sh :tangle no
-if [ -d "$HOME/.cargo" ] ; then
-    export PATH="$HOME/.cargo/bin:$PATH"
-fi
-#+end_src
-
-RVM (Ruby)
-#+begin_src sh :tangle no
-if [ -d "$HOME/.rvm" ] ; then
-    export PATH="$PATH:$HOME/.rvm/bin"
-fi
-# if [ -d "$HOME/.gem" ]; then
-#     export PATH="$HOME/.gem/ruby/2.7.0/bin:$PATH"
-# fi
-#+end_src
-
-Go
-#+begin_src sh :tangle no
-if [ -d "$HOME/go" ] ; then
-    export PATH="$HOME/go/bin:$PATH"
-fi
-#+end_src
-
-ghcup (Haskell)
-#+begin_src sh :tangle no
-[ -f "/home/pavel/.ghcup/env" ] && source "/home/pavel/.ghcup/env" # ghcup-env
-#+end_src
-
-Perl
-#+begin_src sh :tangle no
-if [ -d "$HOME/perl5" ] ; then
-    PATH="/home/pavel/perl5/bin${PATH:+:${PATH}}"
-    PERL5LIB="/home/pavel/perl5/lib/perl5${PERL5LIB:+:${PERL5LIB}}"; export PERL5LIB;
-    PERL_LOCAL_LIB_ROOT="/home/pavel/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
-    PERL_MB_OPT="--install_base \"/home/pavel/perl5\""; export PERL_MB_OPT;
-    PERL_MM_OPT="INSTALL_BASE=/home/pavel/perl5"; export PERL_MM_OPT;
 fi
 #+end_src
 * Bash
@@ -315,7 +190,7 @@ fi
 :header-args+: :tangle ./.bashrc
 :END:
 
-My =.bashrc=, which has pieces from the default one in Guix & Manjaro, as well some mine settings.
+My =.bashrc=, which has pieces from the default one in Guix & Manjaro.
 
 *** Startup & environment
 Export 'SHELL' to child processes.  Programs such as 'screen' honor it and otherwise use /bin/sh.
@@ -348,18 +223,13 @@ if [[ -f "/etc/bashrc" ]]; then
 fi
 #+end_src
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
-| xhost           |
+| xorg-xhost     |
 
 Allow other users to access X server. Necessary for stuff like aw-watcher-window.
 #+begin_src bash
 xhost +local:root > /dev/null 2>&1
-#+end_src
-
-Set manpager to bat
-#+begin_src bash
-# export MANPAGER="sh -c 'sed -e s/.\\\\x08//g | bat -l man -p'"
 #+end_src
 
 [[https://codeberg.org/akib/emacs-eat][eat]] integration
@@ -488,9 +358,9 @@ Yeah, tell this to yourself
 
 #+begin_src bash
 init_mamba () {
-    export MAMBA_EXE="/home/pavel/.guix-extra-profiles/dev/dev/bin/micromamba";
+    export MAMBA_EXE="/usr/bin/micromamba";
     export MAMBA_ROOT_PREFIX="/home/pavel/micromamba";
-    __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
+    __mamba_setup="$("$MAMBA_EXE" shell hook --shell bash --root-prefix "$MAMBA_ROOT_PREFIX" 2> /dev/null)"
     if [ $? -eq 0 ]; then
         eval "$__mamba_setup"
     else
@@ -529,7 +399,7 @@ init_yc () {
 :header-args+: :tangle ./.config/fish/config.fish :comments link
 :END:
 
-| Guix dependency | Description                              |
+| Arch dependency | Description                              |
 |-----------------+------------------------------------------|
 | fish            | An alternative non POSIX-compliant shell |
 
@@ -566,9 +436,9 @@ end
 #+end_src
 
 
-| Guix dependency |
-|-----------------|
-| dt-colorscripts |
+| Arch dependency         |
+|-------------------------|
+| shell-color-scripts-git |
 
 Launch a random [[https://gitlab.com/dwt1/shell-color-scripts][DT's colorscript]] unless ran inside tmux or Emacs.
 #+begin_src fish
@@ -585,9 +455,9 @@ set fish_greeting
 First, a function to initialize micromamba.
 #+begin_src fish
 function init_mamba
-    set -gx MAMBA_EXE "/home/pavel/.guix-extra-profiles/dev/dev/bin/micromamba"
+    set -gx MAMBA_EXE "/usr/bin/micromamba"
     set -gx MAMBA_ROOT_PREFIX "/home/pavel/micromamba"
-    $MAMBA_EXE shell hook --shell fish --prefix $MAMBA_ROOT_PREFIX | source
+    $MAMBA_EXE shell hook --shell fish --root-prefix $MAMBA_ROOT_PREFIX | source
 end
 
 if test -n "$INIT_MAMBA";
@@ -641,6 +511,11 @@ if type -q direnv
 end
 #+end_src
 ** atuin
+
+| Arch dependency |
+|-----------------|
+| atuin           |
+
 #+begin_src fish
 if type -q atuin
     set -gx ATUIN_NOBIND "true"
@@ -653,16 +528,16 @@ end
 :PROPERTIES:
 :header-args+: :tangle ./.config/nu/config.toml :comments link
 :END:
- | Guix dependency |
+ | Arch dependency |
  |-----------------|
- | nushell-bin     |
+ | nushell         |
 
 A structured shell. I don't use it as of now, but perhaps one day.
 
 * Starship prompt
-| Guix dependency | Description         |
+| Arch dependency | Description         |
 |-----------------+---------------------|
-| starship-bin    | my prompt of choice |
+| starship        | my prompt of choice |
 
 [[https://starship.rs/][Starship]] is a nice cross-shell prompt, written in Rust.
 
@@ -750,10 +625,10 @@ symbol = " "
 :PROPERTIES:
 :header-args+: :tangle ./.tmux.conf
 :END:
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | tmux            |
-| python-tmuxp    |
+| tmuxp           |
 
 [[https://github.com/tmux/tmux][tmux]] is my terminal multiplexer of choice.
 
@@ -805,7 +680,7 @@ Reload the config.
 bind r source-file ~/.tmux.conf
 #+end_src
 ** Copy to clipboard
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | xclip           |
 
@@ -846,10 +721,10 @@ source ~/.tmux.line.conf
 #+end_src
 * Alacritty
 :PROPERTIES:
-:header-args+: :tangle ./.config/alacritty/alacritty.yml :comments link
+:header-args+: :tangle ./.config/alacritty/alacritty.toml :comments link
 :END:
 
-| Guix dependency |
+| Arch dependency |
 |-----------------|
 | alacritty       |
 
@@ -858,79 +733,162 @@ source ~/.tmux.line.conf
 References:
 - [[https://github.com/alacritty/alacritty/blob/master/alacritty.yml][default config]]
 
-#+begin_src yaml :noweb yes
-decorations: none
+#+begin_src toml :noweb yes
+[colors.bright]
+black = "<<get-color(name="light-black")>>"
+red = "<<get-color(name="light-red")>>"
+green = "<<get-color(name="light-green")>>"
+yellow = "<<get-color(name="light-yellow")>>"
+blue = "<<get-color(name="light-blue")>>"
+magenta = "<<get-color(name="light-magenta")>>"
+cyan = "<<get-color(name="light-cyan")>>"
+white = "<<get-color(name="light-white")>>"
 
-font:
-  normal:
-    family: JetBrainsMono Nerd Font
-    style: Regular
+[colors.normal]
+black = "<<get-color(name="black")>>"
+red = "<<get-color(name="red")>>"
+green = "<<get-color(name="green")>>"
+yellow = "<<get-color(name="yellow")>>"
+blue = "<<get-color(name="blue")>>"
+magenta = "<<get-color(name="magenta")>>"
+cyan = "<<get-color(name="cyan")>>"
+white = "<<get-color(name="white")>>"
 
-  size: 10
+[colors.primary]
+background = "<<get-color(name="bg")>>"
+foreground = "<<get-color(name="fg")>>"
 
-env:
-  TERM: xterm-256color
+[env]
+TERM = "xterm-256color"
 
-colors:
-  primary:
-    background: '<<get-color(name="bg")>>'
-    foreground: '<<get-color(name="fg")>>'
-  normal:
-    black: '<<get-color(name="black")>>'
-    red: '<<get-color(name="red")>>'
-    green: '<<get-color(name="green")>>'
-    yellow: '<<get-color(name="yellow")>>'
-    blue: '<<get-color(name="blue")>>'
-    magenta: '<<get-color(name="magenta")>>'
-    cyan: '<<get-color(name="cyan")>>'
-    white: '<<get-color(name="white")>>'
-  bright:
-    Black: '<<get-color(name="light-black")>>'
-    Red: '<<get-color(name="light-red")>>'
-    Green: '<<get-color(name="light-green")>>'
-    Yellow: '<<get-color(name="light-yellow")>>'
-    Blue: '<<get-color(name="light-blue")>>'
-    Magenta: '<<get-color(name="light-magenta")>>'
-    Cyan: '<<get-color(name="light-cyan")>>'
-    White: '<<get-color(name="light-white")>>'
+[font]
+size = 10
 
-window:
-  padding:
-    x: 0
-    y: 0
-  dynamic_padding: true
-  opacity: 1
+[font.normal]
+family = "JetBrainsMono Nerd Font"
+style = "Regular"
 
-key_bindings:
-  - { key: Paste,                                       action: Paste          }
-  - { key: Copy,                                        action: Copy           }
-  - { key: L,         mods: Control,                    action: ClearLogNotice }
-  - { key: L,         mods: Control, mode: ~Vi|~Search, chars: "\x0c"          }
-  - { key: PageUp,    mods: Shift,   mode: ~Alt,        action: ScrollPageUp,  }
-  - { key: PageDown,  mods: Shift,   mode: ~Alt,        action: ScrollPageDown }
-  - { key: Home,      mods: Shift,   mode: ~Alt,        action: ScrollToTop,   }
-  - { key: End,       mods: Shift,   mode: ~Alt,        action: ScrollToBottom }
+[[keyboard.bindings]]
+action = "Paste"
+key = "Paste"
 
-  #  Turn off vi mode
-  - { key: Space,  mods: Shift|Control, mode: ~Search,    action: ReceiveChar             }
+[[keyboard.bindings]]
+action = "Copy"
+key = "Copy"
 
-  # (Windows, Linux, and BSD only)
-  - { key: V,              mods: Control|Shift, mode: ~Vi,        action: Paste            }
-  - { key: C,              mods: Control|Shift,                   action: Copy             }
-  - { key: F,              mods: Control|Shift, mode: ~Search,    action: ReceiveChar    }
-  - { key: B,              mods: Control|Shift, mode: ~Search,    action: ReceiveChar   }
-  - { key: Insert,         mods: Shift,                           action: PasteSelection   }
-  - { key: Key0,           mods: Control,                         action: ResetFontSize    }
-  - { key: Equals,         mods: Control,                         action: IncreaseFontSize }
-  - { key: Plus,           mods: Control,                         action: IncreaseFontSize }
-  - { key: NumpadAdd,      mods: Control,                         action: IncreaseFontSize }
-  - { key: Minus,          mods: Control,                         action: DecreaseFontSize }
-  - { key: NumpadSubtract, mods: Control,                         action: DecreaseFontSize }
+[[keyboard.bindings]]
+action = "ClearLogNotice"
+key = "L"
+mods = "Control"
+
+[[keyboard.bindings]]
+chars = "\f"
+key = "L"
+mode = "~Vi|~Search"
+mods = "Control"
+
+[[keyboard.bindings]]
+action = "ScrollPageUp"
+key = "PageUp"
+mode = "~Alt"
+mods = "Shift"
+
+[[keyboard.bindings]]
+action = "ScrollPageDown"
+key = "PageDown"
+mode = "~Alt"
+mods = "Shift"
+
+[[keyboard.bindings]]
+action = "ScrollToTop"
+key = "Home"
+mode = "~Alt"
+mods = "Shift"
+
+[[keyboard.bindings]]
+action = "ScrollToBottom"
+key = "End"
+mode = "~Alt"
+mods = "Shift"
+
+[[keyboard.bindings]]
+action = "ReceiveChar"
+key = "Space"
+mode = "~Search"
+mods = "Shift|Control"
+
+[[keyboard.bindings]]
+action = "Paste"
+key = "V"
+mode = "~Vi"
+mods = "Control|Shift"
+
+[[keyboard.bindings]]
+action = "Copy"
+key = "C"
+mods = "Control|Shift"
+
+[[keyboard.bindings]]
+action = "ReceiveChar"
+key = "F"
+mode = "~Search"
+mods = "Control|Shift"
+
+[[keyboard.bindings]]
+action = "ReceiveChar"
+key = "B"
+mode = "~Search"
+mods = "Control|Shift"
+
+[[keyboard.bindings]]
+action = "PasteSelection"
+key = "Insert"
+mods = "Shift"
+
+[[keyboard.bindings]]
+action = "ResetFontSize"
+key = "Key0"
+mods = "Control"
+
+[[keyboard.bindings]]
+action = "IncreaseFontSize"
+key = "Equals"
+mods = "Control"
+
+[[keyboard.bindings]]
+action = "IncreaseFontSize"
+key = "Plus"
+mods = "Control"
+
+[[keyboard.bindings]]
+action = "IncreaseFontSize"
+key = "NumpadAdd"
+mods = "Control"
+
+[[keyboard.bindings]]
+action = "DecreaseFontSize"
+key = "Minus"
+mods = "Control"
+
+[[keyboard.bindings]]
+action = "DecreaseFontSize"
+key = "NumpadSubtract"
+mods = "Control"
+
+[window]
+dynamic_padding = true
+opacity = 1
+
+[window.padding]
+x = 0
+y = 0
+
+[keyboard]
 #+end_src
 * Bottom
-| Guix dependency       | Description                                 |
-|-----------------------+---------------------------------------------|
-| bottom-bin            | resource monitor                            |
+| Arch dependency | Description      |
+|-----------------+------------------|
+| bottom          | resource monitor |
 
 [[https://github.com/ClementTsang/bottom][bottom]] is a TUI system monitor.
 
@@ -941,11 +899,13 @@ See the [[https://github.com/ClementTsang/bottom/blob/master/sample_configs/defa
 (if (my/light-p) "default-light" "default")
 #+end_src
 
-#+begin_src toml :tangle ~/.config/bottom/bottom.toml :noweb yes
+#+begin_src toml :tangle .config/bottom/bottom.toml :noweb yes
 [flags]
 hide_table_gap = true  # Remove space in tables
-color = "<<bottom-theme()>>"
 process_command = true
+
+[styles]
+theme = "<<bottom-theme()>>"
 
 [processes]
 columns = ["PID", "State", "Name", "CPU%", "Mem%", "R/s", "W/s", "User"]
@@ -955,50 +915,47 @@ columns = ["PID", "State", "Name", "CPU%", "Mem%", "R/s", "W/s", "User"]
 
 See [[https://docs.atuin.sh/configuration/config/][config reference]].
 
-#+begin_src toml :tangle ~/.config/atuin/config.toml
+#+begin_src toml :tangle .config/atuin/config.toml
 update_check = false
 enter_accept = true
 keymap_mode = "vim-insert"
 #+end_src
 
 * Various console applications
-| Guix dependency | Description                                 |
-|-----------------+---------------------------------------------|
-| ncurses         | Provides stuff like ~clear~                 |
-| exa             | ~ls~ replacement, written in Rust           |
-| bat             | ~cat~ clone with syntax highlighting        |
-| htop            | Interactive process viewer                  |
-| nethogs         | A tool to group processed by used bandwidth |
-| osync           | rsync wrapper                               |
-| neofetch        | Fetch system info                           |
-| fzf             | fuzzy finder                                |
-| p7zip           | archiver                                    |
-| password-store  | CLI password manager                        |
-| zip             |                                             |
-| unzip           |                                             |
-| jmtpfs          | A tool to mount MTP devices (e.g. Android)  |
-| tokei           | Count lines of code                         |
-| sshfs           | Mount stuff over SSH                        |
-| lftp            | File transfer                               |
-| git-lfs         |                                             |
-| glibc-locales   |                                             |
-| direnv          |                                             |
-| jless-bin       | JSON viewer                                 |
-| megacmd         | mega.nz client                              |
-| ncdu            | disk usage analyzer                         |
-| openssl         |                                             |
-| aria2           | Download tool                               |
-| man-db          |                                             |
-| pv              |                                             |
+| Arch dependency | Description                                 | Disabled |
+|-----------------+---------------------------------------------+----------|
+| ncurses         | Provides stuff like ~clear~                 |          |
+| eza             | ~ls~ replacement, written in Rust           |          |
+| htop            | Interactive process viewer                  |          |
+| nethogs         | A tool to group processed by used bandwidth |          |
+| neofetch        | Fetch system info                           |          |
+| fzf             | fuzzy finder                                |          |
+| 7zip            | archiver                                    |          |
+| pass            | CLI password manager                        |          |
+| zip             |                                             |          |
+| unzip           |                                             |          |
+| unrar           |                                             |          |
+| jmtpfs          | A tool to mount MTP devices (e.g. Android)  | t        |
+| tokei           | Count lines of code                         |          |
+| sshfs           | Mount stuff over SSH                        |          |
+| git-lfs         |                                             |          |
+| direnv          |                                             |          |
+| jless           | JSON viewer                                 |          |
+| megacmd         | mega.nz client                              |          |
+| ncdu            | disk usage analyzer                         |          |
+| openssl         |                                             |          |
+| aria2           | Download tool                               |          |
+| man-db          |                                             |          |
+| pv              |                                             |          |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.
-#+begin_src text :tangle ~/.config/ripgrep/ripgreprc
+#+begin_src text :tangle .config/ripgrep/ripgreprc
 --ignore-file=/home/pavel/.config/ripgrep/ripgrepignore
 #+end_src
 
 The ignore file:
-#+begin_src text :tangle ~/.config/ripgrep/ripgrepignore
+#+begin_src text :tangle .config/ripgrep/ripgrepignore
 *.ts.snap
 #+end_src
 
@@ -1011,7 +968,7 @@ Usage:
 nt <command>
 #+end_example
 
-#+begin_src sh :tangle ~/bin/scripts/nt
+#+begin_src sh :tangle bin/scripts/nt
 command="$@"
 if [ ! -z "$command" ]; then
     start_time="$(date -u +%s)"
@@ -1045,7 +1002,7 @@ Here's roughly what the script is doing:
 - Send a notification about the events above
 - Send a separate notification if there is a merge conflict
 
-#+begin_src bash :tangle ~/bin/scripts/autocommit
+#+begin_src bash :tangle bin/scripts/autocommit
 TIMEOUT_MIN=${TIMEOUT_MIN:-60}
 
 export DISPLAY=:0
@@ -1114,20 +1071,39 @@ fi
 #+end_src
 
 =mcron= job:
-#+begin_src scheme :tangle ~/.config/cron/autocommit.guile
+#+begin_src scheme :tangle .config/cron/autocommit.guile
 (job "0 * * * *" "autocommit /home/pavel/30-39\\ Life/32\\ org-mode/")
 (job "0,15,30,45 * * * *" "autocommit ~/.password-store")
 #+end_src
-* Guix settings
-#+NAME: packages
-#+begin_src emacs-lisp :tangle no :eval never-export
-(my/format-guix-dependencies)
+
+Systemd timers:
+#+begin_src conf :tangle .config/systemd/user/autocommit-org-mode.service
+[Unit]
+Description=Autocommit org-mode
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /home/pavel/bin/scripts/autocommit "/home/pavel/30-39 Life/32 org-mode"
 #+end_src
 
-#+begin_src scheme :tangle .config/guix/manifests/console.scm :noweb yes
-(specifications->manifest
- '(
-   <<packages()>>))
+#+begin_src conf :tangle .config/systemd/user/autocommit-password-store.service
+[Unit]
+Description=Autocommit .password-store
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /home/pavel/bin/scripts/autocommit "/home/pavel/.password-store"
+#+end_src
+
+* Arch settings
+#+NAME: packages
+#+begin_src emacs-lisp :tangle no
+(when (fboundp #'my/format-arch-dependencies)
+  (my/format-arch-dependencies))
+#+end_src
+
+#+begin_src scheme :tangle .config/metapac/groups/console.toml :noweb yes
+<<packages()>>
 #+end_src
 * Android notes
 SSH instructions: https://wiki.termux.com/wiki/Remote_Access
