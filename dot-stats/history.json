@@ -3,10 +3,20 @@
     "title": "OS/Distro",
     "elements": [
       {
+        "name": "Arch Linux",
+        "states": [
+          {
+            "startDate": "2025-11-23"
+          }
+        ],
+        "color": "y"
+      },
+      {
         "name": "GNU Guix",
         "states": [
           {
-            "startDate": "2021-06-11"
+            "startDate": "2021-06-11",
+            "endDate": "2025-11-23"
           }
         ],
         "color": "y"

@@ -9,7 +9,7 @@ I use the [[https://leanpub.com/lit-config/read][literate configuration]] strate
 
 The files themselves are managed and deployed via [[https://yadm.io/][yadm]], although I use Org Mode for things like config templating.
 
-My current GNU/Linux distribution is [[https://guix.gnu.org/][GNU Guix]]. I like Guix because, among other things, it allows [[https://guix.gnu.org/cookbook/en/html_node/Advanced-package-management.html#Advanced-package-management][to declare the required software]] in configuration files, so I can have the same set of programs across multiple machines (look for tables with "Guix dependency" in the header).
+My current GNU/Linux distribution is [[https://guix.gnu.org/][Arch Linux]], managed declaratively with [[https://github.com/ripytide/metapac][metapac]] (look for tables with "Arch dependency" in the header). I used to use Guix for the same purpose for 4.5 years; I keep the config now for archival purposes.
 
 The central program to all of that is, of course, [[https://www.gnu.org/software/emacs/][GNU Emacs]]. At the time of this writing, it takes ~50% of my screen time and has the largest share of configuration here.
 
@@ -22,15 +22,14 @@ Table of contents and software:
 - [[file:Console.org][Console.org]]
   - /Active/: [[file:Console.org::*=.profile=][.profile]], [[file:Console.org::*Bash][Bash]], [[file:Console.org::*Fish][Fish]], [[file:Console.org::*Starship prompt][Starship]], [[file:Console.org::*Tmux][Tmux]], [[file:Console.org::*Alacritty][Alacritty]]
   - /In Limbo/: [[file:Console.org::*Nushell][Nushell]]
-- [[file:Guix.org][Guix.org]]
+- [[file:Arch.org][Arch.org]]
 - [[file:Mail.org][Mail.org]]
   - /Active/: [[file:Mail.org::*Lieer][Lieer]], [[file:Mail.org::*DavMail][DavMail]], [[file:Mail.org::*OfflineIMAP][OfflineIMAP]], [[file:Mail.org::*Notmuch][Notmuch]]
+- [[file:Guix.org][Guix.org]] (archive)
 
 (/Apparently, links on the second level work only in Emacs 🙁/)
 
 A few other repositories I may consider a part of my config:
-- [[https://github.com/SqrtMinusOne/channel-q][channel-q]] is my Guix channel
-- [[https://github.com/SqrtMinusOne/sqrt-data][sqrt-data]] is a home for my statistics gathering effort
 - [[https://sqrtminusone.xyz/emacs-packages/][My Emacs Packages]], some of which originated in my Emacs config
 
 See also [[https://sqrtminusone.xyz/posts/][my blog posts]].
