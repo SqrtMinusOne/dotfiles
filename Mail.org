@@ -98,7 +98,8 @@ pass show Job/Digital/Email/pvkorytov@etu.ru | head -n 1
 
 #+begin_src conf-unix :tangle ~/.offlineimaprc :noweb yes
 [general]
-accounts = pvkorytov,pvkorytov-mbox
+# accounts = pvkorytov,pvkorytov-mbox
+accounts = pvkorytov-mbox
 
 [Account pvkorytov]
 localrepository = pvkorytov-local
