@@ -4239,6 +4239,7 @@ This section generates manifests for various desktop software that I'm using.
 | office   | okular             |
 | office   | obs-studio         |
 | office   | rocketchat-desktop |
+| office   | digikam            |
 
 ** LaTeX
 | Category | Arch dependency          | Disabled |
@@ -4300,6 +4301,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | git               |          |
 | dev      | rust              |          |
 | dev      | dbeaver           |          |
+| dev      | uv                |          |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""

@@ -7,6 +7,7 @@ x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
 image/png=feh.desktop
 image/jpg=feh.desktop
 image/jpeg=feh.desktop
+video/webm=mpv.desktop
 application/pdf=org.pwmt.zathura.desktop
 
 [Added Associations]
