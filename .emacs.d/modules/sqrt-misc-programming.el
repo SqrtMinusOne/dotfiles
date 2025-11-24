@@ -1,24 +1,14 @@
 ;;; -*- lexical-binding: t -*-
 (use-package ein
   :commands (ein:run)
+  :disabled
   :straight t)
-
-(setq my/pipenv-python-alist '())
 
 (defun my/get-pipenv-python ()
   (let ((default-directory (projectile-project-root)))
-    (if (file-exists-p "Pipfile")
-        (let ((asc (assoc default-directory my/pipenv-python-alist)))
-          (if asc
-              (cdr asc)
-            (let ((python-executable
-                   (string-trim (shell-command-to-string "PIPENV_IGNORE_VIRTUALENVS=1 pipenv run which python 2>/dev/null"))))
-              (if (string-match-p ".*not found.*" python-executable)
-                  (message "Pipfile found, but not pipenv executable!")
-                (message (format "Found pipenv python: %s" python-executable))
-                (add-to-list 'my/pipenv-python-alist (cons default-directory python-executable))
-                python-executable))))
-      "python")))
+    (cond ((file-exists-p ".venv/bin/python")
+           (expand-file-name ".venv/bin/python"))
+          (t (executable-find "python")))))
 
 (use-package lsp-pyright
   :straight t
@@ -30,14 +20,6 @@
 
 (add-hook 'python-mode-hook #'smartparens-mode)
 (add-hook 'python-mode-hook #'treesit-fold-mode)
-
-(use-package pipenv
-  :straight t
-  :hook (python-mode . pipenv-mode)
-  :init
-  (setq
-   pipenv-projectile-after-switch-function
-   #'pipenv-projectile-after-switch-extended))
 
 (use-package yapfify
   :straight (:repo "JorisE/yapfify" :host github)
@@ -128,6 +110,7 @@
 
 (use-package code-cells
   :straight t
+  :disabled
   :commands (code-cells-mode code-cells-convert-ipynb))
 
 (setq my/tensorboard-buffer "TensorBoard-out")

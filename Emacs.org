@@ -4493,33 +4493,25 @@ An honorary Lisp.
 :MODULE_NAME: misc-programming
 :header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-programming.el :comments links
 :END:
-*** ein
+*** OFF (OFF) ein
+CLOSED: [2025-11-24 Mon 18:13]
 [[https://github.com/millejoh/emacs-ipython-notebook][ein]] is a package that allows for running Jupyter notebooks in Emacs.
 
 #+begin_src emacs-lisp
 (use-package ein
   :commands (ein:run)
+  :disabled
   :straight t)
 #+end_src
 *** pyright
-For some reason it doesn't use pipenv python executable, so here is a small workaround.
-#+begin_src emacs-lisp
-(setq my/pipenv-python-alist '())
+A fix to use it with =uv=.
 
+#+begin_src emacs-lisp
 (defun my/get-pipenv-python ()
   (let ((default-directory (projectile-project-root)))
-    (if (file-exists-p "Pipfile")
-        (let ((asc (assoc default-directory my/pipenv-python-alist)))
-          (if asc
-              (cdr asc)
-            (let ((python-executable
-                   (string-trim (shell-command-to-string "PIPENV_IGNORE_VIRTUALENVS=1 pipenv run which python 2>/dev/null"))))
-              (if (string-match-p ".*not found.*" python-executable)
-                  (message "Pipfile found, but not pipenv executable!")
-                (message (format "Found pipenv python: %s" python-executable))
-                (add-to-list 'my/pipenv-python-alist (cons default-directory python-executable))
-                python-executable))))
-      "python")))
+    (cond ((file-exists-p ".venv/bin/python")
+           (expand-file-name ".venv/bin/python"))
+          (t (executable-find "python")))))
 
 (use-package lsp-pyright
   :straight t
@@ -4531,20 +4523,6 @@ For some reason it doesn't use pipenv python executable, so here is a small work
 
 (add-hook 'python-mode-hook #'smartparens-mode)
 (add-hook 'python-mode-hook #'treesit-fold-mode)
-#+end_src
-*** pipenv
-[[https://github.com/pypa/pipenv][Pipenv]] is a package manager for Python.
-
-Automatically creates & manages virtualenvs and stores data in =Pipfile= and =Pipfile.lock= (like npm's =package.json= and =package-lock.json=).
-
-#+begin_src emacs-lisp
-(use-package pipenv
-  :straight t
-  :hook (python-mode . pipenv-mode)
-  :init
-  (setq
-   pipenv-projectile-after-switch-function
-   #'pipenv-projectile-after-switch-extended))
 #+end_src
 *** OFF (OFF) yapf
 [[https://github.com/google/yapf][yapf]] is a formatter for Python files.
@@ -4710,7 +4688,7 @@ To fix that, I've modified the following function in the =python-pytest= package
       (setq process (get-buffer-process buffer))
       (set-process-sentinel process #'python-pytest--process-sentinel))))
 #+end_src
-*** code-cells
+*** OFF (OFF) code-cells
 Support for text with magic comments.
 
 | Arch dependency | Disabled |
@@ -4720,6 +4698,7 @@ Support for text with magic comments.
 #+begin_src emacs-lisp
 (use-package code-cells
   :straight t
+  :disabled
   :commands (code-cells-mode code-cells-convert-ipynb))
 #+end_src
 *** tensorboard
