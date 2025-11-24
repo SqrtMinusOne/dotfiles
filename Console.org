@@ -948,6 +948,7 @@ keymap_mode = "vim-insert"
 | man-db          |                                             |          |
 | pv              |                                             |          |
 | bashmount       | TUI to manage mounts                        |          |
+| bluetui         | TUI to manage bluetooth                     |          |
 
 ** ripgrep config
 Occasionally I can't exclude certain files from ripgrep via the VCS settings, so here is a simple config to ignore certain files globally.

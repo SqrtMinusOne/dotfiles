@@ -1,4 +1,5 @@
 arch = [
+"bluetui",
 "bashmount",
 "pv",
 "man-db",

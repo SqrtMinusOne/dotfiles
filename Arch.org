@@ -125,7 +125,7 @@ If everything works, login into EXWM.
 Create some directories:
 #+begin_src bash
 mkdir -p /home/pavel/Pictures/screenshots/
-mkdir -p /home/pavel/.mpd/
+mkdir -p /home/pavel/.mpd/playlists/
 #+end_src
 
 Also run:
