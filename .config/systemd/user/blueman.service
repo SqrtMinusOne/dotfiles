@@ -1,0 +1,8 @@
+[Unit]
+Description=Blueman
+
+[Service]
+ExecStart=/usr/bin/blueman-applet
+
+[Install]
+WantedBy=wm-session.target

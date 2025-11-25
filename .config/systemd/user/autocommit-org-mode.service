@@ -1,0 +1,6 @@
+[Unit]
+Description=Autocommit org-mode
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /home/pavel/bin/scripts/autocommit "/home/pavel/30-39 Life/32 org-mode"
