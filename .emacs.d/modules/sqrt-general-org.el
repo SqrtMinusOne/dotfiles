@@ -2,7 +2,7 @@
 (setq org-directory (expand-file-name "~/30-39 Life/32 org-mode"))
 
 (use-package org
-  :straight (:type built-in)
+  :straight t
   :defer t
   :init
   (unless (file-exists-p org-directory)
@@ -53,8 +53,7 @@
 (use-package org-contrib
   :straight (org-contrib
              :type git
-             :repo "https://git.sr.ht/~bzg/org-contrib"
-             :build t)
+             :repo "https://git.sr.ht/~bzg/org-contrib")
   :after (org)
   :config
   (require 'ox-extra)
@@ -192,6 +191,92 @@ With ARG, repeats or can move backward if negative."
     (find-file
      (concat org-directory "/"
              (completing-read "Org file: " files)))))
+
+(defvar-local my/org-fold-cycle-last-pos nil
+  "Last position where `my/org-fold-cycle' was called.")
+
+(defvar-local my/org-fold-cycle-status nil
+  "Current folding status for `my/org-fold-cycle'.
+Can be 'folded, 'children, or 'subtree.")
+
+(defun my/org-fold-cycle ()
+  "Cycle folding state of current heading.
+
+The cycling works as follows:
+- If heading is FOLDED: show children only
+- If heading shows CHILDREN and this was the last command at same position:
+  * If heading has sub-headings: show entire subtree
+  * If heading has no sub-headings: fold the heading
+- Otherwise: fold the heading
+
+The complete cycle is:
+- With children: FOLDED → CHILDREN → SUBTREE → FOLDED
+- Without children: FOLDED → CHILDREN → FOLDED
+
+If not at a heading, delegates to the normal `org-cycle' function."
+  (interactive)
+
+  ;; If not at a heading and can't move to one, delegate to org-cycle
+  (unless (org-at-heading-p)
+    (org-cycle)
+    (cl-return-from my/org-fold-cycle))
+
+  (let* ((current-pos (point))
+         (eoh (save-excursion (outline-end-of-heading) (point)))
+         (eos (save-excursion
+                (org-end-of-subtree t t)
+                (if (eobp) (point) (1- (point)))))
+         ;; Check if content after heading is folded
+         (folded-p (org-fold-folded-p eoh 'headline))
+         ;; Check if we're continuing from the same position
+         (same-pos (equal my/org-fold-cycle-last-pos current-pos))
+         (continued (and (or (eq last-command 'my/org-fold-cycle)
+                             (eq last-command 'org-cycle))
+                         same-pos))
+         ;; Check if heading has children (sub-headings)
+         (has-children (save-excursion
+                         (org-back-to-heading t)
+                         (let ((level (org-current-level)))
+                           (outline-next-heading)
+                           (and (not (eobp))
+                                (> (org-current-level) level))))))
+
+    (cond
+     ;; State 1: Heading is folded → show children
+     (folded-p
+      (org-fold-show-entry)
+      (org-fold-show-children)
+      (org-unlogged-message "CHILDREN")
+      (setq my/org-fold-cycle-status 'children))
+
+     ;; State 2: Was showing children, same position → show entire subtree (if has children)
+     ((and continued (eq my/org-fold-cycle-status 'children))
+      (if has-children
+          (progn
+            (org-fold-show-subtree)
+            (org-unlogged-message "SUBTREE")
+            (setq my/org-fold-cycle-status 'subtree))
+        ;; No children, skip SUBTREE and fold directly
+        (org-fold-hide-subtree)
+        (org-unlogged-message "FOLDED")
+        (setq my/org-fold-cycle-status 'folded)))
+
+     ;; State 3: Otherwise → fold the heading
+     (t
+      (org-fold-hide-subtree)
+      (org-unlogged-message "FOLDED")
+      (setq my/org-fold-cycle-status 'folded)))
+
+    ;; Remember position for next invocation
+    (setq my/org-fold-cycle-last-pos current-pos)))
+
+(defun my/org-fold-cycle-around (fun &rest args)
+  (if (org-at-heading-p)
+      (my/org-fold-cycle)
+    (apply fun args)))
+
+(with-eval-after-load 'org-cycle
+  (advice-add #'org-cycle :around #'my/org-fold-cycle-around))
 
 (defun my/enable-org-latex ()
   (interactive)
