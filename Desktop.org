@@ -4318,7 +4318,6 @@ c.tabs.favicons.scale = 1
 #+end_src
 * Various software
 This section generates manifests for various desktop software that I'm using.
-
 ** Browsers
 | Category | Arch dependency        |
 |----------+------------------------|
@@ -4345,6 +4344,7 @@ This section generates manifests for various desktop software that I'm using.
 | latex    | texlive-basic            |          |
 | latex    | texlive-bibtexextra      |          |
 | latex    | texlive-binextra         |          |
+| latex    | texlive-langcyrillic     |          |
 | latex    | texlive-fontsextra       | t        |
 | latex    | texlive-fontutils        |          |
 | latex    | texlive-formatsextra     |          |
@@ -4531,7 +4531,7 @@ Description=Music Player Daemon
 ExecStart=/usr/bin/mpd --no-daemon
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=wm-session.target
 #+end_src
 
 #+begin_src conf :tangle .config/systemd/user/deterred-mpd.service

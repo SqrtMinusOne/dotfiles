@@ -5,4 +5,4 @@ Description=Music Player Daemon
 ExecStart=/usr/bin/mpd --no-daemon
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=wm-session.target

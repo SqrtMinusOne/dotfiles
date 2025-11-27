@@ -166,6 +166,7 @@ Below is the table enabling different groups on different hostnames:
 | nvidia          |           |       | +      |
 | office          | +         | +     | +      |
 | system          | +         | +     | +      |
+| printer         |           |       | +      |
 
 And the code to format it as TOML:
 #+NAME: metapac-groups-format
@@ -244,12 +245,22 @@ Various drivers, I'm not sure which I actually need, so...
 | xf86-video-amdgpu  |
 | xf86-video-ati     |
 
-NVIDIA drivers for violet
+NVIDIA drivers & AI stuff for violet
 | Category | Arch dependency |
 |----------+-----------------|
 | nvidia   | cuda            |
 | nvidia   | nvidia-utils    |
 | nvidia   | nvidia          |
+| nvidia   | ollama-cuda     |
+
+Printer packages.
+| Category | Arch dependency |
+|----------+-----------------|
+| printer  | cups            |
+| printer  | usbutils        |
+| printer  | brlaser         |
+| printer  | naps2-bin       |
+| printer  | brscan4         |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
@@ -258,6 +269,10 @@ NVIDIA drivers for violet
 
 #+begin_src scheme :tangle .config/metapac/groups/nvidia.toml :noweb yes
 <<packages("nvidia")>>
+#+end_src
+
+#+begin_src scheme :tangle .config/metapac/groups/printer.toml :noweb yes
+<<packages("printer")>>
 #+end_src
 
 #+begin_src scheme :tangle .config/metapac/groups/system.toml :noweb yes

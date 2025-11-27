@@ -18,6 +18,7 @@ arch = [
 "texlive-games",
 "texlive-formatsextra",
 "texlive-fontutils",
+"texlive-langcyrillic",
 "texlive-binextra",
 "texlive-bibtexextra",
 "texlive-basic",]
