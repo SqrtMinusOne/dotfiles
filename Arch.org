@@ -246,12 +246,13 @@ Various drivers, I'm not sure which I actually need, so...
 | xf86-video-ati     |
 
 NVIDIA drivers & AI stuff for violet
-| Category | Arch dependency |
-|----------+-----------------|
-| nvidia   | cuda            |
-| nvidia   | nvidia-utils    |
-| nvidia   | nvidia          |
-| nvidia   | ollama-cuda     |
+| Category | Arch dependency          |
+|----------+--------------------------|
+| nvidia   | cuda                     |
+| nvidia   | nvidia-utils             |
+| nvidia   | nvidia                   |
+| nvidia   | ollama-cuda              |
+| nvidia   | nvidia-container-toolkit |
 
 Printer packages.
 | Category | Arch dependency |

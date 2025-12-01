@@ -1,0 +1,6 @@
+arch = [
+"nvidia-container-toolkit",
+"ollama-cuda",
+"nvidia",
+"nvidia-utils",
+"cuda",]

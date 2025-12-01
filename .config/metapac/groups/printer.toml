@@ -1,0 +1,6 @@
+arch = [
+"brscan4",
+"naps2-bin",
+"brlaser",
+"usbutils",
+"cups",]
