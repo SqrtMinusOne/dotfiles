@@ -1,4 +1,5 @@
 arch = [
+"zotero-bin",
 "digikam",
 "rocketchat-desktop",
 "obs-studio",

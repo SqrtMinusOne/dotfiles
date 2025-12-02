@@ -4337,6 +4337,7 @@ This section generates manifests for various desktop software that I'm using.
 | office   | obs-studio         |
 | office   | rocketchat-desktop |
 | office   | digikam            |
+| office   | zotero-bin         |
 
 ** LaTeX
 | Category | Arch dependency          | Disabled |

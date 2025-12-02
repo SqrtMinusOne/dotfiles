@@ -142,6 +142,8 @@ And reboot. After the reboot, =NetworkManager= should run using =wpa_supplicant=
 
 Don't forget to sync mail and enable the sync timer.
 
+Install [[https://github.com/retorquere/zotero-better-bibtex][zotero-better-bibtex]] manually.
+
 * Metapac configuration
 [[https://github.com/ripytide/metapac][metapac]] is a declarative wrapper around different package managers, including [[https://wiki.archlinux.org/title/Pacman][pacman]] and [[https://github.com/Morganamilo/paru][paru]]. This means the required packages can be listed in configuration files and checked into version control.
 
