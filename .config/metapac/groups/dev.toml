@@ -1,4 +1,5 @@
 arch = [
+"libaio",
 "uv",
 "dbeaver",
 "rust",

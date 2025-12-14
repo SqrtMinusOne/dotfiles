@@ -18,7 +18,6 @@ Parts prefixed with (OFF) are not used, but kept for historic purposes. For some
 References:
 - [[https://sqrtminusone.xyz/posts/2022-02-12-literate/][A few cases of literate configuration]]. A few interesting ways in which literate configuration is used in this file.
 
-
 * Some remarks
 Removed features:
 | Feature   | Last commit                              |
@@ -1230,10 +1229,10 @@ And the EXWM config itself.
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))
 
 (defun my/exwm-set-alpha (alpha)
-  (setf (alist-get 'alpha default-frame-alist)
-        `(,alpha . ,alpha))
+  (setf (alist-get 'alpha-background default-frame-alist)
+        alpha)
   (cl-loop for frame being the frames
-           do (set-frame-parameter frame 'alpha `(,alpha . ,alpha))))
+           do (set-frame-parameter frame 'alpha-background alpha)))
 
 (use-package exwm
   :straight t
@@ -4338,6 +4337,8 @@ This section generates manifests for various desktop software that I'm using.
 | office   | rocketchat-desktop |
 | office   | digikam            |
 | office   | zotero-bin         |
+| office   | openshot           |
+| office   | drawio-desktop     |
 
 ** LaTeX
 | Category | Arch dependency          | Disabled |
@@ -4401,6 +4402,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | rust              |          |
 | dev      | dbeaver           |          |
 | dev      | uv                |          |
+| dev      | libaio            |          |
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
