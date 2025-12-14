@@ -94,4 +94,41 @@
   (add-to-list 'biome-query-coords
                '("Tyumen, Russia" 57.15222 65.52722)))
 
+(defun my/flameshot-screenshot ()
+  "Take a screenshot using flameshot and save it to a temporary directory.
+Returns the filepath of the created screenshot."
+  (interactive)
+  (let* ((temp-dir (temporary-file-directory))
+         (filename (format "screenshot-%s.png"
+                          (format-time-string "%Y%m%d-%H%M%S")))
+         (filepath (expand-file-name filename temp-dir)))
+    ;; Call flameshot with gui mode and specified path
+    (call-process "flameshot" nil nil nil
+                  "gui"
+                  "--path" filepath)
+    ;; Check if file was created
+    (if (file-exists-p filepath)
+        (progn
+          (message "Screenshot saved to: %s" filepath)
+          filepath)
+      (progn
+        (message "Screenshot was cancelled or failed")
+        nil))))
+
+(defun my/screenshot-attach-to-notmuch (notmuch-buffer)
+  (interactive
+   (list (my/get-good-buffer 'notmuch-message-mode "Notmuch message buffer: ")))
+  (let ((screenshot-file (my/flameshot-screenshot)))
+    (if screenshot-file
+        (with-current-buffer notmuch-buffer
+          (goto-char (point-max))
+          (let ((type (or (mm-default-file-type screenshot-file)
+                          "image/png")))
+            (mml-attach-file
+             screenshot-file
+             type
+             (mml-minibuffer-read-description)
+             (mml-minibuffer-read-disposition type nil screenshot-file))))
+      (user-error "Screenshot was cancelled or failed"))))
+
 (provide 'sqrt-misc-internet)

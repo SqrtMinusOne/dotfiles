@@ -3867,6 +3867,7 @@ Vue settings
 (add-hook 'web-mode-hook 'my/web-mode-vue-setup)
 (add-hook 'editorconfig-after-apply-functions 'my/web-mode-vue-setup)
 #+end_src
+
 *** SCSS
 #+begin_src emacs-lisp
 (add-hook 'scss-mode-hook #'smartparens-mode)
@@ -11645,6 +11646,62 @@ References:
   (add-to-list 'biome-query-coords
                '("Tyumen, Russia" 57.15222 65.52722)))
 #+end_src
+*** Screenshots with Flameshot
+:PROPERTIES:
+:MODULE_NAME: misc-internet
+:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-misc-internet.el :comments links
+:END:
+
+A function to create a screenshot and save it to a temporary directory:
+#+begin_src emacs-lisp
+(defun my/flameshot-screenshot ()
+  "Take a screenshot using flameshot and save it to a temporary directory.
+Returns the filepath of the created screenshot."
+  (interactive)
+  (let* ((temp-dir (temporary-file-directory))
+         (filename (format "screenshot-%s.png"
+                          (format-time-string "%Y%m%d-%H%M%S")))
+         (filepath (expand-file-name filename temp-dir)))
+    ;; Call flameshot with gui mode and specified path
+    (call-process "flameshot" nil nil nil
+                  "gui"
+                  "--path" filepath)
+    ;; Check if file was created
+    (if (file-exists-p filepath)
+        (progn
+          (message "Screenshot saved to: %s" filepath)
+          filepath)
+      (progn
+        (message "Screenshot was cancelled or failed")
+        nil))))
+#+end_src
+
+A function to attach a screenshot to a notmuch buffer:
+#+begin_src emacs-lisp
+(defun my/screenshot-attach-to-notmuch (notmuch-buffer)
+  (interactive
+   (list (my/get-good-buffer 'notmuch-message-mode "Notmuch message buffer: ")))
+  (let ((screenshot-file (my/flameshot-screenshot)))
+    (if screenshot-file
+        (with-current-buffer notmuch-buffer
+          (save-excursion
+            (goto-char (point-max))
+            (let ((type (or (mm-default-file-type screenshot-file)
+                            "image/png")))
+              (mml-attach-file
+               screenshot-file
+               type
+               nil
+               "attachment"))))
+      (user-error "Screenshot was cancelled or failed"))))
+#+end_src
+
+#+begin_src emacs-lisp
+(my-leader-def
+  "ac" '(:wk "capture screen")
+  "acm" #'my/screenshot-attach-to-notmuch)
+#+end_src
+
 ** Reading documentation
 :PROPERTIES:
 :MODULE_NAME: docs
@@ -13910,6 +13967,25 @@ An =org-babel= block:
   "Default arguments for evaluating a pgn source block.")
 #+end_src
 
+** Listings
+#+begin_src emacs-lisp
+(defun my/listings-add-from-dired (paths)
+  (interactive
+   (list (or (dired-get-marked-files nil 'marked)
+             (list (directory-file-name
+                    (expand-file-name default-directory))))))
+  (let ((listing-buffer (get-buffer-create "*listing*"))
+        (project-root (projectile-project-root)))
+    (dolist (path paths)
+      (with-current-buffer listing-buffer
+        (goto-char (point-max))
+        (insert "\n" (file-relative-name
+                      (expand-file-name path)
+                      project-root)
+                "\n")
+        (insert-file-contents path)))
+    (switch-to-buffer-other-window listing-buffer)))
+#+end_src
 ** Fun
 :PROPERTIES:
 :MODULE_NAME: misc-apps
