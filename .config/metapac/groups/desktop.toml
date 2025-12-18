@@ -1,4 +1,5 @@
 arch = [
+"blueman",
 "vnstat",
 "activitywatch-bin",
 "xdg-desktop-portal",

@@ -26,6 +26,8 @@ arch = [
 "nodejs",
 "git-filter-repo",
 "libvirt",
+"dnsmasq",
+"qemu-full",
 "virt-manager",
 "postgresql",
 "docker-compose",

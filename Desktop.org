@@ -4324,21 +4324,21 @@ This section generates manifests for various desktop software that I'm using.
 | browsers | firefox                |
 | browsers | firefox-tridactyl      |
 ** Office & Multimedia
-| Category | Arch dependency    |
-|----------+--------------------|
-| office   | libreoffice-fresh  |
-| office   | gimp               |
-| office   | krita              |
-| office   | ffmpeg             |
-| office   | kdenlive           |
-| office   | inkscape           |
-| office   | okular             |
-| office   | obs-studio         |
-| office   | rocketchat-desktop |
-| office   | digikam            |
-| office   | zotero-bin         |
-| office   | openshot           |
-| office   | drawio-desktop     |
+| Category | Arch dependency    | Disabled |
+|----------+--------------------+----------|
+| office   | libreoffice-fresh  |          |
+| office   | gimp               |          |
+| office   | krita              |          |
+| office   | ffmpeg             |          |
+| office   | kdenlive           |          |
+| office   | inkscape           |          |
+| office   | okular             |          |
+| office   | obs-studio         |          |
+| office   | rocketchat-desktop |          |
+| office   | digikam            |          |
+| office   | zotero-bin         |          |
+| office   | openshot           | t        |
+| office   | drawio-desktop     |          |
 
 ** LaTeX
 | Category | Arch dependency          | Disabled |
@@ -4376,6 +4376,8 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | docker-compose    |          |
 | dev      | postgresql        |          |
 | dev      | virt-manager      |          |
+| dev      | qemu-full         |          |
+| dev      | dnsmasq           |          |
 | dev      | libvirt           |          |
 | dev      | git-filter-repo   |          |
 | dev      | nodejs            |          |
@@ -4619,6 +4621,10 @@ WantedBy=wm-session.target
 ** blueman
 =blueman= is a GUI bluetooth manager.
 
+| Arch dependency |
+|-----------------|
+| blueman         |
+
 There's a built-in service, but it misses the install section for some reason.
 
 #+begin_src conf :tangle .config/systemd/user/blueman.service
@@ -4659,6 +4665,7 @@ Other desktop programs I use are listed below.
 | desktop-misc | telegram-desktop       |                                           |
 | desktop-misc | noto-fonts-emoji       |                                           |
 | desktop-misc | remmina                |                                           |
+| desktop-misc | freerdp                |                                           |
 | desktop-misc | android-file-transfer  |                                           |
 | desktop-misc | veracrypt              |                                           |
 | desktop-misc | gucharmap              | View charmaps                             |

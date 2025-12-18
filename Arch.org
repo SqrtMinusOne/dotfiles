@@ -142,6 +142,11 @@ And reboot. After the reboot, =NetworkManager= should run using =wpa_supplicant=
 
 Don't forget to sync mail and enable the sync timer.
 
+#+begin_src bash
+sudo usermod -a -G libvirt pavel
+sudo usermod -a -G kvm pavel
+#+end_src
+
 Install [[https://github.com/retorquere/zotero-better-bibtex][zotero-better-bibtex]] manually.
 
 * Metapac configuration
@@ -190,7 +195,6 @@ And the code to format it as TOML:
 
 Which is used in the config:
 #+begin_src toml :tangle .config/metapac/config.toml :noweb yes
-hostname_enabled_backends_enabled = false
 enabled_backends = ["arch"]
 hostname_groups_enabled = true
 
@@ -208,7 +212,7 @@ Some necessary Arch packages:
 | amneziavpn-bin      |
 | base                |
 | base-devel          |
-| decman              |
+| debtap              |
 | grub                |
 | iwd                 |
 | lightdm             |
@@ -247,6 +251,12 @@ Various drivers, I'm not sure which I actually need, so...
 | xf86-video-amdgpu  |
 | xf86-video-ati     |
 
+Also [[https://github.com/evilsocket/opensnitch][opensnitch]], a firewall.
+
+| Arch dependency |
+|-----------------|
+| opensnitch      |
+
 NVIDIA drivers & AI stuff for violet
 | Category | Arch dependency          |
 |----------+--------------------------|
@@ -280,4 +290,37 @@ Printer packages.
 
 #+begin_src scheme :tangle .config/metapac/groups/system.toml :noweb yes
 <<packages()>>
+#+end_src
+
+* On VMs
+** Linux
+Install spice-vdagent and reboot to enable clipboard sharing.
+
+Check View > Scale Display > Auto resize VM with window. Then, running
+#+begin_src bash
+xrandr --output Virtual-1 --auto
+#+end_src
+Will resize the display to the VM window. [[https://superuser.com/questions/1183834/no-auto-resize-with-spice-and-virt-manager][This question]] has some info on how to automate that, I'm fine with executing the command manually.
+
+To add a shared folder, do:
+- Memory > Enable shared memory
+- Add hardware > Filesystem with virtiofs, e.g.
+
+#+begin_src xml
+<filesystem type="mount">
+  <source dir="/home/pavel/00-Scratch"/>
+  <target dir="shared"/>
+  <driver type="virtiofs"/>
+</filesystem>
+#+end_src
+
+Then, in order to mount:
+#+begin_src bash
+mkdir ~/00-Scratch/
+sudo mount -t virtiofs shared /home/pavel/00-Scratch/
+#+end_src
+
+To make in permanent, add the following to =/etc/fstab=
+#+begin_src
+shared /home/pavel/00-Scratch virtiofs defaults 0 0
 #+end_src

@@ -1,4 +1,3 @@
-hostname_enabled_backends_enabled = false
 enabled_backends = ["arch"]
 hostname_groups_enabled = true
 
