@@ -36,4 +36,21 @@
 (setq calendar-latitude 59.9375)
 (setq calendar-longitude 30.308611)
 
+(use-package life-calendar
+  :straight (:host github :repo "vshender/emacs-life-calendar")
+  :commands (life-calendar)
+  :config
+  (setq life-calendar-birthday "1998-08-14")
+  (setq life-calendar-future-char "·")
+  (setq life-calendar-past-char "×")
+  (setq life-calendar-chapter-char "E")
+  (setq life-calendar-current-char "ø")
+
+  (setq life-calendar-chapters
+        '(("2005-01-01" . "School")
+          ("2016-09-01" . "Baccalaureate")
+          ("2020-09-01" . "Master's")
+          ("2022-10-01" . "Grad School")
+          ("2025-12-22" . "Failed Thesis Defence"))))
+
 (provide 'sqrt-productivity-apps)

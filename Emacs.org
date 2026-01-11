@@ -577,7 +577,7 @@ Use only the gpg-encrypted version of the file.
 I have some variables which I don't commit to the repo, e.g. my current location. They are stored in =private.el=
 
 #+begin_src emacs-lisp
-(let ((private-file (expand-file-name "private.el" user-emacs-directory)))
+(let ((private-file "/home/pavel/10-19 Code/11 Config/11.10 dotfiles-private/private.el"))
   (when (file-exists-p private-file)
     (load-file private-file)))
 #+end_src
@@ -6090,16 +6090,7 @@ It's been somewhat complicated to integrate into my workflow, but I think it's b
   (setq org-clock-agg-node-title-width-delta 47)
   (push
    (cons "Agenda+Archive"
-         (append
-          (org-agenda-files)
-          (thread-last "/projects/archive"
-                       (concat org-directory)
-                       (directory-files)
-                       (mapcar (lambda (f)
-                                 (concat
-                                  org-directory "/projects/archive/" f)))
-                       (seq-filter (lambda (f)
-                                     (not (file-directory-p f)))))))
+         (my/org-agenda-and-archive))
    org-clock-agg-files-preset))
 #+end_src
 
@@ -6508,7 +6499,7 @@ Let's see how this goes.
 References:
 - https://orgmode.org/manual/Tracking-your-habits.html
 
-[[https://github.com/ml729/org-habit-stats][org-habit-stats]] is a pretty nice package. Using my fork until my PR is merged.
+[[https://github.com/ml729/org-habit-stats][org-habit-stats]] is a pretty nice package.
 
 #+begin_src emacs-lisp
 (use-package org-habit-stats
@@ -6999,6 +6990,21 @@ And a function to archive all records older than the given number of days. I'll 
         (let ((marker (org-element-property :org-marker record)))
           (org-with-point-at marker
             (my/org-archive-refile)))))))
+#+end_src
+
+Get all agenda files and archive:
+#+begin_src emacs-lisp
+(defun my/org-agenda-and-archive ()
+  (append
+   (org-agenda-files)
+   (thread-last "/projects/archive"
+                (concat org-directory)
+                (directory-files)
+                (mapcar (lambda (f)
+                          (concat
+                           org-directory "/projects/archive/" f)))
+                (seq-filter (lambda (f)
+                              (not (file-directory-p f)))))))
 #+end_src
 
 **** Keybindings
@@ -7709,7 +7715,7 @@ I'll use data from git to get the list of what I've been working on. The directo
                      :start-date (pcase kind
                                    ('weekly
                                     (- start-of-day
-                                       (* 21 24 60 60)))
+                                       (* 30 24 60 60)))
                                    ('zk
                                     (- start-of-day
                                        (* 45 24 60 60)))
@@ -11654,14 +11660,19 @@ References:
 
 A function to create a screenshot and save it to a temporary directory:
 #+begin_src emacs-lisp
-(defun my/flameshot-screenshot ()
-  "Take a screenshot using flameshot and save it to a temporary directory.
+(defun my/flameshot-screenshot (&optional filepath)
+  "Take a screenshot using flameshot.
+
+If FILEPATH is nil, use a temporary directory.
+
 Returns the filepath of the created screenshot."
   (interactive)
-  (let* ((temp-dir (temporary-file-directory))
-         (filename (format "screenshot-%s.png"
-                          (format-time-string "%Y%m%d-%H%M%S")))
-         (filepath (expand-file-name filename temp-dir)))
+  (let* ((filepath
+          (or filepath
+              (expand-file-name
+               (format "screenshot-%s.png"
+                       (format-time-string "%Y%m%d-%H%M%S"))
+               (temporary-file-directory)))))
     ;; Call flameshot with gui mode and specified path
     (call-process "flameshot" nil nil nil
                   "gui"
@@ -11694,6 +11705,19 @@ A function to attach a screenshot to a notmuch buffer:
                nil
                "attachment"))))
       (user-error "Screenshot was cancelled or failed"))))
+#+end_src
+
+A function to attach a screenshot to org:
+#+begin_src emacs-lisp
+(defun my/screenshot-attach-to-org ()
+  (interactive)
+  (unless (derived-mode-p 'org-mode)
+    (user-error "Not in org-mode"))
+  (let ((screenshot-file (my/flameshot-screenshot
+                          (expand-file-name
+                           (read-file-name "Screenshot path: ")))))
+    (when screenshot-file
+      (insert (format "[[./%s]]" (file-relative-name screenshot-file))))))
 #+end_src
 
 #+begin_src emacs-lisp
@@ -11811,22 +11835,19 @@ I don't have access to any proprietary APIs, but LLaMA 3.1 8b with [[https://oll
         (gptel-make-ollama "Ollama"
           :host "localhost:11434"
           :stream t
-          :models '("llama3.1:8b" "deepseek-r1:32b"
-                    "qwen2.5:32b" "qwen2.5-coder:32b"
+          :models '("deepseek-r1:32b"
+                    "qwen2.5:32b"
                     "qwen3:30b" "qwen3:32b"
-                    "eva-qwen2.5-q4_k_l-32b:latest"
-                    "gpt-oss"
-                    (gemma3:27b
-                     :capabilities (media)
-                     :mime-types ("image/jpeg" "image/png")))))
+                    "hf.co/bartowski/TheDrummer_Skyfall-31B-v4-GGUF:q4_k_m"
+                    "gpt-oss:20b")))
   (gptel-make-openai "OpenRouter"
     :host "openrouter.ai/api"
     :key (lambda () (my/password-store-get-field
-                     "My_Online/Accounts/openrouter" "api-key"))
+                     "My_Online/Accounts/openrouter" "api-key-kek"))
     :stream t
     :models '("anthropic/claude-sonnet-4.5"
-              "qwen/qwen3-coder"
-              "qwen/qwen3-coder:free"))
+              "deepseek/deepseek-v3.2"
+              "x-ai/grok-4.1-fast"))
   (setq gptel--known-backends
         (seq-filter
          (lambda (cell)
@@ -13643,16 +13664,19 @@ I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
         (list
          (deterred-activitywatch)
          (deterred-digikam :digikam-db "~/30-39 Life/35 Photos/35.00D DigiKam/digikam4.db")
-         (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
+         (deterred-hledger)
+         ;; (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
          ;; (deterred-locations)
          (deterred-mastodon :server "https://mastodon.bsd.cafe/"
                             :account-id 113136872089175263)
          (deterred-messengers)
          (deterred-mpd)
          (deterred-org-journal-tags)
+         (deterred-org-roam)
+         (deterred-podcasts)
          (deterred-read-it-later :sources '(readeck))
          (deterred-reddit)
-         (deterred-podcasts)
+         (deterred-transport)
          (deterred-wakatime)))
 
   (setq deterred-backups-location "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.B Backups/13.02.B.01 deterred/")
@@ -13682,7 +13706,12 @@ I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
   (setq deterred-read-it-later-wallabag-username
         (my/password-store-get-field "Selfhosted/wallabag" "username"))
   (setq deterred-read-it-later-wallabag-password
-        (my/password-store-get "Selfhosted/wallabag")))
+        (my/password-store-get "Selfhosted/wallabag"))
+  (setq deterred-transport-podorozhnik-login
+        (my/password-store-get-field "My_Online/Accounts/podorozhnik.spb.ru" "username"))
+  (setq deterred-transport-podorozhnik-password
+        (my/password-store-get "My_Online/Accounts/podorozhnik.spb.ru"))
+  (add-hook 'deterred-dispatcher-startup-hook #'deterred-backup))
 #+end_src
 
 #+RESULTS:
@@ -13863,6 +13892,26 @@ Emacs' built-in calendar. Can even calculate sunrise and sunset times.
 (setq calendar-latitude 59.9375)
 (setq calendar-longitude 30.308611)
 #+end_src
+*** life-calendar
+#+begin_src emacs-lisp
+(use-package life-calendar
+  :straight (:host github :repo "vshender/emacs-life-calendar")
+  :commands (life-calendar)
+  :config
+  (setq life-calendar-birthday "1998-08-14")
+  (setq life-calendar-future-char "·")
+  (setq life-calendar-past-char "×")
+  (setq life-calendar-chapter-char "E")
+  (setq life-calendar-current-char "ø")
+
+  (setq life-calendar-chapters
+        '(("2005-01-01" . "School")
+          ("2016-09-01" . "Baccalaureate")
+          ("2020-09-01" . "Master's")
+          ("2022-10-01" . "Grad School")
+          ("2025-12-22" . "Failed Thesis Defence"))))
+#+end_src
+
 ** Calc
 :PROPERTIES:
 :MODULE_NAME: misc-apps

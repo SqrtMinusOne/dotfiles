@@ -15,22 +15,19 @@
         (gptel-make-ollama "Ollama"
           :host "localhost:11434"
           :stream t
-          :models '("llama3.1:8b" "deepseek-r1:32b"
-                    "qwen2.5:32b" "qwen2.5-coder:32b"
+          :models '("deepseek-r1:32b"
+                    "qwen2.5:32b"
                     "qwen3:30b" "qwen3:32b"
-                    "eva-qwen2.5-q4_k_l-32b:latest"
-                    "gpt-oss"
-                    (gemma3:27b
-                     :capabilities (media)
-                     :mime-types ("image/jpeg" "image/png")))))
+                    "hf.co/bartowski/TheDrummer_Skyfall-31B-v4-GGUF:q4_k_m"
+                    "gpt-oss:20b")))
   (gptel-make-openai "OpenRouter"
     :host "openrouter.ai/api"
     :key (lambda () (my/password-store-get-field
-                     "My_Online/Accounts/openrouter" "api-key"))
+                     "My_Online/Accounts/openrouter" "api-key-kek"))
     :stream t
     :models '("anthropic/claude-sonnet-4.5"
-              "qwen/qwen3-coder"
-              "qwen/qwen3-coder:free"))
+              "deepseek/deepseek-v3.2"
+              "x-ai/grok-4.1-fast"))
   (setq gptel--known-backends
         (seq-filter
          (lambda (cell)

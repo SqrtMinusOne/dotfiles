@@ -82,16 +82,7 @@
   (setq org-clock-agg-node-title-width-delta 47)
   (push
    (cons "Agenda+Archive"
-         (append
-          (org-agenda-files)
-          (thread-last "/projects/archive"
-                       (concat org-directory)
-                       (directory-files)
-                       (mapcar (lambda (f)
-                                 (concat
-                                  org-directory "/projects/archive/" f)))
-                       (seq-filter (lambda (f)
-                                     (not (file-directory-p f)))))))
+         (my/org-agenda-and-archive))
    org-clock-agg-files-preset))
 
 (with-eval-after-load 'org
@@ -821,6 +812,18 @@ KEYS is a list of cons cells like (<label> . <time>)."
           (org-with-point-at marker
             (my/org-archive-refile)))))))
 
+(defun my/org-agenda-and-archive ()
+  (append
+   (org-agenda-files)
+   (thread-last "/projects/archive"
+                (concat org-directory)
+                (directory-files)
+                (mapcar (lambda (f)
+                          (concat
+                           org-directory "/projects/archive/" f)))
+                (seq-filter (lambda (f)
+                              (not (file-directory-p f)))))))
+
 (my-leader-def
   :infix "o"
   "" '(:which-key "org-mode")
@@ -1321,7 +1324,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
                      :start-date (pcase kind
                                    ('weekly
                                     (- start-of-day
-                                       (* 21 24 60 60)))
+                                       (* 30 24 60 60)))
                                    ('zk
                                     (- start-of-day
                                        (* 45 24 60 60)))

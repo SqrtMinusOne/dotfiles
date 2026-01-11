@@ -5,7 +5,7 @@
 (setq auth-source-debug nil)
 (setq auth-sources '("~/.authinfo.gpg"))
 
-(let ((private-file (expand-file-name "private.el" user-emacs-directory)))
+(let ((private-file "/home/pavel/10-19 Code/11 Config/11.10 dotfiles-private/private.el"))
   (when (file-exists-p private-file)
     (load-file private-file)))
 

@@ -12,16 +12,19 @@
         (list
          (deterred-activitywatch)
          (deterred-digikam :digikam-db "~/30-39 Life/35 Photos/35.00D DigiKam/digikam4.db")
-         (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
+         (deterred-hledger)
+         ;; (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
          ;; (deterred-locations)
          (deterred-mastodon :server "https://mastodon.bsd.cafe/"
                             :account-id 113136872089175263)
          (deterred-messengers)
          (deterred-mpd)
          (deterred-org-journal-tags)
+         (deterred-org-roam)
+         (deterred-podcasts)
          (deterred-read-it-later :sources '(readeck))
          (deterred-reddit)
-         (deterred-podcasts)
+         (deterred-transport)
          (deterred-wakatime)))
 
   (setq deterred-backups-location "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.B Backups/13.02.B.01 deterred/")
@@ -51,6 +54,11 @@
   (setq deterred-read-it-later-wallabag-username
         (my/password-store-get-field "Selfhosted/wallabag" "username"))
   (setq deterred-read-it-later-wallabag-password
-        (my/password-store-get "Selfhosted/wallabag")))
+        (my/password-store-get "Selfhosted/wallabag"))
+  (setq deterred-transport-podorozhnik-login
+        (my/password-store-get-field "My_Online/Accounts/podorozhnik.spb.ru" "username"))
+  (setq deterred-transport-podorozhnik-password
+        (my/password-store-get "My_Online/Accounts/podorozhnik.spb.ru"))
+  (add-hook 'deterred-dispatcher-startup-hook #'deterred-backup))
 
 (provide 'sqrt-deterred)

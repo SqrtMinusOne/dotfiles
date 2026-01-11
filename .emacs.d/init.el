@@ -230,3 +230,20 @@
   (interactive)
   (with-environment-variables (("EMACS_ENV" "remote"))
     (start-process "emacs-tramp" nil "emacs")))
+
+(defun my/listings-add-from-dired (paths)
+  (interactive
+   (list (or (dired-get-marked-files nil 'marked)
+             (list (directory-file-name
+                    (expand-file-name default-directory))))))
+  (let ((listing-buffer (get-buffer-create "*listing*"))
+        (project-root (projectile-project-root)))
+    (dolist (path paths)
+      (with-current-buffer listing-buffer
+        (goto-char (point-max))
+        (insert "\n" (file-relative-name
+                      (expand-file-name path)
+                      project-root)
+                "\n")
+        (insert-file-contents path)))
+    (switch-to-buffer-other-window listing-buffer)))
