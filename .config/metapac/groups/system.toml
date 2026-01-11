@@ -33,7 +33,7 @@ arch = [
 "lightdm",
 "iwd",
 "grub",
-"decman",
+"debtap",
 "base-devel",
 "base",
 "amneziavpn-bin",]

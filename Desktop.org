@@ -4339,6 +4339,7 @@ This section generates manifests for various desktop software that I'm using.
 | office   | zotero-bin         |          |
 | office   | openshot           | t        |
 | office   | drawio-desktop     |          |
+| office   | gnumeric           |          |
 
 ** LaTeX
 | Category | Arch dependency          | Disabled |
@@ -4405,6 +4406,11 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | dbeaver           |          |
 | dev      | uv                |          |
 | dev      | libaio            |          |
+** Games
+| Category | Arch dependency |
+|----------+-----------------|
+| games    | steam           |
+
 ** Manifests
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
@@ -4449,6 +4455,11 @@ Desktop polybar
 Desktop rofi
 #+begin_src scheme :tangle .config/metapac/groups/desktop-rofi.toml :noweb yes
 <<packages("desktop-rofi")>>
+#+end_src
+
+Games
+#+begin_src scheme :tangle .config/metapac/groups/games.toml :noweb yes
+<<packages("games")>>
 #+end_src
 ** Flatpak
 A lot of proprietary desktop applications can be installed most easily with flatpak & flathub.

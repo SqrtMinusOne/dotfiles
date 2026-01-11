@@ -2,7 +2,7 @@ enabled_backends = ["arch"]
 hostname_groups_enabled = true
 
 [hostname_groups]
-violet = ["printer","system","office","nvidia","music","mail","latex","emacs","dev","desktop-rofi","desktop-polybar","desktop-misc","desktop","console","browsers"]
+violet = ["games","printer","system","office","nvidia","music","mail","latex","emacs","dev","desktop-rofi","desktop-polybar","desktop-misc","desktop","console","browsers"]
 weiss = ["system","office","music","mail","latex","emacs","dev","desktop-rofi","desktop-polybar","desktop-misc","desktop","console","browsers"]
 archlinux = ["system","office","music","mail","latex","emacs","dev","desktop-rofi","desktop-polybar","desktop-misc","desktop","console","browsers"]
 

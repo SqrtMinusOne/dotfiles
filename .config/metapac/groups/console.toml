@@ -1,4 +1,5 @@
 arch = [
+"rsync",
 "bluetui",
 "bashmount",
 "pv",
