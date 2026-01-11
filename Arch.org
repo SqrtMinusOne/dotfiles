@@ -44,6 +44,8 @@ Install [[https://github.com/ripytide/metapac][metapac]]:
 paru -Syyu metapac
 #+end_src
 
+Enable [[https://wiki.archlinux.org/title/Official_repositories#multilib][multilib]] by uncommenting the =[multilib]= section in =/etc/pacman.conf=.
+
 Then install Arch packages with =metapac=:
 #+begin_src bash
 mkdir ~/00-Scratch/
@@ -324,4 +326,46 @@ sudo mount -t virtiofs shared /home/pavel/00-Scratch/
 To make in permanent, add the following to =/etc/fstab=
 #+begin_src
 shared /home/pavel/00-Scratch virtiofs defaults 0 0
+#+end_src
+** Copying VMs between machines
+To copy a VM, first, copy the image:
+#+begin_src bash
+rsync -avP /var/lib/libvirt/images/debian12-vpn.qcow2 /run/media/pavel/A6E5-4138/vms/
+#+end_src
+
+Then, export the configuration:
+#+begin_src
+virsh -c qemu:///system dumpxml debian12-vpn > debian12-vpn.xml
+#+end_src
+
+To restore, copy the image back:
+#+begin_src bash
+sudo rsync -avP /run/media/pavel/A6E5-4138/vms/debian12-vpn.qcow2 /var/lib/libvirt/images/
+#+end_src
+
+And import the configuration:
+#+begin_src src
+sudo virsh define debian12-vpn.xml
+#+end_src
+** Assign a static IP to a VM
+To assign a static IP to a VM, run:
+#+begin_src bash
+sudo EDITOR=vim virsh net-edit default
+#+end_src
+
+And inside the =<dhcp>= section, insert:
+#+begin_src bash
+<host mac='52:54:00:58:7f:82' name='myvm' ip='192.168.122.50'/>
+#+end_src
+
+After which, restart the network:
+#+begin_src bash
+sudo virsh net-destroy default
+sudo virsh net-start default
+#+end_src
+** Network
+
+Don't forget to set =iptables= in =/etc/libvirt/network.conf=:
+#+begin_src conf-space
+firewall_backend = "iptables"
 #+end_src
