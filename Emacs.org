@@ -7965,7 +7965,9 @@ It seems the package has been somewhat revived in the recent months. It used thi
   :after (org)
   :config
   (setq org-contacts-files (list
-                            (concat org-directory "/contacts.org"))))
+                            (concat org-directory "/contacts.org")))
+  (add-to-list 'org-contacts-completion-enabled-mode-list
+               'notmuch-message-mode))
 #+end_src
 
 An example contact entry can look like this:

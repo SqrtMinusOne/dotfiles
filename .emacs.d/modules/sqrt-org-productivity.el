@@ -1540,7 +1540,9 @@ Happened to the world:
   :after (org)
   :config
   (setq org-contacts-files (list
-                            (concat org-directory "/contacts.org"))))
+                            (concat org-directory "/contacts.org")))
+  (add-to-list 'org-contacts-completion-enabled-mode-list
+               'notmuch-message-mode))
 
 (defun my/calfw-setup-buffer ()
   (display-line-numbers-mode -1))
