@@ -36,4 +36,5 @@ arch = [
 "debtap",
 "base-devel",
 "base",
-"amneziavpn-bin",]
+"amneziavpn-bin",
+"pacserve",]

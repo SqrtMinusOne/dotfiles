@@ -76,6 +76,11 @@ if [ -d "$HOME/bin/gradle/gradle-9.0.0" ]; then
 fi
 # Other package managers:4 ends here
 
+# [[file:Console.org::*Other package managers][Other package managers:5]]
+export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+# Other package managers:5 ends here
+
 # [[file:Console.org::*XResources][XResources:1]]
 if [ -z "$IS_ANDROID" ]; then
     xrdb ~/.Xresources

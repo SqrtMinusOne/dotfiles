@@ -1,4 +1,6 @@
 arch = [
+"fish-nvm",
+"nvm",
 "libaio",
 "uv",
 "dbeaver",

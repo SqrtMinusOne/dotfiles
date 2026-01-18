@@ -151,6 +151,11 @@ sudo usermod -a -G kvm pavel
 
 Install [[https://github.com/retorquere/zotero-better-bibtex][zotero-better-bibtex]] manually.
 
+Run =init-nvm=:
+#+begin_src bash
+bash /usr/share/nvm/init-nvm.sh
+#+end_src
+
 * Metapac configuration
 [[https://github.com/ripytide/metapac][metapac]] is a declarative wrapper around different package managers, including [[https://wiki.archlinux.org/title/Pacman][pacman]] and [[https://github.com/Morganamilo/paru][paru]]. This means the required packages can be listed in configuration files and checked into version control.
 
@@ -206,6 +211,18 @@ hostname_groups_enabled = true
 
 [arch]
 package_manager = "paru"
+#+end_src
+
+* pacserve
+https://wiki.archlinux.org/title/Pacserve
+
+| Arch dependencies |
+|-------------------|
+| pacserve          |
+
+
+#+begin_src bash
+systemctl enable --now pacserve
 #+end_src
 
 * System packages

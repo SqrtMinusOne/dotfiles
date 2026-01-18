@@ -4406,6 +4406,8 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | dbeaver           |          |
 | dev      | uv                |          |
 | dev      | libaio            |          |
+| dev      | nvm               |          |
+| dev      | fish-nvm          |          |
 ** Games
 | Category | Arch dependency |
 |----------+-----------------|
