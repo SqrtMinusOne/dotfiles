@@ -2225,6 +2225,7 @@ Line numbers. There seems to be a catch with the relative number setting:
 (setq display-line-numbers-type 'visual)
 (column-number-mode)
 #+end_src
+
 *** Word wrapping
 Word wrapping. These settings aren't too obvious compared to =:set wrap= from vim:
 - =word-wrap= means just "don't split one word between two lines". So, if there isn't enough place to put a word at the end of the line, it will be put on a new one. Run =M-x toggle-word-wrap= to toggle that.
@@ -6101,14 +6102,6 @@ The following enables org-clock persistence between Emacs sessions.
   (org-clock-persistence-insinuate))
 #+end_src
 
-Effort estimation. Not using this as of now.
-#+begin_src emacs-lisp
-(with-eval-after-load 'org
-  (add-to-list
-   'org-global-properties
-   '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 4:00 8:00")))
-#+end_src
-
 Log DONE time
 #+begin_src emacs-lisp
 (setq org-log-done 'time)
@@ -6246,6 +6239,23 @@ And use the function to set the total clocked time.
           (let ((value (org-read-property-value "TASK_KIND")))
             (org-set-property "TASK_KIND" value)))))))
 #+end_src
+**** Task configuration
+Lately I've been keeping a lot of tasks in the TODO state, moving the deadlines ever forward. This is probably suboptimal, so I'll try to keep these tasks in the TODO state, without a deadline but with a priority, and use =org-ql=  and maybe =org-agenda= to get a list of such tasks.
+
+But first, I'll need more priorities for that. A-J will work, I think:
+#+begin_src emacs-lisp
+(setq org-priority-highest ?A)
+(setq org-priority-lowest (+ ?A 9))
+#+end_src
+
+Also, effort estimation. I couldn't find a way to use this for now, but I'll keep it:
+#+begin_src emacs-lisp
+(with-eval-after-load 'org
+  (add-to-list
+   'org-global-properties
+   '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 4:00 8:00")))
+#+end_src
+
 **** org-super-agenda
 [[https://github.com/alphapapa/org-super-agenda][org-super-agenda]] is alphapapa's extension to group items in org-agenda. I don't use it instead of the standard agenda, but =org-ql= uses it for some of its views.
 
@@ -6261,13 +6271,25 @@ And use the function to set the total clocked time.
    "j" nil
    "k" nil
    "l" nil)
+
   (org-super-agenda--def-auto-group outline-path-file "their outline paths & files"
     :key-form
     (org-super-agenda--when-with-marker-buffer (org-super-agenda--get-marker item)
       ;; org-ql depends on f and s anyway
       (s-join "/" (cons
                    (f-filename (buffer-file-name))
-                   (org-get-outline-path))))))
+                   (org-get-outline-path)))))
+
+  (org-super-agenda--def-auto-group priority-outline-path-file
+    "priorities, files and outline paths"
+    :key-form
+    (org-super-agenda--when-with-marker-buffer (org-super-agenda--get-marker item)
+      ;; org-ql depends on f and s anyway
+      (concat
+       (format "[%s] " (org-super-agenda--get-priority-cookie item))
+       (s-join "/" (cons
+                    (f-filename (buffer-file-name))
+                    (org-get-outline-path)))))))
 #+end_src
 
 It doesn't look great with org-bars mode, so...
@@ -6353,6 +6375,24 @@ A view to return all TODOs in a category.
       :super-groups '((:auto-outline-path-file t)))))
 #+end_src
 
+***** View backlog
+Tasks without deadlines are backlog.
+
+#+begin_src emacs-lisp
+(defun my/backlog ()
+  (interactive)
+  (org-ql-search (org-agenda-files)
+    `(and (todo)
+          (not (todo "WAIT"))
+          (not (deadline))
+          (not (scheduled))
+          (not (tags "nb"))
+          (category "JOB" "TEACH" "EDU"))
+    :title "Backlog"
+    :sort '(todo priority)
+    :super-groups '((:auto-priority-outline-path-file t))))
+#+end_src
+
 ***** Items clocked or closed today
 Some custom functions to account for =org-extend-today-until=. Needed because sometimes my daily reviews cross 00:00.
 
@@ -6391,9 +6431,11 @@ Putting all the above in =org-ql-views=.
 (setq org-ql-views
       (list
        (cons "Overview: All TODO" #'my/org-ql-all-todo)
+       (cons "Overview: Backlog" #'my/backlog)
        (cons "Review: Stale tasks"
              (list :buffers-files #'org-agenda-files
                    :query '(and (todo)
+                                (clocked)
                                 (not (tags "nots"))
                                 (not (ts :from -14)))
                    :title "Review: Stale tasks"
@@ -7602,7 +7644,12 @@ First, as I have [[file:Console.org::=autocommit=][autocommit]] set up in my org
         ("U" . unmerged)))
 
 (defun my/get-files-status (rev)
-  (let ((files (shell-command-to-string (concat "git diff --name-status " rev))))
+  (let* ((rev-cmd (if (string-match-p "^@{" rev)
+                      (concat "$(git rev-list -1 --before=\""
+                              (substring rev 2 -1) "\" HEAD)")
+                    rev))
+         (files (shell-command-to-string
+                 (concat "git diff --name-status " rev-cmd))))
     (mapcar
      (lambda (file)
        (let ((elems (split-string file "\t")))
@@ -7718,7 +7765,7 @@ I'll use data from git to get the list of what I've been working on. The directo
                                        (* 30 24 60 60)))
                                    ('zk
                                     (- start-of-day
-                                       (* 45 24 60 60)))
+                                       (* 365 24 60 60)))
                                    (_ (error "Unsupported kind: %s" kind)))
                      :location 'section
                      :order 'descending)))
@@ -13669,19 +13716,21 @@ I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
          (deterred-hledger)
          ;; (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
          ;; (deterred-locations)
-         (deterred-mastodon :server "https://mastodon.bsd.cafe/"
-                            :account-id 113136872089175263)
+
          (deterred-messengers)
          (deterred-mpd)
          (deterred-org-journal-tags)
          (deterred-org-roam)
          (deterred-podcasts)
          (deterred-read-it-later :sources '(readeck))
-         (deterred-reddit)
+         (deterred-social
+          :mastodon-server "https://mastodon.bsd.cafe/"
+          :mastodon-account-id 113136872089175263)
          (deterred-transport)
          (deterred-wakatime)))
 
   (setq deterred-backups-location "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.B Backups/13.02.B.01 deterred/")
+  (setq deterred-sync-location "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.S Sync/")
   (setq deterred-dashboard-python "/home/pavel/micromamba/envs/deterred/bin/python")
   (setq deterred-messengers-my-id "098236bb-5fc5-4a04-8b6d-477afa5105fa")
   (setq deterred-digikam-folder "~/30-39 Life/35 Photos/")
@@ -13715,9 +13764,6 @@ I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
         (my/password-store-get "My_Online/Accounts/podorozhnik.spb.ru"))
   (add-hook 'deterred-dispatcher-startup-hook #'deterred-backup))
 #+end_src
-
-#+RESULTS:
-: #s(hash-table data (:use-package (26916 57402 663223 380000) :init (26916 57402 663203 364000) :init-secs (0 0 1572 511000) :use-package-secs (0 0 18205 114000)))
 
 ** Utilities
 *** pass

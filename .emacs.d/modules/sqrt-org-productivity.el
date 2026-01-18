@@ -89,11 +89,6 @@
   (setq org-clock-persist 'clock)
   (org-clock-persistence-insinuate))
 
-(with-eval-after-load 'org
-  (add-to-list
-   'org-global-properties
-   '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 4:00 8:00")))
-
 (setq org-log-done 'time)
 
 (defun my/org-clock-in--fix-mode-line ()
@@ -205,6 +200,14 @@
           (let ((value (org-read-property-value "TASK_KIND")))
             (org-set-property "TASK_KIND" value)))))))
 
+(setq org-priority-highest ?A)
+(setq org-priority-lowest (+ ?A 9))
+
+(with-eval-after-load 'org
+  (add-to-list
+   'org-global-properties
+   '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 4:00 8:00")))
+
 (use-package org-super-agenda
   :straight t
   :after (org)
@@ -216,13 +219,25 @@
    "j" nil
    "k" nil
    "l" nil)
+
   (org-super-agenda--def-auto-group outline-path-file "their outline paths & files"
     :key-form
     (org-super-agenda--when-with-marker-buffer (org-super-agenda--get-marker item)
       ;; org-ql depends on f and s anyway
       (s-join "/" (cons
                    (f-filename (buffer-file-name))
-                   (org-get-outline-path))))))
+                   (org-get-outline-path)))))
+
+  (org-super-agenda--def-auto-group priority-outline-path-file
+    "priorities, files and outline paths"
+    :key-form
+    (org-super-agenda--when-with-marker-buffer (org-super-agenda--get-marker item)
+      ;; org-ql depends on f and s anyway
+      (concat
+       (format "[%s] " (org-super-agenda--get-priority-cookie item))
+       (s-join "/" (cons
+                    (f-filename (buffer-file-name))
+                    (org-get-outline-path)))))))
 
 (defun my/org-super-agenda--make-agenda-header-around (fun name)
   (remove-text-properties 0 (length name) '(line-prefix nil) name)
@@ -291,6 +306,19 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
       :sort '(priority todo deadline)
       :super-groups '((:auto-outline-path-file t)))))
 
+(defun my/backlog ()
+  (interactive)
+  (org-ql-search (org-agenda-files)
+    `(and (todo)
+          (not (todo "WAIT"))
+          (not (deadline))
+          (not (scheduled))
+          (not (tags "nb"))
+          (category "JOB" "TEACH" "EDU"))
+    :title "Backlog"
+    :sort '(todo priority)
+    :super-groups '((:auto-priority-outline-path-file t))))
+
 (defun my/org-ql-clocked-today ()
   (interactive)
   (let ((today (format-time-string
@@ -318,9 +346,11 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
 (setq org-ql-views
       (list
        (cons "Overview: All TODO" #'my/org-ql-all-todo)
+       (cons "Overview: Backlog" #'my/backlog)
        (cons "Review: Stale tasks"
              (list :buffers-files #'org-agenda-files
                    :query '(and (todo)
+                                (clocked)
                                 (not (tags "nots"))
                                 (not (ts :from -14)))
                    :title "Review: Stale tasks"
@@ -1221,7 +1251,12 @@ KEYS is a list of cons cells like (<label> . <time>)."
         ("U" . unmerged)))
 
 (defun my/get-files-status (rev)
-  (let ((files (shell-command-to-string (concat "git diff --name-status " rev))))
+  (let* ((rev-cmd (if (string-match-p "^@{" rev)
+                      (concat "$(git rev-list -1 --before=\""
+                              (substring rev 2 -1) "\" HEAD)")
+                    rev))
+         (files (shell-command-to-string
+                 (concat "git diff --name-status " rev-cmd))))
     (mapcar
      (lambda (file)
        (let ((elems (split-string file "\t")))
@@ -1327,7 +1362,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
                                        (* 30 24 60 60)))
                                    ('zk
                                     (- start-of-day
-                                       (* 45 24 60 60)))
+                                       (* 365 24 60 60)))
                                    (_ (error "Unsupported kind: %s" kind)))
                      :location 'section
                      :order 'descending)))

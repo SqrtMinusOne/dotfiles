@@ -15,19 +15,21 @@
          (deterred-hledger)
          ;; (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
          ;; (deterred-locations)
-         (deterred-mastodon :server "https://mastodon.bsd.cafe/"
-                            :account-id 113136872089175263)
+
          (deterred-messengers)
          (deterred-mpd)
          (deterred-org-journal-tags)
          (deterred-org-roam)
          (deterred-podcasts)
          (deterred-read-it-later :sources '(readeck))
-         (deterred-reddit)
+         (deterred-social
+          :mastodon-server "https://mastodon.bsd.cafe/"
+          :mastodon-account-id 113136872089175263)
          (deterred-transport)
          (deterred-wakatime)))
 
   (setq deterred-backups-location "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.B Backups/13.02.B.01 deterred/")
+  (setq deterred-sync-location "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.S Sync/")
   (setq deterred-dashboard-python "/home/pavel/micromamba/envs/deterred/bin/python")
   (setq deterred-messengers-my-id "098236bb-5fc5-4a04-8b6d-477afa5105fa")
   (setq deterred-digikam-folder "~/30-39 Life/35 Photos/")
