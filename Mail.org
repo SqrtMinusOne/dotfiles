@@ -133,7 +133,7 @@ remotehost = mbox.etu.ru
 remoteuser = <<mail-username()>>
 remotepass = <<mail-password()>>
 remoteport = 993
-cert_fingerprint = 20bbfdcb617e4695c47a90af96e40d72a57adee4
+sslcacertfile = /etc/ssl/certs/ca-certificates.crt
 #+end_src
 * Notmuch
 | Arch dependency |
@@ -419,7 +419,6 @@ host mbox.etu.ru
 port 465
 tls on
 tls_starttls off
-tls_fingerprint  AD:1D:38:93:43:18:F2:DF:0C:62:80:81:55:74:B0:FB:A7:2B:FF:BD:FC:60:05:02:89:AB:F3:C2:33:57:E1:96
 from pvkorytov@etu.ru
 user pvkorytov
 passwordeval "pass show Job/Digital/Email/pvkorytov@etu.ru | head -n 1"
