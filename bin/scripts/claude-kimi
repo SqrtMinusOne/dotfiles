@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+export ANTHROPIC_BASE_URL=https://api.kimi.com/coding/
+export ANTHROPIC_API_KEY=$(pass show "My_Online/APIs/kimi")
+
+claude
