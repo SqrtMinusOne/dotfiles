@@ -1,8 +1,11 @@
-arch = [
-"flac",
-"cuetools",
-"shntool",
-"mpc",
-"picard",
-"ncmpcpp",
-"mpd",]
+arch = {
+  packages = [
+    "flac",
+    "cuetools",
+    "shntool",
+    "mpc",
+    "picard",
+    "ncmpcpp",
+    "mpd",
+  ]
+}

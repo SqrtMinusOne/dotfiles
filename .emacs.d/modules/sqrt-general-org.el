@@ -507,12 +507,12 @@ If not at a heading, delegates to the normal `org-cycle' function."
   (let ((data (my/extract-arch-dependencies category)))
     (with-temp-buffer
       (cl-loop for (backend . packages) in data
-               do (insert (format "%s = [\n" backend)
+               do (insert (format "%s = {\n  packages = [\n" backend)
                           (mapconcat (lambda (package)
-                                       (format "\"%s\"," package))
+                                       (format "    \"%s\"," package))
                                      packages
                                      "\n")
-                          "]"))
+                          "\n  ]\n}\n"))
       (buffer-string))))
 
 (setq my/org-config-files

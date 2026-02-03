@@ -1,2 +1,5 @@
-arch = [
-"steam",]
+arch = {
+  packages = [
+    "steam",
+  ]
+}

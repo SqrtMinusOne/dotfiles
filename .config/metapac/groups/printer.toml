@@ -1,6 +1,9 @@
-arch = [
-"brscan4",
-"naps2-bin",
-"brlaser",
-"usbutils",
-"cups",]
+arch = {
+  packages = [
+    "brscan4",
+    "naps2-bin",
+    "brlaser",
+    "usbutils",
+    "cups",
+  ]
+}

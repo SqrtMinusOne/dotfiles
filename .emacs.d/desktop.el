@@ -605,10 +605,10 @@ _c_: Chromium
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))
 
 (defun my/exwm-set-alpha (alpha)
-  (setf (alist-get 'alpha default-frame-alist)
-        `(,alpha . ,alpha))
+  (setf (alist-get 'alpha-background default-frame-alist)
+        alpha)
   (cl-loop for frame being the frames
-           do (set-frame-parameter frame 'alpha `(,alpha . ,alpha))))
+           do (set-frame-parameter frame 'alpha-background alpha)))
 
 (use-package exwm
   :straight t

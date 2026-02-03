@@ -220,7 +220,6 @@ https://wiki.archlinux.org/title/Pacserve
 |-------------------|
 | pacserve          |
 
-
 #+begin_src bash
 systemctl enable --now pacserve
 #+end_src
@@ -276,6 +275,11 @@ Also [[https://github.com/evilsocket/opensnitch][opensnitch]], a firewall.
 | Arch dependency |
 |-----------------|
 | opensnitch      |
+
+A tool to downgrade a package.
+| Arch dependency |
+|-----------------|
+| downgrade       |
 
 NVIDIA drivers & AI stuff for violet
 | Category | Arch dependency          |
@@ -385,4 +389,11 @@ sudo virsh net-start default
 Don't forget to set =iptables= in =/etc/libvirt/network.conf=:
 #+begin_src conf-space
 firewall_backend = "iptables"
+#+end_src
+* Notes on Software
+** Installing MS Office 2007
+MS Office 2007, which I need for work, installs reasonably well on PlayOnLinux, except for one library that can be downloaded with winetricks:
+
+#+begin_src bash
+WINEPREFIX=~/.PlayOnLinux/wineprefix/Office2007 WINE=~/.PlayOnLinux/wine/linux-x86/4.0/bin/wine winetricks msxml3
 #+end_src

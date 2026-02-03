@@ -1,5 +1,8 @@
-arch = [
-"xorg-xset",
-"rofi-pass",
-"rofimoji",
-"rofi",]
+arch = {
+  packages = [
+    "xorg-xset",
+    "rofi-pass",
+    "rofimoji",
+    "rofi",
+  ]
+}

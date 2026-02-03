@@ -1,4 +1,7 @@
-arch = [
-"firefox-tridactyl",
-"firefox",
-"ungoogled-chromium-bin",]
+arch = {
+  packages = [
+    "firefox-tridactyl",
+    "firefox",
+    "ungoogled-chromium-bin",
+  ]
+}

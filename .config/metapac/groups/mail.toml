@@ -1,7 +1,10 @@
-arch = [
-"notmuch",
-"msmtp",
-"parallel",
-"notmuch",
-"offlineimap",
-"lieer-git",]
+arch = {
+  packages = [
+    "notmuch",
+    "msmtp",
+    "parallel",
+    "notmuch",
+    "offlineimap",
+    "lieer-git",
+  ]
+}

@@ -4340,6 +4340,7 @@ This section generates manifests for various desktop software that I'm using.
 | office   | openshot           | t        |
 | office   | drawio-desktop     |          |
 | office   | gnumeric           |          |
+| office   | playonlinux        |          |
 
 ** LaTeX
 | Category | Arch dependency          | Disabled |
@@ -4369,45 +4370,49 @@ This section generates manifests for various desktop software that I'm using.
 | latex    | ttf-ms-fonts             |          |
 | latex    | ttf-dejavu               |          |
 ** Dev
-| Category | Arch dependency   | Disabled |
-|----------+-------------------+----------|
-| dev      | micromamba-bin    |          |
-| dev      | pandoc-cli        |          |
-| dev      | docker            |          |
-| dev      | docker-compose    |          |
-| dev      | postgresql        |          |
-| dev      | virt-manager      |          |
-| dev      | qemu-full         |          |
-| dev      | dnsmasq           |          |
-| dev      | libvirt           |          |
-| dev      | git-filter-repo   |          |
-| dev      | nodejs            |          |
-| dev      | jdk21-openjdk     |          |
-| dev      | go                |          |
-| dev      | gopls             |          |
-| dev      | pkgconf           |          |
-| dev      | gcc               |          |
-| dev      | cmake             |          |
-| dev      | lua               |          |
-| dev      | libfaketime       |          |
-| dev      | hugo              |          |
-| dev      | make              |          |
-| dev      | git-lfs           |          |
-| dev      | gource            |          |
-| dev      | php               |          |
-| dev      | python            |          |
-| dev      | python-pip        |          |
-| dev      | python-virtualenv |          |
-| dev      | python-build      |          |
-| dev      | socat             |          |
-| dev      | wireshark-qt      |          |
-| dev      | git               |          |
-| dev      | rust              |          |
-| dev      | dbeaver           |          |
-| dev      | uv                |          |
-| dev      | libaio            |          |
-| dev      | nvm               |          |
-| dev      | fish-nvm          |          |
+| Category | Arch dependency      | Disabled |
+|----------+----------------------+----------|
+| dev      | micromamba-bin       |          |
+| dev      | pandoc-cli           |          |
+| dev      | docker               |          |
+| dev      | docker-compose       |          |
+| dev      | postgresql           |          |
+| dev      | virt-manager         |          |
+| dev      | qemu-full            |          |
+| dev      | dnsmasq              |          |
+| dev      | libvirt              |          |
+| dev      | git-filter-repo      |          |
+| dev      | nodejs               |          |
+| dev      | jdk21-openjdk        |          |
+| dev      | go                   |          |
+| dev      | gopls                |          |
+| dev      | pkgconf              |          |
+| dev      | gcc                  |          |
+| dev      | cmake                |          |
+| dev      | lua                  |          |
+| dev      | libfaketime          |          |
+| dev      | hugo                 |          |
+| dev      | make                 |          |
+| dev      | git-lfs              |          |
+| dev      | gource               |          |
+| dev      | php                  |          |
+| dev      | python               |          |
+| dev      | python-pip           |          |
+| dev      | python-virtualenv    |          |
+| dev      | python-build         |          |
+| dev      | socat                |          |
+| dev      | wireshark-qt         |          |
+| dev      | git                  |          |
+| dev      | rust                 |          |
+| dev      | dbeaver              |          |
+| dev      | uv                   |          |
+| dev      | libaio               |          |
+| dev      | nvm                  |          |
+| dev      | fish-nvm             |          |
+| dev      | claude-code          |          |
+| dev      | speedtest-cli        |          |
+| dev      | winetricks           |          |
+| dev      | cloudflare-speed-cli |          |
 ** Games
 | Category | Arch dependency |
 |----------+-----------------|

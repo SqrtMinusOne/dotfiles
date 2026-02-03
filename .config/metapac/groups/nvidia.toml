@@ -1,6 +1,9 @@
-arch = [
-"nvidia-container-toolkit",
-"ollama-cuda",
-"nvidia-open",
-"nvidia-utils",
-"cuda",]
+arch = {
+  packages = [
+    "nvidia-container-toolkit",
+    "ollama-cuda",
+    "nvidia-open",
+    "nvidia-utils",
+    "cuda",
+  ]
+}
