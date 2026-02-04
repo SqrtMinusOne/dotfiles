@@ -316,7 +316,7 @@ Printer packages.
 <<packages()>>
 #+end_src
 
-* On VMs
+* Notes on VMs
 ** Linux
 Install spice-vdagent and reboot to enable clipboard sharing.
 
@@ -391,6 +391,61 @@ Don't forget to set =iptables= in =/etc/libvirt/network.conf=:
 firewall_backend = "iptables"
 #+end_src
 * Notes on Software
+** Upgrading Python and AUR packages
+After upgrading Python from 3.13 to 3.14, [[https://aur.archlinux.org/packages/lieer-git][lieer]] has stopped working
+
+#+begin_example
+$ gmi
+Traceback (most recent call last):
+  File "/usr/bin/gmi", line 20, in <module>
+    from lieer import Gmailieer
+ModuleNotFoundError: No module named 'lieer'
+#+end_example
+
+The issue is that the package has been installed for Python 3.13:
+#+begin_example
+pacman -Ql lieer-git | grep -E '\.py$|site-packages'
+lieer-git /usr/lib/python3.13/site-packages/
+lieer-git /usr/lib/python3.13/site-packages/lieer-1.6.dist-info/
+lieer-git /usr/lib/python3.13/site-packages/lieer-1.6.dist-info/METADATA
+lieer-git /usr/lib/python3.13/site-packages/lieer-1.6.dist-info/RECORD
+lieer-git /usr/lib/python3.13/site-packages/lieer-1.6.dist-info/WHEEL
+lieer-git /usr/lib/python3.13/site-packages/lieer-1.6.dist-info/licenses/
+lieer-git /usr/lib/python3.13/site-packages/lieer-1.6.dist-info/licenses/COPYING.GPL-3.0+
+lieer-git /usr/lib/python3.13/site-packages/lieer-1.6.dist-info/licenses/LICENSE.md
+lieer-git /usr/lib/python3.13/site-packages/lieer-1.6.dist-info/top_level.txt
+lieer-git /usr/lib/python3.13/site-packages/lieer/
+lieer-git /usr/lib/python3.13/site-packages/lieer/__init__.py
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/__init__.cpython-313.opt-1.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/__init__.cpython-313.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/gmailieer.cpython-313.opt-1.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/gmailieer.cpython-313.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/local.cpython-313.opt-1.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/local.cpython-313.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/nobar.cpython-313.opt-1.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/nobar.cpython-313.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/remote.cpython-313.opt-1.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/remote.cpython-313.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/resume.cpython-313.opt-1.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/__pycache__/resume.cpython-313.pyc
+lieer-git /usr/lib/python3.13/site-packages/lieer/gmailieer.py
+lieer-git /usr/lib/python3.13/site-packages/lieer/local.py
+lieer-git /usr/lib/python3.13/site-packages/lieer/nobar.py
+lieer-git /usr/lib/python3.13/site-packages/lieer/remote.py
+lieer-git /usr/lib/python3.13/site-packages/lieer/resume.py
+#+end_example
+
+And the Python version is 3.14:
+#+begin_example
+$ python --version
+Python 3.14.2
+#+end_example
+
+Simply rebuilding the package doesn't help because something has been cached. It is neccessary to use the =--rebuild= tag:
+#+begin_example
+$ paru -S lieer-git --rebuild
+#+end_example
 ** Installing MS Office 2007
 MS Office 2007, which I need for work, installs reasonably well on PlayOnLinux, except for one library that can be downloaded with winetricks:
 
