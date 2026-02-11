@@ -41,5 +41,5 @@ arch = {
     "docker",
     "pandoc-cli",
     "micromamba-bin",
-  ]
+  ],
 }

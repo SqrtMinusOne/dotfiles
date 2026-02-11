@@ -7,5 +7,5 @@ arch = {
     "bind",
     "noto-fonts-emoji",
     "polybar",
-  ]
+  ],
 }

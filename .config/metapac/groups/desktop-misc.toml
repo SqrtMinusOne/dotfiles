@@ -28,5 +28,5 @@ arch = {
     "xorg-xprop",
     "xss-lock",
     "xorg-xinit",
-  ]
+  ],
 }

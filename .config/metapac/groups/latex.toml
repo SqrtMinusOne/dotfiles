@@ -23,5 +23,5 @@ arch = {
     "texlive-binextra",
     "texlive-bibtexextra",
     "texlive-basic",
-  ]
+  ],
 }

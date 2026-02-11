@@ -1,8 +1,8 @@
 arch = {
   packages = [
-    "glide-browser-bin",
     "firefox-tridactyl",
     "firefox",
     "ungoogled-chromium-bin",
+    "glide-browser-bin",
   ],
 }

@@ -1,7 +1,8 @@
 flatpak = {
   packages = [
     "user:chat.rocket.RocketChat",
-  ]
+  ],
+  repos = [{name = "user:flathub", options = { url = "https://dl.flathub.org/repo/" }}],
 }
 arch = {
   packages = [
@@ -22,5 +23,5 @@ arch = {
     "zathura-pdf-mupdf",
     "zathura-ps",
     "zathura",
-  ]
+  ],
 }

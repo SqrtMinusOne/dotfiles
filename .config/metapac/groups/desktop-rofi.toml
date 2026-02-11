@@ -4,5 +4,5 @@ arch = {
     "rofi-pass",
     "rofimoji",
     "rofi",
-  ]
+  ],
 }

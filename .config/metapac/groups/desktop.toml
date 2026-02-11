@@ -18,5 +18,5 @@ arch = {
     "xsettingsd",
     "papirus-icon-theme",
     "gtk-engines",
-  ]
+  ],
 }
