@@ -35,7 +35,46 @@
     telega-image-mode 3 "telega"
     telega-webpage-mode 3 "telega"))
 
+(defun my/telega-mode-line-unread-private ()
+  "Format unread unmuted private chat count."
+  (let* ((chats (telega-filter-chats (telega-chats-list)
+                  '(and unread unmuted (type private secret bot))))
+         (count (length chats)))
+    (unless (zerop count)
+      (concat
+       " P:"
+       (propertize (number-to-string count)
+                   'face 'telega-unread-unmuted-modeline
+                   'local-map
+                   (make-mode-line-mouse-map
+                    'mouse-1 (telega-mode-line-filter-gen
+                              '(and unread unmuted (type private secret bot))))
+                   'mouse-face 'mode-line-highlight
+                   'help-echo "Unread unmuted private chats")))))
+
+(defun my/telega-mode-line-unread-groups ()
+  "Format unread unmuted group/channel chat count."
+  (let* ((chats (telega-filter-chats (telega-chats-list)
+                  '(and unread unmuted (type basicgroup supergroup channel))))
+         (count (length chats)))
+    (unless (zerop count)
+      (concat
+       " G:"
+       (propertize (number-to-string count)
+                   'face 'telega-unread-unmuted-modeline
+                   'local-map
+                   (make-mode-line-mouse-map
+                    'mouse-1 (telega-mode-line-filter-gen
+                              '(and unread unmuted (type basicgroup supergroup channel))))
+                   'mouse-face 'mode-line-highlight
+                   'help-echo "Unread unmuted group/channel chats")))))
+
 (add-hook 'telega-load-hook #'telega-mode-line-mode)
+
+(with-eval-after-load 'telega
+  (advice-add 'telega-server--idle-timer-function
+              :after #'telega-mode-line-update))
+
 (setq telega-mode-line-string-format
       '("["
         (:eval
@@ -44,7 +83,11 @@
          (when telega-use-tracking-for
            (telega-mode-line-tracking)))
         (:eval
-         (telega-mode-line-unread-unmuted))
+         (my/telega-mode-line-unread-groups))
+        (:eval
+         (my/telega-mode-line-unread-private))
+        ;; (:eval
+        ;;  (telega-mode-line-unread-unmuted))
         (:eval
          (telega-mode-line-mentions 'messages))
         "]"))
