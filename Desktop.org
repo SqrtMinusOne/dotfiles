@@ -2057,20 +2057,10 @@ The script below allows me to:
 
 #+begin_src bash :tangle ./bin/polybar.sh :noweb yes
 hostname=$(hostname)
-# Settings varying on the hostname
-if [ "$hostname" = "azure" ]; then
-    TRAY_MONITOR="eDP-1"
-elif [ "$hostname" = "eminence" ]; then
-    if xrandr --query | grep " connected" | cut -d" " -f1 | grep -q "HDMI-A-0"; then
-        TRAY_MONITOR="HDMI-A-0"
-    else
-        TRAY_MONITOR="eDP"
-    fi
-elif [ "$hostname" = "iris" ]; then
-    TRAY_MONITOR="HDMI-1"
-elif [ "$hostname" = "weiss" ]; then
-    TRAY_MONITOR="eDP-1"
-else
+
+TRAY_MONITOR=$(xrandr --query | grep " connected" | grep -oE "^[^ ]+ connected (primary )?[0-9]" | head -n 1 | cut -d" " -f1)
+
+if [ "$hostname" = 'violet' ]; then
     TRAY_MONITOR="DP-1"
 fi
 

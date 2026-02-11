@@ -544,7 +544,7 @@ If not at a heading, delegates to the normal `org-cycle' function."
   (call-process "xrdb" nil nil nil "-load" "/home/pavel/.Xresources")
   (call-process "~/bin/polybar.sh")
   (call-process "pkill" nil nil nil "dunst")
-  (call-process "herd" nil nil nil "restart" "xsettingsd")
+  (call-process "systemctl" nil nil nil "--user" "restart" "xsettingsd")
   (when (fboundp #'my/exwm-set-alpha)
     (if (my/light-p)
         (my/exwm-set-alpha 100)
