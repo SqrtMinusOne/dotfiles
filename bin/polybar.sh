@@ -1,22 +1,8 @@
 #!/usr/bin/env bash
 # [[file:../Desktop.org::*Launch script][Launch script:1]]
 hostname=$(hostname)
-# Settings varying on the hostname
-if [ "$hostname" = "azure" ]; then
-    TRAY_MONITOR="eDP-1"
-elif [ "$hostname" = "eminence" ]; then
-    if xrandr --query | grep " connected" | cut -d" " -f1 | grep -q "HDMI-A-0"; then
-        TRAY_MONITOR="HDMI-A-0"
-    else
-        TRAY_MONITOR="eDP"
-    fi
-elif [ "$hostname" = "iris" ]; then
-    TRAY_MONITOR="HDMI-1"
-elif [ "$hostname" = "weiss" ]; then
-    TRAY_MONITOR="eDP-1"
-else
-    TRAY_MONITOR="DP-1"
-fi
+
+TRAY_MONITOR=$(xrandr --query | grep " connected" | grep -oE "^[^ ]+ connected (primary )?[0-9]" | head -n 1 | cut -d" " -f1)
 
 # Setting varying on the monitor
 declare -A FONT_SIZES=(
