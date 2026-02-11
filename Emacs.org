@@ -8216,7 +8216,33 @@ A "profile" (metapac calls them "groups") is a way to group package installation
    "mpd"))
 #+end_src
 
-Metapac stores the same info in TOML. I could generate this file with =org-babel= as any other, but that is often not so convenient. For example, I have a [[https://github.com/polybar/polybar][polybar]] module that uses [[https://github.com/risacher/sunwait][sunwait]] to show sunset and sunrise times, and ideally, I want to declare =sunwait= to be in the "desktop-polybar" profile in the same section that has the polybar module definition and the bash script.
+Metapac stores the same info in TOML like this:
+
+#+begin_src toml :exports none
+flatpak = {
+  repos = [
+    {
+      name = "user:flathub",
+      options = { url = "https://dl.flathub.org/repo/" }
+    },
+  ],
+  packages = [
+    "user:chat.rocket.RocketChat",
+  ]
+}
+arch = {
+  packages = [
+    ...,
+    "libreoffice-fresh",
+    "zathura-djvu",
+    "zathura-pdf-mupdf",
+    "zathura-ps",
+    "zathura",
+  ]
+}
+#+end_src
+
+I could generate this file with =org-babel= as any other, but that is often not so convenient. For example, I have a [[https://github.com/polybar/polybar][polybar]] module that uses [[https://github.com/risacher/sunwait][sunwait]] to show sunset and sunrise times, and ideally, I want to declare =sunwait= to be in the "desktop-polybar" profile in the same section that has the polybar module definition and the bash script.
 
 So here's an approach I came up with. The relevant section of the config looks like this:
 #+begin_example
@@ -8312,17 +8338,30 @@ And here is the implementation:
 #+end_src
 
 To make it work in the configuration, it is necessary to format the list in the TOML format. Unfortunately, there doesn't seems to be a TOML generator for Elisp.
+
+Also, some package repositories require additional parameters in the group file, e.g. =flatpak= requires to specify repositories.
+
+#+begin_src emacs-lisp
+(defvar my/arch-dependencies-params
+  '(("flatpak" . "repos = [{name = \"user:flathub\", options = { url = \"https://dl.flathub.org/repo/\" }}],")))
+#+end_src
+
 #+begin_src emacs-lisp :noweb-ref guix-tables
 (defun my/format-arch-dependencies (&optional category)
   (let ((data (my/extract-arch-dependencies category)))
     (with-temp-buffer
       (cl-loop for (backend . packages) in data
+               for backend-params =
+               (alist-get backend my/arch-dependencies-params nil nil #'equal)
                do (insert (format "%s = {\n  packages = [\n" backend)
                           (mapconcat (lambda (package)
                                        (format "    \"%s\"," package))
                                      packages
                                      "\n")
-                          "\n  ]\n}\n"))
+                          "\n  ],\n"
+                          (if backend-params
+                              (concat "  " backend-params "\n") "")
+                          "}\n"))
       (buffer-string))))
 #+end_src
 

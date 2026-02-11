@@ -1,0 +1,6 @@
+flatpak = {
+  packages = [
+    "user:org.viking.Viking",
+  ],
+  repos = [{name = "user:flathub", options = { url = "https://dl.flathub.org/repo/" }}],
+}

@@ -962,14 +962,14 @@ A +transient+ hydra for shortcuts for the most frequent apps.
   "
 ^Apps^
 _t_: Terminal (Alacritty)
-_b_: Browser (Firefox)
+_b_: Browser (Glide)
 _s_: Rocket.Chat
 _d_: DBeaver
 _c_: Chromium
 "
   ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
-  ("b" (lambda () (interactive) (my/run-in-background "firefox")))
-  ("s" (lambda () (interactive) (my/run-in-background "rocketchat-desktop")))
+  ("b" (lambda () (interactive) (my/run-in-background "glide-bin")))
+  ("s" (lambda () (interactive) (my/run-in-background "flatpak run chat.rocket.RocketChat")))
   ("d" (lambda () (interactive) (my/run-in-background "dbeaver")))
   ("c" (lambda () (interactive) (my/run-in-background "chromium"))))
 #+end_src
@@ -4315,6 +4315,61 @@ c.tabs.padding = padding
 c.tabs.indicator.width = 1
 c.tabs.favicons.scale = 1
 #+end_src
+
+
+
+* Glide
+:PROPERTIES:
+:header-args+: :tangle ./.config/glide/glide.ts
+:END:
+
+[[https://glide-browser.app/][Glide]] is a keyboard-driven fork of Firefox.
+
+| Category | Arch dependency        |
+|----------+------------------------|
+| browsers | glide-browser-bin      |
+
+** Keybindings
+#+begin_src typescript
+glide.keymaps.set("normal", "<A-w>", "tab_close")
+
+glide.keymaps.set("normal", "<S-h>", "back")
+glide.keymaps.set("normal", "<S-l>", "forward")
+
+glide.keymaps.set("command", "<A-j>", "commandline_focus_next")
+glide.keymaps.set("command", "<A-k>", "commandline_focus_back")
+#+end_src
+
+** Options
+#+begin_src typescript
+glide.o.native_tabs = "show"
+#+end_src
+
+** Theme
+Glide exposes the [[https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/theme/update][browser.theme.update()]] API directly in the config file, so we can just use that:
+
+#+begin_src typescript :noweb yes
+async function updateTheme() {
+  await browser.theme.update({
+    colors: {
+      frame: <<get-color(name="bg", quote=1)>>,
+      tab_background_text: <<get-color(name="fg", quote=1)>>,
+      toolbar: <<get-color(name="modeline", quote=1)>>,
+      toolbar_text: <<get-fg-for-color(name="modeline", quote=1)>>,
+      toolbar_field: <<get-color(name="bg", quote=1)>>,
+      toolbar_field_text: <<get-color(name="blue", quote=1)>>,
+      tab_line: <<get-color(name="yellow", quote=1)>>,
+      popup: <<get-color(name="bg-alt", quote=1)>>,
+      popup_text: <<get-color(name="fg", quote=1)>>,
+      tab_loading: <<get-color(name="yellow", quote=1)>>,
+    },
+  })
+}
+
+glide.autocmds.create("ConfigLoaded", {}, updateTheme)
+updateTheme()
+#+end_src
+
 * Various software
 This section generates manifests for various desktop software that I'm using.
 ** Browsers
@@ -4324,23 +4379,28 @@ This section generates manifests for various desktop software that I'm using.
 | browsers | firefox                |
 | browsers | firefox-tridactyl      |
 ** Office & Multimedia
-| Category | Arch dependency    | Disabled |
-|----------+--------------------+----------|
-| office   | libreoffice-fresh  |          |
-| office   | gimp               |          |
-| office   | krita              |          |
-| office   | ffmpeg             |          |
-| office   | kdenlive           |          |
-| office   | inkscape           |          |
-| office   | okular             |          |
-| office   | obs-studio         |          |
-| office   | rocketchat-desktop |          |
-| office   | digikam            |          |
-| office   | zotero-bin         |          |
-| office   | openshot           | t        |
-| office   | drawio-desktop     |          |
-| office   | gnumeric           |          |
-| office   | playonlinux        |          |
+| Category | Arch dependency             | Disabled | Source  |
+|----------+-----------------------------+----------+---------|
+| office   | libreoffice-fresh           |          |         |
+| office   | gimp                        |          |         |
+| office   | krita                       |          |         |
+| office   | ffmpeg                      |          |         |
+| office   | kdenlive                    |          |         |
+| office   | inkscape                    |          |         |
+| office   | okular                      |          |         |
+| office   | obs-studio                  |          |         |
+| office   | user:chat.rocket.RocketChat |          | flatpak |
+| office   | digikam                     |          |         |
+| office   | zotero-bin                  |          |         |
+| office   | openshot                    | t        |         |
+| office   | drawio-desktop              |          |         |
+| office   | gnumeric                    |          |         |
+| office   | playonlinux                 |          |         |
+** Geo
+| Category | Arch dependency        | Source  | Disabled |
+|----------+------------------------+---------+----------|
+| geo      | user:org.qgis.qgis     | flatpak | t        |
+| geo      | user:org.viking.Viking | flatpak |          |
 
 ** LaTeX
 | Category | Arch dependency          | Disabled |
@@ -4442,6 +4502,11 @@ Music
 Office
 #+begin_src scheme :tangle .config/metapac/groups/office.toml :noweb yes
 <<packages("office")>>
+#+end_src
+
+Geo
+#+begin_src scheme :tangle .config/metapac/groups/geo.toml :noweb yes
+<<packages("geo")>>
 #+end_src
 
 LaTeX

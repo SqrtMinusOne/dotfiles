@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "exclude": [
+    "node_modules"
+  ],
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "DOM.AsyncIterable", "ESNext"],
+    "types": [
+      "./glide.d.ts"
+    ],
+    "target": "esnext",
+    "module": "esnext",
+    "moduleDetection": "force",
+    "allowJs": true,
+    "noEmit": true,
+    /**
+     * Recommended type checking rules.
+     *
+     * Feel free to modify these.
+     */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "skipLibCheck": true,
+    "noErrorTruncation": true,
+    "erasableSyntaxOnly": true
+  }
+}

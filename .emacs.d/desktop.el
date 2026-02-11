@@ -379,14 +379,14 @@ DIR is either 'left or 'right."
   "
 ^Apps^
 _t_: Terminal (Alacritty)
-_b_: Browser (Firefox)
+_b_: Browser (Glide)
 _s_: Rocket.Chat
 _d_: DBeaver
 _c_: Chromium
 "
   ("t" (lambda () (interactive) (my/run-in-background "alacritty")))
-  ("b" (lambda () (interactive) (my/run-in-background "firefox")))
-  ("s" (lambda () (interactive) (my/run-in-background "rocketchat-desktop")))
+  ("b" (lambda () (interactive) (my/run-in-background "glide-bin")))
+  ("s" (lambda () (interactive) (my/run-in-background "flatpak run chat.rocket.RocketChat")))
   ("d" (lambda () (interactive) (my/run-in-background "dbeaver")))
   ("c" (lambda () (interactive) (my/run-in-background "chromium"))))
 

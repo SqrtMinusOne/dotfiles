@@ -1,3 +1,8 @@
+flatpak = {
+  packages = [
+    "user:chat.rocket.RocketChat",
+  ]
+}
 arch = {
   packages = [
     "playonlinux",
@@ -5,7 +10,6 @@ arch = {
     "drawio-desktop",
     "zotero-bin",
     "digikam",
-    "rocketchat-desktop",
     "obs-studio",
     "okular",
     "inkscape",

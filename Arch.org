@@ -156,6 +156,11 @@ Run =init-nvm=:
 bash /usr/share/nvm/init-nvm.sh
 #+end_src
 
+Add flatpak remote:
+#+begin_src bash
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+#+end_src
+
 * Metapac configuration
 [[https://github.com/ripytide/metapac][metapac]] is a declarative wrapper around different package managers, including [[https://wiki.archlinux.org/title/Pacman][pacman]] and [[https://github.com/Morganamilo/paru][paru]]. This means the required packages can be listed in configuration files and checked into version control.
 
@@ -182,6 +187,7 @@ Below is the table enabling different groups on different hostnames:
 | system          | +         | +     | +      |
 | printer         |           |       | +      |
 | games           |           |       | +      |
+| geo             |           |       | +      |
 
 And the code to format it as TOML:
 #+NAME: metapac-groups-format
@@ -203,7 +209,7 @@ And the code to format it as TOML:
 
 Which is used in the config:
 #+begin_src toml :tangle .config/metapac/config.toml :noweb yes
-enabled_backends = ["arch"]
+enabled_backends = ["arch", "flatpak"]
 hostname_groups_enabled = true
 
 [hostname_groups]
