@@ -176,6 +176,7 @@ x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
 image/png=feh.desktop
 image/jpg=feh.desktop
 image/jpeg=feh.desktop
+video/webm=mpv.desktop
 application/pdf=org.pwmt.zathura.desktop
 
 [Added Associations]
@@ -1001,213 +1002,48 @@ Run i3lock.
                   (backtrace)
                   (buffer-string))))))
 #+end_src
-*** Improve floating windows behavior
-These 3 settings seem to cause particular trouble with floating windows. Setting them to =nil= improves the stability greatly.
+*** Floating windows and mouse warp
+Prevent mouse cursor from jumping to the first monitor when a floating window appears.
+
+I guess this happens because =exwm-floating--set-floating='s call to =select-frame-set-input-focus= occurs before the frame's xcb position requests are flushed, so =focus-follows-mouse= and =mouse-autoselect-window= warp the pointer using stale off-screen coordinates, which get clamped to (0,0) by the X server.
 
 #+begin_src emacs-lisp
-(defun my/fix-exwm-floating-windows ()
-  (setq-local exwm-workspace-warp-cursor nil)
-  (setq-local mouse-autoselect-window nil)
-  (setq-local focus-follows-mouse nil))
-
-(add-hook 'exwm-floating-setup-hook #'my/fix-exwm-floating-windows)
-#+end_src
-*** Fix exwm--on-ClientMessage
-It seems like this strange commit: [[https://github.com/ch11ng/exwm/commit/ce2191c444ae29edf669790a1002238b8fc90ac4][c90ac4]] breaks focusing on an X frame when switching to a workspace, at least on Emacs <= 28. This reverts to the previous version.
-
-#+begin_src emacs-lisp
-(defun exwm--on-ClientMessage-old (raw-data _synthetic)
-  "Handle ClientMessage event."
-  (let ((obj (make-instance 'xcb:ClientMessage))
-        type id data)
-    (xcb:unmarshal obj raw-data)
-    (setq type (slot-value obj 'type)
-          id (slot-value obj 'window)
-          data (slot-value (slot-value obj 'data) 'data32))
-    (exwm--log "atom=%s(%s)" (x-get-atom-name type exwm-workspace--current)
-               type)
-    (cond
-     ;; _NET_NUMBER_OF_DESKTOPS.
-     ((= type xcb:Atom:_NET_NUMBER_OF_DESKTOPS)
-      (let ((current (exwm-workspace--count))
-            (requested (elt data 0)))
-        ;; Only allow increasing/decreasing the workspace number by 1.
-        (cond
-         ((< current requested)
-          (make-frame))
-         ((and (> current requested)
-               (> current 1))
-          (let ((frame (car (last exwm-workspace--list))))
-            (exwm-workspace--get-remove-frame-next-workspace frame)
-            (delete-frame frame))))))
-     ;; _NET_CURRENT_DESKTOP.
-     ((= type xcb:Atom:_NET_CURRENT_DESKTOP)
-      (exwm-workspace-switch (elt data 0)))
-     ;; _NET_ACTIVE_WINDOW.
-     ((= type xcb:Atom:_NET_ACTIVE_WINDOW)
-      (let ((buffer (exwm--id->buffer id))
-            iconic window)
-        (when (buffer-live-p buffer)
-          (with-current-buffer buffer
-            (when (eq exwm--frame exwm-workspace--current)
-              (if exwm--floating-frame
-                  (select-frame exwm--floating-frame)
-                (setq iconic (exwm-layout--iconic-state-p))
-                (when iconic
-                  ;; State change: iconic => normal.
-                  (set-window-buffer (frame-selected-window exwm--frame)
-                                     (current-buffer)))
-                ;; Focus transfer.
-                (setq window (get-buffer-window nil t))
-                (when (or iconic
-                          (not (eq window (selected-window))))
-                  (select-window window))))))))
-     ;; _NET_CLOSE_WINDOW.
-     ((= type xcb:Atom:_NET_CLOSE_WINDOW)
-      (let ((buffer (exwm--id->buffer id)))
-        (when (buffer-live-p buffer)
-          (exwm--defer 0 #'kill-buffer buffer))))
-     ;; _NET_WM_MOVERESIZE
-     ((= type xcb:Atom:_NET_WM_MOVERESIZE)
-      (let ((direction (elt data 2))
-            (buffer (exwm--id->buffer id)))
-        (unless (and buffer
-                     (not (buffer-local-value 'exwm--floating-frame buffer)))
-          (cond ((= direction
-                    xcb:ewmh:_NET_WM_MOVERESIZE_SIZE_KEYBOARD)
-                 ;; FIXME
-                 )
-                ((= direction
-                    xcb:ewmh:_NET_WM_MOVERESIZE_MOVE_KEYBOARD)
-                 ;; FIXME
-                 )
-                ((= direction xcb:ewmh:_NET_WM_MOVERESIZE_CANCEL)
-                 (exwm-floating--stop-moveresize))
-                ;; In case it's a workspace frame.
-                ((and (not buffer)
-                      (catch 'break
-                        (dolist (f exwm-workspace--list)
-                          (when (or (eq id (frame-parameter f 'exwm-outer-id))
-                                    (eq id (frame-parameter f 'exwm-id)))
-                            (throw 'break t)))
-                        nil)))
-                (t
-                 ;; In case it's a floating frame,
-                 ;; move the corresponding X window instead.
-                 (unless buffer
-                   (catch 'break
-                     (dolist (pair exwm--id-buffer-alist)
-                       (with-current-buffer (cdr pair)
-                         (when
-                             (and exwm--floating-frame
-                                  (or (eq id
-                                          (frame-parameter exwm--floating-frame
-                                                           'exwm-outer-id))
-                                      (eq id
-                                          (frame-parameter exwm--floating-frame
-                                                           'exwm-id))))
-                           (setq id exwm--id)
-                           (throw 'break nil))))))
-                 ;; Start to move it.
-                 (exwm-floating--start-moveresize id direction))))))
-     ;; _NET_REQUEST_FRAME_EXTENTS
-     ((= type xcb:Atom:_NET_REQUEST_FRAME_EXTENTS)
-      (let ((buffer (exwm--id->buffer id))
-            top btm)
-        (if (or (not buffer)
-                (not (buffer-local-value 'exwm--floating-frame buffer)))
-            (setq top 0
-                  btm 0)
-          (setq top (window-header-line-height)
-                btm (window-mode-line-height)))
-        (xcb:+request exwm--connection
-            (make-instance 'xcb:ewmh:set-_NET_FRAME_EXTENTS
-                           :window id
-                           :left 0
-                           :right 0
-                           :top top
-                           :bottom btm)))
-      (xcb:flush exwm--connection))
-     ;; _NET_WM_DESKTOP.
-     ((= type xcb:Atom:_NET_WM_DESKTOP)
-      (let ((buffer (exwm--id->buffer id)))
-        (when (buffer-live-p buffer)
-          (exwm-workspace-move-window (elt data 0) id))))
-     ;; _NET_WM_STATE
-     ((= type xcb:Atom:_NET_WM_STATE)
-      (let ((action (elt data 0))
-            (props (list (elt data 1) (elt data 2)))
-            (buffer (exwm--id->buffer id))
-            props-new)
-        ;; only support _NET_WM_STATE_FULLSCREEN / _NET_WM_STATE_ADD for frames
-        (when (and (not buffer)
-                   (memq xcb:Atom:_NET_WM_STATE_FULLSCREEN props)
-                   (= action xcb:ewmh:_NET_WM_STATE_ADD))
-          (xcb:+request
-              exwm--connection
-              (make-instance 'xcb:ewmh:set-_NET_WM_STATE
-                             :window id
-                             :data (vector xcb:Atom:_NET_WM_STATE_FULLSCREEN)))
-          (xcb:flush exwm--connection))
-        (when buffer                    ;ensure it's managed
-          (with-current-buffer buffer
-            ;; _NET_WM_STATE_FULLSCREEN
-            (when (or (memq xcb:Atom:_NET_WM_STATE_FULLSCREEN props)
-                      (memq xcb:Atom:_NET_WM_STATE_ABOVE props))
-              (cond ((= action xcb:ewmh:_NET_WM_STATE_ADD)
-                     (unless (exwm-layout--fullscreen-p)
-                       (exwm-layout-set-fullscreen id))
-                     (push xcb:Atom:_NET_WM_STATE_FULLSCREEN props-new))
-                    ((= action xcb:ewmh:_NET_WM_STATE_REMOVE)
-                     (when (exwm-layout--fullscreen-p)
-                       (exwm-layout-unset-fullscreen id)))
-                    ((= action xcb:ewmh:_NET_WM_STATE_TOGGLE)
-                     (if (exwm-layout--fullscreen-p)
-                         (exwm-layout-unset-fullscreen id)
-                       (exwm-layout-set-fullscreen id)
-                       (push xcb:Atom:_NET_WM_STATE_FULLSCREEN props-new)))))
-            ;; _NET_WM_STATE_DEMANDS_ATTENTION
-            ;; FIXME: check (may require other properties set)
-            (when (memq xcb:Atom:_NET_WM_STATE_DEMANDS_ATTENTION props)
-              (when (= action xcb:ewmh:_NET_WM_STATE_ADD)
-                (unless (eq exwm--frame exwm-workspace--current)
-                  (set-frame-parameter exwm--frame 'exwm-urgency t)
-                  (setq exwm-workspace--switch-history-outdated t)))
-              ;; xcb:ewmh:_NET_WM_STATE_REMOVE?
-              ;; xcb:ewmh:_NET_WM_STATE_TOGGLE?
-              )
-            (xcb:+request exwm--connection
-                (make-instance 'xcb:ewmh:set-_NET_WM_STATE
-                               :window id :data (vconcat props-new)))
-            (xcb:flush exwm--connection)))))
-     ((= type xcb:Atom:WM_PROTOCOLS)
-      (let ((type (elt data 0)))
-        (cond ((= type xcb:Atom:_NET_WM_PING)
-               (setq exwm-manage--ping-lock nil))
-              (t (exwm--log "Unhandled WM_PROTOCOLS of type: %d" type)))))
-     ((= type xcb:Atom:WM_CHANGE_STATE)
-      (let ((buffer (exwm--id->buffer id)))
-        (when (and (buffer-live-p buffer)
-                   (= (elt data 0) xcb:icccm:WM_STATE:IconicState))
-          (with-current-buffer buffer
-            (if exwm--floating-frame
-                (call-interactively #'exwm-floating-hide)
-              (bury-buffer))))))
-     (t
-      (exwm--log "Unhandled: %s(%d)"
-                 (x-get-atom-name type exwm-workspace--current) type)))))
+(defun my/exwm-floating--set-floating-around (orig-fun &rest args)
+  (let ((focus-follows-mouse nil)
+        (mouse-autoselect-window nil))
+    (apply orig-fun args)))
 
 (with-eval-after-load 'exwm
-  (advice-add 'exwm--on-ClientMessage :override #'exwm--on-ClientMessage-old))
+  (advice-add 'exwm-floating--set-floating :around
+              #'my/exwm-floating--set-floating-around))
 #+end_src
-
-** Application-specific settings
-Start Nyxt in =char-mode=.
+*** Floating windows resize fix
+When a floating X client resizes itself (e.g. a dialog expanding), EXWM's ConfigureRequest handler only resizes the Emacs frame's outer window but not the frame container, so the container clips the enlarged frame. This advice queries the outer window's new geometry and applies it to the container as well.
 
 #+begin_src emacs-lisp
-(setq exwm-manage-configurations
-   '(((member exwm-class-name '("Nyxt"))
-	   char-mode t)))
+(defun my/exwm-floating-container-resize-fix (data _synthetic)
+  "Also resize the floating frame container when a floating X client resizes."
+  (with-slots (window value-mask)
+      (xcb:unmarshal-new 'xcb:ConfigureRequest data)
+    (when (and (not (= 0 (logand value-mask
+                                 (logior xcb:ConfigWindow:Width
+                                         xcb:ConfigWindow:Height))))
+               (exwm--id->buffer window))
+      (with-current-buffer (exwm--id->buffer window)
+        (when-let* ((frame exwm--floating-frame)
+                    (container (frame-parameter frame 'exwm-container))
+                    (outer-id (frame-parameter frame 'exwm-outer-id))
+                    (geometry (xcb:+request-unchecked+reply exwm--connection
+                                  (make-instance 'xcb:GetGeometry
+                                                 :drawable outer-id))))
+          (with-slots (width height) geometry
+            (exwm--set-geometry container nil nil width height)
+            (xcb:flush exwm--connection)))))))
+
+
+(with-eval-after-load 'exwm
+  (advice-add 'exwm-manage--on-ConfigureRequest :after
+              #'my/exwm-floating-container-resize-fix))
 #+end_src
 ** EXWM config
 And the EXWM config itself.
