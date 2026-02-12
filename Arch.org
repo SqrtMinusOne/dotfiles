@@ -7,6 +7,12 @@ I've decided to switch to [[https://archlinux.org/][Arch Linux]] and configure i
 ** Installation
 On installation, see https://wiki.archlinux.org/title/Installation_guide and/or use =archinstall=.
 
+Don't forget to run
+#+begin_src bash
+pacman -Sy archlinux-keyring
+#+end_src
+Before =archinstall=.
+
 ** After installation
 Update everything:
 #+begin_src bash
@@ -170,24 +176,24 @@ In =metapac=, packages are listed in "groups", each group being a TOML file stat
 
 Below is the table enabling different groups on different hostnames:
 #+NAME: metapac-groups
-| Profile         | archlinux | weiss | violet |
-| browsers        | +         | +     | +      |
-| console         | +         | +     | +      |
-| desktop         | +         | +     | +      |
-| desktop-misc    | +         | +     | +      |
-| desktop-polybar | +         | +     | +      |
-| desktop-rofi    | +         | +     | +      |
-| dev             | +         | +     | +      |
-| emacs           | +         | +     | +      |
-| latex           | +         | +     | +      |
-| mail            | +         | +     | +      |
-| music           | +         | +     | +      |
-| nvidia          |           |       | +      |
-| office          | +         | +     | +      |
-| system          | +         | +     | +      |
-| printer         |           |       | +      |
-| games           |           |       | +      |
-| geo             |           |       | +      |
+| Profile         | archlinux | weiss | violet | schwarz |
+| browsers        | +         | +     | +      | +       |
+| console         | +         | +     | +      | +       |
+| desktop         | +         | +     | +      | +       |
+| desktop-misc    | +         | +     | +      | +       |
+| desktop-polybar | +         | +     | +      | +       |
+| desktop-rofi    | +         | +     | +      | +       |
+| dev             | +         | +     | +      | +       |
+| emacs           | +         | +     | +      | +       |
+| latex           | +         | +     | +      | +       |
+| mail            | +         | +     | +      | +       |
+| music           | +         | +     | +      | +       |
+| nvidia          |           |       | +      |         |
+| office          | +         | +     | +      | +       |
+| system          | +         | +     | +      | +       |
+| printer         |           |       | +      |         |
+| games           |           |       | +      |         |
+| geo             |           |       | +      |         |
 
 And the code to format it as TOML:
 #+NAME: metapac-groups-format

@@ -2,6 +2,7 @@ enabled_backends = ["arch", "flatpak"]
 hostname_groups_enabled = true
 
 [hostname_groups]
+schwarz = ["system","office","music","mail","latex","emacs","dev","desktop-rofi","desktop-polybar","desktop-misc","desktop","console","browsers"]
 violet = ["geo","games","printer","system","office","nvidia","music","mail","latex","emacs","dev","desktop-rofi","desktop-polybar","desktop-misc","desktop","console","browsers"]
 weiss = ["system","office","music","mail","latex","emacs","dev","desktop-rofi","desktop-polybar","desktop-misc","desktop","console","browsers"]
 archlinux = ["system","office","music","mail","latex","emacs","dev","desktop-rofi","desktop-polybar","desktop-misc","desktop","console","browsers"]
