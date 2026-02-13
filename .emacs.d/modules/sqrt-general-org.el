@@ -517,8 +517,9 @@ If not at a heading, delegates to the normal `org-cycle' function."
                                        (format "    \"%s\"," package))
                                      packages
                                      "\n")
-                          "\n  ]\n"
-                          (if backend-params (insert backend-params) "")
+                          "\n  ],\n"
+                          (if backend-params
+                              (concat "  " backend-params "\n") "")
                           "}\n"))
       (buffer-string))))
 

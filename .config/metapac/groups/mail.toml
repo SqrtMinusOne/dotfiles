@@ -6,5 +6,5 @@ arch = {
     "notmuch",
     "offlineimap",
     "lieer-git",
-  ]
+  ],
 }

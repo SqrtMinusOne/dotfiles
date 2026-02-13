@@ -1,12 +1,12 @@
 # [[file:../../Console.org::*Alacritty][Alacritty:1]]
 [colors.bright]
 black = "#484848"
-red = "#d00000"
-green = "#008900"
-yellow = "#808000"
-blue = "#0000ff"
-magenta = "#dd22dd"
-cyan = "#008899"
+red = "#cf3d3d"
+green = "#22803f"
+yellow = "#916200"
+blue = "#4265db"
+magenta = "#c437b8"
+cyan = "#2075c9"
 white = "#ffffff"
 
 [colors.normal]
