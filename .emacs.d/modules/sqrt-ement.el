@@ -7,7 +7,8 @@
   (interactive)
   (ement-connect
    :user-id "@sqrtminusone:matrix.org"
-   :password (my/password-store-get "My_Online/Accounts/matrix")))
+   ;; :password (my/password-store-get "My_Online/Accounts/matrix")
+   ))
 
 (use-package ement
   :straight (:host github :repo "alphapapa/ement.el")

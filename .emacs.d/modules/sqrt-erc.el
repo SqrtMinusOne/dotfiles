@@ -42,7 +42,8 @@
   (setq znc-servers
         `(("sqrtminusone.xyz" 6697 t
            ((libera "sqrtminusone"
-                    ,(my/password-store-get "Selfhosted/ZNC")))))))
+                    ;; ,(my/password-store-get "Selfhosted/ZNC")
+                    nil))))))
 
 (defun my/erc-detach-all ()
   (interactive)

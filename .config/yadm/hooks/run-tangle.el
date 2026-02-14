@@ -74,12 +74,17 @@
   (let ((data (my/extract-arch-dependencies category)))
     (with-temp-buffer
       (cl-loop for (backend . packages) in data
+               for backend-params =
+               (alist-get backend my/arch-dependencies-params nil nil #'equal)
                do (insert (format "%s = {\n  packages = [\n" backend)
                           (mapconcat (lambda (package)
                                        (format "    \"%s\"," package))
                                      packages
                                      "\n")
-                          "\n  ]\n}"))
+                          "\n  ],\n"
+                          (if backend-params
+                              (concat "  " backend-params "\n") "")
+                          "}\n"))
       (buffer-string))))
 
 ;; A few dummy modes to avoid being prompted for comment systax

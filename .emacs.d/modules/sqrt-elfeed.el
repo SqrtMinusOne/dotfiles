@@ -112,7 +112,7 @@
   (elfeed-sync-mode)
   (setq elfeed-sync-tt-rss-instance "https://sqrtminusone.xyz/tt-rss")
   (setq elfeed-sync-tt-rss-login "sqrtminusone")
-  (setq elfeed-sync-tt-rss-password (my/password-store-get "Selfhosted/tt-rss")))
+  (setq elfeed-sync-tt-rss-password (my/password-store-get "Selfhosting/Accounts/sqrtminusone.xyz-tt-rss")))
 
 (defun my/get-youtube-url (entry)
   (let ((watch-id (cadr

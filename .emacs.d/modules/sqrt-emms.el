@@ -55,7 +55,7 @@
                            (+ (? (or "https://" "http://"))
                               (* nonl)
                               (regexp (eval (emms-player-simple-regexp
-                                             "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
+                              "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
   (setq my/youtube-dl-quality-list
         '("bestvideo[height<=720]+bestaudio/best[height<=720]"
           "bestvideo[height<=480]+bestaudio/best[height<=480]"
@@ -146,7 +146,7 @@
     "asT" #'lyrics-fetcher-show-lyrics-query)
   :config
   (setq lyrics-fetcher-genius-access-token
-        (my/password-store-get "My_Online/APIs/genius.com"))
+        (my/password-store-get "Service/genius.com"))
   (general-define-key
    :states '(emacs normal)
    :keymaps 'emms-browser-mode-map

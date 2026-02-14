@@ -9869,8 +9869,12 @@ The default interface of elfeed is just a list of all entries, so it gets hard t
   (elfeed-sync-mode)
   (setq elfeed-sync-tt-rss-instance "https://sqrtminusone.xyz/tt-rss")
   (setq elfeed-sync-tt-rss-login "sqrtminusone")
-  (setq elfeed-sync-tt-rss-password (my/password-store-get "Selfhosted/tt-rss")))
+  (setq elfeed-sync-tt-rss-password (my/password-store-get "Selfhosting/Accounts/sqrtminusone.xyz-tt-rss")))
 #+end_src
+
+#+RESULTS:
+: #s(hash-table data (:use-package (27024 13121 976368 774000) :use-package-secs (0 0 243024 533000) :init (27024 13121 976359 137000) :config (27024 13121 976354 837000) :config-secs (0 0 221537 176000) :init-secs (0 0 221563 771000)))
+
 *** YouTube, podcasts & EMMS
 Previously this block was opening MPV with =start-process=, but now I've managed to hook up MPV with EMMS. So there is the EMMS+elfeed "integration".
 
@@ -10672,7 +10676,7 @@ My package for fetching EMMS lyrics and album covers.
     "asT" #'lyrics-fetcher-show-lyrics-query)
   :config
   (setq lyrics-fetcher-genius-access-token
-        (my/password-store-get "My_Online/APIs/genius.com"))
+        (my/password-store-get "Service/genius.com"))
   (general-define-key
    :states '(emacs normal)
    :keymaps 'emms-browser-mode-map
@@ -10919,7 +10923,8 @@ ZNC support. Seems to provide a few nice features for ZNC.
   (setq znc-servers
         `(("sqrtminusone.xyz" 6697 t
            ((libera "sqrtminusone"
-                    ,(my/password-store-get "Selfhosted/ZNC")))))))
+                    ;; ,(my/password-store-get "Selfhosted/ZNC")
+                    nil))))))
 #+end_src
 
 Send =/detach= to all servers. Kinda strange that there's no such function already
@@ -11339,9 +11344,9 @@ Source: [[https://fortelabs.com/blog/the-secret-power-of-read-it-later-apps/][Ti
   :config
   (setq wallabag-host "https://wallabag.sqrtminusone.xyz")
   (setq wallabag-username "sqrtminusone")
-  (setq wallabag-password (my/password-store-get "Selfhosted/wallabag"))
-  (setq wallabag-clientid (password-store-get-field "Selfhosted/wallabag" "client_id"))
-  (setq wallabag-secret (password-store-get-field "Selfhosted/wallabag" "client_secret")))
+  (setq wallabag-password (my/password-store-get "Selfhosting/Archive/wallabag.sqrtminusone.xyz"))
+  (setq wallabag-clientid (password-store-get-field "Selfhosting/Archive/wallabag.sqrtminusone.xyz" "client_id"))
+  (setq wallabag-secret (password-store-get-field "Selfhosting/Archive/wallabag.sqrtminusone.xyz" "client_secret")))
 #+end_src
 
 *** ement.el
@@ -11361,7 +11366,8 @@ Source: [[https://fortelabs.com/blog/the-secret-power-of-read-it-later-apps/][Ti
   (interactive)
   (ement-connect
    :user-id "@sqrtminusone:matrix.org"
-   :password (my/password-store-get "My_Online/Accounts/matrix")))
+   ;; :password (my/password-store-get "My_Online/Accounts/matrix")
+   ))
 
 (use-package ement
   :straight (:host github :repo "alphapapa/ement.el")
@@ -11979,7 +11985,7 @@ I don't have access to any proprietary APIs, but LLaMA 3.1 8b with [[https://oll
   (gptel-make-openai "OpenRouter"
     :host "openrouter.ai/api"
     :key (lambda () (my/password-store-get-field
-                     "My_Online/Accounts/openrouter" "api-key-kek"))
+                     "Accounts/openrouter" "api-key-kek"))
     :stream t
     :models '("anthropic/claude-sonnet-4.5"
               "deepseek/deepseek-v3.2"
@@ -12298,7 +12304,7 @@ Then run the program itself with [[https://www.gnu.org/software/emacs/manual/htm
          (args
           `("--file-name" ,(expand-file-name input)
             "--transcript-path" ,transcript-path
-            "--hf-token" ,(my/password-store-get-field "My_Online/Accounts/huggingface.co" "token")
+            "--hf-token" ,(my/password-store-get-field "Accounts/huggingface.co" "token")
             ,@(when language
                 `("--language" ,language))
             ,@(when num-speakers
@@ -13821,7 +13827,7 @@ I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
   (setq deterred-dashboard-python "/home/pavel/micromamba/envs/deterred/bin/python")
   (setq deterred-messengers-my-id "098236bb-5fc5-4a04-8b6d-477afa5105fa")
   (setq deterred-digikam-folder "~/30-39 Life/35 Photos/")
-  (setq deterred-wakatime-api-key (my/password-store-get "My_Online/APIs/wakatime"))
+  (setq deterred-wakatime-api-key (my/password-store-get "Service/wakatime"))
   (setq deterred-wakatime-project-name-map
         '(("digital-nlp-docs-3" . "digital-nlp-docs-3 (Graduate)")
           ("digital-nlp-docs" . "digital-nlp-docs (Master's)")))
@@ -13834,21 +13840,21 @@ I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
                            nil nil #'equal)
                 result))))
   (setq deterred-read-it-later-readeck-token
-        (my/password-store-get-field "Selfhosted/readeck" "deterred_api_token"))
+        (my/password-store-get-field "Selfhosting/Accounts/readeck.sqrtminusone.xyz" "deterred_api_token"))
   (setq deterred-read-it-later-readeck-url "https://readeck.sqrtminusone.xyz/")
   (setq deterred-read-it-later-wallabag-url "https://wallabag.sqrtminusone.xyz/")
   (setq deterred-read-it-later-wallabag-client-id
-        (my/password-store-get-field "Selfhosted/wallabag" "client_id"))
+        (my/password-store-get-field "Selfhosting/Archive/wallabag.sqrtminusone.xyz" "client_id"))
   (setq deterred-read-it-later-wallabag-client-secret
-        (my/password-store-get-field "Selfhosted/wallabag" "client_secret"))
+        (my/password-store-get-field "Selfhosting/Archive/wallabag.sqrtminusone.xyz" "client_secret"))
   (setq deterred-read-it-later-wallabag-username
-        (my/password-store-get-field "Selfhosted/wallabag" "username"))
+        (my/password-store-get-field "Selfhosting/Archive/wallabag.sqrtminusone.xyz" "username"))
   (setq deterred-read-it-later-wallabag-password
-        (my/password-store-get "Selfhosted/wallabag"))
+        (my/password-store-get "Selfhosting/Archive/wallabag.sqrtminusone.xyz"))
   (setq deterred-transport-podorozhnik-login
-        (my/password-store-get-field "My_Online/Accounts/podorozhnik.spb.ru" "username"))
+        (my/password-store-get-field "Accounts/podorozhnik.spb.ru" "username"))
   (setq deterred-transport-podorozhnik-password
-        (my/password-store-get "My_Online/Accounts/podorozhnik.spb.ru"))
+        (my/password-store-get "Accounts/podorozhnik.spb.ru"))
   (add-hook 'deterred-dispatcher-startup-hook #'deterred-backup))
 #+end_src
 

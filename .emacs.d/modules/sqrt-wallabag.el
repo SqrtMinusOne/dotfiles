@@ -7,8 +7,8 @@
   :config
   (setq wallabag-host "https://wallabag.sqrtminusone.xyz")
   (setq wallabag-username "sqrtminusone")
-  (setq wallabag-password (my/password-store-get "Selfhosted/wallabag"))
-  (setq wallabag-clientid (password-store-get-field "Selfhosted/wallabag" "client_id"))
-  (setq wallabag-secret (password-store-get-field "Selfhosted/wallabag" "client_secret")))
+  (setq wallabag-password (my/password-store-get "Selfhosting/Archive/wallabag.sqrtminusone.xyz"))
+  (setq wallabag-clientid (password-store-get-field "Selfhosting/Archive/wallabag.sqrtminusone.xyz" "client_id"))
+  (setq wallabag-secret (password-store-get-field "Selfhosting/Archive/wallabag.sqrtminusone.xyz" "client_secret")))
 
 (provide 'sqrt-wallabag)

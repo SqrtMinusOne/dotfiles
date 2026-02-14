@@ -23,7 +23,7 @@
   (gptel-make-openai "OpenRouter"
     :host "openrouter.ai/api"
     :key (lambda () (my/password-store-get-field
-                     "My_Online/Accounts/openrouter" "api-key-kek"))
+                     "Accounts/openrouter" "api-key-kek"))
     :stream t
     :models '("anthropic/claude-sonnet-4.5"
               "deepseek/deepseek-v3.2"
@@ -284,7 +284,7 @@ Output the following and nothing else:
          (args
           `("--file-name" ,(expand-file-name input)
             "--transcript-path" ,transcript-path
-            "--hf-token" ,(my/password-store-get-field "My_Online/Accounts/huggingface.co" "token")
+            "--hf-token" ,(my/password-store-get-field "Accounts/huggingface.co" "token")
             ,@(when language
                 `("--language" ,language))
             ,@(when num-speakers
