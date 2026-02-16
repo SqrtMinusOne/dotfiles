@@ -1,5 +1,6 @@
 arch = {
   packages = [
+    "openvpn",
     "cloudflare-speed-cli",
     "winetricks",
     "speedtest-cli",

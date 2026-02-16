@@ -167,6 +167,31 @@ Add flatpak remote:
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 #+end_src
 
+To install =xrdp=, configure an unpriviliged user:
+#+begin_src bash
+sudo useradd xrdp -d / -c 'xrdp daemon' -s /usr/sbin/nologin
+#+end_src
+
+Then uncomment these lines in =/etc/xrdp/xrdp.ini=:
+#+begin_example
+runtime_user=xrdp
+runtime_group=xrdp
+#+end_example
+And in =/etc/xrdp/sesman.ini=:
+#+begin_example
+SessionSockdirGroup=xrdp
+#+end_example
+
+Fix the permissions:
+#+begin_src bash
+sudo chmod 640 /etc/xrdp/cert.pem /etc/xrdp/key.pem /etc/xrdp/rsakeys.ini
+sudo chown root:xrdp /etc/xrdp/cert.pem /etc/xrdp/key.pem /etc/xrdp/rsakeys.ini
+#+end_src
+
+#+begin_src bash
+sudo systemctl enable --now xrdp
+#+end_src
+
 * Metapac configuration
 [[https://github.com/ripytide/metapac][metapac]] is a declarative wrapper around different package managers, including [[https://wiki.archlinux.org/title/Pacman][pacman]] and [[https://github.com/Morganamilo/paru][paru]]. This means the required packages can be listed in configuration files and checked into version control.
 
@@ -194,6 +219,7 @@ Below is the table enabling different groups on different hostnames:
 | printer         |           |       | +      |         |
 | games           |           |       | +      |         |
 | geo             |           |       | +      |         |
+| remote          |           |       | +      |         |
 
 And the code to format it as TOML:
 #+NAME: metapac-groups-format
@@ -311,6 +337,12 @@ Printer packages.
 | printer  | naps2-bin       |
 | printer  | brscan4         |
 
+Remote connectivity packages.
+
+| Category | Arch dependency |
+|----------+-----------------|
+| remote   | xorgxrdp        |
+
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""
 (my/format-arch-dependencies category)
@@ -322,6 +354,10 @@ Printer packages.
 
 #+begin_src scheme :tangle .config/metapac/groups/printer.toml :noweb yes
 <<packages("printer")>>
+#+end_src
+
+#+begin_src scheme :tangle .config/metapac/groups/remote.toml :noweb yes
+<<packages("remote")>>
 #+end_src
 
 #+begin_src scheme :tangle .config/metapac/groups/system.toml :noweb yes

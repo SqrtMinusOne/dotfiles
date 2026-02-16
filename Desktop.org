@@ -252,6 +252,12 @@ copyq &
 # exec dbus-launch --exit-with-session ~/.emacs.d/run-exwm.sh
 exec dbus-launch --exit-with-session emacs -mm --debug-init -l ~/.emacs.d/desktop.el
 #+end_src
+
+Also we need =.xinitrc= for =xrdp=:
+#+begin_src sh :tangle ~/.xinitrc
+. ~/.xsession
+#+end_src
+
 *** Startup apps
 Now that Emacs is launched, it is necessary to set up the EXWM-specific parts of config.
 
@@ -4299,6 +4305,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | speedtest-cli        |          |
 | dev      | winetricks           |          |
 | dev      | cloudflare-speed-cli |          |
+| dev      | openvpn              |          |
 ** Games
 | Category | Arch dependency |
 |----------+-----------------|
