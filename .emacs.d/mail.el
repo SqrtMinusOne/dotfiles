@@ -146,10 +146,71 @@
 
 (defun my/ensure-password ()
   (interactive)
-  (my/password-store-get "Job/Digital/Email/pvkorytov@etu.ru"))
+  (my/password-store-get "Digital/Email/pvkorytov@etu.ru"))
 
 (add-hook 'notmuch-mua-send-hook #'my/ensure-password)
 
 (use-package ol-notmuch
   :straight t
   :after (org notmuch))
+
+(defvar my/blacklist-file
+  (expand-file-name "~/10-19 Code/11 Config/11.11 email-blacklist/blacklist.txt"))
+
+(defun my/notmuch-blacklist-address (addr)
+  "Add ADDR to `my/blacklist-file' if not already present.
+
+Return t if added, nil if already present."
+  (let ((contents (if (file-exists-p my/blacklist-file)
+                      (with-temp-buffer
+                        (insert-file-contents my/blacklist-file)
+                        (downcase (buffer-string)))
+                    "")))
+    (unless (string-match-p (concat "^" (regexp-quote addr) "$") contents)
+      (with-temp-buffer
+        (insert addr "\n")
+        (append-to-file (point-min) (point-max) my/blacklist-file))
+      t)))
+
+(defun my/notmuch-blacklist-sender-show ()
+  "Mark current message as spam and blacklist the sender.
+
+For use in `notmuch-show-mode'."
+  (interactive)
+  (let* ((from (notmuch-show-get-header :From))
+         (addr (when from
+                 (downcase
+                  (cadr (mail-extract-address-components from))))))
+    (unless addr
+      (user-error "Could not extract sender address"))
+    (notmuch-show-tag '("+spam" "-inbox" "-unread"))
+    (if (my/notmuch-blacklist-address addr)
+        (message "Marked as spam, added %s to blacklist" addr)
+      (message "Marked as spam (%s already in blacklist)" addr))))
+
+(defun my/notmuch-blacklist-sender-search (&optional beg end)
+  "Mark threads as spam and blacklist their senders.
+
+Acts on the region if active, otherwise the thread at point.  For use
+in `notmuch-search-mode'."
+  (interactive (notmuch-search-interactive-region))
+  (let ((addrs '()))
+    (save-excursion
+      (goto-char beg)
+      (while (and (< (point) end) (not (eobp)))
+        (when-let* ((thread-id (notmuch-search-find-thread-id))
+                    (from (car (process-lines
+                                notmuch-command "address" "--output=sender"
+                                thread-id)))
+                    (addr (downcase
+                           (cadr (mail-extract-address-components from)))))
+          (push addr addrs))
+        (forward-line 1)))
+    (notmuch-search-tag '("+spam" "-inbox" "-unread") beg end)
+    (setq addrs (delete-dups addrs))
+    (let ((added 0))
+      (dolist (addr addrs)
+        (when (my/notmuch-blacklist-address addr)
+          (cl-incf added)))
+      (message "Marked as spam, added %d/%d addresses to blacklist"
+               added (length addrs)))))

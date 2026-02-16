@@ -301,6 +301,21 @@ echo "Pre-new filters done"
 parallel --link -j0 "(cd /home/pavel/Mail/{1}/ && {2} {3})" ::: thexcloud progin6304 pvkorytov_etu ::: "$GMI" "$GMI" "offlineimap" ::: sync sync "-a pvkorytov-mbox"
 #+end_src
 
+*** Blacklist
+Blacklist filter for the =post-new= hook. Reads email addresses from =blacklist.txt= (one per line, =#= for comments) and tags matching new emails as spam.
+
+#+NAME: blacklist-filter
+#+begin_src bash :tangle no
+BLACKLIST="$HOME/10-19 Code/11 Config/11.11 email-blacklist/blacklist.txt"
+if [ -f "$BLACKLIST" ]; then
+    while IFS= read -r addr; do
+        addr=$(echo "$addr" | sed 's/#.*//' | xargs)
+        [ -z "$addr" ] && continue
+        notmuch tag +spam -inbox -- "from:$addr AND tag:new"
+    done < "$BLACKLIST"
+fi
+#+end_src
+
 *** =post_new=
 And this hook tags different mailboxes with different tags.
 
@@ -322,8 +337,12 @@ echo "Running post-new filters"
 <<mail-tags(make_tag="t",remove="t",root="pvkorytov_etu_mbox")>>
 
 echo "Post-new filters done"
+
+<<blacklist-filter>>
+
 notmuch tag -new "tag:new"
 #+end_src
+
 * Sync script
 A script to run =notmuch new= and push a notification if there is new mail.
 
@@ -404,14 +423,7 @@ host smtp.gmail.com
 port 587
 from thexcloud@gmail.com
 user thexcloud@gmail.com
-passwordeval "pass show My_Online/APIs/google-main-app-password | head -n 1"
-
-account progin
-host smtp.gmail.com
-port 587
-from progin6304@gmail.com
-user progin6304@gmail.com
-passwordeval "pass show My_Online/ETU/progin6304@gmail.com | head -n 1"
+passwordeval "pass show Service/google-main-app-password | head -n 1"
 
 account pvkorytov
 host mbox.etu.ru
@@ -420,7 +432,7 @@ tls on
 tls_starttls off
 from pvkorytov@etu.ru
 user pvkorytov
-passwordeval "pass show Job/Digital/Email/pvkorytov@etu.ru | head -n 1"
+passwordeval "pass show Digital/Email/pvkorytov@etu.ru | head -n 1"
 #+end_src
 
 To get a fingerprint:
@@ -684,7 +696,7 @@ Otherwise =msmtp= may call =pinentry= while Emacs is locked, which means EXWM ca
 #+begin_src emacs-lisp
 (defun my/ensure-password ()
   (interactive)
-  (my/password-store-get "Job/Digital/Email/pvkorytov@etu.ru"))
+  (my/password-store-get "Digital/Email/pvkorytov@etu.ru"))
 
 (add-hook 'notmuch-mua-send-hook #'my/ensure-password)
 #+end_src
@@ -695,6 +707,71 @@ Otherwise =msmtp= may call =pinentry= while Emacs is locked, which means EXWM ca
 (use-package ol-notmuch
   :straight t
   :after (org notmuch))
+#+end_src
+
+** Blacklist sender
+Tags the message as spam, removes inbox/unread, and adds the sender's address to =blacklist.txt=. The search mode variant acts on all selected threads when a region is active.
+#+begin_src emacs-lisp
+(defvar my/blacklist-file
+  (expand-file-name "~/10-19 Code/11 Config/11.11 email-blacklist/blacklist.txt"))
+
+(defun my/notmuch-blacklist-address (addr)
+  "Add ADDR to `my/blacklist-file' if not already present.
+
+Return t if added, nil if already present."
+  (let ((contents (if (file-exists-p my/blacklist-file)
+                      (with-temp-buffer
+                        (insert-file-contents my/blacklist-file)
+                        (downcase (buffer-string)))
+                    "")))
+    (unless (string-match-p (concat "^" (regexp-quote addr) "$") contents)
+      (with-temp-buffer
+        (insert addr "\n")
+        (append-to-file (point-min) (point-max) my/blacklist-file))
+      t)))
+
+(defun my/notmuch-blacklist-sender-show ()
+  "Mark current message as spam and blacklist the sender.
+
+For use in `notmuch-show-mode'."
+  (interactive)
+  (let* ((from (notmuch-show-get-header :From))
+         (addr (when from
+                 (downcase
+                  (cadr (mail-extract-address-components from))))))
+    (unless addr
+      (user-error "Could not extract sender address"))
+    (notmuch-show-tag '("+spam" "-inbox" "-unread"))
+    (if (my/notmuch-blacklist-address addr)
+        (message "Marked as spam, added %s to blacklist" addr)
+      (message "Marked as spam (%s already in blacklist)" addr))))
+
+(defun my/notmuch-blacklist-sender-search (&optional beg end)
+  "Mark threads as spam and blacklist their senders.
+
+Acts on the region if active, otherwise the thread at point.  For use
+in `notmuch-search-mode'."
+  (interactive (notmuch-search-interactive-region))
+  (let ((addrs '()))
+    (save-excursion
+      (goto-char beg)
+      (while (and (< (point) end) (not (eobp)))
+        (when-let* ((thread-id (notmuch-search-find-thread-id))
+                    (from (car (process-lines
+                                notmuch-command "address" "--output=sender"
+                                thread-id)))
+                    (addr (downcase
+                           (cadr (mail-extract-address-components from)))))
+          (push addr addrs))
+        (forward-line 1)))
+    (notmuch-search-tag '("+spam" "-inbox" "-unread") beg end)
+    (setq addrs (delete-dups addrs))
+    (let ((added 0))
+      (dolist (addr addrs)
+        (when (my/notmuch-blacklist-address addr)
+          (cl-incf added)))
+      (message "Marked as spam, added %d/%d addresses to blacklist"
+               added (length addrs)))))
 #+end_src
 
 * mailcap
@@ -709,7 +786,7 @@ application/msword; /usr/bin/xdg-open %s
 application/pdf; zathura %s
 application/postscript ; zathura %s
 
-text/html; firefox %s
+text/html; glide-bin %s
 #+end_src
 * Arch settings
 #+NAME: packages

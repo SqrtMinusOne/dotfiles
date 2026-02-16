@@ -66,5 +66,15 @@ notmuch tag +etu.directum "path:pvkorytov_etu_mbox/Etu.Directum/cur/** AND NOT t
 notmuch tag -etu.directum "NOT path:pvkorytov_etu_mbox/Etu.Directum/cur/** AND path:pvkorytov_etu_mbox/** AND tag:etu.directum AND tag:pvkorytov"
 
 echo "Post-new filters done"
+
+BLACKLIST="$HOME/10-19 Code/11 Config/11.11 email-blacklist/blacklist.txt"
+if [ -f "$BLACKLIST" ]; then
+    while IFS= read -r addr; do
+        addr=$(echo "$addr" | sed 's/#.*//' | xargs)
+        [ -z "$addr" ] && continue
+        notmuch tag +spam -inbox -- "from:$addr AND tag:new"
+    done < "$BLACKLIST"
+fi
+
 notmuch tag -new "tag:new"
 # =post_new=:2 ends here
