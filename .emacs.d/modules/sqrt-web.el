@@ -111,10 +111,10 @@
   (add-hook 'web-mode-hook 'smartparens-mode)
   (add-hook 'web-mode-hook 'hs-minor-mode)
   (my/set-smartparens-indent 'web-mode)
-  (with-eval-after-load 'editorconfig
-    (push
-     'standard-indent
-     (alist-get 'web-mode editorconfig-indentation-alist)))
+  ;; (with-eval-after-load 'editorconfig
+  ;;   (push
+  ;;    'standard-indent
+  ;;    (alist-get 'web-mode editorconfig-indentation-alist)))
   (setq web-mode-auto-pairs nil))
 
 (setq my/web-mode-lsp-extensions
