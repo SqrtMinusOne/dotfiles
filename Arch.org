@@ -32,7 +32,7 @@ rankmirrors -n 6 /etc/pacman.d/mirrorlist.backup > /etc/pacman.d/mirrorlist
 #+end_src
 
 If there isn't enough RAM (e.g. running in a VM), turn off mounting =/tmp= as [[https://wiki.archlinux.org/title/Tmpfs#Disable_automatic_mount][tmpfs]]:
-#+begin_src basd
+#+begin_src bash
 sudo systemctl mask tmp.mount
 #+end_src
 
@@ -102,10 +102,6 @@ git config --global user.email "thexcloud@gmail.com"
 git config --global user.name "SqrtMinusOne"
 #+end_src
 
-#+begin_src bash
-sudo systemctl enable --now NetworkManager
-#+end_src
-
 Install wakatime:
 #+begin_src bash
 cd ~/00-Scratch/
@@ -116,7 +112,7 @@ mv wakatime-cli ~/bin
 #+end_src
 
 And create the =~/.wakatime.cfg= file with the following contents:
-#+begin_src
+#+begin_src conf-space
 [settings]
 api_key = <api-key>
 #+end_src
@@ -145,6 +141,7 @@ For I've decided to use =NetworkManager=, but Arch Linux uses =iwd= by default, 
 #+begin_src bash
 sudo systemctl disable --now iwd
 sudo systemctl disable --now systemd-networkd
+sudo systemctl enable --now NetworkManager
 #+end_src
 And reboot. After the reboot, =NetworkManager= should run using =wpa_supplicant= as backend for Wi-Fi.
 
@@ -190,6 +187,11 @@ sudo chown root:xrdp /etc/xrdp/cert.pem /etc/xrdp/key.pem /etc/xrdp/rsakeys.ini
 
 #+begin_src bash
 sudo systemctl enable --now xrdp
+#+end_src
+
+Set the default browser:
+#+begin_src bash
+xdg-settings set default-web-browser glide-browser-bin.desktop
 #+end_src
 
 * Metapac configuration
@@ -500,3 +502,11 @@ MS Office 2007, which I need for work, installs reasonably well on PlayOnLinux, 
 #+begin_src bash
 WINEPREFIX=~/.PlayOnLinux/wineprefix/Office2007 WINE=~/.PlayOnLinux/wine/linux-x86/4.0/bin/wine winetricks msxml3
 #+end_src
+** Issues with DBeaver
+In =/usr/lib/jvm/java-21-openjdk/conf/security/java.security=, in =jdk.tls.disabledAlgorithms= in lines:
+#+begin_example
+    ECDH, TLS_RSA_*, rsa_pkcs1_sha1 usage HandshakeSignature, \
+    ecdsa_sha1 usage HandshakeSignature, dsa_sha1 usage HandshakeSignature
+#+end_example
+
+Leave only ECDH
