@@ -1,8 +1,8 @@
 # [[file:../Desktop.org::*MIME][MIME:1]]
 [Default Applications]
-text/html=qutebrowser.desktop
-x-scheme-handler/http=firefox.desktop
-x-scheme-handler/https=firefox.desktop
+text/html=userapp-Glide-6K8YK3.desktop
+x-scheme-handler/http=userapp-Glide-6K8YK3.desktop
+x-scheme-handler/https=userapp-Glide-6K8YK3.desktop
 x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
 image/png=feh.desktop
 image/jpg=feh.desktop

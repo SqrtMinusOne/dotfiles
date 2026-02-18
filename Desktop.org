@@ -169,9 +169,9 @@ Xft/HintStyle "hintnone"
 Setting the default MIME types
 #+begin_src conf-unix :tangle ~/.config/mimeapps.list
 [Default Applications]
-text/html=qutebrowser.desktop
-x-scheme-handler/http=firefox.desktop
-x-scheme-handler/https=firefox.desktop
+text/html=userapp-Glide-6K8YK3.desktop
+x-scheme-handler/http=userapp-Glide-6K8YK3.desktop
+x-scheme-handler/https=userapp-Glide-6K8YK3.desktop
 x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
 image/png=feh.desktop
 image/jpg=feh.desktop
@@ -2080,6 +2080,7 @@ declare -A FONT_SIZES=(
     ["HDMI-0"]="13"
     ["DP-1"]="13"
     ["Virtual-1"]="13"
+    ["rdp0"]="13"
 )
 declare -A EMOJI_SCALE=(
     ["eDP"]="9"
@@ -2090,6 +2091,7 @@ declare -A EMOJI_SCALE=(
     ["HDMI-0"]="10"
     ["DP-1"]="10"
     ["Virtual-1"]="13"
+    ["rdp0"]="13"
 )
 declare -A BAR_HEIGHT=(
     ["eDP"]="29"
@@ -2100,6 +2102,7 @@ declare -A BAR_HEIGHT=(
     ["HDMI-0"]="29"
     ["DP-1"]="29"
     ["Virtual-1"]="29"
+    ["rdp0"]="29"
 )
 declare -A BLOCKS=(
     ["eDP"]="<<polybar-generate-modules(monitor="eDP")>>"
@@ -2110,6 +2113,7 @@ declare -A BLOCKS=(
     ["HDMI-0"]="<<polybar-generate-modules(monitor="HDMI-0")>>"
     ["DP-1"]="<<polybar-generate-modules(monitor="DP-1")>>"
     ["Virtual-1"]="<<polybar-generate-modules(monitor="Virtual-1")>>"
+    ["rdp0"]="<<polybar-generate-modules(monitor="Virtual-1")>>"
 )
 
 declare -A TEMP_HWMON_PATHS=(
@@ -4306,6 +4310,8 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | winetricks           |          |
 | dev      | cloudflare-speed-cli |          |
 | dev      | openvpn              |          |
+| dev      | bubblewrap           |          |
+| dev      | socat                |          |
 ** Games
 | Category | Arch dependency |
 |----------+-----------------|
