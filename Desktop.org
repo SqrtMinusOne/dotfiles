@@ -9,7 +9,7 @@
 #+PROPERTY: header-args:conf-xdefaults :comments link
 #+PROPERTY: header-args:sh             :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
 #+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
-#+OPTIONS: broken-links:auto h:6 toc:nil
+#+OPTIONS: broken-links:auto toc:nil
 
 My general desktop environment configuration.
 
@@ -121,7 +121,7 @@ Also, Xresources are used to set =Xft= settings. Unfortunately, the DPI setting 
         ((string-equal hostname "violet") 120)
         ((string-equal hostname "iris") 120)
         ((string-equal hostname "weiss") 120)
-        (t 96)))
+        (t 120)))
 #+end_src
 
 #+begin_src conf-xdefaults :noweb yes :tangle ~/.Xresources
@@ -1825,7 +1825,8 @@ Also excluding some modules from certain monitors, which for now is about exclud
 | DVI-D-0   | nvidia  |
 | HDMI-A-0  | nvidia  |
 | HDMI-1    | nvidia  |
-| Virtual-1 | nvidia |
+| HDMI-2    | nvidia  |
+| Virtual-1 | nvidia  |
 
 Another thing we need to do is to set the color of modules in accordance with the =polybar_modules= table. The background can be determined from the =Color= column with the following code block:
 #+NAME: get-polybar-bg
@@ -2076,6 +2077,7 @@ declare -A FONT_SIZES=(
     ["eDP-1"]="13"
     ["DVI-D-0"]="13"
     ["HDMI-A-0"]="13"
+    ["HDMI-2"]="13"
     ["HDMI-1"]="13"
     ["HDMI-0"]="13"
     ["DP-1"]="13"
@@ -2087,6 +2089,7 @@ declare -A EMOJI_SCALE=(
     ["eDP-1"]="9"
     ["DVI-D-0"]="10"
     ["HDMI-A-0"]="10"
+    ["HDMI-2"]="10"
     ["HDMI-1"]="10"
     ["HDMI-0"]="10"
     ["DP-1"]="10"
@@ -2098,6 +2101,7 @@ declare -A BAR_HEIGHT=(
     ["eDP-1"]="29"
     ["DVI-D-0"]="29"
     ["HDMI-A-0"]="29"
+    ["HDMI-2"]="29"
     ["HDMI-1"]="29"
     ["HDMI-0"]="29"
     ["DP-1"]="29"
@@ -2109,6 +2113,7 @@ declare -A BLOCKS=(
     ["eDP-1"]="<<polybar-generate-modules(monitor="eDP-1")>>"
     ["DVI-D-0"]="<<polybar-generate-modules(monitor="DVI-D-0")>>"
     ["HDMI-A-0"]="<<polybar-generate-modules(monitor="HDMI-A-0")>>"
+    ["HDMI-2"]="<<polybar-generate-modules(monitor="HDMI-2")>>"
     ["HDMI-1"]="<<polybar-generate-modules(monitor="HDMI-1")>>"
     ["HDMI-0"]="<<polybar-generate-modules(monitor="HDMI-0")>>"
     ["DP-1"]="<<polybar-generate-modules(monitor="DP-1")>>"
