@@ -55,7 +55,7 @@
 (defun my/telega-mode-line-unread-groups ()
   "Format unread unmuted group/channel chat count."
   (let* ((chats (telega-filter-chats (telega-chats-list)
-                  '(and unread unmuted (type basicgroup supergroup channel))))
+                  '(and unread unmuted (type basicgroup supergroup))))
          (count (length chats)))
     (unless (zerop count)
       (concat

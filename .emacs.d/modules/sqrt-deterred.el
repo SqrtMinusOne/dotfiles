@@ -3,7 +3,7 @@
   :if (file-exists-p "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/")
   :straight (:local-repo
              "/home/pavel/10-19 Code/13 Other Projects/13.02 sqrt-data/13.02.R Repos/13.02.R.05 deterred/"
-             :files (:defaults "dashboards/*.el" "migrations" "python"))
+             :files (:defaults "lisp/*.el" "lisp/**/*.el" "migrations" "python"))
   :commands (deterred)
   :init
   (my-leader-def "ag" #'deterred)
@@ -11,6 +11,7 @@
   (setq deterred-sources
         (list
          (deterred-activitywatch)
+         (deterred-ai-usage)
          (deterred-digikam :digikam-db "~/30-39 Life/35 Photos/35.00D DigiKam/digikam4.db")
          (deterred-hledger)
          ;; (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
