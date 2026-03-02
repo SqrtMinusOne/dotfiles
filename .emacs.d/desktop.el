@@ -151,11 +151,7 @@ _=_: Balance          "
   (interactive)
   (unless exwm--floating-frame
     (pcase exwm-class-name
-      ((or "Firefox" "Nightly")
-       (perspective-exwm-assign-window
-        :workspace-index 2
-        :persp-name "browser"))
-      ("Nyxt"
+      ((or "Firefox" "Nightly" "glide-glide")
        (perspective-exwm-assign-window
         :workspace-index 2
         :persp-name "browser"))
@@ -166,7 +162,7 @@ _=_: Balance          "
        (perspective-exwm-assign-window
         :workspace-index 3
         :persp-name "comms"))
-      ((or "Chromium-browser" "jetbrains-datagrip")
+      ((or "Chromium-browser" "jetbrains-datagrip" "DBeaver")
        (perspective-exwm-assign-window
         :workspace-index 4
         :persp-name "dev")))))
