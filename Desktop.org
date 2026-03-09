@@ -2256,7 +2256,7 @@ format-foreground = ${colors.foreground}
 Display NVIDIA usage with nvidia-smi
 
 #+begin_src bash :tangle ~/bin/polybar/nvidia.sh
-nvidia-smi --query-gpu=utilization.gpu,power.draw,temperature.gpu,memory.used --format=csv,noheader | sed -s 's/ %/%/;s/W, [0-9]\+/&°C/;s/,/  /g'
+nvidia-smi --query-gpu=utilization.gpu,memory.used --format=csv,noheader | sed -s 's/ %/%/;s/,/  /g'
 #+end_src
 
 #+begin_src conf-windows :noweb yes
@@ -2689,6 +2689,7 @@ echo "$output"
 [module/weather]
 type = custom/script
 exec = /home/pavel/bin/polybar/weather.sh
+env-OPENSNITCH_TAG = polybar-weather
 ; format-underline = ${colors.red}
 format-background = <<get-polybar-bg(module="weather")>>
 format-foreground = ${colors.foreground}
@@ -4233,6 +4234,7 @@ This section generates manifests for various desktop software that I'm using.
 | office   | drawio-desktop              |          |         |
 | office   | gnumeric                    |          |         |
 | office   | playonlinux                 |          |         |
+| office   | max-bin                     |          |         |
 ** Geo
 | Category | Arch dependency        | Source  | Disabled |
 |----------+------------------------+---------+----------|
@@ -4313,6 +4315,8 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | openvpn              |          |
 | dev      | bubblewrap           |          |
 | dev      | socat                |          |
+| dev      | openai-codex-bin     |          |
+| dev      | traceroute           |          |
 ** Games
 | Category | Arch dependency |
 |----------+-----------------|
@@ -4561,6 +4565,31 @@ ExecStart=/usr/bin/blueman-applet
 WantedBy=wm-session.target
 #+end_src
 
+** polkit-agent
+#+begin_src conf :tangle .config/systemd/user/polkit-agent.service
+[Unit]
+Description=Polkit Authentication Agent
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+ExecStart=/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+Restart=on-failure
+
+[Install]
+WantedBy=wm-session.target
+#+end_src
+** opensnitch-ui
+#+begin_src conf :tangle .config/systemd/user/opensnitch-ui.service
+[Unit]
+Description=OpenSnitch UI
+
+[Service]
+ExecStart=/usr/bin/opensnitch-ui
+
+[Install]
+WantedBy=wm-session.target
+#+end_src
 * Arch settings
 Other desktop programs I use are listed below.
 

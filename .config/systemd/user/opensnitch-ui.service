@@ -1,0 +1,8 @@
+[Unit]
+Description=OpenSnitch UI
+
+[Service]
+ExecStart=/usr/bin/opensnitch-ui
+
+[Install]
+WantedBy=wm-session.target
