@@ -5,5 +5,5 @@ arch = {
     "brlaser",
     "usbutils",
     "cups",
-  ]
+  ],
 }

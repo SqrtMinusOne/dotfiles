@@ -6,6 +6,7 @@ flatpak = {
 }
 arch = {
   packages = [
+    "max-bin",
     "playonlinux",
     "gnumeric",
     "drawio-desktop",

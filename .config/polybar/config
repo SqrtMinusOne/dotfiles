@@ -463,6 +463,7 @@ format-warn-background = ${colors.cyan}
 [module/weather]
 type = custom/script
 exec = /home/pavel/bin/polybar/weather.sh
+env-OPENSNITCH_TAG = polybar-weather
 ; format-underline = ${colors.red}
 format-background = ${colors.light-yellow}
 format-foreground = ${colors.foreground}

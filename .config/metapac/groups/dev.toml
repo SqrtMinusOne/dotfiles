@@ -1,5 +1,9 @@
 arch = {
   packages = [
+    "traceroute",
+    "openai-codex-bin",
+    "socat",
+    "bubblewrap",
     "openvpn",
     "cloudflare-speed-cli",
     "winetricks",

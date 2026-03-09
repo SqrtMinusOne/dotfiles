@@ -1,6 +1,8 @@
 arch = {
   packages = [
     "downgrade",
+    "firejail",
+    "apparmor",
     "opensnitch",
     "xf86-video-ati",
     "xf86-video-amdgpu",
@@ -40,5 +42,5 @@ arch = {
     "base",
     "amneziavpn-bin",
     "pacserve",
-  ]
+  ],
 }
