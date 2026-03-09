@@ -315,6 +315,8 @@ Also [[https://github.com/evilsocket/opensnitch][opensnitch]], a firewall.
 | Arch dependency |
 |-----------------|
 | opensnitch      |
+| apparmor        |
+| firejail        |
 
 A tool to downgrade a package.
 | Arch dependency |
@@ -327,7 +329,7 @@ NVIDIA drivers & AI stuff for violet
 | nvidia   | cuda                     |
 | nvidia   | nvidia-utils             |
 | nvidia   | nvidia-open              |
-| nvidia   | ollama-cuda              |
+| nvidia   | llama.cpp-vulkan         |
 | nvidia   | nvidia-container-toolkit |
 
 Printer packages.

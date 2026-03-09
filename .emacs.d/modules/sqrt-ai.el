@@ -12,14 +12,11 @@
   (setq gptel-mode "llama3:latest")
   (setq gptel-track-media t)
   (setq gptel-backend
-        (gptel-make-ollama "Ollama"
-          :host "localhost:11434"
+        (gptel-make-openai "llama-cpp"
           :stream t
-          :models '("deepseek-r1:32b"
-                    "qwen2.5:32b"
-                    "qwen3:30b" "qwen3:32b"
-                    "hf.co/bartowski/TheDrummer_Skyfall-31B-v4-GGUF:q4_k_m"
-                    "gpt-oss:20b")))
+          :protocol "http"
+          :host "localhost:8033"
+          :models '(test)))
   (gptel-make-openai "OpenRouter"
     :host "openrouter.ai/api"
     :key (lambda () (my/password-store-get-field

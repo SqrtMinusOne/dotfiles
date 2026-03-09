@@ -3644,47 +3644,29 @@ A general-purpose package to run formatters on files. While the most popular for
 (use-package reformatter
   :straight t)
 #+end_src
-*** copilot
+*** windsurf
 :PROPERTIES:
 :MODULE_NAME: copilot
 :header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-copilot.el :comments links
 :END:
-[[https://copilot.github.com/][GitHub Copilot]] is a project of GitHub and OpenAI that provides code completions.
 
-| Type   | Note                                          |
-|--------+-----------------------------------------------|
-| *TODO* | Figure out how to bypass U.S. export controls |
+This is my attempt to implement AI autocompletions. I don't like the existing windsurf package.
 
 #+begin_src emacs-lisp
-(defun my/copilot-tab ()
-  (interactive)
-  (or (copilot-accept-completion)
-      (when (my/should-run-emmet-p) (my/emmet-or-tab))
-      (when (and (eq evil-state 'normal)
-                 (or hs-minor-mode treesit-fold-mode outline-minor-mode))
-        (evil-toggle-fold)
-        t)
-      (indent-for-tab-command)))
-
-(use-package copilot
-  :straight (:host github :repo "copilot-emacs/copilot.el")
-  :commands (copilot-mode)
-  :disabled t
+(use-package windsurf-copilot
+  :commands (windsurf-copilot-mode)
+  :straight (:local-repo
+             "/home/pavel/10-19 Code/12 My Emacs Packages/12.18 windsurf-copilot")
   :init
-  (add-hook 'emacs-startup-hook
-            (lambda ()
-              (add-hook 'prog-mode-hook #'copilot-mode)))
+  (add-hook 'typescript-mode-hook #'windsurf-copilot-mode)
+  (add-hook 'web-mode-hook #'windsurf-copilot-mode)
+  (add-hook 'python-mode-hook #'windsurf-copilot-mode)
   :config
-  (push '(copilot) warning-suppress-types)
-  (setq copilot-node-executable "/home/pavel/.guix-extra-profiles/dev/dev/bin/node")
+  (add-hook 'windsurf-copilot-mode-hook #'windsurf-copilot-modeline-mode)
   (general-define-key
-   :keymaps 'company-active-map
-   "<backtab>" #'my/copilot-tab)
-  (general-define-key
-   :keymaps 'copilot-mode-map
-   "<tab>" #'my/copilot-tab
-   "M-j" #'copilot-accept-completion-by-line
-   "M-l" #'copilot-accept-completion-by-word))
+   :keymaps '(windsurf-copilot-completion-map)
+   "M-l" #'windsurf-copilot-accept-completion-by-word
+   "M-j" #'windsurf-copilot-accept-completion-by-line))
 #+end_src
 ** Web development
 :PROPERTIES:
@@ -4834,6 +4816,11 @@ A package to quickly create =.gitignore= files.
 #+begin_src emacs-lisp
 (use-package hcl-mode
   :mode "\\.hcl\\'"
+  :straight t)
+#+end_src
+*** apparmor
+#+begin_src emacs-lisp
+(use-package apparmor-mode
   :straight t)
 #+end_src
 ** Shell
@@ -12033,7 +12020,6 @@ Workflows, which are sometimes referred to as "AI", go in here.
 I'm technically writing a PhD on a related topic, so I'm a bit more receptive towards the whole thing than most of the community. But I'm still not calling it AI.
 
 *** LLMs
-I don't have access to any proprietary APIs, but LLaMA 3.1 8b with [[https://ollama.com/][ollama]] works for some purposes.
 
 **** gptel
 [[https://github.com/karthink/gptel][gtpel]] is a package that provides an interface to chat with LLMs.
@@ -12052,14 +12038,11 @@ I don't have access to any proprietary APIs, but LLaMA 3.1 8b with [[https://oll
   (setq gptel-mode "llama3:latest")
   (setq gptel-track-media t)
   (setq gptel-backend
-        (gptel-make-ollama "Ollama"
-          :host "localhost:11434"
+        (gptel-make-openai "llama-cpp"
           :stream t
-          :models '("deepseek-r1:32b"
-                    "qwen2.5:32b"
-                    "qwen3:30b" "qwen3:32b"
-                    "hf.co/bartowski/TheDrummer_Skyfall-31B-v4-GGUF:q4_k_m"
-                    "gpt-oss:20b")))
+          :protocol "http"
+          :host "localhost:8033"
+          :models '(test)))
   (gptel-make-openai "OpenRouter"
     :host "openrouter.ai/api"
     :key (lambda () (my/password-store-get-field
@@ -14652,6 +14635,7 @@ My text editor isn't old enough.
 | ripgrep             | A recursive search tool       |
 | the_silver_searcher | Another recursive search tool |
 | texinfo             |                               |
+| eask-cli-bin        |                               |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no
