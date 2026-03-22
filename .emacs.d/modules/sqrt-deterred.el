@@ -14,11 +14,12 @@
          (deterred-ai-usage)
          (deterred-digikam :digikam-db "~/30-39 Life/35 Photos/35.00D DigiKam/digikam4.db")
          (deterred-hledger)
-         ;; (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
+         (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
          ;; (deterred-locations)
 
          (deterred-messengers)
          (deterred-mpd)
+         (deterred-org-clock)
          (deterred-org-journal-tags)
          (deterred-org-roam)
          (deterred-podcasts)
@@ -62,6 +63,13 @@
         (my/password-store-get-field "Accounts/podorozhnik.spb.ru" "username"))
   (setq deterred-transport-podorozhnik-password
         (my/password-store-get "Accounts/podorozhnik.spb.ru"))
+  (setq deterred-org-clock-files #'my/org-agenda-and-archive)
+
+  (require 'llm-openai)
+  (setq llm-warn-on-nonfree nil)
+  (setq deterred-messengers-categories-llm-provider
+        (make-llm-openai-compatible :url "http://localhost:8033"))
+
   (add-hook 'deterred-dispatcher-startup-hook #'deterred-backup))
 
 (provide 'sqrt-deterred)
