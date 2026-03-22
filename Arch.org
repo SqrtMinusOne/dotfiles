@@ -400,6 +400,75 @@ To make in permanent, add the following to =/etc/fstab=
 #+begin_src
 shared /home/pavel/00-Scratch virtiofs defaults 0 0
 #+end_src
+** Windows
+References:
+- [[https://github.com/winapps-org/winapps/blob/main/docs/libvirt.md][Creating a libvirt windows VM]]
+
+When creating a VM, check "Customize configuration before install". Make the following changes:
+1. In the CPUs tab, select "Copy host CPU configuration" and click Apply.
+2. In the XML version edit the =<clock>= section as follows:
+   #+begin_src xml
+   <clock offset='localtime'>
+     <timer name='rtc' present='no' tickpolicy='catchup'/>
+     <timer name='pit' present='no' tickpolicy='delay'/>
+     <timer name='hpet' present='no'/>
+     <timer name='kvmclock' present='no'/>
+     <timer name='hypervclock' present='yes'/>
+   </clock>
+   #+end_src
+
+   The source says it will disable all timers except for the hypervclocks, reducing idle CPU usage.
+
+   Also enable Hyper-V enlightenments in =<hyperv>=:
+   #+begin_src xml
+   <hyperv>
+     <relaxed state='on'/>
+     <vapic state='on'/>
+     <spinlocks state='on' retries='8191'/>
+     <vpindex state='on'/>
+     <synic state='on'/>
+     <stimer state='on'>
+       <direct state='on'/>
+     </stimer>
+     <reset state='on'/>
+     <frequencies state='on'/>
+     <reenlightenment state='on'/>
+     <tlbflush state='on'/>
+     <ipi state='on'/>
+   </hyperv>
+   #+end_src
+
+   Add this device under =<devices>=:
+   #+begin_src xml
+   <channel type='unix'>
+     <source mode='bind'/>
+     <target type='virtio' name='org.qemu.guest_agent.0'/>
+     <address type='virtio-serial' controller='0' bus='0' port='2'/>
+   </channel>
+   #+end_src
+
+3. In the SATA Disk 1 section, section set the Disk bus type to VirtIO.
+4. In NIC section, set the device model to virtio.
+5. [[https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/5/html/virtualization/sect-virtualization-security_for_virtualization-selinux_and_virtualization#sect-Virtualization-Security_for_virtualization-SELinux_and_virtualization][Download VirtIO drivers]]
+6. Add a CD-ROM device with the VirtIO driver ISO.
+
+During installation, load the VirtIO driver in =\amd64\w11=. The disk should appear.
+
+After installation, open the VirtIO driver ISO and run =virtio-win-guest-tools.exe=. Then, the option at View > Scale Display / Auto resize VM with window should work.
+
+Configure DNS to 1.1.1.1
+
+To configure a shared folder:
+1. Toggle "Enable shared memory" in the memory tab.
+2. Click "Add hardware" -> Filesystem, select virtiofs as the driver and specify the paths.
+3. Install [[https://github.com/winfsp/winfsp/releases/][WinFSP]] on the VM.
+4. Run:
+   #+begin_src shell
+   sc.exe create VirtioFsSvc binpath= "C:\Program Files\Virtio-Win\VioFS\virtiofs.exe" start=auto depend="WinFsp.Launcher/VirtioFsDrv" DisplayName="Virtio Filesystem Service"
+   sc.exe start VirtioFsSvc
+   #+end_src
+5. Reboot the VM.
+
 ** Copying VMs between machines
 To copy a VM, first, copy the image:
 #+begin_src bash
