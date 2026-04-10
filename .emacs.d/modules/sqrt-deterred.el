@@ -13,6 +13,7 @@
          (deterred-activitywatch)
          (deterred-ai-usage)
          (deterred-digikam :digikam-db "~/30-39 Life/35 Photos/35.00D DigiKam/digikam4.db")
+         (deterred-fit)
          (deterred-hledger)
          (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
          ;; (deterred-locations)

@@ -27,6 +27,7 @@
   (setq lsp-modeline-code-actions-enable nil)
   (setq lsp-modeline-diagnostics-enable nil)
   (setq lsp-volar-take-over-mode nil)
+  (setq lsp-volar-support-vue2 t)
   (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
 
 (use-package lsp-ui

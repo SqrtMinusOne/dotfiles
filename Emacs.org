@@ -3071,6 +3071,7 @@ References:
   (setq lsp-modeline-code-actions-enable nil)
   (setq lsp-modeline-diagnostics-enable nil)
   (setq lsp-volar-take-over-mode nil)
+  (setq lsp-volar-support-vue2 t)
   (add-to-list 'lsp-language-id-configuration '(svelte-mode . "svelte")))
 
 (use-package lsp-ui
@@ -14022,6 +14023,7 @@ I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
          (deterred-activitywatch)
          (deterred-ai-usage)
          (deterred-digikam :digikam-db "~/30-39 Life/35 Photos/35.00D DigiKam/digikam4.db")
+         (deterred-fit)
          (deterred-hledger)
          (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
          ;; (deterred-locations)
