@@ -2,8 +2,6 @@
   (interactive)
   (call-process "~/bin/polybar.sh"))
 
-(defun my/exwm-set-wallpaper ()
-  (call-process-shell-command "feh --bg-fill ~/Pictures/wallpaper.jpg"))
 
 (defun my/exwm-run-shepherd ()
   (when (and (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
@@ -423,11 +421,36 @@ _c_: Chromium
   (advice-add 'exwm-manage--on-ConfigureRequest :after
               #'my/exwm-floating-container-resize-fix))
 
+(defun my/exwm-set-wallpaper ()
+  (call-process-shell-command "feh --bg-fill ~/Pictures/wallpaper.jpg"))
+
+(defun my/check-background-mode ()
+  (cl-loop for w being the windows of (selected-frame)
+           do (if (derived-mode-p #'my/background-mode)
+                  (progn
+                    (set-window-parameter (selected-window) 'alpha-background 0.0))
+                (set-window-parameter (selected-window) 'alpha-background 1.0))))
+
+(define-derived-mode my/background-mode fundamental-mode "Background"
+  "Make the current window fully transparent and remove extra stuff."
+  :after-hook
+  (progn
+    (setq-local cursor-type nil)
+    (display-line-numbers-mode -1)
+    (my/check-background-mode)))
+
+;; Surprisingly, `window-configuration-change-hook' is the best hook
+;; for this
+(add-hook 'window-configuration-change-hook #'my/check-background-mode)
+
+(setq initial-major-mode #'my/background-mode)
+(setq initial-scratch-message "")
+
 (defun my/exwm-init ()
   (exwm-workspace-switch 1)
 
-  (my/exwm-set-wallpaper)
   (my/exwm-run-shepherd)
+  (my/exwm-set-wallpaper)
   (my/run-in-background "gpgconf --reload gpg-agent")
   (my/exwm-run-polybar)
   (setenv "DBUS_SESSION_BUS_ADDRESS" "unix:path=/run/user/1000/bus")
