@@ -1,5 +1,6 @@
 arch = {
   packages = [
+    "xvkbd",
     "downgrade",
     "firejail",
     "apparmor",

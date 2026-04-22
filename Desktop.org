@@ -4353,6 +4353,8 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | socat                |          |
 | dev      | openai-codex-bin     |          |
 | dev      | traceroute           |          |
+| dev      | docker-buildx        |          |
+| dev      | duckdb               |          |
 ** Games
 | Category | Arch dependency |
 |----------+-----------------|

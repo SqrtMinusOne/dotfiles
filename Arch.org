@@ -342,10 +342,14 @@ Printer packages.
 | printer  | brscan4         |
 
 Remote connectivity packages.
-
 | Category | Arch dependency |
 |----------+-----------------|
 | remote   | xorgxrdp        |
+
+To type stuff
+| Arch dependency |
+|-----------------|
+| xvkbd           |
 
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no :var category=""

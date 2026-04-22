@@ -1,5 +1,7 @@
 arch = {
   packages = [
+    "duckdb",
+    "docker-buildx",
     "traceroute",
     "openai-codex-bin",
     "socat",
