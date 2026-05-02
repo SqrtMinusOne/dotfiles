@@ -253,6 +253,18 @@ hostname_groups_enabled = true
 package_manager = "paru"
 #+end_src
 
+* paru configuration
+Configuring paru to work with [[https://github.com/SqrtMinusOne/sqrt-emacs][my custom Emacs build]].
+
+#+begin_src conf :tangle ~/.config/paru/paru.conf
+Include = /etc/paru.conf
+
+[private]
+Url = https://github.com/SqrtMinusOne/sqrt-emacs.git
+GenerateSrcinfo
+SkipReview
+#+end_src
+
 * pacserve
 https://wiki.archlinux.org/title/Pacserve
 
@@ -371,6 +383,7 @@ To type stuff
 #+begin_src scheme :tangle .config/metapac/groups/system.toml :noweb yes
 <<packages()>>
 #+end_src
+
 
 * Notes on VMs
 ** Linux
