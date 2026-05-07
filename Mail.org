@@ -88,12 +88,14 @@ I would use =password-store-get= from password-store.el, but I want this to be a
 
 #+NAME: mail-username
 #+begin_src bash
-pass show Job/Digital/Email/pvkorytov@etu.ru | sed -n 's/username: //;2p'
+pass show Digital/Email/pvkorytov@etu.ru | sed -n 's/username: //;2p'
 #+end_src
+
+#+RESULTS: mail-username
 
 #+NAME: mail-password
 #+begin_src bash
-pass show Job/Digital/Email/pvkorytov@etu.ru | head -n 1
+pass show Digital/Email/pvkorytov@etu.ru | head -n 1
 #+end_src
 
 #+begin_src conf-unix :tangle ~/.offlineimaprc :noweb yes
@@ -133,6 +135,7 @@ remotehost = mbox.etu.ru
 remoteuser = <<mail-username()>>
 remotepass = <<mail-password()>>
 remoteport = 993
+auth_mechanisms = LOGIN
 sslcacertfile = /etc/ssl/certs/ca-certificates.crt
 #+end_src
 * Notmuch
