@@ -76,6 +76,9 @@ I decided not to keep configs for features that I do not use anymore because thi
 | sx.el                    | bb1365d9a026cefb7051992a68176ea00f041abd |
 | atomic-chrome            | bb1365d9a026cefb7051992a68176ea00f041abd |
 | screenshot.el            | bb1365d9a026cefb7051992a68176ea00f041abd |
+| org-transclusion         | 0ab00dec9f76a55110f153a766806c6820341443 |
+| calfw                    | 0ab00dec9f76a55110f153a766806c6820341443 |
+| org-timeblock            | 0ab00dec9f76a55110f153a766806c6820341443 |
 
 * Initial setup
 Setting up the environment, performance tuning and a few basic settings.
@@ -548,6 +551,8 @@ I have some concerns that =ps -o rss= may be unrepresentative because of [[https
 [[https://github.com/mamba-org/mamba][mamba]] is a faster alternative to [[https://www.anaconda.com/][Anaconda]], a package and environment manager. =micromamba= is a tiny version that provides a subset of mamba commands.
 
 [[https://github.com/SqrtMinusOne/micromamba.el][micromamba.el]] is my package to interact with the latter.
+
+I've actually mostly switched to =uv= and =nvm=, so don't know if I should keep that...
 
 #+begin_src emacs-lisp
 (use-package micromamba
@@ -3645,35 +3650,6 @@ A general-purpose package to run formatters on files. While the most popular for
 (use-package reformatter
   :straight t)
 #+end_src
-*** windsurf
-:PROPERTIES:
-:MODULE_NAME: copilot
-:header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-copilot.el :comments links
-:END:
-
-This is my attempt to implement AI autocompletions. I don't like the existing windsurf package.
-
-#+begin_src emacs-lisp
-(use-package windsurf-copilot
-  :commands (windsurf-copilot-mode)
-  :straight (:local-repo
-             "/home/pavel/10-19 Code/12 My Emacs Packages/12.18 windsurf-copilot")
-  :init
-  (add-hook 'typescript-mode-hook #'windsurf-copilot-mode)
-  (add-hook 'web-mode-hook #'windsurf-copilot-mode)
-  (add-hook 'python-mode-hook #'windsurf-copilot-mode)
-  (add-hook 'emacs-lisp-mode-hook #'windsurf-copilot-mode)
-  :config
-  (add-hook 'windsurf-copilot-mode-hook #'windsurf-copilot-modeline-mode)
-  (add-hook
-   'windsurf-copilot-accept-completion-hook
-   #'deterred-ai-windsurf-copilot-accept-completion-hook)
-  (general-define-key
-   :keymaps '(windsurf-copilot-completion-map)
-   "M-l" #'windsurf-copilot-accept-completion-by-word
-   "M-j" #'windsurf-copilot-accept-completion-by-line
-   "<backtab>" #'windsurf-copilot-accept-completion))
-#+end_src
 ** Web development
 :PROPERTIES:
 :MODULE_NAME: web
@@ -5989,28 +5965,6 @@ A nice package to make screenshots and insert them to the Org document.
   :config
   (setq org-attach-screenshot-auto-refresh 'never))
 #+end_src
-*** Transclusion
-A package that implements transclusions in Org Mode, i.e. rendering part of one file inside another file.
-
-#+begin_src emacs-lisp
-(use-package org-transclusion
-  :after org
-  :straight (:host github :repo "nobiot/org-transclusion")
-  :config
-  (add-to-list 'org-transclusion-extensions 'org-transclusion-indent-mode)
-  (require 'org-transclusion-indent-mode)
-  (general-define-key
-   :keymaps '(org-transclusion-map)
-   :states '(normal)
-   "RET" #'org-transclusion-open-source
-   "gr" #'org-transclusion-refresh)
-  (general-define-key
-   :keymaps '(org-mode-map)
-   :states 'normal
-   "C-c t a" #'org-transclusion-add
-   "C-c t A" #'org-transclusion-add-all
-   "C-c t t" #'org-transclusion-mode))
-#+end_src
 *** Managing tables
 I use Org to manage some small tables which I want to process further. So here is a function that saves each table to a CSV file.
 
@@ -8098,50 +8052,6 @@ An example contact entry can look like this:
 :BIRTHDAY: [1998-08-14]
 :END:
 #+end_example
-*** Calendar view
-[[https://github.com/kiwanami/emacs-calfw][calfw]] is a nice package that displays calendars in Emacs.
-
-#+begin_src emacs-lisp
-(defun my/calfw-setup-buffer ()
-  (display-line-numbers-mode -1))
-
-(use-package calfw
-  :straight t
-  :defer t
-  :config
-  (add-hook 'cfw:calendar-mode-hook #'my/calfw-setup-buffer))
-
-(use-package calfw-org
-  :after (calfw org)
-  :straight t)
-#+end_src
-*** org-timeblock
-#+begin_src emacs-lisp
-(defun my/org-timeblock-conf ()
-  (display-line-numbers-mode -1))
-
-(use-package org-timeblock
-  :straight (:host github :repo "ichernyshovvv/org-timeblock")
-  :commands (org-timeblock-mode)
-  :init
-  (my-leader-def "ot" #'org-timeblock)
-  :config
-  (add-hook 'org-timeblock-mode-hook #'my/org-timeblock-conf)
-  (general-define-key
-   :keymaps '(org-timeblock-mode-map)
-   :states '(normal visual)
-   "j" #'org-timeblock-forward-block
-   "h" #'org-timeblock-backward-column
-   "l" #'org-timeblock-forward-column
-   "k" #'org-timeblock-backward-block
-   "M-[" #'org-timeblock-day-earlier
-   "M-]" #'org-timeblock-day-later
-   "H" #'org-timeblock-day-earlier
-   "L" #'org-timeblock-day-later
-   "RET" #'org-timeblock-goto
-   "t" #'org-timeblock-todo-set
-   "q" #'quit-window))
-#+end_src
 *** org-drill
 Trying to learn stuff with this.
 
@@ -12174,7 +12084,6 @@ Workflows, which are sometimes referred to as "AI", go in here.
 I'm technically writing a PhD on a related topic, so I'm a bit more receptive towards the whole thing than most of the community. But I'm still not calling it AI.
 
 *** LLMs
-
 **** gptel
 [[https://github.com/karthink/gptel][gtpel]] is a package that provides an interface to chat with LLMs.
 
@@ -14277,6 +14186,34 @@ Emacs' built-in calendar. Can even calculate sunrise and sunset times.
           ("2020-09-01" . "Master's")
           ("2022-10-01" . "Grad School")
           ("2025-12-22" . "Failed Thesis Defence"))))
+#+end_src
+
+*** timestamps
+Some utilities for interactive UNIX timestamp manipulation.
+#+begin_src emacs-lisp
+(defun my/timestamp-parse (timestamp)
+  "Read TIMESTAMP and display it in ISO8601."
+  (interactive
+   (list (read-number
+          "Timestamp: "
+          (when (use-region-p)
+            (string-to-number
+             (buffer-substring-no-properties
+              (use-region-beginning)
+              (use-region-end)))))))
+  (let ((local (format-time-string "%FT%T%z" timestamp))
+        (london (format-time-string "%FT%T%z" timestamp t)))
+    (message "Local: %s; London: %s" local london)))
+#+end_src
+
+#+begin_src emacs-lisp
+(defun my/timestamp-create (date)
+  "Read DATE and convert it to UNIX timestamp."
+  (interactive
+   (list (org-read-date t t nil "Date: ")))
+  (let ((v (number-to-string (time-convert date #'integer))))
+    (kill-new v)
+    (message v)))
 #+end_src
 
 ** Calc

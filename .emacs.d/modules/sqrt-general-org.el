@@ -408,24 +408,6 @@ If not at a heading, delegates to the normal `org-cycle' function."
   :config
   (setq org-attach-screenshot-auto-refresh 'never))
 
-(use-package org-transclusion
-  :after org
-  :straight (:host github :repo "nobiot/org-transclusion")
-  :config
-  (add-to-list 'org-transclusion-extensions 'org-transclusion-indent-mode)
-  (require 'org-transclusion-indent-mode)
-  (general-define-key
-   :keymaps '(org-transclusion-map)
-   :states '(normal)
-   "RET" #'org-transclusion-open-source
-   "gr" #'org-transclusion-refresh)
-  (general-define-key
-   :keymaps '(org-mode-map)
-   :states 'normal
-   "C-c t a" #'org-transclusion-add
-   "C-c t A" #'org-transclusion-add-all
-   "C-c t t" #'org-transclusion-mode))
-
 (defun my/export-org-tables-to-csv ()
   (interactive)
   (org-table-map-tables

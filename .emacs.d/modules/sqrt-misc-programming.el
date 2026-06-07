@@ -182,6 +182,9 @@
   :mode "\\.hcl\\'"
   :straight t)
 
+(use-package apparmor-mode
+  :straight t)
+
 (add-hook 'sh-mode-hook #'smartparens-mode)
 
 (use-package fish-mode

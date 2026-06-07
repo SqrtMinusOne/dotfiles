@@ -53,4 +53,26 @@
           ("2022-10-01" . "Grad School")
           ("2025-12-22" . "Failed Thesis Defence"))))
 
+(defun my/timestamp-parse (timestamp)
+  "Read TIMESTAMP and display it in ISO8601."
+  (interactive
+   (list (read-number
+          "Timestamp: "
+          (when (use-region-p)
+            (string-to-number
+             (buffer-substring-no-properties
+              (use-region-beginning)
+              (use-region-end)))))))
+  (let ((local (format-time-string "%FT%T%z" timestamp))
+        (london (format-time-string "%FT%T%z" timestamp t)))
+    (message "Local: %s; London: %s" local london)))
+
+(defun my/timestamp-create (date)
+  "Read DATE and convert it to UNIX timestamp."
+  (interactive
+   (list (org-read-date t t nil "Date: ")))
+  (let ((v (number-to-string (time-convert date #'integer))))
+    (kill-new v)
+    (message v)))
+
 (provide 'sqrt-productivity-apps)

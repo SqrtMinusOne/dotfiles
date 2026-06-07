@@ -22,8 +22,9 @@
     :key (lambda () (my/password-store-get-field
                      "Accounts/openrouter" "api-key-kek"))
     :stream t
-    :models '("anthropic/claude-sonnet-4.5"
+    :models '("anthropic/claude-sonnet-4.6"
               "deepseek/deepseek-v3.2"
+              "openai/gpt-5.4"
               "x-ai/grok-4.1-fast"))
   (setq gptel--known-backends
         (seq-filter

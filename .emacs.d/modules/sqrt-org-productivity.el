@@ -1579,44 +1579,6 @@ Happened to the world:
   (add-to-list 'org-contacts-completion-enabled-mode-list
                'notmuch-message-mode))
 
-(defun my/calfw-setup-buffer ()
-  (display-line-numbers-mode -1))
-
-(use-package calfw
-  :straight t
-  :defer t
-  :config
-  (add-hook 'cfw:calendar-mode-hook #'my/calfw-setup-buffer))
-
-(use-package calfw-org
-  :after (calfw org)
-  :straight t)
-
-(defun my/org-timeblock-conf ()
-  (display-line-numbers-mode -1))
-
-(use-package org-timeblock
-  :straight (:host github :repo "ichernyshovvv/org-timeblock")
-  :commands (org-timeblock-mode)
-  :init
-  (my-leader-def "ot" #'org-timeblock)
-  :config
-  (add-hook 'org-timeblock-mode-hook #'my/org-timeblock-conf)
-  (general-define-key
-   :keymaps '(org-timeblock-mode-map)
-   :states '(normal visual)
-   "j" #'org-timeblock-forward-block
-   "h" #'org-timeblock-backward-column
-   "l" #'org-timeblock-forward-column
-   "k" #'org-timeblock-backward-block
-   "M-[" #'org-timeblock-day-earlier
-   "M-]" #'org-timeblock-day-later
-   "H" #'org-timeblock-day-earlier
-   "L" #'org-timeblock-day-later
-   "RET" #'org-timeblock-goto
-   "t" #'org-timeblock-todo-set
-   "q" #'quit-window))
-
 (use-package org-drill
   :straight t
   :commands (org-drill)
