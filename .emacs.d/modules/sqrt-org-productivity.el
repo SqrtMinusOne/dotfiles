@@ -208,6 +208,111 @@
    'org-global-properties
    '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 4:00 8:00")))
 
+(defun my/org-planned-effort--bounds ()
+  "Return the boundaries for the current task's EFFORT drawer.
+
+Return a list of (BEG CONTENT-BEG CONTENT-END END)"
+  (save-excursion
+    (org-back-to-heading t)
+    (let ((entry-end (save-excursion
+                       (if (outline-next-heading) (point) (point-max)))))
+      (forward-line)
+      (when (re-search-forward "^[ \t]*:EFFORT:[ \t]*$" entry-end t)
+        (let ((beg (line-beginning-position))
+              (content-beg (progn (forward-line) (point))))
+          (unless (re-search-forward "^[ \t]*:END:[ \t]*$" entry-end t)
+            (user-error "Unclosed EFFORT drawer"))
+          (list beg content-beg (line-beginning-position)
+                (progn (forward-line) (point))))))))
+
+(defun my/org-planned-effort-parse-string (string)
+  "Parse STRING as EFFORT drawer contents.
+
+Return an alist of (TIMESTAMP . MINUTES)."
+  (let (rows)
+    (dolist (line (split-string string "\n"))
+      (when (string-match-p "\\S-" line)
+        (unless (string-match org-ts-regexp-inactive line)
+          (user-error "Invalid effort line: %s" line))
+        (let* ((timestamp (match-string 0 line))
+               (timestamp-end (match-end 0))
+               (day (org-time-string-to-absolute timestamp))
+               (duration (string-trim-left (substring line timestamp-end) "[ \t:]+"))
+               (minutes (round (org-duration-to-minutes duration)))
+               (row (assq day rows)))
+          (if row
+              (cl-incf (cddr row) minutes)
+            (push (cons day (cons timestamp minutes)) rows)))))
+    (mapcar #'cdr (sort rows (lambda (a b) (< (car a) (car b)))))))
+
+(defun my/org-planned-effort-parse ()
+  "Parse the current task's EFFORT drawer.
+
+Return an alist of (TIMESTAMP . MINUTES)."
+  (let ((bounds (my/org-planned-effort--bounds)))
+    (and bounds
+         (my/org-planned-effort-parse-string
+          (buffer-substring-no-properties
+           (nth 1 bounds) (nth 2 bounds))))))
+
+(defun my/org-planned-effort--write (entries)
+  "Rewrite the current task's EFFORT drawer with ENTRIES.
+
+ENTRIES is as returned by `my/org-planned-effort-parse'."
+  (let ((bounds (my/org-planned-effort--bounds))
+        (inhibit-read-only t))
+    (when bounds (delete-region (car bounds) (nth 3 bounds)))
+    (when entries
+      (goto-char (or (car bounds)
+                    (save-excursion
+                      (org-back-to-heading t)
+                      (org-end-of-meta-data nil)
+                      (point))))
+      (insert
+       ":EFFORT:\n"
+       (mapconcat (lambda (entry)
+                    (format "%s: %s"
+                            (car entry)
+                            (org-duration-from-minutes (cdr entry) 'h:mm)))
+                  entries "\n")
+       "\n:END:\n"))))
+
+(defun my/org-planned-effort--put (timestamp minutes entries)
+  "Return ENTRIES with TIMESTAMP's day set to MINUTES."
+  (let* ((day (org-time-string-to-absolute timestamp))
+         (old (cl-find day entries
+                       :key (lambda (e) (org-time-string-to-absolute (car e))))))
+    (if old
+        (setcdr old minutes)
+      (push (cons timestamp minutes) entries))
+    (seq-sort-by (lambda (e)
+                   (org-time-string-to-absolute (car e)))
+                 #'< entries)))
+
+(defun my/org-planned-effort-add-daily (date duration)
+  "Add planned DURATION for DATE to the current Org task's EFFORT drawer."
+  (interactive
+   (list (org-read-date nil t nil "Date: ")
+         (read-string "Effort: ")))
+  (let* ((timestamp (format-time-string (org-time-stamp-format nil t) date))
+         (minutes (round (org-duration-to-minutes duration))))
+    (my/org-planned-effort--write
+     (my/org-planned-effort--put timestamp minutes
+                                 (my/org-planned-effort-parse)))))
+
+(defun my/org-planned-effort-remove-daily (date)
+  "Remove planned effort for DATE from the current Org task's EFFORT drawer."
+  (interactive (list (org-read-date nil t nil "Date: ")))
+  (let* ((day (org-time-string-to-absolute
+               (format-time-string (org-time-stamp-format nil t) date)))
+         (entries (my/org-planned-effort-parse))
+         (kept (cl-remove day entries
+                          :key (lambda (entry)
+                                 (org-time-string-to-absolute (car entry))))))
+    (when (= (length entries) (length kept))
+      (user-error "No effort for that day"))
+    (my/org-planned-effort--write kept)))
+
 (use-package org-super-agenda
   :straight t
   :after (org)
@@ -319,12 +424,11 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
     :sort '(todo priority)
     :super-groups '((:auto-priority-outline-path-file t))))
 
-(defun my/org-ql-clocked-today ()
+(defun my/org-ql-clocked-today (&optional timestamp)
   (interactive)
   (let ((today (format-time-string
                 "%Y-%m-%d"
-                (days-to-time
-                 (- (org-today) (time-to-days 0))))))
+                timestamp)))
     (org-ql-search (org-agenda-files) `(clocked :from ,today)
       :title "Clocked today"
       :sort '(todo priority date)
@@ -487,13 +591,127 @@ skip exactly those headlines that do not match."
                            (or (outline-next-heading) (point-max)))))
       (if (my/org-match-at-point-p match) nil next-headline))))
 
+(defun my/org-agenda-clock--effort-at-point (timestamp &optional headline)
+  (if-let ((effort-data (my/org-planned-effort-parse)))
+      (alist-get
+       (format-time-string (org-time-stamp-format nil t) timestamp)
+       effort-data nil nil #'equal)
+    (when-let (duration
+               (org-element-property
+                :EFFORT (or headline (org-element-at-point-no-context))))
+      (floor
+       (org-duration-to-minutes duration)))))
+
+(defun my/utils-ts-to-day-start (&optional timestamp)
+  "Move TIMESTAMP to start of day."
+  (let ((time (decode-time timestamp)))
+    (setf (decoded-time-second time) 0
+          (decoded-time-minute time) 0
+          (decoded-time-hour time) 0)
+    (time-convert (encode-time time) 'integer)))
+
+(defun my/utils-ts-to-day-end (&optional timestamp)
+  "Move TIMESTAMP to start of day."
+  (let ((time (decode-time timestamp)))
+    (setf (decoded-time-second time) 59
+          (decoded-time-minute time) 59
+          (decoded-time-hour time) 23)
+    (time-convert (encode-time time) 'integer)))
+
+(defun my/org-agenda-clock--clocked-at-point (start end)
+  (when-let* ((headline (org-element-at-point-no-context))
+              (clocks (org-clock-agg--parse-clocks headline)))
+    (/
+     (cl-reduce
+      (lambda (acc clock)
+        (+ (alist-get :duration clock) acc))
+      clocks
+      :initial-value 0)
+     60)))
+
+(setq my/org-agenda-hide-tags (list "org" "refile" "proj" "habit"))
+
+(defun my/org-agenda-clock--get-data (timestamp)
+  (let* ((start (my/utils-ts-to-day-start timestamp))
+         (end (my/utils-ts-to-day-end timestamp))
+         (date (format-time-string "%F" timestamp))
+         (data
+          (org-ql-query
+            :select
+            (lambda ()
+              (let* ((headline (org-element-at-point))
+                     (clocked (my/org-agenda-clock--clocked-at-point start end))
+                     (effort (my/org-agenda-clock--effort-at-point
+                              timestamp headline))
+                     (scheduled (org-element-property :scheduled headline))
+                     (deadline (org-element-property :deadline headline)))
+                `((:clocked . ,clocked)
+                  (:effort . ,effort)
+                  (:missed . ,(and (not clocked) (not effort)
+                                   (not (not (or scheduled deadline))))))))
+            :from (org-agenda-files)
+            :where `(and
+                     (ts :on ,date)
+                     (not (tags ,@my/org-agenda-hide-tags)))))
+         (clocked 0) (effort 0) (missed-count 0))
+    (mapc (lambda (datum)
+            (cl-incf clocked (or (alist-get :clocked datum) 0))
+            (cl-incf effort (or (alist-get :effort datum) 0))
+            (when (alist-get :missed datum)
+              (cl-incf missed-count)))
+          data)
+    (list clocked effort missed-count)))
+
+(defun my/org-agenda-clock-open (data)
+  "Open the agenda detail view described by DATA."
+  (pcase-let ((`(,timestamp . ,kind) data))
+    (let ((date (format-time-string "%F" timestamp)))
+      (pcase kind
+        ('clocked
+         (my/org-ql-clocked-today timestamp))
+        (_
+         (user-error "No detail view implemented for %S" kind))))))
+
+(defun my/org-agenda-clock-format-date (date)
+  "Format agenda DATE with clickable daily clock summary.
+
+DATE is a calendar-style date list, as passed by
+`org-agenda-format-date'.  This expects
+`my/org-agenda-clock--get-data' to return an alist with keys
+`:clocked', `:effort', and `:missed-count'."
+  (pcase-let* ((timestamp (encode-time 0 0 0 (cadr date) (car date) (nth 2 date)))
+               (`(,clocked ,effort ,missed-count)
+                (my/org-agenda-clock--get-data timestamp)))
+    (concat
+     (org-agenda-format-date-aligned date)
+     "  "
+     (mapconcat
+      #'identity
+      (delq nil
+            (list
+             (and effort
+                  (format "E %s"
+                          (org-duration-from-minutes effort 'h:mm)))
+             (and clocked
+                  (concat
+                   "C "
+                   (buttonize
+                    (org-duration-from-minutes clocked 'h:mm)
+                    #'my/org-agenda-clock-open
+                    (cons timestamp 'clocked)
+                    "mouse-1, RET: show tasks")))
+             (and missed-count
+                  (> missed-count 0)
+                  (format "!%d" missed-count))))
+      "  "))))
+
 (defun my/org-scheduled-get-time ()
   (let ((scheduled (org-get-scheduled-time (point))))
     (if scheduled
         (format-time-string "%Y-%m-%d" scheduled)
       "")))
 
-(setq org-agenda-hide-tags-regexp (rx (or "org" "refile" "proj" "habit")))
+(setq org-agenda-hide-tags-regexp (rx (eval `(or ,@my/org-agenda-hide-tags))))
 
 (setq org-agenda-custom-commands
       `(("p" "My outline"

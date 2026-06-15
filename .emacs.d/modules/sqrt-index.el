@@ -495,20 +495,46 @@ def rclone_run_all(folders, extra_args=[]):
     if len(msg) > 0:
         notify(f'rclone sync {REMOTE}', msg, level=level)
 
+def rclone_list_folders():
+    for folder in FOLDERS:
+        print(f'{folder['id']}. {folder['local-path']} -> {folder['remote-path']}')
+
 def parse_arguments():
-    if len(sys.argv) < 2:
-        return None, []
+    args = sys.argv[1:]
 
-    id_arg = sys.argv[1]
-    folder_ids = [int(x.strip()) for x in id_arg.split(',')]
+    if '--help' in args or '-h' in args:
+        print(f'Usage: {sys.argv[0]} [-l|--list] [IDS] [RCLONE_ARGS...]')
+        print('  -l, --list  List synced folders and exit')
+        print('  IDS         Comma-separated folder IDs to sync, e.g. 0,4,12')
+        sys.exit(0)
 
-    extra_args = sys.argv[2:]
+    list_folders = False
+    for list_arg in ('--list', '-l'):
+        while list_arg in args:
+            args.remove(list_arg)
+            list_folders = True
 
-    return folder_ids, extra_args
+    if len(args) < 1 or args[0].startswith('-'):
+        return list_folders, None, args
+
+    id_arg = args[0]
+    try:
+        folder_ids = [int(x.strip()) for x in id_arg.split(',') if x.strip()]
+    except ValueError:
+        print(f'Invalid folder IDs: {id_arg}', file=sys.stderr)
+        sys.exit(2)
+
+    extra_args = args[1:]
+
+    return list_folders, folder_ids, extra_args
 
 
 if __name__ == '__main__':
-    folder_ids, extra_args = parse_arguments()
+    list_folders, folder_ids, extra_args = parse_arguments()
+
+    if list_folders:
+        rclone_list_folders()
+        sys.exit(0)
 
     if folder_ids is None:
         selected_folders = FOLDERS

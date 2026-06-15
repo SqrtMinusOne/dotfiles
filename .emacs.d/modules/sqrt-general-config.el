@@ -445,7 +445,8 @@
           (my/index-nav (vertico-sort-function . nil))
           (org-ql-view (vertico-sort-function . nil))
           (my/consult-line (vertico-sort-function . nil))
-          (telega-msg-add-reaction grid))))
+          (telega-msg-add-reaction grid)
+          (org-set-effort (vertico-sort-function . nil)))))
 
 (use-package vertico-quick
   :after vertico
