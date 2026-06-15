@@ -3165,6 +3165,7 @@ For now, I've advised this away by ignoring empty messages unless they show up m
 :PROPERTIES:
 :MODULE_NAME: flycheck
 :header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-flycheck.el :comments links
+:CLOCK_TOTAL: 0:00
 :END:
 A syntax checking extension for Emacs. Integrates with LSP-mode, but can also use various standalone checkers.
 
@@ -3184,7 +3185,8 @@ References:
                   display-buffer-in-side-window)
                  (side            . bottom)
                  (reusable-frames . visible)
-                 (window-height   . 0.33))))
+                 (window-height   . 0.33)))
+  (setopt flycheck-disabled-checkers '(org-lint)))
 #+end_src
 *** Tree-sitter
 :PROPERTIES:

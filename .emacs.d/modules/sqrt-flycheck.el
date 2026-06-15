@@ -11,6 +11,7 @@
                   display-buffer-in-side-window)
                  (side            . bottom)
                  (reusable-frames . visible)
-                 (window-height   . 0.33))))
+                 (window-height   . 0.33)))
+  (setopt flycheck-disabled-checkers '(org-lint)))
 
 (provide 'sqrt-flycheck)
