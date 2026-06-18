@@ -6556,10 +6556,12 @@ Some custom functions to account for =org-extend-today-until=. Needed because so
 #+begin_src emacs-lisp
 (defun my/org-ql-clocked-today (&optional timestamp)
   (interactive)
-  (let ((today (format-time-string
-                "%Y-%m-%d"
-                timestamp)))
-    (org-ql-search (org-agenda-files) `(clocked :from ,today)
+  (let* ((today (time-convert timestamp 'integer))
+         (start (my/utils-ts-to-day-start today))
+         (end (my/utils-ts-to-day-end today)))
+    (org-ql-search (org-agenda-files)
+      `(clocked :from ,(format-time-string "%FT%T%z" start)
+                :to ,(format-time-string "%FT%T%z" end))
       :title "Clocked today"
       :sort '(todo priority date)
       :super-groups '((:auto-outline-path-file t)
@@ -6838,19 +6840,6 @@ And get the data for a particular timestamp.
     (list clocked effort missed-count)))
 #+end_src
 
-I want the fragments to be clickable:
-#+begin_src emacs-lisp
-(defun my/org-agenda-clock-open (data)
-  "Open the agenda detail view described by DATA."
-  (pcase-let ((`(,timestamp . ,kind) data))
-    (let ((date (format-time-string "%F" timestamp)))
-      (pcase kind
-        ('clocked
-         (my/org-ql-clocked-today timestamp))
-        (_
-         (user-error "No detail view implemented for %S" kind))))))
-#+end_src
-
 And, finally, the custom date format function:
 #+begin_src emacs-lisp
 (defun my/org-agenda-clock-format-date (date)
@@ -6860,31 +6849,28 @@ DATE is a calendar-style date list, as passed by
 `org-agenda-format-date'.  This expects
 `my/org-agenda-clock--get-data' to return an alist with keys
 `:clocked', `:effort', and `:missed-count'."
+  (require 'org-clock-agg)
   (pcase-let* ((timestamp (encode-time 0 0 0 (cadr date) (car date) (nth 2 date)))
                (`(,clocked ,effort ,missed-count)
                 (my/org-agenda-clock--get-data timestamp)))
     (concat
-     (org-agenda-format-date-aligned date)
-     "  "
-     (mapconcat
-      #'identity
-      (delq nil
-            (list
-             (and effort
-                  (format "E %s"
-                          (org-duration-from-minutes effort 'h:mm)))
-             (and clocked
-                  (concat
-                   "C "
-                   (buttonize
-                    (org-duration-from-minutes clocked 'h:mm)
-                    #'my/org-agenda-clock-open
-                    (cons timestamp 'clocked)
-                    "mouse-1, RET: show tasks")))
-             (and missed-count
-                  (> missed-count 0)
-                  (format "!%d" missed-count))))
-      "  "))))
+     (string-pad (org-agenda-format-date-aligned date) 30)
+     (when effort
+       (propertize
+        (format "%s / "
+                (org-duration-from-minutes effort 'h:mm))
+        'face
+        'warning))
+     (when clocked
+       (concat
+        ""
+        (buttonize
+         (org-duration-from-minutes clocked 'h:mm)
+         #'my/org-ql-clocked-today
+         timestamp)
+        " "))
+     (when (and missed-count (> missed-count 0))
+       (format "!%d" missed-count)))))
 #+end_src
 
 ***** Agenda definitions
@@ -6900,7 +6886,8 @@ And the agendas themselves:
 
 (setq org-agenda-custom-commands
       `(("p" "My outline"
-         ((agenda "" ((org-agenda-skip-function '(my/org-agenda-skip-without-match "-habit"))))
+         ((agenda ""
+                  ((org-agenda-skip-function '(my/org-agenda-skip-without-match "-habit"))))
           (tags-todo "inbox"
                      ((org-agenda-overriding-header "Inbox")
                       (org-agenda-prefix-format " %i %-12:c")

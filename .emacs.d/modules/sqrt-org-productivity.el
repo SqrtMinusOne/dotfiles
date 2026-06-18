@@ -426,10 +426,12 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
 
 (defun my/org-ql-clocked-today (&optional timestamp)
   (interactive)
-  (let ((today (format-time-string
-                "%Y-%m-%d"
-                timestamp)))
-    (org-ql-search (org-agenda-files) `(clocked :from ,today)
+  (let* ((today (time-convert timestamp 'integer))
+         (start (my/utils-ts-to-day-start today))
+         (end (my/utils-ts-to-day-end today)))
+    (org-ql-search (org-agenda-files)
+      `(clocked :from ,(format-time-string "%FT%T%z" start)
+                :to ,(format-time-string "%FT%T%z" end))
       :title "Clocked today"
       :sort '(todo priority date)
       :super-groups '((:auto-outline-path-file t)
@@ -662,16 +664,6 @@ skip exactly those headlines that do not match."
           data)
     (list clocked effort missed-count)))
 
-(defun my/org-agenda-clock-open (data)
-  "Open the agenda detail view described by DATA."
-  (pcase-let ((`(,timestamp . ,kind) data))
-    (let ((date (format-time-string "%F" timestamp)))
-      (pcase kind
-        ('clocked
-         (my/org-ql-clocked-today timestamp))
-        (_
-         (user-error "No detail view implemented for %S" kind))))))
-
 (defun my/org-agenda-clock-format-date (date)
   "Format agenda DATE with clickable daily clock summary.
 
@@ -679,31 +671,28 @@ DATE is a calendar-style date list, as passed by
 `org-agenda-format-date'.  This expects
 `my/org-agenda-clock--get-data' to return an alist with keys
 `:clocked', `:effort', and `:missed-count'."
+  (require 'org-clock-agg)
   (pcase-let* ((timestamp (encode-time 0 0 0 (cadr date) (car date) (nth 2 date)))
                (`(,clocked ,effort ,missed-count)
                 (my/org-agenda-clock--get-data timestamp)))
     (concat
-     (org-agenda-format-date-aligned date)
-     "  "
-     (mapconcat
-      #'identity
-      (delq nil
-            (list
-             (and effort
-                  (format "E %s"
-                          (org-duration-from-minutes effort 'h:mm)))
-             (and clocked
-                  (concat
-                   "C "
-                   (buttonize
-                    (org-duration-from-minutes clocked 'h:mm)
-                    #'my/org-agenda-clock-open
-                    (cons timestamp 'clocked)
-                    "mouse-1, RET: show tasks")))
-             (and missed-count
-                  (> missed-count 0)
-                  (format "!%d" missed-count))))
-      "  "))))
+     (string-pad (org-agenda-format-date-aligned date) 30)
+     (when effort
+       (propertize
+        (format "%s / "
+                (org-duration-from-minutes effort 'h:mm))
+        'face
+        'warning))
+     (when clocked
+       (concat
+        ""
+        (buttonize
+         (org-duration-from-minutes clocked 'h:mm)
+         #'my/org-ql-clocked-today
+         timestamp)
+        " "))
+     (when (and missed-count (> missed-count 0))
+       (format "!%d" missed-count)))))
 
 (defun my/org-scheduled-get-time ()
   (let ((scheduled (org-get-scheduled-time (point))))
@@ -715,7 +704,8 @@ DATE is a calendar-style date list, as passed by
 
 (setq org-agenda-custom-commands
       `(("p" "My outline"
-         ((agenda "" ((org-agenda-skip-function '(my/org-agenda-skip-without-match "-habit"))))
+         ((agenda ""
+                  ((org-agenda-skip-function '(my/org-agenda-skip-without-match "-habit"))))
           (tags-todo "inbox"
                      ((org-agenda-overriding-header "Inbox")
                       (org-agenda-prefix-format " %i %-12:c")
