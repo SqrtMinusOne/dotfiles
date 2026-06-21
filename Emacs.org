@@ -6752,26 +6752,34 @@ skip exactly those headlines that do not match."
       (if (my/org-match-at-point-p match) nil next-headline))))
 #+end_src
 
-***** Integrate weekly view with org-clock
+***** Display effort and clocked time in day heading
 I also want to integrate =org-clock= and org effort estimations with org-agenda. Essentially, I want to display three pieces of information:
 - Total planned effort for this day
 - Total clocked time in this day
 - The number of tasks without effort estimation, if any.
 
-The used extension point for this is =org-agenda-format-date= (there's also =org-agenda-prefix-format= for individual tasks, which I'll use later).
+The used extension point for this is =org-agenda-format-date=.
 
 So, first, planned effort. Get the effort of task:
 #+begin_src emacs-lisp
 (defun my/org-agenda-clock--effort-at-point (timestamp &optional headline)
-  (if-let ((effort-data (my/org-planned-effort-parse)))
-      (alist-get
-       (format-time-string (org-time-stamp-format nil t) timestamp)
-       effort-data nil nil #'equal)
-    (when-let (duration
-               (org-element-property
-                :EFFORT (or headline (org-element-at-point-no-context))))
-      (floor
-       (org-duration-to-minutes duration)))))
+  (let ((elem (or headline (org-element-at-point))))
+    (or
+     ;; Data from the scheduled property
+     (when-let* ((scheduled (org-element-property :scheduled elem))
+                 (range-type (org-element-property :range-type scheduled))
+                 (start (org-timestamp-to-time scheduled))
+                 (end (org-timestamp-to-time scheduled t)))
+       (/ (- (time-convert end 'integer) (time-convert start 'integer)) 60))
+     ;; Data from the EFFORT property
+     (when-let (duration (org-element-property :EFFORT elem))
+       (floor
+        (org-duration-to-minutes duration)))
+     ;; Data from the :EFFORT: drawer
+     (when-let (effort-data (my/org-planned-effort-parse))
+       (alist-get
+        (format-time-string (org-time-stamp-format nil t) timestamp)
+        effort-data nil nil #'equal)))))
 #+end_src
 
 Get clocked time at point. I think it's find to do one by one because =org-ql= caches actions:
@@ -6792,16 +6800,25 @@ Get clocked time at point. I think it's find to do one by one because =org-ql= c
           (decoded-time-hour time) 23)
     (time-convert (encode-time time) 'integer)))
 
+(defun my/org-agenda-clock--headline-at-point ()
+  (let ((element (org-element-at-point-no-context)))
+    (when (and (eq (org-element-type element) 'headline)
+               (org-element-property :contents-begin element)
+               (org-element-property :contents-end element))
+      element)))
+
 (defun my/org-agenda-clock--clocked-at-point (start end)
-  (when-let* ((headline (org-element-at-point-no-context))
+  (when-let* ((headline (my/org-agenda-clock--headline-at-point))
               (clocks (org-clock-agg--parse-clocks headline)))
-    (/
-     (cl-reduce
-      (lambda (acc clock)
-        (+ (alist-get :duration clock) acc))
-      clocks
-      :initial-value 0)
-     60)))
+    (let ((seconds
+           (cl-loop for clock in clocks
+                    for clock-start = (alist-get :start clock)
+                    for clock-end = (alist-get :end clock)
+                    when (and clock-start clock-end)
+                    sum (max 0 (- (min end clock-end)
+                                  (max start clock-start))))))
+      (when (> seconds 0)
+        (floor seconds 60)))))
 #+end_src
 
 And get the data for a particular timestamp.
@@ -6823,24 +6840,54 @@ And get the data for a particular timestamp.
                      (scheduled (org-element-property :scheduled headline))
                      (deadline (org-element-property :deadline headline)))
                 `((:clocked . ,clocked)
+                  (:element . ,(org-ql--add-markers headline))
                   (:effort . ,effort)
                   (:missed . ,(and (not clocked) (not effort)
                                    (not (not (or scheduled deadline))))))))
             :from (org-agenda-files)
             :where `(and
-                     (ts :on ,date)
-                     (not (tags ,@my/org-agenda-hide-tags)))))
-         (clocked 0) (effort 0) (missed-count 0))
+                     (ts :from ,(format-time-string "%FT%T%z" start)
+                         :to ,(format-time-string "%FT%T%z" end)))))
+         (clocked 0) (effort 0) missed)
     (mapc (lambda (datum)
             (cl-incf clocked (or (alist-get :clocked datum) 0))
             (cl-incf effort (or (alist-get :effort datum) 0))
             (when (alist-get :missed datum)
-              (cl-incf missed-count)))
+              (push (alist-get :element datum) missed)))
           data)
-    (list clocked effort missed-count)))
+    (list clocked effort missed)))
 #+end_src
 
-And, finally, the custom date format function:
+I couldn't find a better way to display the missed tasks than to just return them in the function above. So here's the display function:
+#+begin_src emacs-lisp
+(defun my/org-agenda-clock-show-missed (data)
+  "Show missed agenda items in an org-ql-like buffer.
+
+DATA is (TIMESTAMP . ELEMENTS)."
+  (pcase-let* ((`(,timestamp . ,elements) data)
+               (date (format-time-string "%F" timestamp))
+               (title (format "Missed effort on %s" date))
+               (query `(my/org-agenda-missed :on ,date))
+               (strings (mapcar #'org-ql-view--format-element elements))
+               (org-ql-view-buffers-files (org-agenda-files))
+               (org-ql-view-query query)
+               (org-ql-view-sort nil)
+               (org-ql-view-narrow nil)
+               (org-ql-view-super-groups '((:auto-outline-path-file t)))
+               (org-ql-view-title title))
+    (when org-ql-view-super-groups
+      (let ((org-super-agenda-groups org-ql-view-super-groups))
+        (setq strings (org-super-agenda--group-items strings))))
+    (org-ql-view--display
+      :buffer (format "*Org QL View: %s*" title)
+      :header (org-ql-view--header-line-format
+               :buffers-files org-ql-view-buffers-files
+               :query query
+               :title title)
+      :strings strings)))
+#+end_src
+
+And, finally, the custom date format function. For some reason, =org-mode= overrrides all faces applied here, so I do custom spans which are later converted to faces.
 #+begin_src emacs-lisp
 (defun my/org-agenda-clock-format-date (date)
   "Format agenda DATE with clickable daily clock summary.
@@ -6848,29 +6895,124 @@ And, finally, the custom date format function:
 DATE is a calendar-style date list, as passed by
 `org-agenda-format-date'.  This expects
 `my/org-agenda-clock--get-data' to return an alist with keys
-`:clocked', `:effort', and `:missed-count'."
+`:clocked', `:effort', and `:missed'."
   (require 'org-clock-agg)
   (pcase-let* ((timestamp (encode-time 0 0 0 (cadr date) (car date) (nth 2 date)))
-               (`(,clocked ,effort ,missed-count)
+               (`(,clocked ,effort ,missed)
                 (my/org-agenda-clock--get-data timestamp)))
     (concat
      (string-pad (org-agenda-format-date-aligned date) 30)
      (when effort
        (propertize
         (format "%s / "
-                (org-duration-from-minutes effort 'h:mm))
-        'face
+                (org-duration-from-minutes clocked 'h:mm))
+        'my/org-agenda-clock-face
         'warning))
      (when clocked
        (concat
         ""
-        (buttonize
-         (org-duration-from-minutes clocked 'h:mm)
-         #'my/org-ql-clocked-today
-         timestamp)
+        (propertize
+         (buttonize
+          (org-duration-from-minutes effort 'h:mm)
+          #'my/org-ql-clocked-today
+          timestamp)
+         'my/org-agenda-clock-face
+         'success)
         " "))
-     (when (and missed-count (> missed-count 0))
-       (format "!%d" missed-count)))))
+     (when missed
+       (propertize
+        (buttonize
+         (format "!%d" (length missed))
+         #'my/org-agenda-clock-show-missed
+         (cons timestamp missed))
+        'my/org-agenda-clock-face
+        'error)))))
+#+end_src
+
+A function to apply faces:
+#+begin_src emacs-lisp
+(defun my/org-agenda-clock-apply-faces ()
+  (let ((inhibit-read-only t)
+        pos next face)
+    (save-excursion
+      (goto-char (point-min))
+      (while (< (point) (point-max))
+        (setq pos (point)
+              next (next-single-property-change
+                    pos 'my/org-agenda-clock-face nil (point-max))
+              face (get-text-property pos 'my/org-agenda-clock-face))
+        (when face
+          (add-face-text-property pos next face))
+        (goto-char next)))))
+
+(add-hook 'org-agenda-finalize-hook #'my/org-agenda-clock-apply-faces)
+#+end_src
+
+***** Display effort and clocked time in task heading
+I also want to display effort and clocked time in task heading.
+
+There's =org-agenda-prefix-format=, which can be used for that, but it doesn't allow for many complex calculations, so I use it to reserve a placeholder:
+#+begin_src emacs-lisp
+(defvar my/org-agenda-clock-prefix-width 13)
+
+(defun my/org-agenda-clock-prefix-placeholder ()
+  (propertize
+   (make-string my/org-agenda-clock-prefix-width ?\s)
+   'my/org-agenda-clock-prefix t))
+#+end_src
+
+Then a function to get the prefix string:
+#+begin_src emacs-lisp
+(defun my/org-agenda-clock--task-prefix (timestamp marker)
+  (org-with-point-at marker
+    (when-let ((headline (my/org-agenda-clock--headline-at-point)))
+      (let* ((start (my/utils-ts-to-day-start timestamp))
+             (end (my/utils-ts-to-day-end timestamp))
+             (clocked (my/org-agenda-clock--clocked-at-point start end))
+             (effort (my/org-agenda-clock--effort-at-point timestamp headline)))
+        (if (or clocked effort)
+            (format "%s / %s"
+                    (propertize
+                     (if clocked
+                         (org-duration-from-minutes clocked 'h:mm)
+                       "--")
+                     'face
+                     'warning)
+                    (propertize
+                     (if effort
+                         (org-duration-from-minutes effort 'h:mm)
+                       "--")
+                     'face
+                     'success))
+          "")))))
+#+end_src
+
+And to fill them:
+#+begin_src emacs-lisp
+(defun my/org-agenda-clock-fill-prefixes ()
+  (let ((inhibit-read-only t))
+    (save-excursion
+      (goto-char (point-min))
+      (while-let ((match (text-property-search-forward
+                          'my/org-agenda-clock-prefix)))
+        (let* ((beg (prop-match-beginning match))
+               (end (prop-match-end match))
+               (day (get-text-property beg 'day))
+               (marker (or (get-text-property beg 'org-hd-marker)
+                           (get-text-property beg 'org-marker)))
+               (text (if (and day marker)
+                         (or (my/org-agenda-clock--task-prefix
+                              (org-time-from-absolute day)
+                              marker)
+                             "")
+                       "")))
+          (goto-char beg)
+          (delete-region beg end)
+          (insert
+           (truncate-string-to-width
+            text my/org-agenda-clock-prefix-width 0 ?\s)))))))
+
+(add-hook 'org-agenda-finalize-hook #'my/org-agenda-clock-fill-prefixes)
 #+end_src
 
 ***** Agenda definitions
@@ -6887,7 +7029,9 @@ And the agendas themselves:
 (setq org-agenda-custom-commands
       `(("p" "My outline"
          ((agenda ""
-                  ((org-agenda-skip-function '(my/org-agenda-skip-without-match "-habit"))))
+                  ((org-agenda-skip-function '(my/org-agenda-skip-without-match "-habit"))
+                   (org-agenda-format-date 'my/org-agenda-clock-format-date)
+                   (org-agenda-prefix-format " %i %(my/org-agenda-clock-prefix-placeholder)%?-12t% s")))
           (tags-todo "inbox"
                      ((org-agenda-overriding-header "Inbox")
                       (org-agenda-prefix-format " %i %-12:c")
