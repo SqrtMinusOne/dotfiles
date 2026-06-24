@@ -206,7 +206,7 @@
 (with-eval-after-load 'org
   (add-to-list
    'org-global-properties
-   '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 4:00 8:00")))
+   '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 3:00 4:00 8:00")))
 
 (defun my/org-planned-effort--bounds ()
   "Return the boundaries for the current task's EFFORT drawer.
@@ -232,7 +232,7 @@ Return an alist of (TIMESTAMP . MINUTES)."
   (let (rows)
     (dolist (line (split-string string "\n"))
       (when (string-match-p "\\S-" line)
-        (unless (string-match org-ts-regexp-inactive line)
+        (unless (string-match org-ts-regexp-both line)
           (user-error "Invalid effort line: %s" line))
         (let* ((timestamp (match-string 0 line))
                (timestamp-end (match-end 0))
@@ -241,7 +241,7 @@ Return an alist of (TIMESTAMP . MINUTES)."
                (minutes (round (org-duration-to-minutes duration)))
                (row (assq day rows)))
           (if row
-              (cl-incf (cddr row) minutes)
+              (setcdr (cdr row) minutes)
             (push (cons day (cons timestamp minutes)) rows)))))
     (mapcar #'cdr (sort rows (lambda (a b) (< (car a) (car b)))))))
 
@@ -294,7 +294,7 @@ ENTRIES is as returned by `my/org-planned-effort-parse'."
   (interactive
    (list (org-read-date nil t nil "Date: ")
          (read-string "Effort: ")))
-  (let* ((timestamp (format-time-string (org-time-stamp-format nil t) date))
+  (let* ((timestamp (format-time-string (org-time-stamp-format nil nil) date))
          (minutes (round (org-duration-to-minutes duration))))
     (my/org-planned-effort--write
      (my/org-planned-effort--put timestamp minutes
@@ -304,7 +304,7 @@ ENTRIES is as returned by `my/org-planned-effort-parse'."
   "Remove planned effort for DATE from the current Org task's EFFORT drawer."
   (interactive (list (org-read-date nil t nil "Date: ")))
   (let* ((day (org-time-string-to-absolute
-               (format-time-string (org-time-stamp-format nil t) date)))
+               (format-time-string (org-time-stamp-format nil nil) date)))
          (entries (my/org-planned-effort-parse))
          (kept (cl-remove day entries
                           :key (lambda (entry)
@@ -609,7 +609,7 @@ skip exactly those headlines that do not match."
      ;; Data from the :EFFORT: drawer
      (when-let (effort-data (my/org-planned-effort-parse))
        (alist-get
-        (format-time-string (org-time-stamp-format nil t) timestamp)
+        (format-time-string (org-time-stamp-format nil nil) timestamp)
         effort-data nil nil #'equal)))))
 
 (defun my/utils-ts-to-day-start (&optional timestamp)
@@ -650,6 +650,11 @@ skip exactly those headlines that do not match."
 
 (setq my/org-agenda-hide-tags (list "org" "refile" "proj" "habit"))
 
+(defun my/org-agenda-clock--org-timestamp-in-range (start end timestamp)
+  (when timestamp
+    (let ((epoch (time-convert (org-timestamp-to-time timestamp) 'integer)))
+      (and (>= epoch start) (<= epoch end)))))
+
 (defun my/org-agenda-clock--get-data (timestamp)
   (let* ((start (my/utils-ts-to-day-start timestamp))
          (end (my/utils-ts-to-day-end timestamp))
@@ -659,6 +664,8 @@ skip exactly those headlines that do not match."
             :select
             (lambda ()
               (let* ((headline (org-element-at-point))
+                     (status (substring-no-properties
+                              (org-element-property :todo-keyword headline)))
                      (clocked (my/org-agenda-clock--clocked-at-point start end))
                      (effort (my/org-agenda-clock--effort-at-point
                               timestamp headline))
@@ -667,8 +674,13 @@ skip exactly those headlines that do not match."
                 `((:clocked . ,clocked)
                   (:element . ,(org-ql--add-markers headline))
                   (:effort . ,effort)
-                  (:missed . ,(and (not clocked) (not effort)
-                                   (not (not (or scheduled deadline))))))))
+                  (:missed
+                   . ,(and (not clocked) (not effort)
+                           (or (my/org-agenda-clock--org-timestamp-in-range
+                                start end scheduled)
+                               (my/org-agenda-clock--org-timestamp-in-range
+                                start end deadline))
+                           (not (equal status "WAIT")))))))
             :from (org-agenda-files)
             :where `(and
                      (ts :from ,(format-time-string "%FT%T%z" start)
@@ -724,17 +736,18 @@ DATE is a calendar-style date list, as passed by
      (when effort
        (propertize
         (format "%s / "
-                (org-duration-from-minutes clocked 'h:mm))
+                (buttonize
+                 (org-duration-from-minutes clocked 'h:mm)
+                 #'my/org-ql-clocked-today
+                 timestamp)
+                )
         'my/org-agenda-clock-face
         'warning))
      (when clocked
        (concat
         ""
         (propertize
-         (buttonize
-          (org-duration-from-minutes effort 'h:mm)
-          #'my/org-ql-clocked-today
-          timestamp)
+         (org-duration-from-minutes effort 'h:mm)
          'my/org-agenda-clock-face
          'success)
         " "))
@@ -1207,6 +1220,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
     "c" #'org-clock-goto
     "p" #'org-set-property
     "e" #'org-set-effort
+    "E" #'my/org-planned-effort-add-daily
+    "R" #'my/org-planned-effort-remove-daily
     "r" #'org-priority
     "m" #'my/org-meeting-link))
 
@@ -1722,11 +1737,12 @@ KEYS is a list of cons cells like (<label> . <time>)."
 Review checklist (/delete this/):
 - [ ] Clear email inbox
 - [ ] Reconcile ledger
+- [ ] Reconcile other stats
 - [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
 - [ ] Process [[file:~/30-39 Life/35 Photos/35.00 Inbox/][photo inbox]]
 - [ ] Process [[file:../inbox.org][inbox]]
 - [ ] Create [[file:../recurring.org][recurring tasks]] for next week
-- [ ] Check agenda (-1 / +2 weeks): priorities, deadlines
+- [ ] Sort agenda (-1 / +2 weeks): deadlines, effort
 - [ ] Check TODOs: priorities, deadlines
   - [[org-ql-search:todo%3A?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: All TODOs]]
   - [[org-ql-search:(and (todo) (clocked) (not (tags \"nots\")) (not (ts :from -14)) (not (todo \"MAYBE\")))?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: Stale tasks]]

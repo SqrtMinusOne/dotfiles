@@ -4807,6 +4807,11 @@ A package to quickly create =.gitignore= files.
 (use-package apparmor-mode
   :straight t)
 #+end_src
+*** ansible
+#+begin_src emacs-lisp
+(use-package ansible
+  :straight t)
+#+end_src
 ** Shell
 :PROPERTIES:
 :MODULE_NAME: misc-programming
@@ -6278,7 +6283,7 @@ Then, effort estimation. Effort per task can be set with =M-x org-set-effort=, w
 (with-eval-after-load 'org
   (add-to-list
    'org-global-properties
-   '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 4:00 8:00")))
+   '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 3:00 4:00 8:00")))
 #+end_src
 
 But I also occasionally have tasks I work for a long time. For that, I want to specify how much time I plan to spend on on the task a particular day for further workflows.
@@ -6286,9 +6291,10 @@ But I also occasionally have tasks I work for a long time. For that, I want to s
 I've decided to store that information in blocks like this:
 #+begin_example
 :EFFORT:
-[2026-06-08 Mon]: 04:00
+<2026-06-08 Mon>: 04:00
 :END:
 #+end_example
+The timestamp is active because that way it's indexed in =org-agenda=.
 
 So, first, parse the bounds of this block:
 #+begin_src emacs-lisp
@@ -6319,7 +6325,7 @@ Return an alist of (TIMESTAMP . MINUTES)."
   (let (rows)
     (dolist (line (split-string string "\n"))
       (when (string-match-p "\\S-" line)
-        (unless (string-match org-ts-regexp-inactive line)
+        (unless (string-match org-ts-regexp-both line)
           (user-error "Invalid effort line: %s" line))
         (let* ((timestamp (match-string 0 line))
                (timestamp-end (match-end 0))
@@ -6328,7 +6334,7 @@ Return an alist of (TIMESTAMP . MINUTES)."
                (minutes (round (org-duration-to-minutes duration)))
                (row (assq day rows)))
           (if row
-              (cl-incf (cddr row) minutes)
+              (setcdr (cdr row) minutes)
             (push (cons day (cons timestamp minutes)) rows)))))
     (mapcar #'cdr (sort rows (lambda (a b) (< (car a) (car b)))))))
 #+end_src
@@ -6393,7 +6399,7 @@ Which allows us to implement interactive functions to add and remove daily durat
   (interactive
    (list (org-read-date nil t nil "Date: ")
          (read-string "Effort: ")))
-  (let* ((timestamp (format-time-string (org-time-stamp-format nil t) date))
+  (let* ((timestamp (format-time-string (org-time-stamp-format nil nil) date))
          (minutes (round (org-duration-to-minutes duration))))
     (my/org-planned-effort--write
      (my/org-planned-effort--put timestamp minutes
@@ -6403,7 +6409,7 @@ Which allows us to implement interactive functions to add and remove daily durat
   "Remove planned effort for DATE from the current Org task's EFFORT drawer."
   (interactive (list (org-read-date nil t nil "Date: ")))
   (let* ((day (org-time-string-to-absolute
-               (format-time-string (org-time-stamp-format nil t) date)))
+               (format-time-string (org-time-stamp-format nil nil) date)))
          (entries (my/org-planned-effort-parse))
          (kept (cl-remove day entries
                           :key (lambda (entry)
@@ -6778,7 +6784,7 @@ So, first, planned effort. Get the effort of task:
      ;; Data from the :EFFORT: drawer
      (when-let (effort-data (my/org-planned-effort-parse))
        (alist-get
-        (format-time-string (org-time-stamp-format nil t) timestamp)
+        (format-time-string (org-time-stamp-format nil nil) timestamp)
         effort-data nil nil #'equal)))))
 #+end_src
 
@@ -6825,6 +6831,11 @@ And get the data for a particular timestamp.
 #+begin_src emacs-lisp
 (setq my/org-agenda-hide-tags (list "org" "refile" "proj" "habit"))
 
+(defun my/org-agenda-clock--org-timestamp-in-range (start end timestamp)
+  (when timestamp
+    (let ((epoch (time-convert (org-timestamp-to-time timestamp) 'integer)))
+      (and (>= epoch start) (<= epoch end)))))
+
 (defun my/org-agenda-clock--get-data (timestamp)
   (let* ((start (my/utils-ts-to-day-start timestamp))
          (end (my/utils-ts-to-day-end timestamp))
@@ -6834,6 +6845,8 @@ And get the data for a particular timestamp.
             :select
             (lambda ()
               (let* ((headline (org-element-at-point))
+                     (status (substring-no-properties
+                              (org-element-property :todo-keyword headline)))
                      (clocked (my/org-agenda-clock--clocked-at-point start end))
                      (effort (my/org-agenda-clock--effort-at-point
                               timestamp headline))
@@ -6842,8 +6855,13 @@ And get the data for a particular timestamp.
                 `((:clocked . ,clocked)
                   (:element . ,(org-ql--add-markers headline))
                   (:effort . ,effort)
-                  (:missed . ,(and (not clocked) (not effort)
-                                   (not (not (or scheduled deadline))))))))
+                  (:missed
+                   . ,(and (not clocked) (not effort)
+                           (or (my/org-agenda-clock--org-timestamp-in-range
+                                start end scheduled)
+                               (my/org-agenda-clock--org-timestamp-in-range
+                                start end deadline))
+                           (not (equal status "WAIT")))))))
             :from (org-agenda-files)
             :where `(and
                      (ts :from ,(format-time-string "%FT%T%z" start)
@@ -6905,17 +6923,18 @@ DATE is a calendar-style date list, as passed by
      (when effort
        (propertize
         (format "%s / "
-                (org-duration-from-minutes clocked 'h:mm))
+                (buttonize
+                 (org-duration-from-minutes clocked 'h:mm)
+                 #'my/org-ql-clocked-today
+                 timestamp)
+                )
         'my/org-agenda-clock-face
         'warning))
      (when clocked
        (concat
         ""
         (propertize
-         (buttonize
-          (org-duration-from-minutes effort 'h:mm)
-          #'my/org-ql-clocked-today
-          timestamp)
+         (org-duration-from-minutes effort 'h:mm)
          'my/org-agenda-clock-face
          'success)
         " "))
@@ -7501,6 +7520,8 @@ Local keybindings
     "c" #'org-clock-goto
     "p" #'org-set-property
     "e" #'org-set-effort
+    "E" #'my/org-planned-effort-add-daily
+    "R" #'my/org-planned-effort-remove-daily
     "r" #'org-priority
     "m" #'my/org-meeting-link))
 #+end_src
@@ -8219,11 +8240,12 @@ I'll use data from git to get the list of what I've been working on. The directo
 Review checklist (/delete this/):
 - [ ] Clear email inbox
 - [ ] Reconcile ledger
+- [ ] Reconcile other stats
 - [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
 - [ ] Process [[file:~/30-39 Life/35 Photos/35.00 Inbox/][photo inbox]]
 - [ ] Process [[file:../inbox.org][inbox]]
 - [ ] Create [[file:../recurring.org][recurring tasks]] for next week
-- [ ] Check agenda (-1 / +2 weeks): priorities, deadlines
+- [ ] Sort agenda (-1 / +2 weeks): deadlines, effort
 - [ ] Check TODOs: priorities, deadlines
   - [[org-ql-search:todo%3A?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: All TODOs]]
   - [[org-ql-search:(and (todo) (clocked) (not (tags \"nots\")) (not (ts :from -14)) (not (todo \"MAYBE\")))?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: Stale tasks]]
@@ -12361,9 +12383,7 @@ Returns the filepath of the created screenshot."
 
 A function to attach a screenshot to a notmuch buffer:
 #+begin_src emacs-lisp
-(defun my/screenshot-attach-to-notmuch (notmuch-buffer)
-  (interactive
-   (list (my/get-good-buffer 'notmuch-message-mode "Notmuch message buffer: ")))
+(defun my/screenshot-attach-to-notmuch--do (notmuch-buffer)
   (let ((screenshot-file (my/flameshot-screenshot)))
     (if screenshot-file
         (with-current-buffer notmuch-buffer
@@ -12377,6 +12397,19 @@ A function to attach a screenshot to a notmuch buffer:
                nil
                "attachment"))))
       (user-error "Screenshot was cancelled or failed"))))
+
+(defun my/screenshot-attach-to-notmuch (notmuch-buffer &optional delay)
+  (interactive
+   (list (my/get-good-buffer 'notmuch-message-mode "Notmuch message buffer: ")
+         (when current-prefix-arg
+           (read-number "Delay (sec): "))))
+  (if delay
+      (run-with-timer
+       delay nil
+       (lambda ()
+         (my/screenshot-attach-to-notmuch--do notmuch-buffer)
+         ))
+    (my/screenshot-attach-to-notmuch--do notmuch-buffer)))
 #+end_src
 
 A function to attach a screenshot to org:
