@@ -1,4 +1,4 @@
-#+TITLE: Console
+#+TITLE: Console config
 #+TODO: TODO(t) CHECK(s) | OFF(o)
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:conf-space   :comments link

@@ -1,4 +1,4 @@
-#+TITLE: Guix
+#+TITLE: Guix config
 #+PROPERTY: header-args                :mkdirp yes
 #+PROPERTY: header-args:emacs-lisp     :eval never-export
 #+PROPERTY: header-args:bash           :tangle-mode (identity #o755) :comments link :shebang "#!/usr/bin/env bash"
@@ -8,7 +8,9 @@
 
 [[https://guix.gnu.org/][GNU Guix]] is (1) a transactional package manager and (2) a GNU/Linux distribution.
 
-My personal selling points are declarative package configuration and transactional upgrades.
+My personal selling points were declarative package configuration and transactional upgrades.
+
+I've since switched to Arch Linux but decided to keep this file as a reference. I've even spent ~30 hours writing a blog post detailing why but deleted it.
 
 References:
 - [[https://guix.gnu.org/en/help/][Official help]]

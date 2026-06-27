@@ -1,7 +1,7 @@
 :PROPERTIES:
 :TOC:      :include all :depth 3
 :END:
-#+TITLE: Mail
+#+TITLE: Mail config
 #+PROPERTY: header-args :mkdirp yes
 #+PROPERTY: header-args:emacs-lisp  :eval never-export
 #+PROPERTY: header-args:conf-unix   :comments link
@@ -72,7 +72,6 @@ cd $HOME/bin/davmail-6.0.0-3375
 ./davmail davmail.properties
 #+end_src
 
-Shepherd service is defined in [[file:Desktop.org::*Davmail][Desktop.org]].
 * OfflineIMAP
 | Arch dependency |
 |-----------------|

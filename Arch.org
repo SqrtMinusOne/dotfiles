@@ -1,4 +1,4 @@
-#+TITLE: Arch Linux
+#+TITLE: Arch Linux config
 #+PROPERTY: header-args :mkdirp yes
 
 I've decided to switch to [[https://archlinux.org/][Arch Linux]] and configure it declaratively with [[https://github.com/ripytide/metapac][metapac]].
