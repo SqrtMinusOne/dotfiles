@@ -828,7 +828,7 @@ Also other local keybindings, that are also available only in =line-mode=:
 (general-define-key
  :keymaps '(exwm-mode-map)
  "C-q" #'exwm-input-send-next-key
- "<print>" (my/app-command "flameshot gui")
+ "<print>" (my/app-command "ksnip -r -c")
  "<mode-line> s-<mouse-4>" #'perspective-exwm-cycle-all-buffers-backward
  "<mode-line> s-<mouse-5>" #'perspective-exwm-cycle-all-buffers-forward
  "M-x" #'execute-extended-command
@@ -914,7 +914,7 @@ And keybindings that are available in both =char-mode= and =line-mode=:
 
         (,(kbd "<XF86AudioPlay>") . ,(my/app-command "mpc toggle"))
         (,(kbd "<XF86AudioPause>") . ,(my/app-command "mpc pause"))
-        (,(kbd "<print>") . ,(my/app-command "flameshot gui"))
+        (,(kbd "<print>") . ,(my/app-command "ksnip -r -c"))
 
         ;; Input method
         (,(kbd "M-\\") . my/toggle-input-method)
@@ -930,8 +930,6 @@ And keybindings that are available in both =char-mode= and =line-mode=:
         (,(kbd "s-}") . perspective-exwm-cycle-all-buffers-forward)
         (,(kbd "s-[") . perspective-exwm-cycle-exwm-buffers-backward)
         (,(kbd "s-]") . perspective-exwm-cycle-exwm-buffers-forward)
-        (,(kbd "s-<mouse-4>") . perspective-exwm-cycle-exwm-buffers-backward)
-        (,(kbd "s-<mouse-5>") . perspective-exwm-cycle-exwm-buffers-forward)
         (,(kbd "s-`") . perspective-exwm-switch-perspective)
         (,(kbd "s-o") . ,(my/app-command "rofi -show window"))
 
@@ -1089,7 +1087,6 @@ And the EXWM config itself.
 #+begin_src emacs-lisp :noweb yes
 (defun my/exwm-init ()
   (exwm-workspace-switch 1)
-
   (my/exwm-run-shepherd)
   (my/exwm-set-wallpaper)
   (my/run-in-background "gpgconf --reload gpg-agent")
@@ -1098,7 +1095,6 @@ And the EXWM config itself.
   (my/exwm-run-systemd)
   (when (my/is-arch)
     (my/run-in-background "set_layout")))
-
 (defun my/exwm-update-class ()
   (exwm-workspace-rename-buffer (format "EXWM :: %s" exwm-class-name)))
 
@@ -1137,7 +1133,9 @@ And the EXWM config itself.
     (my/exwm-set-alpha 90))
 
   (perspective-exwm-mode)
-  (exwm-enable))
+  ;; Why does Daniel Mendler delete functions? Why not just keep the
+  ;; old functions forever?
+  (exwm-wm-mode))
 #+end_src
 * i3wm
 :PROPERTIES:
@@ -1594,8 +1592,7 @@ bindsym XF86MonBrightnessDown exec light -U 5
 
 #+begin_src conf-space
 # Screenshots
-bindsym --release Print exec "flameshot gui"
-bindsym --release Shift+Print exec "xfce4-screenshooter"
+bindsym --release Print exec "knsip -r -c"
 #+end_src
 ** Colors
 Application of the XResources theme to the WM.
@@ -2046,7 +2043,7 @@ radius = 0.0
 
 Fonts
 #+begin_src conf-windows
-font-0 = pango:monospace:size=13;2
+font-0 = pango:DejaVu Sans:size=13;2
 font-1 = NotoEmoji:scale=10:antialias=false;1
 font-2 = fontawesome:pixelsize=13;3
 font-3 = JetBrainsMono Nerd Font:style=Medium,Regular:size=13;4
@@ -2885,7 +2882,7 @@ content-background = ${colors.blue}
 #+begin_src conf-windows
 [module/glyph-left-light-background--blue]
 type = custom/text
-content-background = ${colors.backround}
+content-background = ${colors.background}
 content-foreground = ${colors.blue}
 content = ${glyph.gleft}
 content-font = 5
@@ -3148,58 +3145,37 @@ EDITOR=vim
 default_autotype='username :tab pass'
 clip=both
 #+end_src
-* Flameshot
+* ksnip
 | Arch dependency |
 |-----------------|
-| flameshot       |
+| ksnip           |
 
-[[https://github.com/flameshot-org/flameshot][flameshot]] is my program of choice to make screenshots.
+[[https://github.com/ksnip/ksnip][ksnip]] is my screenshot program of choice.
 
-As it overwrites its own config all the time, I do not keep the file in VC.
+#+begin_src conf-unix :tangle ~/.config/ksnip/ksnip.conf
+[Application]
+SaveDirectory=/home/pavel/Pictures/screenshots
 
-#+begin_src conf-unix :tangle ./.config/flameshot/flameshot.ini :comments no :noweb yes
-[General]
-disabledTrayIcon=false
-drawColor=#ff0000
-drawThickness=3
-savePath=/home/pavel/Pictures
-savePathFixed=false
-showStartupLaunchMessage=false
-uiColor=<<get-color(name="blue")>>
+[HotKeys]
+GlobalHotKeysEnabled=false
 
-[Shortcuts]
-TYPE_ARROW=A
-TYPE_CIRCLE=C
-TYPE_CIRCLECOUNT=
-TYPE_COMMIT_CURRENT_TOOL=Ctrl+Return
-TYPE_COPY=Ctrl+C
-TYPE_DRAWER=D
-TYPE_EXIT=Ctrl+Q
-TYPE_IMAGEUPLOADER=Return
-TYPE_MARKER=M
-TYPE_MOVESELECTION=Ctrl+M
-TYPE_MOVE_DOWN=Down
-TYPE_MOVE_LEFT=Left
-TYPE_MOVE_RIGHT=Right
-TYPE_MOVE_UP=Up
-TYPE_OPEN_APP=Ctrl+O
-TYPE_PENCIL=P
-TYPE_PIN=
-TYPE_PIXELATE=B
-TYPE_RECTANGLE=R
-TYPE_REDO=Ctrl+Shift+Z
-TYPE_RESIZE_DOWN=Shift+Down
-TYPE_RESIZE_LEFT=Shift+Left
-TYPE_RESIZE_RIGHT=Shift+Right
-TYPE_RESIZE_UP=Shift+Up
-TYPE_SAVE=Ctrl+S
-TYPE_SELECTION=S
-TYPE_SELECTIONINDICATOR=
-TYPE_SELECT_ALL=Ctrl+A
-TYPE_TEXT=T
-TYPE_TOGGLE_PANEL=Space
-TYPE_UNDO=Ctrl+Z
+[ImageGrabber]
+LastRectArea=@Rect(340 230 928 503)
+
+[KImageAnnotator]
+AnnotatorDockWidgetsState="@ByteArray(\0\0\0\xff\0\0\0\0\xfd\0\0\0\x3\0\0\0\0\0\0\0\x44\0\0\x2\x8f\xfc\x2\0\0\0\x1\xfb\0\0\0\x1c\0T\0o\0o\0l\0 \0S\0\x65\0l\0\x65\0\x63\0t\0i\0o\0n\x1\0\0\0%\0\0\x2\x8f\0\0\0Q\0\xff\xff\xff\0\0\0\x2\0\0\x5\xee\0\0\0\x1f\xfc\x1\0\0\0\x1\xfb\0\0\0\x1a\0I\0t\0\x65\0m\0 \0S\0\x65\0t\0t\0i\0n\0g\0s\x1\0\0\0\0\0\0\x5\xee\0\0\x1=\0\xff\xff\xff\0\0\0\x3\0\0\x5\xee\0\0\0\x1f\xfc\x1\0\0\0\x2\xfb\0\0\0 \0G\0\x65\0n\0\x65\0r\0\x61\0l\0 \0S\0\x65\0t\0t\0i\0n\0g\0s\x1\0\0\0\0\0\0\x4N\0\0\0\xab\0\xff\xff\xff\xfb\0\0\0\x1c\0I\0m\0\x61\0g\0\x65\0 \0S\0\x65\0t\0t\0i\0n\0g\0s\x1\0\0\x4T\0\0\x1\x9a\0\0\0\x44\0\xff\xff\xff\0\0\x5\xa4\0\0\x2\x8f\0\0\0\x4\0\0\0\x4\0\0\0\b\0\0\0\b\xfc\0\0\0\0)"
+ToolColor_1=@Variant(\0\0\0\x43\x1\xff\xff\xff\xff\0\0\0\0\0\0)
+ToolShadowEnabled_1=false
+ToolType=1
+ToolWidth_1=3
+
+[MainWindow]
+Position=@Point(1920 0)
+
+[Painter]
+SmoothPathEnabled=true
 #+end_src
+
 * dunst
 | Arch dependency |
 |-----------------|
@@ -4252,6 +4228,7 @@ This section generates manifests for various desktop software that I'm using.
 | browsers | ungoogled-chromium-bin |
 | browsers | firefox                |
 | browsers | firefox-tridactyl      |
+| browsers  | torbrowser-launcher    |
 ** Office & Multimedia
 | Category | Arch dependency             | Disabled | Source  |
 |----------+-----------------------------+----------+---------|
@@ -4355,6 +4332,8 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | traceroute           |          |
 | dev      | docker-buildx        |          |
 | dev      | duckdb               |          |
+| dev      | ansible              |          |
+| dev      | strace               |          |
 ** Games
 | Category | Arch dependency |
 |----------+-----------------|

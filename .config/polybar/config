@@ -35,6 +35,7 @@ gright = 
 ; Glyph settings:1 ends here
 
 ; [[file:../../Desktop.org::*Generating glyphs][Generating glyphs:3]]
+
 [module/glyph-light-cyan--cyan]
 type = custom/text
 content-background = ${colors.light-cyan}
@@ -180,7 +181,7 @@ radius = 0.0
 ; Global bar config:2 ends here
 
 ; [[file:../../Desktop.org::*Global bar config][Global bar config:3]]
-font-0 = pango:monospace:size=13;2
+font-0 = pango:DejaVu Sans:size=13;2
 font-1 = NotoEmoji:scale=10:antialias=false;1
 font-2 = fontawesome:pixelsize=13;3
 font-3 = JetBrainsMono Nerd Font:style=Medium,Regular:size=13;4
@@ -524,7 +525,7 @@ content-background = ${colors.blue}
 ; [[file:../../Desktop.org::*C-g][C-g:3]]
 [module/glyph-left-light-background--blue]
 type = custom/text
-content-background = ${colors.backround}
+content-background = ${colors.background}
 content-foreground = ${colors.blue}
 content = ${glyph.gleft}
 content-font = 5

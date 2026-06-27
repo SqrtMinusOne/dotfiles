@@ -185,6 +185,9 @@
 (use-package apparmor-mode
   :straight t)
 
+(use-package ansible
+  :straight t)
+
 (add-hook 'sh-mode-hook #'smartparens-mode)
 
 (use-package fish-mode

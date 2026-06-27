@@ -169,12 +169,7 @@
    :states '(normal)
    :keymaps '(dired-mode-map)
    "C" #'dired-rsync
-   "gC" #'dired-rsync-transient
    "gd" #'dired-do-copy))
-
-(use-package dired-rsync-transient
-  :straight t
-  :after (dired))
 
 (defun my/dired-open-this-subdir ()
   (interactive)

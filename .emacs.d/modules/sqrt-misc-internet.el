@@ -120,9 +120,7 @@ Returns the filepath of the created screenshot."
         (message "Screenshot was cancelled or failed")
         nil))))
 
-(defun my/screenshot-attach-to-notmuch (notmuch-buffer)
-  (interactive
-   (list (my/get-good-buffer 'notmuch-message-mode "Notmuch message buffer: ")))
+(defun my/screenshot-attach-to-notmuch--do (notmuch-buffer)
   (let ((screenshot-file (my/flameshot-screenshot)))
     (if screenshot-file
         (with-current-buffer notmuch-buffer
@@ -136,6 +134,18 @@ Returns the filepath of the created screenshot."
                nil
                "attachment"))))
       (user-error "Screenshot was cancelled or failed"))))
+
+(defun my/screenshot-attach-to-notmuch (notmuch-buffer &optional delay)
+  (interactive
+   (list (my/get-good-buffer 'notmuch-message-mode "Notmuch message buffer: ")
+         (when current-prefix-arg
+           (read-number "Delay (sec): "))))
+  (if delay
+      (run-with-timer
+       delay nil
+       (lambda ()
+         (my/screenshot-attach-to-notmuch--do notmuch-buffer)))
+    (my/screenshot-attach-to-notmuch--do notmuch-buffer)))
 
 (defun my/screenshot-attach-to-org ()
   (interactive)

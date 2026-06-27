@@ -350,8 +350,7 @@ bindsym XF86MonBrightnessDown exec light -U 5
 
 # [[file:../../Desktop.org::*Screenshots][Screenshots:1]]
 # Screenshots
-bindsym --release Print exec "flameshot gui"
-bindsym --release Shift+Print exec "xfce4-screenshooter"
+bindsym --release Print exec "knsip -r -c"
 # Screenshots:1 ends here
 
 # [[file:../../Desktop.org::*Colors][Colors:1]]

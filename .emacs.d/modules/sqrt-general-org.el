@@ -50,6 +50,42 @@
 (unless my/remote-server
   (setq epa-file-encrypt-to '("DE004F32AFA00205")))
 
+(defvar my/org-babel-tangle--normalized-targets nil)
+
+(defun my/org-babel-tangle-normalize-current-target (orig-fun &optional arg target-file lang-re)
+  "Restore `C-u C-u C-c C-v t' for Org 10.0-pre.
+
+Org's double-prefix path currently uses the raw `:tangle' header value
+as a filter, while `org-babel-tangle-collect-blocks' compares that
+filter with the computed target filename.  Normalize the current block
+target through `org-babel-tangle-single-block' before the collector
+runs."
+  (if (not (equal arg '(16)))
+      (funcall orig-fun arg target-file lang-re)
+    (save-excursion
+      (let ((head (org-babel-where-is-src-block-head)))
+        (unless head
+          (user-error "Point is not in a source code block"))
+        (goto-char head)
+        (let ((my/org-babel-tangle--normalized-targets
+               (mapcar #'car (org-babel-tangle-single-block 1 t))))
+          (funcall orig-fun arg target-file lang-re))))))
+
+(defun my/org-babel-tangle-collect-blocks-normalized-target
+    (orig-fun &optional lang-re tangle-file)
+  (if (not my/org-babel-tangle--normalized-targets)
+      (funcall orig-fun lang-re tangle-file)
+    (apply #'append
+           (mapcar (lambda (target)
+                     (funcall orig-fun lang-re target))
+                   my/org-babel-tangle--normalized-targets))))
+
+(with-eval-after-load 'ob-tangle
+  (advice-add 'org-babel-tangle
+              :around #'my/org-babel-tangle-normalize-current-target)
+  (advice-add 'org-babel-tangle-collect-blocks
+              :around #'my/org-babel-tangle-collect-blocks-normalized-target))
+
 (use-package org-contrib
   :straight (org-contrib
              :type git

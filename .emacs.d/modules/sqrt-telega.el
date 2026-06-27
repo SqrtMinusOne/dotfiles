@@ -285,12 +285,12 @@
             (setq track-timeout t)
             (setf (alist-get proxy-id telega--proxy-pings) (cons currts nil))
             (telega--pingProxy
-                proxy
-              (lambda (seconds)
-                (setf (alist-get proxy-id telega--proxy-pings)
-                      (cons (time-to-seconds) (plist-get seconds :seconds)))
-                (when callback
-                  (funcall callback)))))))
+             proxy
+             (lambda (seconds)
+               (setf (alist-get proxy-id telega--proxy-pings)
+                     (cons (time-to-seconds) (plist-get seconds :seconds)))
+               (when callback
+                 (funcall callback)))))))
       (when (and track-timeout callback)
         (run-with-timer 10 nil callback))))
 

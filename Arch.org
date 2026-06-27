@@ -150,6 +150,7 @@ Don't forget to sync mail and enable the sync timer.
 #+begin_src bash
 sudo usermod -a -G libvirt pavel
 sudo usermod -a -G kvm pavel
+sudo virsh net-autostart default
 #+end_src
 
 Install [[https://github.com/retorquere/zotero-better-bibtex][zotero-better-bibtex]] manually.
@@ -192,6 +193,13 @@ sudo systemctl enable --now xrdp
 Set the default browser:
 #+begin_src bash
 xdg-settings set default-web-browser glide-browser-bin.desktop
+#+end_src
+
+Disable systemd coredumps by editing /etc/systemd/coredump.conf
+#+begin_src conf
+[Coredump]
+Storage=none
+ProcessSizeMax=0
 #+end_src
 
 * Metapac configuration

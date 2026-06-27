@@ -54,4 +54,5 @@
                   (let ((tgt (erc-default-target)))
                     (erc-server-send (format "DETACH %s" tgt) nil tgt))))))
 
+
 (provide 'sqrt-erc)
