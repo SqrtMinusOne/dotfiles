@@ -80,6 +80,7 @@
 
 (defun my/ement-room-compose-setup ()
   (ement-room-compose-org)
+  (require 'telega-company)
   (setq company-backends '(telega-company-emoji company-capf))
   (general-define-key
    :states '(normal visual)
