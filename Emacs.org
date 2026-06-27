@@ -9737,7 +9737,8 @@ Some initial configuration.
   (general-define-key
    :states '(normal insert)
    :keymaps 'eshell-mode-map
-   "<home>" #'eshell-bol)
+   "<home>" #'eshell-bol
+   "<return>" #'eshell-send-input)
 
   (general-define-key
    :keymaps 'eshell-mode-map
@@ -14752,8 +14753,6 @@ An =org-babel= block:
 :header-args:emacs-lisp: :tangle /home/pavel/.emacs.d/modules/sqrt-discord.el :comments links
 :END:
 Integration with Discord. Shows which file is being edited in Emacs.
-
-In order for this to work in Guix, a service is necessary - [[file:Desktop.org::*Discord rich presence][Discord rich presence]].
 
 Some functions to override the displayed message:
 #+begin_src emacs-lisp
