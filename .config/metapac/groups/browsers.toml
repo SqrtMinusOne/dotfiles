@@ -1,8 +1,10 @@
 arch = {
   packages = [
+    "torbrowser-launcher",
     "firefox-tridactyl",
     "firefox",
     "ungoogled-chromium-bin",
     "glide-browser-bin",
   ],
 }
+

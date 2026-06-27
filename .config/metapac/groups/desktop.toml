@@ -8,7 +8,7 @@ arch = {
     "picom",
     "libnotify",
     "dunst",
-    "flameshot",
+    "ksnip",
     "i3lock",
     "i3-wm",
     "xorg-xinput",
@@ -20,3 +20,4 @@ arch = {
     "gtk-engines",
   ],
 }
+

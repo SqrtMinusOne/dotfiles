@@ -1,5 +1,7 @@
 arch = {
   packages = [
+    "strace",
+    "ansible",
     "duckdb",
     "docker-buildx",
     "traceroute",
@@ -50,3 +52,4 @@ arch = {
     "micromamba-bin",
   ],
 }
+
