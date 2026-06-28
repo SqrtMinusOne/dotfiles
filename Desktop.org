@@ -4595,6 +4595,26 @@ ExecStart=/usr/bin/opensnitch-ui
 [Install]
 WantedBy=wm-session.target
 #+end_src
+** snixembed
+[[https://git.sr.ht/~steef/snixembed][snixembed]] is a compatibility proxy between two systemtray protocols.
+
+| Arch dependency |
+|-----------------|
+| snixembed       |
+
+#+begin_src conf :tangle .config/systemd/user/snixembed.service
+[Unit]
+Description=snixembed
+
+[Service]
+ExecStart=/usr/bin/snixembed
+Restart=on-failure
+
+[Install]
+WantedBy=wm-session.target
+#+end_src
+
+
 * Arch settings
 Other desktop programs I use are listed below.
 
