@@ -606,3 +606,22 @@ In =/usr/lib/jvm/java-21-openjdk/conf/security/java.security=, in =jdk.tls.disab
 #+end_example
 
 Leave only ECDH
+** Running MAX in Firejail
+#+begin_src conf-desktop :tangle .local/share/applications/max.desktop
+[Desktop Entry]
+Type=Application
+Terminal=false
+Name=MAX
+Exec=firejail --profile=max /usr/share/max/bin/max %U
+DBusActivatable=false
+Icon=/usr/share/pixmaps/max.png
+MimeType=x-scheme-handler/max;
+Comment=MAX Messenger Client Application
+Comment[ru]=Клиентское приложение мессенджера MAX
+StartupWMClass=max
+Categories=Chat;Network;InstantMessaging;Qt;
+Keywords=max;chat;im;messaging;messenger;sms;
+SingleMainWindow=true
+X-GNOME-UsesNotifications=true
+X-GNOME-SingleWindow=true
+#+end_src

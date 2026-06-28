@@ -156,7 +156,7 @@ _=_: Balance          "
       ("Alacritty"
        (perspective-exwm-assign-window
         :persp-name "term"))
-      ((or "VK" "Slack" "discord" "TelegramDesktop" "Rocket.Chat")
+      ((or "VK" "Slack" "discord" "TelegramDesktop" "Rocket.Chat" "max")
        (perspective-exwm-assign-window
         :workspace-index 3
         :persp-name "comms"))
