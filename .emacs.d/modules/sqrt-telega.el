@@ -154,6 +154,32 @@
     (advice-add 'telega--sendMessageAlbum
                 :around #'my/telega-tdlib-fix-send-album-photo)))
 
+(defun my/telega-ins-user-status-when-known (fun user)
+  (when (telega--tl-get user :status :@type)
+    (funcall fun user)))
+
+(with-eval-after-load 'telega-ins
+  (advice-add 'telega-ins--user-status
+              :around #'my/telega-ins-user-status-when-known))
+
+(defun my/telega-ins-chat-status-when-known (fun chat &optional topic)
+  (let ((start (point)))
+    (condition-case err
+        (funcall fun chat topic)
+      (wrong-type-argument
+       (if (equal err '(wrong-type-argument stringp nil))
+           (progn
+             (delete-region start (point))
+             (when-let ((last-msg (plist-get (or topic chat) :last_message)))
+               (if (telega-msg-match-p last-msg 'ignored)
+                   (telega-ins--one-lined (telega-ins--message-ignored last-msg))
+                 (telega-ins--chat-msg-one-line chat last-msg))))
+         (signal (car err) (cdr err)))))))
+
+(with-eval-after-load 'telega-ins
+  (advice-add 'telega-ins--chat-status
+              :around #'my/telega-ins-chat-status-when-known))
+
 (defun my/telega-chat-setup ()
   (interactive)
   (require 'telega-company)
