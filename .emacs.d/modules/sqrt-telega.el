@@ -106,6 +106,54 @@
          (telega-mode-line-mentions 'messages))
         "]"))
 
+(defun my/telega-tdlib-input-photo-p ()
+  (let ((header "/usr/include/td/telegram/td_api.h"))
+    (and (file-readable-p header)
+         (with-temp-buffer
+           (insert-file-contents header nil 0 4000000)
+           (search-forward "object_ptr<inputPhoto> photo_" nil t)))))
+
+(defun my/telega-tdlib-fix-input-message-photo (imc)
+  (if (and (eq (telega--tl-type imc) 'inputMessagePhoto)
+           (not (eq (telega--tl-type (plist-get imc :photo)) 'inputPhoto)))
+      (nconc
+       (list :@type "inputMessagePhoto"
+             :photo (nconc
+                     (list :@type "inputPhoto"
+                           :photo (plist-get imc :photo))
+                     (when-let ((thumbnail (plist-get imc :thumbnail)))
+                       (list :thumbnail thumbnail))
+                     (when-let ((video (plist-get imc :video)))
+                       (list :video video))
+                     (when-let ((sticker-ids (plist-get imc :added_sticker_file_ids)))
+                       (list :added_sticker_file_ids sticker-ids))
+                     (when-let ((width (plist-get imc :width)))
+                       (list :width width))
+                     (when-let ((height (plist-get imc :height)))
+                       (list :height height))))
+       (when-let ((caption (plist-get imc :caption)))
+         (list :caption caption))
+       (when-let ((caption-above (plist-get imc :show_caption_above_media)))
+         (list :show_caption_above_media caption-above))
+       (when-let ((self-destruct (plist-get imc :self_destruct_type)))
+         (list :self_destruct_type self-destruct))
+       (when-let ((spoiler-p (plist-get imc :has_spoiler)))
+         (list :has_spoiler spoiler-p)))
+    imc))
+
+(defun my/telega-tdlib-fix-send-message-photo (fun chat imc &rest args)
+  (apply fun chat (my/telega-tdlib-fix-input-message-photo imc) args))
+
+(defun my/telega-tdlib-fix-send-album-photo (fun chat imcs &rest args)
+  (apply fun chat (mapcar #'my/telega-tdlib-fix-input-message-photo imcs) args))
+
+(with-eval-after-load 'telega-tdlib
+  (when (my/telega-tdlib-input-photo-p)
+    (advice-add 'telega--sendMessage
+                :around #'my/telega-tdlib-fix-send-message-photo)
+    (advice-add 'telega--sendMessageAlbum
+                :around #'my/telega-tdlib-fix-send-album-photo)))
+
 (defun my/telega-chat-setup ()
   (interactive)
   (require 'telega-company)
