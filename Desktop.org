@@ -828,7 +828,7 @@ Also other local keybindings, that are also available only in =line-mode=:
 (general-define-key
  :keymaps '(exwm-mode-map)
  "C-q" #'exwm-input-send-next-key
- "<print>" (my/app-command "ksnip -r -c")
+ "<print>" (my/app-command "bash /home/pavel/bin/scripts/screenshot")
  "<mode-line> s-<mouse-4>" #'perspective-exwm-cycle-all-buffers-backward
  "<mode-line> s-<mouse-5>" #'perspective-exwm-cycle-all-buffers-forward
  "M-x" #'execute-extended-command
@@ -914,7 +914,7 @@ And keybindings that are available in both =char-mode= and =line-mode=:
 
         (,(kbd "<XF86AudioPlay>") . ,(my/app-command "mpc toggle"))
         (,(kbd "<XF86AudioPause>") . ,(my/app-command "mpc pause"))
-        (,(kbd "<print>") . ,(my/app-command "ksnip -r -c"))
+        (,(kbd "<print>") . ,(my/app-command "bash /home/pavel/bin/scripts/screenshot"))
 
         ;; Input method
         (,(kbd "M-\\") . my/toggle-input-method)
@@ -1592,7 +1592,7 @@ bindsym XF86MonBrightnessDown exec light -U 5
 
 #+begin_src conf-space
 # Screenshots
-bindsym --release Print exec "knsip -r -c"
+bindsym --release Print exec ~/bin/scripts/screenshot
 #+end_src
 ** Colors
 Application of the XResources theme to the WM.
@@ -3145,35 +3145,23 @@ EDITOR=vim
 default_autotype='username :tab pass'
 clip=both
 #+end_src
-* ksnip
+* Screenshots
 | Arch dependency |
 |-----------------|
-| ksnip           |
+| maim            |
+| satty           |
+| xclip           |
 
-[[https://github.com/ksnip/ksnip][ksnip]] is my screenshot program of choice.
+I use [[https://github.com/naelstrof/maim][maim]] for selecting the region and [[https://github.com/gabm/Satty][satty]] for annotation and copying.
 
-#+begin_src conf-unix :tangle ~/.config/ksnip/ksnip.conf
-[Application]
-SaveDirectory=/home/pavel/Pictures/screenshots
+#+begin_src bash :tangle ~/bin/scripts/screenshot :shebang "#!/usr/bin/env bash"
+output_filename="${1:-$HOME/Pictures/screenshots/satty-$(date '+%Y%m%d-%H:%M:%S').png}"
+mkdir -p "$(dirname "$output_filename")"
 
-[HotKeys]
-GlobalHotKeysEnabled=false
-
-[ImageGrabber]
-LastRectArea=@Rect(340 230 928 503)
-
-[KImageAnnotator]
-AnnotatorDockWidgetsState="@ByteArray(\0\0\0\xff\0\0\0\0\xfd\0\0\0\x3\0\0\0\0\0\0\0\x44\0\0\x2\x8f\xfc\x2\0\0\0\x1\xfb\0\0\0\x1c\0T\0o\0o\0l\0 \0S\0\x65\0l\0\x65\0\x63\0t\0i\0o\0n\x1\0\0\0%\0\0\x2\x8f\0\0\0Q\0\xff\xff\xff\0\0\0\x2\0\0\x5\xee\0\0\0\x1f\xfc\x1\0\0\0\x1\xfb\0\0\0\x1a\0I\0t\0\x65\0m\0 \0S\0\x65\0t\0t\0i\0n\0g\0s\x1\0\0\0\0\0\0\x5\xee\0\0\x1=\0\xff\xff\xff\0\0\0\x3\0\0\x5\xee\0\0\0\x1f\xfc\x1\0\0\0\x2\xfb\0\0\0 \0G\0\x65\0n\0\x65\0r\0\x61\0l\0 \0S\0\x65\0t\0t\0i\0n\0g\0s\x1\0\0\0\0\0\0\x4N\0\0\0\xab\0\xff\xff\xff\xfb\0\0\0\x1c\0I\0m\0\x61\0g\0\x65\0 \0S\0\x65\0t\0t\0i\0n\0g\0s\x1\0\0\x4T\0\0\x1\x9a\0\0\0\x44\0\xff\xff\xff\0\0\x5\xa4\0\0\x2\x8f\0\0\0\x4\0\0\0\x4\0\0\0\b\0\0\0\b\xfc\0\0\0\0)"
-ToolColor_1=@Variant(\0\0\0\x43\x1\xff\xff\xff\xff\0\0\0\0\0\0)
-ToolShadowEnabled_1=false
-ToolType=1
-ToolWidth_1=3
-
-[MainWindow]
-Position=@Point(1920 0)
-
-[Painter]
-SmoothPathEnabled=true
+maim -s |
+    satty --filename - \
+          --output-filename "$output_filename" \
+          --copy-command "xclip -selection clipboard -t image/png -i"
 #+end_src
 
 * dunst

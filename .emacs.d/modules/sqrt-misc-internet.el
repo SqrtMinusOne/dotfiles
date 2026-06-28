@@ -94,8 +94,10 @@
   (add-to-list 'biome-query-coords
                '("Tyumen, Russia" 57.15222 65.52722)))
 
-(defun my/flameshot-screenshot (&optional filepath)
-  "Take a screenshot using flameshot.
+(defvar my/screenshot-command (expand-file-name "~/bin/scripts/screenshot"))
+
+(defun my/screenshot (&optional filepath)
+  "Take a screenshot using `my/screenshot-command'.
 
 If FILEPATH is nil, use a temporary directory.
 
@@ -107,11 +109,10 @@ Returns the filepath of the created screenshot."
                (format "screenshot-%s.png"
                        (format-time-string "%Y%m%d-%H%M%S"))
                (temporary-file-directory)))))
-    ;; Call flameshot with gui mode and specified path
-    (call-process "flameshot" nil nil nil
-                  "gui"
-                  "--path" filepath)
-    ;; Check if file was created
+    (make-directory (file-name-directory filepath) t)
+    (call-process "bash" nil nil nil
+                  my/screenshot-command
+                  filepath)
     (if (file-exists-p filepath)
         (progn
           (message "Screenshot saved to: %s" filepath)
@@ -121,7 +122,7 @@ Returns the filepath of the created screenshot."
         nil))))
 
 (defun my/screenshot-attach-to-notmuch--do (notmuch-buffer)
-  (let ((screenshot-file (my/flameshot-screenshot)))
+  (let ((screenshot-file (my/screenshot)))
     (if screenshot-file
         (with-current-buffer notmuch-buffer
           (save-excursion
@@ -151,7 +152,7 @@ Returns the filepath of the created screenshot."
   (interactive)
   (unless (derived-mode-p 'org-mode)
     (user-error "Not in org-mode"))
-  (let ((screenshot-file (my/flameshot-screenshot
+  (let ((screenshot-file (my/screenshot
                           (expand-file-name
                            (read-file-name "Screenshot path: ")))))
     (when screenshot-file

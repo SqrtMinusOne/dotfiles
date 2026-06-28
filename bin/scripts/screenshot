@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# [[file:../../Desktop.org::*Screenshots][Screenshots:1]]
+output_filename="${1:-$HOME/Pictures/screenshots/satty-$(date '+%Y%m%d-%H:%M:%S').png}"
+mkdir -p "$(dirname "$output_filename")"
+
+maim -s |
+    satty --filename - \
+          --output-filename "$output_filename" \
+          --copy-command "xclip -selection clipboard -t image/png -i"
+# Screenshots:1 ends here

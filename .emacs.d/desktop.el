@@ -496,7 +496,7 @@ _c_: Chromium
   (general-define-key
    :keymaps '(exwm-mode-map)
    "C-q" #'exwm-input-send-next-key
-   "<print>" (my/app-command "ksnip -r -c")
+   "<print>" (my/app-command "bash /home/pavel/bin/scripts/screenshot")
    "<mode-line> s-<mouse-4>" #'perspective-exwm-cycle-all-buffers-backward
    "<mode-line> s-<mouse-5>" #'perspective-exwm-cycle-all-buffers-forward
    "M-x" #'execute-extended-command
@@ -565,7 +565,7 @@ _c_: Chromium
   
           (,(kbd "<XF86AudioPlay>") . ,(my/app-command "mpc toggle"))
           (,(kbd "<XF86AudioPause>") . ,(my/app-command "mpc pause"))
-          (,(kbd "<print>") . ,(my/app-command "ksnip -r -c"))
+          (,(kbd "<print>") . ,(my/app-command "bash /home/pavel/bin/scripts/screenshot"))
   
           ;; Input method
           (,(kbd "M-\\") . my/toggle-input-method)
