@@ -12054,12 +12054,6 @@ Or you can load up Element for a moment to see what the mention was, if that's e
   (setq telega-chat-fill-column 80)
   (setq telega-completing-read-function #'completing-read)
   (setq telega-sticker-size '(12 . 24))
-  (setq telega-proxies
-        `((:server
-           ,(my/password-store-get-field "Selfhosting/Machines/bern" "ip")
-           :port 443 :enable t :type
-           (:@type "proxyTypeMtproto" :secret
-                   ,(my/password-store-get-field "Selfhosting/Machines/bern" "secret")))))
   (add-to-list 'savehist-additional-variables 'telega-msg-add-reaction)
   (remove-hook 'telega-chat-mode-hook #'telega-chat-auto-fill-mode)
   (general-define-key
@@ -12068,7 +12062,8 @@ Or you can load up Element for a moment to see what the mention was, if that's e
    "gp" telega-prefix-map)
   (general-define-key
    :keymaps '(telega-msg-button-map)
-   "<SPC>" nil)
+   "<SPC>" nil
+   "g?" #'telega-describe-message)
   (general-define-key
    :keymaps '(telega-chat-mode-map)
    "C-<return>" #'newline)
@@ -12147,7 +12142,7 @@ And modeline settings:
          (telega-mode-line-mentions 'messages))
         "]"))
 #+end_src
-
+**** Fix regressions
 Arch's TDLib 1.8.65 changed =inputMessagePhoto=: the photo fields moved under an =inputPhoto= object.  Keep telega's older photo attachments working when that new TDLib API is installed.
 #+begin_src emacs-lisp
 (defun my/telega-tdlib-input-photo-p ()
@@ -12228,7 +12223,7 @@ The same missing-type issue can happen inside the chat status inserter itself. C
 
 (with-eval-after-load 'telega-ins
   (advice-add 'telega-ins--chat-status
-              :around #'my/telega-ins-chat-status-when-known))z
+              :around #'my/telega-ins-chat-status-when-known))
 #+end_src
 
 Configuring company backends for the chat buffer, as recommended in the manual:
@@ -12258,6 +12253,25 @@ And custom online status. By default it marks you online when the Emacs frame is
                   'telega-image-mode 'telega-webpage-mode))
 
 (setq telega-online-status-function #'my/telega-online-status)
+#+end_src
+**** Proxies
+#+begin_src emacs-lisp
+(defun my/telega-setup-proxies ()
+  (telega--addProxy
+      `(:server ,(my/password-store-get-field "Selfhosting/Machines/bern" "ip")
+                :port 443
+                :type (:@type "proxyTypeMtproto"
+                              :secret ,(my/password-store-get-field "Selfhosting/Machines/bern" "secret")))
+    :enable-p nil
+    :comment "bern mtproto")
+  (telega--addProxy
+      '(:server "192.168.122.51"
+                :port 1080
+                :type (:@type "proxyTypeSocks5"))
+    :enable-p t
+    :comment "local socks5"))
+
+(add-hook 'telega-before-auth-hook #'my/telega-setup-proxies)
 #+end_src
 **** Switch to topic in forum chats.
 Somehow there isn't a built-in function?

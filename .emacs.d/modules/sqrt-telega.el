@@ -21,12 +21,6 @@
   (setq telega-chat-fill-column 80)
   (setq telega-completing-read-function #'completing-read)
   (setq telega-sticker-size '(12 . 24))
-  (setq telega-proxies
-        `((:server
-           ,(my/password-store-get-field "Selfhosting/Machines/bern" "ip")
-           :port 443 :enable t :type
-           (:@type "proxyTypeMtproto" :secret
-                   ,(my/password-store-get-field "Selfhosting/Machines/bern" "secret")))))
   (add-to-list 'savehist-additional-variables 'telega-msg-add-reaction)
   (remove-hook 'telega-chat-mode-hook #'telega-chat-auto-fill-mode)
   (general-define-key
@@ -35,7 +29,8 @@
    "gp" telega-prefix-map)
   (general-define-key
    :keymaps '(telega-msg-button-map)
-   "<SPC>" nil)
+   "<SPC>" nil
+   "g?" #'telega-describe-message)
   (general-define-key
    :keymaps '(telega-chat-mode-map)
    "C-<return>" #'newline)
@@ -202,6 +197,23 @@
                   'telega-image-mode 'telega-webpage-mode))
 
 (setq telega-online-status-function #'my/telega-online-status)
+
+(defun my/telega-setup-proxies ()
+  (telega--addProxy
+      `(:server ,(my/password-store-get-field "Selfhosting/Machines/bern" "ip")
+                :port 443
+                :type (:@type "proxyTypeMtproto"
+                              :secret ,(my/password-store-get-field "Selfhosting/Machines/bern" "secret")))
+    :enable-p nil
+    :comment "bern mtproto")
+  (telega--addProxy
+      '(:server "192.168.122.51"
+                :port 1080
+                :type (:@type "proxyTypeSocks5"))
+    :enable-p t
+    :comment "local socks5"))
+
+(add-hook 'telega-before-auth-hook #'my/telega-setup-proxies)
 
 (defun my/telega-switch-to-topic ()
   (interactive)
