@@ -135,7 +135,8 @@ remoteuser = <<mail-username()>>
 remotepass = <<mail-password()>>
 remoteport = 993
 auth_mechanisms = LOGIN
-sslcacertfile = /etc/ssl/certs/ca-certificates.crt
+# sslcacertfile = /etc/ssl/certs/ca-certificates.crt
+cert_fingerprint = AD:10:E1:44:2C:B8:F4:4A:9B:39:39:32:44:75:1E:E1:55:3C:B2:B3:CD:91:27:ED:50:D3:69:EB:C7:AC:2D:8D
 #+end_src
 * Notmuch
 | Arch dependency |
