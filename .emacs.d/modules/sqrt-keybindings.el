@@ -124,6 +124,25 @@
          xref eshell helpful compile comint git-timemachine magit prodigy
          slime forge deadgrep vc-annonate telega doc-view gnus outline)))
 
+(defmacro my/wrap-push-button (fn keymap)
+  (let ((fn-wrap (intern (format "my/%s-ret" (symbol-name fn)))))
+    `(progn
+       (defun ,fn-wrap ()
+         (interactive)
+         (or (push-button)
+             (call-interactively #',fn)))
+       (general-define-key
+        :states '(normal)
+        :keymaps ',keymap
+        "RET" #',fn-wrap
+        "<return>" #',fn-wrap))))
+
+(with-eval-after-load 'notmuch-show
+  (my/wrap-push-button notmuch-show-toggle-message notmuch-show-mode-map))
+
+(with-eval-after-load 'telega-chat
+  (my/wrap-push-button telega-chatbuf-newline-or-input-send telega-chat-mode-map))
+
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
 In Delete Selection mode, if the mark is active, just deactivate it;

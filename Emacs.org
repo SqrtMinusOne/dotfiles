@@ -827,6 +827,30 @@ Do ex search in other buffer. Like =*=, but switch to other buffer and search th
          xref eshell helpful compile comint git-timemachine magit prodigy
          slime forge deadgrep vc-annonate telega doc-view gnus outline)))
 #+end_src
+**** Fix push-button
+Don't know what causes it.
+
+#+begin_src emacs-lisp
+(defmacro my/wrap-push-button (fn keymap)
+  (let ((fn-wrap (intern (format "my/%s-ret" (symbol-name fn)))))
+    `(progn
+       (defun ,fn-wrap ()
+         (interactive)
+         (or (push-button)
+             (call-interactively #',fn)))
+       (general-define-key
+        :states '(normal)
+        :keymaps ',keymap
+        "RET" #',fn-wrap
+        "<return>" #',fn-wrap))))
+
+(with-eval-after-load 'notmuch-show
+  (my/wrap-push-button notmuch-show-toggle-message notmuch-show-mode-map))
+
+(with-eval-after-load 'telega-chat
+  (my/wrap-push-button telega-chatbuf-newline-or-input-send telega-chat-mode-map))
+#+end_src
+
 *** My keybindings
 Various keybinding settings that I can't put anywhere else.
 
