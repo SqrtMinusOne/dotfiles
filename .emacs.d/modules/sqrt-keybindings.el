@@ -137,11 +137,18 @@
         "RET" #',fn-wrap
         "<return>" #',fn-wrap))))
 
-(with-eval-after-load 'notmuch-show
-  (my/wrap-push-button notmuch-show-toggle-message notmuch-show-mode-map))
+(defun my/evil-collection-configure (mode _maps)
+  (pcase mode
+    ('notmuch
+     (my/wrap-push-button
+      notmuch-show-toggle-message
+      notmuch-show-mode-map))
+    ('telega
+     (my/wrap-push-button
+      telega-chatbuf-newline-or-input-send
+      telega-chat-mode-map))))
 
-(with-eval-after-load 'telega-chat
-  (my/wrap-push-button telega-chatbuf-newline-or-input-send telega-chat-mode-map))
+(add-hook 'evil-collection-setup-hook #'my/evil-collection-configure)
 
 (defun minibuffer-keyboard-quit ()
   "Abort recursive edit.
