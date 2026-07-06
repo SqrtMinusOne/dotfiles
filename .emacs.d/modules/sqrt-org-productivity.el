@@ -206,7 +206,7 @@
 (with-eval-after-load 'org
   (add-to-list
    'org-global-properties
-   '("Effort_ALL" . "0 0:05 0:10 0:15 0:30 0:45 1:00 1:30 2:00 3:00 4:00 8:00")))
+   '("Effort_ALL" . "0 0:05 0:10 0:15 0:20 0:30 0:45 1:00 1:30 2:00 3:00 4:00 8:00")))
 
 (defun my/org-planned-effort--bounds ()
   "Return the boundaries for the current task's EFFORT drawer.
@@ -474,6 +474,16 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
        (cons "Review: Recently timestamped" #'my/org-ql-view-recent-items)
        (cons "Review: Clocked today" #'my/org-ql-clocked-today)
        (cons "Review: Closed today" #'my/org-ql-closed-today)
+       (cons "Fix: Missing timestamps"
+             (list :buffers-files #'org-agenda-files
+                   :query '(and (todo "TODO")
+                                (not (scheduled))
+                                (not (deadline))
+                                (not (priority))
+                                (not (tags "nots")))
+                   :title "Fix: Missing timestamps"
+                   :sort '(todo date)
+                   :super-groups '((:auto-outline-path-file t))))
        (cons "Fix: tasks without TASK_KIND"
              (lambda ()
                (interactive)
@@ -549,6 +559,18 @@ and lots of comments which are too long for my Emacs config."
 
 (with-eval-after-load 'org-ql
   (advice-add #'org-ql-view--format-element :override #'my/org-ql-view--format-element-override))
+
+(defun my/org-ql-store-link ()
+  "Store an Org QL link, expanding function-valued `org-ql-view-buffers-files'."
+  (interactive)
+  (let ((org-ql-view-buffers-files
+         (pcase org-ql-view-buffers-files
+           ((or 'org-agenda-files '(function org-agenda-files))
+            (org-agenda-files))
+           ((pred functionp)
+            (funcall org-ql-view-buffers-files))
+           (_ org-ql-view-buffers-files))))
+    (call-interactively #'org-store-link)))
 
 (use-package org-habit-stats
   :straight (:host github :repo "ml729/org-habit-stats")
@@ -1748,6 +1770,7 @@ Review checklist (/delete this/):
   - [[org-ql-search:(and (todo) (clocked) (not (tags \"nots\")) (not (ts :from -14)) (not (todo \"MAYBE\")))?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: Stale tasks]]
   - [[org-ql-search:todo%3AWAIT?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: WAIT]]
   - [[org-ql-search:todo%3AMAYBE?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: MAYBE]]
+  - [[org-ql-search:todo%3ATODO%20%21scheduled%3A%20%21deadline%3A%20%21priority%3A%20%21tags%3Anots?super-groups=((:auto-outline-path-file%20t))&sort=(todo%20date)&title=%22Fix:%20Missing%20timestamps%22][org-ql-search: Missing timestamps]]
 - [ ] Run auto-archiving
 - [ ] Review journal records
 ")

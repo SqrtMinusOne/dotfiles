@@ -122,7 +122,8 @@
   (general-define-key
    :states '(normal insert)
    :keymaps 'eshell-mode-map
-   "<home>" #'eshell-bol)
+   "<home>" #'eshell-bol
+   "<return>" #'eshell-send-input)
 
   (general-define-key
    :keymaps 'eshell-mode-map

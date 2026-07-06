@@ -69,9 +69,9 @@
       (intern (elt (split-string command) 1))))
     ((rx bos "resize")
      (my/emacs-i3-resize-window
-      (intern (elt (split-string command) 2))
-      (intern (elt (split-string command) 1))
-      (string-to-number (elt (split-string command) 3))))
+       (intern (elt (split-string command) 2))
+       (intern (elt (split-string command) 1))
+       (string-to-number (elt (split-string command) 3))))
     ("layout toggle split" (transpose-frame))
     ("split h" (evil-window-split))
     ("split v" (evil-window-vsplit))
