@@ -188,6 +188,9 @@
 (use-package ansible
   :straight t)
 
+(use-package jinja2-mode
+  :straight t)
+
 (add-hook 'sh-mode-hook #'smartparens-mode)
 
 (use-package fish-mode

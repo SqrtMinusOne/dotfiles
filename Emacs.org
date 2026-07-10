@@ -4883,6 +4883,11 @@ A package to quickly create =.gitignore= files.
 (use-package ansible
   :straight t)
 #+end_src
+*** jinja2
+#+begin_src emacs-lisp
+(use-package jinja2-mode
+  :straight t)
+#+end_src
 ** Shell
 :PROPERTIES:
 :MODULE_NAME: misc-programming
