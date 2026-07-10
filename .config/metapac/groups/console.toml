@@ -8,7 +8,6 @@ arch = {
     "aria2",
     "openssl",
     "ncdu",
-    "megacmd",
     "jless",
     "direnv",
     "git-lfs",
@@ -39,3 +38,4 @@ arch = {
     "xorg-xrdb",
   ],
 }
+

@@ -947,7 +947,7 @@ keymap_mode = "vim-insert"
 | git-lfs         |                                             |          |
 | direnv          |                                             |          |
 | jless           | JSON viewer                                 |          |
-| megacmd         | mega.nz client                              |          |
+| megacmd         | mega.nz client                              | t        |
 | ncdu            | disk usage analyzer                         |          |
 | openssl         |                                             |          |
 | aria2           | Download tool                               |          |
