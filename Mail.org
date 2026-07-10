@@ -433,6 +433,7 @@ host mbox.etu.ru
 port 465
 tls on
 tls_starttls off
+tls_fingerprint AD:10:E1:44:2C:B8:F4:4A:9B:39:39:32:44:75:1E:E1:55:3C:B2:B3:CD:91:27:ED:50:D3:69:EB:C7:AC:2D:8D
 from pvkorytov@etu.ru
 user pvkorytov
 passwordeval "pass show Digital/Email/pvkorytov@etu.ru | head -n 1"
