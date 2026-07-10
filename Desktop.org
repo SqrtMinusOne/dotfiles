@@ -193,12 +193,37 @@ application/pdf=org.pwmt.zathura.desktop
 Set screen layout & other params depending on hostname
 #+begin_src sh :tangle ~/bin/scripts/screen-layout
 hostname=$(hostname)
+
 if [ "$hostname" = "indigo" ]; then
-    xrandr --output DisplayPort-0 --off --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal --output DVI-D-0 --mode 1920x1080 --pos 1920x0 --rotate normal
+    xrandr \
+        --output DisplayPort-0 --off \
+        --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal \
+        --output DVI-D-0 --mode 1920x1080 --pos 1920x0 --rotate normal
+
 elif [ "$hostname" = "eminence" ]; then
     xgamma -gamma 1.25
+
+    if xrandr --query | grep -q '^HDMI-1 connected' &&
+       xrandr --query | grep -q '^DP-1 connected'; then
+        xrandr \
+            --output eDP-1 --primary --mode 1920x1200 --pos 1920x0 --rotate normal \
+            --output HDMI-1 --mode 1920x1080 --pos 3840x0 --rotate normal \
+            --output DP-1 --mode 1920x1080 --pos 0x0 --rotate normal \
+            --output DP-2 --off \
+            --output DP-3 --off \
+            --output DP-4 --off
+    fi
+
 elif [ "$hostname" = "violet" ]; then
-    xrandr --output HDMI-0 --primary --mode 1920x1080 --pos 0x0 --rotate normal --output DP-0 --off --output DP-1 --mode 1920x1080 --pos 1920x0 --rotate normal --output DP-2 --off --output DP-3 --off --output DP-4 --off --output DP-5 --off --output None-1-1 --off
+    xrandr \
+        --output HDMI-0 --primary --mode 1920x1080 --pos 0x0 --rotate normal \
+        --output DP-0 --off \
+        --output DP-1 --mode 1920x1080 --pos 1920x0 --rotate normal \
+        --output DP-2 --off \
+        --output DP-3 --off \
+        --output DP-4 --off \
+        --output DP-5 --off \
+        --output None-1-1 --off
 fi
 #+end_src
 * EXWM
@@ -270,7 +295,6 @@ As of now, these are polybar, feh and, shepherd:
 (defun my/exwm-run-polybar ()
   (interactive)
   (call-process "~/bin/polybar.sh"))
-
 
 (defun my/exwm-run-shepherd ()
   (when (and (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
@@ -700,7 +724,9 @@ So here is my implementation of that. It always does =windmove-do-select-window=
            (setf (plist-get exwm-randr-workspace-monitor-plist i)
                  (car my/exwm-monitor-list)))
   (when refresh
-    (exwm-randr-refresh)))
+    (exwm-randr-refresh)
+    (my/exwm-set-wallpaper)
+    (my/exwm-run-polybar)))
 #+end_src
 ** Completions
 Setting up some completion interfaces that fit particularly well to use with EXWM. While rofi also works, I want to use Emacs functionality wherever possible to have one completion interface everywhere.
@@ -1839,23 +1865,21 @@ As we want to interweave polybar modules with these glyphs in the right order an
 |    13 | aw-afk      | light-blue    | +     |
 |    14 | date        | blue          | +     |
 
-Also excluding some modules from certain monitors, which for now is about excluding =battery= from the monitors of my desktop PC:
+Also excluding modules that are not available on certain hosts:
 
 #+NAME: polybar_modules_exclude
-| Monitor   | Exclude |
+| Hostname  | Exclude |
 |-----------+---------|
-| DVI-D-0   | battery |
-| HDMI-A-0  | battery |
-| HDMI-0    | battery |
-| DP-1      | battery |
-| Virtual-1 | battery |
-| eDP       | nvidia  |
-| eDP-1     | nvidia  |
-| DVI-D-0   | nvidia  |
-| HDMI-A-0  | nvidia  |
-| HDMI-1    | nvidia  |
-| HDMI-2    | nvidia  |
-| Virtual-1 | nvidia  |
+| azure     | nvidia  |
+| eminence  | nvidia  |
+| iris      | nvidia  |
+| indigo    | battery |
+| indigo    | nvidia  |
+| violet    | battery |
+| weiss     | battery |
+| weiss     | nvidia  |
+| default   | battery |
+| default   | nvidia  |
 
 Another thing we need to do is to set the color of modules in accordance with the =polybar_modules= table. The background can be determined from the =Color= column with the following code block:
 #+NAME: get-polybar-bg
@@ -1884,21 +1908,21 @@ Most of these combinations can be inferred from the =polybar_modules= table, the
 
 #+NAME: polybar-generate-glyphs
 #+begin_src emacs-lisp :var table=polybar_modules exclude-table=polybar_modules_exclude extra=polybar_extra_colors
-(let* ((monitors
+(let* ((hostnames
         (thread-last
           exclude-table
           (seq-map (lambda (el) (nth 0 el)))
           (seq-uniq)))
        (exclude-combinations
         (seq-map
-         (lambda (monitor)
+         (lambda (hostname)
            (seq-map
             (lambda (el) (nth 1 el))
             (seq-filter
-             (lambda (el) (and (string-equal (nth 0 el) monitor)
+             (lambda (el) (and (string-equal (nth 0 el) hostname)
                                (nth 1 el)))
              exclude-table)))
-         `(,@monitors "")))
+         `(,@hostnames "")))
        (module-glyph-combinations
         (thread-last
           exclude-combinations
@@ -1943,10 +1967,10 @@ content-font = 5"
 #+end_src
 
 Here's a rough outline of how the code works:
-- =monitors= is a list of unique monitors in =exclude-table=
-- =exclude-combilnations= is a list of lists of module names to be excluded for each monitor
-- =module-glyphs-combinations= is a list of lists of actual modules for each monitor
-- =color-changes= is a list of unique adjacent colors across modules in all monitors
+- =hostnames= is a list of unique hostnames in =exclude-table=
+- =exclude-combinations= is a list of lists of module names to be excluded for each hostname
+- =module-glyphs-combinations= is a list of lists of actual modules for each hostname
+- =color-changes= is a list of unique adjacent colors across modules on all hosts
 
 Finally, =color-changes= is used to generate glyph modules that look like this:
 #+begin_src conf-windows :tangle no
@@ -1965,19 +1989,19 @@ Include this to the polybar config itself:
 <<polybar-generate-glyphs()>>
 #+end_src
 *** Generating set of modules
-To configure polybar itself, we need to generate a set of modules for each monitor.
+To configure polybar itself, we need to generate a set of modules for each host.
 
 The parameters here, excluding the two required tables, are:
-- =monitor= - the current monitor on which to filter out the blocks by the =polybar_modules_exclude= table,
+- =hostname= - the current hostname on which to filter out the blocks by the =polybar_modules_exclude= table,
 - =first-color= - the first color of the first glyph,
 - =last-color= - the second color of the last glyph.
 
 #+NAME: polybar-generate-modules
-#+begin_src emacs-lisp :var table=polybar_modules exclude-table=polybar_modules_exclude monitor="DVI-D-0" first-color="background" last-color="background"
+#+begin_src emacs-lisp :var table=polybar_modules exclude-table=polybar_modules_exclude hostname="default" first-color="background" last-color="background"
 (let* ((exclude-modules
         (thread-last
           exclude-table
-          (seq-filter (lambda (el) (string-equal (nth 0 el) monitor)))
+          (seq-filter (lambda (el) (string-equal (nth 0 el) hostname)))
           (seq-map (lambda (el) (nth 1 el)))))
        (modules
         (thread-last
@@ -2088,8 +2112,8 @@ margin-bottom = 0
 #+end_src
 *** Launch script
 The script below allows me to:
-- have different blocks on my two different-sized monitors and my laptop;
-- have different settings on my desktop PC and laptop;
+- have different blocks and settings on each host;
+- launch a bar on every connected monitor;
 
 #+begin_src bash :tangle ./bin/polybar.sh :noweb yes
 hostname=$(hostname)
@@ -2100,54 +2124,15 @@ if [ "$hostname" = 'violet' ]; then
     TRAY_MONITOR="DP-1"
 fi
 
-# Setting varying on the monitor
-declare -A FONT_SIZES=(
-    ["eDP"]="13"
-    ["eDP-1"]="13"
-    ["DVI-D-0"]="13"
-    ["HDMI-A-0"]="13"
-    ["HDMI-2"]="13"
-    ["HDMI-1"]="13"
-    ["HDMI-0"]="13"
-    ["DP-1"]="13"
-    ["Virtual-1"]="13"
-    ["rdp0"]="13"
-)
-declare -A EMOJI_SCALE=(
-    ["eDP"]="9"
-    ["eDP-1"]="9"
-    ["DVI-D-0"]="10"
-    ["HDMI-A-0"]="10"
-    ["HDMI-2"]="10"
-    ["HDMI-1"]="10"
-    ["HDMI-0"]="10"
-    ["DP-1"]="10"
-    ["Virtual-1"]="13"
-    ["rdp0"]="13"
-)
-declare -A BAR_HEIGHT=(
-    ["eDP"]="29"
-    ["eDP-1"]="29"
-    ["DVI-D-0"]="29"
-    ["HDMI-A-0"]="29"
-    ["HDMI-2"]="29"
-    ["HDMI-1"]="29"
-    ["HDMI-0"]="29"
-    ["DP-1"]="29"
-    ["Virtual-1"]="29"
-    ["rdp0"]="29"
-)
+# Settings varying by hostname
 declare -A BLOCKS=(
-    ["eDP"]="<<polybar-generate-modules(monitor="eDP")>>"
-    ["eDP-1"]="<<polybar-generate-modules(monitor="eDP-1")>>"
-    ["DVI-D-0"]="<<polybar-generate-modules(monitor="DVI-D-0")>>"
-    ["HDMI-A-0"]="<<polybar-generate-modules(monitor="HDMI-A-0")>>"
-    ["HDMI-2"]="<<polybar-generate-modules(monitor="HDMI-2")>>"
-    ["HDMI-1"]="<<polybar-generate-modules(monitor="HDMI-1")>>"
-    ["HDMI-0"]="<<polybar-generate-modules(monitor="HDMI-0")>>"
-    ["DP-1"]="<<polybar-generate-modules(monitor="DP-1")>>"
-    ["Virtual-1"]="<<polybar-generate-modules(monitor="Virtual-1")>>"
-    ["rdp0"]="<<polybar-generate-modules(monitor="Virtual-1")>>"
+    ["azure"]="<<polybar-generate-modules(hostname="azure")>>"
+    ["eminence"]="<<polybar-generate-modules(hostname="eminence")>>"
+    ["iris"]="<<polybar-generate-modules(hostname="iris")>>"
+    ["indigo"]="<<polybar-generate-modules(hostname="indigo")>>"
+    ["violet"]="<<polybar-generate-modules(hostname="violet")>>"
+    ["weiss"]="<<polybar-generate-modules(hostname="weiss")>>"
+    ["default"]="<<polybar-generate-modules(hostname="default")>>"
 )
 
 declare -A TEMP_HWMON_PATHS=(
@@ -2162,6 +2147,7 @@ export LOC="SPB"
 # export IPSTACK_API_KEY=$(pass show My_Online/APIs/ipstack | head -n 1)
 
 pkill polybar
+RIGHT_BLOCKS=${BLOCKS[$hostname]:-${BLOCKS[default]}}
 for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     export MONITOR=$m
     if [ "$MONITOR" = "$TRAY_MONITOR" ]; then
@@ -2169,19 +2155,9 @@ for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     else
         export TRAY="none"
     fi
-    SIZE=${FONT_SIZES[$MONITOR]}
-    SCALE=${EMOJI_SCALE[$MONITOR]}
-    TEMP=${TEMP_HWMON_PATHS[$(hostname)]}
-    if [[ -z "$SCALE" ]]; then
-        continue
-    fi
-    # export FONT0="pango:monospace:size=$SIZE;1"
-    # export FONT1="NotoEmoji:scale=$SCALE:antialias=false;1"
-    # export FONT2="fontawesome:pixelsize=$SIZE;1"
-    # export FONT3="JetBrains Mono Nerd Font:monospace:size=15;1"
-    export HEIGHT=${BAR_HEIGHT[$MONITOR]}
-    export RIGHT_BLOCKS=${BLOCKS[$MONITOR]}
-    export TEMP_HWMON_PATH=${TEMP}
+    export HEIGHT=29
+    export RIGHT_BLOCKS
+    export TEMP_HWMON_PATH=${TEMP_HWMON_PATHS[$hostname]}
     polybar mybar &
 done
 #+end_src

@@ -8,54 +8,15 @@ if [ "$hostname" = 'violet' ]; then
     TRAY_MONITOR="DP-1"
 fi
 
-# Setting varying on the monitor
-declare -A FONT_SIZES=(
-    ["eDP"]="13"
-    ["eDP-1"]="13"
-    ["DVI-D-0"]="13"
-    ["HDMI-A-0"]="13"
-    ["HDMI-2"]="13"
-    ["HDMI-1"]="13"
-    ["HDMI-0"]="13"
-    ["DP-1"]="13"
-    ["Virtual-1"]="13"
-    ["rdp0"]="13"
-)
-declare -A EMOJI_SCALE=(
-    ["eDP"]="9"
-    ["eDP-1"]="9"
-    ["DVI-D-0"]="10"
-    ["HDMI-A-0"]="10"
-    ["HDMI-2"]="10"
-    ["HDMI-1"]="10"
-    ["HDMI-0"]="10"
-    ["DP-1"]="10"
-    ["Virtual-1"]="13"
-    ["rdp0"]="13"
-)
-declare -A BAR_HEIGHT=(
-    ["eDP"]="29"
-    ["eDP-1"]="29"
-    ["DVI-D-0"]="29"
-    ["HDMI-A-0"]="29"
-    ["HDMI-2"]="29"
-    ["HDMI-1"]="29"
-    ["HDMI-0"]="29"
-    ["DP-1"]="29"
-    ["Virtual-1"]="29"
-    ["rdp0"]="29"
-)
+# Settings varying by hostname
 declare -A BLOCKS=(
-    ["eDP"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--cyan battery glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["eDP-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--cyan battery glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["DVI-D-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["HDMI-A-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["HDMI-2"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--cyan battery glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["HDMI-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--cyan battery glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["HDMI-0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan nvidia glyph-light-cyan--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["DP-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan nvidia glyph-light-cyan--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["Virtual-1"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
-    ["rdp0"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["azure"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--cyan battery glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["eminence"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--cyan battery glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["iris"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--cyan battery glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["indigo"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["violet"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--light-cyan nvidia glyph-light-cyan--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["weiss"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
+    ["default"]="glyph-background--light-magenta pulseaudio glyph-light-magenta--magenta mpd glyph-magenta--cyan cpu glyph-cyan--cyan temperature glyph-cyan--light-green ram-memory glyph-light-green--green swap-memory glyph-green--light-red bandwidth openvpn glyph-light-red--red xkeyboard glyph-red--light-yellow weather glyph-light-yellow--yellow sun glyph-yellow--light-blue aw-afk glyph-light-blue--blue date glyph-blue--background "
 )
 
 declare -A TEMP_HWMON_PATHS=(
@@ -70,6 +31,7 @@ export LOC="SPB"
 # export IPSTACK_API_KEY=$(pass show My_Online/APIs/ipstack | head -n 1)
 
 pkill polybar
+RIGHT_BLOCKS=${BLOCKS[$hostname]:-${BLOCKS[default]}}
 for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     export MONITOR=$m
     if [ "$MONITOR" = "$TRAY_MONITOR" ]; then
@@ -77,19 +39,9 @@ for m in $(xrandr --query | grep " connected" | cut -d" " -f1); do
     else
         export TRAY="none"
     fi
-    SIZE=${FONT_SIZES[$MONITOR]}
-    SCALE=${EMOJI_SCALE[$MONITOR]}
-    TEMP=${TEMP_HWMON_PATHS[$(hostname)]}
-    if [[ -z "$SCALE" ]]; then
-        continue
-    fi
-    # export FONT0="pango:monospace:size=$SIZE;1"
-    # export FONT1="NotoEmoji:scale=$SCALE:antialias=false;1"
-    # export FONT2="fontawesome:pixelsize=$SIZE;1"
-    # export FONT3="JetBrains Mono Nerd Font:monospace:size=15;1"
-    export HEIGHT=${BAR_HEIGHT[$MONITOR]}
-    export RIGHT_BLOCKS=${BLOCKS[$MONITOR]}
-    export TEMP_HWMON_PATH=${TEMP}
+    export HEIGHT=29
+    export RIGHT_BLOCKS
+    export TEMP_HWMON_PATH=${TEMP_HWMON_PATHS[$hostname]}
     polybar mybar &
 done
 # Launch script:1 ends here
