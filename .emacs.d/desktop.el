@@ -2,7 +2,6 @@
   (interactive)
   (call-process "~/bin/polybar.sh"))
 
-
 (defun my/exwm-run-shepherd ()
   (when (and (string-empty-p (shell-command-to-string "pgrep -u pavel shepherd"))
              (executable-find "shepherd"))
@@ -163,7 +162,11 @@ _=_: Balance          "
       ((or "Chromium-browser" "jetbrains-datagrip" "DBeaver")
        (perspective-exwm-assign-window
         :workspace-index 4
-        :persp-name "dev")))))
+        :persp-name "dev"))
+      ("Virt-manager"
+       (perspective-exwm-assign-window
+        :workspace-index 5
+        :persp-name "vms")))))
 
 (add-hook 'exwm-manage-finish-hook #'my/exwm-configure-window)
 
@@ -286,7 +289,9 @@ DIR is either 'left or 'right."
            (setf (plist-get exwm-randr-workspace-monitor-plist i)
                  (car my/exwm-monitor-list)))
   (when refresh
-    (exwm-randr-refresh)))
+    (exwm-randr-refresh)
+    (my/exwm-set-wallpaper)
+    (my/exwm-run-polybar)))
 
 (use-package ivy-posframe
   :straight t
@@ -468,7 +473,7 @@ _c_: Chromium
 (use-package exwm
   :straight t
   :config
-  (setq exwm-workspace-number 5)
+  (setq exwm-workspace-number 6)
   (add-hook 'exwm-init-hook #'my/exwm-init)
   (add-hook 'exwm-update-class-hook #'my/exwm-update-class)
 

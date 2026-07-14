@@ -543,7 +543,11 @@ For EXWM windows, the =perspective-exwm= package provides a function called =per
       ((or "Chromium-browser" "jetbrains-datagrip" "DBeaver")
        (perspective-exwm-assign-window
         :workspace-index 4
-        :persp-name "dev")))))
+        :persp-name "dev"))
+      ("Virt-manager"
+       (perspective-exwm-assign-window
+        :workspace-index 5
+        :persp-name "vms")))))
 
 (add-hook 'exwm-manage-finish-hook #'my/exwm-configure-window)
 #+end_src
@@ -1133,7 +1137,7 @@ And the EXWM config itself.
 (use-package exwm
   :straight t
   :config
-  (setq exwm-workspace-number 5)
+  (setq exwm-workspace-number 6)
   (add-hook 'exwm-init-hook #'my/exwm-init)
   (add-hook 'exwm-update-class-hook #'my/exwm-update-class)
 
@@ -1142,7 +1146,10 @@ And the EXWM config itself.
   (start-process-shell-command "xrandr" nil "~/bin/scripts/screen-layout")
   (when (string= (system-name) "violet")
     (setq my/exwm-another-monitor "DP-1")
-    (setq exwm-randr-workspace-monitor-plist `(2 ,my/exwm-another-monitor 3 ,my/exwm-another-monitor))
+    (setq exwm-randr-workspace-monitor-plist
+          `(
+            2 ,my/exwm-another-monitor 3 ,my/exwm-another-monitor
+            4 ,my/exwm-another-monitor 5 ,my/exwm-another-monitor))
     (my/exwm-refresh-monitors))
 
   (setq exwm-workspace-warp-cursor t)
@@ -3220,7 +3227,7 @@ References:
     force_xinerama = false
 
     ### mouse
-    mouse_left_click = close_current
+    mouse_left_click = do_action, close_current
     mouse_middle_click = do_action
     mouse_right_click = close_all
 
@@ -4292,7 +4299,6 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | openvpn              |          |
 | dev      | bubblewrap           |          |
 | dev      | socat                |          |
-| dev      | openai-codex-bin     |          |
 | dev      | traceroute           |          |
 | dev      | docker-buildx        |          |
 | dev      | duckdb               |          |

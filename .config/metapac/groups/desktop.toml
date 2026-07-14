@@ -1,5 +1,6 @@
 arch = {
   packages = [
+    "snixembed",
     "blueman",
     "vnstat",
     "activitywatch-bin",

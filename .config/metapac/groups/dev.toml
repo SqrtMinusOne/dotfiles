@@ -5,7 +5,6 @@ arch = {
     "duckdb",
     "docker-buildx",
     "traceroute",
-    "openai-codex-bin",
     "socat",
     "bubblewrap",
     "openvpn",
