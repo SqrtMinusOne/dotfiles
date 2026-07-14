@@ -926,6 +926,65 @@ update_check = false
 enter_accept = true
 keymap_mode = "vim-insert"
 #+end_src
+* Codex
+| Arch dependency  |
+|------------------|
+| openai-codex-bin |
+** Permissions notification
+#+begin_src bash :tangle ~/.codex/hooks/permission-notify.sh
+payload=$(cat)
+
+active_window=$(xdotool getactivewindow 2>/dev/null || true)
+codex_window=${WINDOWID:-}
+
+# Notify unless we can positively determine that Codex's terminal is focused.
+if [[ -z "$codex_window" || "$active_window" != "$codex_window" ]]; then
+    description=$(
+        jq -r '
+            .tool_input.description //
+            .tool_input.command //
+            "Codex is waiting for permission"
+        ' <<<"$payload" 2>/dev/null
+    )
+
+    # Keep the action listener alive after the hook itself returns.  An absolute
+    # icon path avoids Dunst's deliberately restricted icon search path.
+    (
+        action=$(notify-send \
+            --app-name="Codex" \
+            --urgency=normal \
+            --icon=/usr/share/icons/Papirus-Dark/24x24/actions/dialog-password.svg \
+            --action=default="Open Codex terminal" \
+            "Codex needs permission" \
+            "$description")
+
+        if [[ "$action" == "default" ]]; then
+            if [[ -n "$codex_window" ]]; then
+                xdotool windowactivate "$codex_window" 2>/dev/null || alacritty
+            else
+                alacritty
+            fi
+        fi
+    ) </dev/null >/dev/null 2>&1 &
+fi
+
+# Produce no decision: Codex should show its normal approval prompt.
+exit 0
+#+end_src
+
+Add this to the =~/.codex/config.toml=:
+#+begin_src toml
+[[hooks.PermissionRequest]]
+matcher = ".*"
+
+[[hooks.PermissionRequest.hooks]]
+type = "command"
+command = "~/.codex/hooks/permission-notify.sh"
+timeout = 5
+statusMessage = "Sending permission notification"
+#+end_src
+
+After that, run =/hooks= and confirm the hook.
 
 * Various console applications
 | Arch dependency | Description                                 | Disabled |

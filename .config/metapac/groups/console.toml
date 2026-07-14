@@ -24,6 +24,7 @@ arch = {
     "htop",
     "eza",
     "ncurses",
+    "openai-codex-bin",
     "bottom",
     "alacritty",
     "xclip",
