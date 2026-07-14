@@ -607,6 +607,21 @@ In =/usr/lib/jvm/java-21-openjdk/conf/security/java.security=, in =jdk.tls.disab
 
 Leave only ECDH
 ** Running MAX in Firejail
+Firejail config:
+#+begin_src firejail :tangle .config/firejail/max.profile
+include disable-common.inc
+include disable-devel.inc
+include disable-programs.inc
+
+private ~/.sandbox/max
+private-tmp
+private-cache
+private-dev
+
+caps.drop all
+nonewprivs
+#+end_src
+
 #+begin_src conf-desktop :tangle .local/share/applications/max.desktop
 [Desktop Entry]
 Type=Application
