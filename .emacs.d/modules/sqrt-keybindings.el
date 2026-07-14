@@ -122,7 +122,8 @@
          docker ibuffer geiser pdf info elfeed edebug bookmark company
          vterm flycheck profiler cider explain-pause-mode notmuch custom
          xref eshell helpful compile comint git-timemachine magit prodigy
-         slime forge deadgrep vc-annonate telega doc-view gnus outline)))
+         slime forge deadgrep vc-annonate telega doc-view gnus outline
+         agent-shell)))
 
 (defmacro my/wrap-push-button (fn keymap)
   (let ((fn-wrap (intern (format "my/%s-ret" (symbol-name fn)))))

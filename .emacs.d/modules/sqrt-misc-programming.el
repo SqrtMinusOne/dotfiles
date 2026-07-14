@@ -263,6 +263,7 @@
 
 (use-package lsp-java
   :straight t
+  :disabled t
   :after (lsp)
   :config
   (setq lsp-java-jdt-download-url "https://www.eclipse.org/downloads/download.php?file=/jdtls/milestones/1.23.0/jdt-language-server-1.23.0-202304271346.tar.gz"))

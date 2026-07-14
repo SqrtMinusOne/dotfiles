@@ -55,7 +55,7 @@
                            (+ (? (or "https://" "http://"))
                               (* nonl)
                               (regexp (eval (emms-player-simple-regexp
-                              "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
+                                             "mp4" "mov" "wmv" "webm" "flv" "avi" "mkv")))))))
   (setq my/youtube-dl-quality-list
         '("bestvideo[height<=720]+bestaudio/best[height<=720]"
           "bestvideo[height<=480]+bestaudio/best[height<=480]"

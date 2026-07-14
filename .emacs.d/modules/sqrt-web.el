@@ -153,4 +153,67 @@
   (add-hook 'php-mode-hook #'lsp)
   (my/set-smartparens-indent 'php-mode))
 
+(use-package node-debug
+  :if (file-exists-p "/home/pavel/10-19 Code/12 My Emacs Packages/12.21 node-debug.el/")
+  :straight (:local-repo "/home/pavel/10-19 Code/12 My Emacs Packages/12.21 node-debug.el/")
+  :commands (node-debug node-debug-connect node-debug-dispatch)
+  :init
+  (my-leader-def "dd" #'node-debug-dispatch))
+
+(defun my/node-debug-exwm-perspective-target (buffer)
+  "Return (FRAME . PERSPECTIVE-NAME) containing BUFFER, or nil."
+  (when (and (bound-and-true-p persp-mode)
+             (boundp 'exwm-workspace--list))
+    (catch 'target
+      (dolist (frame exwm-workspace--list)
+        (when (frame-live-p frame)
+          (maphash
+           (lambda (name perspective)
+             (when (memq buffer (persp-buffers perspective))
+               (throw 'target (cons frame name))))
+           (perspectives-hash frame)))))))
+
+(defun my/node-debug-display-buffer (buffer location select)
+  "Reuse BUFFER's visible window or its EXWM perspective."
+  (if-let ((window (or (get-buffer-window buffer (selected-frame))
+                       (get-buffer-window buffer t))))
+      (progn
+        (unless (eq (window-frame window) (selected-frame))
+          (exwm-workspace-switch (window-frame window) t))
+        window)
+    (if-let ((target (my/node-debug-exwm-perspective-target buffer)))
+        (progn
+          (unless (eq (car target) (selected-frame))
+            (exwm-workspace-switch (car target) t))
+          (persp-switch (cdr target))
+          ;; Switching perspectives restores its window configuration, so
+          ;; check again before replacing the selected window.
+          (or (get-buffer-window buffer (selected-frame))
+              (progn
+                (persp-switch-to-buffer buffer)
+                (selected-window))))
+      (node-debug-source-default-display-buffer buffer location select))))
+
+(setq node-debug-display-buffer-function #'my/node-debug-display-buffer)
+
+(use-package rest-query
+  :if (file-exists-p "/home/pavel/10-19 Code/12 My Emacs Packages/12.20 rest-query.el/")
+  :straight (:local-repo "/home/pavel/10-19 Code/12 My Emacs Packages/12.20 rest-query.el/")
+  :commands (rest-query rest-query-openapi rest-query-new rest-query-open-preset)
+  :init
+  (my-leader-def
+    "dr" #'rest-query
+    "dR" #'rest-query-openapi)
+  :config
+  (my/persp-add-rule
+    rest-query-openapi-mode 4 "api"
+    rest-query-request-mode 4 "api"
+    rest-query-response-mode 4 "api"
+    rest-query-workspaces-mode 4 "api"))
+
+(setq rest-query-workspace-presets
+      '(("portfolio-public" . "http://localhost:3019/portfolio/api/docs-public-json/")
+        ("portfolio" . "http://localhost:3019/portfolio/api/docs-json/")
+        ("is-mob" . "http://localhost:3023/is-mob/api/docs-json/")))
+
 (provide 'sqrt-web)

@@ -422,4 +422,56 @@ ENTRY is an instance of `elfeed-entry'."
        (lambda (&key error-thrown &allow-other-keys)
          (message "Error!: %S" error-thrown))))))
 
+(use-package agent-shell
+  :straight t
+  :init
+  (my-leader-def "ais" #'agent-shell)
+  (my/persp-add-rule
+    agent-shell-mode nil "agent")
+  :commands (agent-shell)
+  :config
+  (setq agent-shell-openai-codex-acp-command
+        (list "/home/pavel/.local/bin/ai-proxy"
+              "run"
+              "/home/pavel/micromamba/envs/general/bin/codex-acp"))
+  (setq agent-shell-openai-authentication
+        (agent-shell-openai-make-authentication :login t))
+  (setq agent-shell-session-restore-verbosity 'full))
+
+(defun my/agent-shell-ret ()
+  (interactive)
+  (if (get-text-property (point) 'agent-shell-ui-state)
+      (agent-shell-ui-toggle-fragment)
+    (agent-shell-submit)))
+
+(with-eval-after-load 'agent-shell
+  (general-define-key
+   :states '(insert normal)
+   :keymaps 'agent-shell-mode-map
+   "RET"        #'my/agent-shell-ret
+   "<return>"   #'my/agent-shell-ret)
+
+  (general-define-key
+   :states '(insert)
+   :keymaps 'agent-shell-mode-map
+   "C-<return>" #'newline))
+
+(defun my/agent-shell-trigger-completion ()
+  (when (and (memq (char-before) '(?@ ?/))
+             (or (= (point) (1+ (line-beginning-position)))
+                 (memq (char-before (1- (point))) '(?\s ?\t ?\n))))
+    (company-begin-backend 'company-capf)))
+
+(defun my/agent-shell-company-completion ()
+  (remove-hook 'post-self-insert-hook
+               #'agent-shell--trigger-completion-at-point
+               t)
+  (add-hook 'post-self-insert-hook
+            #'my/agent-shell-trigger-completion
+            nil t))
+
+(with-eval-after-load 'agent-shell
+  (add-hook 'agent-shell-completion-mode-hook
+            #'my/agent-shell-company-completion))
+
 (provide 'sqrt-ai)
