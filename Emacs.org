@@ -12493,7 +12493,11 @@ Somehow there isn't a built-in function?
                  :auth password :username "pvkorytov")))
   (add-hook 'rocket-chat-mode-hook #'rocket-company-setup)
   (setq rocket-chat-fill-column 80)
-  (remove-hook 'rocket-chat-mode-hook #'rocket-chat-auto-fill-mode))
+  (remove-hook 'rocket-chat-mode-hook #'rocket-chat-auto-fill-mode)
+  (my/persp-add-rule
+    rocket-root-mode 3 "rocket"
+    rocket-chat-mode 3 "rocket"
+    rocket-image-mode 3 "rocket"))
 #+end_src
 
 *** Google Translate
