@@ -202,6 +202,10 @@ Storage=none
 ProcessSizeMax=0
 #+end_src
 
+#+begin_src bash
+systemctl --user enable --now gnome-keyring-daemon.service gnome-keyring-daemon.socket
+#+end_src
+
 * Metapac configuration
 [[https://github.com/ripytide/metapac][metapac]] is a declarative wrapper around different package managers, including [[https://wiki.archlinux.org/title/Pacman][pacman]] and [[https://github.com/Morganamilo/paru][paru]]. This means the required packages can be listed in configuration files and checked into version control.
 
@@ -286,39 +290,40 @@ systemctl enable --now pacserve
 
 * System packages
 Some necessary Arch packages:
-| Arch dependency     |
-|---------------------|
-| amneziavpn-bin      |
-| base                |
-| base-devel          |
-| debtap              |
-| grub                |
-| iwd                 |
-| lightdm             |
-| lightdm-gtk-greeter |
-| linux               |
-| linux-firmware      |
-| inetutils           |
-| nano                |
-| networkmanager      |
-| metapac             |
-| openssh             |
-| pacman-contrib      |
-| paru                |
-| pipewire            |
-| pipewire-audio      |
-| pipewire-alsa       |
-| pipewire-pulse      |
-| pipewire-jack       |
-| sof-firmware        |
-| smartmontools       |
-| vim                 |
-| xterm               |
-| wget                |
-| wireless_tools      |
-| wireplumber         |
-| yadm                |
-| zram-generator      |
+| Arch dependency      |
+|----------------------|
+| amneziavpn-bin       |
+| base                 |
+| base-devel           |
+| debtap               |
+| gnome-keyring-daemon |
+| grub                 |
+| iwd                  |
+| lightdm              |
+| lightdm-gtk-greeter  |
+| linux                |
+| linux-firmware       |
+| inetutils            |
+| nano                 |
+| networkmanager       |
+| metapac              |
+| openssh              |
+| pacman-contrib       |
+| paru                 |
+| pipewire             |
+| pipewire-audio       |
+| pipewire-alsa        |
+| pipewire-pulse       |
+| pipewire-jack        |
+| sof-firmware         |
+| smartmontools        |
+| vim                  |
+| xterm                |
+| wget                 |
+| wireless_tools       |
+| wireplumber          |
+| yadm                 |
+| zram-generator       |
 
 Various drivers, I'm not sure which I actually need, so...
 | Arch dependency    |
@@ -639,4 +644,10 @@ Keywords=max;chat;im;messaging;messenger;sms;
 SingleMainWindow=true
 X-GNOME-UsesNotifications=true
 X-GNOME-SingleWindow=true
+#+end_src
+
+Don't forget to run:
+#+begin_src bash :tangle no
+mkdir -p ~/.sandbox/max
+update-desktop-database ~/.local/share/applications
 #+end_src

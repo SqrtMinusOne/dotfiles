@@ -482,7 +482,10 @@ _c_: Chromium
   (start-process-shell-command "xrandr" nil "~/bin/scripts/screen-layout")
   (when (string= (system-name) "violet")
     (setq my/exwm-another-monitor "DP-1")
-    (setq exwm-randr-workspace-monitor-plist `(2 ,my/exwm-another-monitor 3 ,my/exwm-another-monitor))
+    (setq exwm-randr-workspace-monitor-plist
+          `(
+            2 ,my/exwm-another-monitor 3 ,my/exwm-another-monitor
+            4 ,my/exwm-another-monitor 5 ,my/exwm-another-monitor))
     (my/exwm-refresh-monitors))
 
   (setq exwm-workspace-warp-cursor t)

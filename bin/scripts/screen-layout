@@ -8,7 +8,7 @@ if [ "$hostname" = "indigo" ]; then
         --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal \
         --output DVI-D-0 --mode 1920x1080 --pos 1920x0 --rotate normal
 
-elif [ "$hostname" = "eminence" ]; then
+elif [ "$hostname" = "weiss" ]; then
     xgamma -gamma 1.25
 
     if xrandr --query | grep -q '^HDMI-1 connected' &&

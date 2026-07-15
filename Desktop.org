@@ -169,9 +169,9 @@ Xft/HintStyle "hintnone"
 Setting the default MIME types
 #+begin_src conf-unix :tangle ~/.config/mimeapps.list
 [Default Applications]
-text/html=userapp-Glide-6K8YK3.desktop
-x-scheme-handler/http=userapp-Glide-6K8YK3.desktop
-x-scheme-handler/https=userapp-Glide-6K8YK3.desktop
+text/html=glide-browser-bin.desktop
+x-scheme-handler/http=glide-browser-bin.desktop
+x-scheme-handler/https=glide-browser-bin.desktop
 x-scheme-handler/tg=userapp-Telegram Desktop-7PVWF1.desktop
 image/png=feh.desktop
 image/jpg=feh.desktop
@@ -200,7 +200,7 @@ if [ "$hostname" = "indigo" ]; then
         --output HDMI-A-0 --mode 1920x1080 --pos 0x0 --rotate normal \
         --output DVI-D-0 --mode 1920x1080 --pos 1920x0 --rotate normal
 
-elif [ "$hostname" = "eminence" ]; then
+elif [ "$hostname" = "weiss" ]; then
     xgamma -gamma 1.25
 
     if xrandr --query | grep -q '^HDMI-1 connected' &&
@@ -1883,7 +1883,6 @@ Also excluding modules that are not available on certain hosts:
 | indigo    | battery |
 | indigo    | nvidia  |
 | violet    | battery |
-| weiss     | battery |
 | weiss     | nvidia  |
 | default   | battery |
 | default   | nvidia  |
@@ -4189,6 +4188,41 @@ async function updateTheme() {
 
 glide.autocmds.create("ConfigLoaded", {}, updateTheme)
 updateTheme()
+#+end_src
+
+** Fix desktop file
+Don't forget to run:
+#+begin_src bash :tangle no
+update-desktop-database ~/.local/share/applications
+#+end_src
+
+#+begin_src conf-desktop :tangle .local/share/applications/glide-browser-bin.desktop
+[Desktop Entry]
+Name=Glide Browser
+Comment=An extensible and keyboard-focused web browser built on Firefox
+Exec=/usr/bin/glide-bin %u
+Terminal=false
+Type=Application
+Icon=glide-bin
+StartupWMClass=glide-glide
+MimeType=application/json;application/pdf;application/rdf+xml;application/rss+xml;application/x-xpinstall;application/xhtml+xml;application/xml;audio/flac;audio/ogg;audio/webm;image/avif;image/gif;image/jpeg;image/png;image/svg+xml;image/webp;text/html;text/xml;video/ogg;video/webm;x-scheme-handler/chrome;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/mailto;
+Actions=new-window;new-private-window;open-profile-manager;
+Comment=An extensible and keyboard-focused web browser built on Firefox
+X-GNOME-FullName=Glide Browser
+Categories=Network;WebBrowser;
+StartupWMClass=Glide Browser
+
+[Desktop Action new-window]
+Exec=/usr/bin/glide-bin --new-window %u
+Name=New Window
+
+[Desktop Action new-private-window]
+Exec=/usr/bin/"glide-bin" --private-window %u
+Name=New Private Window
+
+[Desktop Action open-profile-manager]
+Exec=/usr/bin/"glide-bin" --ProfileManager
+Name=Open Profile Manager
 #+end_src
 
 * Various software
