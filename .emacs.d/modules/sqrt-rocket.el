@@ -17,6 +17,10 @@
   (my/persp-add-rule
     rocket-root-mode 3 "rocket"
     rocket-chat-mode 3 "rocket"
-    rocket-image-mode 3 "rocket"))
+    rocket-image-mode 3 "rocket")
+  (general-define-key
+   :states '(insert)
+   :keymaps '(rocket-chat-mode-map)
+   "C-<return>" #'newline))
 
 (provide 'sqrt-rocket)
