@@ -58,6 +58,19 @@
 \makeatletter
 \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
 \def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\newsavebox\pandoc@box
+\providecommand*\pandocbounded[1]{% Scale an image to the available height/width.
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{%
+    \dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi
+  \ifdim\@tempa\p@<\p@
+    \scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else
+    \usebox{\pandoc@box}%
+  \fi
+}
 \makeatother
 % Scale images if necessary, so that they will not overflow the page
 % margins by default, and it is still possible to overwrite the defaults
@@ -143,8 +156,6 @@ $endif$
 
 \setmonofont[Scale=0.9]{DejaVu Sans Mono}
 \newfontfamily{\cyrillicfonttt}{DejaVu Sans Mono}[Scale=0.8]
-
-\usepackage{bidi}
 
 \usepackage{microtype}
 \setlength{\emergencystretch}{3pt}

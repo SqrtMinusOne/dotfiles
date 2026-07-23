@@ -119,7 +119,7 @@
   :config
   (evil-collection-init
    '(eww devdocs proced emms pass calendar dired debug guix calc
-         docker ibuffer geiser pdf info elfeed edebug bookmark company
+         docker ibuffer geiser pdf info edebug bookmark company
          vterm flycheck profiler cider explain-pause-mode notmuch custom
          xref eshell helpful compile comint git-timemachine magit prodigy
          slime forge deadgrep vc-annonate telega doc-view gnus outline

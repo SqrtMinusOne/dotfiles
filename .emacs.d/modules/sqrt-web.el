@@ -203,7 +203,7 @@
   :init
   (my-leader-def
     "dr" #'rest-query
-    "dR" #'rest-query-openapi)
+    "dR" #'rest-query-open-preset)
   :config
   (my/persp-add-rule
     rest-query-openapi-mode 4 "api"
@@ -214,6 +214,7 @@
 (setq rest-query-workspace-presets
       '(("portfolio-public" . "http://localhost:3019/portfolio/api/docs-public-json/")
         ("portfolio" . "http://localhost:3019/portfolio/api/docs-json/")
-        ("is-mob" . "http://localhost:3023/is-mob/api/docs-json/")))
+        ("is-mob" . "http://localhost:3023/is-mob/api/docs-json/")
+        ("nav" . "http://localhost:8000/openapi.json")))
 
 (provide 'sqrt-web)

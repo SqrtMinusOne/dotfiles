@@ -61,7 +61,8 @@
 (defun my/set-pipenv-pytest ()
   (setq-local
    python-pytest-executable
-   (concat (my/get-pipenv-python) " -m pytest")))
+   (format "%s -m pytest"
+           (shell-quote-argument (my/get-pipenv-python)))))
 
 (use-package python-pytest
   :straight t

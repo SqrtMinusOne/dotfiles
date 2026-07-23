@@ -778,6 +778,27 @@ in `notmuch-search-mode'."
                added (length addrs)))))
 #+end_src
 
+Update blacklist:
+#+begin_src bash :tangle ~/bin/scripts/blacklist-candidates
+EMAILS=$(
+    notmuch show --body=false --format=json --entire-thread=false \
+            'tag:pvkorytov AND (tag:spam OR subject:[MASSMAIL] OR subject [Spam]) AND NOT from:*@etu.ru' \
+        | jq -r '.[][] | .[0].headers.From | capture("<(?<addr>[^>]+)>")?.addr // .' \
+        | sort \
+        | uniq
+)
+
+mapfile -t patterns < "/home/pavel/10-19 Code/11 Config/11.11 email-blacklist/blacklist.txt"
+
+while IFS= read -r email; do
+    for pattern in "${patterns[@]}"; do
+        [[ -z $pattern || $pattern =~ ^# ]] && continue
+        [[ $email == $pattern ]] && continue 2
+    done
+    echo "$email"
+done <<< "$EMAILS"
+#+end_src
+
 * mailcap
 mailcap file is a file which defines how to read to different MIME types. Notmuch also uses it, so why not keep it here.
 
