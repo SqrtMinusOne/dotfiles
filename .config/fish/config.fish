@@ -97,3 +97,21 @@ if type -q atuin
     bind -M insert \cr _atuin_search
 end
 # atuin:1 ends here
+
+# [[file:../../Console.org::*Ghostel][Ghostel:1]]
+string match -qr '^ghostel(,|$)' -- "$INSIDE_EMACS"; and source "$EMACS_GHOSTEL_PATH/etc/shell/ghostel.fish"
+
+if test "$INSIDE_EMACS" = ghostel
+    function e
+        ghostel_cmd find-file-other-window $argv
+    end
+
+    function dired
+        ghostel_cmd dired-other-window $argv
+    end
+
+    function magit
+        ghostel_cmd magit-status-setup-buffer (pwd)
+    end
+end
+# Ghostel:1 ends here

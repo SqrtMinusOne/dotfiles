@@ -1,4 +1,38 @@
 ;;; -*- lexical-binding: t -*-
+(use-package ghostel
+  :straight t
+  :commands (ghostel)
+  :config
+  (setq ghostel-eval-cmds
+        '(("find-file-other-window" find-file-other-window)
+          ("dired-other-window" dired-other-window)
+          ("magit-status-setup-buffer" magit-status-setup-buffer)))
+  (setq ghostel-tramp-shell-integration t))
+
+(add-to-list 'display-buffer-alist
+             '("ghostel-dedicated.*"
+               (display-buffer-reuse-window
+                display-buffer-in-side-window)
+               (side . bottom)
+               (reusable-frames . visible)
+               (window-height . 0.33)))
+
+(defun my/ghostel-dedicated ()
+  (interactive)
+  (let* ((ghostel-buffer-name "ghostel-dedicated")
+         (dedicated-buffer (get-buffer ghostel-buffer-name)))
+    (if (not dedicated-buffer)
+        (ghostel)
+      (let ((window (get-buffer-window dedicated-buffer)))
+        (if (eq (selected-window) window)
+            (kill-buffer-and-window)
+          (select-window window))))))
+
+(general-define-key
+ :states '(normal)
+ "`" #'my/ghostel-dedicated
+ "~" #'ghostel)
+
 (when my/is-termux
   (straight-use-package 'vterm))
 
@@ -386,10 +420,10 @@
       (eshell/cd root)
     (message "Not in a project")))
 
-(general-define-key
- :states '(normal)
- "`" #'my/eshell-dedicated
- "~" #'eshell)
+;; (general-define-key
+;;  :states '(normal)
+;;  "`" #'my/eshell-dedicated
+;;  "~" #'eshell)
 
 (use-package eat
   :straight (:files ("*.el" ("term" "term/*.el") "*.texi"

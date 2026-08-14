@@ -123,7 +123,7 @@
          vterm flycheck profiler cider explain-pause-mode notmuch custom
          xref eshell helpful compile comint git-timemachine magit prodigy
          slime forge deadgrep vc-annonate telega doc-view gnus outline
-         agent-shell)))
+         agent-shell evil-ghostel)))
 
 (defmacro my/wrap-push-button (fn keymap)
   (let ((fn-wrap (intern (format "my/%s-ret" (symbol-name fn)))))

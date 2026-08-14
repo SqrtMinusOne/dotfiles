@@ -400,6 +400,19 @@ init_yc () {
     if [ -f '/home/pavel/yandex-cloud/completion.bash.inc' ]; then source '/home/pavel/yandex-cloud/completion.bash.inc'; fi
 }
 #+end_src
+*** Ghostel
+Ghostel integration, see the [[https://dakra.github.io/ghostel/#orga5520f8][docs]].
+
+#+begin_src bash
+[[ "${INSIDE_EMACS%%,*}" = 'ghostel' ]] && source "$EMACS_GHOSTEL_PATH/etc/shell/ghostel.bash"
+
+if [[ "$INSIDE_EMACS" = 'ghostel' ]]; then
+    e()   { ghostel_cmd find-file-other-window "$@"; }
+    dired() { ghostel_cmd dired-other-window "$@"; }
+    magit() { ghostel_cmd magit-status-setup-buffer "$(pwd)"; }
+fi
+#+end_src
+
 * Fish
 :PROPERTIES:
 :header-args+: :tangle ./.config/fish/config.fish :comments link
@@ -528,6 +541,24 @@ if type -q atuin
     atuin init fish | source
     bind \cr _atuin_search
     bind -M insert \cr _atuin_search
+end
+#+end_src
+** Ghostel
+#+begin_src fish
+string match -qr '^ghostel(,|$)' -- "$INSIDE_EMACS"; and source "$EMACS_GHOSTEL_PATH/etc/shell/ghostel.fish"
+
+if test "$INSIDE_EMACS" = ghostel
+    function e
+        ghostel_cmd find-file-other-window $argv
+    end
+
+    function dired
+        ghostel_cmd dired-other-window $argv
+    end
+
+    function magit
+        ghostel_cmd magit-status-setup-buffer (pwd)
+    end
 end
 #+end_src
 * Nushell
@@ -985,6 +1016,29 @@ statusMessage = "Sending permission notification"
 #+end_src
 
 After that, run =/hooks= and confirm the hook.
+* SSH
+I guess there are no secrets here.
+
+#+begin_src conf-space :tangle ~/.ssh/config
+# TODO get CIDR
+# ip -brief -4 address
+#  ip -4 route show proto kernel scope link
+# Match originalhost *.digital.etu.ru localnetwork 10.24.32.0/20
+#     ProxyJump none
+
+Match originalhost *.etu.ru
+	ProxyJump pavel@192.168.122.50
+
+Host *
+	ControlMaster auto
+	ControlPath ~/.ssh/cm-%C
+	ControlPersist no
+	AddKeysToAgent yes
+
+Host aur.archlinux.org
+  IdentityFile ~/.ssh/aur
+  User aur
+#+end_src
 
 * Various console applications
 | Arch dependency | Description                                 | Disabled |

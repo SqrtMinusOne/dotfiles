@@ -24,7 +24,7 @@
    "l" #'dired-find-file
    "=" #'dired-narrow
    "-" #'my/dired-create-empty-file-subtree
-   "~" #'eshell
+   "~" #'ghostel
    "M-r" #'wdired-change-to-wdired-mode
    "<left>" #'dired-up-directory
    "<right>" #'dired-find-file

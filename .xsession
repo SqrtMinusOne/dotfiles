@@ -26,5 +26,6 @@ copyq &
 
 # Run the Emacs startup script as a session.
 # exec dbus-launch --exit-with-session ~/.emacs.d/run-exwm.sh
-exec dbus-launch --exit-with-session emacs -mm --debug-init -l ~/.emacs.d/desktop.el
+exec env DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus" \
+  emacs -mm --debug-init -l ~/.emacs.d/desktop.el
 # Xsession:1 ends here

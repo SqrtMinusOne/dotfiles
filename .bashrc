@@ -164,3 +164,13 @@ init_yc () {
     if [ -f '/home/pavel/yandex-cloud/completion.bash.inc' ]; then source '/home/pavel/yandex-cloud/completion.bash.inc'; fi
 }
 # Yandex Cloud:1 ends here
+
+# [[file:Console.org::*Ghostel][Ghostel:1]]
+[[ "${INSIDE_EMACS%%,*}" = 'ghostel' ]] && source "$EMACS_GHOSTEL_PATH/etc/shell/ghostel.bash"
+
+if [[ "$INSIDE_EMACS" = 'ghostel' ]]; then
+    e()   { ghostel_cmd find-file-other-window "$@"; }
+    dired() { ghostel_cmd dired-other-window "$@"; }
+    magit() { ghostel_cmd magit-status-setup-buffer "$(pwd)"; }
+fi
+# Ghostel:1 ends here

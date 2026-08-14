@@ -218,8 +218,9 @@
    (require 'sqrt-general-ui) (require 'sqrt-doom-modeline)
    (require 'sqrt-perspective) (require 'sqrt-flycheck)
    (require 'sqrt-tree-sitter) (require 'sqrt-markup)
-   (require 'sqrt-lisp) (require 'sqrt-dired) (require 'sqrt-terms)
-   (require 'sqrt-dotfiles) (require 'sqrt-misc-internet)))
+   (require 'sqrt-lisp) (require 'sqrt-dired) (require 'sqrt-tramp)
+   (require 'sqrt-terms) (require 'sqrt-dotfiles)
+   (require 'sqrt-misc-internet)))
 
 
 (defun my/modules--post-tangle ()
