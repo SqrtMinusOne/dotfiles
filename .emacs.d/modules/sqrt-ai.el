@@ -191,79 +191,65 @@ Output the following and nothing else:
   (require 'ellama)
   (my/ellama-proof-read--display text is-org-mode my/ellama-proof-read-prompt))
 
-(defun my/whisper--format-vtt-seconds (seconds)
-  (if (numberp seconds)
-      (let* ((hours (/ (floor seconds) (* 60 60)))
-             (minutes (/ (- (floor seconds) (* hours 60 60)) 60))
-             (sec (% (floor seconds) 60))
-             (ms (floor (* 1000 (- seconds (floor seconds))))))
-        (format "%.2d:%.2d:%.2d.%.3d" hours minutes sec ms))
-    ""))
-
-(defun my/whisper--save-chucks-vtt (path data)
-  (with-temp-file path
-    (insert "WEBVTT\n\n")
-    (cl-loop for chunk across (alist-get 'chunks data)
-             for start = (my/whisper--format-vtt-seconds
-                          (aref (alist-get 'timestamp chunk) 0))
-             for end = (my/whisper--format-vtt-seconds
-                        (aref (alist-get 'timestamp chunk) 1))
-             do (insert (format "%s --> %s" start end) "\n")
-             do (insert (string-trim (alist-get 'text chunk)) "\n\n"))))
-
-(defun my/whisper--save-speakers-vtt (path data)
-  (with-temp-file path
-    (insert "WEBVTT\n\n")
-    (cl-loop for chunk across (alist-get 'speakers data)
-             for start = (my/whisper--format-vtt-seconds
-                          (aref (alist-get 'timestamp chunk) 0))
-             for end = (my/whisper--format-vtt-seconds
-                        (aref (alist-get 'timestamp chunk) 1))
-             do (insert (format "%s --> %s" start end) "\n")
-             do (insert
-                 (format "<v %s>" (alist-get 'speaker chunk))
-                 (string-trim (alist-get 'text chunk)) "\n\n"))))
-
-(defun my/whisper--save-speakers-txt (path data)
-  (with-temp-file path
-    (cl-loop with prev-speaker
-             for chunk across (alist-get 'speakers data)
-             for speaker = (alist-get 'speaker chunk)
-             if (not (equal speaker prev-speaker))
-             do (progn
-                  (when prev-speaker
-                    (fill-region
-                     (line-beginning-position)
-                     (line-end-position))
-                    (insert "\n\n"))
-                  (insert (format "[%s]" speaker) "\n")
-                  (setq prev-speaker speaker))
-             do (insert (string-trim (alist-get 'text chunk)) " "))
-    (fill-region
-     (line-beginning-position)
-     (line-end-position))))
-
-(defun my/whisper--process-output (transcript-path)
-  (let ((data (json-read-file transcript-path)))
-    (when (alist-get 'text data)
-      (with-temp-file (concat
-                       (file-name-sans-extension transcript-path)
-                       ".txt")
-        (insert (string-trim (alist-get 'text data)))
-        (do-auto-fill)))
-    (unless (seq-empty-p (alist-get 'speakers data))
-      (my/whisper--save-speakers-vtt
-       (concat (file-name-sans-extension transcript-path) "-spk.vtt")
-       data)
-      (my/whisper--save-speakers-txt
-       (concat (file-name-sans-extension transcript-path) "-spk.txt")
-       data))
-    (my/whisper--save-chucks-vtt
-     (concat (file-name-sans-extension transcript-path) ".vtt")
-     data)))
-
 (defvar my/whisper-path
-  "/home/pavel/micromamba/envs/insanely-fast-whisper/bin/insanely-fast-whisper")
+  "/home/pavel/10-19 Code/13 Other Projects/13.15 whisper-cli/.venv/bin/whisper-cli")
+
+(defun my/whisper--sentinel (process event)
+  (when (memq (process-status process) '(exit signal))
+    (let ((buffer (process-buffer process)))
+      (if (and (eq (process-status process) 'exit)
+               (= (process-exit-status process) 0))
+          (progn
+            (notifications-notify :body "Audio conversion completed"
+                                  :title "Whisper")
+            (message "Whisper conversion completed")
+            (when (buffer-live-p buffer)
+              (kill-buffer buffer)))
+        (notifications-notify
+         :body (format "Conversion failed: %s" (string-trim event))
+         :title "Whisper")
+        (when (buffer-live-p buffer)
+          (display-buffer buffer))
+        (message "Whisper failed: %s" (string-trim event))))))
+
+(defun my/whisper--read-diarization ()
+  "Prompt for optional diarization and return nil, `auto', or a speaker count."
+  (when (y-or-n-p "Enable speaker diarization? ")
+    (let ((num (read-number "Number of speakers (0 for automatic): " 0)))
+      (if (> num 0) num 'auto))))
+
+(defun my/whisper--start (source-args output-dir &optional language num-speakers)
+  "Start Whisper for SOURCE-ARGS.
+NUM-SPEAKERS is nil to disable diarization, `auto' to infer the count, or a number."
+  (let* ((args (append
+                source-args
+                (list "--output" (expand-file-name output-dir))
+                (when language
+                  (list "--language" language))
+                (when num-speakers
+                  (append
+                   (list "--diarize")
+                   (when (numberp num-speakers)
+                     (list "--num-speakers" (format "%s" num-speakers)))))))
+         (buffer (generate-new-buffer "*whisper*"))
+         (process-environment (copy-sequence process-environment)))
+    (dolist (variable '("http_proxy" "https_proxy" "HTTP_PROXY"
+                        "HTTPS_PROXY" "all_proxy" "ALL_PROXY"))
+      (setenv variable nil))
+    (when num-speakers
+      (setenv "HF_TOKEN"
+              (my/password-store-get-field
+               "Accounts/huggingface.co" "token")))
+    (let ((process
+           (make-process
+            :name "whisper"
+            :buffer buffer
+            :command (cons my/whisper-path args)
+            :connection-type 'pipe
+            :noquery t
+            :sentinel #'my/whisper--sentinel)))
+      (display-buffer buffer)
+      process)))
 
 (defun my/invoke-whisper (input output-dir &optional language num-speakers)
   (interactive
@@ -272,125 +258,12 @@ Output the following and nothing else:
     (read-directory-name "Output-directory: ")
     (let ((lang (read-string "Language (optional): ")))
       (if (string-empty-p lang) nil lang))
-    (let ((num (read-number "Number of speakers (optional): " 0)))
-      (when (> num 0)
-        (number-to-string num)))))
-  (let* ((transcript-path (concat
-                           (expand-file-name (file-name-as-directory output-dir))
-                           (file-name-base input)
-                           ".json"))
-         (args
-          `("--file-name" ,(expand-file-name input)
-            "--transcript-path" ,transcript-path
-            "--hf-token" ,(my/password-store-get-field "Accounts/huggingface.co" "token")
-            ,@(when language
-                `("--language" ,language))
-            ,@(when num-speakers
-                `("--num-speakers" ,num-speakers))))
-         (buffer (generate-new-buffer "*whisper*"))
-         (proc (apply #'start-process "whisper" buffer my/whisper-path args)))
-    (set-process-sentinel
-     proc
-     (lambda (process _msg)
-       (let ((status (process-status process))
-             (code (process-exit-status process)))
-         (cond ((and (eq status 'exit) (= code 0))
-                (my/whisper--process-output transcript-path)
-                (notifications-notify :body "Audio conversion completed"
-                                      :title "Whisper")
-                (kill-buffer (process-buffer process)))
-               ((or (and (eq status 'exit) (> code 0))
-                    (eq status 'signal))
-                (let ((err (with-current-buffer (process-buffer process)
-                             (buffer-string))))
-                  (user-error "Error in Whisper: %s" err)))))))))
-
-(with-eval-after-load 'elfeed
-  (defvar my/elfeed-whisper-podcast-files-directory
-    (concat elfeed-db-directory "/podcast-files/")))
-
-(defun my/elfeed-whisper-get-transcript-new (entry)
-  (interactive (list elfeed-show-entry))
-  (let* ((url (caar (elfeed-entry-enclosures entry)))
-         (file-name (concat
-                     (elfeed-ref-id (elfeed-entry-content entry))
-                     "."
-                     (file-name-extension url)))
-         (file-path (expand-file-name
-                     (concat
-                      my/elfeed-whisper-podcast-files-directory
-                      file-name))))
-    (message "Download started")
-    (unless (file-exists-p my/elfeed-whisper-podcast-files-directory)
-      (mkdir my/elfeed-whisper-podcast-files-directory))
-    (request url
-      :type "GET"
-      :encoding 'binary
-      :complete
-      (cl-function
-       (lambda (&key data &allow-other-keys)
-         (let ((coding-system-for-write 'binary)
-               (write-region-annotate-functions nil)
-               (write-region-post-annotation-function nil))
-           (write-region data nil file-path nil :silent))
-         (message "Conversion started")
-         (my/invoke-whisper file-path my/elfeed-srt-dir)))
-      :error
-      (cl-function
-       (lambda (&key error-thrown &allow-other-keys)
-         (message "Error!: %S" error-thrown))))))
-
-(defun my/elfeed-show-related-files (entry)
-  (interactive (list elfeed-show-entry))
-  (let* ((files
-          (mapcar
-           (lambda (file) (cons (file-name-extension file) file))
-           (seq-filter
-            (lambda (file)
-              (string-match-p
-               (rx bos (literal (elfeed-ref-id (elfeed-entry-content entry))) ".")
-               file))
-            (directory-files my/elfeed-srt-dir))))
-         (buffer
-          (find-file-other-window
-           (concat
-            my/elfeed-srt-dir
-            (alist-get
-             (completing-read "File: " files)
-             files nil nil #'equal)))))
-    (with-current-buffer buffer
-      (setq-local elfeed-show-entry entry))))
-
-(defun my/elfeed-whisper-get-transcript (entry)
-  "Retrieve transcript for the enclosure of the current elfeed ENTRY."
-  (interactive (list elfeed-show-entry))
-  (let ((enclosure (caar (elfeed-entry-enclosures entry))))
-    (unless enclosure
-      (user-error "No enclosure found!"))
-    (let ((srt-path (concat my/elfeed-srt-dir
-                            (elfeed-ref-id (elfeed-entry-content entry))
-                            ".srt")))
-      (if (file-exists-p srt-path)
-          (let ((buffer (find-file-other-window srt-path)))
-            (with-current-buffer buffer
-              (setq-local elfeed-show-entry entry)))
-        (my/elfeed-whisper-get-transcript-new entry)))))
-
-(defun my/elfeed-whisper-subed (entry)
-  "Run MPV for the current Whisper-generated subtitles file.
-
-ENTRY is an instance of `elfeed-entry'."
-  (interactive (list elfeed-show-entry))
-  (unless entry
-    (user-error "No entry!"))
-  (unless (derived-mode-p 'subed-mode)
-    (user-error "Not subed mode!"))
-  (setq-local subed-mpv-video-file
-              (expand-file-name
-               (concat my/elfeed-whisper-podcast-files-directory
-                       (my/get-file-name-from-url
-                        (caar (elfeed-entry-enclosures entry))))))
-  (subed-mpv--play subed-mpv-video-file))
+    (my/whisper--read-diarization)))
+  (unless (file-readable-p input)
+    (user-error "Input file is not readable: %s" input))
+  (my/whisper--start
+   (list "--file" (expand-file-name input))
+   output-dir language num-speakers))
 
 (defun my/whisper-url (url file-name output-dir &optional language num-speakers)
   (interactive
@@ -399,28 +272,10 @@ ENTRY is an instance of `elfeed-entry'."
          (read-directory-name "Output directory: ")
          (let ((lang (read-string "Language (optional): ")))
            (if (string-empty-p lang) nil lang))
-         (let ((num (read-number "Number of speakers (optional): " 0)))
-           (when (> num 0)
-             (number-to-string num)))))
-  (let ((file-path
-         (concat output-dir file-name "." (file-name-extension url))))
-    (message "Download started")
-    (request url
-      :type "GET"
-      :encoding 'binary
-      :complete
-      (cl-function
-       (lambda (&key data &allow-other-keys)
-         (let ((coding-system-for-write 'binary)
-               (write-region-annotate-functions nil)
-               (write-region-post-annotation-function nil))
-           (write-region data nil file-path nil :silent))
-         (message "Conversion started")
-         (my/invoke-whisper file-path output-dir language num-speakers)))
-      :error
-      (cl-function
-       (lambda (&key error-thrown &allow-other-keys)
-         (message "Error!: %S" error-thrown))))))
+         (my/whisper--read-diarization)))
+  (my/whisper--start
+   (list "--url" url "--name" file-name)
+   output-dir language num-speakers))
 
 (use-package agent-shell
   :straight t

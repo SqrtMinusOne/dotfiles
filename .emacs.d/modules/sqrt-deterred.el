@@ -65,6 +65,7 @@
   (setq deterred-transport-podorozhnik-password
         (my/password-store-get "Accounts/podorozhnik.spb.ru"))
   (setq deterred-org-clock-files #'my/org-agenda-and-archive)
+  (setq deterred-messengers-discord-non-work '("System Crafters" "Doom Emacs" "Lisp"))
 
   (require 'llm-openai)
   (setq llm-warn-on-nonfree nil)

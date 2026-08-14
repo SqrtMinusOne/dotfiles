@@ -36,8 +36,7 @@
   (dired (expand-file-name "~")))
 
 (my-leader-def
-  "ad" #'dired
-  "aD" #'my/dired-bookmark-open)
+  "ad" #'dired)
 
 (use-package diredfl
   :straight t
@@ -171,6 +170,12 @@
    "C" #'dired-rsync
    "gd" #'dired-do-copy))
 
+(setq bookmark-default-file
+      (expand-file-name "~/10-19 Code/11 Config/11.10 dotfiles-private/bookmarks.el"))
+
+(my-leader-def "gb" #'list-bookmarks)
+(my-leader-def "gk" #'consult-bookmark)
+
 (defun my/dired-open-this-subdir ()
   (interactive)
   (dired (dired-current-directory)))
@@ -230,18 +235,6 @@
    :states '(normal insert)
    :keymaps '(dired-mode-map)
    "&" #'my/dired-do-async-shell-command))
-
-(defun my/dired-bookmark-open ()
-  (interactive)
-  (let ((bookmarks
-         (mapcar
-          (lambda (el) (cons (format "%-30s %s" (car el) (cdr el)) (cdr el)))
-          my/dired-bookmarks)))
-    (dired
-     (cdr
-      (assoc
-       (completing-read "Dired: " bookmarks nil nil "^")
-       bookmarks)))))
 
 (defun my/get-good-buffer (buffer-major-mode prompt)
   (or

@@ -7,7 +7,7 @@
   :init
   (my-leader-def "ae" #'el-rss)
   :config
-  (setq el-rss-tt-rss-url "https://sqrtminusone.xyz/tt-rss/")
+  (setq el-rss-tt-rss-url "https://i.sqrtminusone.xyz/tt-rss/")
   (setq el-rss-tt-rss-username "sqrtminusone")
   (setq el-rss-tt-rss-password-function
         (lambda ()
