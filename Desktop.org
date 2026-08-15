@@ -4302,6 +4302,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | git-filter-repo      |          |
 | dev      | nodejs               |          |
 | dev      | jdk21-openjdk        |          |
+| dev      | jdk17-openjdk        |          |
 | dev      | go                   |          |
 | dev      | gopls                |          |
 | dev      | pkgconf              |          |

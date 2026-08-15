@@ -803,7 +803,7 @@ size = 10
 
 [font.normal]
 family = "JetBrainsMono Nerd Font"
-style = "Regular"
+style = "Medium"
 
 [[keyboard.bindings]]
 action = "Paste"

@@ -19,6 +19,7 @@
 
 (defun my/ghostel-dedicated ()
   (interactive)
+  (require 'ghostel)
   (let* ((ghostel-buffer-name "ghostel-dedicated")
          (dedicated-buffer (get-buffer ghostel-buffer-name)))
     (if (not dedicated-buffer)
@@ -32,6 +33,12 @@
  :states '(normal)
  "`" #'my/ghostel-dedicated
  "~" #'ghostel)
+
+(defun my/ghostel-auto-insert ()
+  (interactive)
+  (evil-insert-state 1))
+
+(add-hook 'ghostel-mode-hook #'my/ghostel-auto-insert)
 
 (when my/is-termux
   (straight-use-package 'vterm))

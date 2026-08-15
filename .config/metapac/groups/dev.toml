@@ -37,6 +37,7 @@ arch = {
     "pkgconf",
     "gopls",
     "go",
+    "jdk17-openjdk",
     "jdk21-openjdk",
     "nodejs",
     "git-filter-repo",

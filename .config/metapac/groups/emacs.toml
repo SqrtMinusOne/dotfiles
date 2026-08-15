@@ -11,6 +11,8 @@ arch = {
     "yt-dlp",
     "mpv",
     "ttf-opensans",
+    "gvfs-goa",
+    "gvfs-dnssd",
     "graphviz",
     "python-isort",
     "python-black",

@@ -38,7 +38,7 @@ arch = {
     "lightdm",
     "iwd",
     "grub",
-    "gnome-keyring-daemon",
+    "gnome-keyring",
     "debtap",
     "base-devel",
     "base",

@@ -2734,11 +2734,26 @@ References:
 
 #+begin_src emacs-lisp
 (when (display-graphic-p)
-  (if (x-list-fonts "JetBrainsMono Nerd Font")
-      (let ((font "-JB  -JetBrainsMono Nerd Font-medium-normal-normal-*-17-*-*-*-m-0-iso10646-1"))
-        (set-frame-font font nil t)
-        (add-to-list 'default-frame-alist `(font . ,font)))
-    (message "Install JetBrainsMono Nerd Font!")))
+  (let ((font (font-spec :family "JetBrainsMono Nerd Font"
+                         :weight 'medium
+                         :size 17)))
+    (if (find-font font)
+        (progn
+          (set-frame-font font nil t)
+          (setf (alist-get 'font default-frame-alist)
+                (frame-parameter nil 'font)))
+      (message "Install JetBrainsMono Nerd Font!"))))
+#+end_src
+
+The 2020 Nerd Font build predates the supplementary private-use glyphs used by current tools.  Preserve its existing glyphs and use Symbols Nerd Font Mono only for ranges that the old font does not contain.
+
+#+begin_src emacs-lisp
+(when (display-graphic-p)
+  (let ((symbols (font-spec :family "Symbols Nerd Font Mono")))
+    (when (find-font symbols)
+      (dolist (range '((#xE62F . #xE6B8)
+                       (#xF0001 . #xF1AF0)))
+        (set-fontset-font t range symbols nil 'prepend)))))
 #+end_src
 
 To make the icons work (e.g. in the Doom Modeline), run =M-x all-the-icons-install-fonts=. The package definition is somewhere later in the config.
@@ -9590,6 +9605,11 @@ And the keybindings:
 :END:
 TRAMP is a package that provides remote editing capacities. It is particularly useful for remote server management.
 
+| Arch dependency |
+|-----------------|
+| gvfs-dnssd      |
+| gvfs-goa        |
+
 *** General settings
 Some settings I copy-pasted from somewhere:
 #+begin_src emacs-lisp
@@ -9826,6 +9846,7 @@ Make a dedicated buffer for ghostel in the bottom of the screen.
 
 (defun my/ghostel-dedicated ()
   (interactive)
+  (require 'ghostel)
   (let* ((ghostel-buffer-name "ghostel-dedicated")
          (dedicated-buffer (get-buffer ghostel-buffer-name)))
     (if (not dedicated-buffer)
@@ -9844,6 +9865,15 @@ Make a dedicated buffer for ghostel in the bottom of the screen.
  "~" #'ghostel)
 #+end_src
 
+
+**** Auto insert
+#+begin_src emacs-lisp
+(defun my/ghostel-auto-insert ()
+  (interactive)
+  (evil-insert-state 1))
+
+(add-hook 'ghostel-mode-hook #'my/ghostel-auto-insert)
+#+end_src
 
 *** vterm
 [[https://github.com/akermu/emacs-libvterm][vterm]] is a terminal emulator for Emacs.

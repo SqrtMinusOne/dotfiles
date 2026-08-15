@@ -341,11 +341,22 @@
     :foreground (my/color-value 'fg) :background (my/color-value 'fg))))
 
 (when (display-graphic-p)
-  (if (x-list-fonts "JetBrainsMono Nerd Font")
-      (let ((font "-JB  -JetBrainsMono Nerd Font-medium-normal-normal-*-17-*-*-*-m-0-iso10646-1"))
-        (set-frame-font font nil t)
-        (add-to-list 'default-frame-alist `(font . ,font)))
-    (message "Install JetBrainsMono Nerd Font!")))
+  (let ((font (font-spec :family "JetBrainsMono Nerd Font"
+                         :weight 'medium
+                         :size 17)))
+    (if (find-font font)
+        (progn
+          (set-frame-font font nil t)
+          (setf (alist-get 'font default-frame-alist)
+                (frame-parameter nil 'font)))
+      (message "Install JetBrainsMono Nerd Font!"))))
+
+(when (display-graphic-p)
+  (let ((symbols (font-spec :family "Symbols Nerd Font Mono")))
+    (when (find-font symbols)
+      (dolist (range '((#xE62F . #xE6B8)
+                       (#xF0001 . #xF1AF0)))
+        (set-fontset-font t range symbols nil 'prepend)))))
 
 (when (display-graphic-p)
   (set-face-attribute 'variable-pitch nil :family "Cantarell" :height 1.0)
