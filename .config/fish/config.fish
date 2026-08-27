@@ -19,8 +19,8 @@ end
 alias q="exit"
 alias c="clear"
 if type -q exa
-    alias ls="exa --icons"
-    alias ll="exa -lah --icons"
+    alias ls="exa --icons auto"
+    alias ll="exa -lah --icons auto"
 else
     alias ll="ls -h"
 end

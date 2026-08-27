@@ -11,6 +11,8 @@ arch = {
     "yt-dlp",
     "mpv",
     "ttf-opensans",
+    "gnome-online-accounts-gtk",
+    "gnome-online-accounts",
     "gvfs-goa",
     "gvfs-dnssd",
     "graphviz",

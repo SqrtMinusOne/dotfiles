@@ -189,6 +189,9 @@
 (use-package ansible
   :straight t)
 
+(use-package ansible-vault
+  :straight t)
+
 (use-package jinja2-mode
   :straight t)
 

@@ -273,10 +273,16 @@ picom &
 # dunst &
 copyq &
 
-# Run the Emacs startup script as a session.
-# exec dbus-launch --exit-with-session ~/.emacs.d/run-exwm.sh
-exec env DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus" \
-  emacs -mm --debug-init -l ~/.emacs.d/desktop.el
+export DBUS_SESSION_BUS_ADDRESS="unix:path=${XDG_RUNTIME_DIR}/bus"
+
+# Activate GVfs and GOA before Emacs
+gio mount --list >/dev/null
+gdbus call --session \
+  --dest org.gnome.OnlineAccounts \
+  --object-path /org/gnome/OnlineAccounts \
+  --method org.freedesktop.DBus.ObjectManager.GetManagedObjects >/dev/null
+
+exec emacs -mm --debug-init -l ~/.emacs.d/desktop.el
 #+end_src
 
 Also we need =.xinitrc= for =xrdp=:

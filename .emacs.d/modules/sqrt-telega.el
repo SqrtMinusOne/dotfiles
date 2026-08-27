@@ -38,6 +38,10 @@
    :keymaps '(telega-chat-mode-map)
    :states '(insert)
    "<return>" #'telega-chatbuf-newline-or-input-send)
+  (general-define-key
+   :keymaps '(telega-chat-mode-map)
+   :states '(normal)
+   "T" #'telega-chatbuf-filter-by-topic)
   (my/persp-add-rule
     telega-root-mode 3 "telega"
     telega-chat-mode 3 "telega"
@@ -214,43 +218,5 @@
     :comment "local socks5"))
 
 (add-hook 'telega-before-auth-hook #'my/telega-setup-proxies)
-
-(defun my/telega-switch-to-topic ()
-  (interactive)
-  (let* ((topics-data (gethash
-                       (plist-get telega-chatbuf--chat :id)
-                       telega--chat-topics))
-         (topics-string
-          (mapcar
-           (lambda (topic)
-             (let* ((name (plist-get (plist-get topic :info) :name))
-                    (unread-count (plist-get topic :unread_count))
-                    (name-string (with-temp-buffer
-                                   (telega-ins--topic-title topic 'with-icon)
-                                   (buffer-string))))
-               (if (zerop unread-count)
-                   name-string
-                 (format "%-40s (%s)"
-                         name-string
-                         (propertize (format "%d" unread-count)
-                                     'face 'telega-unread-unmuted-modeline)))))
-           topics-data))
-         (topics-collection (cl-loop for datum in topics-data
-                                     for string in topics-string
-                                     collect (cons string datum)))
-         (topic (completing-read "Topic: " topics-collection nil t)))
-    (telega-chat--goto-thread
-     telega-chatbuf--chat
-     (plist-get
-      (plist-get
-       (alist-get topic topics-collection nil nil #'equal)
-       :info)
-      :message_thread_id))))
-
-(with-eval-after-load 'telega
-  (general-define-key
-   :states '(normal)
-   :keymaps 'telega-chat-mode-map
-   "T" #'my/telega-switch-to-topic))
 
 (provide 'sqrt-telega)

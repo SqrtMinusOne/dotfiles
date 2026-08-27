@@ -170,6 +170,12 @@
    "C" #'dired-rsync
    "gd" #'dired-do-copy))
 
+(use-package async
+  :straight t
+  :after (dired)
+  :config
+  (dired-async-mode))
+
 (setq bookmark-default-file
       (expand-file-name "~/10-19 Code/11 Config/11.10 dotfiles-private/bookmarks.el"))
 

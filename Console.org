@@ -336,8 +336,8 @@ fi
 #+begin_src bash :noweb yes :noweb-ref shell-aliases
 alias v="vim"
 if command -v exa > /dev/null; then
-    alias ls="exa --icons"
-    alias ll="exa -lah --icons"
+    alias ls="exa --icons auto"
+    alias ll="exa -lah --icons auto"
 else
     alias ll='ls -lah'
 fi
@@ -447,8 +447,8 @@ end
 alias q="exit"
 alias c="clear"
 if type -q exa
-    alias ls="exa --icons"
-    alias ll="exa -lah --icons"
+    alias ls="exa --icons auto"
+    alias ll="exa -lah --icons auto"
 else
     alias ll="ls -h"
 end
@@ -1026,7 +1026,7 @@ I guess there are no secrets here.
 # Match originalhost *.digital.etu.ru localnetwork 10.24.32.0/20
 #     ProxyJump none
 
-Match originalhost *.etu.ru
+Match originalhost *.etu.ru,10.136.*,10.128.*,10.160.*
 	ProxyJump pavel@192.168.122.50
 
 Host *
@@ -1034,6 +1034,7 @@ Host *
 	ControlPath ~/.ssh/cm-%C
 	ControlPersist no
 	AddKeysToAgent yes
+    StrictHostKeyChecking=accept-new
 
 Host aur.archlinux.org
   IdentityFile ~/.ssh/aur
@@ -1216,7 +1217,21 @@ Description=Autocommit .password-store
 Type=oneshot
 ExecStart=/usr/bin/bash /home/pavel/bin/scripts/autocommit "/home/pavel/.password-store"
 #+end_src
+** =process-cue=
+#+begin_src sh :tangle bin/scripts/process-cue
+FLAC_NAME="${1%.cue}.flac"
+FOLDER="${1%.cue}-split"
 
+if [[ ! -f "$FLAC_NAME" ]]; then
+    echo "File do not exists"
+    exit 1
+fi
+
+cuebreakpoints "$1" | shnsplit -o flac "$FLAC_NAME"
+cuetag.sh "$1" split-*.flac
+mkdir -p "$FOLDER"
+mv split-*.flac "$FOLDER"
+#+end_src
 * Arch settings
 #+NAME: packages
 #+begin_src emacs-lisp :tangle no

@@ -52,76 +52,10 @@
   (setq ellama-language "English")
   :defer t
   :config
-  (require 'llm-ollama)
   ;; I've looked for this option for 1.5 hours
   (setq ellama-long-lines-length 100000)
 
-  (setq ellama-provider (make-llm-ollama
-                         :chat-model "qwen2.5:32b"
-                         :embedding-model "qwen2.5:32b"))
-  (setq ellama-coding-provider (make-llm-ollama
-                                :chat-model "qwen2.5-coder:32b"
-                                :embedding-model "qwen2.5-coder:32b"))
-  (setq ellama-providers
-        `(("llama3.1:8b" . ,(make-llm-ollama
-                             :chat-model "llama3.1:latest"
-                             :embedding-model "llama3.1:latest"))
-          ("phi4:latest" . ,(make-llm-ollama
-                             :chat-model "phi4:latest"
-                             :embedding-model "phi4:latest"))
-          ("qwen2.5:32b" . ,(make-llm-ollama
-                             :chat-model "qwen2.5:32b"
-                             :embedding-model "qwen2.5:32b"))
-          ("qwen2.5-coder:32b" . ,(make-llm-ollama
-                                   :chat-model "qwen2.5-coder:32b"
-                                   :embedding-model "qwen2.5-coder:32b")))))
-
-(with-eval-after-load 'ellama
-  (transient-define-prefix my/ellama-transient ()
-    "Ellama actions."
-    ["General"
-     :class transient-row
-     ("a" "Chat" ellama-chat)]
-    ["Code"
-     :class transient-row
-     ("ca" "Add" ellama-code-add)
-     ("cc" "Complete" ellama-code-complete)
-     ("ce" "Edit" ellama-code-edit)
-     ("cr" "Review" ellama-code-review)
-     ("ci" "Improve" ellama-code-improve)]
-    ["Natural Language"
-     :class transient-row
-     ("np" "Proof-read" my/ellama-proof-read)]
-    ["Formatting"
-     :class transient-row
-     ("ff" "Format" ellama-make-format)
-     ("fm" "List" ellama-make-list)
-     ("ft" "Table" ellama-make-table)]
-    ["Explain & Summarize"
-     :class transient-row
-     ("es" "Summarize" ellama-summarize)
-     ("ea" "Ask about" ellama-ask-about)
-     ("es" "Send to chat" ellama-ask-selection)
-     ("ew" "Word definition" ellama-define-word)]
-    ["Context"
-     :class transient-row
-     ("xb" "Add buffer" ellama-context-add-buffer)
-     ("xf" "Add file" ellama-context-add-file)
-     ("xi" "Add info" ellama-context-add-info-node)
-     ("xs" "Add selection" ellama-context-add-selection)]
-    ["Settings & Sessions"
-     :class transient-row
-     ("sp" "Provider" ellama-provider-select)
-     ("ss" "Session" ellama-session-switch)
-     ("sr" "Rename ression" ellama-session-rename)
-     ("sd" "Delete session" ellama-session-remove)]))
-
-(defun my/ellama ()
-  (interactive)
-  (require 'ellama)
-  (call-interactively #'my/ellama-transient))
-
-(my-leader-def "aie" #'my/ellama)
+  (setq ellama-provider (make-llm-openai-compatible :url "localhost:8033")))
 
 (defun my/diff-strings (str1 str2)
   (let ((file1 (make-temp-file "diff1"))
@@ -132,11 +66,12 @@
             (insert str1))
           (with-temp-file file2
             (insert str2))
-          (with-temp-buffer
-            (diff-mode)
-            (diff-no-select file1 file2 (diff-switches) t (current-buffer))
-            (font-lock-fontify-buffer)
-            (buffer-string)))
+          (ansi-color-apply
+           (mapconcat
+            #'identity
+            (process-lines
+             "difft" file1 file2 "--color" "always" "--display" "inline")
+            "\n")))
       (delete-file file1)
       (delete-file file2))))
 
@@ -168,17 +103,79 @@
      (message "Error: %s" err))))
 
 (setq my/ellama-proof-read-prompt
-      "Proof-read the following text. Follow these rules:
-- Fix all grammar errors
-- Keep the original style and punctuation, including linebreaks.
-- Use British spelling
-- Do not replace ' with ’, and do not touch other such symbols
+      "You are a conservative proofreader. Your job is to correct genuine language errors while preserving the author's original wording and style as closely as possible.
 
-Output the following and nothing else:
-- The fixed text
-- The string -FIXED TEXT ENDS-
-- List of found errors
-- List of style suggestions
+The input may be in English or Russian. Detect the language of the input text and produce your entire response in that language.
+
+## Rules for correcting the text
+
+1. Fix all genuine grammar, spelling, punctuation, agreement, inflection, and syntax errors.
+
+2. Preserve the original style.
+
+   * Keep the author's word choice whenever it is grammatically acceptable.
+   * Keep abbreviations, contractions, informal expressions, technical terminology, jargon, sentence structure, and level of formality.
+   * Do not rewrite sentences merely to make them smoother, clearer, more elegant, concise, idiomatic, or literary.
+   * Do not replace an unusual but valid expression with a more common one.
+
+3. For English text, use British spelling and conventions where there is a difference between British and American English.
+
+   * For example: \"colour\", \"organise\", \"centre\".
+   * Do not otherwise rewrite vocabulary merely because another word would sound more British.
+
+4. Preserve symbols exactly whenever possible.
+
+   * Do not replace straight quotes with curly quotes or curly quotes with straight quotes.
+   * Do not change quotation-mark style.
+   * Do not replace hyphens, en dashes, em dashes, apostrophes, ellipses, brackets, slashes, or other typographical symbols with alternative forms.
+   * Do not normalise typography.
+   * You may move, add, or remove commas when required by grammar or punctuation rules.
+   * Other punctuation may be corrected only when it is genuinely erroneous; preserve the original character/style where possible.
+
+5. Preserve formatting, including paragraph breaks, Markdown, lists, and other structural formatting, unless a change is necessary to correct an error.
+
+6. Make the smallest possible correction that fixes each error.
+
+## Errors vs style suggestions
+
+Treat these as two separate categories.
+
+An **error** is something that should actually be corrected: incorrect grammar, spelling, punctuation, agreement, word form, syntax, or an objectively incorrect use of a word or construction.
+
+A **style suggestion** is optional. It may make the text clearer, more idiomatic, less awkward, or easier to read, but the original is not actually wrong.
+
+Do NOT apply style suggestions to the corrected text. The corrected text must contain only corrections of genuine errors.
+
+Be conservative with style suggestions. Do not suggest changing wording merely because you personally prefer an alternative.
+
+## Required output format
+
+First output the complete corrected text, without a heading or introductory sentence.
+
+Immediately after it, output this exact string on its own line:
+
+-FIXED TEXT ENDS-
+
+Then output:
+
+Errors:
+
+* List every genuine error you found and briefly explain the correction.
+* Where useful, show the original and corrected fragments.
+* If there were no errors, write that no errors were found.
+
+Style suggestions:
+
+* List optional style improvements separately.
+* These suggestions must NOT have been applied to the corrected text.
+* If there are no worthwhile style suggestions, write that there are none.
+
+The \"Errors:\" and \"Style suggestions:\" headings and all explanations must be in the same language as the input text.
+
+Do not add any other commentary before or after this format.
+
+Here is the text to proofread:
+
 %s")
 
 (defun my/ellama--text ()
@@ -190,6 +187,40 @@ Output the following and nothing else:
   (interactive (list (my/ellama--text) (derived-mode-p 'org-mode)))
   (require 'ellama)
   (my/ellama-proof-read--display text is-org-mode my/ellama-proof-read-prompt))
+
+(setq my/ellama-analyze-journal-prompt
+      "
+You see my personal data for a given period, including some aggregated statistics and journal records. Your job is to summarize it.
+
+## Required output format
+Please output the summary with the following sections. Make each section a Markdown heading.
+
+1. Happened to me. A bullet-point list of things happened to me.
+2. Happened to the world. A bullet-point list of events happened in the world.
+3. Interactions. Mentioned or inferred from statistics interactions, conflicts, tensions, etc.
+4. Emotions. A bullet-point list of experienced emotions, moods, etc. and their causes.
+5. Observations. A free-form text, whatever your thoughts on the above are.
+
+## Data
+%s
+")
+
+(defun my/ellama-analyze-journal ()
+  (interactive)
+  (require 'ellama)
+  (let ((text (my/ellama--text)))
+    (llm-chat-async
+     ellama-provider
+     (llm-make-chat-prompt
+      (format my/ellama-analyze-journal-prompt text))
+     (lambda (response)
+       (let ((buf (generate-new-buffer "*ellama-response*")))
+         (with-current-buffer buf
+           (insert (ellama--translate-markdown-to-org-filter response))
+           (org-mode))
+         (display-buffer buf)))
+     (lambda (&rest err)
+       (message "Error: %s" err)))))
 
 (defvar my/whisper-path
   "/home/pavel/10-19 Code/13 Other Projects/13.15 whisper-cli/.venv/bin/whisper-cli")

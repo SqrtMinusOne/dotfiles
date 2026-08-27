@@ -7,7 +7,10 @@
         '(("find-file-other-window" find-file-other-window)
           ("dired-other-window" dired-other-window)
           ("magit-status-setup-buffer" magit-status-setup-buffer)))
-  (setq ghostel-tramp-shell-integration t))
+  (setq ghostel-tramp-shell-integration t)
+  (general-define-key
+   :keymaps '(ghostel-semi-char-mode)
+   "C-c C-k" #'ghostel-char-mode))
 
 (add-to-list 'display-buffer-alist
              '("ghostel-dedicated.*"
@@ -34,11 +37,20 @@
  "`" #'my/ghostel-dedicated
  "~" #'ghostel)
 
-(defun my/ghostel-auto-insert ()
+(defun my/ghostel-setup ()
   (interactive)
+  ;; The terminal owns wrapping; don't visually wrap its rendered rows.
+  (visual-line-mode -1)
+  (setq-local word-wrap nil
+              truncate-lines t)
+
+  ;; Keep the gutter stable so Ghostel can size the PTY correctly.
+  (display-line-numbers-mode 1)
+  (setq-local display-line-numbers-width 5)
+
   (evil-insert-state 1))
 
-(add-hook 'ghostel-mode-hook #'my/ghostel-auto-insert)
+(add-hook 'ghostel-mode-hook #'my/ghostel-setup)
 
 (when my/is-termux
   (straight-use-package 'vterm))

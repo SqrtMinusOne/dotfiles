@@ -133,4 +133,102 @@
    :states '(normal)
    "Q" #'my/tramp-cleanup-here-maybe))
 
+(defun my/dired-ssh-copy (sources target-folder)
+  (interactive
+   (list (dired-get-marked-files)
+         (with-current-buffer
+             (my/get-good-buffer 'dired-mode "Dired buffer: ")
+           (dired-current-directory))))
+
+  (unless sources
+    (user-error "No source files selected"))
+
+  (let* ((source-remote-prefix (file-remote-p (car sources)))
+         (sources-remote-p (not (null source-remote-prefix)))
+         (target-remote-p
+          (not (null (file-remote-p target-folder)))))
+
+    (when (eq sources-remote-p target-remote-p)
+      (user-error "Sources and target must be on opposite sides of SSH"))
+
+    ;; All sources must be local, or use the same remote connection.
+    (dolist (source sources)
+      (unless (equal (file-remote-p source) source-remote-prefix)
+        (user-error "All source files must use the same local or remote connection")))
+
+    ;; Reject remote methods other than ordinary /ssh: paths.
+    (dolist (remote-file
+             (if sources-remote-p sources (list target-folder)))
+      (unless (string-prefix-p "/ssh:" remote-file)
+        (user-error "%s doesn't look like an SSH location" remote-file)))
+
+    ;; Check this before converting the TRAMP names.
+    (let* ((recursive-p (seq-some #'file-directory-p sources))
+           (local-directory
+            (if sources-remote-p
+                (file-name-as-directory
+                 (expand-file-name target-folder))
+              (file-name-directory
+               (expand-file-name (car sources)))))
+           (scp-sources
+            (mapcar
+             (lambda (source) (string-remove-prefix "/ssh:" source))
+             sources))
+           (scp-target (string-remove-prefix "/ssh:" target-folder))
+           (buf (get-buffer-create "*dired-copy*")))
+
+      (when-let ((process (get-buffer-process buf)))
+        (when (process-live-p process)
+          (user-error "A Dired copy process is already running")))
+
+      (with-current-buffer buf
+        (comint-mode)
+
+        ;; Ensure `start-file-process' starts scp locally.
+        (setq default-directory local-directory)
+
+        (let ((inhibit-read-only t))
+          (erase-buffer))
+
+        (setq-local comint-inhibit-carriage-motion nil
+                    ansi-color-for-comint-mode t)
+        (add-hook 'comint-output-filter-functions
+                  #'ansi-color-process-output nil t))
+
+      (let ((process-connection-type t))
+        (comint-exec
+         buf "dired-copy" "scp" nil
+         (append
+          (when recursive-p '("-r"))
+          '("--")
+          scp-sources
+          (list scp-target))))
+
+      (display-buffer buf))))
+
+(with-eval-after-load 'dired
+  (general-define-key
+   :states '(normal)
+   :keymaps '(dired-mode-map)
+   "gD" #'my/dired-ssh-copy))
+
+(defun my/open-as-sudo-dwim ()
+  (interactive)
+  (let ((file
+         (if (derived-mode-p 'dired-mode)
+             (or (car (dired-get-marked-files nil nil nil t))
+                 default-directory)
+           buffer-file-name)))
+    (unless file
+      (user-error "No file"))
+    (find-file
+     (if-let ((remote (file-remote-p file)))
+         (concat
+          (substring remote 0 -1)
+          "|sudo:root@"
+          (file-remote-p file 'host)
+          ":"
+          (file-remote-p file 'localname))
+       (concat "/sudo::" file)))))
+
 (provide 'sqrt-tramp)

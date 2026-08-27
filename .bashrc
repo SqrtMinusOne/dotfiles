@@ -108,8 +108,8 @@ HISTFILESIZE=
 # [[file:Console.org::*Aliases][Aliases:1]]
 alias v="vim"
 if command -v exa > /dev/null; then
-    alias ls="exa --icons"
-    alias ll="exa -lah --icons"
+    alias ls="exa --icons auto"
+    alias ll="exa -lah --icons auto"
 else
     alias ll='ls -lah'
 fi
