@@ -10,7 +10,9 @@
         '((etu :name "ETU" :url "https://chat.etudevs.ru"
                :auth browser)
           (moevm :name "MOEVM" :url "https://chat.moevm.pro"
-                 :auth password :username "pvkorytov")))
+                 :auth password :username "pvkorytov")
+          (students-2 :name "ST-2" :url "https://student-chat2.moevm.pro/"
+                      :auth password :username "pvkorytov")))
   (add-hook 'rocket-chat-mode-hook #'rocket-company-setup)
   (setq rocket-chat-fill-column 80)
   (remove-hook 'rocket-chat-mode-hook #'rocket-chat-auto-fill-mode)
