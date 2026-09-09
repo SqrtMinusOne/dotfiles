@@ -25,6 +25,8 @@
   :straight t
   :demand t)
 
+(straight-use-package 'org)
+
 (defun my/get-env ()
   (or (getenv "EMACS_ENV")
       (when (member (system-name) '("dev-digital" "viridian"))
@@ -221,7 +223,6 @@
    (require 'sqrt-lisp) (require 'sqrt-dired) (require 'sqrt-tramp)
    (require 'sqrt-terms) (require 'sqrt-dotfiles)
    (require 'sqrt-misc-internet)))
-
 
 (defun my/modules--post-tangle ()
   (when (string-match-p (rx bos (literal my/modules-dir)

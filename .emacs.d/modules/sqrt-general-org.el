@@ -218,7 +218,9 @@ With ARG, repeats or can move backward if negative."
           (thread-last
             '("projects" "misc" "learning")
             (mapcar (lambda (f)
-                      (directory-files (concat org-directory "/" f) t (rx ".org" eos))))
+                      (directory-files (concat org-directory "/" f) t
+                                       (rx (| ".org"
+                                              ".org.gpg") eos))))
             (apply #'append)
             (mapcar (lambda (file)
                       (string-replace (concat org-directory "/") "" file)))

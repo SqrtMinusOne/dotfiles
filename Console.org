@@ -1020,11 +1020,8 @@ After that, run =/hooks= and confirm the hook.
 I guess there are no secrets here.
 
 #+begin_src conf-space :tangle ~/.ssh/config
-# TODO get CIDR
-# ip -brief -4 address
-#  ip -4 route show proto kernel scope link
-# Match originalhost *.digital.etu.ru localnetwork 10.24.32.0/20
-#     ProxyJump none
+Match originalhost *.etu.ru,10.136.*,10.128.*,10.160.* localnetwork 10.136.8.0/24
+    ProxyJump none
 
 Match originalhost *.etu.ru,10.136.*,10.128.*,10.160.*
 	ProxyJump pavel@192.168.122.50

@@ -149,6 +149,12 @@ Also, why is the wrong transient loaded?
   :demand t)
 #+end_src
 
+And wrong org-mode.
+
+#+begin_src emacs-lisp
+(straight-use-package 'org)
+#+end_src
+
 ** Modular configuration & environments
 I've made the config sort of modular because I need different parts in different environments. With such a large config as mine, this is important.
 

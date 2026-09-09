@@ -26,7 +26,6 @@
 ;;   :config
 ;;   (setq livedown-browser "qutebrowser"))
 
-
 (use-package adoc-mode
   :mode (rx (| ".asciidoc") eos)
   :straight t)
