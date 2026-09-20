@@ -219,6 +219,7 @@ So, here are the rules which match tags & folders:
 | etu                      | Etu                      |
 | etu.grad-school          | Etu.Grad_School          |
 | etu.directum             | Etu.Directum             |
+| etu.students-2026        | Etu.Students_2026        |
 
 And below is a noweb function, which generates the following commands for notmuch to execute:
 - /before/ sync:

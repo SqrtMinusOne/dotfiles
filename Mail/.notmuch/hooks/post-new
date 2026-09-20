@@ -35,6 +35,8 @@ notmuch tag +etu.grad-school "path:pvkorytov_etu/Etu.Grad_School/cur/** AND NOT 
 notmuch tag -etu.grad-school "NOT path:pvkorytov_etu/Etu.Grad_School/cur/** AND path:pvkorytov_etu/** AND tag:etu.grad-school AND tag:pvkorytov"
 notmuch tag +etu.directum "path:pvkorytov_etu/Etu.Directum/cur/** AND NOT tag:etu.directum"
 notmuch tag -etu.directum "NOT path:pvkorytov_etu/Etu.Directum/cur/** AND path:pvkorytov_etu/** AND tag:etu.directum AND tag:pvkorytov"
+notmuch tag +etu.students-2026 "path:pvkorytov_etu/Etu.Students_2026/cur/** AND NOT tag:etu.students-2026"
+notmuch tag -etu.students-2026 "NOT path:pvkorytov_etu/Etu.Students_2026/cur/** AND path:pvkorytov_etu/** AND tag:etu.students-2026 AND tag:pvkorytov"
 
 notmuch tag +inbox "path:pvkorytov_etu_mbox/INBOX/cur/** AND NOT tag:inbox"
 notmuch tag -inbox "NOT path:pvkorytov_etu_mbox/INBOX/cur/** AND path:pvkorytov_etu_mbox/** AND tag:inbox AND tag:pvkorytov"
@@ -64,6 +66,8 @@ notmuch tag +etu.grad-school "path:pvkorytov_etu_mbox/Etu.Grad_School/cur/** AND
 notmuch tag -etu.grad-school "NOT path:pvkorytov_etu_mbox/Etu.Grad_School/cur/** AND path:pvkorytov_etu_mbox/** AND tag:etu.grad-school AND tag:pvkorytov"
 notmuch tag +etu.directum "path:pvkorytov_etu_mbox/Etu.Directum/cur/** AND NOT tag:etu.directum"
 notmuch tag -etu.directum "NOT path:pvkorytov_etu_mbox/Etu.Directum/cur/** AND path:pvkorytov_etu_mbox/** AND tag:etu.directum AND tag:pvkorytov"
+notmuch tag +etu.students-2026 "path:pvkorytov_etu_mbox/Etu.Students_2026/cur/** AND NOT tag:etu.students-2026"
+notmuch tag -etu.students-2026 "NOT path:pvkorytov_etu_mbox/Etu.Students_2026/cur/** AND path:pvkorytov_etu_mbox/** AND tag:etu.students-2026 AND tag:pvkorytov"
 
 echo "Post-new filters done"
 
