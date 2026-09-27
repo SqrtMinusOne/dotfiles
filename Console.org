@@ -1020,7 +1020,7 @@ After that, run =/hooks= and confirm the hook.
 I guess there are no secrets here.
 
 #+begin_src conf-space :tangle ~/.ssh/config
-Match originalhost *.etu.ru,10.136.*,10.128.*,10.160.* localnetwork 10.136.8.0/24
+Match originalhost *.etu.ru,10.136.*,10.128.*,10.160.* exec "ip -o -4 addr show | grep -Eq ' inet 10[.]136[.]8[.][0-9]+/'"
     ProxyJump none
 
 Match originalhost *.etu.ru,10.136.*,10.128.*,10.160.*
