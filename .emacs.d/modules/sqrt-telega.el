@@ -19,10 +19,10 @@
 
   (setq telega-emoji-use-images nil)
   (setq telega-chat-fill-column 80)
+  (remove-hook 'telega-chat-mode-hook #'telega-chat-auto-fill-mode)
   (setq telega-completing-read-function #'completing-read)
   (setq telega-sticker-size '(12 . 24))
   (add-to-list 'savehist-additional-variables 'telega-msg-add-reaction)
-  (remove-hook 'telega-chat-mode-hook #'telega-chat-auto-fill-mode)
   (general-define-key
    :keymaps '(telega-root-mode-map telega-chat-mode-map)
    :states '(normal)

@@ -612,23 +612,42 @@ skip exactly those headlines that do not match."
       (if (my/org-match-at-point-p match) nil next-headline))))
 
 (defun my/org-agenda-clock--effort-at-point (timestamp &optional headline)
-  (let ((elem (or headline (org-element-at-point))))
+  "Return the task's effort in minutes for TIMESTAMP's day.
+Subtract earlier clocks from the estimate only on its scheduled or
+deadline day.  Otherwise use the day's clocks, unless an explicit
+daily EFFORT drawer entry exists.  HEADLINE may supply the parsed task."
+  (let* ((elem (or headline (org-element-at-point)))
+         (start (my/utils-ts-to-day-start timestamp))
+         (end (my/utils-ts-to-day-end timestamp))
+         (scheduled (org-element-property :scheduled elem))
+         (deadline (org-element-property :deadline elem))
+         (due (or (my/org-agenda-clock--org-timestamp-in-range
+                   start end scheduled)
+                  (my/org-agenda-clock--org-timestamp-in-range
+                   start end deadline))))
     (or
-     ;; Data from the scheduled property
-     (when-let* ((scheduled (org-element-property :scheduled elem))
-                 (range-type (org-element-property :range-type scheduled))
-                 (start (org-timestamp-to-time scheduled))
-                 (end (org-timestamp-to-time scheduled t)))
-       (/ (- (time-convert end 'integer) (time-convert start 'integer)) 60))
-     ;; Data from the EFFORT property
-     (when-let (duration (org-element-property :EFFORT elem))
-       (floor
-        (org-duration-to-minutes duration)))
-     ;; Data from the :EFFORT: drawer
+     (when due
+       (when-let ((estimate
+                   (or
+                    ;; Data from the scheduled property
+                    (when-let* ((range-type (org-element-property :range-type scheduled))
+                                (range-start (org-timestamp-to-time scheduled))
+                                (range-end (org-timestamp-to-time scheduled t)))
+                      (/ (- (time-convert range-end 'integer)
+                            (time-convert range-start 'integer))
+                         60))
+                    ;; Data from the EFFORT property
+                    (when-let ((duration (org-element-property :EFFORT elem)))
+                      (floor (org-duration-to-minutes duration))))))
+         (max 0 (- estimate
+                   (or (my/org-agenda-clock--clocked-at-point nil start) 0)))))
+     ;; Daily plans are independent of clocks on other days.
      (when-let (effort-data (my/org-planned-effort-parse))
        (alist-get
         (format-time-string (org-time-stamp-format nil nil) timestamp)
-        effort-data nil nil #'equal)))))
+        effort-data nil nil #'equal))
+     (unless due
+       (my/org-agenda-clock--clocked-at-point start (1+ end))))))
 
 (defun my/utils-ts-to-day-start (&optional timestamp)
   "Move TIMESTAMP to start of day."
@@ -654,17 +673,22 @@ skip exactly those headlines that do not match."
       element)))
 
 (defun my/org-agenda-clock--clocked-at-point (start end)
-  (when-let* ((headline (my/org-agenda-clock--headline-at-point))
-              (clocks (org-clock-agg--parse-clocks headline)))
-    (let ((seconds
-           (cl-loop for clock in clocks
-                    for clock-start = (alist-get :start clock)
-                    for clock-end = (alist-get :end clock)
-                    when (and clock-start clock-end)
-                    sum (max 0 (- (min end clock-end)
-                                  (max start clock-start))))))
-      (when (> seconds 0)
-        (floor seconds 60)))))
+  "Return minutes clocked at point in the half-open interval START to END.
+When START is nil, include all clocked time before END."
+  (save-excursion
+    (when-let* ((headline (my/org-agenda-clock--headline-at-point))
+                (clocks (org-clock-agg--parse-clocks headline)))
+      (let ((seconds
+             (cl-loop for clock in clocks
+                      for clock-start = (alist-get :start clock)
+                      for clock-end = (alist-get :end clock)
+                      when (and clock-start clock-end)
+                      sum (max 0 (- (min end clock-end)
+                                    (if start
+                                        (max start clock-start)
+                                      clock-start))))))
+        (when (> seconds 0)
+          (floor seconds 60))))))
 
 (setq my/org-agenda-hide-tags (list "org" "refile" "proj" "habit"))
 
@@ -684,7 +708,7 @@ skip exactly those headlines that do not match."
               (let* ((headline (org-element-at-point))
                      (status (substring-no-properties
                               (org-element-property :todo-keyword headline)))
-                     (clocked (my/org-agenda-clock--clocked-at-point start end))
+                     (clocked (my/org-agenda-clock--clocked-at-point start (1+ end)))
                      (effort (my/org-agenda-clock--effort-at-point
                               timestamp headline))
                      (scheduled (org-element-property :scheduled headline))
@@ -806,7 +830,7 @@ DATE is a calendar-style date list, as passed by
     (when-let ((headline (my/org-agenda-clock--headline-at-point)))
       (let* ((start (my/utils-ts-to-day-start timestamp))
              (end (my/utils-ts-to-day-end timestamp))
-             (clocked (my/org-agenda-clock--clocked-at-point start end))
+             (clocked (my/org-agenda-clock--clocked-at-point start (1+ end)))
              (effort (my/org-agenda-clock--effort-at-point timestamp headline)))
         (if (or clocked effort)
             (format "%s / %s"
