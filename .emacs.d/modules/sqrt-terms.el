@@ -60,6 +60,8 @@
   (advice-add 'ghostel--write-remote-file :around
               #'my/ghostel-write-remote-file-without-locks))
 
+(setq ghostel-ssh-install-terminfo nil)
+
 (when my/is-termux
   (straight-use-package 'vterm))
 

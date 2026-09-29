@@ -10057,6 +10057,13 @@ This can be helped a bit as follows:
               #'my/ghostel-write-remote-file-without-locks))
 #+end_src
 
+This disables installing =terminfo= on remote servers, also speeding up the setup:
+#+begin_src emacs-lisp
+(setq ghostel-ssh-install-terminfo nil)
+#+end_src
+
+It fallbacks to =xterm-256color= without it. This must disable certain terminal capabilities (like colored underlines, true color, etc.), but I'm not running Emacs from inside =ghostel= anyway.
+
 *** vterm
 [[https://github.com/akermu/emacs-libvterm][vterm]] is a terminal emulator for Emacs.
 
