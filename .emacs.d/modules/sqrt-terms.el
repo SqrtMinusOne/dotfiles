@@ -52,6 +52,14 @@
 
 (add-hook 'ghostel-mode-hook #'my/ghostel-setup)
 
+(defun my/ghostel-write-remote-file-without-locks (original &rest args)
+  (let ((create-lockfiles nil))
+    (apply original args)))
+
+(with-eval-after-load 'ghostel
+  (advice-add 'ghostel--write-remote-file :around
+              #'my/ghostel-write-remote-file-without-locks))
+
 (when my/is-termux
   (straight-use-package 'vterm))
 

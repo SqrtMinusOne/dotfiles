@@ -10043,6 +10043,20 @@ Make a dedicated buffer for ghostel in the bottom of the screen.
 (add-hook 'ghostel-mode-hook #'my/ghostel-setup)
 #+end_src
 
+**** TRAMP optimizations
+When =ghostel-tramp-shell-integration= is enabled, =ghostel= writes several remote files during connection with ordinary =write-region=, creating lockfiles. This slows down the setup.
+
+This can be helped a bit as follows:
+#+begin_src emacs-lisp
+(defun my/ghostel-write-remote-file-without-locks (original &rest args)
+  (let ((create-lockfiles nil))
+    (apply original args)))
+
+(with-eval-after-load 'ghostel
+  (advice-add 'ghostel--write-remote-file :around
+              #'my/ghostel-write-remote-file-without-locks))
+#+end_src
+
 *** vterm
 [[https://github.com/akermu/emacs-libvterm][vterm]] is a terminal emulator for Emacs.
 
