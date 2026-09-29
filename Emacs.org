@@ -9713,9 +9713,13 @@ I used to launch a separate Emacs instance for TRAMP to disable these packages w
 So, to determine if the buffer is in TRAMP:
 #+begin_src emacs-lisp
 (defun my/tramp-p (&optional buffer)
+  "Return BUFFER's remote prefix without communicating with the remote host."
   (file-remote-p
-   (buffer-local-value 'default-directory (or buffer (current-buffer)))))
+   (buffer-local-value 'default-directory (or buffer (current-buffer)))
+   nil 'never))
 #+end_src
+
+Using =file-remote-p= without the ='never= flag sometimes bungled the connection setup because it tried to run this function while the connection wasn't properly estabilished yet. I'm not entirely sure.
 
 And advice to disable a function for TRAMP-related buffers:
 #+begin_src emacs-lisp

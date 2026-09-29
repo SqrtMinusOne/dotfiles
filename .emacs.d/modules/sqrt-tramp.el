@@ -30,8 +30,10 @@
 (setq tramp-verbose 0)
 
 (defun my/tramp-p (&optional buffer)
+  "Return BUFFER's remote prefix without communicating with the remote host."
   (file-remote-p
-   (buffer-local-value 'default-directory (or buffer (current-buffer)))))
+   (buffer-local-value 'default-directory (or buffer (current-buffer)))
+   nil 'never))
 
 (defun my/tramp-void-if-tramp (fun &rest args)
   (unless (my/tramp-p)
