@@ -7201,7 +7201,7 @@ DATE is a calendar-style date list, as passed by
                (`(,clocked ,effort ,missed)
                 (my/org-agenda-clock--get-data timestamp)))
     (concat
-     (string-pad (org-agenda-format-date-aligned date) 30)
+     (string-pad (org-agenda-format-date-aligned date) 33)
      (when effort
        (propertize
         (format "%s / "
@@ -14526,6 +14526,11 @@ I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
   (setq llm-warn-on-nonfree nil)
   (setq deterred-messengers-categories-llm-provider
         (make-llm-openai-compatible :url "http://localhost:8033"))
+
+  (setq deterred-messengers-rocket-start-dates
+        '(("etu" . "2024-10-09")))
+  (setq deterred-messengers-rocket-excluded-rooms
+        '(("etu" "RS-import-logs")))
 
   (add-hook 'deterred-dispatcher-startup-hook #'deterred-backup))
 #+end_src

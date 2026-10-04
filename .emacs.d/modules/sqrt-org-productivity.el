@@ -775,6 +775,7 @@ DATE is a calendar-style date list, as passed by
                 (my/org-agenda-clock--get-data timestamp)))
     (concat
      (string-pad (org-agenda-format-date-aligned date) 30)
+     " "
      (when effort
        (propertize
         (format "%s / "

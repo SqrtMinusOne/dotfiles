@@ -72,6 +72,11 @@
   (setq deterred-messengers-categories-llm-provider
         (make-llm-openai-compatible :url "http://localhost:8033"))
 
+  (setq deterred-messengers-rocket-start-dates
+        '(("etu" . "2024-10-09")))
+  (setq deterred-messengers-rocket-excluded-rooms
+        '(("etu" "RS-import-logs")))
+
   (add-hook 'deterred-dispatcher-startup-hook #'deterred-backup))
 
 (provide 'sqrt-deterred)
