@@ -89,6 +89,7 @@
     (setq biome-query-tab-key "<TAB>")
     (setq biome-api-try-parse-error-as-response t))
   :config
+  (setq biome-api-proxy "socks5h://192.168.122.51:1080")
   (add-to-list 'biome-query-coords
                '("Saint-Petersburg, Russia" 59.942651 30.229930))
   (add-to-list 'biome-query-coords

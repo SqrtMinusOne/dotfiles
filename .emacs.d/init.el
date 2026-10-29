@@ -27,6 +27,20 @@
 
 (straight-use-package 'org)
 
+(unless (fboundp 'custom-initialize-after-file-load)
+  (defun custom-initialize-after-file-load (symbol exp)
+    "Initialize SYMBOL from EXP once its defining file has loaded."
+    (internal--define-uninitialized-variable symbol)
+    (if (null load-file-name)
+        (custom-initialize-set symbol exp)
+      (let ((target load-file-name))
+        (letrec ((initialize
+                  (lambda (loaded)
+                    (when (equal loaded target)
+                      (remove-hook 'after-load-functions initialize)
+                      (custom-initialize-set symbol exp)))))
+          (add-hook 'after-load-functions initialize))))))
+
 (defun my/get-env ()
   (or (getenv "EMACS_ENV")
       (when (member (system-name) '("dev-digital" "viridian"))

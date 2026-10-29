@@ -196,6 +196,15 @@
   (setq-local split-width-threshold 1))
 (add-hook 'telega-chat-mode-hook #'my/telega-chat-setup)
 
+(with-eval-after-load 'telega-info
+  (defun telega-proxy-last-used (&optional added-proxies)
+    "Return the most recently used proxy."
+    (car (cl-sort (or (copy-sequence added-proxies)
+                      (telega--getProxies))
+                  #'>
+                  :key (lambda (proxy)
+                         (or (plist-get proxy :last_used_date) 0))))))
+
 (defun my/telega-online-status ()
   (derived-mode-p 'telega-root-mode 'telega-chat-mode
                   'telega-image-mode 'telega-webpage-mode))

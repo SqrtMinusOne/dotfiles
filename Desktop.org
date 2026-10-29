@@ -1145,6 +1145,7 @@ And the EXWM config itself.
   :straight t
   :config
   (setq exwm-workspace-number 6)
+  (setq xcb:connection-timeout 10)
   (add-hook 'exwm-init-hook #'my/exwm-init)
   (add-hook 'exwm-update-class-hook #'my/exwm-update-class)
 
@@ -1872,7 +1873,6 @@ As we want to interweave polybar modules with these glyphs in the right order an
 |     4 | ram-memory  | light-green   | +     |
 |     5 | swap-memory | green         | +     |
 |     6 | bandwidth   | light-red     | +     |
-|     7 | openvpn     | light-red     |       |
 |     8 | xkeyboard   | red           | +     |
 |    10 | weather     | light-yellow  | +     |
 |    12 | sun         | yellow        | +     |

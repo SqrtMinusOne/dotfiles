@@ -150,9 +150,25 @@ Also, why is the wrong transient loaded?
 #+end_src
 
 And wrong org-mode.
-
 #+begin_src emacs-lisp
 (straight-use-package 'org)
+#+end_src
+
+Also fixing =evil-org='s broken backwards compatibility which somehow =compat= doesn't provide.
+#+begin_src emacs-lisp
+(unless (fboundp 'custom-initialize-after-file-load)
+  (defun custom-initialize-after-file-load (symbol exp)
+    "Initialize SYMBOL from EXP once its defining file has loaded."
+    (internal--define-uninitialized-variable symbol)
+    (if (null load-file-name)
+        (custom-initialize-set symbol exp)
+      (let ((target load-file-name))
+        (letrec ((initialize
+                  (lambda (loaded)
+                    (when (equal loaded target)
+                      (remove-hook 'after-load-functions initialize)
+                      (custom-initialize-set symbol exp)))))
+          (add-hook 'after-load-functions initialize))))))
 #+end_src
 
 ** Modular configuration & environments
@@ -12332,6 +12348,19 @@ Configuring company backends for the chat buffer, as recommended in the manual:
 (add-hook 'telega-chat-mode-hook #'my/telega-chat-setup)
 #+end_src
 
+Also a regression related to proxy status display.
+
+#+begin_src emacs-lisp
+(with-eval-after-load 'telega-info
+  (defun telega-proxy-last-used (&optional added-proxies)
+    "Return the most recently used proxy."
+    (car (cl-sort (or (copy-sequence added-proxies)
+                      (telega--getProxies))
+                  #'>
+                  :key (lambda (proxy)
+                         (or (plist-get proxy :last_used_date) 0))))))
+#+end_src
+
 And custom online status. By default it marks you online when the Emacs frame is active, but I use EXWM, so I change that to when =telega.el= buffer is active. Otherwise, I'm online all the time.
 #+begin_src emacs-lisp
 (defun my/telega-online-status ()
@@ -12491,6 +12520,7 @@ References:
     (setq biome-query-tab-key "<TAB>")
     (setq biome-api-try-parse-error-as-response t))
   :config
+  (setq biome-api-proxy "socks5h://192.168.122.51:1080")
   (add-to-list 'biome-query-coords
                '("Saint-Petersburg, Russia" 59.942651 30.229930))
   (add-to-list 'biome-query-coords
