@@ -5,7 +5,7 @@ EXCLUDE_PATTERN="dbus-launch --exit-with-session emacs"
 EMACS_PIDS=$(pgrep -f "emacs.*${EMACS_FLAG}")
 SIGNAL_SENT=false
 
-for PID in $EMACS_PIDS; d   o
+for PID in $EMACS_PIDS; do
     CMDLINE=$(ps -p "$PID" -o args=)
 
     if [[ "$CMDLINE" == *"$EXCLUDE_PATTERN"* ]]; then
