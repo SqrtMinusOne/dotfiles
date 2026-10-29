@@ -58,7 +58,7 @@ get_weather_desc() {
 }
 
 # Get coordinates from city name using Open-Meteo Geocoding API
-geo_response=$(curl -sf "https://geocoding-api.open-meteo.com/v1/search?name=${location}&count=1" 2>/dev/null)
+geo_response=$(curl -sf "https://i.sqrtminusone.xyz/open-meteo-geo/v1/search?name=${location}&count=1" 2>/dev/null)
 if [ -z "$geo_response" ]; then
     echo "??"
     exit 1
@@ -77,7 +77,7 @@ temp_unit="celsius"
 [ "$units" = "fahrenheit" ] && temp_unit="fahrenheit"
 
 # Get current weather from Open-Meteo API
-weather_response=$(curl -sf "https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&temperature_unit=${temp_unit}" 2>/dev/null)
+weather_response=$(curl -sf "https://i.sqrtminusone.xyz/open-meteo/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&temperature_unit=${temp_unit}" 2>/dev/null)
 if [ -z "$weather_response" ]; then
     echo "??"
     exit 1
