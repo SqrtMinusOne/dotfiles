@@ -405,7 +405,7 @@ interval = 1200
 [module/openvpn]
 type = custom/script
 exec = /home/pavel/bin/polybar/openvpn.sh
-format-background = ${colors.light-red}
+format-background = ${colors.nil}
 format-foreground = ${colors.foreground}
 interval = 1200
 ; openvpn:2 ends here
