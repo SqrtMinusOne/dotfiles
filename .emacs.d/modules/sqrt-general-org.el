@@ -324,8 +324,10 @@ If not at a heading, delegates to the normal `org-cycle' function."
   (sp--remove-local-pair "'"))
 
 (with-eval-after-load 'org
-  (setq my/org-latex-scale 1.75)
-  (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale)))
+  (setq org-latex-preview-appearance-options
+        '(:foreground auto :background "Transparent" :scale 2.75 :zoom 1.35
+                      :page-width 0.6))
+  (setq org-latex-preview-process-precompile nil))
 
 (with-eval-after-load 'org
   (setq my/latex-preview-header "\\documentclass{article}

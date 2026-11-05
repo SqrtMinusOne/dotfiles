@@ -5658,8 +5658,10 @@ Call the function before opening an org file or reopen a buffer after calling th
 Scale latex fragments preview.
 #+begin_src emacs-lisp
 (with-eval-after-load 'org
-  (setq my/org-latex-scale 1.75)
-  (setq org-format-latex-options (plist-put org-format-latex-options :scale my/org-latex-scale)))
+  (setq org-latex-preview-appearance-options
+        '(:foreground auto :background "Transparent" :scale 2.75 :zoom 1.35
+                      :page-width 0.6))
+  (setq org-latex-preview-process-precompile nil))
 #+end_src
 
 Also, LaTeX fragments preview tends to break whenever the are custom =#+LATEX_HEADER= entries. To circumvent this, I add a custom header and modify the ~org-preview-latex-process-alist~ variable
@@ -14558,7 +14560,7 @@ I also need the tree to use in my =sqrt-data=, so let's export this to JSON.
   (setq deterred-dashboard-python "/home/pavel/micromamba/envs/deterred/bin/python")
   (setq deterred-messengers-my-id "098236bb-5fc5-4a04-8b6d-477afa5105fa")
   (setq deterred-digikam-folder "~/30-39 Life/35 Photos/")
-  (setq deterred-wakatime-api-key (my/password-store-get "Service/wakatime"))
+  (setq deterred-wakatime-api-key (my/password-store-get-field "Service/wakatime" "oauth"))
   (setq deterred-wakatime-project-name-map
         '(("digital-nlp-docs-3" . "digital-nlp-docs-3 (Graduate)")
           ("digital-nlp-docs" . "digital-nlp-docs (Master's)")))

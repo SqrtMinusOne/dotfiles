@@ -14,6 +14,7 @@
          (deterred-ai-usage)
          (deterred-digikam :digikam-db "~/30-39 Life/35 Photos/35.00D DigiKam/digikam4.db")
          (deterred-fit)
+         (deterred-google-health)
          (deterred-hledger)
          (deterred-habits :org-files '("~/30-39 Life/32 org-mode/misc/habit.org"))
          ;; (deterred-locations)
@@ -36,7 +37,7 @@
   (setq deterred-dashboard-python "/home/pavel/micromamba/envs/deterred/bin/python")
   (setq deterred-messengers-my-id "098236bb-5fc5-4a04-8b6d-477afa5105fa")
   (setq deterred-digikam-folder "~/30-39 Life/35 Photos/")
-  (setq deterred-wakatime-api-key (my/password-store-get "Service/wakatime"))
+  (setq deterred-wakatime-api-key (my/password-store-get-field "Service/wakatime" "oauth"))
   (setq deterred-wakatime-project-name-map
         '(("digital-nlp-docs-3" . "digital-nlp-docs-3 (Graduate)")
           ("digital-nlp-docs" . "digital-nlp-docs (Master's)")))
