@@ -228,4 +228,78 @@
 
 (add-hook 'telega-before-auth-hook #'my/telega-setup-proxies)
 
+(defun my/org-telega-text (msg)
+  "Return the plain text or caption of MSG."
+  (substring-no-properties
+   (or (telega-msg-content-text msg) "[Media message]")))
+
+(defun my/org-telega-sender (msg)
+  "Return the sender's name for MSG."
+  (substring-no-properties
+   (telega-msg-sender-title (telega-msg-sender msg)
+     :with-badges-p nil)))
+
+(defun my/org-telega-body (messages)
+  "Format sorted MESSAGES, grouping consecutive messages by sender."
+  (let (previous-sender parts)
+    (dolist (msg messages)
+      (let ((sender (plist-get msg :sender_id))
+            (text (replace-regexp-in-string
+                   "^\\([ \t]*\\)\\(\\*+[ \t]\\|#\\+\\)" "\\1\u200B\\2"
+                   (my/org-telega-text msg))))
+        (push
+         (if (and parts (equal sender previous-sender))
+             (concat "\n" text)
+           (concat
+            (when parts "\n\n")
+            (org-link-make-string (telega-tme-internal-link-to msg)
+                                  (my/org-telega-sender msg))
+            (format-time-string " (%H:%M)\n"
+                                (seconds-to-time (plist-get msg :date)))
+            text))
+         parts)
+        (setq previous-sender sender)))
+    (apply #'concat (nreverse parts))))
+
+(defun my/org-telega-store-link (&optional _interactive)
+  "Store a link and capture marked messages, or the message at point."
+  (let* ((messages (or telega-chatbuf--marked-messages
+                       (when-let* ((msg (telega-msg-at (point))))
+                         (list msg))))
+         ;; Sort a copy so Telega's marked-message list is unchanged.
+         (messages (cl-sort (copy-sequence messages) #'<
+                            :key (lambda (msg) (plist-get msg :id))))
+         (msg (car messages)))
+    (if (null msg)
+        (org-telega-store-link)
+      (unless (telega-msg-internal-p msg)
+        (let* ((text (my/org-telega-text msg))
+               (summary (truncate-string-to-width
+                         (mapconcat #'identity (split-string text) " ")
+                         80 nil nil "…"))
+               (from (my/org-telega-sender msg))
+               (chat (substring-no-properties
+                      (telega-chat-title (telega-msg-chat msg) nil t))))
+          (org-link-store-props
+           :type "telega"
+           :link (telega-tme-internal-link-to msg)
+           :description (format "%s: %s" from summary)
+           :from from :subject summary :chat chat
+           :date-timestamp-inactive
+           (format-time-string (org-time-stamp-format t t)
+                               (seconds-to-time (plist-get msg :date)))
+           :body (my/org-telega-body messages)))))))
+
+(with-eval-after-load 'telega
+  (require 'ol-telega)
+  (org-link-set-parameters "telega" :store #'my/org-telega-store-link))
+
+(with-eval-after-load 'org-capture
+  (setf (alist-get "t" org-capture-templates nil nil #'equal)
+        `("Telegram" entry (file "inbox.org")
+          ,(concat "* TODO %:from: %:subject %?\n"
+                   "/Entered on/ %U\n"
+                   "/Received on/ %:date-timestamp-inactive\n\n"
+                   "#+begin_quote\n%:body\n#+end_quote\n"))))
+
 (provide 'sqrt-telega)

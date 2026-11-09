@@ -147,6 +147,8 @@
   :config
   (setq lyrics-fetcher-genius-access-token
         (my/password-store-get "Service/genius.com"))
+  (setq lyrics-fetcher-proxy "socks5h://192.168.122.51:1080")
+  (lyrics-fetcher-use-backend 'lrclib)
   (general-define-key
    :states '(emacs normal)
    :keymaps 'emms-browser-mode-map
