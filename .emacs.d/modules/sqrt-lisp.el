@@ -32,6 +32,17 @@
 (add-hook 'inferior-emacs-lisp-mode-hook #'smartparens-mode)
 (my-leader-def "bi" #'ielm)
 
+(with-eval-after-load 'ielm
+  (general-define-key
+   :keymaps 'ielm-map
+   :states '(normal)
+   "<return>" #'ielm-return)
+  (general-define-key
+   :keymaps 'ielm-map
+   :states '(insert)
+   "<return>" #'ielm-return
+   "C-<return>" #'newline))
+
 (use-package slime
   :straight t
   :commands (slime)
