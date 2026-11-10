@@ -181,21 +181,6 @@
     :infix "SPC"
     "C" #'my/org-clock-recent))
 
-(defun my/org-fix-task-kind ()
-  (interactive)
-  (let ((entries (org-ql-query
-                   :select #'element-with-markers
-                   :from (current-buffer)
-                   :where '(and (olp "Tasks")
-                                (not (property "TASK_KIND"))
-                                (clocked)))))
-    (org-fold-show-all)
-    (dolist (entry entries)
-      (let ((marker (org-element-property :org-marker entry)))
-        (org-with-point-at marker
-          (let ((value (org-read-property-value "TASK_KIND")))
-            (org-set-property "TASK_KIND" value)))))))
-
 (setq org-priority-highest ?A)
 (setq org-priority-lowest (+ ?A 9))
 
@@ -480,14 +465,8 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
                    :title "Fix: Missing timestamps"
                    :sort '(todo date)
                    :super-groups '((:auto-outline-path-file t))))
-       (cons "Fix: tasks without TASK_KIND"
-             (lambda ()
-               (interactive)
-               (org-ql-search (current-buffer)
-                 '(and (olp "Tasks")
-                       (not (property "TASK_KIND"))
-                       (clocked))
-                 :super-groups '((:auto-outline-path-file t)))))))
+       (cons "Focus: View focus" #'my/org-focus-view)
+       (cons "Focus: Tasks without focus" #'my/org-focus-view-tasks-without-focus)))
 
 (defun my/org-ql-view--format-element-override (element)
   "Format ELEMENT for `org-ql-view'.
@@ -585,6 +564,589 @@ and lots of comments which are too long for my Emacs config."
    "." #'org-habit-stats-view-next-habit
    "," #'org-habit-stats-view-previous-habit)
    (add-hook 'org-after-todo-state-change-hook 'org-habit-stats-update-properties))
+
+(setq my/org-focus-file (concat org-directory "/planning/focus-pocus.org"))
+
+(with-eval-after-load 'org-id
+  (add-to-list 'org-id-files my/org-focus-file))
+
+(with-eval-after-load 'org-capture
+  (setf (alist-get "f" org-capture-templates nil nil #'equal)
+        `("Focus" entry (file+olp ,my/org-focus-file "Focuses")
+          ,(concat "** ACTIVE %?\n"
+                   "%^{ID}p\n"
+                   "/Entered on/ %U\n")
+          :prepend t
+          :jump-to-captured t)))
+
+(defun my/org-focus--find ()
+  "Find all currently active org focuses."
+  (org-ql-query
+    :select 'element-with-markers
+    :from my/org-focus-file
+    :where '(and (todo)
+                 (outline-path "Focuses"))))
+
+(defun my/org-focus--find-by-id (id)
+  "Find focus by ID.  Return nil if not found."
+  (car (org-ql-query
+         :select 'element-with-markers
+         :from my/org-focus-file
+         :where `(property "ID" ,id))))
+
+(defconst my/org-focus-prop "FOCUS")
+
+(defun my/org-focus-assign-to-task (focus)
+  "Assign FOCUS to task under cursor."
+  (interactive (list (my/org-focus--pick)))
+  (org-set-property my/org-focus-prop (org-element-property :ID focus)))
+
+(defun my/org-focus--at-point ()
+  "Get focus under cursor or nil."
+  (when (equal (buffer-file-name) my/org-focus-file)
+    (save-excursion
+      (org-back-to-heading t)
+      (when (seq-contains-p (org-get-outline-path) "Focuses")
+        (let ((elem (org-element-at-point)))
+          (when (org-element-property :ID elem)
+            elem))))))
+
+(defun my/org-focus--week-range (year number)
+  "Determine week boundaries by YEAR and its NUMBER.
+
+NUMBER may range from 1 to 53
+
+Return a cons cell of two time values:
+- week start (by UTC),
+- week end (by UTC).
+
+If the week is incomplete (at a start or end of the year), return the
+first or the last day of the year as the boundary."
+  (let* ((year-start `(0 0 0 1 1 ,year nil -1 0))
+         ;; to get dow
+         (year-start (decode-time (encode-time year-start) t))
+         ;; Monday - 0, Sunday - 6
+         (dow (% (+ (decoded-time-weekday year-start) 6) 7))
+         (year-week-start (time-add (encode-time year-start) (* (- dow) 60 60 24)))
+         (week-start (time-add year-week-start (* (1- number) 60 60 24 7)))
+         (week-end (time-add week-start (* 6 60 60 24)))
+         (week-start-year (decoded-time-year (decode-time week-start)))
+         (week-end-year (decoded-time-year (decode-time week-end))))
+    (when (and (not (= year week-start-year))
+               (not (= year week-end-year)))
+      (error "Wrong week number %s: both boundaries are out of year %s (%s, %s)"
+             number year week-start-year week-end-year))
+
+    (when (not (= year week-start-year))
+      (setq week-start (encode-time year-start)))
+    (when (not (= year week-end-year))
+      (setq week-end (encode-time `(0 0 0 31 12 ,year nil -1 0))))
+
+    ;; Cast to epoch for consistency: `time-add' returns epochs
+    ;; somehow...
+    (cons
+     (time-convert week-start 'integer)
+     (time-convert week-end 'integer))))
+
+(defun my/org-focus--pick-week ()
+  "Prompt the user for a date and return its week.
+
+Return a cons cell of two values:
+- year (integer)
+- week number (integer)."
+  (let* ((time (org-read-date nil t))
+         (week-year (string-to-number (format-time-string "%Y" time)))
+         (week-number (1+ (string-to-number (format-time-string "%W" time)))))
+    (cons week-year week-number)))
+
+(setq my/org-focus-day-format "%A, %Y-%m-%d")
+
+(defun my/org-focus--week-template ()
+  "Return a template for the weekly focus planning section."
+  (pcase-let* ((`(,year . ,week) (my/org-focus--pick-week))
+               (`(,week-start . ,week-end) (my/org-focus--week-range year week))
+               (fmt (org-time-stamp-format nil t))
+               (add-saturday (y-or-n-p "Add Saturday?"))
+               (add-sunday (and add-saturday
+                                (y-or-n-p "Add Sunday?"))))
+    ;; Forward ref: check if the week already exists
+    (when (my/org-focus--find-week year week)
+      (user-error "Week %s-W%s already exists" year week))
+    (concat
+     (format "** %d-W%d %s - %s\n"
+             year week (format-time-string fmt week-start)
+             (format-time-string fmt week-end))
+     (mapconcat
+      (lambda (dow)
+        (let ((time (time-add week-start (* 60 60 24 dow))))
+          (concat (format "*** %s\n" (format-time-string my/org-focus-day-format time))
+                  "*Primary focuses*:\n"
+                  "\n"
+                  "*Secondary focuses*:\n")))
+      (number-sequence
+       0 (cond (add-sunday 6) (add-saturday 5) (t 4)))
+      "\n"))))
+
+(with-eval-after-load 'org
+  (setf (alist-get "w" org-capture-templates nil nil #'equal)
+        `("Focus week" entry (file+olp ,my/org-focus-file "Planning")
+          (function my/org-focus--week-template)
+          :prepend t
+          ;; I prefer to edit that in the full org buffer
+          :immediate-finish t
+          :jump-to-captured t
+          :unnarrowed t)))
+
+(defun my/org-focus--pick ()
+  "Pick an active focus."
+  (let* ((coll (mapcar
+                (lambda (f) (cons (org-element-property :raw-value f) f))
+                (my/org-focus--find)))
+         (focus
+          (alist-get
+           (completing-read "Focus: " coll nil t)
+           coll nil nil #'equal)))
+    (unless focus
+      (user-error "Focus not selected"))
+    focus))
+
+(defun my/org-focus-insert-link (focus)
+  "Insert a link to a focus under cursor.
+
+FOCUS is an org element with the selected focus heading."
+  (interactive (list (my/org-focus--pick)))
+  (insert
+   (format "[[id:%s][%s]]"
+           (org-element-property :ID focus)
+           (org-element-property :raw-value focus))))
+
+(defun my/org-focus--parse-link-list ()
+  "Parse paths of links in the list under cursor.
+
+An example list is:
+- [[id:1][link 1]]
+- [[id:2][link 2]]
+
+The function will return 1, 2."
+  (let (links)
+    (while (looking-at-p "- ")
+      (forward-char 2)
+      (when-let ((link (org-element-link-parser)))
+        (push (org-element-property :path link) links))
+      (forward-line))
+    (nreverse links)))
+
+(defun my/org-focus--parse-week ()
+  "Parse focus week data under cursor.
+
+Return an alist with the following keys:
+- `:week' - a list with two values, year and week number
+- `:week-start' - start of the week (a time value)
+- `:week-end' - end of the week (a time value)
+- `:day-data' - an alist, where the keys are day timestamps, and the
+  values are alists with the following keys:
+  - `:heading' - a string with the day heading
+  - `:primary-ids' - ids of primary focuses
+  - `:secondary-ids' - ids of secondary focuses."
+  (save-excursion
+    (search-backward-regexp (rx bol "** " (group (= 4 digit))
+                                "-W" (group (= 2 digit))))
+    (pcase-let* ((year (string-to-number (match-string 1)))
+                 (week (string-to-number (match-string 2)))
+                 (`(,week-start . ,week-end) (my/org-focus--week-range year week))
+                 (days (mapcar
+                        (lambda (dow)
+                          (let ((time (time-add week-start (* dow 60 60 24))))
+                            (cons (format-time-string my/org-focus-day-format time)
+                                  (time-convert time 'integer))))
+                        (number-sequence 0 6)))
+                 ;; XXX `pcase-let' doesn't support (let (arg))?
+                 (day-data nil))
+      (pcase-dolist (`(,heading . ,time) days)
+        ;; Assuming all days are in order
+        (let (primary-ids secondary-ids)
+          (when (search-forward heading nil t)
+            (save-excursion
+              (when (search-forward "*Primary focuses*:" nil t)
+                (forward-line)
+                (setq primary-ids (my/org-focus--parse-link-list))))
+            (save-excursion
+              (when (search-forward "*Secondary focuses*:" nil t)
+                (forward-line)
+                (setq secondary-ids (my/org-focus--parse-link-list)))))
+          (when (or primary-ids secondary-ids)
+            (setf (alist-get time day-data)
+                  `((:heading . ,heading)
+                    (:primary-ids . ,primary-ids)
+                    (:secondary-ids . ,secondary-ids))))))
+      `((:week . (,year ,week))
+        (:week-start . ,week-start)
+        (:week-end . ,week-end)
+        (:day-data . ,(nreverse day-data))))))
+
+(defun my/org-focus--find-week-1 (year week)
+  "Find the data for a particular week.
+
+YEAR is the year, WEEK is the week number from 1 to 53.
+
+If the week is found, return the data structure described in
+`my/org-focus--parse-week'.  Otherwise, return nil."
+  (with-current-buffer (find-file-noselect my/org-focus-file)
+    (save-excursion
+      (goto-char (point-min))
+      (when (re-search-forward
+             (rx bol "** " (literal (format "%d-W%d" year week))) nil t)
+        (my/org-focus--parse-week)))))
+
+(defvar-local my/cached-fn-tick nil)
+(defvar-local my/cached-fn-cache nil)
+
+(defmacro my/make-cached-fn (name fn buf-fn)
+  "Make a cached variant of the function FN.  Call it NAME.
+
+This can only work if FN operates in one and only one buffer.  BUF-FN must return that buffer."
+  (declare (indent 1))
+  (let ((arglist (ad-arglist fn)))
+    `(defun ,name (,@arglist)
+       (with-current-buffer (funcall ,buf-fn)
+         (let ((tick (buffer-chars-modified-tick))
+               (key (format "%s-%s" ',name (list ,@arglist))))
+           (when (not (eql tick my/cached-fn-tick))
+             (setq my/cached-fn-tick tick
+                   my/cached-fn-cache (make-hash-table :test #'equal)))
+           (let ((cached-res (gethash key my/cached-fn-cache :cache-miss)))
+             (if (not (eq cached-res :cache-miss))
+                 cached-res
+               (let ((res (funcall #',fn ,@arglist)))
+                 (puthash key res my/cached-fn-cache)
+                 res))))))))
+
+(defun my/make-cached-fn-reset ()
+  "Reset the buffer-local cache for `my/make-cached-fn' functions."
+  (interactive)
+  (setq my/cached-fn-tick -1))
+
+(my/make-cached-fn my/org-focus--find-week
+  my/org-focus--find-week-1
+  (lambda () (find-file-noselect my/org-focus-file)))
+
+(defun my/org-focus-view-tasks-dwim (focus)
+  "View tasks in FOCUS."
+  (interactive
+   (list (or (my/org-focus--at-point)
+             (my/org-focus--pick))))
+  (let ((id (org-element-property :ID focus))
+        (title (format "Focus: %s" (org-element-property :raw-value focus))))
+    (org-ql-search (org-agenda-files)
+      `(and (property ,my/org-focus-prop ,id))
+      :title title
+      :sort '(priority todo deadline)
+      :super-groups '((:auto-outline-path-file t)))))
+
+(defun my/org-focus--get-referenced-at-point ()
+  "Get focus ID referenced by task at point."
+  (save-excursion
+    (org-back-to-heading t)
+    (let* ((elem (org-element-at-point-no-context))
+           (focus-id (org-element-property :FOCUS elem)))
+      focus-id)))
+
+(defun my/org-focus-task-dwim (arg)
+  "Assign a focus to the task under cursor or go to it.
+
+ARG is the prefix arg.  If it's 4, then always assign a new focus even
+if it's already set."
+  (interactive "p")
+  (let ((focus-id (my/org-focus--get-referenced-at-point)))
+    (cond ((or (null focus-id) (eq arg 4))
+           (call-interactively #'my/org-focus-assign-to-task))
+          (t (org-id-goto focus-id)))))
+
+(defun my/org-focus-view-tasks-without-focus ()
+  "Find all relevant tasks without focus."
+  (interactive)
+  (org-ql-search (org-agenda-files)
+    `(and (not (property ,my/org-focus-prop))
+          (not (tags "nof" "nots"))
+          (or (todo "TODO" "MAYBE" "HOLD" "WAIT" "PLAN")
+              (and (todo "DONE")
+                   (or (closed :from -31)
+                       (clocked :from -31)))))
+    :title "Tasks without focus"
+    :sort '(priority todo deadline)
+    :super-groups '((:auto-outline-path-file t))))
+
+(defun my/org-focus-sparse-tree-tasks-without-focus ()
+  "Create a sparse tree from all tasks without focus."
+  (interactive)
+  (org-ql-sparse-tree
+   `(and (not (property ,my/org-focus-prop))
+         (not (tags "nof" "nots"))
+         (or (todo "TODO" "MAYBE" "HOLD" "WAIT" "PLAN")
+             (and (todo "DONE")
+                  (or (closed :from -31)
+                      (clocked :from -31)))))))
+
+(defun my/org-focus-sparse-tree-for-focus (focus)
+  "Create a sparse tree for tasks in FOCUS."
+  (interactive (list (my/org-focus--pick)))
+  (let ((id (org-element-property :ID focus)))
+    (org-ql-sparse-tree
+     `(property ,my/org-focus-prop ,id))))
+
+(defun my/org-focus--select-headline ()
+  "Parse headline at point for use in the focus view.
+
+Return an alist with the following values:
+- `:headline' - an instance of headline with markers
+- `:clocks' - org-clock data (see `org-clock-agg--parse-clocks')
+- `:clocks-total' - total time clocked (in seconds)
+- `:effort-daily' - planned daily effort per task (see
+  `my/org-planned-effort-parse')
+- `:effort-total' - total time planned (in seconds)."
+  (save-excursion ;; Why?
+    (let* ((headline (org-element-headline-parser))
+           (clocks (when (org-element-property :contents-begin headline)
+                     (org-clock-agg--parse-clocks headline)))
+           (effort (my/org-planned-effort-parse)))
+      (org-ql--add-markers headline)
+      `((:headline . ,headline)
+        (:clocks . ,clocks)
+        (:clocks-total . ,(when clocks
+                            (seq-reduce (lambda (acc v) (+ acc (alist-get :duration v)))
+                                        clocks 0)))
+        (:effort-daily . ,effort)
+        (:effort-total
+         . ,(or (when effort
+                  (seq-reduce (lambda (acc e) (+ acc (* (cdr e) 60))) effort 0))
+                (when-let (effort-prop (org-element-property :EFFORT headline))
+                  (floor (* 60 (org-duration-to-minutes effort-prop))))))))))
+
+(defun my/org-focus--process-focus (focus &optional archive)
+  "Process FOCUS for display.
+
+If ARCHIVE is non-nil, include archived tasks.
+
+The return value is an alist with the following values:
+- `:id' - focus id
+- `:name' - focus heading
+- `:text' - focus description"
+  (with-current-buffer (find-file-noselect my/org-focus-file)
+    (let ((id (org-element-property :ID focus)))
+      `((:id . ,id)
+        (:name . ,(org-element-property :raw-value focus))
+        (:text . ,(string-trim
+                   (buffer-substring-no-properties
+                    (org-element-property :contents-begin focus)
+                    (org-element-property :contents-end focus))))
+        (:tasks . ,(org-ql-query
+                     :select #'my/org-focus--select-headline
+                     :from (append (org-agenda-files)
+                                   (when archive
+                                     (my/org-agenda-archive)))
+                     :where `(property ,my/org-focus-prop ,id)))))))
+
+(setq my/org-done-statuses '("NO" "DONE" "PASSED" "OFF"))
+
+(defun my/org-focus--render-task (task)
+  "Render TASK for display.
+
+TASK is an element as returned by `my/org-focus--select-headline'."
+  ;; `org-ql' modifes the element
+  (let* ((element (copy-tree (alist-get :headline task)))
+         (marker (org-element-property :org-marker element))
+         (title (--> (org-ql-view--add-faces element)
+                     (org-element-property :raw-value it)
+                     (org-link-display-format it)))
+         (org-done-keywords my/org-done-statuses)
+         (todo-keyword (-some--> (org-element-property :todo-keyword element)
+                         (org-ql-view--add-todo-face it)))
+         (priority-string (-some->> (org-element-property :priority element)
+                            (char-to-string)
+                            (format "[#%s]")
+                            (org-ql-view--add-priority-face)))
+         (closed-string (-some--> (org-element-property :closed element)
+                          (org-timestamp-to-time it)
+                          (format-time-string "%Y-%m-%d" it)
+                          (propertize it 'face 'org-done)))
+         (clock-string (let ((effort (-some--> (alist-get :effort-total task)
+                                       (org-duration-from-minutes (/ it 60.0))))
+                             (clocked (-some--> (alist-get :clocks-total task)
+                                        (org-duration-from-minutes (/ it 60.0)))))
+                         (format "%s / %s"
+                                 (propertize (or effort "--") 'face 'success)
+                                 (propertize (or clocked "--") 'face 'warning))
+                         (cond
+                          ((and clocked effort) (format "[%s/%s]" clocked effort))
+                          ((and clocked (not effort) (format "[%s]" clocked)))
+                          ((and (not clocked) effort) (format "[EST: %s]" effort)))))
+         (due-string
+          (when-let (s (org-element-property :relative-due-date element))
+            (org-add-props s nil 'face 'org-ql-view-due-date)))
+         (string
+          (s-join
+           " " (-non-nil
+                (list todo-keyword priority-string clock-string
+                      due-string closed-string title)))))
+    (remove-list-of-text-properties 0 (length string) '(line-prefix) string)
+    (propertize string
+                'org-agenda-type 'search
+                'todo-state todo-keyword
+                'org-marker marker
+                'org-hd-marker marker)))
+
+(defun my/org-focus--sort-task-key (task)
+  "Get sort key for TASK."
+  (let* ((element (alist-get :headline task))
+         (priority (org-element-property :priority element))
+         (title (org-element-property :raw-value element)))
+    (or
+     (-some--> element
+       (org-element-property :deadline it)
+       (org-element-property :raw-value it)
+       (format "01-%s-%s" it title))
+     (-some--> element
+       (org-element-property :scheduled it)
+       (org-element-property :raw-value it)
+       (format "02-%s-%s" it title))
+     (-some--> element
+       (org-element-property :priority it)
+       (format "02-%s-%s" it title))
+     title)))
+
+(defun my/org-focus--render-task-list (tasks)
+  "Render TASKS for display as a list.
+
+TASKS is a list, where each element is as returned by
+`my/org-focus--select-headline'."
+  (thread-last
+    tasks
+    (seq-sort-by #'my/org-focus--sort-task-key #'string-lessp)
+    (mapcar
+     (lambda (task)
+       (insert (my/org-focus--render-task task) "\n")))))
+
+(defun my/org-focus--render-tasks (tasks)
+  "Render TASKS.
+
+TASKS is a list, where each element is as returned by
+`my/org-focus--select-headline'."
+  (let ((groups (seq-group-by
+                 (lambda (task)
+                   (org-element-property :todo-keyword (alist-get :headline task)))
+                 tasks))
+        (todo-keyword-order '("PLAN" "WAIT" "TODO" "DONE" "NO")))
+    (setq groups
+          (seq-sort-by
+           (lambda (g) (or (seq-position todo-keyword-order (car g)) 100))
+           #'< groups))
+    (pcase-dolist (`(,todo-keyword . ,tasks-group) groups)
+      (insert (propertize "** " 'face 'outline-2)
+              (propertize (or todo-keyword "") 'face
+                          (or
+                           (org-face-from-face-or-color
+                            'todo 'org-todo
+                            (cdr (assoc todo-keyword org-todo-keyword-faces)))
+                           (and (member todo-keyword my/org-done-statuses) 'org-done)
+                           'org-todo))
+              "\n")
+      (my/org-focus--render-task-list tasks-group)
+      (insert "\n"))))
+
+(defun my/org-focus--render-focus-data (focus-data)
+  "Render FOCUS-DATA in current buffer.
+
+FOCUS-DATA is as returned by `my/org-focus--process-focus'."
+  (let ((inhibit-read-only t)
+        (id (alist-get :id focus-data)))
+    (erase-buffer)
+    (insert (propertize
+             (format "* Focus: %s\n" (alist-get :name focus-data))
+             'face 'outline-1))
+    (insert (with-temp-buffer
+              (insert (alist-get :text focus-data))
+              (let (org-mode-hook)
+                (org-mode))
+              (font-lock-ensure)
+              (buffer-string))
+            "\n\n")
+    (insert (propertize "* Actions\n" 'face 'outline-1))
+    (widget-create 'push-button
+                   :focus-id id
+                   :notify (lambda (widget &rest _)
+                             (org-id-goto (widget-get widget :focus-id)))
+                   "Goto")
+    (insert " ")
+    (widget-create 'push-button
+                   :focus-id id
+                   :notify (lambda (widget &rest _)
+                             (my/org-focus-view-tasks-dwim
+                              (my/org-focus--find-by-id
+                               (widget-get widget :focus-id))))
+                   "Org QL Tasks")
+    (insert "\n\n")
+    (insert (propertize "* Tasks\n" 'face 'outline-1))
+    (my/org-focus--render-tasks
+     (alist-get :tasks focus-data))
+    (widget-setup)))
+
+(with-eval-after-load 'org
+  (define-derived-mode my/org-focus-view-mode fundamental-mode "Focus Pocus"
+    (setq-local buffer-read-only t)
+    (outline-minor-mode 1))
+
+  (defvar-keymap my/org-focus-view-mode-map
+    :doc "Keymap for org-focus-view-mode")
+
+  (general-define-key
+   :keymaps '(my/org-focus-view-mode-map)
+   :states '(normal emacs)
+   "q" #'my/quit-window-and-buffer))
+
+(defun my/org-focus-view-revert (_ignore-auto _noconfirm)
+  "Refresh the current focus view buffer."
+  (interactive)
+  (unless (derived-mode-p #'my/org-focus-view-mode)
+    (user-error "Not it my/org-focus-view-mode"))
+  (let ((id (org-element-property :ID my/org-focus-focus)))
+    (unless id
+      (user-error "Can't find the focus id"))
+    (let* ((focus (my/org-focus--find-by-id id))
+           (focus-data (my/org-focus--process-focus focus))
+           (point (point)))
+      (my/org-focus--render-focus-data focus-data)
+      (goto-char (max (point-min) point)))))
+
+(defvar-local my/org-focus-focus nil
+  "A focus headline displayed in the current focus view.")
+
+(defvar-local my/org-focus-focus-data nil
+  "Focus data displayed in the current focus view.")
+
+(defun my/org-focus-view (focus)
+  "Display information about FOCUS."
+  (interactive
+   (list (or (my/org-focus--at-point)
+             (my/org-focus--pick))))
+  (require 'org-clock-agg)
+  (let* ((focus-data (my/org-focus--process-focus focus))
+         (buf (get-buffer-create
+               (format "*Focus: %s*" (alist-get :name focus-data)))))
+    (with-current-buffer buf
+      (my/org-focus-view-mode)
+      (setq-local my/org-focus-focus focus
+                  my/org-focus-focus-data focus-data
+                  revert-buffer-function #'my/org-focus-view-revert)
+      (my/org-focus--render-focus-data focus-data)
+      (toggle-truncate-lines 1)
+      (goto-char (point-min)))
+    (pop-to-buffer buf)))
+
+(with-eval-after-load 'org
+  (my-leader-def
+    :infix "SPC"
+    :keymaps '(org-mode-map)
+    "f" #'my/org-focus-task-dwim))
 
 (defun my/org-match-at-point-p (match)
   "Return non-nil if headline at point matches MATCH.
@@ -1231,9 +1793,8 @@ KEYS is a list of cons cells like (<label> . <time>)."
           (org-with-point-at marker
             (my/org-archive-refile)))))))
 
-(defun my/org-agenda-and-archive ()
+(defun my/org-agenda-archive ()
   (append
-   (org-agenda-files)
    (thread-last "/projects/archive"
                 (concat org-directory)
                 (directory-files)
@@ -1242,6 +1803,11 @@ KEYS is a list of cons cells like (<label> . <time>)."
                            org-directory "/projects/archive/" f)))
                 (seq-filter (lambda (f)
                               (not (file-directory-p f)))))))
+
+(defun my/org-agenda-and-archive ()
+  (append
+   (org-agenda-files)
+   (my/org-agenda-archive)))
 
 (my-leader-def
   :infix "o"
@@ -1265,7 +1831,9 @@ KEYS is a list of cons cells like (<label> . <time>)."
     "E" #'my/org-planned-effort-add-daily
     "R" #'my/org-planned-effort-remove-daily
     "r" #'org-priority
-    "m" #'my/org-meeting-link))
+    "m" #'my/org-meeting-link
+    ;; Focus
+    "f" #'my/org-focus-assign-to-task))
 
 (use-package org-journal
   :straight t

@@ -216,7 +216,7 @@ With ARG, repeats or can move backward if negative."
   (interactive)
   (let* ((files
           (thread-last
-            '("projects" "misc" "learning")
+            '("projects" "misc" "learning" "planning")
             (mapcar (lambda (f)
                       (directory-files (concat org-directory "/" f) t
                                        (rx (| ".org"
@@ -225,7 +225,7 @@ With ARG, repeats or can move backward if negative."
             (mapcar (lambda (file)
                       (string-replace (concat org-directory "/") "" file)))
             (append
-             '("inbox.org" "contacts.org" "recurring.org")))))
+             '("inbox.org" "contacts.org")))))
     (find-file
      (concat org-directory "/"
              (completing-read "Org file: " files)))))
