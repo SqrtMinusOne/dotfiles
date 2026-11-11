@@ -121,6 +121,14 @@ runs."
 (with-eval-after-load 'org
   (org-link-set-parameters "rel" :follow #'browse-url :export #'my/export-rel-url))
 
+(defun my/org-link-elisp-confirm (prompt)
+  (let ((filename (when-let (f (buffer-file-name))
+                    (expand-file-name f))))
+    (cond ((and filename (string-prefix-p org-directory filename)) t)
+          (t (y-or-n-p prompt)))))
+
+(setq org-link-elisp-confirm-function #'my/org-link-elisp-confirm)
+
 (defun my/outline-prev-or-up-heading ()
   (interactive)
   (if (outline-on-heading-p)

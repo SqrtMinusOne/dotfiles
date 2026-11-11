@@ -5434,6 +5434,23 @@ Source: https://emacs.stackexchange.com/questions/9807/org-mode-dont-change-rela
 (with-eval-after-load 'org
   (org-link-set-parameters "rel" :follow #'browse-url :export #'my/export-rel-url))
 #+end_src
+*** elisp links
+org-mode supports [[https://orgmode.org/manual/External-Links.html][elisp]] links.
+
+However, they require a confirmation by default. I'll disable this confirmation for my org files because if someone can edit my org files, they might as well edit my =init.el=.
+
+#+begin_src emacs-lisp
+(defun my/org-link-elisp-confirm (prompt)
+  (let ((filename (when-let (f (buffer-file-name))
+                    (expand-file-name f))))
+    (cond ((and filename (string-prefix-p org-directory filename)) t)
+          (t (y-or-n-p prompt)))))
+
+(setq org-link-elisp-confirm-function #'my/org-link-elisp-confirm)
+#+end_src
+
+References:
+- https://emacs.stackexchange.com/questions/61730/is-there-a-way-to-create-an-org-mode-link-that-opens-help
 
 ** Keybindings & stuff
 I've moved this block above because the =my-leader-def= expression in the next block seems to override the previous ones. So it has to be on the top.
@@ -6334,6 +6351,14 @@ My day ends late sometimes. Thanks John Wigley.
 (setq org-extend-today-until 4)
 #+end_src
 
+Custom TODO fales:
+
+#+begin_src emacs-lisp
+(setq org-todo-keyword-faces
+      '(("WAIT" . font-lock-escape-face)
+        ("DELEGATED" . font-lock-keyword-face)))
+#+end_src
+
 **** Capture templates
 Settings for Org capture mode. The goal here is to have a non-disruptive process to capture various ideas.
 
@@ -6802,38 +6827,6 @@ Lately I've been keeping a lot of tasks in the TODO state, moving the deadlines 
     :super-groups '((:auto-priority-outline-path-file t))))
 #+end_src
 
-***** Items clocked or closed today
-Some custom functions to account for =org-extend-today-until=. Needed because sometimes my daily reviews cross 00:00.
-
-#+begin_src emacs-lisp
-(defun my/org-ql-clocked-today (&optional timestamp)
-  (interactive)
-  (let* ((today (time-convert timestamp 'integer))
-         (start (my/utils-ts-to-day-start today))
-         (end (my/utils-ts-to-day-end today)))
-    (org-ql-search (org-agenda-files)
-      `(clocked :from ,(format-time-string "%FT%T%z" start)
-                :to ,(format-time-string "%FT%T%z" end))
-      :title "Clocked today"
-      :sort '(todo priority date)
-      :super-groups '((:auto-outline-path-file t)
-                      (:auto-todo t)))))
-#+end_src
-
-#+begin_src emacs-lisp
-(defun my/org-ql-closed-today ()
-  (interactive)
-  (let ((today (format-time-string
-                "%Y-%m-%d"
-                (days-to-time
-                 (- (org-today) (time-to-days 0))))))
-    (org-ql-search (org-agenda-files) `(closed :from ,today)
-      :title "Closed today"
-      :sort '(todo priority date)
-      :super-groups '((:auto-outline-path-file t)
-                      (:auto-todo t)))))
-#+end_src
-
 ***** Configuring views
 Putting all the above in =org-ql-views=.
 
@@ -6842,10 +6835,18 @@ Putting all the above in =org-ql-views=.
       (list
        (cons "Overview: All TODO" #'my/org-ql-all-todo)
        (cons "Overview: Backlog" #'my/backlog)
+       (cons "Review: WAIT"
+             (list :buffers-files #'org-agenda-files
+                   :query '(todo "WAIT")
+                   :sort '(todo priority date)
+                   :super-groups '((:auto-outline-path-file t))))
        (cons "Review: Stale tasks"
              (list :buffers-files #'org-agenda-files
                    :query '(and (todo)
                                 (clocked)
+                                (not (priority))
+                                (not (todo "WAIT"))
+                                (not (todo "PLAN"))
                                 (not (tags "nots"))
                                 (not (ts :from -14)))
                    :title "Review: Stale tasks"
@@ -6861,8 +6862,14 @@ Putting all the above in =org-ql-views=.
                    :sort '(todo priority date)
                    :super-groups '((:auto-outline-path-file t))))
        (cons "Review: Recently timestamped" #'my/org-ql-view-recent-items)
-       (cons "Review: Clocked today" #'my/org-ql-clocked-today)
-       (cons "Review: Closed today" #'my/org-ql-closed-today)
+       (cons "Review: Missed deadlines"
+             (list :buffers-files #'org-agenda-files
+                   :query '(and (todo)
+                                (not (todo "WAIT"))
+                                (deadline :to -1))
+                   :title "Review: Missed deadlines"
+                   :sort '(todo priority date)
+                   :super-groups '((:auto-outline-path-file t))))
        (cons "Fix: Missing timestamps"
              (list :buffers-files #'org-agenda-files
                    :query '(and (todo "TODO")
@@ -6873,6 +6880,14 @@ Putting all the above in =org-ql-views=.
                    :title "Fix: Missing timestamps"
                    :sort '(todo date)
                    :super-groups '((:auto-outline-path-file t))))
+       (cons "Fix: Passed events"
+             (list
+              :buffers-files #'org-agenda-files
+              :query '(and (todo "FUTURE")
+                           (scheduled :to -1))
+              :title "Fix: passed events"
+              :sort '(todo date)
+              :super-groups '((:auto-outline-path-file t))))
        (cons "Focus: View focus" #'my/org-focus-view)
        (cons "Focus: Tasks without focus" #'my/org-focus-view-tasks-without-focus)))
 #+end_src
@@ -7011,6 +7026,9 @@ TODO:
   - Focus view
     - All tasks
     - Effort
+  - Focus overview: all focuses and tasks (org-ql)
+  - Agenda view
+- GitLab integration?
 
 ***** Focus data
 So, first, a focus file. Let it be =focus-pocus.org=:
@@ -7071,10 +7089,24 @@ A function to assign a focus to a particular task:
 #+begin_src emacs-lisp
 (defconst my/org-focus-prop "FOCUS")
 
+(defmacro my/org-focus--with-element (&rest body)
+  "Try to execute BODY on element under cursor.
+
+If the element is an `org-agenda' element reference, resolve that."
+  `(cond ((derived-mode-p #'org-agenda-mode)
+          (if-let ((marker (get-text-property (point) 'org-hd-marker)))
+              (org-super-agenda--when-with-marker-buffer marker
+                ,@body)
+            (user-error "No element at point!")))
+         (t ,@body)))
+
 (defun my/org-focus-assign-to-task (focus)
   "Assign FOCUS to task under cursor."
   (interactive (list (my/org-focus--pick)))
-  (org-set-property my/org-focus-prop (org-element-property :ID focus)))
+  (unless (org-element-property :ID focus)
+    (user-error "Focus doesn't have an ID!"))
+  (my/org-focus--with-element
+   (org-set-property my/org-focus-prop (org-element-property :ID focus))))
 #+end_src
 
 Get focus under cursor:
@@ -7200,10 +7232,16 @@ Add that function to org templates:
 
 Then, we need a function to insert a link to an active focus:
 #+begin_src emacs-lisp
+(defun my/org-focus--outline-path (element)
+  "Return the full outline path of ELEMENT."
+  (org-with-point-at (org-element-property :org-hd-marker element)
+    (mapconcat #'identity (org-get-outline-path t) " / ")))
+
 (defun my/org-focus--pick ()
   "Pick an active focus."
   (let* ((coll (mapcar
-                (lambda (f) (cons (org-element-property :raw-value f) f))
+                (lambda (f)
+                  (cons (my/org-focus--outline-path f) f))
                 (my/org-focus--find)))
          (focus
           (alist-get
@@ -7369,20 +7407,27 @@ A function to assign a focus to a particular task or go to it:
 #+begin_src emacs-lisp
 (defun my/org-focus--get-referenced-at-point ()
   "Get focus ID referenced by task at point."
-  (save-excursion
-    (org-back-to-heading t)
-    (let* ((elem (org-element-at-point-no-context))
-           (focus-id (org-element-property :FOCUS elem)))
-      focus-id)))
+  (cond
+   ((derived-mode-p #'org-agenda-mode)
+    (get-text-property (point) 'FOCUS))
+   (t (save-excursion
+        (org-back-to-heading t)
+        (let* ((elem (org-element-at-point-no-context))
+               (focus-id (org-element-property :FOCUS elem)))
+          focus-id)))))
 
 (defun my/org-focus-task-dwim (arg)
   "Assign a focus to the task under cursor or go to it.
 
+If a focus is under cursor, open its view.
+
 ARG is the prefix arg.  If it's 4, then always assign a new focus even
 if it's already set."
   (interactive "p")
-  (let ((focus-id (my/org-focus--get-referenced-at-point)))
-    (cond ((or (null focus-id) (eq arg 4))
+  (let ((focus-id (my/org-focus--get-referenced-at-point))
+        (focus-object (my/org-focus--at-point)))
+    (cond (focus-object (my/org-focus-view focus-object))
+          ((or (null focus-id) (eq arg 4))
            (call-interactively #'my/org-focus-assign-to-task))
           (t (org-id-goto focus-id)))))
 #+end_src
@@ -7494,12 +7539,18 @@ Then render it. I'll have to define a global list of done statuses, =org-ql= act
 (setq my/org-done-statuses '("NO" "DONE" "PASSED" "OFF"))
 #+end_src
 
-We can start by rendering one task, which I copy from org-ql:
+We can start by rendering one task. I think I'll reuse this task across different views.
 #+begin_src emacs-lisp
-(defun my/org-focus--render-task (task)
+(cl-defun my/org-focus--render-task
+    (task &optional (display
+                     '(todo-keyword priority-string closed-string
+                                    clock-string due-string title)))
   "Render TASK for display.
 
-TASK is an element as returned by `my/org-focus--select-headline'."
+TASK is an element as returned by `my/org-focus--select-headline'.
+
+DISPLAY is the display configuration.  See the default value for
+possible elements."
   ;; `org-ql' modifes the element
   (let* ((element (copy-tree (alist-get :headline task)))
          (marker (org-element-property :org-marker element))
@@ -7531,11 +7582,7 @@ TASK is an element as returned by `my/org-focus--select-headline'."
          (due-string
           (when-let (s (org-element-property :relative-due-date element))
             (org-add-props s nil 'face 'org-ql-view-due-date)))
-         (string
-          (s-join
-           " " (-non-nil
-                (list todo-keyword priority-string clock-string
-                      due-string closed-string title)))))
+         (string (s-join " " (-non-nil (mapcar #'symbol-value display)))))
     (remove-list-of-text-properties 0 (length string) '(line-prefix) string)
     (propertize string
                 'org-agenda-type 'search
@@ -7546,51 +7593,86 @@ TASK is an element as returned by `my/org-focus--select-headline'."
 
 Then the multiple tasks and the focus itself:
 #+begin_src emacs-lisp
-(defun my/org-focus--sort-task-key (task)
-  "Get sort key for TASK."
+(defun my/org-focus--sort-task-key (task values)
+  "Get a sort key for TASK.
+
+VALUES is a list of parameters to extract from the task."
   (let* ((element (alist-get :headline task))
          (priority (org-element-property :priority element))
-         (title (org-element-property :raw-value element)))
-    (or
-     (-some--> element
-       (org-element-property :deadline it)
-       (org-element-property :raw-value it)
-       (format "01-%s-%s" it title))
-     (-some--> element
-       (org-element-property :scheduled it)
-       (org-element-property :raw-value it)
-       (format "02-%s-%s" it title))
-     (-some--> element
-       (org-element-property :priority it)
-       (format "02-%s-%s" it title))
-     title)))
+         (title (org-element-property :raw-value element))
+         (deadline (org-element-property
+                    :raw-value (org-element-property :deadline element)))
+         (scheduled (org-element-property
+                     :raw-value (org-element-property :scheduled element)))
+         (closed (org-element-property
+                  :raw-value (org-element-property :closed element))) )
+    (mapconcat
+     (lambda (key)
+       (let ((value (symbol-value key)))
+         (cond ((numberp value) (format "%10d" value))
+               ((stringp value) value)
+               ((null value) (make-string 1 0))
+               (t (prin1-to-string value)))))
+     values "--")))
 
-(defun my/org-focus--render-task-list (tasks)
-  "Render TASKS for display as a list.
+(defun my/org-focus--sort-tasks-by (tasks values &optional reverse)
+  "Sort TASKS by VALUES.
 
-TASKS is a list, where each element is as returned by
-`my/org-focus--select-headline'."
-  (thread-last
-    tasks
-    (seq-sort-by #'my/org-focus--sort-task-key #'string-lessp)
+If REVERSE is non-nil, sort in the backward order."
+  (let ((res (seq-sort-by
+              (lambda (task) (my/org-focus--sort-task-key task values))
+              #'string-lessp
+              tasks)))
+    (when reverse
+      (setq res (nreverse res)))
+    res))
+
+(setq my/org-focus--group-tasks-order '("PLAN" "BACKLOG" "TODO" "WAIT" "DELEGATED"
+                                        "EVENT" "DONE" "PASSED" "NO"))
+
+(defun my/org-focus--group-tasks-in-focus (tasks)
+  "Group TASKS and sort them in groups.
+
+Return an alist, where the keys are group names, and the values are
+lists of tasks."
+  (let (groups)
+    (dolist (task tasks)
+      (let* ((element (alist-get :headline task))
+             (todo-keyword (org-element-property :todo-keyword element))
+             (deadline (org-element-property :deadline element)))
+        (push
+         task
+         (alist-get
+          (cond
+           ((and (equal todo-keyword "TODO") deadline) "TODO")
+           ((and (equal todo-keyword "TODO") (not deadline)) "BACKLOG")
+           ((equal todo-keyword "FUTURE") "EVENT")
+           (t todo-keyword))
+          groups nil nil #'equal))))
     (mapcar
-     (lambda (task)
-       (insert (my/org-focus--render-task task) "\n")))))
+     (lambda (group)
+       (let ((name (car group))
+             (tasks (cdr group)))
+         (cons
+          name
+          (cond ((member name '("PLAN" "BACKLOG"))
+                 (my/org-focus--sort-tasks-by tasks '(priority title)))
+                ((member name '("EVENT"))
+                 (my/org-focus--sort-tasks-by tasks '(scheduled title)))
+                ((member name '("DONE" "PASSED" "NO"))
+                 (my/org-focus--sort-tasks-by tasks
+                                              '(closed scheduled deadline title) t))
+                (t
+                 (my/org-focus--sort-tasks-by tasks '(deadline priority title)))))))
+     (seq-sort-by (lambda (group)
+                    (or (cl-position
+                         (car group) my/org-focus--group-tasks-order :test #'equal)
+                        99))
+                  #'< groups))))
 
-(defun my/org-focus--render-tasks (tasks)
-  "Render TASKS.
-
-TASKS is a list, where each element is as returned by
-`my/org-focus--select-headline'."
-  (let ((groups (seq-group-by
-                 (lambda (task)
-                   (org-element-property :todo-keyword (alist-get :headline task)))
-                 tasks))
-        (todo-keyword-order '("PLAN" "WAIT" "TODO" "DONE" "NO")))
-    (setq groups
-          (seq-sort-by
-           (lambda (g) (or (seq-position todo-keyword-order (car g)) 100))
-           #'< groups))
+(defun my/org-focus--render-task-focus-view (tasks)
+  "Render TASKS for focus view."
+  (let ((groups (my/org-focus--group-tasks-in-focus tasks)))
     (pcase-dolist (`(,todo-keyword . ,tasks-group) groups)
       (insert (propertize "** " 'face 'outline-2)
               (propertize (or todo-keyword "") 'face
@@ -7601,7 +7683,10 @@ TASKS is a list, where each element is as returned by
                            (and (member todo-keyword my/org-done-statuses) 'org-done)
                            'org-todo))
               "\n")
-      (my/org-focus--render-task-list tasks-group)
+      (dolist (task tasks-group)
+        (insert (my/org-focus--render-task
+                 task '(due-string closed-string clock-string priority-string title))
+                "\n"))
       (insert "\n"))))
 
 (defun my/org-focus--render-focus-data (focus-data)
@@ -7637,17 +7722,33 @@ FOCUS-DATA is as returned by `my/org-focus--process-focus'."
                    "Org QL Tasks")
     (insert "\n\n")
     (insert (propertize "* Tasks\n" 'face 'outline-1))
-    (my/org-focus--render-tasks
+    (my/org-focus--render-task-focus-view
      (alist-get :tasks focus-data))
     (widget-setup)))
 #+end_src
 
 And hook the rendering into a view buffer:
 #+begin_src emacs-lisp
+(defun my/org-focus-ret ()
+  (interactive)
+  (cond ((get-char-property (point) 'button)
+         (call-interactively #'widget-button-press))
+        ((get-char-property (point) 'org-hd-marker)
+         (call-interactively #'org-agenda-switch-to))
+        (t (evil-ret))))
+
+(defmacro my/org-focus--wrap-agenda-command (command)
+  "Call COMMAND interactively and revert the buffer."
+  `(lambda () (interactive)
+     (call-interactively #',command)
+     (revert-buffer)))
+
 (with-eval-after-load 'org
   (define-derived-mode my/org-focus-view-mode fundamental-mode "Focus Pocus"
     (setq-local buffer-read-only t)
-    (outline-minor-mode 1))
+    (outline-minor-mode 1)
+    (visual-line-mode -1)
+    (toggle-truncate-lines 1))
 
   (defvar-keymap my/org-focus-view-mode-map
     :doc "Keymap for org-focus-view-mode")
@@ -7655,7 +7756,13 @@ And hook the rendering into a view buffer:
   (general-define-key
    :keymaps '(my/org-focus-view-mode-map)
    :states '(normal emacs)
-   "q" #'my/quit-window-and-buffer))
+   "q" #'my/quit-window-and-buffer
+   ;; "t" (my/org-focus--wrap-agenda-command org-agenda-todo)
+   "t" #'org-agenda-todo
+   "r" #'revert-buffer
+   "L" (my/org-focus--wrap-agenda-command org-agenda-do-date-later)
+   "H" (my/org-focus--wrap-agenda-command org-agenda-do-date-earlier)
+   "RET" #'my/org-focus-ret))
 
 (defun my/org-focus-view-revert (_ignore-auto _noconfirm)
   "Refresh the current focus view buffer."
@@ -7692,20 +7799,34 @@ And hook the rendering into a view buffer:
                   my/org-focus-focus-data focus-data
                   revert-buffer-function #'my/org-focus-view-revert)
       (my/org-focus--render-focus-data focus-data)
-      (toggle-truncate-lines 1)
       (goto-char (point-min)))
     (pop-to-buffer buf)))
 #+end_src
 
-***** Keybindings
-Not sure if this will break the definition below or not.
+***** Focused refile
+My wrapper around =org-refile=.
 
 #+begin_src emacs-lisp
+(defun my/org-refile-with-focus (arg)
+  "Refile header at point.  Maybe ask for focus.
+
+See `org-refile' for ARG."
+  (interactive "P" org-mode)
+  (let ((heading (save-excursion
+                   (org-back-to-heading t)
+                   (org-element-headline-parser)))
+        (is-inbox (equal (buffer-file-name)
+                         (concat org-directory "/inbox.org"))))
+    (when (and is-inbox (not (org-element-property :FOCUS heading))
+               (y-or-n-p "Pick focus?"))
+      (my/org-focus-assign-to-task
+       (my/org-focus--pick)))
+    (org-refile arg)))
+
 (with-eval-after-load 'org
-  (my-leader-def
-    :infix "SPC"
-    :keymaps '(org-mode-map)
-    "f" #'my/org-focus-task-dwim))
+  (general-define-key
+   :keymaps '(org-mode-map)
+   "C-c C-w" #'my/org-refile-with-focus))
 #+end_src
 
 **** Custom agendas
@@ -8535,7 +8656,14 @@ Local keybindings
     "r" #'org-priority
     "m" #'my/org-meeting-link
     ;; Focus
-    "f" #'my/org-focus-assign-to-task))
+    "f" #'my/org-focus-task-dwim)
+
+  (my-leader-def
+    :states '(normal motion)
+    :keymaps '(org-agenda-mode-map)
+    "" nil
+    ;; Focus
+    "SPC f" #'my/org-focus-task-dwim))
 #+end_src
 
 *** Org Journal
@@ -9088,6 +9216,10 @@ I want two general things from the workflow:
 
 For the second point I'll try to collect data from various sources and add the data to my review template.
 
+TODO:
+- Implement one function to process a task (effort, focus, refile, deadline / scheduled, backlog?)
+- Implement a view to find all open tasks without effort (no =:EFFORT= prop, but also no =:EFFORT:= drawer).
+
 **** Data from git
 First, as I have [[file:Console.org::=autocommit=][autocommit]] set up in my org directory, here is a function to get an alist of changed files in a form =(status . path)=. The =rev= parameter can be a commit, tag, etc. but here I'm interested in the date form (e.g. =@{2021-08-30}=).
 
@@ -9236,8 +9368,6 @@ I'll use data from git to get the list of what I've been working on. The directo
 #+end_src
 **** Weekly review
 
-
-
 #+begin_src emacs-lisp
 (defun my/org-review-set-weekly-record ()
   (save-excursion
@@ -9252,21 +9382,27 @@ I'll use data from git to get the list of what I've been working on. The directo
                (seconds-to-time last-review-date)))
       (insert "
 
-Review checklist (/delete this/):
+Review checklist (/delete this after review/):
 - [ ] Clear email inbox
 - [ ] Reconcile ledger
 - [ ] Reconcile other stats
 - [ ] Clear [[file:~/Downloads][downloads]] and [[file:~/00-Scratch][scratch]] folders
 - [ ] Process [[file:~/30-39 Life/35 Photos/35.00 Inbox/][photo inbox]]
 - [ ] Process [[file:../inbox.org][inbox]]
-- [ ] Create [[file:../recurring.org][recurring tasks]] for next week
-- [ ] Sort agenda (-1 / +2 weeks): deadlines, effort
-- [ ] Check TODOs: priorities, deadlines
-  - [[org-ql-search:todo%3A?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: All TODOs]]
-  - [[org-ql-search:(and (todo) (clocked) (not (tags \"nots\")) (not (ts :from -14)) (not (todo \"MAYBE\")))?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: Stale tasks]]
-  - [[org-ql-search:todo%3AWAIT?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: WAIT]]
-  - [[org-ql-search:todo%3AMAYBE?buffers-files=%22org-agenda-files%22&super-groups=%28%28%3Aauto-outline-path-file%20t%29%29&sort=%28priority%20todo%20deadline%29][org-ql-search: MAYBE]]
-  - [[org-ql-search:todo%3ATODO%20%21scheduled%3A%20%21deadline%3A%20%21priority%3A%20%21tags%3Anots?super-groups=((:auto-outline-path-file%20t))&sort=(todo%20date)&title=%22Fix:%20Missing%20timestamps%22][org-ql-search: Missing timestamps]]
+- [ ] Create [[file:../planning/recurring.org][recurring tasks]] for next week
+- [ ] Task check:
+  - [[elisp:(org-ql-view \"Focus: Tasks without focus\")][org-ql: unfocused tasks]] - focus them
+  - [[elisp:(org-ql-view \"Review: WAIT\")][org-ql: WAIT]] - ich warte...
+  - [[elisp:(org-ql-view \"Fix: Passed events\")][org-ql: Fix passed events]]
+  - [[elisp:(org-ql-view \"Review: Missed deadlines\")][org-ql: Review missed deadlines]] - move to backlog or reschedule
+  - [[elisp:(org-ql-view \"Review: Stale tasks\")][org-ql: Stale tasks]] - move to backlog or reschedule
+- [ ] [[file:/home/planning/focus-pocus.org::*Focuses][Focus]] check:
+  - Review currently active focuses
+- [ ] Agenda check:
+  - Check [[file:/home/planning/focus-pocus.org::*Planning][Focused planning]] with agenda (-1 / +2 weeks)
+- [ ] Final check
+  - [[elisp:(org-ql-view \"Fix: Missing timestamps\")][org-ql: Fix missing timestamps]]
+  - [[elisp:(my/backlog)][org-ql: Backlog]] - check if something's missing
 - [ ] Run auto-archiving
 - [ ] Review journal records
 ")
@@ -9288,11 +9424,10 @@ TODO Write something, maybe? "))))
 (with-eval-after-load 'org-journal
   (my-leader-def "ojw" #'my/org-review-weekly))
 #+end_src
-**** Daily review
-My attempt at a daily review, or an end-of-day routine.
+**** Daily review (formerly)
+I attempted to implement a daily review here. Removed that for now.
 
-I try to keep it under 10-15 minutes.
-
+Just keeping the function to turn off all the messengers.
 #+begin_src emacs-lisp
 (defun my/kill-messengers ()
   (interactive)
@@ -9305,70 +9440,6 @@ I try to keep it under 10-15 minutes.
     (rocket-kill t))
   (ignore-errors
     (max-kill t)))
-#+end_src
-
-#+begin_src emacs-lisp
-(defun my/org-review-set-daily-record ()
-  (let* ((today (format-time-string
-                 "%Y-%m-%d"
-                 (days-to-time
-                  (- (org-today) (time-to-days 0)))))
-         (roam-changes (my/org-review--org-roam-get-changes today)))
-    (save-excursion
-      (org-journal-tags-prop-apply-delta :add '("review.daily"))
-      (insert "Daily Review")
-      (goto-char (point-max))
-
-      (insert "
-Maintenance checklist (/delete this/):
-- [ ] [[elisp:(my/kill-messengers)][Close all messengers]]
-- [ ] Process [[file:../inbox.org][inbox]]
-- [ ] Check if clocked tasks are properly annotated
-  - [[elisp:(my/org-ql-clocked-today)][Tasks clocked today]]
-  - [[elisp:(my/org-ql-closed-today)][Tasks closed today]]
-- [ ] Check agenda for the current week
-
-/Remember, all of the following headers are optional./
-
-,*** Happened today
-Happened to me:
-- /Anything interesting?/
-Happened to the world:
-- /Anything important?/
-
-,*** New ideas
-/Write them down in org-roam with the \"fleeting\" tag; leave links here. Perhaps note what sparked that idea?/
-"
-              (thread-last
-                (nth 1 roam-changes)
-                (seq-filter (lambda (c) (eq 'added (car c))))
-                (mapcar (lambda (c)
-                          (format "- [[id:%s][%s]]\n"
-                                  (org-roam-node-id (cdr c))
-                                  (org-roam-node-title (cdr c)))))
-                (apply #'concat))
-              "
-,*** Interactions today
-/Any meaninginful interactions, conflicts or tensions?/
-
-,*** Emotions today
-/How did I feel?/
-"))))
-#+end_src
-
-#+begin_src emacs-lisp
-(defun my/org-review-daily ()
-  (interactive)
-  (let ((org-journal-after-entry-create-hook
-         `(,@org-journal-after-entry-create-hook
-           my/org-review-set-daily-record)))
-    (org-journal-new-entry nil)
-    (org-fold-show-subtree)))
-#+end_src
-
-#+begin_src emacs-lisp
-(with-eval-after-load 'org-journal
-  (my-leader-def "ojd" #'my/org-review-daily))
 #+end_src
 **** ZK review
 Mostly incorporating or discarding my fleeting notes here.
