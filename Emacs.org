@@ -6690,6 +6690,16 @@ Which allows us to implement interactive functions to add and remove daily durat
     (my/org-planned-effort--write kept)))
 #+end_src
 
+Also a custom =org-ql= predicate would be useful:
+#+begin_src emacs-lisp
+(with-eval-after-load 'org-ql
+  (org-ql-defpred has-effort ()
+    "Match entries with an effort property or an EFFORT drawer."
+    :body
+    (or (org-entry-get (point) "EFFORT")
+        (my/org-planned-effort--bounds))))
+#+end_src
+
 **** org-super-agenda
 [[https://github.com/alphapapa/org-super-agenda][org-super-agenda]] is alphapapa's extension to group items in org-agenda. I don't use it instead of the standard agenda, but =org-ql= uses it for some of its views.
 
@@ -6880,6 +6890,16 @@ Putting all the above in =org-ql-views=.
                    :title "Fix: Missing timestamps"
                    :sort '(todo date)
                    :super-groups '((:auto-outline-path-file t))))
+       (cons "Fix: Missing effort"
+             (list :buffers-files #'org-agenda-files
+                   :query '(and (not (has-effort))
+                                (todo "TODO")
+                                (or (scheduled) (deadline))
+                                (not (habit))
+                                (not (tags "nots")))
+                   :title "Fix: Missing timestamps"
+                   :sort '(todo date)
+                   :super-groups '((:auto-outline-path-file t))))
        (cons "Fix: Passed events"
              (list
               :buffers-files #'org-agenda-files
@@ -7022,9 +7042,10 @@ Then, I want a view with grouping like: day / focus / task, i.e., all tasks in a
 
 TODO:
 - Check the integrity of focus ids: all referenced focus ids exist and are unique.
+- Add effort aggregation to focus view
+- Add org-clock-add integration
 - Views:
   - Focus view
-    - All tasks
     - Effort
   - Focus overview: all focuses and tasks (org-ql)
   - Agenda view
@@ -7066,10 +7087,20 @@ A corresponding capture template:
 
 Now, a few functions. Extract all active focuses, thankfully, =org-ql= exists:
 #+begin_src emacs-lisp
+(defun my/org-focus--select-focus ()
+  "Select focus at point."
+  (save-excursion
+    (let* ((headline (org-element-headline-parser)))
+      (org-ql--add-markers headline)
+      (org-element-put-property
+       headline :outline-path
+       (org-get-outline-path t))
+      headline)))
+
 (defun my/org-focus--find ()
   "Find all currently active org focuses."
   (org-ql-query
-    :select 'element-with-markers
+    :select #'my/org-focus--select-focus
     :from my/org-focus-file
     :where '(and (todo)
                  (outline-path "Focuses"))))
@@ -7232,16 +7263,13 @@ Add that function to org templates:
 
 Then, we need a function to insert a link to an active focus:
 #+begin_src emacs-lisp
-(defun my/org-focus--outline-path (element)
-  "Return the full outline path of ELEMENT."
-  (org-with-point-at (org-element-property :org-hd-marker element)
-    (mapconcat #'identity (org-get-outline-path t) " / ")))
-
 (defun my/org-focus--pick ()
   "Pick an active focus."
   (let* ((coll (mapcar
                 (lambda (f)
-                  (cons (my/org-focus--outline-path f) f))
+                  (cons (mapconcat
+                         #'identity (org-element-property :outline-path f) " / ")
+                        f))
                 (my/org-focus--find)))
          (focus
           (alist-get
@@ -7582,6 +7610,11 @@ possible elements."
          (due-string
           (when-let (s (org-element-property :relative-due-date element))
             (org-add-props s nil 'face 'org-ql-view-due-date)))
+         (due-string-when-open
+          (when (not (member (substring-no-properties
+                              (org-element-property :todo-keyword element))
+                             my/org-done-statuses))
+            due-string))
          (string (s-join " " (-non-nil (mapcar #'symbol-value display)))))
     (remove-list-of-text-properties 0 (length string) '(line-prefix) string)
     (propertize string
@@ -7597,7 +7630,15 @@ Then the multiple tasks and the focus itself:
   "Get a sort key for TASK.
 
 VALUES is a list of parameters to extract from the task."
+  (setq my/test task)
   (let* ((element (alist-get :headline task))
+         (todo-keyword (or
+                        (cl-position
+                         (substring-no-properties
+                          (org-element-property :todo-keyword element))
+                         my/org-focus--todo-keywords-order
+                         :test #'equal)
+                        99))
          (priority (org-element-property :priority element))
          (title (org-element-property :raw-value element))
          (deadline (org-element-property
@@ -7609,7 +7650,7 @@ VALUES is a list of parameters to extract from the task."
     (mapconcat
      (lambda (key)
        (let ((value (symbol-value key)))
-         (cond ((numberp value) (format "%10d" value))
+         (cond ((numberp value) (format "%010d" value))
                ((stringp value) value)
                ((null value) (make-string 1 0))
                (t (prin1-to-string value)))))
@@ -7627,8 +7668,8 @@ If REVERSE is non-nil, sort in the backward order."
       (setq res (nreverse res)))
     res))
 
-(setq my/org-focus--group-tasks-order '("PLAN" "BACKLOG" "TODO" "WAIT" "DELEGATED"
-                                        "EVENT" "DONE" "PASSED" "NO"))
+(setq my/org-focus--todo-keywords-order
+      '("PLAN" "BACKLOG" "TODO" "WAIT" "DELEGATED" "FUTURE" "EVENT" "DONE" "PASSED" "NO"))
 
 (defun my/org-focus--group-tasks-in-focus (tasks)
   "Group TASKS and sort them in groups.
@@ -7666,7 +7707,7 @@ lists of tasks."
                  (my/org-focus--sort-tasks-by tasks '(deadline priority title)))))))
      (seq-sort-by (lambda (group)
                     (or (cl-position
-                         (car group) my/org-focus--group-tasks-order :test #'equal)
+                         (car group) my/org-focus--todo-keywords-order :test #'equal)
                         99))
                   #'< groups))))
 
@@ -7733,6 +7774,9 @@ And hook the rendering into a view buffer:
   (interactive)
   (cond ((get-char-property (point) 'button)
          (call-interactively #'widget-button-press))
+        ((get-char-property (point) 'focus-id)
+         (my/org-focus-view
+          (my/org-focus--find-by-id (get-char-property (point) 'focus-id))))
         ((get-char-property (point) 'org-hd-marker)
          (call-interactively #'org-agenda-switch-to))
         (t (evil-ret))))
@@ -7800,6 +7844,91 @@ And hook the rendering into a view buffer:
                   revert-buffer-function #'my/org-focus-view-revert)
       (my/org-focus--render-focus-data focus-data)
       (goto-char (point-min)))
+    (pop-to-buffer buf)))
+#+end_src
+
+***** Focus overview
+A view to all focuses and their tasks in their order in =focus-pocus.org=.
+
+#+begin_src emacs-lisp
+(defun my/org-focus-overview--data ()
+  "Get data for focus overview."
+  (let* ((focuses (my/org-focus--find))
+         (tasks
+          (cl-loop with total = (seq-length focuses)
+                   for focus in focuses
+                   for i from 0
+                   for focus-id = (org-element-property :ID focus)
+                   ;; do (message "Collecting focus %d/%d" i total)
+                   collect (cons focus-id
+                                 (my/org-focus--sort-tasks-by
+                                  (org-ql-query
+                                    :select #'my/org-focus--select-headline
+                                    :from (org-agenda-files)
+                                    :where `(property "FOCUS" ,focus-id))
+                                  '(todo-keyword closed deadline scheduled priority
+                                                 title))))))
+    (cons focuses tasks)))
+
+(defun my/org-focus-overview--render (data)
+  "Render focus overview data.
+
+DATA is as returned by `my/org-focus-overview--data'."
+  (let ((inhibit-read-only t))
+    (erase-buffer)
+    (pcase-let ((`(,focuses . ,tasks) data)
+                (outline-paths-written nil))
+      (dolist (focus focuses)
+        (let ((focus-id (org-element-property :ID focus)))
+          (cl-loop
+           with last-i = (seq-length (org-element-property :outline-path focus))
+           for i from 1
+           for header in (org-element-property :outline-path focus)
+           for full-path =
+           (mapconcat #'identity (seq-subseq (org-element-property :outline-path focus)
+                                             0 i))
+           for face = (intern (format "outline-%d" i))
+           for prefix = (concat (make-string i ?*) " ")
+           do (if (= i last-i)
+                  (insert (propertize (concat prefix header)
+                                      'face face 'focus-id focus-id)
+                          "\n")
+                (unless (member full-path outline-paths-written)
+                  (insert (propertize (concat prefix header)
+                                      'face face)
+                          "\n")
+                  (push full-path outline-paths-written))))
+          (dolist (task (alist-get focus-id tasks nil nil #'equal))
+            (let ((render (my/org-focus--render-task
+                           task '(todo-keyword due-string-when-open closed-string
+                                               clock-string priority-string title))))
+              (insert
+               (apply #'propertize " " (text-properties-at 0 render))
+               render
+               "\n"))))
+        (insert "\n")))))
+
+(defvar-local my/org-focus-overview-data nil
+  "Focus overview data displayed in the current view.")
+
+(defun my/org-focus-overview-revert (_ignore-auto _noconfirm)
+  "Refresh the current focus oveview buffer."
+  (interactive)
+  (unless (derived-mode-p #'my/org-focus-view-mode)
+    (user-error "Not it my/org-focus-view-mode"))
+  (let ((data (my/org-focus-overview--data)))
+    (setq my/org-focus-overview-data data)
+    (my/org-focus-overview--render data)
+    (goto-char (point-min))))
+
+(defun my/org-focus-overview ()
+  "View all focuses and their tasks."
+  (interactive)
+  (let ((buf (get-buffer-create "*Focus overview*")))
+    (with-current-buffer buf
+      (my/org-focus-view-mode)
+      (my/org-focus-overview-revert nil nil)
+      (setq-local revert-buffer-function #'my/org-focus-overview-revert))
     (pop-to-buffer buf)))
 #+end_src
 
@@ -9218,7 +9347,6 @@ For the second point I'll try to collect data from various sources and add the d
 
 TODO:
 - Implement one function to process a task (effort, focus, refile, deadline / scheduled, backlog?)
-- Implement a view to find all open tasks without effort (no =:EFFORT= prop, but also no =:EFFORT:= drawer).
 
 **** Data from git
 First, as I have [[file:Console.org::=autocommit=][autocommit]] set up in my org directory, here is a function to get an alist of changed files in a form =(status . path)=. The =rev= parameter can be a commit, tag, etc. but here I'm interested in the date form (e.g. =@{2021-08-30}=).
@@ -9402,6 +9530,7 @@ Review checklist (/delete this after review/):
   - Check [[file:/home/planning/focus-pocus.org::*Planning][Focused planning]] with agenda (-1 / +2 weeks)
 - [ ] Final check
   - [[elisp:(org-ql-view \"Fix: Missing timestamps\")][org-ql: Fix missing timestamps]]
+  - [[elisp:(org-ql-view \"Fix: Missing effort\")][org-ql: Fix missing effort]]
   - [[elisp:(my/backlog)][org-ql: Backlog]] - check if something's missing
 - [ ] Run auto-archiving
 - [ ] Review journal records
