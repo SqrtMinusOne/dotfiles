@@ -965,12 +965,6 @@ keymap_mode = "vim-insert"
 I guess there are no secrets here.
 
 #+begin_src conf-space :tangle ~/.ssh/config
-Match originalhost *.etu.ru,10.136.*,10.128.*,10.160.* exec "ip -o -4 addr show | grep -Eq ' inet 10[.]136[.]8[.][0-9]+/'"
-    ProxyJump none
-
-Match originalhost *.etu.ru,10.136.*,10.128.*,10.160.*
-	ProxyJump pavel@192.168.122.50
-
 Host *
 	ControlMaster auto
 	ControlPath ~/.ssh/cm-%C
