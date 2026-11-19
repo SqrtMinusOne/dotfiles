@@ -4346,6 +4346,7 @@ This section generates manifests for various desktop software that I'm using.
 | dev      | duckdb               |          |
 | dev      | ansible              |          |
 | dev      | strace               |          |
+| dev      | smbclient            |          |
 ** Games
 | Category | Arch dependency |
 |----------+-----------------|
