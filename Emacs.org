@@ -6827,7 +6827,7 @@ Lately I've been keeping a lot of tasks in the TODO state, moving the deadlines 
   (interactive)
   (org-ql-search (org-agenda-files)
     `(and (todo)
-          (not (todo "WAIT"))
+          (not (todo "WAIT" "DELEGATED"))
           (not (deadline))
           (not (scheduled))
           (not (tags "nb"))
@@ -6856,6 +6856,7 @@ Putting all the above in =org-ql-views=.
                                 (clocked)
                                 (not (priority))
                                 (not (todo "WAIT"))
+                                (not (todo "DELEGATED"))
                                 (not (todo "PLAN"))
                                 (not (tags "nots"))
                                 (not (ts :from -14)))
@@ -7043,13 +7044,13 @@ Then, I want a view with grouping like: day / focus / task, i.e., all tasks in a
 TODO:
 - Check the integrity of focus ids: all referenced focus ids exist and are unique.
 - Add effort aggregation to focus view
-- Add org-clock-add integration
+- Add org-clock-agg integration
 - Views:
-  - Focus view
-    - Effort
-  - Focus overview: all focuses and tasks (org-ql)
   - Agenda view
+  - Backlog per focus vief
 - GitLab integration?
+- Review delegated tasks somehow
+- Review: no backlog in areas
 
 ***** Focus data
 So, first, a focus file. Let it be =focus-pocus.org=:
@@ -7457,7 +7458,14 @@ if it's already set."
     (cond (focus-object (my/org-focus-view focus-object))
           ((or (null focus-id) (eq arg 4))
            (call-interactively #'my/org-focus-assign-to-task))
-          (t (org-id-goto focus-id)))))
+          ;; XXX I don't want `pop-to-buffer-same-window' from `org-id-goto'
+          (t (let ((m (org-id-find focus-id 'marker)))
+               (unless m
+                 (error "Cannot find entry with ID \"%s\"" id))
+               (pop-to-buffer (marker-buffer m))
+               (goto-char m)
+               (move-marker m nil)
+               (org-fold-show-context))))))
 #+end_src
 
 Find all tasks without focus that either open or were open in the last month.
@@ -7630,7 +7638,6 @@ Then the multiple tasks and the focus itself:
   "Get a sort key for TASK.
 
 VALUES is a list of parameters to extract from the task."
-  (setq my/test task)
   (let* ((element (alist-get :headline task))
          (todo-keyword (or
                         (cl-position
@@ -8652,7 +8659,33 @@ And insert a similar heading:
     (org-insert-heading '(4))
     (insert (format "FUTURE %s %s" heading last-number))))
 #+end_src
+**** Miscellaneous
+***** Insert a link to org heading
+#+begin_src emacs-lisp
+(defun my/org-insert-heading-link (&optional arg)
+  "Insert a link to an Org heading.
 
+With prefix ARG, choose a file from `org-agenda-files'."
+  (interactive "P")
+  (let* ((file (if arg
+                   (completing-read "File: " (org-agenda-files) nil t)
+                 (buffer-file-name)))
+         (headings (with-current-buffer (find-file-noselect file)
+                     (org-map-entries
+                      (lambda ()
+                        (cons (string-join
+                               (append (org-get-outline-path)
+                                       (list (org-get-heading t nil t t)))
+                               " / ")
+                              (org-get-heading t t t t)))
+                      nil 'file)))
+         (heading (cdr (assoc (completing-read "Heading: " headings nil t)
+                              headings))))
+    (org-insert-link
+     nil
+     (format "file:%s::*%s" (file-relative-name file) heading)
+     heading)))
+#+end_src
 **** Archiving records
 - *CREDIT*: thanks [[https://emacs.ch/@grinn][Amy]] for pointing me to the right functionality of =org-refile=.
 
@@ -8783,7 +8816,7 @@ Local keybindings
     "E" #'my/org-planned-effort-add-daily
     "R" #'my/org-planned-effort-remove-daily
     "r" #'org-priority
-    "m" #'my/org-meeting-link
+    "l" #'my/org-insert-heading-link
     ;; Focus
     "f" #'my/org-focus-task-dwim)
 
@@ -9347,6 +9380,7 @@ For the second point I'll try to collect data from various sources and add the d
 
 TODO:
 - Implement one function to process a task (effort, focus, refile, deadline / scheduled, backlog?)
+- Implement a function to auto-create recurring tasks
 
 **** Data from git
 First, as I have [[file:Console.org::=autocommit=][autocommit]] set up in my org directory, here is a function to get an alist of changed files in a form =(status . path)=. The =rev= parameter can be a commit, tag, etc. but here I'm interested in the date form (e.g. =@{2021-08-30}=).
@@ -9524,7 +9558,7 @@ Review checklist (/delete this after review/):
   - [[elisp:(org-ql-view \"Fix: Passed events\")][org-ql: Fix passed events]]
   - [[elisp:(org-ql-view \"Review: Missed deadlines\")][org-ql: Review missed deadlines]] - move to backlog or reschedule
   - [[elisp:(org-ql-view \"Review: Stale tasks\")][org-ql: Stale tasks]] - move to backlog or reschedule
-- [ ] [[file:/home/planning/focus-pocus.org::*Focuses][Focus]] check:
+- [ ] [[file:../planning/focus-pocus.org::*Focuses][Focus]] check:
   - Review currently active focuses
 - [ ] Agenda check:
   - Check [[file:/home/planning/focus-pocus.org::*Planning][Focused planning]] with agenda (-1 / +2 weeks)

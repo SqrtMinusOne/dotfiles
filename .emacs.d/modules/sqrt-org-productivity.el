@@ -407,7 +407,7 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
   (interactive)
   (org-ql-search (org-agenda-files)
     `(and (todo)
-          (not (todo "WAIT"))
+          (not (todo "WAIT" "DELEGATED"))
           (not (deadline))
           (not (scheduled))
           (not (tags "nb"))
@@ -431,6 +431,7 @@ TYPE may be `ts', `ts-active', `ts-inactive', `clocked', or
                                 (clocked)
                                 (not (priority))
                                 (not (todo "WAIT"))
+                                (not (todo "DELEGATED"))
                                 (not (todo "PLAN"))
                                 (not (tags "nots"))
                                 (not (ts :from -14)))
@@ -912,7 +913,14 @@ if it's already set."
     (cond (focus-object (my/org-focus-view focus-object))
           ((or (null focus-id) (eq arg 4))
            (call-interactively #'my/org-focus-assign-to-task))
-          (t (org-id-goto focus-id)))))
+          ;; XXX I don't want `pop-to-buffer-same-window' from `org-id-goto'
+          (t (let ((m (org-id-find focus-id 'marker)))
+               (unless m
+                 (error "Cannot find entry with ID \"%s\"" id))
+               (pop-to-buffer (marker-buffer m))
+               (goto-char m)
+               (move-marker m nil)
+               (org-fold-show-context))))))
 
 (defun my/org-focus-view-tasks-without-focus ()
   "Find all relevant tasks without focus."
@@ -1058,7 +1066,6 @@ possible elements."
   "Get a sort key for TASK.
 
 VALUES is a list of parameters to extract from the task."
-  (setq my/test task)
   (let* ((element (alist-get :headline task))
          (todo-keyword (or
                         (cl-position
@@ -1956,6 +1963,30 @@ KEYS is a list of cons cells like (<label> . <time>)."
     (org-insert-heading '(4))
     (insert (format "FUTURE %s %s" heading last-number))))
 
+(defun my/org-insert-heading-link (&optional arg)
+  "Insert a link to an Org heading.
+
+With prefix ARG, choose a file from `org-agenda-files'."
+  (interactive "P")
+  (let* ((file (if arg
+                   (completing-read "File: " (org-agenda-files) nil t)
+                 (buffer-file-name)))
+         (headings (with-current-buffer (find-file-noselect file)
+                     (org-map-entries
+                      (lambda ()
+                        (cons (string-join
+                               (append (org-get-outline-path)
+                                       (list (org-get-heading t nil t t)))
+                               " / ")
+                              (org-get-heading t t t t)))
+                      nil 'file)))
+         (heading (cdr (assoc (completing-read "Heading: " headings nil t)
+                              headings))))
+    (org-insert-link
+     nil
+     (format "file:%s::*%s" (file-relative-name file) heading)
+     heading)))
+
 (defun my/org-archive--get-file ()
   "Get an archive version of the file."
   (let ((archive-file
@@ -2055,7 +2086,7 @@ KEYS is a list of cons cells like (<label> . <time>)."
     "E" #'my/org-planned-effort-add-daily
     "R" #'my/org-planned-effort-remove-daily
     "r" #'org-priority
-    "m" #'my/org-meeting-link
+    "l" #'my/org-insert-heading-link
     ;; Focus
     "f" #'my/org-focus-task-dwim)
 
@@ -2589,7 +2620,7 @@ Review checklist (/delete this after review/):
   - [[elisp:(org-ql-view \"Fix: Passed events\")][org-ql: Fix passed events]]
   - [[elisp:(org-ql-view \"Review: Missed deadlines\")][org-ql: Review missed deadlines]] - move to backlog or reschedule
   - [[elisp:(org-ql-view \"Review: Stale tasks\")][org-ql: Stale tasks]] - move to backlog or reschedule
-- [ ] [[file:/home/planning/focus-pocus.org::*Focuses][Focus]] check:
+- [ ] [[file:../planning/focus-pocus.org::*Focuses][Focus]] check:
   - Review currently active focuses
 - [ ] Agenda check:
   - Check [[file:/home/planning/focus-pocus.org::*Planning][Focused planning]] with agenda (-1 / +2 weeks)
